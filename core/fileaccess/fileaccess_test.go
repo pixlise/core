@@ -1,0 +1,238 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+package fileaccess
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/core/utils"
+)
+
+type testData struct {
+	Name        string `json:"name"`
+	Value       int    `json:"value"`
+	Description string `json:"description"`
+}
+
+func runTest(fs FileAccess, bucket string) {
+	// Write pretty printed JSON
+	fmt.Printf("JSON: %v\n", fs.WriteJSON(bucket, "the-files/pretty.json", testData{Name: "Hello", Value: 778, Description: "World"}))
+
+	// Write non-indented JSON
+	fmt.Printf("JSON no-indent: %v\n", fs.WriteJSONNoIndent(bucket, "the-files/subdir/ugly.json", testData{Name: "Hello", Value: 778, Description: "World"}))
+
+	// Write binary data
+	fmt.Printf("Binary: %v\n", fs.WriteObject(bucket, "the-files/data.bin", []byte{250, 130, 10, 0, 33}))
+
+	// Copy a file
+	fmt.Printf("Copy: %v\n", fs.CopyObject(bucket, "the-files/pretty.json", bucket, "the-files/subdir/copied.json"))
+
+	// Copy a file, bad path
+	err := fs.CopyObject(bucket, "the-files/prettyzzz.json", bucket, "the-files/subdir/copied2.json")
+	fmt.Printf("Copy bad path, got not found error: %v\n", fs.IsNotFoundError(err)) // Don't print aws error because it changes between tests (contains req id)
+
+	// Read each back/verify their contents
+	var contents testData
+	err = fs.ReadJSON(bucket, "the-files/pretty.json", &contents, false)
+	fmt.Printf("Read JSON: %v, %v\n", err, contents)
+
+	err = fs.ReadJSON(bucket, "the-files/pretty.json", &contents, false)
+	fmt.Printf("Read JSON no-indent: %v, %v\n", err, contents)
+
+	data, err := fs.ReadObject(bucket, "the-files/data.bin")
+	fmt.Printf("Read Binary: %v, %v\n", err, data)
+
+	// Read bad path, then check that this is a not found error
+	err = fs.ReadJSON(bucket, "the-files/prettyzzz.json", &contents, false)
+	fmt.Printf("Read bad path, got not found error: %v\n", fs.IsNotFoundError(err)) // Don't print aws error because it changes between tests (contains req id)
+
+	// Read the binary file as JSON, should fail to deserialise and get a different error code
+	err = fs.ReadJSON(bucket, "the-files/data.bin", &contents, false)
+	fmt.Printf("Read bad JSON: %v\n", err)
+
+	// Check this is not seen as a "not found" error
+	fmt.Printf("Not a \"not found\" error: %v\n", !fs.IsNotFoundError(err))
+
+	// List files
+	listing, err := fs.ListObjects(bucket, "the-files/")
+	fmt.Printf("Listing: %v, %v\n", err, listing)
+
+	listing, err = fs.ListObjects(bucket, "the-files/subdir")
+	fmt.Printf("Listing subdir: %v, %v\n", err, listing)
+
+	// Delete the copy
+	fmt.Printf("Delete copy: %v\n", fs.DeleteObject(bucket, "the-files/subdir/copied.json"))
+
+	// Delete bin file
+	fmt.Printf("Delete bin: %v\n", fs.DeleteObject(bucket, "the-files/data.bin"))
+
+	// Check listing changed
+	listing, err = fs.ListObjects(bucket, "the-files/")
+	fmt.Printf("Listing2: %v, %v\n", err, listing)
+
+	listing, err = fs.ListObjects(bucket, "the-files/subdir")
+	fmt.Printf("Listing subdir2: %v, %v\n", err, listing)
+
+	// Empty dir
+	fmt.Printf("Empty dir: %v\n", fs.EmptyObjects(bucket))
+
+	// List emptied dir
+	listing, err = fs.ListObjects(bucket, "")
+	fmt.Printf("Listing subdir3: %v, %v\n", err, listing)
+}
+
+func Example_localFileSystem() {
+	// First, clear any files we may have there already
+	fmt.Printf("Setup: %v\n", os.RemoveAll("./test-output/"))
+
+	// Now run the tests
+	runTest(&FSAccess{}, "./test-output")
+
+	// NOTE: test output must match the output from S3 (except cleanup steps)
+
+	// Output:
+	// Setup: <nil>
+	// JSON: <nil>
+	// JSON no-indent: <nil>
+	// Binary: <nil>
+	// Copy: <nil>
+	// Copy bad path, got not found error: true
+	// Read JSON: <nil>, {Hello 778 World}
+	// Read JSON no-indent: <nil>, {Hello 778 World}
+	// Read Binary: <nil>, [250 130 10 0 33]
+	// Read bad path, got not found error: true
+	// Read bad JSON: invalid character 'ú' looking for beginning of value
+	// Not a "not found" error: true
+	// Listing: <nil>, [the-files/data.bin the-files/pretty.json the-files/subdir/copied.json the-files/subdir/ugly.json]
+	// Listing subdir: <nil>, [the-files/subdir/copied.json the-files/subdir/ugly.json]
+	// Delete copy: <nil>
+	// Delete bin: <nil>
+	// Listing2: <nil>, [the-files/pretty.json the-files/subdir/ugly.json]
+	// Listing subdir2: <nil>, [the-files/subdir/ugly.json]
+	// Empty dir: <nil>
+	// Listing subdir3: <nil>, []
+}
+
+func Example_s3() {
+	sess, err := awsutil.GetSessionWithRegion("us-east-1")
+	if err != nil {
+		fmt.Println("Failed to get AWS session")
+		return
+	}
+	s3svc, err := awsutil.GetS3(sess)
+	if err != nil {
+		fmt.Println("Failed to get S3")
+		return
+	}
+
+	fmt.Printf("Setup: %v\n", err)
+
+	fs := MakeS3Access(s3svc)
+
+	// Create test S3 bucket for this purpose
+	testBucket := "api-fileaccess-s3-test-" + utils.RandStringBytesMaskImpr(10)
+	_, err = s3svc.CreateBucket(
+		&s3.CreateBucketInput{
+			Bucket: aws.String(testBucket),
+			//CreateBucketConfiguration:
+		},
+	)
+	if err != nil {
+		fmt.Printf("Failed to create test S3 bucket: %v\n", err)
+		return
+	}
+
+	defer func() {
+		_, err := s3svc.DeleteBucket(&s3.DeleteBucketInput{Bucket: aws.String(testBucket)})
+		fmt.Printf("Delete bucket errors: %v\n", err)
+	}()
+
+	// Now run the tests
+	runTest(fs, testBucket)
+
+	// NOTE: test output must match the output from local file system (except cleanup steps)
+
+	// Output:
+	// Setup: <nil>
+	// JSON: <nil>
+	// JSON no-indent: <nil>
+	// Binary: <nil>
+	// Copy: <nil>
+	// Copy bad path, got not found error: true
+	// Read JSON: <nil>, {Hello 778 World}
+	// Read JSON no-indent: <nil>, {Hello 778 World}
+	// Read Binary: <nil>, [250 130 10 0 33]
+	// Read bad path, got not found error: true
+	// Read bad JSON: invalid character 'ú' looking for beginning of value
+	// Not a "not found" error: true
+	// Listing: <nil>, [the-files/data.bin the-files/pretty.json the-files/subdir/copied.json the-files/subdir/ugly.json]
+	// Listing subdir: <nil>, [the-files/subdir/copied.json the-files/subdir/ugly.json]
+	// Delete copy: <nil>
+	// Delete bin: <nil>
+	// Listing2: <nil>, [the-files/pretty.json the-files/subdir/ugly.json]
+	// Listing subdir2: <nil>, [the-files/subdir/ugly.json]
+	// Empty dir: <nil>
+	// Listing subdir3: <nil>, []
+	// Delete bucket errors: <nil>
+}
+
+func Example_MakeValidObjectName() {
+	fmt.Println(MakeValidObjectName("my file!"))
+	fmt.Println(MakeValidObjectName("this/path/to.bin"))
+	fmt.Println(MakeValidObjectName("Hope \"this\" isn't too $expensive"))
+	fmt.Println(MakeValidObjectName("This-file is it"))
+	fmt.Println(MakeValidObjectName("A!B#C$D/E\\F"))
+
+	// Output:
+	// my file
+	// this_path_to.bin
+	// Hope this isnt too expensive
+	// This-file is it
+	// ABCD_E_F
+}
+
+func Example_IsValidObjectName() {
+	fmt.Println(IsValidObjectName("name"))
+	fmt.Println(IsValidObjectName("Name With Spaces"))
+	fmt.Println(IsValidObjectName("Name With Spaces"))
+	fmt.Println(IsValidObjectName(""))
+	fmt.Println(IsValidObjectName("Name \"Quote"))
+
+	// Output:
+	// true
+	// true
+	// true
+	// false
+	// false
+}

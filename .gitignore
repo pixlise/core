@@ -1,0 +1,19 @@
+__debug_bin
+.idea/
+
+# Build output from make for exes, coverage reports, etc
+/_out/
+
+# temp files that get generated for tests
+diffraction-detector/test-files/dataset-diffraction.bin
+core/fileaccess/test-output/
+
+
+# macOS #
+.DS_Store
+.AppleDouble
+.LSOverride
+
+#binary files
+integrationTest
+.vscode/

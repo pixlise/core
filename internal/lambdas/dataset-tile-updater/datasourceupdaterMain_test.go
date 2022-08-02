@@ -1,0 +1,453 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/logger"
+)
+
+func Example_updateDatasetsBucketFail() {
+	const jobBucket = "dev-pixlise-data"
+	var mockS3 awsutil.MockS3Client
+	defer mockS3.FinishTest()
+	l := logger.NullLogger{}
+
+	// Listing returns an error
+	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
+		{
+			Bucket: aws.String(jobBucket), Prefix: aws.String("Datasets/"),
+		},
+	}
+	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{nil}
+
+	fs := fileaccess.MakeS3Access(&mockS3)
+	fmt.Println(updateDatasets(fs, jobBucket, l))
+
+	// Output:
+	// Returning error from ListObjectsV2
+
+}
+
+func Example_updateDatasetsErrorGettingFiles() {
+	const jobBucket = "dev-pixlise-data"
+	var mockS3 awsutil.MockS3Client
+	defer mockS3.FinishTest()
+	l := logger.NullLogger{}
+
+	// Listing returns 1 item, get status returns error, check that it still requests 2nd item, 2nd item will fail to parse
+	// but the func should still upload a blank datasets.json
+	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
+		{
+			Bucket: aws.String(jobBucket), Prefix: aws.String("Datasets/"),
+		},
+	}
+	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
+		{
+			IsTruncated: aws.Bool(false),
+			Contents: []*s3.Object{
+				{Key: aws.String("Datasets/abc-123/summary.json")},
+				{Key: aws.String("Datasets/abc-123/node1.json")},
+				{Key: aws.String("Datasets/abc-123/params.json")},
+				{Key: aws.String("Datasets/abc-456/summary.json")},
+				{Key: aws.String("Datasets/abc-456/node1.json")},
+				{Key: aws.String("Datasets/abc-456/params.json")},
+				{Key: aws.String("Datasets/abc-456/output/combined.csv")},
+			},
+		},
+	}
+
+	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+		{
+			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-123/summary.json"),
+		},
+		{
+			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-456/summary.json"),
+		},
+	}
+	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+		nil,
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte("bad json"))),
+		},
+	}
+
+	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
+		{
+			Bucket: aws.String(jobBucket), Key: aws.String("PixliseConfig/datasets.json"), Body: bytes.NewReader([]byte(`{
+ "datasets": []
+}`)),
+		},
+	}
+	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
+		{},
+	}
+
+	fs := fileaccess.MakeS3Access(&mockS3)
+	fmt.Println(updateDatasets(fs, jobBucket, l))
+
+	// Output:
+	// <nil>
+}
+
+func Example_updateDatasetsTwoSummaryCombineNilJson() {
+	const jobBucket = "dev-pixlise-data"
+	var mockS3 awsutil.MockS3Client
+	defer mockS3.FinishTest()
+	l := logger.NullLogger{}
+
+	// Listing returns 1 item, get status returns error, requests 2nd and 3rd item and properly combines the
+	//two jsons into datasets.json
+	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
+		{
+			Bucket: aws.String(jobBucket), Prefix: aws.String("Datasets/"),
+		},
+	}
+	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
+		{
+			IsTruncated: aws.Bool(false),
+			Contents: []*s3.Object{
+				{Key: aws.String("Datasets/abc-123/summary.json")},
+				{Key: aws.String("Datasets/abc-123/node1.json")},
+				{Key: aws.String("Datasets/abc-123/params.json")},
+				{Key: aws.String("Datasets/abc-456/summary.json")},
+				{Key: aws.String("Datasets/abc-789/summary.json")},
+				{Key: aws.String("Datasets/abc-456/params.json")},
+				{Key: aws.String("Datasets/abc-456/output/combined.csv")},
+			},
+		},
+	}
+
+	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+		{
+			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-123/summary.json"),
+		},
+		{
+			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-456/summary.json"),
+		},
+		{
+			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-789/summary.json"),
+		},
+	}
+	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+		nil,
+		// NOTE: Missing creation time, eg existing old datasets
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+				"dataset_id": "test-fm-5x11",
+				"group": "the-group",
+				"title": "5x5 title",
+				"site": "5x5 site",
+				"target": "5x5 target",
+				"drive_id": 0,
+				"site_id": 0,
+				"target_id": "?",
+				"sol": "",
+				"rtt": 0,
+				"sclk": 0,
+				"context_image": "MCC-6.jpg",
+				"location_count": 4035,
+				"data_file_size": 23212328,
+				"context_images": 2,
+				"tiff_context_images": 0,
+				"normal_spectra": 8064,
+				"dwell_spectra": 0,
+				"bulk_spectra": 2,
+				"max_spectra": 2,
+				"pseudo_intensities": 0,
+				"detector_config": "PIXL"
+			   }`))),
+		},
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+				"dataset_id": "test-fm-5x5-full",
+				"group": "the-group",
+				"drive_id": 0,
+				"site_id": 0,
+				"target_id": "?",
+				"sol": "",
+				"rtt": 0,
+				"sclk": 0,
+				"context_image": "MCC-4042.jpg",
+				"location_count": 1769,
+				"data_file_size": 11202865,
+				"context_images": 10,
+				"tiff_context_images": 0,
+				"normal_spectra": 3528,
+				"dwell_spectra": 2,
+				"bulk_spectra": 2,
+				"max_spectra": 2,
+				"pseudo_intensities": 0,
+				"detector_config": "PIXL",
+				"create_unixtime_sec": 1234567890
+			   }`))),
+		},
+	}
+
+	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
+		{
+			Bucket: aws.String(jobBucket), Key: aws.String("PixliseConfig/datasets.json"), Body: bytes.NewReader([]byte(`{
+ "datasets": [
+  {
+   "dataset_id": "test-fm-5x11",
+   "group": "the-group",
+   "drive_id": 0,
+   "site_id": 0,
+   "target_id": "?",
+   "site": "5x5 site",
+   "target": "5x5 target",
+   "title": "5x5 title",
+   "sol": "",
+   "rtt": 0,
+   "sclk": 0,
+   "context_image": "MCC-6.jpg",
+   "location_count": 4035,
+   "data_file_size": 23212328,
+   "context_images": 2,
+   "tiff_context_images": 0,
+   "normal_spectra": 8064,
+   "dwell_spectra": 0,
+   "bulk_spectra": 2,
+   "max_spectra": 2,
+   "pseudo_intensities": 0,
+   "detector_config": "PIXL",
+   "create_unixtime_sec": 0
+  },
+  {
+   "dataset_id": "test-fm-5x5-full",
+   "group": "the-group",
+   "drive_id": 0,
+   "site_id": 0,
+   "target_id": "?",
+   "site": "",
+   "target": "",
+   "title": "",
+   "sol": "",
+   "rtt": 0,
+   "sclk": 0,
+   "context_image": "MCC-4042.jpg",
+   "location_count": 1769,
+   "data_file_size": 11202865,
+   "context_images": 10,
+   "tiff_context_images": 0,
+   "normal_spectra": 3528,
+   "dwell_spectra": 2,
+   "bulk_spectra": 2,
+   "max_spectra": 2,
+   "pseudo_intensities": 0,
+   "detector_config": "PIXL",
+   "create_unixtime_sec": 1234567890
+  }
+ ]
+}`)),
+		},
+	}
+	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
+		{},
+	}
+
+	fs := fileaccess.MakeS3Access(&mockS3)
+	fmt.Println(updateDatasets(fs, jobBucket, l))
+
+	// Output:
+	// <nil>
+}
+
+func Example_updateDatasetsTwoSummaryCombineBadJson() {
+	const jobBucket = "dev-pixlise-data"
+	var mockS3 awsutil.MockS3Client
+	defer mockS3.FinishTest()
+	l := logger.NullLogger{}
+
+	// Listing returns 1 item that is invalid json, does not parse it, returnrs error, and moves on
+	// requests 2nd and 3rd item and properly combines the two jsons into datasets.json
+	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
+		{
+			Bucket: aws.String(jobBucket), Prefix: aws.String("Datasets/"),
+		},
+	}
+	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
+		{
+			IsTruncated: aws.Bool(false),
+			Contents: []*s3.Object{
+				{Key: aws.String("Datasets/abc-123/summary.json")},
+				{Key: aws.String("Datasets/abc-123/node1.json")},
+				{Key: aws.String("Datasets/abc-123/params.json")},
+				{Key: aws.String("Datasets/abc-456/summary.json")},
+				{Key: aws.String("Datasets/abc-789/summary.json")},
+				{Key: aws.String("Datasets/abc-456/params.json")},
+				{Key: aws.String("Datasets/abc-456/output/combined.csv")},
+			},
+		},
+	}
+
+	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+		{
+			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-123/summary.json"),
+		},
+		{
+			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-456/summary.json"),
+		},
+		{
+			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-789/summary.json"),
+		},
+	}
+	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte("bad json"))),
+		},
+		// NOTE: Missing creation time, eg existing old datasets
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+				"dataset_id": "test-fm-5x11",
+				"title": "5x5 title",
+				"site": "5x5 site",
+				"target": "5x5 target",
+				"group": "groupie",
+				"drive_id": 0,
+				"site_id": 0,
+				"target_id": "?",
+				"sol": "230",
+				"rtt": 0,
+				"sclk": 0,
+				"context_image": "MCC-6.jpg",
+				"location_count": 4035,
+				"data_file_size": 23212328,
+				"context_images": 2,
+				"tiff_context_images": 0,
+				"normal_spectra": 8064,
+				"dwell_spectra": 0,
+				"bulk_spectra": 2,
+				"max_spectra": 2,
+				"pseudo_intensities": 0,
+				"detector_config": "PIXL"
+			   }`))),
+		},
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+				"dataset_id": "test-fm-5x5-full",
+				"group": "groupie",
+				"drive_id": 0,
+				"site_id": 0,
+				"target_id": "?",
+				"sol": "231",
+				"rtt": 0,
+				"sclk": 0,
+				"context_image": "MCC-4042.jpg",
+				"location_count": 1769,
+				"data_file_size": 11202865,
+				"context_images": 10,
+				"tiff_context_images": 0,
+				"normal_spectra": 3528,
+				"dwell_spectra": 2,
+				"bulk_spectra": 2,
+				"max_spectra": 2,
+				"pseudo_intensities": 0,
+				"detector_config": "PIXL",
+				"create_unixtime_sec": 1234567890
+			   }`))),
+		},
+	}
+
+	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
+		{
+			Bucket: aws.String(jobBucket), Key: aws.String("PixliseConfig/datasets.json"), Body: bytes.NewReader([]byte(`{
+ "datasets": [
+  {
+   "dataset_id": "test-fm-5x11",
+   "group": "groupie",
+   "drive_id": 0,
+   "site_id": 0,
+   "target_id": "?",
+   "site": "5x5 site",
+   "target": "5x5 target",
+   "title": "5x5 title",
+   "sol": "230",
+   "rtt": 0,
+   "sclk": 0,
+   "context_image": "MCC-6.jpg",
+   "location_count": 4035,
+   "data_file_size": 23212328,
+   "context_images": 2,
+   "tiff_context_images": 0,
+   "normal_spectra": 8064,
+   "dwell_spectra": 0,
+   "bulk_spectra": 2,
+   "max_spectra": 2,
+   "pseudo_intensities": 0,
+   "detector_config": "PIXL",
+   "create_unixtime_sec": 0
+  },
+  {
+   "dataset_id": "test-fm-5x5-full",
+   "group": "groupie",
+   "drive_id": 0,
+   "site_id": 0,
+   "target_id": "?",
+   "site": "",
+   "target": "",
+   "title": "",
+   "sol": "231",
+   "rtt": 0,
+   "sclk": 0,
+   "context_image": "MCC-4042.jpg",
+   "location_count": 1769,
+   "data_file_size": 11202865,
+   "context_images": 10,
+   "tiff_context_images": 0,
+   "normal_spectra": 3528,
+   "dwell_spectra": 2,
+   "bulk_spectra": 2,
+   "max_spectra": 2,
+   "pseudo_intensities": 0,
+   "detector_config": "PIXL",
+   "create_unixtime_sec": 1234567890
+  }
+ ]
+}`)),
+		},
+	}
+	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
+		{},
+	}
+
+	fs := fileaccess.MakeS3Access(&mockS3)
+	fmt.Println(updateDatasets(fs, jobBucket, l))
+
+	// Output:
+	// <nil>
+}

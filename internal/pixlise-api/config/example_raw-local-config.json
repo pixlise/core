@@ -1,0 +1,27 @@
+{
+	"DataBucket": "",
+    "JobBucket": "",
+	"AWSBucketRegion": "",
+    "AWSCloudwatchRegion": "",
+	"EnvironmentName": "local",
+    "LogLevel": 0,
+    "CoresPerNode": 6,
+    "PiquantDockerImage": "",
+    "DockerLoginString": "",
+    "QuantNamespace": "",
+    "QuantExecutor": "",
+    "ElasticURL": "",
+    "SentryEndpoint": "",
+    "Auth0Domain": "",
+    "Auth0ManagementClientID": "",
+    "Auth0ManagementSecret": "",
+
+    "DatasetsBucket": "",
+    "UsersBucket": "",
+    "ConfigBucket": "",
+    "PiquantJobsBucket": "",
+    "ManualUploadBucket": "",
+
+    "BuildsBucket": "",
+    "DatasourceArtifactsBucket": ""
+}

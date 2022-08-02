@@ -1,0 +1,247 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+package endpoints
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/api/handlers"
+	"github.com/pixlise/core/api/permission"
+	apiRouter "github.com/pixlise/core/api/router"
+	"github.com/pixlise/core/api/services"
+	"github.com/pixlise/core/core/api"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/core/roiModel"
+	"github.com/pixlise/core/core/utils"
+)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ROI - regions of interest
+
+type roiHandler struct {
+	svcs *services.APIServices
+}
+
+func registerROIHandler(router *apiRouter.ApiObjectRouter) {
+	const pathPrefix = "roi"
+
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), roiList)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteDataAnalysis), roiPost)
+
+	//router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("GET", permReadDataAnalysis), roiGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWriteDataAnalysis), roiPut)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("DELETE", permission.PermWriteDataAnalysis), roiDelete)
+
+	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedROI), roiShare)
+}
+
+func roiList(params handlers.ApiHandlerParams) (interface{}, error) {
+	datasetID := params.PathParams[datasetIdentifier]
+
+	rois := roiModel.ROILookup{}
+
+	// Get user item summaries
+	err := roiModel.GetROIs(params.Svcs, params.UserInfo.UserID, datasetID, &rois)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get shared item summaries (into same map)
+	err = roiModel.GetROIs(params.Svcs, pixlUser.ShareUserID, datasetID, &rois)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the combined set
+	return &rois, nil
+}
+
+func roiPost(params handlers.ApiHandlerParams) (interface{}, error) {
+	datasetID := params.PathParams[datasetIdentifier]
+
+	// Read in body
+	body, err := ioutil.ReadAll(params.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var req roiModel.ROIItem
+	err = json.Unmarshal(body, &req)
+	if err != nil {
+		return nil, api.MakeBadRequestError(err)
+	}
+
+	// Validate
+	if !fileaccess.IsValidObjectName(req.Name) {
+		return nil, api.MakeBadRequestError(fmt.Errorf("Invalid ROI name: %v", req.Name))
+	}
+
+	// Download the file
+	s3Path := filepaths.GetROIPath(params.UserInfo.UserID, datasetID)
+	allROIs, err := roiModel.ReadROIData(params.Svcs, s3Path)
+	if err != nil && !params.Svcs.FS.IsNotFoundError(err) {
+		// Only return error if it's not about the file missing, because user may not have interacted with this dataset yet
+		return nil, err
+	}
+
+	// Check that name is not duplicate. At first we didn't care, because we operate on IDs, but it came up that when exporting
+	// using ROI names, files overwrote each other, so better to have unique names
+	for _, roi := range allROIs {
+		if req.Name == roi.Name && roi.Creator.UserID == params.UserInfo.UserID {
+			return nil, api.MakeBadRequestError(fmt.Errorf("ROI name already used: %v", req.Name))
+		}
+	}
+
+	// Save it & upload
+	saveID := params.Svcs.IDGen.GenObjectID()
+	_, exists := allROIs[saveID]
+	if exists {
+		return nil, fmt.Errorf("Failed to generate unique ID")
+	}
+
+	allROIs[saveID] = roiModel.ROISavedItem{
+		ROIItem: &req,
+		APIObjectItem: &pixlUser.APIObjectItem{
+			Shared:  false,
+			Creator: params.UserInfo,
+		},
+	}
+	return nil, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, allROIs)
+}
+
+func roiPut(params handlers.ApiHandlerParams) (interface{}, error) {
+	datasetID := params.PathParams[datasetIdentifier]
+	itemID := params.PathParams[idIdentifier]
+
+	s3Path := filepaths.GetROIPath(params.UserInfo.UserID, datasetID)
+
+	// Can't edit shared ones
+	_, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
+	if isSharedReq {
+		return nil, api.MakeBadRequestError(errors.New("Cannot edit shared ROIs"))
+	}
+
+	// Get all ROIs so we can check that it exists already
+	allROIs, err := roiModel.ReadROIData(params.Svcs, s3Path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Read in body of message, this will be what overwrites the existing ROI entry
+	body, err := ioutil.ReadAll(params.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var req roiModel.ROIItem
+	err = json.Unmarshal(body, &req)
+	if err != nil {
+		return nil, api.MakeBadRequestError(err)
+	}
+
+	// Validate
+	if !fileaccess.IsValidObjectName(req.Name) {
+		return nil, api.MakeBadRequestError(fmt.Errorf("Invalid ROI name: \"%v\"", req.Name))
+	}
+
+	// Check that it exists
+	_, exists := allROIs[itemID]
+	if !exists {
+		return nil, api.MakeStatusError(http.StatusNotFound, fmt.Errorf("ROI %v not found", itemID))
+	}
+
+	allROIs[itemID] = roiModel.ROISavedItem{
+		ROIItem: &req,
+		APIObjectItem: &pixlUser.APIObjectItem{
+			Shared:  false,
+			Creator: params.UserInfo,
+		},
+	}
+
+	return nil, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, allROIs)
+}
+
+func roiDelete(params handlers.ApiHandlerParams) (interface{}, error) {
+	datasetID := params.PathParams[datasetIdentifier]
+
+	// If deleting a shared item, we need to strip the prefix from the ID and also ensure that only the creator can delete
+	itemID := params.PathParams[idIdentifier]
+	s3Path := filepaths.GetROIPath(params.UserInfo.UserID, datasetID)
+
+	strippedID, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
+	if isSharedReq {
+		s3Path = filepaths.GetROIPath(pixlUser.ShareUserID, datasetID)
+		itemID = strippedID
+	}
+
+	// Using path params, work out path
+	items, err := roiModel.ReadROIData(params.Svcs, s3Path)
+	if err != nil {
+		return nil, err
+	}
+
+	sharedItem, ok := items[itemID]
+	if !ok {
+		return nil, api.MakeNotFoundError(itemID)
+	}
+
+	if isSharedReq && sharedItem.Creator.UserID != params.UserInfo.UserID {
+		return nil, api.MakeStatusError(http.StatusUnauthorized, fmt.Errorf("%v not owned by %v", itemID, params.UserInfo.UserID))
+	}
+
+	// Found it, delete & we're done
+	delete(items, itemID)
+
+	return nil, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, items)
+}
+
+func roiShare(params handlers.ApiHandlerParams) (interface{}, error) {
+	datasetID := params.PathParams[datasetIdentifier]
+	idToFind := params.PathParams[idIdentifier]
+
+	sharedIDs, err := roiModel.ShareROIs(params.Svcs, params.UserInfo.UserID, datasetID, []string{idToFind})
+	if err != nil {
+		return nil, err
+	}
+
+	// shared IDs should only contain one item!
+	if len(sharedIDs) != 1 {
+		return nil, errors.New("Failed to share ROI with ID: " + idToFind)
+	}
+
+	// Return just the one shared id
+	return sharedIDs[0], nil
+}

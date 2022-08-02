@@ -1,0 +1,365 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+package main
+
+import (
+	"encoding/json"
+	"flag"
+	"fmt"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/logger"
+	apiNotifications "github.com/pixlise/core/core/notifications"
+	"github.com/pixlise/core/core/utils"
+	"github.com/pixlise/core/data-converter/importer"
+	"github.com/pixlise/core/data-converter/importer/msatestdata"
+	"github.com/pixlise/core/data-converter/importer/pixlfm"
+	"github.com/pixlise/core/data-converter/output"
+	"os"
+	"path"
+	"strings"
+	"time"
+)
+
+func createDatasourceEvent(inpath string) DatasourceEvent {
+	return DatasourceEvent{
+		Inpath:         inpath,
+		Rangespath:     "configs/StandardPseudoIntensities.csv",
+		Outpath:        tmpprefix,
+		DatasetID:      "",
+		DetectorConfig: "PIXL",
+	}
+}
+
+// JobInit - Create name, Filesystem Access, Notification Stack
+func jobinit(inpath string) (DatasourceEvent, fileaccess.S3Access, apiNotifications.NotificationManager, error) {
+	name := createDatasourceEvent(inpath)
+	sess, err := awsutil.GetSession()
+	svc, err := awsutil.GetS3(sess)
+	if err != nil {
+		return DatasourceEvent{}, fileaccess.S3Access{}, nil, err
+	}
+	fs := fileaccess.MakeS3Access(svc)
+	ns := makeNotificationStack(fs)
+	return name, fs, ns, err
+}
+
+// processS3 - If the message received is an S3 trigger, then process the S3 trigger
+func processS3(makeLog bool, record awsutil.Record) (string, error) {
+	jobLog := createLogger(makeLog)
+	jobLog.Infof("HandleRequest for: \"%v\"\n", record)
+	jobLog.Infof("Key: \"%v\"\n", record.S3.Object.Key)
+
+	targetbucket := os.Getenv("DATASETS_BUCKET")
+
+	if strings.Contains(record.S3.Object.Key, "dataset-addons") {
+		jobLog.Infof("Re-processing dataset due to file: \"%v\"\n", record.S3.Object.Key)
+		splits := strings.Split(record.S3.Object.Key, "/")
+		name, fs, ns, err := jobinit(record.S3.Object.Key)
+		if err != nil {
+			return "", err
+		}
+		return executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+	} else {
+		jobLog.Infof("Datasource Path: " + record.S3.Object.Key)
+		name, fs, ns, err := jobinit(record.S3.Object.Key)
+		sourcebucket := record.S3.Bucket.Name
+		str, err := executePipeline(name, fs, ns, time.Now().Unix(), sourcebucket, targetbucket, jobLog)
+		if err != nil {
+			jobLog.Infof("Error in processing data: %v\n", err.Error())
+			_, err = triggerErrorNotifications(ns)
+			jobLog.Errorf("Could not trigger error notification: %v", err)
+		}
+		err = fs.DeleteObject(record.S3.Bucket.Name, record.S3.Object.Key)
+		if err != nil {
+			_, err = triggerErrorNotifications(ns)
+			jobLog.Errorf("Could not trigger error notification: %v", err)
+		}
+		return str, err
+	}
+}
+
+// processSNS - If the message received is an SNS message, then process the SNS message
+func processSns(makeLog bool, record awsutil.Record) (string, error) {
+	message := record.SNS.Message
+	jobLog := createLogger(makeLog)
+
+	targetbucket := os.Getenv("DATASETS_BUCKET")
+	sourcebucket := record.S3.Bucket.Name
+	jobLog.Infof("Message: %v", message)
+	var e awsutil.Event
+	err := e.UnmarshalJSON([]byte(message))
+	if err != nil {
+		jobLog.Errorf("Issue decoding message: %v", err)
+	}
+	if e.Records[0].EventSource == "aws:s3" {
+		name, fs, ns, err := jobinit(record.S3.Object.Key)
+		if err != nil {
+			return "", err
+		}
+		return executePipeline(name, fs, ns, time.Now().Unix(), sourcebucket, targetbucket, jobLog)
+	} else if strings.HasPrefix(message, "datasource:") {
+		// run execution
+	} else if strings.HasPrefix(message, `{"datasetaddons":`) {
+		var snsMsg APISnsMessage
+		err := json.Unmarshal([]byte(message), &snsMsg)
+		if err != nil {
+			fmt.Printf("error unmarshalling message: %v", err)
+		}
+		fmt.Printf("Re-processing dataset due to file: \"%v\"\n", message)
+		fmt.Printf("Key: \"%v\"\n", snsMsg.Key.Dir)
+		name, fs, ns, err := jobinit(snsMsg.Key.Dir)
+
+		jobLog.Infof("Key: \"%v\"\n", snsMsg.Key.Dir)
+		jobLog.Infof("Re-processing dataset due to file: \"%v\"\n", message)
+
+		splits := strings.Split(snsMsg.Key.Dir, "/")
+
+		return executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+	} else {
+		jobLog.Infof("Re-processing dataset due to SNS request: \"%v\"\n", record.SNS.Message)
+		name, fs, ns, err := jobinit("")
+		if err != nil {
+			fmt.Printf("error initialising job: %v", err)
+		}
+		return executeReprocess(record.SNS.Message, name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+	}
+	return "", nil
+}
+
+// executeReprocess - If the request is to reprocess an existing data source, then execute the reprocess pipeline and download the existing files
+func executeReprocess(rtt string, name DatasourceEvent, creationUnixTimeSec int64, fs fileaccess.FileAccess, ns apiNotifications.NotificationManager, targetbucket string, jobLog logger.ILogger) (string, error) {
+	_ = fetchRanges(getConfigBucket(), name.Rangespath, fs)
+	var allthefiles []string
+	updateExisting := false
+	importers := map[string]importer.Importer{"test-msa": msatestdata.MSATestData{}, "pixl-fm": pixlfm.PIXLFM{}}
+	// TODO: make this work --> importerNames := utils.GetStringMapKeys(importers)
+	var importerNames []string
+	for k := range importers {
+		importerNames = append(importerNames, k)
+	}
+	files, err := checkExistingArchive(allthefiles, rtt, &updateExisting, fs, jobLog)
+	allthefiles = append(files)
+	for _, p := range allthefiles {
+		if strings.HasSuffix(p, ".zip") || strings.Contains(p, "zip") {
+			jobLog.Infof("Preparing to unzip %v\n", p)
+			_, err := utils.UnzipDirectory(p, localUnzipPath)
+			if err != nil {
+				return "", err
+			}
+			inpath := localUnzipPath
+			name.Inpath = inpath
+		}
+	}
+	err = downloadExtraFiles(rtt, fs)
+	if err != nil {
+		return "", err
+	}
+	r, err := processFiles(localUnzipPath, name, importers, creationUnixTimeSec, true, fs, ns, targetbucket, jobLog)
+	return r, err
+}
+
+// executePipeline - Run the full pipeline
+func executePipeline(name DatasourceEvent, fs fileaccess.FileAccess, ns apiNotifications.NotificationManager, creationUnixTimeSec int64, sourcebucket string, targetbucket string, jobLog logger.ILogger) (string, error) {
+	if jobLog == nil {
+		jobLog = logger.NullLogger{}
+	}
+	err := os.MkdirAll(localUnzipPath, os.ModePerm)
+	if err != nil {
+		return "", err
+	}
+	localFS := fileaccess.FSAccess{}
+	err = localFS.EmptyObjects(localUnzipPath)
+	if err != nil {
+		return "", err
+	}
+	importers := map[string]importer.Importer{"test-msa": msatestdata.MSATestData{}, "pixl-fm": pixlfm.PIXLFM{}}
+	// TODO: make this work --> importerNames := utils.GetStringMapKeys(importers)
+	var importerNames []string
+	for k := range importers {
+		importerNames = append(importerNames, k)
+	}
+
+	jobLog.Infof("----- Importing pseudo-intensity ranges -----\n")
+	err = fetchRanges(getConfigBucket(), name.Rangespath, fs)
+	if err != nil {
+		return "", err
+	}
+
+	inpath := localUnzipPath
+	updateExisting := false
+	allthefiles := []string{}
+	//allthefiles = append(allthefiles, inpath)
+	// As this datasource is now in the process flow, copy to the archive folder for re-processing and historical purposes
+	jobLog.Infof("----- Copying file to archive %v -----\n", name.Inpath)
+	err = fs.CopyObject(sourcebucket, name.Inpath, getConfigBucket(), "archive/"+name.Inpath)
+	if err != nil {
+		return "", err
+	}
+	// Lookup other parts of the dataset that have already been processed
+	splits := strings.Split(name.Inpath, "-")
+	rtt := splits[0]
+	check, err := checkExistingArchive(allthefiles, rtt, &updateExisting, fs, jobLog)
+	//allthefiles = append(files)
+	if err != nil {
+		return "", err
+	}
+	if len(check) > 0 {
+		updateExisting = true
+	}
+
+	// Download the input file from the preprocess bucket -- Should be with the existing archive to ensure order
+	jobLog.Infof("----- Importing file %v -----\n", name.Inpath)
+	_, err = downloadDirectoryZip(sourcebucket, name.Inpath, fs)
+	if err != nil {
+		return "", err
+	}
+	//Unzip the files into the same folder
+	jobLog.Infof("Unzipping all archives...")
+	for _, p := range allthefiles {
+		if strings.HasSuffix(p, ".zip") || strings.Contains(p, "zip") {
+			//fmt.Printf("Preparing to unzip %v\n", p)
+			_, err := utils.UnzipDirectory(p, localUnzipPath)
+			if err != nil {
+				jobLog.Errorf("Unzip failed for \"%v\". Error: \"%v\"\n", p, err)
+				return "", err
+			}
+			name.Inpath = inpath
+		}
+	}
+
+	// Get the extra manual stuff
+	err = downloadExtraFiles(rtt, fs)
+	if err != nil {
+		return "", err
+	}
+	r, err := processFiles(inpath, name, importers, creationUnixTimeSec, updateExisting, fs, ns, targetbucket, jobLog)
+	return r, err
+}
+
+// processFiles - Once files have been downloasded, process the files to generate the datasource and upload the results
+func processFiles(inpath string, name DatasourceEvent, importers map[string]importer.Importer,
+	creationUnixTimeSec int64, updateExisting bool, fs fileaccess.FileAccess, ns apiNotifications.NotificationManager, targetbucket string, jobLog logger.ILogger) (string, error) {
+	argFormat := "pixl-fm"
+	var argInPath = inpath
+	var argOutPath = name.Outpath
+	argOutDatasetIDOverride, err := computeName()
+
+	flag.Parse()
+
+	importing, ok := importers[argFormat]
+	if !ok {
+		s := fmt.Sprintf("Importer for format \"%v\" not found\n", argFormat)
+		return s, nil
+	}
+
+	fmt.Printf("----- Importing %v dataset: %v -----\n", argFormat, argInPath)
+
+	data, contextImageSrcPath, err := importing.Import(argInPath, localRangesCSVPath, jobLog)
+	if err != nil {
+		s := fmt.Sprintf("IMPORT ERROR: %v\n", err)
+		return s, err
+	}
+
+	// Override dataset ID for output if required
+	if argOutDatasetIDOverride != "" && len(argOutDatasetIDOverride) > 0 && argOutDatasetIDOverride != " " {
+		data.DatasetID = argOutDatasetIDOverride
+	}
+
+	customDetectorVal, err := customDetector(data.Meta.SOL)
+	if err != nil {
+		return "", err
+	}
+	if customDetectorVal == "" {
+		customDetectorVal = name.DetectorConfig
+	}
+
+	// Override detector config if required
+	if customDetectorVal != "" && len(customDetectorVal) > 0 {
+		data.DetectorConfig = customDetectorVal
+	}
+
+	customGroupVal, err := customGroup(customDetectorVal)
+	if err != nil {
+		return "", err
+	}
+	data.Group = customGroupVal
+	// Form the output path
+	outPath := path.Join(argOutPath, data.DatasetID)
+
+	jobLog.Infof("----- Checking for Quick/Autolooks: %v -----\n", outPath)
+
+	importAutoQuickLook(outPath)
+
+	jobLog.Infof("----- Writing Dataset to: %v -----\n", outPath)
+	saver := output.PIXLISEDataSaver{}
+	err = saver.Save(*data, contextImageSrcPath, outPath, creationUnixTimeSec, jobLog)
+	if err != nil {
+		s := fmt.Sprintf("WRITE ERROR: %v\n", err)
+		return s, err
+	}
+
+	jobLog.Infof("----- Calculating Diffraction Peaks: %v -----\n", data.DatasetID)
+
+	err = createPeakDiffractionDB(path.Join(outPath, filepaths.DatasetFileName), path.Join(outPath, filepaths.DiffractionDBFileName), jobLog)
+
+	if err != nil {
+		return "", err
+	}
+
+	err = copyAdditionalDirectories(outPath, jobLog)
+	if err != nil {
+		return "", err
+	}
+	if targetbucket == "" {
+		err = uploadDirectoryToAllEnvironments(fs, outPath, data.DatasetID, getDatasourceBucket(), envBuckets, jobLog)
+	} else {
+		err = uploadDirectoryToAllEnvironments(fs, outPath, data.DatasetID, getDatasourceBucket(), []string{targetbucket}, jobLog)
+	}
+	if err != nil {
+		return "", err
+	}
+
+	jobLog.Infof("------ Triggering Notifications ------\n")
+	update, err := overrideUpdateType()
+	if update != "trvial" {
+		updatenotificationtype, err := getUpdateNotificationType(data.DatasetID, getDatasourceBucket(), fs)
+		if err != nil {
+			return "", err
+		}
+		_, err = triggernotifications(fs, updateExisting, updatenotificationtype, ns, jobLog)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return "", nil
+}
