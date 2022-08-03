@@ -1,4 +1,9 @@
 # Pixlise Core
+
+
+[![DOI](https://zenodo.org/badge/520044172.svg)](https://zenodo.org/badge/latestdoi/520044172)
+
+
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/pixlise/core)
 
  
