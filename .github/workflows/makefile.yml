@@ -16,6 +16,10 @@ jobs:
 
       - name: Test
         run: make test
+        env:
+          PIXLISE_API_TEST_AUTH0_CLIENT_ID: ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }}
+          PIXLISE_API_TEST_AUTH0_DOMAIN: ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }}
+          PIXLISE_API_TEST_AUTH0_SECRET: ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }}
 
   build:
 
