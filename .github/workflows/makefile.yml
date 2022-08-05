@@ -71,7 +71,6 @@ jobs:
       - name: download api
         uses: actions/download-artifact@master
         with:
-            name: api
             path: ./_out
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -110,7 +109,7 @@ jobs:
 
       - name: move afacts
         run: mv /home/runner/work/core/core/_out .
-        
+
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
