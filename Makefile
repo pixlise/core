@@ -15,7 +15,7 @@ lint: ## Lint the files
 
 test: ## Run unittests
 	mkdir -p _out
-	GOPRIVATE=github.com/pixlise go test -p 1 -v ./... 2>&1 | tee go-junit-report > ./_out/report.xml
+	go test -p 1 -v ./... 
 
 codegen:
 	./genproto.sh checkgen
