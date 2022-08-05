@@ -15,7 +15,7 @@ lint: ## Lint the files
 
 test: ## Run unittests
 	mkdir -p _out
-	go test -p 1 -v ./... 
+	go test -p 1 -v ./...
 
 codegen:
 	./genproto.sh checkgen
