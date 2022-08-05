@@ -72,10 +72,12 @@ jobs:
         uses: actions/download-artifact@master
         with:
             name: api
-            path: .
+            path: ./out
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: move afacts
+        run: mv core/_out .
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
