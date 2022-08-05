@@ -72,7 +72,7 @@ jobs:
         uses: actions/download-artifact@master
         with:
             name: api
-            path: ./out
+            path: ./_out
       - name: Checkout repository
         uses: actions/checkout@v3
 
