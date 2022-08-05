@@ -53,8 +53,8 @@ jobs:
     - name: store artifact
       uses: actions/upload-artifact@master
       with:
-        name: api
-        path: _out/
+        name: pixlise-api-linux
+        path: _out/pixlise-api-linux
     needs: test
 
   docker:
@@ -71,10 +71,14 @@ jobs:
       - name: download api
         uses: actions/download-artifact@master
         with:
+            name: pixlise-api-linux
             path: ./_out
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: ./_out
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
