@@ -113,7 +113,7 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 	jobLog := createLogger(makeLog)
 
 	targetbucket := os.Getenv("DATASETS_BUCKET")
-	sourcebucket := record.S3.Bucket.Name
+
 	jobLog.Infof("Message: %v", message)
 	var e awsutil.Event
 	err := e.UnmarshalJSON([]byte(message))
@@ -121,10 +121,20 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 		jobLog.Errorf("Issue decoding message: %v", err)
 	}
 	if e.Records[0].EventSource == "aws:s3" {
-		name, fs, ns, err := jobinit(record.S3.Object.Key)
+		name, fs, ns, err := jobinit(e.Records[0].S3.Object.Key)
 		if err != nil {
 			return "", err
 		}
+		keys, err := checkExisting(getDatasourceBucket(), e.Records[0].S3.Object.Key, fs, jobLog)
+		if err != nil {
+			return "", err
+		}
+		if len(keys) > 0 {
+			jobLog.Infof("File already exists, not reprocessing")
+			return "", nil
+		}
+		sourcebucket := e.Records[0].S3.Bucket.Name
+		jobLog.Infof("Sourcebucket: " + sourcebucket)
 		return executePipeline(name, fs, ns, time.Now().Unix(), sourcebucket, targetbucket, jobLog)
 	} else if strings.HasPrefix(message, "datasource:") {
 		// run execution
@@ -219,8 +229,8 @@ func executePipeline(name DatasourceEvent, fs fileaccess.FileAccess, ns apiNotif
 	allthefiles := []string{}
 	//allthefiles = append(allthefiles, inpath)
 	// As this datasource is now in the process flow, copy to the archive folder for re-processing and historical purposes
-	jobLog.Infof("----- Copying file to archive %v -----\n", name.Inpath)
-	err = fs.CopyObject(sourcebucket, name.Inpath, getConfigBucket(), "archive/"+name.Inpath)
+	jobLog.Infof("----- Copying file %v %v to archive: %v %v -----\n", sourcebucket, name.Inpath, getConfigBucket(), "archive/"+name.Inpath)
+	err = fs.CopyObject(sourcebucket, name.Inpath, getDatasourceBucket(), "archive/"+name.Inpath)
 	if err != nil {
 		return "", err
 	}

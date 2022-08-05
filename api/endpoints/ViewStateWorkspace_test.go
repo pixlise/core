@@ -452,6 +452,7 @@ func Example_viewStateHandler_GetSaved() {
 	//         "variograms": {},
 	//         "spectrums": {},
 	//         "rgbuPlots": {},
+	//         "singleAxisRGBU": {},
 	//         "rgbuImages": {},
 	//         "parallelograms": {},
 	//         "rois": {
@@ -578,6 +579,7 @@ func Example_viewStateHandler_GetSaved_ROIQuantFallbackCheck() {
 	//         "variograms": {},
 	//         "spectrums": {},
 	//         "rgbuPlots": {},
+	//         "singleAxisRGBU": {},
 	//         "rgbuImages": {},
 	//         "parallelograms": {},
 	//         "rois": {
@@ -698,6 +700,7 @@ func Example_viewStateHandler_GetSavedShared() {
 	//         "variograms": {},
 	//         "spectrums": {},
 	//         "rgbuPlots": {},
+	//         "singleAxisRGBU": {},
 	//         "rgbuImages": {},
 	//         "parallelograms": {},
 	//         "rois": {
@@ -756,6 +759,7 @@ func Example_viewStateHandler_PutSaved() {
         "variograms": {},
         "spectrums": {},
         "rgbuPlots": {},
+        "singleAxisRGBU": {},
         "rgbuImages": {},
         "parallelograms": {},
         "rois": {
@@ -912,6 +916,7 @@ func Example_viewStateHandler_RenamingWorkspaces() {
         "variograms": {},
         "spectrums": {},
         "rgbuPlots": {},
+        "singleAxisRGBU": {},
         "rgbuImages": {},
         "parallelograms": {},
         "rois": {
@@ -1698,6 +1703,7 @@ func Example_viewStateHandler_ShareViewState() {
         "variograms": {},
         "spectrums": {},
         "rgbuPlots": {},
+        "singleAxisRGBU": {},
         "rgbuImages": {},
         "parallelograms": {},
         "rois": {
@@ -2126,6 +2132,7 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
         "variograms": {},
         "spectrums": {},
         "rgbuPlots": {},
+        "singleAxisRGBU": {},
         "rgbuImages": {},
         "parallelograms": {},
         "rois": {

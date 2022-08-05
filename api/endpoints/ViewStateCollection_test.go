@@ -248,6 +248,7 @@ func Example_viewStateHandler_GetCollection() {
 	//             "variograms": {},
 	//             "spectrums": {},
 	//             "rgbuPlots": {},
+	//             "singleAxisRGBU": {},
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
 	//             "rois": {
@@ -288,6 +289,7 @@ func Example_viewStateHandler_GetCollection() {
 	//             "variograms": {},
 	//             "spectrums": {},
 	//             "rgbuPlots": {},
+	//             "singleAxisRGBU": {},
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
 	//             "rois": {
@@ -340,6 +342,7 @@ func Example_viewStateHandler_GetCollection() {
 	//             "variograms": {},
 	//             "spectrums": {},
 	//             "rgbuPlots": {},
+	//             "singleAxisRGBU": {},
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
 	//             "rois": {
@@ -388,6 +391,7 @@ func Example_viewStateHandler_GetCollection() {
 	//             "variograms": {},
 	//             "spectrums": {},
 	//             "rgbuPlots": {},
+	//             "singleAxisRGBU": {},
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
 	//             "rois": {
@@ -467,6 +471,7 @@ func Example_viewStateHandler_GetCollectionShared() {
             "variograms": {},
             "spectrums": {},
             "rgbuPlots": {},
+            "singleAxisRGBU": {},
             "rgbuImages": {},
             "parallelograms": {},
             "rois": {
@@ -507,6 +512,7 @@ func Example_viewStateHandler_GetCollectionShared() {
             "variograms": {},
             "spectrums": {},
             "rgbuPlots": {},
+            "singleAxisRGBU": {},
             "rgbuImages": {},
             "parallelograms": {},
             "rois": {
@@ -582,6 +588,7 @@ func Example_viewStateHandler_GetCollectionShared() {
 	//             "variograms": {},
 	//             "spectrums": {},
 	//             "rgbuPlots": {},
+	//             "singleAxisRGBU": {},
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
 	//             "rois": {
@@ -622,6 +629,7 @@ func Example_viewStateHandler_GetCollectionShared() {
 	//             "variograms": {},
 	//             "spectrums": {},
 	//             "rgbuPlots": {},
+	//             "singleAxisRGBU": {},
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
 	//             "rois": {
@@ -921,6 +929,7 @@ func Example_viewStateHandler_ShareCollection() {
             "variograms": {},
             "spectrums": {},
             "rgbuPlots": {},
+            "singleAxisRGBU": {},
             "rgbuImages": {},
             "parallelograms": {},
             "rois": {
@@ -961,6 +970,7 @@ func Example_viewStateHandler_ShareCollection() {
             "variograms": {},
             "spectrums": {},
             "rgbuPlots": {},
+            "singleAxisRGBU": {},
             "rgbuImages": {},
             "parallelograms": {},
             "rois": {

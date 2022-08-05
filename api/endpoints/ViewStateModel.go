@@ -192,6 +192,13 @@ type rgbuPlotWidgetState struct {
 	DrawMonochrome bool     `json:"drawMonochrome"`
 }
 
+type singleAxisRGBUWidgetState struct {
+	Minerals          []string `json:"minerals"`
+	ChannelA          string   `json:"channelA"`
+	ChannelB          string   `json:"channelB"`
+	RoiStackedOverlap bool     `json:"roiStackedOverlap"`
+}
+
 type rgbuImagesWidgetState struct {
 	LogColour  bool    `json:"logColour"`
 	Brightness float32 `json:"brightness"`
@@ -216,18 +223,19 @@ type wholeViewState struct {
 	// is loaded, we still allow for this, but new state files should be written with this in the spectrums field
 	Spectrum spectrumWidgetState `json:"spectrum"`
 
-	ContextImages  map[string]contextImageState        `json:"contextImages"`
-	Histograms     map[string]histogramState           `json:"histograms"`
-	ChordDiagrams  map[string]chordState               `json:"chordDiagrams"`
-	TernaryPlots   map[string]ternaryState             `json:"ternaryPlots"`
-	BinaryPlots    map[string]binaryState              `json:"binaryPlots"`
-	Tables         map[string]tableState               `json:"tables"`
-	ROIQuantTables map[string]roiQuantTableState       `json:"roiQuantTables"`
-	Variograms     map[string]variogramState           `json:"variograms"`
-	Spectrums      map[string]spectrumWidgetState      `json:"spectrums"`
-	RGBUPlots      map[string]rgbuPlotWidgetState      `json:"rgbuPlots"`
-	RGBUImageViews map[string]rgbuImagesWidgetState    `json:"rgbuImages"`
-	Parallelograms map[string]parallelogramWidgetState `json:"parallelograms"`
+	ContextImages  map[string]contextImageState         `json:"contextImages"`
+	Histograms     map[string]histogramState            `json:"histograms"`
+	ChordDiagrams  map[string]chordState                `json:"chordDiagrams"`
+	TernaryPlots   map[string]ternaryState              `json:"ternaryPlots"`
+	BinaryPlots    map[string]binaryState               `json:"binaryPlots"`
+	Tables         map[string]tableState                `json:"tables"`
+	ROIQuantTables map[string]roiQuantTableState        `json:"roiQuantTables"`
+	Variograms     map[string]variogramState            `json:"variograms"`
+	Spectrums      map[string]spectrumWidgetState       `json:"spectrums"`
+	RGBUPlots      map[string]rgbuPlotWidgetState       `json:"rgbuPlots"`
+	SingleAxisRGBU map[string]singleAxisRGBUWidgetState `json:"singleAxisRGBU"`
+	RGBUImageViews map[string]rgbuImagesWidgetState     `json:"rgbuImages"`
+	Parallelograms map[string]parallelogramWidgetState  `json:"parallelograms"`
 
 	// Not strictly the view-state of a widget, but the shared display state of ROIs
 	// for the given user/dataset
@@ -320,6 +328,12 @@ func defaultRGBUPlot() rgbuPlotWidgetState {
 	return rgbu
 }
 
+func defaultSingleAxisRGBU() singleAxisRGBUWidgetState {
+	singleAxisRGBU := singleAxisRGBUWidgetState{}
+	singleAxisRGBU.Minerals = []string{}
+	return singleAxisRGBU
+}
+
 func defaultRGBUImages() rgbuImagesWidgetState {
 	rgbu := rgbuImagesWidgetState{}
 	return rgbu
@@ -377,6 +391,7 @@ func defaultWholeViewState() wholeViewState {
 	state.Spectrums = map[string]spectrumWidgetState{}
 	state.RGBUImageViews = map[string]rgbuImagesWidgetState{}
 	state.RGBUPlots = map[string]rgbuPlotWidgetState{}
+	state.SingleAxisRGBU = map[string]singleAxisRGBUWidgetState{}
 	state.Parallelograms = map[string]parallelogramWidgetState{}
 
 	state.Quantification.QuantificationByROI = map[string]string{}

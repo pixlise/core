@@ -561,6 +561,7 @@ func Example_viewStateHandler_List() {
 	//             "drawMonochrome": false
 	//         }
 	//     },
+	//     "singleAxisRGBU": {},
 	//     "rgbuImages": {
 	//         "33": {
 	//             "logColour": false,
@@ -676,6 +677,7 @@ func Example_viewStateHandler_List_WithReset() {
 	//     "variograms": {},
 	//     "spectrums": {},
 	//     "rgbuPlots": {},
+	//     "singleAxisRGBU": {},
 	//     "rgbuImages": {},
 	//     "parallelograms": {},
 	//     "rois": {

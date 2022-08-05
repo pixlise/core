@@ -255,6 +255,13 @@ func getViewStateFiles(state *wholeViewState, fs fileaccess.FileAccess, bucket s
 					return err
 				}
 				state.RGBUPlots[whichInstance] = rgbu
+			} else if dataType == "singleAxisRGBU" {
+				singleAxisRGBU := defaultSingleAxisRGBU()
+				err = fs.ReadJSON(bucket, path, &singleAxisRGBU, false)
+				if err != nil && !fs.IsNotFoundError(err) {
+					return err
+				}
+				state.SingleAxisRGBU[whichInstance] = singleAxisRGBU
 			} else if dataType == "rgbuImages" {
 				rgbu := defaultRGBUImages()
 				err = fs.ReadJSON(bucket, path, &rgbu, false)
@@ -339,6 +346,8 @@ func viewStatePut(params handlers.ApiHandlerParams) (interface{}, error) {
 			return saveVariogramState(params, body, whichInstance)
 		case "rgbuPlot":
 			return saveRGBUPlotState(params, body, whichInstance)
+		case "singleAxisRGBU":
+			return saveSingleAxisRGBUState(params, body, whichInstance)
 		case "rgbuImages":
 			return saveRGBUImagesState(params, body, whichInstance)
 		case "parallelogram":
@@ -530,6 +539,18 @@ func saveRGBUPlotState(params handlers.ApiHandlerParams, body []byte, whichInsta
 	}
 
 	// TODO: Validate?
+
+	// Replace existing
+	return nil, writeViewStateFile(params, req)
+}
+
+func saveSingleAxisRGBUState(params handlers.ApiHandlerParams, body []byte, whichInstance string) (interface{}, error) {
+	// Read in body
+	var req singleAxisRGBUWidgetState
+	err := json.Unmarshal(body, &req)
+	if err != nil {
+		return nil, api.MakeBadRequestError(err)
+	}
 
 	// Replace existing
 	return nil, writeViewStateFile(params, req)
