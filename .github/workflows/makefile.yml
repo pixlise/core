@@ -47,8 +47,14 @@ jobs:
       with:
         go-version: "1.18.0"
 
-    - name: Install dependencies
+    - name: Build package
       run: make build-linux
+
+    - name: store artifact
+      uses: actions/upload-artifact@master
+      with:
+        name: api
+        path: _out/pixlise-go-api
     needs: test
 
   docker:
@@ -62,6 +68,11 @@ jobs:
       id-token: write
 
     steps:
+      - name: download api
+        uses: actions/download-artifact@master
+        with:
+            name: api
+            path: _out/pixlise-go-api
       - name: Checkout repository
         uses: actions/checkout@v3
 
