@@ -54,7 +54,7 @@ jobs:
       uses: actions/upload-artifact@master
       with:
         name: api
-        path: _out/pixlise-go-api
+        path: _out/
     needs: test
 
   docker:
@@ -72,7 +72,7 @@ jobs:
         uses: actions/download-artifact@master
         with:
             name: api
-            path: _out/pixlise-go-api
+            path: _out/
       - name: Checkout repository
         uses: actions/checkout@v3
 
