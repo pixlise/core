@@ -784,7 +784,7 @@ func main() {
 
 	// TODO: Maybe we need to change this if we go open source?
 	printTestStart("Getting JWT (Auth0 login)")
-	JWT, err := auth0login.GetJWT(username, password, "***REMOVED***", "***REMOVED***", "pixlise.au.auth0.com", "http://localhost:4200/authenticate", "pixlise-backend", "openid profile email")
+	JWT, err := auth0login.GetJWT(username, password, "REDACTED", "REDACTED", "pixlise.au.auth0.com", "http://localhost:4200/authenticate", "pixlise-backend", "openid profile email")
 	if err == nil && len(JWT) <= 0 {
 		err = errors.New("JWT returned is empty")
 	}
