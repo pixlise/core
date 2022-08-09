@@ -1,4 +1,4 @@
-module github.com/pixlise/core
+module gitlab.com/pixlise/pixlise-go-api
 
 go 1.17
 
@@ -6,6 +6,7 @@ require (
 	github.com/auth0-community/go-auth0 v1.0.0
 	github.com/aws/aws-lambda-go v1.34.1
 	github.com/aws/aws-sdk-go v1.44.70
+	github.com/aws/aws-secretsmanager-caching-go v1.1.0
 	github.com/getsentry/sentry-go v0.13.0
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/handlers v1.5.1

@@ -1,32 +1,3 @@
-// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
-// Government sponsorship acknowledged.
-// All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-// * Redistributions of source code must retain the above copyright notice, this
-//   list of conditions and the following disclaimer.
-// * Redistributions in binary form must reproduce the above copyright notice,
-//   this list of conditions and the following disclaimer in the documentation
-//   and/or other materials provided with the distribution.
-// * Neither the name of Caltech nor its operating division, the Jet Propulsion
-//   Laboratory, nor the names of its contributors may be used to endorse or
-//   promote products derived from this software without specific prior written
-//   permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
-
 package quantModel
 
 import (
@@ -36,13 +7,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/api/filepaths"
-	datasetModel "github.com/pixlise/core/core/dataset"
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/logger"
-	"github.com/pixlise/core/core/notifications"
-	"github.com/pixlise/core/core/pixlUser"
-	"github.com/pixlise/core/data-converter/importer/pixlfm"
+	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
+	datasetModel "gitlab.com/pixlise/pixlise-go-api/core/dataset"
+	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
+	"gitlab.com/pixlise/pixlise-go-api/core/kubernetes"
+	"gitlab.com/pixlise/pixlise-go-api/core/logger"
+	"gitlab.com/pixlise/pixlise-go-api/core/notifications"
+	"gitlab.com/pixlise/pixlise-go-api/core/ocs"
+	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
+	"gitlab.com/pixlise/pixlise-go-api/data-converter/importer/pixlfm"
+	apiv1 "k8s.io/api/core/v1"
 )
 
 type PublisherConfig struct {
@@ -400,7 +374,40 @@ func makeQuantProducts(fs fileaccess.FileAccess, usersBucket string, datasetsBuc
 
 // triggerOCSPoster - Trigger a run of the OCS poster docker container with the associated metadata.
 func triggerOCSPoster(config PublisherConfig, log logger.ILogger, creator pixlUser.UserInfo, products ProductSet, dataset string, kenv string) error {
+	k := kubernetes.KubeHelper{
+		Kubeconfig: config.Kubeconfig,
+	}
 
-	log.Errorf("Not implemented")
+	k.Bootstrap(config.KubernetesLocation, log)
+	filenames := fmt.Sprintf("%v/%v/%s,%v/%v/%s", OcsStagingPath, dataset, products.PqpFileName, OcsStagingPath, dataset, products.PqrFileName)
+	env := make(map[string]string)
+	env["venue"] = "sstage"
+	env["credss_username"] = "m20-sstage-pixlise"
+	env["credss_appaccount"] = "true"
+	env["AWS_PROFILE"] = "default"
+
+	volumes := []apiv1.Volume{
+		{
+			Name: "aws-volume",
+			VolumeSource: apiv1.VolumeSource{
+				ConfigMap: &apiv1.ConfigMapVolumeSource{
+					LocalObjectReference: apiv1.LocalObjectReference{Name: "aws-pixlise-config"},
+				},
+			},
+		},
+	}
+
+	volumemounts := []apiv1.VolumeMount{
+		{
+			Name:      "aws-volume",
+			MountPath: "/root/.aws/credentialstmp",
+			SubPath:   "credentials",
+		},
+	}
+	_, err := k.RunPod(nil, ocs.GeneratePosterPodCmd(filenames, products.SourceBucket, products.OcsPath, config.QuantDestinationPackage, config.QuantObjectType), env, volumes, volumemounts, config.PosterImage,
+		"api", generatePodNamePrefix(products.JobID), generatePodLabels(products.JobID, products.DatasetID, kenv), creator, log, false)
+	if err != nil {
+		return err
+	}
 	return nil
 }

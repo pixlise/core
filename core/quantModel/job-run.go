@@ -1,31 +1,19 @@
-// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
-// Government sponsorship acknowledged.
-// All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
+// Licensed to NASA JPL under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. NASA JPL licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// * Redistributions of source code must retain the above copyright notice, this
-//   list of conditions and the following disclaimer.
-// * Redistributions in binary form must reproduce the above copyright notice,
-//   this list of conditions and the following disclaimer in the documentation
-//   and/or other materials provided with the distribution.
-// * Neither the name of Caltech nor its operating division, the Jet Propulsion
-//   Laboratory, nor the names of its contributors may be used to endorse or
-//   promote products derived from this software without specific prior written
-//   permission.
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 package quantModel
 
@@ -39,22 +27,23 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/notifications"
+	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
+	"gitlab.com/pixlise/pixlise-go-api/core/notifications"
 
-	datasetModel "github.com/pixlise/core/core/dataset"
-	"github.com/pixlise/core/core/piquant"
-	"github.com/pixlise/core/core/pixlUser"
-	"github.com/pixlise/core/core/roiModel"
-	"github.com/pixlise/core/core/utils"
-	protos "github.com/pixlise/core/generated-protos"
+	datasetModel "gitlab.com/pixlise/pixlise-go-api/core/dataset"
+	"gitlab.com/pixlise/pixlise-go-api/core/piquant"
+	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
+	"gitlab.com/pixlise/pixlise-go-api/core/roiModel"
+	"gitlab.com/pixlise/pixlise-go-api/core/utils"
+	protos "gitlab.com/pixlise/pixlise-go-api/generated-protos"
 
-	"github.com/pixlise/core/api/config"
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/api/services"
-	"github.com/pixlise/core/core/logger"
+	"gitlab.com/pixlise/pixlise-go-api/api/config"
+	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
+	"gitlab.com/pixlise/pixlise-go-api/api/services"
+	"gitlab.com/pixlise/pixlise-go-api/core/logger"
 )
 
 const QuantModeSeparateAB = "AB"
@@ -67,8 +56,17 @@ const QuantModeCombinedMultiQuant = "CombinedMultiQuant"
 const QuantModeABMultiQuant = "ABMultiQuant"
 
 // CreateJob - creates a new quantification job
-func CreateJob(svcs *services.APIServices, createParams JobCreateParams, makeLog bool) (string, error) {
+func CreateJob(svcs *services.APIServices, createParams JobCreateParams, makeLog bool, wg *sync.WaitGroup) (string, error) {
 	jobID := svcs.IDGen.GenObjectID()
+
+	// NOTE: if we're NOT running a map job, we make weird job IDs that help us identify this as a piquant that doesn't need to be
+	// treated as a long-running job
+	if createParams.Command != "map" {
+		// Make the name and ID the same, and start with something that stands out
+		jobID = "cmd-" + createParams.Command + "-" + jobID
+		createParams.Name = jobID
+	}
+
 	startTime := time.Now().Unix()
 
 	createMsg := fmt.Sprintf("quantCreate: %v, %v pmcs, elems=%v, cfg=%v, params=%v. Job ID: %v", createParams.DatasetPath, len(createParams.PMCs), createParams.Elements, createParams.DetectorConfig, createParams.Parameters, jobID)
@@ -137,7 +135,14 @@ func CreateJob(svcs *services.APIServices, createParams JobCreateParams, makeLog
 			PIQUANTVersion:    piquantVersion.Version,
 			QuantMode:         createParams.QuantMode,
 			IncludeDwells:     createParams.IncludeDwells,
+			Command:           createParams.Command,
 		},
+	}
+
+	// Fallback if we're using wrong UI version with this API version
+	// TODO: Could be removed after about August 2022...
+	if len(params.Command) <= 0 {
+		params.Command = "map"
 	}
 
 	// Save...
@@ -154,14 +159,18 @@ func CreateJob(svcs *services.APIServices, createParams JobCreateParams, makeLog
 	setJobStatus(&status, JobStarting, "Job started")
 	saveQuantJobStatus(svcs, createParams.DatasetID, params.Name, &status, jobLog, createParams.Creator)
 
+	wg.Add(1)
+
 	// Trigger task to start in a go routine, so we don't block!
-	go triggerPiquantNodes(svcs, jobLog, jobID, svcs.Config, params, svcs.Notifications, createParams.Creator)
+	go triggerPiquantNodes(svcs, jobLog, jobID, svcs.Config, params, svcs.Notifications, createParams.Creator, wg)
 
 	return jobID, nil
 }
 
 // This should be triggered as a go routine from quant creation endpoint so we can return a job id there quickly and do the processing offline
-func triggerPiquantNodes(svcs *services.APIServices, jobLog logger.ILogger, jobID string, cfg config.APIConfig, params JobStartingParametersWithPMCs, notifications notifications.NotificationManager, creator pixlUser.UserInfo) {
+func triggerPiquantNodes(svcs *services.APIServices, jobLog logger.ILogger, jobID string, cfg config.APIConfig, params JobStartingParametersWithPMCs, notifications notifications.NotificationManager, creator pixlUser.UserInfo, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	jobRoot := filepaths.GetJobDataPath(params.DatasetID, "", "")
 	jobDataPath := filepaths.GetJobDataPath(params.DatasetID, jobID, "")
 
@@ -200,6 +209,7 @@ func triggerPiquantNodes(svcs *services.APIServices, jobLog logger.ILogger, jobI
 		PiquantJobsBucket: params.PiquantJobsBucket,
 		QuantName:         params.Name,
 		PMCListName:       "", // PMC List Name will be filled in later
+		Command:           params.Command,
 	}
 
 	piquantParamsStr, err := json.MarshalIndent(piquantParams, "", utils.PrettyPrintIndentForJSON)
@@ -210,7 +220,7 @@ func triggerPiquantNodes(svcs *services.APIServices, jobLog logger.ILogger, jobI
 	// Generate the lists, and then save each, and start the quantification
 	// NOTE: empty == combined, just to honor the previous mode of operation before quantMode field was added
 	combined := params.QuantMode == "" || params.QuantMode == QuantModeCombinedABBulk || params.QuantMode == QuantModeCombinedAB
-	quantByROI := params.QuantMode == QuantModeCombinedABBulk || params.QuantMode == QuantModeSeparateABBulk
+	quantByROI := params.QuantMode == QuantModeCombinedABBulk || params.QuantMode == QuantModeSeparateABBulk || params.Command != "map"
 
 	// If we're quantifying ROIs, do that
 	pmcFiles := []string{}
@@ -251,35 +261,122 @@ func triggerPiquantNodes(svcs *services.APIServices, jobLog logger.ILogger, jobI
 	// Generate the output path for all generated data files & logs
 	quantOutPath := filepaths.GetUserQuantPath(params.Creator.UserID, params.DatasetID, "")
 
-	setJobStatus(&status, JobGatheringResults, fmt.Sprintf("Combining CSVs from %v nodes...", len(pmcFiles)))
-	// Gather log files straight away, we want any status updates to include the logs!
-	status.PiquantLogList, err = getLogLinks(svcs.FS, jobLog, params.PiquantJobsBucket, jobDataPath, cfg.UsersBucket, quantOutPath, jobID)
-	saveQuantJobStatus(svcs, params.DatasetID, piquantParams.QuantName, &status, jobLog, creator)
-
-	// Now we can combine the outputs from all runners
-	csvTitleRow := fmt.Sprintf("PIQUANT version: %v DetectorConfig: %v", params.PIQUANTVersion, params.DetectorConfig)
-	err = nil
+	outputCSVName := ""
+	outputCSVBytes := []byte{}
 	outputCSV := ""
 
-	// Again, if we're in ROI mode, we act differently
-	errMsg := ""
-	if quantByROI {
-		outputCSV, err = processQuantROIsToPMCs(svcs.FS, cfg.PiquantJobsBucket, jobDataPath, csvTitleRow, pmcFiles[0], combined, rois)
-		errMsg = "Error when duplicating quant rows for ROI PMCs"
-	} else {
-		outputCSV, err = combineQuantOutputs(svcs.FS, cfg.PiquantJobsBucket, jobDataPath, csvTitleRow, pmcFiles)
-		errMsg = "Error when combining quants"
-	}
-	if err != nil {
-		setJobError(&status, fmt.Sprintf("%v: %v", errMsg, err))
+	if params.Command == "map" {
+		setJobStatus(&status, JobGatheringResults, fmt.Sprintf("Combining CSVs from %v nodes...", len(pmcFiles)))
+		// Gather log files straight away, we want any status updates to include the logs!
+		status.PiquantLogList, err = copyAllLogs(
+			svcs.FS,
+			jobLog,
+			params.PiquantJobsBucket,
+			jobDataPath,
+			cfg.UsersBucket,
+			path.Join(quantOutPath, filepaths.MakeQuantLogDirName(jobID)),
+			jobID,
+		)
 		saveQuantJobStatus(svcs, params.DatasetID, piquantParams.QuantName, &status, jobLog, creator)
-		return
+
+		// Now we can combine the outputs from all runners
+		csvTitleRow := fmt.Sprintf("PIQUANT version: %v DetectorConfig: %v", params.PIQUANTVersion, params.DetectorConfig)
+		err = nil
+
+		// Again, if we're in ROI mode, we act differently
+		errMsg := ""
+
+		if quantByROI {
+			outputCSV, err = processQuantROIsToPMCs(svcs.FS, cfg.PiquantJobsBucket, jobDataPath, csvTitleRow, pmcFiles[0], combined, rois)
+			errMsg = "Error when duplicating quant rows for ROI PMCs"
+		} else {
+			outputCSV, err = combineQuantOutputs(svcs.FS, cfg.PiquantJobsBucket, jobDataPath, csvTitleRow, pmcFiles)
+			errMsg = "Error when combining quants"
+		}
+		if err != nil {
+			setJobError(&status, fmt.Sprintf("%v: %v", errMsg, err))
+			saveQuantJobStatus(svcs, params.DatasetID, piquantParams.QuantName, &status, jobLog, creator)
+			return
+		}
+
+		outputCSVBytes = []byte(outputCSV)
+		outputCSVName = "combined.csv"
+	} else {
+		// NOTE: Missing status writes - we only write those for map commands! saveQuantJobStatus quits if it's not a map anyway...
+
+		// Complete writing to the jobs bucket
+		// Read the resulting CSV
+		jobOutputPath := path.Join(jobDataPath, "output")
+
+		// Make the assumed output path
+		piquantOutputPath := path.Join(jobOutputPath, pmcFiles[0]+"_result.csv")
+
+		data, err := svcs.FS.ReadObject(cfg.PiquantJobsBucket, piquantOutputPath)
+		if err != nil {
+			jobLog.Errorf("Failed to read PIQUANT output data from: s3://%v/%v. Error: %v", cfg.PiquantJobsBucket, piquantOutputPath, err)
+			outputCSVBytes = []byte{}
+			outputCSVName = ""
+		} else {
+			outputCSVBytes = data
+			outputCSVName = "result.csv"
+		}
 	}
 
 	// Save to S3
-	csvOutPath := path.Join(jobRoot, jobID, "output", "combined.csv")
-	outputCSVBytes := []byte(outputCSV)
+	csvOutPath := path.Join(jobRoot, jobID, "output", outputCSVName)
 	svcs.FS.WriteObject(cfg.PiquantJobsBucket, csvOutPath, outputCSVBytes)
+
+	if params.Command != "map" {
+		// Map commands are more complicated, where they generate status and summaries, the csv, and the protobuf bin version of the csv, etc
+		// but all other commands are far simpler.
+
+		// Clear the previously written files
+		csvUserFilePath := filepaths.GetUserLastPiquantOutputPath(params.Creator.UserID, params.DatasetID, params.Command, filepaths.QuantLastOutputFileName+".csv")
+		userLogFilePath := filepaths.GetUserLastPiquantOutputPath(params.Creator.UserID, params.DatasetID, params.Command, filepaths.QuantLastOutputLogName)
+
+		err = svcs.FS.DeleteObject(cfg.UsersBucket, csvUserFilePath)
+		if err != nil {
+			jobLog.Errorf("Failed to delete previous piquant output for command %v from s3://%v/%v. Error: %v", params.Command, cfg.UsersBucket, csvUserFilePath, err)
+		}
+		err = svcs.FS.DeleteObject(cfg.UsersBucket, userLogFilePath)
+		if err != nil {
+			jobLog.Errorf("Failed to delete previous piquant log for command %v from s3://%v/%v. Error: %v", params.Command, cfg.UsersBucket, userLogFilePath, err)
+		}
+
+		// Upload the results file to the user bucket spot
+		if len(outputCSVBytes) > 0 {
+			err = svcs.FS.WriteObject(cfg.UsersBucket, csvUserFilePath, outputCSVBytes)
+
+			if err != nil {
+				jobLog.Errorf("Failed to write output data (length=%v bytes) to user destination path s3://%v/%v", len(outputCSVBytes), cfg.UsersBucket, csvUserFilePath, err)
+			}
+		}
+
+		// We also write out the log file to the user bucket
+		logSourcePath := path.Join(jobDataPath, filepaths.PiquantLogSubdir)
+		files, err := svcs.FS.ListObjects(cfg.PiquantJobsBucket, logSourcePath)
+		if err != nil {
+			jobLog.Errorf("Failed to retrieve log files from PIQUANT run from: s3://%v/%v", cfg.PiquantJobsBucket, logSourcePath)
+		} else {
+			// It should have only ONE log! Anyway, write the first one...
+			if len(files) > 0 {
+				err := svcs.FS.CopyObject(
+					cfg.PiquantJobsBucket,
+					files[0],
+					cfg.UsersBucket,
+					userLogFilePath,
+				)
+
+				if err != nil {
+					jobLog.Errorf("Failed to copy log file: %v://%v to data bucket destination: %v", cfg.PiquantJobsBucket, files[0], userLogFilePath)
+				}
+			}
+		}
+
+		// STOP HERE! Non-map commands are simpler, map commands do a whole bunch more to maintain state files which are picked up
+		// by quant listing generation
+		return
+	}
 
 	// Convert to binary format
 	binFileBytes, elements, err := ConvertQuantificationCSV(cfg.EnvironmentName, outputCSV, []string{"PMC", "SCLK", "RTT", "filename"}, "", false, "", false)
@@ -335,10 +432,8 @@ func triggerPiquantNodes(svcs *services.APIServices, jobLog logger.ILogger, jobI
 	}
 }
 
-func getLogLinks(fs fileaccess.FileAccess, jobLog logger.ILogger, jobBucket string, jobDataPath string, usersBucket string, quantPath string, jobID string) ([]string, error) {
+func copyAllLogs(fs fileaccess.FileAccess, jobLog logger.ILogger, jobBucket string, jobDataPath string, usersBucket string, logSavePath string, jobID string) ([]string, error) {
 	result := []string{}
-
-	savePath := path.Join(quantPath, filepaths.MakeQuantLogDirName(jobID))
 
 	logSourcePath := path.Join(jobDataPath, filepaths.PiquantLogSubdir)
 	files, err := fs.ListObjects(jobBucket, logSourcePath)
@@ -350,7 +445,7 @@ func getLogLinks(fs fileaccess.FileAccess, jobLog logger.ILogger, jobBucket stri
 		// Copy all log files to the data bucket and generate a link to save in the status object
 		fileName := cleanLogName(filepath.Base(item))
 
-		dstPath := path.Join(savePath, fileName)
+		dstPath := path.Join(logSavePath, fileName)
 
 		err := fs.CopyObject(
 			jobBucket,
@@ -382,7 +477,17 @@ func getROIs(svcs *services.APIServices, params JobStartingParametersWithPMCs, l
 	var err error
 
 	if len(params.RoiIDs) <= 0 {
-		return result, errors.New("No ROI IDs specified for sum-then-quantify mode")
+		// If we're in a map command, this is bad, as we want to have a list of ROIs to generate for
+		if params.Command == "map" {
+			return result, errors.New("No ROI IDs specified for sum-then-quantify mode")
+		} else {
+			// For anything else, we can just add the single ROI specified (or AllPoints if that's empty)
+			if len(params.RoiID) <= 0 {
+				params.RoiIDs = append(params.RoiIDs, "AllPoints")
+			} else {
+				params.RoiIDs = append(params.RoiIDs, params.RoiID)
+			}
+		}
 	}
 
 	userROIs := roiModel.ROILookup{}
@@ -533,6 +638,12 @@ func makePMCListFilesForQuantPMCs(svcs *services.APIServices, combinedSpectra bo
 		nodeCount = cfg.NodeCountOverride
 		jobLog.Infof("Using node count override: %v\n", nodeCount)
 	}
+
+	// NOTE: if we're running anything but the map command, the result is pretty quick, so we don't need to farm it out to multiple nodes
+	if params.Command != "map" {
+		nodeCount = 1
+	}
+
 	spectraPerNode := filesPerNode(spectraCount, nodeCount)
 
 	// Generate the lists and save to S3

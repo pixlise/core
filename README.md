@@ -69,4 +69,35 @@ If you're wondering what the Gitpod button above is and would like to get a deve
 - Open any file in the main package (cmd/run-api/*.go)
 - Hit F5 to start debugging
 
+## Building
+ 
+Because this repository uses other go-modules defined in our private gitlab pixlise repository, when doing anything with the go command that results in getting dependencies, we need to specify the environment variable:
+`GOPRIVATE=gitlab.com/pixlise`
+
+Not only this, but for go to have access to the repository, it needs to be configured in a ~/.netrc file, with the following syntax:
+```
+machine gitlab.com
+login USERNAME
+password PASSWORD
+```
+
+Once the above are set, building with ./build.sh or make (if you have the required go tools installed) should work.
+
+The above is solved in Gitlab CI using the following 2 lines (see `.gitlab-ci.yml`)
+```
+  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/".insteadOf https://gitlab.com/
+  - go env -w GOPRIVATE=gitlab.com/${CI_PROJECT_NAMESPACE}
+```
+
+### Required Env Vars
+
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_REGION=us-west-1
+
+### Example CLI flags
+
+`-configLocation s3://pixlise-config/api/dev.json -kubernetesLocation external -quantExecutor kubernetes`
+or
+`-quantExecutor docker`
 

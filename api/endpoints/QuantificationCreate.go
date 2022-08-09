@@ -1,31 +1,19 @@
-// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
-// Government sponsorship acknowledged.
-// All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
+// Licensed to NASA JPL under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. NASA JPL licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// * Redistributions of source code must retain the above copyright notice, this
-//   list of conditions and the following disclaimer.
-// * Redistributions in binary form must reproduce the above copyright notice,
-//   this list of conditions and the following disclaimer in the documentation
-//   and/or other materials provided with the distribution.
-// * Neither the name of Caltech nor its operating division, the Jet Propulsion
-//   Laboratory, nor the names of its contributors may be used to endorse or
-//   promote products derived from this software without specific prior written
-//   permission.
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 package endpoints
 
@@ -36,11 +24,12 @@ import (
 	"io/ioutil"
 	"path"
 	"strings"
+	"sync"
 
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/api/handlers"
-	"github.com/pixlise/core/core/api"
-	"github.com/pixlise/core/core/quantModel"
+	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
+	"gitlab.com/pixlise/pixlise-go-api/api/handlers"
+	"gitlab.com/pixlise/pixlise-go-api/core/api"
+	"gitlab.com/pixlise/pixlise-go-api/core/quantModel"
 )
 
 func quantificationPost(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -56,9 +45,22 @@ func quantificationPost(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	// Validate things, eg no quants named the same already, parameters filled out as expected, etc...
-	if quantModel.CheckQuantificationNameExists(req.Name, params.PathParams[datasetIdentifier], params.UserInfo.UserID, params.Svcs) {
-		return nil, api.MakeBadRequestError(fmt.Errorf("Name already used: %v", req.Name))
+	if len(req.Command) <= 0 {
+		return nil, api.MakeBadRequestError(errors.New("PIQUANT command to run was not supplied"))
+	}
+
+	// We only require the name to be set in map mode
+	if req.Command == "map" {
+		if len(req.Name) <= 0 {
+			return nil, api.MakeBadRequestError(errors.New("Name not supplied"))
+		}
+
+		// Validate things, eg no quants named the same already, parameters filled out as expected, etc...
+		if quantModel.CheckQuantificationNameExists(req.Name, params.PathParams[datasetIdentifier], params.UserInfo.UserID, params.Svcs) {
+			return nil, api.MakeBadRequestError(fmt.Errorf("Name already used: %v", req.Name))
+		}
+	} else {
+		req.Name = ""
 	}
 
 	// Might be given either empty elements, or if string conversion (with split(',')) maybe we got [""]...
@@ -112,16 +114,33 @@ func quantificationPost(params handlers.ApiHandlerParams) (interface{}, error) {
 		req.RoiIDs = []string{}
 	}
 
-	jobID, err := quantModel.CreateJob(params.Svcs, req, true)
+	var wg sync.WaitGroup
+	jobID, err := quantModel.CreateJob(params.Svcs, req, true, &wg)
 
 	if err != nil {
 		return jobID, err
 	}
 
-	// TODO: Use quantificationCreateResponse
-	// TODO: Use Location header and return 202 (Accepted) for job creation
-	// See: https://farazdagi.com/2014/rest-and-long-running-jobs/
-	// Talks about being RFC 7231 compliant
+	// If it's NOT a map command, we wait around for the result and pass it back in the response
+	// but for map commands, we just pass back the generated job id instantly
+	if req.Command == "map" {
+		// TODO: Use quantificationCreateResponse
+		// TODO: Use Location header and return 202 (Accepted) for job creation
+		// See: https://farazdagi.com/2014/rest-and-long-running-jobs/
+		// Talks about being RFC 7231 compliant
 
-	return jobID, nil
+		return jobID, nil
+	}
+
+	// Wait around for the output file to appear, or for the job to end up in an error state
+	wg.Wait()
+
+	// Return error or the resulting CSV, whichever happened
+	userOutputFilePath := filepaths.GetUserLastPiquantOutputPath(req.Creator.UserID, req.DatasetID, req.Command, filepaths.QuantLastOutputFileName+".csv")
+	bytes, err := params.Svcs.FS.ReadObject(params.Svcs.Config.UsersBucket, userOutputFilePath)
+	if err != nil {
+		return nil, errors.New("PIQUANT command: " + req.Command + " failed.")
+	}
+
+	return string(bytes), nil
 }

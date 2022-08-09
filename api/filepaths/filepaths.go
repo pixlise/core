@@ -1,31 +1,19 @@
-// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
-// Government sponsorship acknowledged.
-// All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
+// Licensed to NASA JPL under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. NASA JPL licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// * Redistributions of source code must retain the above copyright notice, this
-//   list of conditions and the following disclaimer.
-// * Redistributions in binary form must reproduce the above copyright notice,
-//   this list of conditions and the following disclaimer in the documentation
-//   and/or other materials provided with the distribution.
-// * Neither the name of Caltech nor its operating division, the Jet Propulsion
-//   Laboratory, nor the names of its contributors may be used to endorse or
-//   promote products derived from this software without specific prior written
-//   permission.
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 package filepaths
 
@@ -33,8 +21,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/pixlUser"
+	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
+	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
 )
 
 // This package contains all file paths that the PIXLISE API should ever need to access. All been centralised
@@ -151,6 +139,19 @@ func GetUserQuantPath(userID string, datasetID string, fileName string) string {
 		return path.Join(RootUserContent, userID, datasetID, quantificationSubPath, fileName)
 	}
 	return path.Join(RootUserContent, userID, datasetID, quantificationSubPath)
+}
+
+//               LastPiquantOutput/
+const quantLastOutputSubPath = "LastPiquantOutput"
+const QuantLastOutputFileName = "output_data" // Extension added as needed
+const QuantLastOutputLogName = "output.log"
+
+//                   Path for last outputs, eg last run fit command (command is actually "quant"), sits in here with its log file
+func GetUserLastPiquantOutputPath(userID string, datasetID string, piquantCommand string, fileName string) string {
+	if len(fileName) > 0 {
+		return path.Join(RootUserContent, userID, datasetID, quantLastOutputSubPath, piquantCommand, fileName)
+	}
+	return path.Join(RootUserContent, userID, datasetID, quantLastOutputSubPath, piquantCommand)
 }
 
 //               ViewState/

@@ -15,16 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-FROM alpine:latest  
-RUN apk --no-cache add ca-certificates libc6-compat
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates libc6-compat wget
 WORKDIR /root
 # Copy the Pre-built binary file from the previous stage
 
 COPY ./_out/pixlise-api-linux ./
 
-RUN chmod +x ./pixlise-api-linux
+RUN chmod +x ./pixlise-api-linux && wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
 # Expose port 8080 to the outside world
 EXPOSE 8080
 
 # Command to run the executable
-ENTRYPOINT ["./pixlise-api-linux"] 
+ENTRYPOINT ["./pixlise-api-linux"]

@@ -1,63 +1,87 @@
-// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
-// Government sponsorship acknowledged.
-// All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-// * Redistributions of source code must retain the above copyright notice, this
-//   list of conditions and the following disclaimer.
-// * Redistributions in binary form must reproduce the above copyright notice,
-//   this list of conditions and the following disclaimer in the documentation
-//   and/or other materials provided with the distribution.
-// * Neither the name of Caltech nor its operating division, the Jet Propulsion
-//   Laboratory, nor the names of its contributors may be used to endorse or
-//   promote products derived from this software without specific prior written
-//   permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
-
 package notifications
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/pixlise/core/core/logger"
+	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
+	"gitlab.com/pixlise/pixlise-go-api/core/logger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
+	"io/ioutil"
+	"net/url"
+	"strings"
 	"time"
 )
 
-type mongoutils struct {
+type MongoUtils struct {
 	client                 *mongo.Client
 	userDatabase           *mongo.Database
 	userCollection         *mongo.Collection
 	notificationCollection *mongo.Collection
+	SecretsCache           *secretcache.Cache
+	ConnectionSecret       string
+	MongoUsername          string
+	MongoPassword          string
+	MongoEndpoint          string
+	Log                    logger.ILogger
 }
 
-func (m *mongoutils) Connect() error {
+func getCustomTLSConfig(caFile string) (*tls.Config, error) {
+	tlsConfig := new(tls.Config)
+	certs, err := ioutil.ReadFile(caFile)
+
+	if err != nil {
+		return tlsConfig, err
+	}
+
+	tlsConfig.RootCAs = x509.NewCertPool()
+	ok := tlsConfig.RootCAs.AppendCertsFromPEM(certs)
+
+	if !ok {
+		return tlsConfig, errors.New("Failed parsing pem file")
+	}
+
+	return tlsConfig, nil
+}
+
+func (m *MongoUtils) Connect() error {
 	cmdMonitor := &event.CommandMonitor{
 		Started: func(_ context.Context, evt *event.CommandStartedEvent) {
-			log.Print(evt.Command)
+			m.Log.Infof("%v", evt.Command)
 		},
 	}
 	//ctx := context.Background()
 	var err error
-	m.client, err = mongo.NewClient(options.Client().ApplyURI("mongodb://localhost").SetMonitor(cmdMonitor))
+	m.Log.Infof("Connecting to mongo db: %v", m.MongoEndpoint)
+	if m.ConnectionSecret != "" && m.SecretsCache != nil {
+		connectionStringTemplate := "mongodb://%s:%s@%s/userdatabase?tls=true&replicaSet=rs0&readpreference=%s"
+		pw, err := m.SecretsCache.GetSecretString(m.ConnectionSecret)
+		var result map[string]interface{}
+		json.Unmarshal([]byte(pw), &result)
+		if err != nil {
+			m.Log.Errorf("failed to fetch secret: %v", m.ConnectionSecret)
+		}
+		str := fmt.Sprintf("%v", result["password"])
+		connectionURI := fmt.Sprintf(connectionStringTemplate, "pixlise", url.QueryEscape(str), m.MongoEndpoint, "secondaryPreferred")
+		tlsConfig, err := getCustomTLSConfig("./rds-combined-ca-bundle.pem")
+		if err != nil {
+			m.Log.Errorf("Failed getting TLS configuration: %v", err)
+		}
+		m.client, err = mongo.NewClient(options.Client().ApplyURI(connectionURI).SetMonitor(cmdMonitor).SetTLSConfig(tlsConfig).SetRetryWrites(false))
+		if err != nil {
+			m.Log.Errorf("Failed connection: %v", err)
+		}
+		m.Log.Infof("Connection Successful")
+	} else {
+		m.client, err = mongo.NewClient(options.Client().ApplyURI("mongodb://localhost").SetMonitor(cmdMonitor))
+	}
+
 	//client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost"))
 	/*if err != nil {
 		return nil, err
@@ -69,12 +93,16 @@ func (m *mongoutils) Connect() error {
 	}
 	//defer client.Disconnect(ctx)
 
+	m.Log.Infof("Switching Databases")
 	m.userDatabase = m.client.Database("userdatabase")
 	m.userCollection = m.userDatabase.Collection("users")
+	m.notificationCollection = m.userDatabase.Collection("notifications")
+	m.Log.Infof("Mongo Setup Complete")
 	return nil
 }
 
-func (m *mongoutils) GetAllMongoUsers(log logger.ILogger) ([]UserStruct, error) {
+func (m *MongoUtils) GetAllMongoUsers(log logger.ILogger) ([]UserStruct, error) {
+	m.Log.Infof("Fetching All Subscribers Mongo Object")
 
 	filter := bson.D{}
 	sort := bson.D{{"timestamp", -1}}
@@ -95,17 +123,24 @@ func (m *mongoutils) GetAllMongoUsers(log logger.ILogger) ([]UserStruct, error) 
 		}
 		notifications = append(notifications, l)
 	}
-
+	m.Log.Infof("Fetched All Subscribers Mongo Object")
 	return notifications, nil
 }
 
-func (m *mongoutils) GetMongoSubscribersByTopicID(override []string, searchtopic string, logger logger.ILogger) ([]UserStruct, error) {
+func (m *MongoUtils) GetMongoSubscribersByTopicID(override []string, searchtopic string, logger logger.ILogger) ([]UserStruct, error) {
+	m.Log.Infof("Fetching Subscriber Mongo Object for topic: %v", searchtopic)
+
 	var filter bson.M
 	if override != nil && len(override) > 0 {
+		var v []string
+		for _, f := range override {
+			s := strings.TrimPrefix(f, "auth0|")
+			v = append(v, s)
+		}
 		filter = bson.M{
 			"$and": []bson.D{
 				{
-					{"userid", bson.D{{"$in", override}}},
+					{"userid", bson.D{{"$in", v}}},
 				},
 				{
 					{
@@ -147,13 +182,21 @@ func (m *mongoutils) GetMongoSubscribersByTopicID(override []string, searchtopic
 		}
 		notifications = append(notifications, l)
 	}
+	m.Log.Infof("Fetched Subscriber Mongo Object for topic: %v", searchtopic)
 
 	return notifications, nil
 }
 
-func (m *mongoutils) GetMongoSubscribersByEmailTopicID(override []string, searchtopic string, logger logger.ILogger) ([]UserStruct, error) {
+func (m *MongoUtils) GetMongoSubscribersByEmailTopicID(override []string, searchtopic string, logger logger.ILogger) ([]UserStruct, error) {
+	m.Log.Infof("Fetching Subscriber Mongo Object for topic: %v", searchtopic)
+
 	var filter bson.M
 	if override != nil && len(override) > 0 {
+		var v []string
+		for _, f := range override {
+			s := strings.TrimPrefix(f, "auth0|")
+			v = append(v, s)
+		}
 		filter = bson.M{
 			"$and": []bson.D{
 				{
@@ -199,11 +242,14 @@ func (m *mongoutils) GetMongoSubscribersByEmailTopicID(override []string, search
 		}
 		notifications = append(notifications, l)
 	}
+	m.Log.Infof("Fetched Subscriber Mongo Object for topic: %v", searchtopic)
 
 	return notifications, nil
 }
 
-func (m *mongoutils) GetMongoSubscribersByTopic(searchtopic string, logger logger.ILogger) ([]UserStruct, error) {
+func (m *MongoUtils) GetMongoSubscribersByTopic(searchtopic string, logger logger.ILogger) ([]UserStruct, error) {
+	m.Log.Infof("Fetching Subscribers Mongo Object for topic: %v", searchtopic)
+
 	var filter bson.M
 
 	filter = bson.M{
@@ -237,25 +283,32 @@ func (m *mongoutils) GetMongoSubscribersByTopic(searchtopic string, logger logge
 		}
 		notifications = append(notifications, l)
 	}
+	m.Log.Infof("Fetched Subscribers Mongo Object for topic: %v", searchtopic)
 
 	return notifications, nil
 }
 
-func (m *mongoutils) InsertUINotification(newNotification UINotificationObj) error {
-	_, err := m.userCollection.InsertOne(context.TODO(), newNotification)
+func (m *MongoUtils) InsertUINotification(newNotification UINotificationObj) error {
+	m.Log.Infof("Inserting UI Notification Mongo Object for user: %v", newNotification.UserID)
+
+	_, err := m.notificationCollection.InsertOne(context.TODO(), newNotification)
 	if err != nil {
 		return err
 	}
+	m.Log.Infof("Inserted UI Notification Mongo Object for user: %v", newNotification.UserID)
+
 	return nil
 }
 
-func (m *mongoutils) GetUINotifications(user string) ([]UINotificationObj, error) {
+func (m *MongoUtils) GetUINotifications(user string) ([]UINotificationObj, error) {
+	m.Log.Infof("Fetching Mongo Notifications for user: %v", user)
+
 	filter := bson.D{{"userid", user}}
 	sort := bson.D{{"timestamp", -1}}
 	//projection := bson.D{{"type", 1}, {"rating", 1}, {"_id", 0}}
 
 	opts := options.Find().SetSort(sort) //.SetProjection(projection)
-	cursor, err := m.userCollection.Find(context.TODO(), filter, opts)
+	cursor, err := m.notificationCollection.Find(context.TODO(), filter, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -270,27 +323,30 @@ func (m *mongoutils) GetUINotifications(user string) ([]UINotificationObj, error
 		}
 		notifications = append(notifications, l)
 	}
+	m.Log.Infof("Fetched Mongo Notifications for user: %v", user)
 
 	return notifications, nil
 }
 
-func (m *mongoutils) DeleteUINotifications(user string) error {
-
+func (m *MongoUtils) DeleteUINotifications(user string) error {
 	filter := bson.D{{"userid", user}}
 
-	_, err := m.userCollection.DeleteMany(context.TODO(), filter)
+	_, err := m.notificationCollection.DeleteMany(context.TODO(), filter)
 	return err
 }
 
-func (m *mongoutils) CreateMongoUserObject(user UserStruct) error {
+func (m *MongoUtils) CreateMongoUserObject(user UserStruct) error {
+	m.Log.Infof("Creating Mongo Object for user: %v", user.Userid)
 
 	_, err := m.userCollection.InsertOne(context.TODO(), user)
+	m.Log.Infof("Created Mongo Object for user: %v", user.Userid)
+
 	return err
 
 }
 
-func (m *mongoutils) FetchMongoUserObject(userid string, exist bool, name string, email string) (UserStruct, error) {
-
+func (m *MongoUtils) FetchMongoUserObject(userid string, exist bool, name string, email string) (UserStruct, error) {
+	m.Log.Infof("Fetching Mongo Object for user: %v", userid)
 	filter := bson.D{{"userid", userid}}
 	sort := bson.D{{"timestamp", -1}}
 	//projection := bson.D{{"type", 1}, {"rating", 1}, {"_id", 0}}
@@ -298,20 +354,25 @@ func (m *mongoutils) FetchMongoUserObject(userid string, exist bool, name string
 	cursor := m.userCollection.FindOne(context.TODO(), filter, opts)
 
 	var notifications UserStruct
-
+	m.Log.Infof("Decoding Mongo Object for user: %v", userid)
 	err := cursor.Decode(&notifications)
 	if err != nil {
 		return UserStruct{}, err
 	}
+	m.Log.Infof("Fetched Mongo Object for user: %v", userid)
 
 	return notifications, nil
 }
 
-func (m *mongoutils) UpdateMongoUserConfig(userid string, data UserStruct) error {
+func (m *MongoUtils) UpdateMongoUserConfig(userid string, data UserStruct) error {
+	m.Log.Infof("Updating Mongo Object for user: %v", userid)
+
 	filter := bson.D{{"userid", userid}}
 	update := bson.D{{"$set", data}}
 	opts := options.Update().SetUpsert(true)
 
 	_, err := m.userCollection.UpdateOne(context.TODO(), filter, update, opts)
+	m.Log.Infof("Updated Mongo Object for user: %v", userid)
+
 	return err
 }
