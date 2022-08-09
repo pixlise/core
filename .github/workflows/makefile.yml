@@ -135,7 +135,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: trigger Job
-        uses: appleboy/gitlab-ci-action@master
-        with:
-          token: ${{ secrets.GITLABTOKEN }}
-          project_id: 18114496
+        run: |
+          curl -X POST \
+               --fail \
+               -F token=${{ secrets.GITLABTOKEN }} \
+               -F ref=main \
+               https://gitlab.com/api/v4/projects/18114496/trigger/pipeline
