@@ -129,3 +129,13 @@ jobs:
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
         run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
+
+  infratrigger:
+    needs: docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: trigger Job
+        uses: appleboy/gitlab-ci-action@master
+        with:
+          token: ${{ secrets.GITLABTOKEN }}
+          project_id: 18114496
