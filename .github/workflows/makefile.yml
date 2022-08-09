@@ -130,12 +130,11 @@ jobs:
         # against the sigstore community Fulcio instance.
         run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
 
-
   infratrigger:
     needs: docker
     runs-on: ubuntu-latest
     steps:
-      - name: trigger Job
+      - name: Trigger Job
         run: |
           curl -X POST \
                --fail \
