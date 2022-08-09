@@ -58,6 +58,7 @@ jobs:
     needs: test
 
   docker:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
