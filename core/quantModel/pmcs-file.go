@@ -22,7 +22,7 @@ import (
 	"path"
 	"strings"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
+	"github.com/pixlise/core/api/services"
 )
 
 func savePMCList(svcs *services.APIServices, jobBucket string, contents string, nodeNumber int, jobDataPath string) (string, error) {

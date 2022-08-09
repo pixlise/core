@@ -23,8 +23,8 @@ import (
 	"net/http/httptest"
 	"time"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/config"
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
+	"github.com/pixlise/core/api/config"
+	"github.com/pixlise/core/core/logger"
 )
 
 func Example_testInsert() {

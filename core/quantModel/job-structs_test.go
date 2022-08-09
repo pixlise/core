@@ -20,7 +20,7 @@ package quantModel
 import (
 	"fmt"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
+	"github.com/pixlise/core/core/pixlUser"
 )
 
 // Making sure our embedded structure copying works

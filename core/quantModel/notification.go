@@ -19,10 +19,10 @@ package quantModel
 
 import (
 	"fmt"
-	"gitlab.com/pixlise/pixlise-go-api/core/notifications"
+	"github.com/pixlise/core/core/notifications"
 	"time"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
+	"github.com/pixlise/core/core/pixlUser"
 )
 
 func startQuantNotification(params PiquantParams, notificationStack notifications.NotificationManager, creator pixlUser.UserInfo) error {

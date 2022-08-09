@@ -18,8 +18,8 @@
 package dataset
 
 import (
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/core/fileaccess"
 )
 
 // SummaryFileData - Structure of dataset summary JSON files

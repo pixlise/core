@@ -23,7 +23,7 @@ import (
 	"sort"
 	"strings"
 
-	protos "gitlab.com/pixlise/pixlise-go-api/generated-protos"
+	protos "github.com/pixlise/core/generated-protos"
 )
 
 // Importing code needs to store everything in these intermediate models, which are then understood by the output

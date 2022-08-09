@@ -14,13 +14,20 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+FROM golang:1.18-alpine
+RUN apk --no-cache add ca-certificates libc6-compat wget make bash
+
+COPY . /build
+
+RUN cd /build && make build-linux
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates libc6-compat wget
 WORKDIR /root
 # Copy the Pre-built binary file from the previous stage
 
-COPY ./_out/pixlise-api-linux ./
+COPY --from=0 /build/_out/pixlise-api-linux ./
+#COPY ./_out/pixlise-api-linux ./
 
 RUN chmod +x ./pixlise-api-linux && wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
 # Expose port 8080 to the outside world

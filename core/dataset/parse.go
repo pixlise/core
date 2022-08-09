@@ -20,8 +20,8 @@ package dataset
 import (
 	"io/ioutil"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
-	protos "gitlab.com/pixlise/pixlise-go-api/generated-protos"
+	"github.com/pixlise/core/api/services"
+	protos "github.com/pixlise/core/generated-protos"
 	"google.golang.org/protobuf/proto"
 )
 

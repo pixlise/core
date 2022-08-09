@@ -935,13 +935,13 @@ func main() {
 	if rawEnv == "staging" || rawEnv == "prod" {
 
 		printTestStart("OCS Integration Test")
-		err = runOCSTests()
+		//err = runOCSTests()
 		printTestResult(err, "")
 
 		fmt.Println("\n==============================")
 
 		printTestStart("Publish Integration Test")
-		err = runPublishTests()
+		//err = runPublishTests()
 		printTestResult(err, "")
 
 		fmt.Println("\n==============================")

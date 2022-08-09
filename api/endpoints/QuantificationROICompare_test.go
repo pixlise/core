@@ -27,8 +27,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
-	"gitlab.com/pixlise/pixlise-go-api/core/quantModel"
+	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/core/quantModel"
 )
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -207,7 +207,7 @@ func prepROICompareGetCalls() ([]s3.GetObjectInput, []*s3.GetObjectOutput) {
 		},
 		"roiID": "",
 		"elementSetID": "",
-		"piquantVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8-ALPHA",
+		"piquantVersion": "registry.github.com/pixlise/piquant/runner:3.2.8-ALPHA",
 		"quantMode": "Combined",
 		"comments": ""
 	},
@@ -265,7 +265,7 @@ func prepROICompareGetCalls() ([]s3.GetObjectInput, []*s3.GetObjectOutput) {
 		},
 		"roiID": "",
 		"elementSetID": "",
-		"piquantVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8-ALPHA",
+		"piquantVersion": "registry.github.com/pixlise/piquant/runner:3.2.8-ALPHA",
 		"quantMode": "Combined",
 		"comments": ""
 	},

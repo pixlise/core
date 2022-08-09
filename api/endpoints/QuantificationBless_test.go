@@ -27,8 +27,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
+	"github.com/pixlise/core/api/services"
+	"github.com/pixlise/core/core/awsutil"
 )
 
 func Example_quantHandler_BlessShared1stQuant() {

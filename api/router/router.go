@@ -22,9 +22,9 @@ import (
 
 	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/gorilla/mux"
-	"gitlab.com/pixlise/pixlise-go-api/api/handlers"
-	"gitlab.com/pixlise/pixlise-go-api/api/permission"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
+	"github.com/pixlise/core/api/handlers"
+	"github.com/pixlise/core/api/permission"
+	"github.com/pixlise/core/api/services"
 )
 
 type MethodPermission struct {

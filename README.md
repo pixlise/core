@@ -72,11 +72,11 @@ If you're wondering what the Gitpod button above is and would like to get a deve
 ## Building
  
 Because this repository uses other go-modules defined in our private gitlab pixlise repository, when doing anything with the go command that results in getting dependencies, we need to specify the environment variable:
-`GOPRIVATE=gitlab.com/pixlise`
+`GOPRIVATE=github.com/pixlise`
 
 Not only this, but for go to have access to the repository, it needs to be configured in a ~/.netrc file, with the following syntax:
 ```
-machine gitlab.com
+machine github.com
 login USERNAME
 password PASSWORD
 ```
@@ -85,8 +85,8 @@ Once the above are set, building with ./build.sh or make (if you have the requir
 
 The above is solved in Gitlab CI using the following 2 lines (see `.gitlab-ci.yml`)
 ```
-  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/".insteadOf https://gitlab.com/
-  - go env -w GOPRIVATE=gitlab.com/${CI_PROJECT_NAMESPACE}
+  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@github.com/".insteadOf https://github.com/
+  - go env -w GOPRIVATE=github.com/${CI_PROJECT_NAMESPACE}
 ```
 
 ### Required Env Vars

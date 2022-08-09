@@ -23,8 +23,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
-	"gitlab.com/pixlise/pixlise-go-api/core/utils"
+	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/core/utils"
 )
 
 type testData struct {

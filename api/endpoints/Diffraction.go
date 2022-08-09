@@ -21,12 +21,12 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/api/handlers"
-	"gitlab.com/pixlise/pixlise-go-api/api/permission"
-	apiRouter "gitlab.com/pixlise/pixlise-go-api/api/router"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
-	"gitlab.com/pixlise/pixlise-go-api/core/api"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/api/handlers"
+	"github.com/pixlise/core/api/permission"
+	apiRouter "github.com/pixlise/core/api/router"
+	"github.com/pixlise/core/api/services"
+	"github.com/pixlise/core/core/api"
 )
 
 type UserDiffractionPeak struct {

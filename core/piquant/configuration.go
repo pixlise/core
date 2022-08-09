@@ -18,9 +18,9 @@
 package piquant
 
 import (
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
-	"gitlab.com/pixlise/pixlise-go-api/core/api"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/api/services"
+	"github.com/pixlise/core/core/api"
 )
 
 type PiquantConfig struct {

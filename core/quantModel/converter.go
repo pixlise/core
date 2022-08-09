@@ -28,8 +28,8 @@ import (
 	"strconv"
 	"strings"
 
-	datasetModel "gitlab.com/pixlise/pixlise-go-api/core/dataset"
-	protos "gitlab.com/pixlise/pixlise-go-api/generated-protos"
+	datasetModel "github.com/pixlise/core/core/dataset"
+	protos "github.com/pixlise/core/generated-protos"
 	"google.golang.org/protobuf/proto"
 )
 

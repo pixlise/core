@@ -20,14 +20,14 @@ package notifications
 import (
 	"bytes"
 	"fmt"
-	"gitlab.com/pixlise/pixlise-go-api/core/notifications/templates"
+	"github.com/pixlise/core/core/notifications/templates"
 	"html/template"
 	"log"
 	"os"
 	"strconv"
 	"time"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
+	"github.com/pixlise/core/core/awsutil"
 )
 
 const (

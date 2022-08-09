@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
+	"github.com/pixlise/core/core/logger"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
-	"gitlab.com/pixlise/pixlise-go-api/core/utils"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/utils"
 )
 
 func downloadDirectoryZip(s3bucket string, s3path string, fs fileaccess.FileAccess) (string, error) {

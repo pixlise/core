@@ -9,7 +9,7 @@ import (
 	"path"
 	"strings"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/quantModel"
+	"github.com/pixlise/core/core/quantModel"
 )
 
 func makeExpectedMetaList(allMetaColumns []string, userExpectedMissingColumns []string) ([]string, error) {

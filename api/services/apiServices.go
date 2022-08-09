@@ -24,18 +24,18 @@ import (
 	"net/http"
 	"time"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
-	"gitlab.com/pixlise/pixlise-go-api/core/notifications"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/notifications"
 
 	"github.com/getsentry/sentry-go"
-	"gitlab.com/pixlise/pixlise-go-api/api/esutil"
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
+	"github.com/pixlise/core/api/esutil"
+	"github.com/pixlise/core/core/pixlUser"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"gitlab.com/pixlise/pixlise-go-api/api/config"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
+	"github.com/pixlise/core/api/config"
+	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/core/logger"
 )
 
 // NOTE: these 2 vars are set during compilation in gitlab CI build (see Makefile)

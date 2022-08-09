@@ -27,12 +27,12 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
-	"gitlab.com/pixlise/pixlise-go-api/data-converter/converterModels"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/data-converter/converterModels"
 
-	"gitlab.com/pixlise/pixlise-go-api/data-converter/importer"
+	"github.com/pixlise/core/data-converter/importer"
 )
 
 // These are structured differently to test data-sets in our test-data repo. One can be found in test-data called FM-cal-target-crosshair

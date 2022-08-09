@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
-	"gitlab.com/pixlise/pixlise-go-api/data-converter/converterModels"
+	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/data-converter/converterModels"
 )
 
 func ReadPseudoIntensityFile(path string, expectHeaderRow bool, jobLog logger.ILogger) (converterModels.PseudoIntensities, error) {

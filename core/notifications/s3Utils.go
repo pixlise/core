@@ -25,9 +25,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/athena"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
+	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/logger"
 )
 
 type s3utils struct {

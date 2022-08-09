@@ -27,8 +27,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
+	"github.com/pixlise/core/api/services"
+	"github.com/pixlise/core/core/awsutil"
 )
 
 func Example_detectorQuantConfigHandler_List() {
@@ -356,7 +356,7 @@ func Example_piquantHandler_GetVersion() {
 		nil,
 		{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-    "version": "registry.gitlab.com/pixlise/piquant/runner:3.0.7-ALPHA",
+    "version": "registry.github.com/pixlise/piquant/runner:3.0.7-ALPHA",
     "changedUnixTimeSec": 1234567890,
     "creator": {
         "name": "Niko Bellic",
@@ -368,7 +368,7 @@ func Example_piquantHandler_GetVersion() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
-	svcs.Config.PiquantDockerImage = "registry.gitlab.com/pixlise/piquant/runner:3.0.8-ALPHA"
+	svcs.Config.PiquantDockerImage = "registry.github.com/pixlise/piquant/runner:3.0.8-ALPHA"
 	apiRouter := MakeRouter(svcs)
 
 	// Success, we have config var set, returns that
@@ -389,7 +389,7 @@ func Example_piquantHandler_GetVersion() {
 	//
 	// 200
 	// {
-	//     "version": "registry.gitlab.com/pixlise/piquant/runner:3.0.8-ALPHA",
+	//     "version": "registry.github.com/pixlise/piquant/runner:3.0.8-ALPHA",
 	//     "changedUnixTimeSec": 0,
 	//     "creator": {
 	//         "name": "",
@@ -400,7 +400,7 @@ func Example_piquantHandler_GetVersion() {
 	//
 	// 200
 	// {
-	//     "version": "registry.gitlab.com/pixlise/piquant/runner:3.0.7-ALPHA",
+	//     "version": "registry.github.com/pixlise/piquant/runner:3.0.7-ALPHA",
 	//     "changedUnixTimeSec": 1234567890,
 	//     "creator": {
 	//         "name": "Niko Bellic",
@@ -447,7 +447,7 @@ func Example_piquantHandler_SetVersion() {
 	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
 		{
 			Bucket: aws.String(ConfigBucketForUnitTest), Key: aws.String("PixliseConfig/piquant-version.json"), Body: bytes.NewReader([]byte(`{
-    "version": "registry.gitlab.com/pixlise/piquant/runner:3.0.7-ALPHA",
+    "version": "registry.github.com/pixlise/piquant/runner:3.0.7-ALPHA",
     "changedUnixTimeSec": 1234567777,
     "creator": {
         "name": "Niko Bellic",
@@ -468,7 +468,7 @@ func Example_piquantHandler_SetVersion() {
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/piquant/version", bytes.NewReader([]byte(`{
-    "version": "registry.gitlab.com/pixlise/piquant/runner:3.0.7-ALPHA"
+    "version": "registry.github.com/pixlise/piquant/runner:3.0.7-ALPHA"
 }`)))
 	resp := executeRequest(req, apiRouter.Router)
 

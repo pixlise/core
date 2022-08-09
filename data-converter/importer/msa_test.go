@@ -20,7 +20,7 @@ package importer
 import (
 	"fmt"
 
-	"gitlab.com/pixlise/pixlise-go-api/data-converter/converterModels"
+	"github.com/pixlise/core/data-converter/converterModels"
 )
 
 func Example_ReadMSAFileLines() {

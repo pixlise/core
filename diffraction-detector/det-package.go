@@ -26,7 +26,7 @@ import (
 	"io/ioutil"
 	"math"
 
-	protos "gitlab.com/pixlise/pixlise-go-api/generated-protos"
+	protos "github.com/pixlise/core/generated-protos"
 
 	"google.golang.org/protobuf/proto"
 )

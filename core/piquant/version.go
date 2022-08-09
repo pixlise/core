@@ -20,9 +20,9 @@ package piquant
 import (
 	"errors"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/api/services"
+	"github.com/pixlise/core/core/pixlUser"
 )
 
 // Version config item

@@ -26,12 +26,12 @@ import (
 	"path"
 	"testing"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
-	datasetModel "gitlab.com/pixlise/pixlise-go-api/core/dataset"
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
-	"gitlab.com/pixlise/pixlise-go-api/core/quantModel"
-	"gitlab.com/pixlise/pixlise-go-api/core/roiModel"
-	"gitlab.com/pixlise/pixlise-go-api/core/utils"
+	"github.com/pixlise/core/api/services"
+	datasetModel "github.com/pixlise/core/core/dataset"
+	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/core/quantModel"
+	"github.com/pixlise/core/core/roiModel"
+	"github.com/pixlise/core/core/utils"
 )
 
 func Test_makeMarkupImage(t *testing.T) {

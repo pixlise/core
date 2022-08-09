@@ -20,8 +20,8 @@ package piquant
 import (
 	"strings"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/api/services"
 )
 
 // PIQUANT config versioning

@@ -17,7 +17,7 @@
 
 package quantModel
 
-import "gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
+import "github.com/pixlise/core/core/pixlUser"
 
 // Structures, constants and functionality of a quantification job
 

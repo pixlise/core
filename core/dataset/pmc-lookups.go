@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strconv"
 
-	protos "gitlab.com/pixlise/pixlise-go-api/generated-protos"
+	protos "github.com/pixlise/core/generated-protos"
 )
 
 func MakePMCBeamLookup(dataset *protos.Experiment) map[int32]protos.Experiment_Location_BeamLocation {

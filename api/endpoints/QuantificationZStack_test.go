@@ -25,9 +25,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/core/pixlUser"
 )
 
 // Testing querying and saving multi-quant z-stacks

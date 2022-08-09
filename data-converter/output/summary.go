@@ -23,11 +23,11 @@ import (
 	"reflect"
 	"strings"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	datasetModel "gitlab.com/pixlise/pixlise-go-api/core/dataset"
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
-	"gitlab.com/pixlise/pixlise-go-api/data-converter/converterModels"
-	protos "gitlab.com/pixlise/pixlise-go-api/generated-protos"
+	"github.com/pixlise/core/api/filepaths"
+	datasetModel "github.com/pixlise/core/core/dataset"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/data-converter/converterModels"
+	protos "github.com/pixlise/core/generated-protos"
 )
 
 func makeSummaryFileContent(exp *protos.Experiment, datasetID string, group string, meta converterModels.FileMetaData, fileSize int, creationUnixTimeSec int64) datasetModel.SummaryFileData {

@@ -36,14 +36,14 @@ import (
 	"path"
 	"strconv"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
-	datasetModel "gitlab.com/pixlise/pixlise-go-api/core/dataset"
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
-	"gitlab.com/pixlise/pixlise-go-api/core/quantModel"
-	"gitlab.com/pixlise/pixlise-go-api/core/roiModel"
-	"gitlab.com/pixlise/pixlise-go-api/core/utils"
-	protos "gitlab.com/pixlise/pixlise-go-api/generated-protos"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/api/services"
+	datasetModel "github.com/pixlise/core/core/dataset"
+	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/core/quantModel"
+	"github.com/pixlise/core/core/roiModel"
+	"github.com/pixlise/core/core/utils"
+	protos "github.com/pixlise/core/generated-protos"
 )
 
 // The actual exporter, implemented by our package. This is so we can be used as part of an interface by caller

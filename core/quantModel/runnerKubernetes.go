@@ -25,18 +25,18 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/kubernetes"
-	"gitlab.com/pixlise/pixlise-go-api/core/notifications"
+	"github.com/pixlise/core/core/kubernetes"
+	"github.com/pixlise/core/core/notifications"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
+	"github.com/pixlise/core/core/logger"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
+	"github.com/pixlise/core/core/pixlUser"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"sync"
 	"time"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/config"
+	"github.com/pixlise/core/api/config"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

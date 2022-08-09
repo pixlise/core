@@ -25,7 +25,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
+	"github.com/pixlise/core/core/awsutil"
 )
 
 const annotationS3Path = "UserContent/600f2a0806b6c70071d3d174/rtt-123/SpectrumAnnotation.json"

@@ -26,7 +26,7 @@ import (
 	"strings"
 	"syscall"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/utils"
+	"github.com/pixlise/core/core/utils"
 )
 
 // Implementation of file access using local file system

@@ -22,10 +22,10 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
-	"gitlab.com/pixlise/pixlise-go-api/core/utils"
-	"gitlab.com/pixlise/pixlise-go-api/data-converter/converterModels"
-	"gitlab.com/pixlise/pixlise-go-api/data-converter/importer"
+	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/core/utils"
+	"github.com/pixlise/core/data-converter/converterModels"
+	"github.com/pixlise/core/data-converter/importer"
 )
 
 func readSpectraCSV(path string, jobLog logger.ILogger) (converterModels.DetectorSampleByPMC, error) {

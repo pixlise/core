@@ -23,10 +23,10 @@ import (
 	"net/http"
 	"strings"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/api"
-	datasetModel "gitlab.com/pixlise/pixlise-go-api/core/dataset"
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
+	"github.com/pixlise/core/core/api"
+	datasetModel "github.com/pixlise/core/core/dataset"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/pixlUser"
 )
 
 // We have a few public things, mainly getting the API version...

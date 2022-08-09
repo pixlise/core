@@ -25,12 +25,12 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
-	datasetModel "gitlab.com/pixlise/pixlise-go-api/core/dataset"
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
-	apiNotifications "gitlab.com/pixlise/pixlise-go-api/core/notifications"
-	"gitlab.com/pixlise/pixlise-go-api/core/utils"
+	"github.com/pixlise/core/core/awsutil"
+	datasetModel "github.com/pixlise/core/core/dataset"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/logger"
+	apiNotifications "github.com/pixlise/core/core/notifications"
+	"github.com/pixlise/core/core/utils"
 )
 
 const testFileCreationUnixTimeSec = 1234567890 // needs to match what's in test-output/summary*.json

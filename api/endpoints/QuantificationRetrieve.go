@@ -24,16 +24,16 @@ import (
 	"strings"
 	"sync"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/api/handlers"
-	"gitlab.com/pixlise/pixlise-go-api/api/permission"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/api/handlers"
+	"github.com/pixlise/core/api/permission"
+	"github.com/pixlise/core/api/services"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"gitlab.com/pixlise/pixlise-go-api/core/api"
-	"gitlab.com/pixlise/pixlise-go-api/core/quantModel"
-	"gitlab.com/pixlise/pixlise-go-api/core/utils"
+	"github.com/pixlise/core/core/api"
+	"github.com/pixlise/core/core/quantModel"
+	"github.com/pixlise/core/core/utils"
 )
 
 type QuantListingResponse struct {

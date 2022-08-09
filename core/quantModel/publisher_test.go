@@ -8,8 +8,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
+	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/core/fileaccess"
 )
 
 // This Example demonstrates how to check for existing published quants.
@@ -254,7 +254,7 @@ func Example_makeQuantProducts() {
         },
         "roiID": "",
         "elementSetID": "",
-        "piquantVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8-ALPHA",
+        "piquantVersion": "registry.github.com/pixlise/piquant/runner:3.2.8-ALPHA",
         "quantMode": "CombinedBulk",
         "comments": "",
         "roiIDs": [

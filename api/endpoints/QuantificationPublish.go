@@ -18,8 +18,8 @@
 package endpoints
 
 import (
-	"gitlab.com/pixlise/pixlise-go-api/api/handlers"
-	quant "gitlab.com/pixlise/pixlise-go-api/core/quantModel"
+	"github.com/pixlise/core/api/handlers"
+	quant "github.com/pixlise/core/core/quantModel"
 )
 
 func quantificationPublish(params handlers.ApiHandlerParams) (interface{}, error) {

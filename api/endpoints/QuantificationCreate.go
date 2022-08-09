@@ -26,10 +26,10 @@ import (
 	"strings"
 	"sync"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/api/handlers"
-	"gitlab.com/pixlise/pixlise-go-api/core/api"
-	"gitlab.com/pixlise/pixlise-go-api/core/quantModel"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/api/handlers"
+	"github.com/pixlise/core/core/api"
+	"github.com/pixlise/core/core/quantModel"
 )
 
 func quantificationPost(params handlers.ApiHandlerParams) (interface{}, error) {

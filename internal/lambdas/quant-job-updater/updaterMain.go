@@ -30,11 +30,11 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
-	"gitlab.com/pixlise/pixlise-go-api/core/quantModel"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/core/quantModel"
 )
 
 // How long to keep showing completed quantification jobs once they're done

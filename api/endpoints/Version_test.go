@@ -28,7 +28,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
+	"github.com/pixlise/core/core/awsutil"
 )
 
 func Example_version() {
@@ -47,7 +47,7 @@ func Example_version() {
 		nil,
 		{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-	"version": "registry.gitlab.com/pixlise/piquant/runner:3.2.8",
+	"version": "registry.github.com/pixlise/piquant/runner:3.2.8",
 	"changedUnixTimeSec": 1630635994,
 	"creator": {
 		"name": "Niko Belic",

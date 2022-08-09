@@ -7,16 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	datasetModel "gitlab.com/pixlise/pixlise-go-api/core/dataset"
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
-	"gitlab.com/pixlise/pixlise-go-api/core/kubernetes"
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
-	"gitlab.com/pixlise/pixlise-go-api/core/notifications"
-	"gitlab.com/pixlise/pixlise-go-api/core/ocs"
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
-	"gitlab.com/pixlise/pixlise-go-api/data-converter/importer/pixlfm"
-	apiv1 "k8s.io/api/core/v1"
+	"github.com/pixlise/core/api/filepaths"
+	datasetModel "github.com/pixlise/core/core/dataset"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/core/notifications"
+	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/data-converter/importer/pixlfm"
 )
 
 type PublisherConfig struct {
@@ -374,40 +371,40 @@ func makeQuantProducts(fs fileaccess.FileAccess, usersBucket string, datasetsBuc
 
 // triggerOCSPoster - Trigger a run of the OCS poster docker container with the associated metadata.
 func triggerOCSPoster(config PublisherConfig, log logger.ILogger, creator pixlUser.UserInfo, products ProductSet, dataset string, kenv string) error {
-	k := kubernetes.KubeHelper{
-		Kubeconfig: config.Kubeconfig,
-	}
-
-	k.Bootstrap(config.KubernetesLocation, log)
-	filenames := fmt.Sprintf("%v/%v/%s,%v/%v/%s", OcsStagingPath, dataset, products.PqpFileName, OcsStagingPath, dataset, products.PqrFileName)
-	env := make(map[string]string)
-	env["venue"] = "sstage"
-	env["credss_username"] = "m20-sstage-pixlise"
-	env["credss_appaccount"] = "true"
-	env["AWS_PROFILE"] = "default"
-
-	volumes := []apiv1.Volume{
-		{
-			Name: "aws-volume",
-			VolumeSource: apiv1.VolumeSource{
-				ConfigMap: &apiv1.ConfigMapVolumeSource{
-					LocalObjectReference: apiv1.LocalObjectReference{Name: "aws-pixlise-config"},
-				},
-			},
-		},
-	}
-
-	volumemounts := []apiv1.VolumeMount{
-		{
-			Name:      "aws-volume",
-			MountPath: "/root/.aws/credentialstmp",
-			SubPath:   "credentials",
-		},
-	}
-	_, err := k.RunPod(nil, ocs.GeneratePosterPodCmd(filenames, products.SourceBucket, products.OcsPath, config.QuantDestinationPackage, config.QuantObjectType), env, volumes, volumemounts, config.PosterImage,
-		"api", generatePodNamePrefix(products.JobID), generatePodLabels(products.JobID, products.DatasetID, kenv), creator, log, false)
-	if err != nil {
-		return err
-	}
+	//k := kubernetes.KubeHelper{
+	//	Kubeconfig: config.Kubeconfig,
+	//}
+	//
+	//k.Bootstrap(config.KubernetesLocation, log)
+	//filenames := fmt.Sprintf("%v/%v/%s,%v/%v/%s", OcsStagingPath, dataset, products.PqpFileName, OcsStagingPath, dataset, products.PqrFileName)
+	//env := make(map[string]string)
+	//env["venue"] = "sstage"
+	//env["credss_username"] = "m20-sstage-pixlise"
+	//env["credss_appaccount"] = "true"
+	//env["AWS_PROFILE"] = "default"
+	//
+	//volumes := []apiv1.Volume{
+	//	{
+	//		Name: "aws-volume",
+	//		VolumeSource: apiv1.VolumeSource{
+	//			ConfigMap: &apiv1.ConfigMapVolumeSource{
+	//				LocalObjectReference: apiv1.LocalObjectReference{Name: "aws-pixlise-config"},
+	//			},
+	//		},
+	//	},
+	//}
+	//
+	//volumemounts := []apiv1.VolumeMount{
+	//	{
+	//		Name:      "aws-volume",
+	//		MountPath: "/root/.aws/credentialstmp",
+	//		SubPath:   "credentials",
+	//	},
+	//}
+	//_, err := k.RunPod(nil, ocs.GeneratePosterPodCmd(filenames, products.SourceBucket, products.OcsPath, config.QuantDestinationPackage, config.QuantObjectType), env, volumes, volumemounts, config.PosterImage,
+	//	"api", generatePodNamePrefix(products.JobID), generatePodLabels(products.JobID, products.DatasetID, kenv), creator, log, false)
+	//if err != nil {
+	//	return err
+	//}
 	return nil
 }

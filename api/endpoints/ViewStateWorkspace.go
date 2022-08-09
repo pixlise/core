@@ -26,16 +26,16 @@ import (
 	"sort"
 	"strings"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/api/handlers"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
-	"gitlab.com/pixlise/pixlise-go-api/core/api"
-	dataExpression "gitlab.com/pixlise/pixlise-go-api/core/expression"
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
-	"gitlab.com/pixlise/pixlise-go-api/core/quantModel"
-	"gitlab.com/pixlise/pixlise-go-api/core/roiModel"
-	"gitlab.com/pixlise/pixlise-go-api/core/utils"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/api/handlers"
+	"github.com/pixlise/core/api/services"
+	"github.com/pixlise/core/core/api"
+	dataExpression "github.com/pixlise/core/core/expression"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/core/quantModel"
+	"github.com/pixlise/core/core/roiModel"
+	"github.com/pixlise/core/core/utils"
 )
 
 type workspace struct {

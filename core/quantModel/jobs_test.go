@@ -24,10 +24,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
-	"gitlab.com/pixlise/pixlise-go-api/core/roiModel"
+	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/core/roiModel"
 )
 
 /*
@@ -78,7 +78,7 @@ Assumptions:
   Nodes = 72630 / 7200 = 10 nodes... seems reasonable
 */
 func Example_estimateNodeCount() {
-	// Based on experimental runs in: https://gitlab.com/pixlise/pixlise-go-api/-/issues/113
+	// Based on experimental runs in: https://github.com/pixlise/core/-/issues/113
 
 	// Can only use the ones where we had allcoation of 7.5 set in kubernetes, because the others weren't maxing out cores
 

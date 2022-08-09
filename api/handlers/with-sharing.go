@@ -21,9 +21,9 @@ import (
 	"errors"
 	"net/http"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
-	"gitlab.com/pixlise/pixlise-go-api/core/api"
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
+	"github.com/pixlise/core/api/services"
+	"github.com/pixlise/core/core/api"
+	"github.com/pixlise/core/core/pixlUser"
 )
 
 // If it's a share function, use this. Enforces that method is only POST

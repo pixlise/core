@@ -30,20 +30,20 @@ import (
 	"sync"
 	"time"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
-	"gitlab.com/pixlise/pixlise-go-api/core/notifications"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/notifications"
 
-	datasetModel "gitlab.com/pixlise/pixlise-go-api/core/dataset"
-	"gitlab.com/pixlise/pixlise-go-api/core/piquant"
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
-	"gitlab.com/pixlise/pixlise-go-api/core/roiModel"
-	"gitlab.com/pixlise/pixlise-go-api/core/utils"
-	protos "gitlab.com/pixlise/pixlise-go-api/generated-protos"
+	datasetModel "github.com/pixlise/core/core/dataset"
+	"github.com/pixlise/core/core/piquant"
+	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/core/roiModel"
+	"github.com/pixlise/core/core/utils"
+	protos "github.com/pixlise/core/generated-protos"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/config"
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
+	"github.com/pixlise/core/api/config"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/api/services"
+	"github.com/pixlise/core/core/logger"
 )
 
 const QuantModeSeparateAB = "AB"

@@ -2,7 +2,7 @@ package notifications
 
 import (
 	"fmt"
-	"gitlab.com/pixlise/pixlise-go-api/awsutil"
+	"github.com/pixlise/core/awsutil"
 	"time"
 )
 

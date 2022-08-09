@@ -49,12 +49,12 @@ jobs:
 
     - name: Build package
       run: make build-linux
-
-    - name: store artifact
-      uses: actions/upload-artifact@master
-      with:
-        name: pixlise-api-linux
-        path: _out/pixlise-api-linux
+#
+#    - name: store artifact
+#      uses: actions/upload-artifact@master
+#      with:
+#        name: pixlise-api-linux
+#        path: _out/pixlise-api-linux
     needs: test
 
   docker:
@@ -68,11 +68,11 @@ jobs:
       id-token: write
 
     steps:
-      - name: download api
-        uses: actions/download-artifact@master
-        with:
-            name: pixlise-api-linux
-            path: ./_out
+#      - name: download api
+#        uses: actions/download-artifact@master
+#        with:
+#            name: pixlise-api-linux
+#            path: ./_out
       - name: Checkout repository
         uses: actions/checkout@v3
 

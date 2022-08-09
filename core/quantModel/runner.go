@@ -20,11 +20,11 @@ package quantModel
 import (
 	"fmt"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/notifications"
+	"github.com/pixlise/core/core/notifications"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/config"
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
-	"gitlab.com/pixlise/pixlise-go-api/core/pixlUser"
+	"github.com/pixlise/core/api/config"
+	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/core/pixlUser"
 )
 
 // NOTE: these are all static params, the PMC list to process is passed in via the number at the end of the host name

@@ -28,12 +28,12 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/sns"
-	"gitlab.com/pixlise/pixlise-go-api/core/api"
-	datasetModel "gitlab.com/pixlise/pixlise-go-api/core/dataset"
-	"gitlab.com/pixlise/pixlise-go-api/core/utils"
+	"github.com/pixlise/core/core/api"
+	datasetModel "github.com/pixlise/core/core/dataset"
+	"github.com/pixlise/core/core/utils"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/api/handlers"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/api/handlers"
 )
 
 // NOTE: No registration function here, this sits in the dataset registration function, shares paths with it. Only separated

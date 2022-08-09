@@ -18,8 +18,8 @@
 package quantModel
 
 import (
-	"gitlab.com/pixlise/pixlise-go-api/api/filepaths"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
+	"github.com/pixlise/core/api/filepaths"
+	"github.com/pixlise/core/api/services"
 )
 
 const quantBlessedFile = "blessed-quant.json"

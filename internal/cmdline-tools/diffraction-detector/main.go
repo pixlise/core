@@ -6,8 +6,8 @@ import (
 	"os"
 	"sort"
 
-	datasetModel "gitlab.com/pixlise/pixlise-go-api/core/dataset"
-	diffractionDetection "gitlab.com/pixlise/pixlise-go-api/diffraction-detector"
+	datasetModel "github.com/pixlise/core/core/dataset"
+	diffractionDetection "github.com/pixlise/core/diffraction-detector"
 )
 
 func main() {

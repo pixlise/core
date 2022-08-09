@@ -24,13 +24,13 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
+	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/core/logger"
 
-	"gitlab.com/pixlise/pixlise-go-api/data-converter/importer"
-	"gitlab.com/pixlise/pixlise-go-api/data-converter/importer/msatestdata"
-	"gitlab.com/pixlise/pixlise-go-api/data-converter/importer/pixlfm"
-	"gitlab.com/pixlise/pixlise-go-api/data-converter/output"
+	"github.com/pixlise/core/data-converter/importer"
+	"github.com/pixlise/core/data-converter/importer/msatestdata"
+	"github.com/pixlise/core/data-converter/importer/pixlfm"
+	"github.com/pixlise/core/data-converter/output"
 )
 
 func main() {

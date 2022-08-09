@@ -28,19 +28,19 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/notifications"
+	"github.com/pixlise/core/core/notifications"
 
 	"github.com/gorilla/handlers"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/config"
-	"gitlab.com/pixlise/pixlise-go-api/api/endpoints"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
-	"gitlab.com/pixlise/pixlise-go-api/core/api"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
-	"gitlab.com/pixlise/pixlise-go-api/core/utils"
+	"github.com/pixlise/core/api/config"
+	"github.com/pixlise/core/api/endpoints"
+	"github.com/pixlise/core/api/services"
+	"github.com/pixlise/core/core/api"
+	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/core/utils"
 
 	cmap "github.com/orcaman/concurrent-map"
-	"gitlab.com/pixlise/pixlise-go-api/core/export"
+	"github.com/pixlise/core/core/export"
 )
 
 func printRoutePermissions(routePermissions map[string]string) {

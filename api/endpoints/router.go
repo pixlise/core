@@ -19,8 +19,8 @@ package endpoints
 
 import (
 	"github.com/gorilla/mux"
-	apiRouter "gitlab.com/pixlise/pixlise-go-api/api/router"
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
+	apiRouter "github.com/pixlise/core/api/router"
+	"github.com/pixlise/core/api/services"
 )
 
 func MakeRouter(svcs services.APIServices) apiRouter.ApiObjectRouter {

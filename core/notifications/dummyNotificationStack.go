@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"time"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/fileaccess"
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
+	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/core/logger"
 )
 
 // REFACTOR: Top of this file is practically IDENTICAL to uiNotificationmanagement.go ???

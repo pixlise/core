@@ -28,8 +28,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 
-	"gitlab.com/pixlise/pixlise-go-api/api/services"
-	"gitlab.com/pixlise/pixlise-go-api/core/awsutil"
+	"github.com/pixlise/core/api/services"
+	"github.com/pixlise/core/core/awsutil"
 )
 
 // TODO: this is not really a unit test, as it calls out to Auth0 and interacts with a test user, adding/removing a role!

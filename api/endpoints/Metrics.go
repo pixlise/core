@@ -18,9 +18,9 @@
 package endpoints
 
 import (
-	"gitlab.com/pixlise/pixlise-go-api/api/handlers"
-	"gitlab.com/pixlise/pixlise-go-api/api/permission"
-	apiRouter "gitlab.com/pixlise/pixlise-go-api/api/router"
+	"github.com/pixlise/core/api/handlers"
+	"github.com/pixlise/core/api/permission"
+	apiRouter "github.com/pixlise/core/api/router"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

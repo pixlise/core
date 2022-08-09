@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
-	"gitlab.com/pixlise/pixlise-go-api/core/logger"
+	"github.com/pixlise/core/core/logger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"

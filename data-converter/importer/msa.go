@@ -23,9 +23,9 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.com/pixlise/pixlise-go-api/core/utils"
-	"gitlab.com/pixlise/pixlise-go-api/data-converter/converterModels"
-	protos "gitlab.com/pixlise/pixlise-go-api/generated-protos"
+	"github.com/pixlise/core/core/utils"
+	"github.com/pixlise/core/data-converter/converterModels"
+	protos "github.com/pixlise/core/generated-protos"
 )
 
 func ReadMSAFileLines(lines []string, singleDetectorMSA bool, expectPMC bool, detectorADuplicate bool) ([]converterModels.DetectorSample, error) {
