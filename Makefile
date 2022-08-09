@@ -1,7 +1,7 @@
 SHELL=/bin/bash -o pipefail
 
-PROJECT_NAME := pixlise-go-api
-PKG := "gitlab.com/pixlise/$(PROJECT_NAME)"
+PROJECT_NAME := core
+PKG := "github.com/pixlise/$(PROJECT_NAME)"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
 
 .PHONY: all build clean test lint
