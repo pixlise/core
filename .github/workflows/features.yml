@@ -109,6 +109,10 @@ jobs:
         to-slug: ${{ steps.taggen.outputs.semverbranch }}
     - name: Build package
       run: BUILD_VERSION="${{ steps.slug.outputs.slug }}" make build-linux
+    - name: Copy to S3 Archive
+      run: |
+        cd _out && aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive
+
     needs: test
 
   docker:
