@@ -171,7 +171,9 @@ jobs:
         run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
 
   infratrigger:
-    needs: docker
+    needs:
+      - docker
+      - build
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Job
