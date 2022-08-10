@@ -1,4 +1,4 @@
-name: Core Dev
+name: Core Release
 
 on:
   push:
