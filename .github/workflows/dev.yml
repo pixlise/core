@@ -2,8 +2,7 @@ name: Core Devevelopment
 
 on:
   push:
-    branches-ignore:
-      - main
+    branches:
       - development
   pull_request:
     branches: [ "development" ]
