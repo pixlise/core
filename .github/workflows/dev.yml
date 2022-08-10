@@ -2,8 +2,8 @@ name: Core Dev
 
 on:
   push:
-    branches:
-      - '!main'
+    branches-ignore:
+      - main
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
