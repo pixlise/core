@@ -69,9 +69,18 @@ jobs:
       with:
         go-version: "1.18.0"
     - name: print version
-      run: echo "BUILDING VERSION ${{ steps.version.outputs.version }}-${GITHUB_REF##*/}"
+      id: taggen
+      run: |
+        echo "BUILDING VERSION ${{ steps.version.outputs.version }}-${GITHUB_REF##*/}"
+        echo "::set-output name=semverbranch::${{ steps.version.outputs.version}}-${GITHUB_REF_NAME}"
+
+    - uses: gacts/github-slug@v1
+      id: slug
+      with:
+        # replace value in "to-slug" this on your choice
+        to-slug: ${{ steps.taggen.outputs.semverbranch }}
     - name: Build package
-      run: BUILD_VERSION="${{ steps.version.outputs.version }}-${GITHUB_REF##*/}" make build-linux
+      run: BUILD_VERSION="${{ steps.slug.outputs.slug }}" make build-linux
     needs: test
 
   docker:
