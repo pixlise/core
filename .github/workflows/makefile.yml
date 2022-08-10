@@ -39,7 +39,7 @@ jobs:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    - uses: paulhatch/semantic-version@v4.0.2
+    - uses: paulhatch/semantic-version@v5.0.0-alpha2
       name: version
       with:
         # The prefix to use to identify tags
@@ -86,7 +86,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - uses: paulhatch/semantic-version@v4.0.2
+      - uses: paulhatch/semantic-version@v5.0.0-alpha2
         name: version
         with:
           # The prefix to use to identify tags
