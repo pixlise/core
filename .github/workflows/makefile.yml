@@ -56,7 +56,7 @@ jobs:
         # 'changed' output will true. Enter multiple paths separated by spaces.
         #change_path: "src/my-service"
         # Named version, will be used as suffix for name version tag
-        namespace: core-${GITHUB_REF##*/}
+        namespace: core
         # If this is set to true, *every* commit will be treated as a new version.
         bump_each_commit: false
         # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
@@ -68,9 +68,9 @@ jobs:
       with:
         go-version: "1.18.0"
     - name: print version
-      run: echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
+      run: echo "BUILDING VERSION ${{ steps.version.outputs.version }}-${GITHUB_REF##*/}"
     - name: Build package
-      run: BUILD_VERSION="${{ steps.version.outputs.version }}" make build-linux
+      run: BUILD_VERSION="${{ steps.version.outputs.version }}-${GITHUB_REF##*/}" make build-linux
     needs: test
 
   docker:
@@ -104,7 +104,7 @@ jobs:
           # 'changed' output will true. Enter multiple paths separated by spaces.
           #change_path: "src/my-service"
           # Named version, will be used as suffix for name version tag
-          namespace: core-${GITHUB_REF##*/}
+          namespace: core
           # If this is set to true, *every* commit will be treated as a new version.
           bump_each_commit: false
           # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
@@ -116,9 +116,7 @@ jobs:
         with:
           go-version: "1.18.0"
       - name: print version
-        run: echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
-      - name: Build package
-        run: BUILD_VERSION="${{ steps.version.outputs.version }}" make build-linux
+        run: echo "BUILDING VERSION ${{ steps.version.outputs.version }}-${GITHUB_REF##*/}"
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
