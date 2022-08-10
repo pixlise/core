@@ -41,6 +41,7 @@ jobs:
         fetch-depth: 0
     - uses: paulhatch/semantic-version@v5.0.0-alpha2
       name: version
+      id: version
       with:
         # The prefix to use to identify tags
         tag_prefix: "v"
@@ -55,7 +56,7 @@ jobs:
         # 'changed' output will true. Enter multiple paths separated by spaces.
         #change_path: "src/my-service"
         # Named version, will be used as suffix for name version tag
-        namespace: core
+        namespace: core-${GITHUB_REF##*/}
         # If this is set to true, *every* commit will be treated as a new version.
         bump_each_commit: false
         # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
@@ -88,6 +89,7 @@ jobs:
           fetch-depth: 0
       - uses: paulhatch/semantic-version@v5.0.0-alpha2
         name: version
+        id: version
         with:
           # The prefix to use to identify tags
           tag_prefix: "v"
@@ -102,7 +104,7 @@ jobs:
           # 'changed' output will true. Enter multiple paths separated by spaces.
           #change_path: "src/my-service"
           # Named version, will be used as suffix for name version tag
-          namespace: core
+          namespace: core-${GITHUB_REF##*/}
           # If this is set to true, *every* commit will be treated as a new version.
           bump_each_commit: false
           # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
@@ -116,7 +118,7 @@ jobs:
       - name: print version
         run: echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
       - name: Build package
-        run: BUILD_VERSION=${{ steps.version.outputs.version }} make build-linux
+        run: BUILD_VERSION="${{ steps.version.outputs.version }}" make build-linux
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
