@@ -1,8 +1,9 @@
-name: Makefile CI
+name: Core Dev
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - 'main'
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -51,7 +52,7 @@ jobs:
         # Same as above except indicating a minor change, supports regular expressions wrapped with '/'
         minor_pattern: "(MINOR)"
         # A string to determine the format of the version output
-        version_format: "${major}.${minor}.${patch}-prerelease"
+        version_format: "${major}.${minor}.${patch}-RC${increment}"
         # Optional path to check for changes. If any changes are detected in the path the
         # 'changed' output will true. Enter multiple paths separated by spaces.
         #change_path: "src/my-service"
@@ -99,7 +100,7 @@ jobs:
           # Same as above except indicating a minor change, supports regular expressions wrapped with '/'
           minor_pattern: "(MINOR)"
           # A string to determine the format of the version output
-          version_format: "${major}.${minor}.${patch}-prerelease"
+          version_format: "${major}.${minor}.${patch}-RC${increment}"
           # Optional path to check for changes. If any changes are detected in the path the
           # 'changed' output will true. Enter multiple paths separated by spaces.
           #change_path: "src/my-service"
@@ -118,8 +119,8 @@ jobs:
       - name: print version
         id: taggen
         run: |
-          echo "BUILDING VERSION ${{ steps.version.outputs.version }}-${GITHUB_REF##*/}"
-          echo "::set-output name=semverbranch::${{ steps.version.outputs.version}}-${GITHUB_REF_NAME}"
+          echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
+          echo "::set-output name=semverbranch::${{ steps.version.outputs.version}}"
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
