@@ -67,9 +67,9 @@ jobs:
       with:
         go-version: "1.18.0"
     - name: print version
-      run: echo "BUILDING VERSION ${{ steps.version.outputs.version }}
+      run: echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
     - name: Build package
-      run: BUILD_VERSION=${{ steps.version.outputs.version }} make build-linux
+      run: BUILD_VERSION="${{ steps.version.outputs.version }}" make build-linux
     needs: test
 
   docker:
@@ -114,7 +114,7 @@ jobs:
         with:
           go-version: "1.18.0"
       - name: print version
-        run: echo "BUILDING VERSION ${{ steps.version.outputs.version }}
+        run: echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
       - name: Build package
         run: BUILD_VERSION=${{ steps.version.outputs.version }} make build-linux
 
