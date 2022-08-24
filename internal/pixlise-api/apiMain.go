@@ -79,6 +79,9 @@ func printRoutePermissions(routePermissions map[string]string) {
 }
 
 func main() {
+	go func() {
+		http.ListenAndServe(":1234", nil)
+	}()
 	rand.Seed(time.Now().UnixNano())
 
 	cfg, err := config.Init()
