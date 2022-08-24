@@ -41,6 +41,7 @@ import (
 
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/pixlise/core/core/export"
+	_ "net/http/pprof"
 )
 
 func printRoutePermissions(routePermissions map[string]string) {

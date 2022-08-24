@@ -173,7 +173,7 @@ func (h *LoggerMiddleware) Middleware(next http.Handler) http.Handler {
 					return
 				}
 
-				if userObj.Config.DataCollection != "" {
+				if userObj.Config.DataCollection != "unknown" && userObj.Config.DataCollection != "false" {
 					track = true
 					h.Notifications.SetTrack(requestingUser.UserID, true)
 				}
