@@ -21,10 +21,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: paulhatch/semantic-version@v5.0.0-alpha2
+        name: version
+        id: version
+        with:
+          # The prefix to use to identify tags
+          tag_prefix: "v"
+          # A string which, if present in a git commit, indicates that a change represents a
+          # major (breaking) change, supports regular expressions wrapped with '/'
+          major_pattern: "(MAJOR)"
+          # Same as above except indicating a minor change, supports regular expressions wrapped with '/'
+          minor_pattern: "(MINOR)"
+          # A string to determine the format of the version output
+          version_format: "${major}.${minor}.${patch}-prerelease"
+          # Optional path to check for changes. If any changes are detected in the path the
+          # 'changed' output will true. Enter multiple paths separated by spaces.
+          #change_path: "src/my-service"
+          # Named version, will be used as suffix for name version tag
+          namespace: core
+          # If this is set to true, *every* commit will be treated as a new version.
+          bump_each_commit: false
+          # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
+          search_commit_body: false
+          # The output method used to generate list of users, 'csv' or 'json'.
+          user_format_type: "csv"
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
           go-version: "1.18.0"
+
       - name: Test
         run: make test
         env:
@@ -37,6 +64,10 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
     - uses: actions/checkout@v3
       with:
@@ -82,6 +113,19 @@ jobs:
         to-slug: ${{ steps.taggen.outputs.semverbranch }}
     - name: Build package
       run: BUILD_VERSION="${{ steps.slug.outputs.slug }}" make build-linux
+    - name: Copy to S3 Archive
+      run: |
+        cd _out && \
+        zip jobupdater-linux-${{ steps.slug.outputs.slug }}.zip jobupdater-linux && \
+        rm jobupdater-linux && \
+        zip datasourceupdater-linux-${{ steps.slug.outputs.slug }}.zip datasourceupdater-linux && \
+        rm datasourceupdater-linux && \
+        zip integrationtest-linux-${{ steps.slug.outputs.slug }}.zip integrationtest-linux && \
+        rm integrationtest-linux && \
+        zip dataimport-linux-${{ steps.slug.outputs.slug }}.zip dataimport-linux && \
+        rm dataimport-linux && \
+        aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
+
     needs: test
 
   docker:
@@ -193,7 +237,9 @@ jobs:
         run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
 
   infratrigger:
-    needs: docker
+    needs:
+      - docker
+      - build
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Job
@@ -201,5 +247,6 @@ jobs:
           curl -X POST \
                --fail \
                -F token=${{ secrets.GITLABTOKEN }} \
-               -F ref=main \
+               -F ref="feat/env-stacks" \
+               -F "variables[STACK_NAME]=dev" \
                https://gitlab.com/api/v4/projects/18114496/trigger/pipeline
