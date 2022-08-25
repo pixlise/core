@@ -85,7 +85,7 @@ func (h *LoggerMiddleware) Middleware(next http.Handler) http.Handler {
 		// We're not that strict on content types, basically if it's not set it's probably a download, if it is set it's probably
 		// text we can log, though octet-stream is definitely a special case we don't want to log.
 		// TODO: Improve content types so this check can be made more accurate
-		if true /*len(contType) > 0 && contType != "application/octet-stream"*/ { //contType == "application/json" || contType == "application/text" {
+		if len(contType) > 0 && contType != "application/octet-stream" { //contType == "application/json" || contType == "application/text" {
 			fullRespBodyText = string(buf.Bytes())
 			respBodyTxt = fullRespBodyText
 
