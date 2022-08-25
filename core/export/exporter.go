@@ -249,6 +249,8 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 			return nil, err
 		}
 
+		defer f.Close()
+		
 		locations := files.diffraction.Locations
 		sort.Slice(locations, func(i, j int) bool {
 			firstLocID, err := strconv.Atoi(locations[i].Id)
