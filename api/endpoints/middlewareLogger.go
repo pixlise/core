@@ -79,7 +79,7 @@ func (h *LoggerMiddleware) Middleware(next http.Handler) http.Handler {
 		hadError := w2.Status != 0 && w2.Status != http.StatusOK && w2.Status != http.StatusNotModified
 
 		// Write body in debug output, if we can
-		//contType := w2.RealWriter.Header().Get("Content-Type")
+		contType := w2.RealWriter.Header().Get("Content-Type")
 		respBodyTxt := ""
 		fullRespBodyText := ""
 		// We're not that strict on content types, basically if it's not set it's probably a download, if it is set it's probably
@@ -178,7 +178,7 @@ func (h *LoggerMiddleware) Middleware(next http.Handler) http.Handler {
 					h.Notifications.SetTrack(requestingUser.UserID, true)
 				}
 			}
-			if track {
+			if track && len(contType) > 0 && contType != "application/octet-stream" {
 				o := esutil.LoggingObject{
 					Time:        time.Now(),
 					Component:   r.URL.Path,
