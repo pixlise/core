@@ -249,7 +249,7 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 			return nil, err
 		}
 
-		defer f.Close()
+		defer csv.Close()
 		
 		locations := files.diffraction.Locations
 		sort.Slice(locations, func(i, j int) bool {
