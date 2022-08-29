@@ -1,7 +1,5 @@
 {
     "MaxQuantNodes": 4,
-	"DataBucket": "devstack-persistencepixlisedata4f446ecf-1corom7nbx3uv",
-    "JobBucket": "devstack-persistencepiquantjobs65c7175e-1dg51nw1ye1rk",
 	"AWSBucketRegion": "us-east-1",
     "AWSCloudwatchRegion": "us-east-1",
 	"EnvironmentName": "local",

@@ -136,6 +136,9 @@ func (stack *NotificationStack) GetUINotifications(userid string) ([]UINotificat
 		}
 		return notifications, nil
 	} else {
+		if stack.MongoUtils.MongoEndpoint == "" {
+			return []UINotificationObj{}, nil
+		}
 		obj, err := stack.MongoUtils.GetUINotifications(userid)
 		if err != nil {
 			return nil, err
@@ -155,7 +158,6 @@ func (stack *NotificationStack) GetAllUsers() ([]UserStruct, error) {
 	} else {
 		return stack.MongoUtils.GetAllMongoUsers(stack.Logger)
 	}
-
 }
 
 func (stack *NotificationStack) GetSubscribersByTopicID(useroverride []string, topic string) ([]UserStruct, error) {
@@ -165,7 +167,6 @@ func (stack *NotificationStack) GetSubscribersByTopicID(useroverride []string, t
 	} else {
 		return stack.MongoUtils.GetMongoSubscribersByTopicID(useroverride, topic, stack.Logger)
 	}
-
 }
 
 func (stack *NotificationStack) GetSubscribersByEmailTopicID(useroverride []string, topic string) ([]UserStruct, error) {
@@ -175,8 +176,8 @@ func (stack *NotificationStack) GetSubscribersByEmailTopicID(useroverride []stri
 	} else {
 		return stack.MongoUtils.GetMongoSubscribersByEmailTopicID(useroverride, topic, stack.Logger)
 	}
-
 }
+
 func (stack *NotificationStack) GetSubscribersByTopic(topic string) ([]UserStruct, error) {
 	if stack.MongoUtils == nil {
 		u := s3utils{}
@@ -184,7 +185,6 @@ func (stack *NotificationStack) GetSubscribersByTopic(topic string) ([]UserStruc
 	} else {
 		return stack.MongoUtils.GetMongoSubscribersByTopic(topic, stack.Logger)
 	}
-
 }
 
 func (stack *NotificationStack) CreateUserObject(userid string, name string, email string) (UserStruct, error) {
