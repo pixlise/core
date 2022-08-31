@@ -74,6 +74,18 @@ jobs:
         echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
     - name: Build package
       run: BUILD_VERSION="${{ steps.version.outputs.version }}" make build-linux
+    - name: Copy to S3 Archive
+      run: |
+        cd _out && \
+        zip jobupdater-linux-${{ steps.slug.outputs.slug }}.zip jobupdater-linux && \
+        rm jobupdater-linux && \
+        zip datasourceupdater-linux-${{ steps.slug.outputs.slug }}.zip datasourceupdater-linux && \
+        rm datasourceupdater-linux && \
+        zip integrationtest-linux-${{ steps.slug.outputs.slug }}.zip integrationtest-linux && \
+        rm integrationtest-linux && \
+        zip dataimport-linux-${{ steps.slug.outputs.slug }}.zip dataimport-linux && \
+        rm dataimport-linux && \
+        aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
     needs: test
 
   docker:
