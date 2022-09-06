@@ -203,7 +203,7 @@ func executePipeline(name DatasourceEvent, fs fileaccess.FileAccess, ns apiNotif
 	//allthefiles = append(allthefiles, inpath)
 	// As this datasource is now in the process flow, copy to the archive folder for re-processing and historical purposes
 	jobLog.Infof("----- Copying file %v %v to archive: %v %v -----\n", sourcebucket, name.Inpath, getConfigBucket(), "Datasets/archive/"+name.Inpath)
-	err = fs.CopyObject(sourcebucket, name.Inpath, getDatasourceBucket(), "Datsets/archive/"+name.Inpath)
+	err = fs.CopyObject(sourcebucket, name.Inpath, getDatasourceBucket(), "Datasets/archive/"+name.Inpath)
 	if err != nil {
 		return "", err
 	}
@@ -323,7 +323,8 @@ func processFiles(inpath string, name DatasourceEvent, importers map[string]impo
 		return "", err
 	}
 	if targetbucket == "" {
-		err = uploadDirectoryToAllEnvironments(fs, outPath, data.DatasetID, getDatasourceBucket(), envBuckets, jobLog)
+		//err = uploadDirectoryToAllEnvironments(fs, outPath, data.DatasetID, getDatasourceBucket(), envBuckets, jobLog)
+		jobLog.Errorf("No Target Bucket Defined, exiting")
 	} else {
 		err = uploadDirectoryToAllEnvironments(fs, outPath, data.DatasetID, getDatasourceBucket(), []string{targetbucket}, jobLog)
 	}

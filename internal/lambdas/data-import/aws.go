@@ -56,15 +56,15 @@ func uploadDirectoryToAllEnvironments(fs fileaccess.FileAccess, root string, dat
 			} else {
 				uploadPath := filepath.Join("Datasets", datasetID, filepath.Base(path))
 
-				jobLog.Infof("Uploading %v to S3://%v/%v\n", path, artifactBucket, uploadPath)
-				err = fs.WriteObject(artifactBucket, uploadPath, data)
-				if err != nil {
-					jobLog.Infof("Failed to upload to s3://%v/%v: %v\n", artifactBucket, uploadPath, err)
-					uploadError = err
-				}
-
-				// For saving to env buckets, we need to put it relative to Datasets/
-				uploadPath = filepath.Join("Datasets", uploadPath)
+				//jobLog.Infof("Uploading %v to S3://%v/%v\n", path, artifactBucket, uploadPath)
+				//err = fs.WriteObject(artifactBucket, uploadPath, data)
+				//if err != nil {
+				//	jobLog.Infof("Failed to upload to s3://%v/%v: %v\n", artifactBucket, uploadPath, err)
+				//	uploadError = err
+				//}
+				//
+				//// For saving to env buckets, we need to put it relative to Datasets/
+				//uploadPath = filepath.Join("Datasets", uploadPath)
 
 				for _, envBucket := range envBuckets {
 					jobLog.Infof("Uploading %v to S3://%v/%v\n", path, envBucket, uploadPath)

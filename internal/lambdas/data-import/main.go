@@ -51,10 +51,8 @@ func getDatasourceBucket() string {
 	return os.Getenv("DATASETS_BUCKET")
 }
 
-var envBuckets = []string{
-	"devstack-persistencepixlisedata4f446ecf-1corom7nbx3uv",
-	"stagingstack-persistencepixlisedata4f446ecf-118o0uwwb176b",
-	"prodstack-persistencepixlisedata4f446ecf-m36oehuca7uc",
+func getInputBucket() string {
+	return os.Getenv("INPUT_BUCKET")
 }
 
 //{
