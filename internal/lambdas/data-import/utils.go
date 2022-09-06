@@ -156,7 +156,7 @@ func createPeakDiffractionDB(path string, savepath string, jobLog logger.ILogger
 
 // checkExisting - Check existing files in S3
 func checkExisting(bucket string, prefix string, fs fileaccess.FileAccess, jobLog logger.ILogger) ([]string, error) {
-	jobLog.Infof("----- Checking for other files -----\n")
+	jobLog.Infof(fmt.Sprintf("----- Checking for other files in %v, archive/%v -----\n", bucket, prefix))
 	files, err := fs.ListObjects(bucket, "archive/"+prefix)
 	if err != nil {
 		return nil, err
