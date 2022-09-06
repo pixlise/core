@@ -86,6 +86,24 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 	targetbucket := os.Getenv("DATASETS_BUCKET")
 
 	jobLog.Infof("Message: %v", message)
+
+	if strings.HasPrefix(message, `{"datasetaddons":`) {
+		var snsMsg APISnsMessage
+		err := json.Unmarshal([]byte(message), &snsMsg)
+		if err != nil {
+			fmt.Printf("error unmarshalling message: %v", err)
+		}
+		fmt.Printf("Re-processing dataset due to file: \"%v\"\n", message)
+		fmt.Printf("Key: \"%v\"\n", snsMsg.Key.Dir)
+		name, fs, ns, err := jobinit(snsMsg.Key.Dir)
+
+		jobLog.Infof("Key: \"%v\"\n", snsMsg.Key.Dir)
+		jobLog.Infof("Re-processing dataset due to file: \"%v\"\n", message)
+
+		splits := strings.Split(snsMsg.Key.Dir, "/")
+
+		return executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+	}
 	var e awsutil.Event
 	err := e.UnmarshalJSON([]byte(message))
 	if err != nil {
@@ -109,22 +127,6 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 		return executePipeline(name, fs, ns, time.Now().Unix(), sourcebucket, targetbucket, jobLog)
 	} else if strings.HasPrefix(message, "datasource:") {
 		// run execution
-	} else if strings.HasPrefix(message, `{"datasetaddons":`) {
-		var snsMsg APISnsMessage
-		err := json.Unmarshal([]byte(message), &snsMsg)
-		if err != nil {
-			fmt.Printf("error unmarshalling message: %v", err)
-		}
-		fmt.Printf("Re-processing dataset due to file: \"%v\"\n", message)
-		fmt.Printf("Key: \"%v\"\n", snsMsg.Key.Dir)
-		name, fs, ns, err := jobinit(snsMsg.Key.Dir)
-
-		jobLog.Infof("Key: \"%v\"\n", snsMsg.Key.Dir)
-		jobLog.Infof("Re-processing dataset due to file: \"%v\"\n", message)
-
-		splits := strings.Split(snsMsg.Key.Dir, "/")
-
-		return executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
 	} else {
 		jobLog.Infof("Re-processing dataset due to SNS request: \"%v\"\n", record.SNS.Message)
 		name, fs, ns, err := jobinit("")
