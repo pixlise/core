@@ -54,7 +54,7 @@ func uploadDirectoryToAllEnvironments(fs fileaccess.FileAccess, root string, dat
 				jobLog.Infof("FAILED to read file for upload: %v\n", path)
 				uploadError = err
 			} else {
-				uploadPath := filepath.Join(datasetID, filepath.Base(path))
+				uploadPath := filepath.Join("Datasets", datasetID, filepath.Base(path))
 
 				jobLog.Infof("Uploading %v to S3://%v/%v\n", path, artifactBucket, uploadPath)
 				err = fs.WriteObject(artifactBucket, uploadPath, data)

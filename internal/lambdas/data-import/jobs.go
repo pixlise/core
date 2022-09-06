@@ -202,8 +202,8 @@ func executePipeline(name DatasourceEvent, fs fileaccess.FileAccess, ns apiNotif
 	allthefiles := []string{}
 	//allthefiles = append(allthefiles, inpath)
 	// As this datasource is now in the process flow, copy to the archive folder for re-processing and historical purposes
-	jobLog.Infof("----- Copying file %v %v to archive: %v %v -----\n", sourcebucket, name.Inpath, getConfigBucket(), "archive/"+name.Inpath)
-	err = fs.CopyObject(sourcebucket, name.Inpath, getDatasourceBucket(), "archive/"+name.Inpath)
+	jobLog.Infof("----- Copying file %v %v to archive: %v %v -----\n", sourcebucket, name.Inpath, getConfigBucket(), "Datasets/archive/"+name.Inpath)
+	err = fs.CopyObject(sourcebucket, name.Inpath, getDatasourceBucket(), "Datsets/archive/"+name.Inpath)
 	if err != nil {
 		return "", err
 	}
