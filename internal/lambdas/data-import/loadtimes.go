@@ -25,12 +25,12 @@ func saveLoadtime(name string, loads Loaded, fs fileaccess.FileAccess) error {
 	}
 	var l = Loaded{newloads}
 
-	return fs.WriteJSONNoIndent(getConfigBucket(), "configs/lastloaded.json", l)
+	return fs.WriteJSONNoIndent(getConfigBucket(), "DatasetConfig/lastloaded.json", l)
 }
 
 func lookupLoadtime(name string, fs fileaccess.FileAccess) (Loaded, bool) {
 	var loads Loaded
-	err := fs.ReadJSON(getConfigBucket(), "configs/lastloaded.json", &loads, false)
+	err := fs.ReadJSON(getConfigBucket(), "DatasetConfig/lastloaded.json", &loads, false)
 	if err != nil {
 		// REFACTOR: Return an error? What if this fails, is it bad? Should we use the "return empty if not found" flag above?
 		fmt.Println(err)
