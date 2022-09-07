@@ -19,6 +19,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	cmap "github.com/orcaman/concurrent-map"
 	ccopy "github.com/otiai10/copy"
 	"github.com/pixlise/core/core/awsutil"
@@ -222,14 +223,28 @@ func checkLocalExisting(prefix string, path string) ([]string, error) {
 }
 
 // makeNotificationStack - Create a notification stack
-func makeNotificationStack(fs fileaccess.FileAccess) apiNotifications.NotificationManager {
+func makeNotificationStack(fs fileaccess.FileAccess, log logger.ILogger) apiNotifications.NotificationManager {
+	seccache, err := secretcache.New()
+
+	mongo := apiNotifications.MongoUtils{
+		SecretsCache:     seccache,
+		ConnectionSecret: os.Getenv("MongoSecret"),
+		MongoUsername:    os.Getenv("MongoUsername"),
+		MongoEndpoint:    os.Getenv("MongoEndpoint"),
+		Log:              log,
+	}
+	err = mongo.Connect()
+	if err != nil {
+		fmt.Printf("Couldn't connect to mongodb: %v", err)
+	}
 	return &apiNotifications.NotificationStack{
 		Notifications: []apiNotifications.UINotificationObj{},
 		FS:            fs,
 		Track:         cmap.New(), //make(map[string]bool),
 		Bucket:        os.Getenv("notificationBucket"),
 		Environment:   "prod",
-		Logger:        logger.NullLogger{},
+		MongoUtils:    &mongo,
+		Logger:        log,
 	}
 }
 
