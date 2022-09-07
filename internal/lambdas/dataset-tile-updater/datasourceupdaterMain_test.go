@@ -29,8 +29,10 @@ import (
 	"github.com/pixlise/core/core/logger"
 )
 
+const datasetBucket = "dev-pixlise-data"
+const configBucket = "dev-pixlise-config"
+
 func Example_updateDatasetsBucketFail() {
-	const jobBucket = "dev-pixlise-data"
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 	l := logger.NullLogger{}
@@ -38,13 +40,13 @@ func Example_updateDatasetsBucketFail() {
 	// Listing returns an error
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(jobBucket), Prefix: aws.String("Datasets/"),
+			Bucket: aws.String(datasetBucket), Prefix: aws.String("Datasets/"),
 		},
 	}
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{nil}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	fmt.Println(updateDatasets(fs, jobBucket, l))
+	fmt.Println(updateDatasets(fs, datasetBucket, configBucket, l))
 
 	// Output:
 	// Returning error from ListObjectsV2
@@ -52,7 +54,6 @@ func Example_updateDatasetsBucketFail() {
 }
 
 func Example_updateDatasetsErrorGettingFiles() {
-	const jobBucket = "dev-pixlise-data"
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 	l := logger.NullLogger{}
@@ -61,7 +62,7 @@ func Example_updateDatasetsErrorGettingFiles() {
 	// but the func should still upload a blank datasets.json
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(jobBucket), Prefix: aws.String("Datasets/"),
+			Bucket: aws.String(datasetBucket), Prefix: aws.String("Datasets/"),
 		},
 	}
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
@@ -81,13 +82,18 @@ func Example_updateDatasetsErrorGettingFiles() {
 
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-123/summary.json"),
+			Bucket: aws.String(configBucket), Key: aws.String("PixliseConfig/bad-dataset-ids.json"),
 		},
 		{
-			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-456/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-123/summary.json"),
+		},
+		{
+			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-456/summary.json"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+		nil, // Pretend no bad dataset ids file, this shouldn't affect outcome
+		// This is what we're testing
 		nil,
 		{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte("bad json"))),
@@ -96,7 +102,7 @@ func Example_updateDatasetsErrorGettingFiles() {
 
 	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
 		{
-			Bucket: aws.String(jobBucket), Key: aws.String("PixliseConfig/datasets.json"), Body: bytes.NewReader([]byte(`{
+			Bucket: aws.String(configBucket), Key: aws.String("PixliseConfig/datasets.json"), Body: bytes.NewReader([]byte(`{
  "datasets": []
 }`)),
 		},
@@ -106,14 +112,13 @@ func Example_updateDatasetsErrorGettingFiles() {
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	fmt.Println(updateDatasets(fs, jobBucket, l))
+	fmt.Println(updateDatasets(fs, datasetBucket, configBucket, l))
 
 	// Output:
 	// <nil>
 }
 
 func Example_updateDatasetsTwoSummaryCombineNilJson() {
-	const jobBucket = "dev-pixlise-data"
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 	l := logger.NullLogger{}
@@ -122,7 +127,7 @@ func Example_updateDatasetsTwoSummaryCombineNilJson() {
 	//two jsons into datasets.json
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(jobBucket), Prefix: aws.String("Datasets/"),
+			Bucket: aws.String(datasetBucket), Prefix: aws.String("Datasets/"),
 		},
 	}
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
@@ -142,16 +147,20 @@ func Example_updateDatasetsTwoSummaryCombineNilJson() {
 
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-123/summary.json"),
+			Bucket: aws.String(configBucket), Key: aws.String("PixliseConfig/bad-dataset-ids.json"),
 		},
 		{
-			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-456/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-123/summary.json"),
 		},
 		{
-			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-789/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-456/summary.json"),
+		},
+		{
+			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-789/summary.json"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+		nil, // Pretend no bad dataset ids file, this shouldn't affect outcome
 		nil,
 		// NOTE: Missing creation time, eg existing old datasets
 		{
@@ -208,7 +217,7 @@ func Example_updateDatasetsTwoSummaryCombineNilJson() {
 
 	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
 		{
-			Bucket: aws.String(jobBucket), Key: aws.String("PixliseConfig/datasets.json"), Body: bytes.NewReader([]byte(`{
+			Bucket: aws.String(configBucket), Key: aws.String("PixliseConfig/datasets.json"), Body: bytes.NewReader([]byte(`{
  "datasets": [
   {
    "dataset_id": "test-fm-5x11",
@@ -269,14 +278,13 @@ func Example_updateDatasetsTwoSummaryCombineNilJson() {
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	fmt.Println(updateDatasets(fs, jobBucket, l))
+	fmt.Println(updateDatasets(fs, datasetBucket, configBucket, l))
 
 	// Output:
 	// <nil>
 }
 
 func Example_updateDatasetsTwoSummaryCombineBadJson() {
-	const jobBucket = "dev-pixlise-data"
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 	l := logger.NullLogger{}
@@ -285,7 +293,7 @@ func Example_updateDatasetsTwoSummaryCombineBadJson() {
 	// requests 2nd and 3rd item and properly combines the two jsons into datasets.json
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(jobBucket), Prefix: aws.String("Datasets/"),
+			Bucket: aws.String(datasetBucket), Prefix: aws.String("Datasets/"),
 		},
 	}
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
@@ -305,16 +313,20 @@ func Example_updateDatasetsTwoSummaryCombineBadJson() {
 
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-123/summary.json"),
+			Bucket: aws.String(configBucket), Key: aws.String("PixliseConfig/bad-dataset-ids.json"),
 		},
 		{
-			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-456/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-123/summary.json"),
 		},
 		{
-			Bucket: aws.String(jobBucket), Key: aws.String("Datasets/abc-789/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-456/summary.json"),
+		},
+		{
+			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-789/summary.json"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+		nil, // Pretend no bad dataset ids file, this shouldn't affect outcome
 		{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte("bad json"))),
 		},
@@ -373,7 +385,7 @@ func Example_updateDatasetsTwoSummaryCombineBadJson() {
 
 	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
 		{
-			Bucket: aws.String(jobBucket), Key: aws.String("PixliseConfig/datasets.json"), Body: bytes.NewReader([]byte(`{
+			Bucket: aws.String(configBucket), Key: aws.String("PixliseConfig/datasets.json"), Body: bytes.NewReader([]byte(`{
  "datasets": [
   {
    "dataset_id": "test-fm-5x11",
@@ -434,7 +446,152 @@ func Example_updateDatasetsTwoSummaryCombineBadJson() {
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	fmt.Println(updateDatasets(fs, jobBucket, l))
+	fmt.Println(updateDatasets(fs, datasetBucket, configBucket, l))
+
+	// Output:
+	// <nil>
+}
+
+func Example_updateDatasetsTwoSummaryCombineBadJsonWithBadIDMarked() {
+	var mockS3 awsutil.MockS3Client
+	defer mockS3.FinishTest()
+	l := logger.NullLogger{}
+
+	// Listing returns 1 item that is invalid json, does not parse it, returnrs error, and moves on
+	// requests 2nd and 3rd item and properly combines the two jsons into datasets.json
+	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
+		{
+			Bucket: aws.String(datasetBucket), Prefix: aws.String("Datasets/"),
+		},
+	}
+	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
+		{
+			IsTruncated: aws.Bool(false),
+			Contents: []*s3.Object{
+				{Key: aws.String("Datasets/abc-123/summary.json")},
+				{Key: aws.String("Datasets/abc-123/node1.json")},
+				{Key: aws.String("Datasets/abc-123/params.json")},
+				{Key: aws.String("Datasets/abc-456/summary.json")},
+				{Key: aws.String("Datasets/abc-789/summary.json")},
+				{Key: aws.String("Datasets/abc-456/params.json")},
+				{Key: aws.String("Datasets/abc-456/output/combined.csv")},
+			},
+		},
+	}
+
+	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+		{
+			Bucket: aws.String(configBucket), Key: aws.String("PixliseConfig/bad-dataset-ids.json"),
+		},
+		{
+			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-123/summary.json"),
+		},
+		{
+			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-456/summary.json"),
+		},
+		{
+			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-789/summary.json"),
+		},
+	}
+	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte("[\"test-fm-5x11\",\"another-id\"]"))),
+		},
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte("bad json"))),
+		},
+		// NOTE: Missing creation time, eg existing old datasets
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+				"dataset_id": "test-fm-5x11",
+				"title": "5x5 title",
+				"site": "5x5 site",
+				"target": "5x5 target",
+				"group": "groupie",
+				"drive_id": 0,
+				"site_id": 0,
+				"target_id": "?",
+				"sol": "230",
+				"rtt": 0,
+				"sclk": 0,
+				"context_image": "MCC-6.jpg",
+				"location_count": 4035,
+				"data_file_size": 23212328,
+				"context_images": 2,
+				"tiff_context_images": 0,
+				"normal_spectra": 8064,
+				"dwell_spectra": 0,
+				"bulk_spectra": 2,
+				"max_spectra": 2,
+				"pseudo_intensities": 0,
+				"detector_config": "PIXL"
+			   }`))),
+		},
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+				"dataset_id": "test-fm-5x5-full",
+				"group": "groupie",
+				"drive_id": 0,
+				"site_id": 0,
+				"target_id": "?",
+				"sol": "231",
+				"rtt": 0,
+				"sclk": 0,
+				"context_image": "MCC-4042.jpg",
+				"location_count": 1769,
+				"data_file_size": 11202865,
+				"context_images": 10,
+				"tiff_context_images": 0,
+				"normal_spectra": 3528,
+				"dwell_spectra": 2,
+				"bulk_spectra": 2,
+				"max_spectra": 2,
+				"pseudo_intensities": 0,
+				"detector_config": "PIXL",
+				"create_unixtime_sec": 1234567890
+			   }`))),
+		},
+	}
+
+	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
+		{
+			Bucket: aws.String(configBucket), Key: aws.String("PixliseConfig/datasets.json"), Body: bytes.NewReader([]byte(`{
+ "datasets": [
+  {
+   "dataset_id": "test-fm-5x5-full",
+   "group": "groupie",
+   "drive_id": 0,
+   "site_id": 0,
+   "target_id": "?",
+   "site": "",
+   "target": "",
+   "title": "",
+   "sol": "231",
+   "rtt": 0,
+   "sclk": 0,
+   "context_image": "MCC-4042.jpg",
+   "location_count": 1769,
+   "data_file_size": 11202865,
+   "context_images": 10,
+   "tiff_context_images": 0,
+   "normal_spectra": 3528,
+   "dwell_spectra": 2,
+   "bulk_spectra": 2,
+   "max_spectra": 2,
+   "pseudo_intensities": 0,
+   "detector_config": "PIXL",
+   "create_unixtime_sec": 1234567890
+  }
+ ]
+}`)),
+		},
+	}
+	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
+		{},
+	}
+
+	fs := fileaccess.MakeS3Access(&mockS3)
+	fmt.Println(updateDatasets(fs, datasetBucket, configBucket, l))
 
 	// Output:
 	// <nil>
