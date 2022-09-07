@@ -1,6 +1,6 @@
 module github.com/pixlise/core
 
-go 1.17
+go 1.18
 
 require (
 	github.com/auth0-community/go-auth0 v1.0.0
