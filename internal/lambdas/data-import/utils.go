@@ -19,6 +19,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	cmap "github.com/orcaman/concurrent-map"
 	ccopy "github.com/otiai10/copy"
 	"github.com/pixlise/core/core/awsutil"
@@ -156,8 +157,9 @@ func createPeakDiffractionDB(path string, savepath string, jobLog logger.ILogger
 
 // checkExisting - Check existing files in S3
 func checkExisting(bucket string, prefix string, fs fileaccess.FileAccess, jobLog logger.ILogger) ([]string, error) {
-	jobLog.Infof("----- Checking for other files -----\n")
-	files, err := fs.ListObjects(bucket, "archive/"+prefix)
+	path := fmt.Sprintf("Datasets/archive/%v", prefix)
+	jobLog.Infof(fmt.Sprintf("----- Checking for other files in %v, %v -----\n", bucket, path))
+	files, err := fs.ListObjects(bucket, path)
 	if err != nil {
 		return nil, err
 	}
@@ -221,14 +223,32 @@ func checkLocalExisting(prefix string, path string) ([]string, error) {
 }
 
 // makeNotificationStack - Create a notification stack
-func makeNotificationStack(fs fileaccess.FileAccess) apiNotifications.NotificationManager {
-	return &apiNotifications.NotificationStack{
-		Notifications: []apiNotifications.UINotificationObj{},
-		FS:            fs,
-		Track:         cmap.New(), //make(map[string]bool),
-		Bucket:        os.Getenv("notificationBucket"),
-		Environment:   "prod",
-		Logger:        logger.NullLogger{},
+func makeNotificationStack(fs fileaccess.FileAccess, log logger.ILogger) apiNotifications.NotificationManager {
+	if os.Getenv("MongoSecret") != "" {
+		seccache, err := secretcache.New()
+
+		mongo := apiNotifications.MongoUtils{
+			SecretsCache:     seccache,
+			ConnectionSecret: os.Getenv("MongoSecret"),
+			MongoUsername:    os.Getenv("MongoUsername"),
+			MongoEndpoint:    os.Getenv("MongoEndpoint"),
+			Log:              log,
+		}
+		err = mongo.Connect()
+		if err != nil {
+			fmt.Printf("Couldn't connect to mongodb: %v", err)
+		}
+		return &apiNotifications.NotificationStack{
+			Notifications: []apiNotifications.UINotificationObj{},
+			FS:            fs,
+			Track:         cmap.New(), //make(map[string]bool),
+			Bucket:        os.Getenv("notificationBucket"),
+			Environment:   "prod",
+			MongoUtils:    &mongo,
+			Logger:        log,
+		}
+	} else {
+		return nil
 	}
 }
 
@@ -277,13 +297,14 @@ func downloadExtraFiles(rtt string, fs fileaccess.FileAccess) error {
 			splits = splits[:len(splits)-1]
 			splits = splits[2:]
 			newpath := strings.Join(splits, "/")
-			newpath = localUnzipPath + "/" + newpath
+			newpath = localUnzipPath + newpath
 			os.MkdirAll(newpath, 0755)
 			writepath := newpath + "/" + filename
 			fmt.Printf("Writing to path: %v\n", writepath)
 			err = ioutil.WriteFile(writepath, bytes, 0644)
 			if err != nil {
 				fmt.Printf("Couldn't write custom meta")
+				return err
 			}
 		}
 	}
@@ -299,8 +320,10 @@ func fetchRanges(s3bucket string, s3path string, fs fileaccess.FileAccess) error
 
 	f, err := os.Create(localRangesCSVPath)
 	if err != nil {
+		fmt.Printf("Couldn't write local ranges")
 		return err
 	}
+
 	defer f.Close()
 
 	_, err = f.Write(bytes)
