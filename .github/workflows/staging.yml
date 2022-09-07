@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -36,6 +38,10 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
     - uses: actions/checkout@v3
       with:
@@ -72,6 +78,18 @@ jobs:
       run: echo "BUILDING VERSION ${{ steps.version.outputs.version }}-${GITHUB_REF##*/}"
     - name: Build package
       run: BUILD_VERSION="${{ steps.version.outputs.version }}-${GITHUB_REF##*/}" make build-linux
+    - name: Copy to S3 Archive
+      run: |
+        cd _out && \
+        zip jobupdater-linux-${{ steps.version.outputs.version }}.zip jobupdater-linux && \
+        rm jobupdater-linux && \
+        zip datasourceupdater-linux-${{ steps.version.outputs.version }}.zip datasourceupdater-linux && \
+        rm datasourceupdater-linux && \
+        zip integrationtest-linux-${{ steps.version.outputs.version }}.zip integrationtest-linux && \
+        rm integrationtest-linux && \
+        zip dataimport-linux-${{ steps.version.outputs.version }}.zip dataimport-linux && \
+        rm dataimport-linux && \
+        aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
     needs: test
 
   docker:
@@ -175,15 +193,3 @@ jobs:
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
         run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
-
-  infratrigger:
-    needs: docker
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Job
-        run: |
-          curl -X POST \
-               --fail \
-               -F token=${{ secrets.GITLABTOKEN }} \
-               -F ref=main \
-               https://gitlab.com/api/v4/projects/18114496/trigger/pipeline

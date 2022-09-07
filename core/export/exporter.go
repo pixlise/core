@@ -44,6 +44,7 @@ import (
 	"github.com/pixlise/core/core/roiModel"
 	"github.com/pixlise/core/core/utils"
 	protos "github.com/pixlise/core/generated-protos"
+	"google.golang.org/protobuf/proto"
 )
 
 // The actual exporter, implemented by our package. This is so we can be used as part of an interface by caller
@@ -63,6 +64,7 @@ const FileIdBeamLocations = "beam-locations"
 const FileIdROIs = "rois"
 const FileIdContextImage = "context-image"
 const FileIdUnquantifiedWeightPct = "unquantified-weight"
+const FileIdDiffractionPeak = "diffraction-peak"
 
 // The above IDs specify what to download, and they get downloaded in parallel into this structure by downloadInputs()
 type inputFiles struct {
@@ -72,6 +74,7 @@ type inputFiles struct {
 	userROIs      roiModel.ROILookup
 	sharedROIs    roiModel.ROILookup
 	quantCSVFile  []byte
+	diffraction   *protos.Diffraction
 }
 
 // MakeExportFilesZip - makes a zip file containing all requested export data
@@ -95,6 +98,7 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 	wantContextImage := false
 	wantBeamLocations := false
 	wantROIs := false
+	wantDiffractionPeak := false
 
 	for _, id := range fileIDs {
 		if id == FileIdQuantMapCSV {
@@ -111,6 +115,8 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 			wantROIs = true
 		} else if id == FileIdContextImage {
 			wantContextImage = true
+		} else if id == FileIdDiffractionPeak {
+			wantDiffractionPeak = true
 		}
 	}
 
@@ -131,7 +137,7 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 	}
 
 	// We download ROI files if we're looking at spectra too, because we want to export spectra files for each ROI
-	files, err := downloadInputs(svcs, userID, datasetID, quantBINPath, quantCSVPath, wantContextImage, wantROIs || wantSpectra || wantQuantCSV, outDir)
+	files, err := downloadInputs(svcs, userID, datasetID, quantBINPath, quantCSVPath, wantDiffractionPeak, wantContextImage, wantROIs || wantSpectra || wantQuantCSV, outDir)
 
 	if err != nil {
 		return nil, err
@@ -235,6 +241,44 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 			return nil, err
 		}
 	}
+	if wantDiffractionPeak {
+		fmt.Println(files.diffraction.Title)
+		fmt.Printf("%v Locations with Peaks found\n", len(files.diffraction.Locations))
+		csv, err := os.Create(path.Join(outDir, fileNamePrefix+"-diffraction-peaks.csv"))
+		if err != nil {
+			return nil, err
+		}
+
+		defer csv.Close()
+		
+		locations := files.diffraction.Locations
+		sort.Slice(locations, func(i, j int) bool {
+			firstLocID, err := strconv.Atoi(locations[i].Id)
+			if err != nil {
+				firstLocID = 0
+			}
+			secondLocID, err := strconv.Atoi(locations[j].Id)
+			if err != nil {
+				secondLocID = 0
+			}
+			return firstLocID < secondLocID
+		})
+
+		_, err = csv.WriteString("PMC, Peak Channel, Peak Height, Effect Size, Baseline Variation, Difference Sigma, Global Difference\n")
+		if err != nil {
+			return nil, err
+		}
+
+		for _, loc := range locations {
+			for _, p := range loc.Peaks {
+				line := fmt.Sprintf("%s, %v, %v, %v, %v, %v, %v\n", loc.Id, p.PeakChannel, p.PeakHeight, p.EffectSize, p.BaselineVariation, p.DifferenceSigma, p.GlobalDifference)
+				_, err = csv.WriteString(line)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
 
 	if wantQuantCSV {
 		// Save the whole original CSV
@@ -298,6 +342,7 @@ func downloadInputs(
 	datasetID string,
 	quantBINPath string, // if blank, not loaded
 	quantCSVPath string, // if blank, not loaded
+	loadDiffractionPeak bool,
 	loadContextImage bool, // if false, not loaded
 	loadROIs bool, // if false, not loaded
 	outputDir string, // only quant CSV is written directly. This is here in case other files are needed in future too
@@ -356,6 +401,27 @@ func downloadInputs(
 				svcs.Log.Errorf("Failed to download map CSV for zipping. Path was: %v", quantCSVPath)
 			} else {
 				svcs.Log.Debugf("  Quantification CSV finished")
+			}
+		}()
+	}
+	if loadDiffractionPeak {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			diffraction := &protos.Diffraction{}
+
+			s3Path := filepaths.GetDatasetFilePath(datasetID, filepaths.DiffractionDBFileName)
+			diffractionData, err := svcs.FS.ReadObject(svcs.Config.DatasetsBucket, s3Path)
+			if err != nil {
+				errors = append(errors, err)
+			}
+
+			err = proto.Unmarshal(diffractionData, diffraction)
+			if err != nil {
+				errors = append(errors, err)
+			} else {
+				result.diffraction = diffraction
 			}
 		}()
 	}
@@ -461,29 +527,29 @@ func loadContextImages(svcs *services.APIServices, datasetID string, result inpu
 }
 
 /*
-func makeReadme(svcs *services.APIServices, s3Path string, outPath string) error {
-	var summary quantModel.JobSummaryItem
-	err := svcs.FS.ReadJSON(svcs.Config.UsersBucket, s3Path, &summary, false)
-	if err != nil {
+	func makeReadme(svcs *services.APIServices, s3Path string, outPath string) error {
+		var summary quantModel.JobSummaryItem
+		err := svcs.FS.ReadJSON(svcs.Config.UsersBucket, s3Path, &summary, false)
+		if err != nil {
+			return err
+		}
+
+		// Save the readme
+		readme, err := os.Create(outPath)
+		if err != nil {
+			return err
+		}
+		defer readme.Close()
+
+		readme.WriteString("=============================\n")
+		readme.WriteString("= Quantification Map Export =\n")
+		readme.WriteString("=============================\n\n")
+		readme.WriteString(fmt.Sprintf("Name: %v\nQuantification ID: %v\nElements: %v\nDataset ID: %v\n", summary.Params.Name, summary.JobID, strings.Join(summary.Params.Elements, ","), summary.Params.DatasetID))
+		readme.WriteString(fmt.Sprintf("Processing time: %v sec on %v cores\n", summary.EndUnixTime-summary.Params.StartUnixTime, summary.Params.CoresPerNode*int32(len(summary.PiquantLogList)/2)))
+		_, err = readme.WriteString(fmt.Sprintf("Creator: %v\nPiquant detector config: %v\nPiquant custom params: \"%v\"\n", summary.Params.Creator.Name, summary.Params.DetectorConfig, summary.Params.Parameters))
+
 		return err
 	}
-
-	// Save the readme
-	readme, err := os.Create(outPath)
-	if err != nil {
-		return err
-	}
-	defer readme.Close()
-
-	readme.WriteString("=============================\n")
-	readme.WriteString("= Quantification Map Export =\n")
-	readme.WriteString("=============================\n\n")
-	readme.WriteString(fmt.Sprintf("Name: %v\nQuantification ID: %v\nElements: %v\nDataset ID: %v\n", summary.Params.Name, summary.JobID, strings.Join(summary.Params.Elements, ","), summary.Params.DatasetID))
-	readme.WriteString(fmt.Sprintf("Processing time: %v sec on %v cores\n", summary.EndUnixTime-summary.Params.StartUnixTime, summary.Params.CoresPerNode*int32(len(summary.PiquantLogList)/2)))
-	_, err = readme.WriteString(fmt.Sprintf("Creator: %v\nPiquant detector config: %v\nPiquant custom params: \"%v\"\n", summary.Params.Creator.Name, summary.Params.DetectorConfig, summary.Params.Parameters))
-
-	return err
-}
 */
 func expandRect(r image.Rectangle, x, y int) image.Rectangle {
 	if x > r.Max.X {

@@ -12,11 +12,11 @@
 
 ## What is it?
 
-Pixlise Core is the API and data management processes for the Pixlise platform. 
+PIXLISE Core is the API and data management processes for the PIXLISE platform. 
 
 ## Building
 
-The core package is written in Golang and contains a number of components required for deplyoment of the Pixlise platform. The simplest way to build the code is to run
+The core package is written in Golang and contains a number of components required for deplyoment of the PIXLISE platform. The simplest way to build the code is to run
 
 ``` shell
 make build
@@ -25,9 +25,9 @@ make build
 within the project root directory. This will build a number of binary files that are then located in the `_out` directory. The main API is called `pixlise-api-xxx` where xxx is the target architecture. 
 By default we build for Mac, Linux and Windows.
 
-## Running
+## Run-time Configuration
 
-Executing the API requires an environment variable to be set, this variable is named CUSTOM_CONFIG and is an encoded JSON string:
+Executing the API requires several environment variables to be set. These include ones related to AWS (see below), but we also supply a JSON configuration string in a single environment variable called CUSTOM_CONFIG. This specifies buckets and other configuration parameters to allow the API to execute containers and log errors, etc.
 
 Full Example:
 
@@ -45,11 +45,12 @@ Then execute the binary file and your API should come to life.
 
 `TODO`
 
-### Required Env Vars
+### Required Environment Variables
 
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-AWS_REGION=us-west-1
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+- AWS_REGION=us-west-1
+- CUSTOM_CONFIG
 
 ## Developing in Gitpod
 
@@ -59,6 +60,7 @@ If you're wondering what the Gitpod button above is and would like to get a deve
 
 - Download the source.
 - Configure your .vscode/launch.json file to supply the following to start debugger:
+```
     "env": {
         "AWS_ACCESS_KEY_ID":"<<< LOOK THIS UP! >>>",
         "AWS_SECRET_ACCESS_KEY":"<<< LOOK THIS UP! >>>",
@@ -66,38 +68,19 @@ If you're wondering what the Gitpod button above is and would like to get a deve
         "AWS_S3_US_EAST_1_REGIONAL_ENDPOINT":"regional",
     },
     "args": ["-quantExecutor", "docker"]
-- Open any file in the main package (cmd/run-api/*.go)
+```
+- Open any file in the main package (`internal/pixlise-api/*.go`)
 - Hit F5 to start debugging
 
-## Building
- 
-Because this repository uses other go-modules defined in our private gitlab pixlise repository, when doing anything with the go command that results in getting dependencies, we need to specify the environment variable:
-`GOPRIVATE=github.com/pixlise`
+You may encounter errors related to having an old Go version. At time of writing PIXLISE Core requires Go version 1.18. VS Code may also want to install some plugins for Go development.
 
-Not only this, but for go to have access to the repository, it needs to be configured in a ~/.netrc file, with the following syntax:
-```
-machine github.com
-login USERNAME
-password PASSWORD
-```
-
-Once the above are set, building with ./build.sh or make (if you have the required go tools installed) should work.
-
-The above is solved in Gitlab CI using the following 2 lines (see `.gitlab-ci.yml`)
-```
-  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@github.com/".insteadOf https://github.com/
-  - go env -w GOPRIVATE=github.com/${CI_PROJECT_NAMESPACE}
-```
-
-### Required Env Vars
-
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-AWS_REGION=us-west-1
+The API takes a few seconds to start up. Watch the Debug Console in VS Code! You will see:
+- A dump of the configuration the API started with
+- Mongo DB connection status
+- A listing of all API endpoints and what permission they require
+- `"INFO: API Started..."` signifying the API is ready to accept requests
 
 ### Example CLI flags
 
-`-configLocation s3://pixlise-config/api/dev.json -kubernetesLocation external -quantExecutor kubernetes`
-or
-`-quantExecutor docker`
+`-quantExecutor docker` - this tells the API to use local docker as the quant executor, meaning PIQUANT jobs will start on your local development machine.
 

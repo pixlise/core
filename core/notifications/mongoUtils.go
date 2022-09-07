@@ -7,16 +7,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/url"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	"github.com/pixlise/core/core/logger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"io/ioutil"
-	"net/url"
-	"strings"
-	"time"
 )
 
 type MongoUtils struct {
@@ -51,6 +52,11 @@ func getCustomTLSConfig(caFile string) (*tls.Config, error) {
 }
 
 func (m *MongoUtils) Connect() error {
+	if m.MongoEndpoint == "" {
+		m.Log.Infof("Mongo DB endpoint not configured, all calls will be ignored...")
+		return nil
+	}
+
 	cmdMonitor := &event.CommandMonitor{
 		Started: func(_ context.Context, evt *event.CommandStartedEvent) {
 			m.Log.Infof("%v", evt.Command)
@@ -289,6 +295,10 @@ func (m *MongoUtils) GetMongoSubscribersByTopic(searchtopic string, logger logge
 }
 
 func (m *MongoUtils) InsertUINotification(newNotification UINotificationObj) error {
+	if m.MongoEndpoint == "" {
+		return errors.New("Mongo not connected")
+	}
+
 	m.Log.Infof("Inserting UI Notification Mongo Object for user: %v", newNotification.UserID)
 
 	_, err := m.notificationCollection.InsertOne(context.TODO(), newNotification)
@@ -336,16 +346,23 @@ func (m *MongoUtils) DeleteUINotifications(user string) error {
 }
 
 func (m *MongoUtils) CreateMongoUserObject(user UserStruct) error {
+	if m.MongoEndpoint == "" {
+		return errors.New("Mongo not connected")
+	}
+
 	m.Log.Infof("Creating Mongo Object for user: %v", user.Userid)
 
 	_, err := m.userCollection.InsertOne(context.TODO(), user)
 	m.Log.Infof("Created Mongo Object for user: %v", user.Userid)
 
 	return err
-
 }
 
 func (m *MongoUtils) FetchMongoUserObject(userid string, exist bool, name string, email string) (UserStruct, error) {
+	if m.MongoEndpoint == "" {
+		return UserStruct{}, errors.New("Mongo not connected")
+	}
+
 	m.Log.Infof("Fetching Mongo Object for user: %v", userid)
 	filter := bson.D{{"userid", userid}}
 	sort := bson.D{{"timestamp", -1}}
@@ -365,6 +382,10 @@ func (m *MongoUtils) FetchMongoUserObject(userid string, exist bool, name string
 }
 
 func (m *MongoUtils) UpdateMongoUserConfig(userid string, data UserStruct) error {
+	if m.MongoEndpoint == "" {
+		return errors.New("Mongo not connected")
+	}
+
 	m.Log.Infof("Updating Mongo Object for user: %v", userid)
 
 	filter := bson.D{{"userid", userid}}

@@ -85,18 +85,20 @@ func Example_viewStateHandler_List() {
 				{Key: aws.String(viewStateS3Path + "quantification.json")},
 				{Key: aws.String(viewStateS3Path + "selection.json")},
 				{Key: aws.String(viewStateS3Path + "roi.json")},
+				{Key: aws.String(viewStateS3Path + "analysisLayout.json")},
 				{Key: aws.String(viewStateS3Path + "histogram-1.json")},
 				{Key: aws.String(viewStateS3Path + "chord-0.json")},
 				{Key: aws.String(viewStateS3Path + "chord-1.json")},
-				{Key: aws.String(viewStateS3Path + "table-xyz.json")},
-				{Key: aws.String(viewStateS3Path + "binary-1.json")},
-				{Key: aws.String(viewStateS3Path + "ternary-bottom-row-1.json")},
+				{Key: aws.String(viewStateS3Path + "table-undercontext.json")},
+				{Key: aws.String(viewStateS3Path + "table-underspectrum0.json")},
+				{Key: aws.String(viewStateS3Path + "binary-underspectrum0.json")},
+				{Key: aws.String(viewStateS3Path + "ternary-underspectrum2.json")},
 				{Key: aws.String(viewStateS3Path + "variogram-abc123.json")},
 				{Key: aws.String(viewStateS3Path + "rgbuImages-33.json")},
-				{Key: aws.String(viewStateS3Path + "rgbuPlot-44.json")},
+				{Key: aws.String(viewStateS3Path + "rgbuPlot-underspectrum1.json")},
 				{Key: aws.String(viewStateS3Path + "parallelogram-55.json")},
 				{Key: aws.String(viewStateS3Path + "roiQuantTable-ttt.json")},
-				{Key: aws.String(viewStateS3Path + "spectrum-0.json")}, // the "new style" version that comes with a position id
+				{Key: aws.String(viewStateS3Path + "spectrum-top1.json")}, // the "new style" version that comes with a position id
 			},
 		},
 	}
@@ -126,6 +128,9 @@ func Example_viewStateHandler_List() {
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "roi.json"),
 		},
 		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "analysisLayout.json"),
+		},
+		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "histogram-1.json"),
 		},
 		{
@@ -135,13 +140,16 @@ func Example_viewStateHandler_List() {
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "chord-1.json"),
 		},
 		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "table-xyz.json"),
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "table-undercontext.json"),
 		},
 		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "binary-1.json"),
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "table-underspectrum0.json"),
 		},
 		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "ternary-bottom-row-1.json"),
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "binary-underspectrum0.json"),
+		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "ternary-underspectrum2.json"),
 		},
 		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "variogram-abc123.json"),
@@ -150,7 +158,7 @@ func Example_viewStateHandler_List() {
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "rgbuImages-33.json"),
 		},
 		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "rgbuPlot-44.json"),
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "rgbuPlot-underspectrum1.json"),
 		},
 		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "parallelogram-55.json"),
@@ -159,7 +167,7 @@ func Example_viewStateHandler_List() {
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "roiQuantTable-ttt.json"),
 		},
 		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "spectrum-0.json"),
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "spectrum-top1.json"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -228,10 +236,27 @@ func Example_viewStateHandler_List() {
 	}
 }`))),
 		},
+		{ // analysisLayout
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+	"topWidgetSelectors": [
+		"context-image",
+		"spectrum-widget"
+	],
+	"bottomWidgetSelectors": [
+		"table-widget",
+		"binary-plot-widget",
+		"rgbu-plot-widget",
+		"ternary-plot-widget"
+	]
+}`))),
+		},
 		nil, // quant histogram
 		nil, // chord-0
 		nil, // chord-1
 		{ // table
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"showPureElements": true}`))),
+		},
+		{ // table 2
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"showPureElements": true}`))),
 		},
 		{ // binary
@@ -298,8 +323,16 @@ func Example_viewStateHandler_List() {
 	// 200
 	// {
 	//     "analysisLayout": {
-	//         "topWidgetSelectors": [],
-	//         "bottomWidgetSelectors": []
+	//         "topWidgetSelectors": [
+	//             "context-image",
+	//             "spectrum-widget"
+	//         ],
+	//         "bottomWidgetSelectors": [
+	//             "table-widget",
+	//             "binary-plot-widget",
+	//             "rgbu-plot-widget",
+	//             "ternary-plot-widget"
+	//         ]
 	//     },
 	//     "spectrum": {
 	//         "panX": 32,
@@ -333,44 +366,6 @@ func Example_viewStateHandler_List() {
 	//         "analysis": {
 	//             "panX": 0,
 	//             "panY": 11,
-	//             "zoomX": 2,
-	//             "zoomY": 1,
-	//             "showPoints": true,
-	//             "showPointBBox": false,
-	//             "pointColourScheme": "BW",
-	//             "pointBBoxColourScheme": "PURPLE_CYAN",
-	//             "contextImage": "file1.jpg",
-	//             "contextImageSmoothing": "linear",
-	//             "mapLayers": [
-	//                 {
-	//                     "expressionID": "Fe",
-	//                     "opacity": 0.3,
-	//                     "visible": true,
-	//                     "displayValueRangeMin": 12,
-	//                     "displayValueRangeMax": 48.8,
-	//                     "displayValueShading": "SHADE_VIRIDIS"
-	//                 }
-	//             ],
-	//             "roiLayers": [
-	//                 {
-	//                     "roiID": "roi123",
-	//                     "opacity": 0.7,
-	//                     "visible": true
-	//                 }
-	//             ],
-	//             "elementRelativeShading": true,
-	//             "brightness": 1,
-	//             "rgbuChannels": "RGB",
-	//             "unselectedOpacity": 0.4,
-	//             "unselectedGrayscale": false,
-	//             "colourRatioMin": 0,
-	//             "colourRatioMax": 0,
-	//             "removeTopSpecularArtifacts": false,
-	//             "removeBottomSpecularArtifacts": false
-	//         },
-	//         "engineering": {
-	//             "panX": 0,
-	//             "panY": 12,
 	//             "zoomX": 2,
 	//             "zoomY": 1,
 	//             "showPoints": true,
@@ -445,72 +440,33 @@ func Example_viewStateHandler_List() {
 	//             "removeBottomSpecularArtifacts": false
 	//         }
 	//     },
-	//     "histograms": {
-	//         "1": {
-	//             "showStdDeviation": false,
-	//             "logScale": false,
-	//             "expressionIDs": [],
-	//             "visibleROIs": []
-	//         }
-	//     },
-	//     "chordDiagrams": {
-	//         "0": {
-	//             "showForSelection": false,
-	//             "expressionIDs": [],
-	//             "displayROI": "",
-	//             "threshold": 0,
-	//             "drawMode": "BOTH"
-	//         },
-	//         "1": {
-	//             "showForSelection": false,
-	//             "expressionIDs": [],
-	//             "displayROI": "",
-	//             "threshold": 0,
-	//             "drawMode": "BOTH"
-	//         }
-	//     },
+	//     "histograms": {},
+	//     "chordDiagrams": {},
 	//     "ternaryPlots": {
-	//         "bottom-row-1": {
+	//         "underspectrum2": {
 	//             "showMmol": false,
 	//             "expressionIDs": [],
 	//             "visibleROIs": []
 	//         }
 	//     },
 	//     "binaryPlots": {
-	//         "1": {
+	//         "underspectrum0": {
 	//             "showMmol": false,
 	//             "expressionIDs": [],
 	//             "visibleROIs": []
 	//         }
 	//     },
 	//     "tables": {
-	//         "xyz": {
+	//         "undercontext": {
 	//             "showPureElements": true,
 	//             "order": "atomic-number",
 	//             "visibleROIs": []
 	//         }
 	//     },
-	//     "roiQuantTables": {
-	//         "ttt": {
-	//             "roi": "the-roi",
-	//             "quantIDs": [
-	//                 "quant1",
-	//                 "quant2"
-	//             ]
-	//         }
-	//     },
-	//     "variograms": {
-	//         "abc123": {
-	//             "expressionIDs": [],
-	//             "visibleROIs": [],
-	//             "varioModel": "exponential",
-	//             "maxDistance": 0,
-	//             "binCount": 0,
-	//             "drawModeVector": false
-	//         }
-	//     },
+	//     "roiQuantTables": {},
+	//     "variograms": {},
 	//     "spectrums": {
-	//         "0": {
+	//         "top1": {
 	//             "panX": 30,
 	//             "panY": 0,
 	//             "zoomX": 1,
@@ -540,7 +496,7 @@ func Example_viewStateHandler_List() {
 	//         }
 	//     },
 	//     "rgbuPlots": {
-	//         "44": {
+	//         "underspectrum1": {
 	//             "minerals": [],
 	//             "yChannelA": "B",
 	//             "yChannelB": "",
@@ -550,20 +506,8 @@ func Example_viewStateHandler_List() {
 	//         }
 	//     },
 	//     "singleAxisRGBU": {},
-	//     "rgbuImages": {
-	//         "33": {
-	//             "logColour": false,
-	//             "brightness": 1.2
-	//         }
-	//     },
-	//     "parallelograms": {
-	//         "55": {
-	//             "colourChannels": [
-	//                 "R",
-	//                 "G"
-	//             ]
-	//         }
-	//     },
+	//     "rgbuImages": {},
+	//     "parallelograms": {},
 	//     "rois": {
 	//         "roiColours": {
 	//             "roi22": "rgba(128,0,255,0.5)",
@@ -608,7 +552,9 @@ func Example_viewStateHandler_List_WithReset() {
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
 		{
 			Contents: []*s3.Object{
-				{Key: aws.String(viewStateS3Path + "not-a-widget.json")}, // Not a recognised file name
+				{Key: aws.String(viewStateS3Path + "not-a-widget.json")},                    // Not a recognised file name
+				{Key: aws.String(viewStateS3Path + "Workspaces/workspace.json")},            // workspace file, should not be deleted
+				{Key: aws.String(viewStateS3Path + "WorkspaceCollections/collection.json")}, // collection file, should not be deleted
 				{Key: aws.String(viewStateS3Path + "spectrum.json")},
 			},
 		},
@@ -1685,4 +1631,562 @@ func Example_viewStateHandler_Delete() {
 
 	// Output:
 	// 405
+}
+
+// Saving an entire view state. This clears view state files in the S3 directory we're writing to, and writes new ones
+// based on the view state being passed in
+func Example_viewStateHandler_Put_all() {
+	var mockS3 awsutil.MockS3Client
+	defer mockS3.FinishTest()
+
+	// Expecting a listing of view state dir
+	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(viewStateS3Path),
+		},
+	}
+	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
+		{
+			Contents: []*s3.Object{
+				{Key: aws.String(viewStateS3Path + "not-a-widget.json")},                    // Not a recognised file name
+				{Key: aws.String(viewStateS3Path + "Workspaces/workspace.json")},            // workspace file, should not be deleted
+				{Key: aws.String(viewStateS3Path + "WorkspaceCollections/collection.json")}, // collection file, should not be deleted
+				{Key: aws.String(viewStateS3Path + "spectrum-top1.json")},
+			},
+		},
+	}
+
+	// Expecting to delete only view state files (not workspace/collection)
+	mockS3.ExpDeleteObjectInput = []s3.DeleteObjectInput{
+		// Test 4
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "not-a-widget.json"),
+		},
+		// Test 5
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "spectrum-top1.json"),
+		},
+	}
+	mockS3.QueuedDeleteObjectOutput = []*s3.DeleteObjectOutput{
+		{},
+		{},
+	}
+
+	// Expecting a PUT for layout, selection, quant, ROI and each widget
+	// NOTE: PUT expected JSON needs to have spaces not tabs
+	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "roi.json"), Body: bytes.NewReader([]byte(`{
+    "roiColours": {
+        "roi22": "rgba(128,0,255,0.5)",
+        "roi33": "rgba(255,255,0,1)"
+    }
+}`)),
+		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "quantification.json"), Body: bytes.NewReader([]byte(`{
+    "appliedQuantID": "9qntb8w2joq4elti"
+}`)),
+		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "selection.json"), Body: bytes.NewReader([]byte(`{
+    "roiID": "",
+    "roiName": "",
+    "locIdxs": [
+        345,
+        347,
+        348,
+        1273
+    ]
+}`)),
+		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "analysisLayout.json"), Body: bytes.NewReader([]byte(`{
+    "topWidgetSelectors": [
+        "context-image",
+        "spectrum-widget"
+    ],
+    "bottomWidgetSelectors": [
+        "table-widget",
+        "binary-plot-widget",
+        "rgbu-plot-widget",
+        "ternary-plot-widget"
+    ]
+}`)),
+		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "contextImage-analysis.json"), Body: bytes.NewReader([]byte(`{
+    "panX": -636.63446,
+    "panY": -674.23505,
+    "zoomX": 2.6251905,
+    "zoomY": 2.6251905,
+    "showPoints": true,
+    "showPointBBox": true,
+    "pointColourScheme": "PURPLE_CYAN",
+    "pointBBoxColourScheme": "PURPLE_CYAN",
+    "contextImage": "PCCR0257_0689789827_000MSA_N008000008906394300060LUD01.tif",
+    "contextImageSmoothing": "linear",
+    "mapLayers": [],
+    "roiLayers": [
+        {
+            "roiID": "AllPoints",
+            "opacity": 1,
+            "visible": false
+        },
+        {
+            "roiID": "SelectedPoints",
+            "opacity": 1,
+            "visible": false
+        }
+    ],
+    "elementRelativeShading": true,
+    "brightness": 1,
+    "rgbuChannels": "R/G",
+    "unselectedOpacity": 0.3,
+    "unselectedGrayscale": false,
+    "colourRatioMin": 0.5,
+    "colourRatioMax": 2.25,
+    "removeTopSpecularArtifacts": false,
+    "removeBottomSpecularArtifacts": false
+}`)),
+		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "contextImage-map.json"), Body: bytes.NewReader([]byte(`{
+    "panX": -116.896935,
+    "panY": -145.20177,
+    "zoomX": 1.0904286,
+    "zoomY": 1.0904286,
+    "showPoints": true,
+    "showPointBBox": true,
+    "pointColourScheme": "PURPLE_CYAN",
+    "pointBBoxColourScheme": "PURPLE_CYAN",
+    "contextImage": "",
+    "contextImageSmoothing": "linear",
+    "mapLayers": [],
+    "roiLayers": [
+        {
+            "roiID": "AllPoints",
+            "opacity": 1,
+            "visible": false
+        },
+        {
+            "roiID": "SelectedPoints",
+            "opacity": 1,
+            "visible": false
+        }
+    ],
+    "elementRelativeShading": true,
+    "brightness": 1,
+    "rgbuChannels": "RGB",
+    "unselectedOpacity": 0.4,
+    "unselectedGrayscale": false,
+    "colourRatioMin": 0,
+    "colourRatioMax": 0,
+    "removeTopSpecularArtifacts": false,
+    "removeBottomSpecularArtifacts": false
+}`)),
+		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "ternary-underspectrum2.json"), Body: bytes.NewReader([]byte(`{
+    "showMmol": false,
+    "expressionIDs": [
+        "vge9tz6fkbi2ha1p",
+        "shared-j1g1sx285s6yqjih",
+        "r4zd5s2tfgr8rahy"
+    ],
+    "visibleROIs": [
+        "AllPoints",
+        "SelectedPoints"
+    ]
+}`)),
+		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "rgbuPlot-underspectrum1.json"), Body: bytes.NewReader([]byte(`{
+    "minerals": [],
+    "yChannelA": "B",
+    "yChannelB": "U",
+    "xChannelA": "R",
+    "xChannelB": "B",
+    "drawMonochrome": false
+}`)),
+		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "spectrum-top1.json"), Body: bytes.NewReader([]byte(`{
+    "panX": -53.19157,
+    "panY": -37.737877,
+    "zoomX": 3.5776386,
+    "zoomY": 1.3382256,
+    "spectrumLines": [
+        {
+            "roiID": "AllPoints",
+            "lineExpressions": [
+                "bulk(A)",
+                "bulk(B)"
+            ]
+        },
+        {
+            "roiID": "SelectedPoints",
+            "lineExpressions": [
+                "bulk(A)",
+                "bulk(B)"
+            ]
+        }
+    ],
+    "logScale": true,
+    "xrflines": [],
+    "showXAsEnergy": true,
+    "energyCalibration": [
+        {
+            "detector": "A",
+            "eVStart": -20.759016,
+            "eVPerChannel": 7.8629937
+        },
+        {
+            "detector": "B",
+            "eVStart": -20.759016,
+            "eVPerChannel": 7.8629937
+        }
+    ]
+}`)),
+		},
+	}
+	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
+		{},
+		{},
+		{},
+		{},
+		{},
+		{},
+		{},
+		{},
+		{},
+	}
+
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	apiRouter := MakeRouter(svcs)
+
+	const wholeState = `{
+	"analysisLayout": {
+		"topWidgetSelectors": ["context-image", "spectrum-widget"],
+		"bottomWidgetSelectors": ["table-widget", "binary-plot-widget", "rgbu-plot-widget", "ternary-plot-widget"]
+	},
+	"contextImages": {
+		"analysis": {
+			"panX": -636.63446,
+			"panY": -674.23505,
+			"zoomX": 2.6251905,
+			"zoomY": 2.6251905,
+			"showPoints": true,
+			"showPointBBox": true,
+			"pointColourScheme": "PURPLE_CYAN",
+			"pointBBoxColourScheme": "PURPLE_CYAN",
+			"contextImage": "PCCR0257_0689789827_000MSA_N008000008906394300060LUD01.tif",
+			"contextImageSmoothing": "linear",
+			"mapLayers": [],
+			"roiLayers": [{
+				"roiID": "AllPoints",
+				"opacity": 1,
+				"visible": false
+			}, {
+				"roiID": "SelectedPoints",
+				"opacity": 1,
+				"visible": false
+			}],
+			"elementRelativeShading": true,
+			"brightness": 1,
+			"rgbuChannels": "R/G",
+			"unselectedOpacity": 0.3,
+			"unselectedGrayscale": false,
+			"colourRatioMin": 0.5,
+			"colourRatioMax": 2.25,
+			"removeTopSpecularArtifacts": false,
+			"removeBottomSpecularArtifacts": false
+		},
+		"map": {
+			"panX": -116.896935,
+			"panY": -145.20177,
+			"zoomX": 1.0904286,
+			"zoomY": 1.0904286,
+			"showPoints": true,
+			"showPointBBox": true,
+			"pointColourScheme": "PURPLE_CYAN",
+			"pointBBoxColourScheme": "PURPLE_CYAN",
+			"contextImage": "",
+			"contextImageSmoothing": "linear",
+			"mapLayers": [],
+			"roiLayers": [{
+				"roiID": "AllPoints",
+				"opacity": 1,
+				"visible": false
+			}, {
+				"roiID": "SelectedPoints",
+				"opacity": 1,
+				"visible": false
+			}],
+			"elementRelativeShading": true,
+			"brightness": 1,
+			"rgbuChannels": "RGB",
+			"unselectedOpacity": 0.4,
+			"unselectedGrayscale": false,
+			"colourRatioMin": 0,
+			"colourRatioMax": 0,
+			"removeTopSpecularArtifacts": false,
+			"removeBottomSpecularArtifacts": false
+		}
+	},
+	"histograms": {},
+	"chordDiagrams": {},
+	"ternaryPlots": {
+		"undercontext": {
+			"showMmol": false,
+			"expressionIDs": ["expr-elem-K2O-%(Combined)", "expr-elem-Na2O-%(Combined)", "expr-elem-MgO-%(Combined)"],
+			"visibleROIs": ["AllPoints", "9s5vkwjxl6539jbp", "tsiaam7uvs00yjom", "und4hnr30l61ha3u", "newa1c3apifnygtm", "y0o44g8n4z3ts40x", "SelectedPoints"]
+		},
+		"underspectrum1": {
+			"showMmol": false,
+			"expressionIDs": ["expr-elem-Na2O-%(Combined)", "shared-uds1s1t27qf97b03", "expr-elem-MgO-%(Combined)"],
+			"visibleROIs": ["AllPoints", "SelectedPoints"]
+		},
+		"underspectrum2": {
+			"showMmol": false,
+			"expressionIDs": ["vge9tz6fkbi2ha1p", "shared-j1g1sx285s6yqjih", "r4zd5s2tfgr8rahy"],
+			"visibleROIs": ["AllPoints", "SelectedPoints"]
+		}
+	},
+	"binaryPlots": {
+		"undercontext": {
+			"showMmol": false,
+			"expressionIDs": ["", ""],
+			"visibleROIs": ["AllPoints", "SelectedPoints"]
+		},
+		"underspectrum1": {
+			"showMmol": false,
+			"expressionIDs": ["expr-elem-SiO2-%(Combined)", "expr-elem-Al2O3-%(Combined)"],
+			"visibleROIs": ["AllPoints", "SelectedPoints"]
+		}
+	},
+	"tables": {
+		"underspectrum0": {
+			"showPureElements": false,
+			"order": "atomic-number",
+			"visibleROIs": ["AllPoints", "SelectedPoints", "jvi1p1awm77fsywc", "6mbhyd8nbyj4um4p", "1mk9xra5qejh3tvk"]
+		}
+	},
+	"roiQuantTables": {},
+	"variograms": {
+		"undercontext": {
+			"expressionIDs": ["expr-elem-K2O-%"],
+			"visibleROIs": ["AllPoints", "SelectedPoints"],
+			"varioModel": "exponential",
+			"maxDistance": 6.5188847,
+			"binCount": 1668,
+			"drawModeVector": false
+		}
+	},
+	"spectrums": {
+		"top0": {
+			"panX": -137.13159,
+			"panY": 0,
+			"zoomX": 1.6592865,
+			"zoomY": 1,
+			"spectrumLines": [{
+				"roiID": "AllPoints",
+				"lineExpressions": ["bulk(A)", "bulk(B)"]
+			}, {
+				"roiID": "SelectedPoints",
+				"lineExpressions": ["bulk(A)", "bulk(B)"]
+			}],
+			"logScale": true,
+			"xrflines": [],
+			"showXAsEnergy": true,
+			"energyCalibration": [{
+				"detector": "A",
+				"eVStart": -18.5,
+				"eVPerChannel": 7.862
+			}, {
+				"detector": "B",
+				"eVStart": -22.4,
+				"eVPerChannel": 7.881
+			}]
+		},
+		"top1": {
+			"panX": -53.19157,
+			"panY": -37.737877,
+			"zoomX": 3.5776386,
+			"zoomY": 1.3382256,
+			"spectrumLines": [{
+				"roiID": "AllPoints",
+				"lineExpressions": ["bulk(A)", "bulk(B)"]
+			}, {
+				"roiID": "SelectedPoints",
+				"lineExpressions": ["bulk(A)", "bulk(B)"]
+			}],
+			"logScale": true,
+			"xrflines": [],
+			"showXAsEnergy": true,
+			"energyCalibration": [{
+				"detector": "A",
+				"eVStart": -20.759016,
+				"eVPerChannel": 7.8629937
+			}, {
+				"detector": "B",
+				"eVStart": -20.759016,
+				"eVPerChannel": 7.8629937
+			}]
+		},
+		"undercontext": {
+			"panX": 0,
+			"panY": 0,
+			"zoomX": 1,
+			"zoomY": 1,
+			"spectrumLines": [{
+				"roiID": "AllPoints",
+				"lineExpressions": ["bulk(A)"]
+			}],
+			"logScale": true,
+			"xrflines": [],
+			"showXAsEnergy": true,
+			"energyCalibration": [{
+				"detector": "A",
+				"eVStart": -18.5,
+				"eVPerChannel": 7.862
+			}, {
+				"detector": "B",
+				"eVStart": -22.4,
+				"eVPerChannel": 7.881
+			}]
+		},
+		"underspectrum0": {
+			"panX": 0,
+			"panY": 0,
+			"zoomX": 1,
+			"zoomY": 1,
+			"spectrumLines": [{
+				"roiID": "AllPoints",
+				"lineExpressions": ["bulk(A)", "bulk(B)"]
+			}, {
+				"roiID": "SelectedPoints",
+				"lineExpressions": ["bulk(A)"]
+			}],
+			"logScale": true,
+			"xrflines": [],
+			"showXAsEnergy": true,
+			"energyCalibration": [{
+				"detector": "A",
+				"eVStart": -18.5,
+				"eVPerChannel": 7.862
+			}, {
+				"detector": "B",
+				"eVStart": -22.4,
+				"eVPerChannel": 7.881
+			}]
+		},
+		"underspectrum1": {
+			"panX": 0,
+			"panY": 0,
+			"zoomX": 1,
+			"zoomY": 1,
+			"spectrumLines": [{
+				"roiID": "AllPoints",
+				"lineExpressions": ["bulk(A)", "bulk(B)"]
+			}, {
+				"roiID": "SelectedPoints",
+				"lineExpressions": ["bulk(A)", "bulk(B)"]
+			}],
+			"logScale": true,
+			"xrflines": [],
+			"showXAsEnergy": true,
+			"energyCalibration": [{
+				"detector": "A",
+				"eVStart": -18.5,
+				"eVPerChannel": 7.862
+			}, {
+				"detector": "B",
+				"eVStart": -22.4,
+				"eVPerChannel": 7.881
+			}]
+		},
+		"underspectrum2": {
+			"panX": 0,
+			"panY": 0,
+			"zoomX": 1,
+			"zoomY": 1,
+			"spectrumLines": [{
+				"roiID": "SelectedPoints",
+				"lineExpressions": ["bulk(A)", "bulk(B)"]
+			}],
+			"logScale": true,
+			"xrflines": [],
+			"showXAsEnergy": true,
+			"energyCalibration": [{
+				"detector": "A",
+				"eVStart": -18.5,
+				"eVPerChannel": 7.862
+			}, {
+				"detector": "B",
+				"eVStart": -22.4,
+				"eVPerChannel": 7.881
+			}]
+		}
+	},
+	"rgbuPlots": {
+		"underspectrum0": {
+			"minerals": ["plag", "sanidine", "microline", "aug", "opx", "Fo89", "Fo11", "Chalcedor", "calsite", "gypsum", "dolomite", "FeS2", "FeS", "Fe3O4"],
+			"yChannelA": "G",
+			"yChannelB": "R",
+			"xChannelA": "B",
+			"xChannelB": "R",
+			"drawMonochrome": false
+		},
+		"underspectrum1": {
+			"minerals": [],
+			"yChannelA": "B",
+			"yChannelB": "U",
+			"xChannelA": "R",
+			"xChannelB": "B",
+			"drawMonochrome": false
+		},
+		"underspectrum2": {
+			"minerals": [],
+			"yChannelA": "U",
+			"yChannelB": "R",
+			"xChannelA": "U",
+			"xChannelB": "B",
+			"drawMonochrome": false
+		}
+	},
+	"singleAxisRGBU": {},
+	"rgbuImages": {
+		"top1": {
+			"logColour": false,
+			"brightness": 1
+		}
+	},
+	"parallelograms": {},
+	"rois": {
+		"roiColours": {
+			"roi22": "rgba(128,0,255,0.5)",
+			"roi33": "rgba(255,255,0,1)"
+		}
+	},
+	"quantification": {
+		"appliedQuantID": "9qntb8w2joq4elti"
+	},
+	"selection": {
+		"roiID": "",
+		"roiName": "",
+		"locIdxs": [345, 347, 348, 1273]
+	}
+}`
+
+	const routePath = "/view-state/TheDataSetID/"
+
+	req, _ := http.NewRequest("PUT", routePath+"all", bytes.NewReader([]byte(wholeState)))
+	resp := executeRequest(req, apiRouter.Router)
+
+	fmt.Println(resp.Code)
+	fmt.Println(resp.Body)
+
+	// Output:
+	// 200
 }
