@@ -59,7 +59,7 @@ func updateDatasets(fs fileaccess.FileAccess, datasetBucket string, configBucket
 	if err != nil {
 		// This is only an info level message, there may simply not be any to ignore, so don't give up
 		// We do want to see the error message though, in case it's badly formatted!
-		log.Infof("Failed to read %v://%v: %v", configBucket, badDatasetIDsPath, err)
+		log.Infof("Failed to read s3://%v/%v: %v", configBucket, badDatasetIDsPath, err)
 	}
 
 	summaries := []datasetModel.SummaryFileData{}
