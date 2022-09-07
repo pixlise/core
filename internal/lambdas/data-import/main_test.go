@@ -460,7 +460,7 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/test-datasource-1/summary.json"),
 		},
 		{
-			Bucket: aws.String(getConfigBucket()), Key: aws.String("configs/lastloaded.json"),
+			Bucket: aws.String(getConfigBucket()), Key: aws.String("DatasetConfig/lastloaded.json"),
 		},
 		{
 			Bucket: aws.String(""), Key: aws.String("UserContent/notifications/123.json"),
@@ -478,7 +478,7 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/test-datasource-1/summary.json"),
 		},
 		{
-			Bucket: aws.String(getConfigBucket()), Key: aws.String("configs/lastloaded.json"),
+			Bucket: aws.String(getConfigBucket()), Key: aws.String("DatasetConfig/lastloaded.json"),
 		},
 	}
 	/*{
@@ -748,7 +748,7 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("983561/summary.json"),
 		},
 		{
-			Bucket: aws.String(getConfigBucket()), Key: aws.String("configs/lastloaded.json"),
+			Bucket: aws.String(getConfigBucket()), Key: aws.String("DatasetConfig/lastloaded.json"),
 		},
 		{
 			Bucket: aws.String(""), Key: aws.String("UserContent/notifications/123.json"),
