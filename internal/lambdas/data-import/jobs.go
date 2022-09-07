@@ -2,8 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
+	"os"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/pixlise/core/api/filepaths"
 	"github.com/pixlise/core/core/awsutil"
 	"github.com/pixlise/core/core/fileaccess"
@@ -14,10 +20,6 @@ import (
 	"github.com/pixlise/core/data-converter/importer/msatestdata"
 	"github.com/pixlise/core/data-converter/importer/pixlfm"
 	"github.com/pixlise/core/data-converter/output"
-	"os"
-	"path"
-	"strings"
-	"time"
 )
 
 func createDatasourceEvent(inpath string) DatasourceEvent {
@@ -323,7 +325,7 @@ func processFiles(inpath string, name DatasourceEvent, importers map[string]impo
 		return "", err
 	}
 	if targetbucket == "" {
-		jobLog.Errorf("No Target Bucket Defined, exiting")
+  	jobLog.Errorf("No Target Bucket Defined, exiting")
 	} else {
 		err = uploadDirectoryToAllEnvironments(fs, outPath, data.DatasetID, []string{targetbucket}, jobLog)
 	}

@@ -33,6 +33,12 @@ import (
 	"github.com/pixlise/core/core/utils"
 )
 
+var envBuckets = []string{
+	"devstack-persistencepixlisedata",
+	"stagingstack-persistencepixlisedata",
+	"prodstack-persistencepixlisedata",
+}
+
 const testFileCreationUnixTimeSec = 1234567890 // needs to match what's in test-output/summary*.json
 
 func loadFileBytes(path string, t *testing.T) *os.File {
