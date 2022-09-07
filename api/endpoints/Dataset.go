@@ -109,7 +109,7 @@ func registerDatasetHandler(router *apiRouter.ApiObjectRouter) {
 
 func readDataSetData(svcs *services.APIServices, s3Path string) (datasetModel.DatasetConfig, error) {
 	allDatasets := datasetModel.DatasetConfig{}
-	return allDatasets, svcs.FS.ReadJSON(svcs.Config.DatasetsBucket, s3Path, &allDatasets, false)
+	return allDatasets, svcs.FS.ReadJSON(svcs.Config.ConfigBucketgi, s3Path, &allDatasets, false)
 }
 
 type queryItem struct {
