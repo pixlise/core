@@ -82,13 +82,13 @@ jobs:
     - name: Copy to S3 Archive
       run: |
         cd _out && \
-        zip jobupdater-linux-${{ steps.slug.outputs.slug }}.zip jobupdater-linux && \
+        zip jobupdater-linux-${{ steps.version.outputs.version }}.zip jobupdater-linux && \
         rm jobupdater-linux && \
-        zip datasourceupdater-linux-${{ steps.slug.outputs.slug }}.zip datasourceupdater-linux && \
+        zip datasourceupdater-linux-${{ steps.version.outputs.version }}.zip datasourceupdater-linux && \
         rm datasourceupdater-linux && \
-        zip integrationtest-linux-${{ steps.slug.outputs.slug }}.zip integrationtest-linux && \
+        zip integrationtest-linux-${{ steps.version.outputs.version }}.zip integrationtest-linux && \
         rm integrationtest-linux && \
-        zip dataimport-linux-${{ steps.slug.outputs.slug }}.zip dataimport-linux && \
+        zip dataimport-linux-${{ steps.version.outputs.version }}.zip dataimport-linux && \
         rm dataimport-linux && \
         aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
     needs: test
