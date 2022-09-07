@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-lambda-go/lambda"
 	"math/rand"
 	"strings"
 	"time"
@@ -137,11 +138,11 @@ func handler(ctx context.Context, s3Event events.S3Event) error {
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	//lambda.Start(handler)
+	lambda.Start(handler)
 
-	sess, _ := awsutil.GetSession()
+	/*sess, _ := awsutil.GetSession()
 	s3svc, _ := awsutil.GetS3(sess)
 	fs := fileaccess.MakeS3Access(s3svc)
 	stdLog := logger.StdOutLogger{}
-	updateDatasets(fs, "devpixlise-datasets0030ee04-ox1crk4uej2x", "devpixlise-config57d1d894-f139lsgzotpf", stdLog)
+	updateDatasets(fs, "devpixlise-datasets0030ee04-ox1crk4uej2x", "devpixlise-config57d1d894-f139lsgzotpf", stdLog)*/
 }
