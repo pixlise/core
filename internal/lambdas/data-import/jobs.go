@@ -23,7 +23,7 @@ import (
 func createDatasourceEvent(inpath string) DatasourceEvent {
 	return DatasourceEvent{
 		Inpath:         inpath,
-		Rangespath:     "configs/StandardPseudoIntensities.csv",
+		Rangespath:     "DatasetConfig/StandardPseudoIntensities.csv",
 		Outpath:        tmpprefix,
 		DatasetID:      "",
 		DetectorConfig: "PIXL",
