@@ -56,6 +56,10 @@ func GetDatasetFilePath(datasetID string, fileName string) string {
 	return path.Join(RootDatasets, datasetID, fileName)
 }
 
+////////////////////////////////////////////////////////////////////////////////////
+// Config Bucket
+////////////////////////////////////////////////////////////////////////////////////
+
 // - DetectorConfig/
 const RootDetectorConfig = "DetectorConfig"
 
@@ -100,10 +104,18 @@ func GetDatasetListPath() string {
 //       piquant-version.json - Config contains the docker container to use for PIQUANT. Separate from config.json because users can configure this in UI
 const PiquantVersionFileName = "piquant-version.json"
 
+//       bad-dataset-ids.json - Contains a list of Dataset IDs to ignore when generating dataset tiles. This is hand
+//                              maintained, only used when we have a bad dataset is downloaded that will never be usable
+//                              This way we can prevent it from being written to <Config bucket>/PixliseConfig/datasets.json
+const BadDatasetIDsFile = "bad-dataset-ids.json"
+
 func GetConfigFilePath(fileName string) string {
 	return path.Join(RootPixliseConfigPath, fileName)
 }
 
+////////////////////////////////////////////////////////////////////////////////////
+// User Content Bucket
+////////////////////////////////////////////////////////////////////////////////////
 // - UserContent/
 const RootUserContent = "UserContent"
 
@@ -157,6 +169,9 @@ func GetUserLastPiquantOutputPath(userID string, datasetID string, piquantComman
 //               ViewState/
 const viewStatePath = "ViewState"
 
+// TODO: Move files directly in ViewState/ into their own directory, eg Last/ because
+// currently we have to check what we're deleting if resetting view state for example
+
 //                   quantification.json - The quantification loaded on UI top toolbar
 //                   roi.json - Colours assigned to ROIs on the UI
 //                   selection.json - The users current selection of PMCs and/or pixels on UI
@@ -164,12 +179,12 @@ const viewStatePath = "ViewState"
 //                   <panel-type>-<location>.json - States of various UI panels and where they are
 //                   See: GetViewStatePath()
 //                   Workspaces/
-const viewStateSavedSubpath = "Workspaces"
+const ViewStateSavedSubpath = "Workspaces"
 
 //                       <workspace-name>.json - View state files (like up one directory) flattened to a file and given a workspace name. Note the file also contains the workspace name, the file name may have been modified for saving, eg removal of /
 //                       See: GetWorkspacePath()
 //                   WorkspaceCollections/
-const viewStateCollectionsSubpath = "WorkspaceCollections"
+const ViewStateCollectionsSubpath = "WorkspaceCollections"
 
 //                       <collection-name>.json
 //                       See: GetCollectionPath()
@@ -327,21 +342,21 @@ func GetViewStatePath(userID string, datasetID string, fileName string) string {
 func GetWorkspacePath(userID string, datasetID string, id string) string {
 	if len(id) <= 0 {
 		// Just return the root of this
-		return path.Join(RootUserContent, userID, datasetID, viewStatePath, viewStateSavedSubpath)
+		return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateSavedSubpath)
 	}
 	// ensure it's a valid file name
 	id = fileaccess.MakeValidObjectName(id)
-	return path.Join(RootUserContent, userID, datasetID, viewStatePath, viewStateSavedSubpath, id+".json")
+	return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateSavedSubpath, id+".json")
 }
 
 func GetCollectionPath(userID string, datasetID string, id string) string {
 	if len(id) <= 0 {
 		// Just return the root of this
-		return path.Join(RootUserContent, userID, datasetID, viewStatePath, viewStateCollectionsSubpath)
+		return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateCollectionsSubpath)
 	}
 	// ensure it's a valid file name
 	id = fileaccess.MakeValidObjectName(id)
-	return path.Join(RootUserContent, userID, datasetID, viewStatePath, viewStateCollectionsSubpath, id+".json")
+	return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateCollectionsSubpath, id+".json")
 }
 
 ////////////////////////////////////////////////////////////////////////////////////

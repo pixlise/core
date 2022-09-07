@@ -129,6 +129,10 @@ func savedViewStateGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	applyQuantByROIFallback(&state.ViewState.Quantification)
+
+	// Remove any view state items which are not shown by analysis layout
+	filterUnusedWidgetStates(&state.ViewState)
+
 	return &state, nil
 }
 
@@ -161,7 +165,11 @@ func savedViewStatePut(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
+	// Quant storage changed a while back, we have a fallback though
 	applyQuantByROIFallback(&stateToSave.ViewState.Quantification)
+
+	// Remove any view state items which are not shown by analysis layout
+	filterUnusedWidgetStates(&stateToSave.ViewState)
 
 	// If the name doesn't match, set it explicitly here
 	if stateToSave.Name != viewStateID {
