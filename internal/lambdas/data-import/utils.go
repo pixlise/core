@@ -278,13 +278,14 @@ func downloadExtraFiles(rtt string, fs fileaccess.FileAccess) error {
 			splits = splits[:len(splits)-1]
 			splits = splits[2:]
 			newpath := strings.Join(splits, "/")
-			newpath = localUnzipPath + "/" + newpath
+			newpath = localUnzipPath + newpath
 			os.MkdirAll(newpath, 0755)
 			writepath := newpath + "/" + filename
 			fmt.Printf("Writing to path: %v\n", writepath)
 			err = ioutil.WriteFile(writepath, bytes, 0644)
 			if err != nil {
 				fmt.Printf("Couldn't write custom meta")
+				return err
 			}
 		}
 	}
@@ -300,8 +301,10 @@ func fetchRanges(s3bucket string, s3path string, fs fileaccess.FileAccess) error
 
 	f, err := os.Create(localRangesCSVPath)
 	if err != nil {
+		fmt.Printf("Couldn't write local ranges")
 		return err
 	}
+
 	defer f.Close()
 
 	_, err = f.Write(bytes)
