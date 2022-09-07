@@ -33,6 +33,12 @@ import (
 	"github.com/pixlise/core/core/utils"
 )
 
+var envBuckets = []string{
+	"devstack-persistencepixlisedata",
+	"stagingstack-persistencepixlisedata",
+	"prodstack-persistencepixlisedata",
+}
+
 const testFileCreationUnixTimeSec = 1234567890 // needs to match what's in test-output/summary*.json
 
 func loadFileBytes(path string, t *testing.T) *os.File {
@@ -56,9 +62,9 @@ func makeTestNotifications(fs fileaccess.FileAccess) apiNotifications.Notificati
 }
 
 func TestRunFull(t *testing.T) {
+	t.Setenv("DATASETS_BUCKET", "devbucket")
 	var mockS3 awsutil.MockS3Client
 	// NOTE: directly calling mockS3.FinishTest() at the end to check its return value
-	artifactPreProcessedBucket := "artifactsstack-artifactspreprocesseddatasourcespi-9h8o5px7rqk7"
 	dir, err := ioutil.TempDir("/tmp", "ds")
 	if err != nil {
 		fmt.Printf(err.Error())
@@ -66,7 +72,7 @@ func TestRunFull(t *testing.T) {
 	defer os.RemoveAll(dir)
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("archive/063111681"),
+			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("Datasets/archive/063111681"),
 		},
 		{
 			Bucket: aws.String(getManualBucket()), Prefix: aws.String("dataset-addons/063111681.zip"),
@@ -86,7 +92,7 @@ func TestRunFull(t *testing.T) {
 			Bucket: aws.String(getConfigBucket()), Key: aws.String("configs/StandardPseudoIntensities.csv"),
 		},
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("063111681.zip"),
+			Bucket: aws.String(getInputBucket()), Key: aws.String("063111681.zip"),
 		},
 		{
 			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/full-test-datasource-1/summary.json"),
@@ -107,7 +113,7 @@ func TestRunFull(t *testing.T) {
 
 	mockS3.ExpCopyObjectInput = []s3.CopyObjectInput{
 		{
-			CopySource: aws.String(artifactPreProcessedBucket + "/063111681.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("archive/063111681.zip"),
+			CopySource: aws.String(getInputBucket() + "/063111681.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/archive/063111681.zip"),
 		},
 	}
 
@@ -139,18 +145,13 @@ func TestRunFull(t *testing.T) {
 	mockS3.SkipPutChecks(skipPaths)
 	expBuckets := []string{
 		getDatasourceBucket(),
-		envBuckets[0],
-		envBuckets[1],
-		envBuckets[2],
 	}
 
 	for c, f := range expFiles {
-		for bC, bucket := range expBuckets {
+		for _, bucket := range expBuckets {
 			fSend := f
 			// In case of env buckets we prepend Datasets/
-			if bC > 0 {
-				fSend = "Datasets/" + f
-			}
+			fSend = "Datasets/" + f
 			mockS3.ExpPutObjectInput = append(mockS3.ExpPutObjectInput, s3.PutObjectInput{
 				Bucket: aws.String(bucket), Key: aws.String(fSend), Body: loadFileBytes(expExpFilePaths[c], t),
 			},
@@ -170,7 +171,7 @@ func TestRunFull(t *testing.T) {
 	setupLocalPaths()
 	fs := fileaccess.MakeS3Access(&mockS3)
 	ns := makeTestNotifications(fs)
-	str, err := executePipeline(e, fs, ns, testFileCreationUnixTimeSec, artifactPreProcessedBucket, "", logger.NullLogger{})
+	str, err := executePipeline(e, fs, ns, testFileCreationUnixTimeSec, getInputBucket(), "devbucket", logger.NullLogger{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -204,10 +205,11 @@ func TestRunFull(t *testing.T) {
 
 func TestRunLocalTestMissingFilesAppend(t *testing.T) {
 	var mockS3 awsutil.MockS3Client
+	t.Setenv("DATASETS_BUCKET", "devbucket")
+	t.Setenv("MANUAL_BUCKET", "manualbucket")
+	t.Setenv("CONFIG_BUCKET", "configbucket")
+	t.Setenv("INPUT_BUCKET", "inputbucket")
 	// NOTE: directly calling mockS3.FinishTest() at the end to check its return value
-	os.Setenv("CONFIG_BUCKET", "artifactsstack-artifactspreprocesseddatasourcespi-9h8o5px7rqk7")
-	os.Setenv("DATASETS_BUCKET", "artifactsstack-artifactspreprocesseddatasourcespi-9h8o5px7rqk7")
-	os.Setenv("MANUAL_BUCKET", "artifactsstack-artifactsmanualuploaddatasourcespi-1m9y4zu1x9vud")
 	dir, err := ioutil.TempDir("/tmp", "ds")
 	if err != nil {
 		fmt.Printf(err.Error())
@@ -215,7 +217,7 @@ func TestRunLocalTestMissingFilesAppend(t *testing.T) {
 	defer os.RemoveAll(dir)
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(getConfigBucket()), Prefix: aws.String("archive/060883460"),
+			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("Datasets/archive/060883460"),
 		},
 		{
 			Bucket: aws.String(getManualBucket()), Prefix: aws.String("dataset-addons/060883460"),
@@ -230,22 +232,22 @@ func TestRunLocalTestMissingFilesAppend(t *testing.T) {
 		},
 		{},
 	}
-	artifactPreProcessedBucket := "artifactsstack-artifactspreprocesseddatasourcespi-9h8o5px7rqk7"
+	//artifactPreProcessedBucket := "artifactsstack-artifactspreprocesseddatasourcespi-9h8o5px7rqk7"
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("configs/StandardPseudoIntensities.csv"),
+			Bucket: aws.String(getConfigBucket()), Key: aws.String("configs/StandardPseudoIntensities.csv"),
 		},
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("060883460-04-08-2021-09-04-35.zip"),
+			Bucket: aws.String(getInputBucket()), Key: aws.String("060883460-04-08-2021-09-04-35.zip"),
 		},
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("configs/StandardPseudoIntensities.csv"),
+			Bucket: aws.String(getConfigBucket()), Key: aws.String("configs/StandardPseudoIntensities.csv"),
 		},
 		{
-			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("archive/060883460-04-08-2021-09-04-35.zip"),
+			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/archive/060883460-04-08-2021-09-04-35.zip"),
 		},
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("060883460-04-08-2021-09-05-39.zip"),
+			Bucket: aws.String(getInputBucket()), Key: aws.String("060883460-04-08-2021-09-05-39.zip"),
 		},
 		{
 			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/test-datasource-1/summary.json"),
@@ -275,10 +277,10 @@ func TestRunLocalTestMissingFilesAppend(t *testing.T) {
 
 	mockS3.ExpCopyObjectInput = []s3.CopyObjectInput{
 		{
-			CopySource: aws.String(artifactPreProcessedBucket + "/060883460-04-08-2021-09-04-35.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("archive/060883460-04-08-2021-09-04-35.zip"),
+			CopySource: aws.String(getInputBucket() + "/060883460-04-08-2021-09-04-35.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/archive/060883460-04-08-2021-09-04-35.zip"),
 		},
 		{
-			CopySource: aws.String(artifactPreProcessedBucket + "/060883460-04-08-2021-09-05-39.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("archive/060883460-04-08-2021-09-05-39.zip"),
+			CopySource: aws.String(getInputBucket() + "/060883460-04-08-2021-09-05-39.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/archive/060883460-04-08-2021-09-05-39.zip"),
 		},
 	}
 
@@ -307,18 +309,13 @@ func TestRunLocalTestMissingFilesAppend(t *testing.T) {
 	}
 	expBuckets := []string{
 		getDatasourceBucket(),
-		envBuckets[0],
-		envBuckets[1],
-		envBuckets[2],
 	}
 
 	for c, f := range expFiles {
-		for bC, bucket := range expBuckets {
+		for _, bucket := range expBuckets {
 			fSend := f
 			// In case of env buckets we prepend Datasets/
-			if bC > 0 {
-				fSend = "Datasets/" + f
-			}
+			fSend = "Datasets/" + f
 			mockS3.ExpPutObjectInput = append(mockS3.ExpPutObjectInput, s3.PutObjectInput{
 				Bucket: aws.String(bucket), Key: aws.String(fSend), Body: loadFileBytes(expExpFilePaths[c], t),
 			},
@@ -339,7 +336,7 @@ func TestRunLocalTestMissingFilesAppend(t *testing.T) {
 
 	fs := fileaccess.MakeS3Access(&mockS3)
 	ns := makeTestNotifications(fs)
-	str, err := executePipeline(e, fs, ns, testFileCreationUnixTimeSec, artifactPreProcessedBucket, "", logger.NullLogger{})
+	str, err := executePipeline(e, fs, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), logger.NullLogger{})
 	// Expecting an error
 	if err.Error() != "Failed to determine dataset RTT" {
 		t.Errorf("Unexpected error when executing pipeline")
@@ -350,7 +347,7 @@ func TestRunLocalTestMissingFilesAppend(t *testing.T) {
 
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("archive/060883460"),
+			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("Datasets/archive/060883460"),
 		},
 		{
 			Bucket: aws.String(getManualBucket()), Prefix: aws.String("dataset-addons/060883460"),
@@ -364,7 +361,7 @@ func TestRunLocalTestMissingFilesAppend(t *testing.T) {
 		{
 			Contents: []*s3.Object{
 				//{Key: aws.String("archive/summary.json")},
-				{Key: aws.String("archive/060883460-04-08-2021-09-04-35.zip")},
+				{Key: aws.String("Datasets/archive/060883460-04-08-2021-09-04-35.zip")},
 			},
 		},
 		{},
@@ -379,7 +376,7 @@ func TestRunLocalTestMissingFilesAppend(t *testing.T) {
 		DetectorConfig: "PIXL-EM-E2E",
 	}
 	setupLocalPaths()
-	str, err = executePipeline(e, fs, ns, testFileCreationUnixTimeSec, artifactPreProcessedBucket, "", logger.NullLogger{})
+	str, err = executePipeline(e, fs, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), logger.NullLogger{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -414,7 +411,10 @@ func TestRunLocalTestMissingFilesAppend(t *testing.T) {
 func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 	var mockS3 awsutil.MockS3Client
 	// NOTE: directly calling mockS3.FinishTest() at the end to check its return value
-
+	t.Setenv("DATASETS_BUCKET", "devbucket")
+	t.Setenv("MANUAL_BUCKET", "manualbucket")
+	t.Setenv("CONFIG_BUCKET", "configbucket")
+	t.Setenv("INPUT_BUCKET", "inputbucket")
 	dir, err := ioutil.TempDir("/tmp", "ds")
 	if err != nil {
 		fmt.Printf(err.Error())
@@ -422,7 +422,7 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 	defer os.RemoveAll(dir)
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("archive/060883460"),
+			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("Datasets/archive/060883460"),
 		},
 		{
 			Bucket: aws.String(getManualBucket()), Prefix: aws.String("dataset-addons/060883460"),
@@ -442,47 +442,43 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 		{},
 		{
 			Contents: []*s3.Object{
-				{Key: aws.String("archive/060883460-04-08-2021-09-05-39.zip")},
+				{Key: aws.String("Datasets/archive/060883460-04-08-2021-09-05-39.zip")},
 			},
 		},
 		{},
 		{},
 	}
-	/*
-		{
-		Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("configs/lastloaded.json"),
-		},*/
-	artifactPreProcessedBucket := "artifactsstack-artifactspreprocesseddatasourcespi-9h8o5px7rqk7"
+
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("configs/StandardPseudoIntensities.csv"),
+			Bucket: aws.String(getConfigBucket()), Key: aws.String("configs/StandardPseudoIntensities.csv"),
 		},
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("060883460-04-08-2021-09-05-39.zip"),
+			Bucket: aws.String(getInputBucket()), Key: aws.String("060883460-04-08-2021-09-05-39.zip"),
 		},
 		{
 			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/test-datasource-1/summary.json"),
 		},
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("configs/lastloaded.json"),
+			Bucket: aws.String(getConfigBucket()), Key: aws.String("configs/lastloaded.json"),
 		},
 		{
 			Bucket: aws.String(""), Key: aws.String("UserContent/notifications/123.json"),
 		},
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("configs/StandardPseudoIntensities.csv"),
+			Bucket: aws.String(getConfigBucket()), Key: aws.String("configs/StandardPseudoIntensities.csv"),
 		},
 		{
-			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("archive/060883460-04-08-2021-09-05-39.zip"),
+			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/archive/060883460-04-08-2021-09-05-39.zip"),
 		},
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("060883460-04-08-2021-09-04-35.zip"),
+			Bucket: aws.String(getInputBucket()), Key: aws.String("060883460-04-08-2021-09-04-35.zip"),
 		},
 		{
 			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/test-datasource-1/summary.json"),
 		},
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("configs/lastloaded.json"),
+			Bucket: aws.String(getConfigBucket()), Key: aws.String("configs/lastloaded.json"),
 		},
 	}
 	/*{
@@ -525,10 +521,10 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 
 	mockS3.ExpCopyObjectInput = []s3.CopyObjectInput{
 		{
-			CopySource: aws.String(artifactPreProcessedBucket + "/060883460-04-08-2021-09-05-39.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("archive/060883460-04-08-2021-09-05-39.zip"),
+			CopySource: aws.String(getInputBucket() + "/060883460-04-08-2021-09-05-39.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/archive/060883460-04-08-2021-09-05-39.zip"),
 		},
 		{
-			CopySource: aws.String(artifactPreProcessedBucket + "/060883460-04-08-2021-09-04-35.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("archive/060883460-04-08-2021-09-04-35.zip"),
+			CopySource: aws.String(getInputBucket() + "/060883460-04-08-2021-09-04-35.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/archive/060883460-04-08-2021-09-04-35.zip"),
 		},
 	}
 
@@ -544,9 +540,9 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 	// Add each expected upload file operation
 	expFiles := []string{
 		//"test-datasource-1/PCR_D077T0637741562_000RCM_N00100360009835610066000J01.png",
-		"test-datasource-1/dataset.bin",
-		"test-datasource-1/diffraction-db.bin",
-		"test-datasource-1/summary.json",
+		"Datasets/test-datasource-1/dataset.bin",
+		"Datasets/test-datasource-1/diffraction-db.bin",
+		"Datasets/test-datasource-1/summary.json",
 	}
 	expExpFilePaths := []string{
 		//"./test-output/PCR_D077T0637741562_000RCM_N00100360009835610066000J01.png",
@@ -556,17 +552,13 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 	}
 	expBuckets := []string{
 		getDatasourceBucket(),
-		envBuckets[0],
-		envBuckets[1],
-		envBuckets[2],
 	}
 	for c, f := range expFiles {
-		for bC, bucket := range expBuckets {
+		for _, bucket := range expBuckets {
 			fSend := f
 			// In case of env buckets we prepend Datasets/
-			if bC > 0 {
-				fSend = "Datasets/" + f
-			}
+			//fSend = "Datasets/" + f
+
 			mockS3.ExpPutObjectInput = append(mockS3.ExpPutObjectInput, s3.PutObjectInput{
 				Bucket: aws.String(bucket), Key: aws.String(fSend), Body: loadFileBytes(expExpFilePaths[c], t),
 			},
@@ -587,7 +579,7 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 
 	s3access := fileaccess.MakeS3Access(&mockS3)
 	ns := makeTestNotifications(s3access)
-	str, err := executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, artifactPreProcessedBucket, "", logger.NullLogger{})
+	str, err := executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), logger.NullLogger{})
 	if err != nil {
 		t.Errorf("Error executing pipeline: %v", err)
 	}
@@ -597,7 +589,7 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("archive/060883460"),
+			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("Datasets/archive/060883460"),
 		},
 		{
 			Bucket: aws.String(getManualBucket()), Prefix: aws.String("dataset-addons/060883460"),
@@ -609,10 +601,10 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 
 	// Add each expected upload file operation
 	expFiles = []string{
-		"test-datasource-1/PCR_D077T0637741562_000RCM_N00100360009835610066000J01.png",
-		"test-datasource-1/dataset.bin",
-		"test-datasource-1/diffraction-db.bin",
-		"test-datasource-1/summary.json",
+		"Datasets/test-datasource-1/PCR_D077T0637741562_000RCM_N00100360009835610066000J01.png",
+		"Datasets/test-datasource-1/dataset.bin",
+		"Datasets/test-datasource-1/diffraction-db.bin",
+		"Datasets/test-datasource-1/summary.json",
 	}
 	expExpFilePaths = []string{
 		"./test-output/PCR_D077T0637741562_000RCM_N00100360009835610066000J01.png",
@@ -622,17 +614,13 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 	}
 	expBuckets = []string{
 		getDatasourceBucket(),
-		envBuckets[0],
-		envBuckets[1],
-		envBuckets[2],
 	}
 	for c, f := range expFiles {
-		for bC, bucket := range expBuckets {
+		for _, bucket := range expBuckets {
 			fSend := f
 			// In case of env buckets we prepend Datasets/
-			if bC > 0 {
-				fSend = "Datasets/" + f
-			}
+			//fSend = "Datasets/" + f
+
 			mockS3.ExpPutObjectInput = append(mockS3.ExpPutObjectInput, s3.PutObjectInput{
 				Bucket: aws.String(bucket), Key: aws.String(fSend), Body: loadFileBytes(expExpFilePaths[c], t),
 			},
@@ -648,7 +636,7 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 		DatasetID:      "test_datasource_missingfiles_name",
 		DetectorConfig: "PIXL-EM-E2E",
 	}
-	str, err = executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, artifactPreProcessedBucket, "", logger.NullLogger{})
+	str, err = executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), logger.NullLogger{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -684,7 +672,10 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 func TestRunBrokenAppendWithCustomName(t *testing.T) {
 	var mockS3 awsutil.MockS3Client
 	// NOTE: directly calling mockS3.FinishTest() at the end to check its return value
-
+	t.Setenv("DATASETS_BUCKET", "devbucket")
+	t.Setenv("MANUAL_BUCKET", "manualbucket")
+	t.Setenv("CONFIG_BUCKET", "configbucket")
+	t.Setenv("INPUT_BUCKET", "inputbucket")
 	dir, err := ioutil.TempDir("/tmp", "ds")
 	if err != nil {
 		fmt.Printf(err.Error())
@@ -692,7 +683,7 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 	defer os.RemoveAll(dir)
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("archive/060883460"),
+			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("Datasets/archive/060883460"),
 		},
 		{
 			Bucket: aws.String(getManualBucket()), Prefix: aws.String("dataset-addons/060883460"),
@@ -701,7 +692,7 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("983561"),
 		},
 		{
-			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("archive/060883460"),
+			Bucket: aws.String(getDatasourceBucket()), Prefix: aws.String("Datasets/archive/060883460"),
 		},
 		{
 			Bucket: aws.String(getManualBucket()), Prefix: aws.String("dataset-addons/060883460"),
@@ -725,7 +716,7 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 		},
 		{
 			Contents: []*s3.Object{
-				{Key: aws.String("archive/060883460-04-08-2021-09-05-39.zip")},
+				{Key: aws.String("Datasets/archive/060883460-04-08-2021-09-05-39.zip")},
 			},
 		},
 		{
@@ -739,14 +730,13 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 			},
 		},
 	}
-	artifactPreProcessedBucket := "artifactsstack-artifactspreprocesseddatasourcespi-9h8o5px7rqk7"
 
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("configs/StandardPseudoIntensities.csv"),
+			Bucket: aws.String(getConfigBucket()), Key: aws.String("configs/StandardPseudoIntensities.csv"),
 		},
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("060883460-04-08-2021-09-05-39.zip"),
+			Bucket: aws.String(getInputBucket()), Key: aws.String("060883460-04-08-2021-09-05-39.zip"),
 		},
 		{
 			Bucket: aws.String(getManualBucket()), Key: aws.String("dataset-addons/060883460/custom-meta.json"),
@@ -758,19 +748,19 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("983561/summary.json"),
 		},
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("configs/lastloaded.json"),
+			Bucket: aws.String(getConfigBucket()), Key: aws.String("configs/lastloaded.json"),
 		},
 		{
 			Bucket: aws.String(""), Key: aws.String("UserContent/notifications/123.json"),
 		},
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("configs/StandardPseudoIntensities.csv"),
+			Bucket: aws.String(getConfigBucket()), Key: aws.String("configs/StandardPseudoIntensities.csv"),
 		},
 		{
-			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("archive/060883460-04-08-2021-09-05-39.zip"),
+			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/archive/060883460-04-08-2021-09-05-39.zip"),
 		},
 		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("060883460-04-08-2021-09-04-35.zip"),
+			Bucket: aws.String(getInputBucket()), Key: aws.String("060883460-04-08-2021-09-04-35.zip"),
 		},
 		{
 			Bucket: aws.String(getManualBucket()), Key: aws.String("dataset-addons/060883460/custom-meta.json"),
@@ -781,24 +771,6 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 		{
 			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("983561/summary.json"),
 		},
-		/*{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("configs/lastloaded.json"),
-		},
-		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("configs/StandardPseudoIntensities.csv"),
-		},
-		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("configs/StandardPseudoIntensities.csv"),
-		},
-		{
-			Bucket: aws.String(getDatasourceBucket()), Key: aws.String("archive/060883460-04-08-2021-09-05-39.zip"),
-		},
-		{
-			Bucket: aws.String(artifactPreProcessedBucket), Key: aws.String("060883460-04-08-2021-09-04-35.zip"),
-		},
-		{
-			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("dataset-addons/060883460/custom-meta.json"),
-		},*/
 	}
 
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -841,29 +813,14 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 		{
 			Body: loadFileBytes("./test-output/summary.json", t),
 		},
-		/*{
-			Body: loadFileBytes("./test-data/configs/lastloaded.json", t),
-		},
-		{
-			Body: loadFileBytes("./test-data/configs/StandardPseudoIntensities.csv", t),
-		},
-		{
-			Body: loadFileBytes("./test-data/060883460-04-08-2021-09-05-39.zip", t),
-		},
-		{
-			Body: loadFileBytes("./test-data/060883460-04-08-2021-09-04-35.zip", t),
-		},
-		{
-			Body: loadFileBytes("./test-data/config.json", t),
-		},*/
 	}
 
 	mockS3.ExpCopyObjectInput = []s3.CopyObjectInput{
 		{
-			CopySource: aws.String(artifactPreProcessedBucket + "/060883460-04-08-2021-09-05-39.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("archive/060883460-04-08-2021-09-05-39.zip"),
+			CopySource: aws.String(getInputBucket() + "/060883460-04-08-2021-09-05-39.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/archive/060883460-04-08-2021-09-05-39.zip"),
 		},
 		{
-			CopySource: aws.String(artifactPreProcessedBucket + "/060883460-04-08-2021-09-04-35.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("archive/060883460-04-08-2021-09-04-35.zip"),
+			CopySource: aws.String(getInputBucket() + "/060883460-04-08-2021-09-04-35.zip"), Bucket: aws.String(getDatasourceBucket()), Key: aws.String("Datasets/archive/060883460-04-08-2021-09-04-35.zip"),
 		},
 	}
 
@@ -891,17 +848,12 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 	}
 	expBuckets := []string{
 		getDatasourceBucket(),
-		envBuckets[0],
-		envBuckets[1],
-		envBuckets[2],
 	}
 	for c, f := range expFiles {
-		for bC, bucket := range expBuckets {
+		for _, bucket := range expBuckets {
 			fSend := f
 			// In case of env buckets we prepend Datasets/
-			if bC > 0 {
-				fSend = "Datasets/" + f
-			}
+			fSend = "Datasets/" + f
 			mockS3.ExpPutObjectInput = append(mockS3.ExpPutObjectInput, s3.PutObjectInput{
 				Bucket: aws.String(bucket), Key: aws.String(fSend), Body: loadFileBytes(expExpFilePaths[c], t),
 			},
@@ -922,7 +874,7 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 
 	s3access := fileaccess.MakeS3Access(&mockS3)
 	ns := makeTestNotifications(s3access)
-	str, err := executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, artifactPreProcessedBucket, "", logger.NullLogger{})
+	str, err := executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), logger.NullLogger{})
 	if err != nil {
 		t.Errorf("Error executing pipeline: %v", err)
 	}
@@ -944,17 +896,13 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 	}
 	expBuckets = []string{
 		getDatasourceBucket(),
-		envBuckets[0],
-		envBuckets[1],
-		envBuckets[2],
 	}
 	for c, f := range expFiles {
-		for bC, bucket := range expBuckets {
+		for _, bucket := range expBuckets {
 			fSend := f
 			// In case of env buckets we prepend Datasets/
-			if bC > 0 {
-				fSend = "Datasets/" + f
-			}
+
+			fSend = "Datasets/" + f
 			mockS3.ExpPutObjectInput = append(mockS3.ExpPutObjectInput, s3.PutObjectInput{
 				Bucket: aws.String(bucket), Key: aws.String(fSend), Body: loadFileBytes(expExpFilePaths[c], t),
 			},
@@ -971,7 +919,7 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 		DetectorConfig: "PIXL-EM-E2E",
 	}
 
-	str, err = executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, artifactPreProcessedBucket, "", logger.NullLogger{})
+	str, err = executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), logger.NullLogger{})
 	if err != nil {
 		t.Errorf("Error executing pipeline: %v", err)
 	}

@@ -20,24 +20,26 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/pixlise/core/api/filepaths"
 	"github.com/pixlise/core/core/awsutil"
 	datasetModel "github.com/pixlise/core/core/dataset"
 	"github.com/pixlise/core/core/fileaccess"
 	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/core/utils"
+	"k8s.io/utils/env"
 )
 
-func updateDatasets(fs fileaccess.FileAccess, s3Bucket string, log logger.ILogger) error {
-	log.Infof("Requesting file listing from: %v", s3Bucket)
+func updateDatasets(fs fileaccess.FileAccess, datasetBucket string, configBucket string, log logger.ILogger) error {
+	log.Infof("Requesting file listing from: %v", datasetBucket)
 
-	allPaths, err := fs.ListObjects(s3Bucket, filepaths.RootDatasets+"/")
+	allPaths, err := fs.ListObjects(datasetBucket, filepaths.RootDatasets+"/")
 	if err != nil {
 		return err
 	}
@@ -51,17 +53,30 @@ func updateDatasets(fs fileaccess.FileAccess, s3Bucket string, log logger.ILogge
 
 	log.Infof("Got %v paths. Requesting %v summary files...", len(allPaths), len(summaryPaths))
 
+	badDatasetIDs := []string{}
+	badDatasetIDsPath := filepaths.GetConfigFilePath(filepaths.BadDatasetIDsFile)
+	err = fs.ReadJSON(configBucket, badDatasetIDsPath, &badDatasetIDs, false)
+	if err != nil {
+		// This is only an info level message, there may simply not be any to ignore, so don't give up
+		// We do want to see the error message though, in case it's badly formatted!
+		log.Infof("Failed to read %v://%v: %v", configBucket, badDatasetIDsPath, err)
+	}
+
 	summaries := []datasetModel.SummaryFileData{}
 	for _, k := range summaryPaths {
 		var summary datasetModel.SummaryFileData
-		err := fs.ReadJSON(s3Bucket, k, &summary, false)
+		err = fs.ReadJSON(datasetBucket, k, &summary, false)
 		if err != nil {
-			log.Errorf("Failed to read dataset summary %v: %v", s3Bucket, err)
+			log.Errorf("Failed to read dataset summary %v: %v", datasetBucket, err)
 			continue
 		}
-		summaries = append(summaries, summary)
-	}
 
+		if !utils.StringInSlice(summary.DatasetID, badDatasetIDs) {
+			summaries = append(summaries, summary)
+		} else {
+			log.Infof("  Ignored dataset ID due to entry in bad-rtts.json: %v", summary.DatasetID)
+		}
+	}
 	mapped := datasetModel.DatasetConfig{
 		Datasets: summaries,
 	}
@@ -73,11 +88,11 @@ func updateDatasets(fs fileaccess.FileAccess, s3Bucket string, log logger.ILogge
 	}
 
 	datasetsPath := filepaths.GetDatasetListPath()
-	log.Infof("Returning data to %v %v. List of dataset IDs:", s3Bucket, datasetsPath)
+	log.Infof("Returning data to %v %v. List of dataset IDs:", configBucket, datasetsPath)
 	for c, summary := range summaries {
 		log.Infof("  %v: %v", c+1, summary.DatasetID)
 	}
-	return fs.WriteObject(s3Bucket, datasetsPath, fileContents)
+	return fs.WriteObject(configBucket, datasetsPath, fileContents)
 }
 
 func handler(ctx context.Context, s3Event events.S3Event) error {
@@ -98,8 +113,13 @@ func handler(ctx context.Context, s3Event events.S3Event) error {
 			return err
 		}
 
+		configBucket := env.GetString("CONFIG_BUCKET", "")
+		if len(configBucket) <= 0 {
+			return errors.New("CONFIG_BUCKET not configured!")
+		}
+
 		fs := fileaccess.MakeS3Access(s3svc)
-		err = updateDatasets(fs, bucket, stdLog)
+		err = updateDatasets(fs, bucket, configBucket, stdLog)
 
 		if err != nil {
 			// Don't stop here!
@@ -117,12 +137,11 @@ func handler(ctx context.Context, s3Event events.S3Event) error {
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	lambda.Start(handler)
-	/*
-		sess, _ := awsutil.GetSession()
-		s3svc, _ := awsutil.GetS3(sess)
-		fs := fileaccess.MakeS3Access(s3svc)
-		stdLog := logger.StdOutLogger{}
-		updateDatasets(fs, "/prodstack-persistencepixlisedata4f446ecf-m36oehuca7uc", stdLog)
-	*/
+	//lambda.Start(handler)
+
+	sess, _ := awsutil.GetSession()
+	s3svc, _ := awsutil.GetS3(sess)
+	fs := fileaccess.MakeS3Access(s3svc)
+	stdLog := logger.StdOutLogger{}
+	updateDatasets(fs, "devpixlise-datasets0030ee04-ox1crk4uej2x", "devpixlise-config57d1d894-f139lsgzotpf", stdLog)
 }

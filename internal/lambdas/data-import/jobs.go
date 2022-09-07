@@ -4,6 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/pixlise/core/api/filepaths"
 	"github.com/pixlise/core/core/awsutil"
 	"github.com/pixlise/core/core/fileaccess"
@@ -14,16 +19,12 @@ import (
 	"github.com/pixlise/core/data-converter/importer/msatestdata"
 	"github.com/pixlise/core/data-converter/importer/pixlfm"
 	"github.com/pixlise/core/data-converter/output"
-	"os"
-	"path"
-	"strings"
-	"time"
 )
 
 func createDatasourceEvent(inpath string) DatasourceEvent {
 	return DatasourceEvent{
 		Inpath:         inpath,
-		Rangespath:     "configs/StandardPseudoIntensities.csv",
+		Rangespath:     "DatasetConfig/StandardPseudoIntensities.csv",
 		Outpath:        tmpprefix,
 		DatasetID:      "",
 		DetectorConfig: "PIXL",
@@ -31,7 +32,7 @@ func createDatasourceEvent(inpath string) DatasourceEvent {
 }
 
 // JobInit - Create name, Filesystem Access, Notification Stack
-func jobinit(inpath string) (DatasourceEvent, fileaccess.S3Access, apiNotifications.NotificationManager, error) {
+func jobinit(inpath string, log logger.ILogger) (DatasourceEvent, fileaccess.S3Access, apiNotifications.NotificationManager, error) {
 	name := createDatasourceEvent(inpath)
 	sess, err := awsutil.GetSession()
 	svc, err := awsutil.GetS3(sess)
@@ -39,7 +40,7 @@ func jobinit(inpath string) (DatasourceEvent, fileaccess.S3Access, apiNotificati
 		return DatasourceEvent{}, fileaccess.S3Access{}, nil, err
 	}
 	fs := fileaccess.MakeS3Access(svc)
-	ns := makeNotificationStack(fs)
+	ns := makeNotificationStack(fs, log)
 	return name, fs, ns, err
 }
 
@@ -54,14 +55,14 @@ func processS3(makeLog bool, record awsutil.Record) (string, error) {
 	if strings.Contains(record.S3.Object.Key, "dataset-addons") {
 		jobLog.Infof("Re-processing dataset due to file: \"%v\"\n", record.S3.Object.Key)
 		splits := strings.Split(record.S3.Object.Key, "/")
-		name, fs, ns, err := jobinit(record.S3.Object.Key)
+		name, fs, ns, err := jobinit(record.S3.Object.Key, jobLog)
 		if err != nil {
 			return "", err
 		}
 		return executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
 	} else {
 		jobLog.Infof("Datasource Path: " + record.S3.Object.Key)
-		name, fs, ns, err := jobinit(record.S3.Object.Key)
+		name, fs, ns, err := jobinit(record.S3.Object.Key, jobLog)
 		sourcebucket := record.S3.Bucket.Name
 		str, err := executePipeline(name, fs, ns, time.Now().Unix(), sourcebucket, targetbucket, jobLog)
 		if err != nil {
@@ -95,7 +96,7 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 		}
 		fmt.Printf("Re-processing dataset due to file: \"%v\"\n", message)
 		fmt.Printf("Key: \"%v\"\n", snsMsg.Key.Dir)
-		name, fs, ns, err := jobinit(snsMsg.Key.Dir)
+		name, fs, ns, err := jobinit(snsMsg.Key.Dir, jobLog)
 
 		jobLog.Infof("Key: \"%v\"\n", snsMsg.Key.Dir)
 		jobLog.Infof("Re-processing dataset due to file: \"%v\"\n", message)
@@ -110,7 +111,7 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 		jobLog.Errorf("Issue decoding message: %v", err)
 	}
 	if e.Records[0].EventSource == "aws:s3" {
-		name, fs, ns, err := jobinit(e.Records[0].S3.Object.Key)
+		name, fs, ns, err := jobinit(e.Records[0].S3.Object.Key, jobLog)
 		if err != nil {
 			return "", err
 		}
@@ -129,7 +130,7 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 		// run execution
 	} else {
 		jobLog.Infof("Re-processing dataset due to SNS request: \"%v\"\n", record.SNS.Message)
-		name, fs, ns, err := jobinit("")
+		name, fs, ns, err := jobinit("", jobLog)
 		if err != nil {
 			fmt.Printf("error initialising job: %v", err)
 		}
@@ -202,8 +203,8 @@ func executePipeline(name DatasourceEvent, fs fileaccess.FileAccess, ns apiNotif
 	allthefiles := []string{}
 	//allthefiles = append(allthefiles, inpath)
 	// As this datasource is now in the process flow, copy to the archive folder for re-processing and historical purposes
-	jobLog.Infof("----- Copying file %v %v to archive: %v %v -----\n", sourcebucket, name.Inpath, getConfigBucket(), "archive/"+name.Inpath)
-	err = fs.CopyObject(sourcebucket, name.Inpath, getDatasourceBucket(), "archive/"+name.Inpath)
+	jobLog.Infof("----- Copying file %v %v to archive: %v %v -----\n", sourcebucket, name.Inpath, getConfigBucket(), "Datasets/archive/"+name.Inpath)
+	err = fs.CopyObject(sourcebucket, name.Inpath, getDatasourceBucket(), "Datasets/archive/"+name.Inpath)
 	if err != nil {
 		return "", err
 	}
@@ -323,9 +324,9 @@ func processFiles(inpath string, name DatasourceEvent, importers map[string]impo
 		return "", err
 	}
 	if targetbucket == "" {
-		err = uploadDirectoryToAllEnvironments(fs, outPath, data.DatasetID, getDatasourceBucket(), envBuckets, jobLog)
+		jobLog.Errorf("No Target Bucket Defined, exiting")
 	} else {
-		err = uploadDirectoryToAllEnvironments(fs, outPath, data.DatasetID, getDatasourceBucket(), []string{targetbucket}, jobLog)
+		err = uploadDirectoryToAllEnvironments(fs, outPath, data.DatasetID, []string{targetbucket}, jobLog)
 	}
 	if err != nil {
 		return "", err
