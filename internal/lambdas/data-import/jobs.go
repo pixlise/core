@@ -95,7 +95,7 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 		}
 		fmt.Printf("Re-processing dataset due to file: \"%v\"\n", message)
 		fmt.Printf("Key: \"%v\"\n", snsMsg.Key.Dir)
-		name, fs, ns, err := jobinit(snsMsg.Key.Dir)
+		name, fs, ns, err := jobinit(snsMsg.Key.Dir, jobLog)
 
 		jobLog.Infof("Key: \"%v\"\n", snsMsg.Key.Dir)
 		jobLog.Infof("Re-processing dataset due to file: \"%v\"\n", message)
@@ -110,7 +110,7 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 		jobLog.Errorf("Issue decoding message: %v", err)
 	}
 	if e.Records[0].EventSource == "aws:s3" {
-		name, fs, ns, err := jobinit(e.Records[0].S3.Object.Key)
+		name, fs, ns, err := jobinit(e.Records[0].S3.Object.Key, jobLog)
 		if err != nil {
 			return "", err
 		}
@@ -129,7 +129,7 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 		// run execution
 	} else {
 		jobLog.Infof("Re-processing dataset due to SNS request: \"%v\"\n", record.SNS.Message)
-		name, fs, ns, err := jobinit("")
+		name, fs, ns, err := jobinit("", jobLog)
 		if err != nil {
 			fmt.Printf("error initialising job: %v", err)
 		}
