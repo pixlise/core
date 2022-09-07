@@ -103,41 +103,9 @@ func (r kubernetesRunner) runPiquant(piquantDockerImage string, params PiquantPa
 func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jobid, namespace string, creator pixlUser.UserInfo, length int) *apiv1.Pod {
 	sec := apiv1.LocalObjectReference{Name: "api-auth"}
 	parts := strings.Split(params.PMCListName, ".")
+	san := "pixlise-api"
 	if namespace == "piquant-fit" {
-		return &apiv1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      jobid + "-" + parts[0],
-				Namespace: namespace,
-				Labels: map[string]string{
-					"app":          parts[0],
-					"owner":        creator.UserID,
-					"jobid":        jobid,
-					"numberofpods": strconv.Itoa(length),
-				},
-			},
-			Spec: apiv1.PodSpec{
-				ImagePullSecrets: []apiv1.LocalObjectReference{sec},
-				RestartPolicy:    apiv1.RestartPolicyNever,
-				Containers: []apiv1.Container{
-					{
-						Name:            parts[0],
-						Image:           dockerImage,
-						ImagePullPolicy: apiv1.PullAlways,
-						Resources: apiv1.ResourceRequirements{
-							Requests: apiv1.ResourceList{
-								"cpu": resource.MustParse("3500m"),
-							},
-						},
-
-						Env: []apiv1.EnvVar{
-							{Name: "QUANT_PARAMS", Value: paramsStr},
-							{Name: "AWS_DEFAULT_REGION", Value: os.Getenv("AWS_DEFAULT_REGION")},
-							{Name: "PYTHONUNBUFFERED", Value: "TRUE"},
-						},
-					},
-				},
-			},
-		}
+		san = "piquant-fit"
 	}
 	return &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -153,7 +121,7 @@ func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jo
 		Spec: apiv1.PodSpec{
 			ImagePullSecrets:   []apiv1.LocalObjectReference{sec},
 			RestartPolicy:      apiv1.RestartPolicyNever,
-			ServiceAccountName: "pixlise-api",
+			ServiceAccountName: san,
 			Containers: []apiv1.Container{
 				{
 					Name:            parts[0],
