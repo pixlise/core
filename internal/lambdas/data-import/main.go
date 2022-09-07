@@ -46,6 +46,9 @@ func getDatasourceBucket() string {
 	return os.Getenv("DATASETS_BUCKET")
 }
 
+func getInputBucket() string {
+	return os.Getenv("INPUT_BUCKET")
+}
 //{
 //  "inpath": "pixl.zip",
 //  "rangespath": "configs/StandardPseudoIntensities.csv",
