@@ -56,6 +56,10 @@ func GetDatasetFilePath(datasetID string, fileName string) string {
 	return path.Join(RootDatasets, datasetID, fileName)
 }
 
+////////////////////////////////////////////////////////////////////////////////////
+// Config Bucket
+////////////////////////////////////////////////////////////////////////////////////
+
 // - DetectorConfig/
 const RootDetectorConfig = "DetectorConfig"
 
@@ -100,10 +104,18 @@ func GetDatasetListPath() string {
 //       piquant-version.json - Config contains the docker container to use for PIQUANT. Separate from config.json because users can configure this in UI
 const PiquantVersionFileName = "piquant-version.json"
 
+//       bad-dataset-ids.json - Contains a list of Dataset IDs to ignore when generating dataset tiles. This is hand
+//                              maintained, only used when we have a bad dataset is downloaded that will never be usable
+//                              This way we can prevent it from being written to <Config bucket>/PixliseConfig/datasets.json
+const BadDatasetIDsFile = "bad-dataset-ids.json"
+
 func GetConfigFilePath(fileName string) string {
 	return path.Join(RootPixliseConfigPath, fileName)
 }
 
+////////////////////////////////////////////////////////////////////////////////////
+// User Content Bucket
+////////////////////////////////////////////////////////////////////////////////////
 // - UserContent/
 const RootUserContent = "UserContent"
 
