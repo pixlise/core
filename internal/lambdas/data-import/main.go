@@ -20,9 +20,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/pixlise/core/core/awsutil"
-	"os"
 )
 
 type DatasourceEvent struct {
@@ -32,12 +33,6 @@ type DatasourceEvent struct {
 	DatasetID      string `json:"datasetid"`
 	DetectorConfig string `json:"detectorconfig"`
 }
-
-//var artifactDataSourceBucket = os.Getenv("DATASETS_BUCKET")
-
-//var artifactPreProcessedBucket = os.Getenv("PREPROCESS_BUCKET") //"artifactsstack-artifactspreprocesseddatasourcespi-9h8o5px7rqk7"
-//var artifactManualUploadBucket = os.Getenv("MANUAL_BUCKET") //"artifactsstack-artifactsmanualuploaddatasourcespi-1m9y4zu1x9vud"
-//var configBucket = os.Getenv("CONFIG_BUCKET")
 
 func getConfigBucket() string {
 	return os.Getenv("CONFIG_BUCKET")
@@ -49,12 +44,6 @@ func getManualBucket() string {
 
 func getDatasourceBucket() string {
 	return os.Getenv("DATASETS_BUCKET")
-}
-
-var envBuckets = []string{
-	"devstack-persistencepixlisedata4f446ecf-1corom7nbx3uv",
-	"stagingstack-persistencepixlisedata4f446ecf-118o0uwwb176b",
-	"prodstack-persistencepixlisedata4f446ecf-m36oehuca7uc",
 }
 
 //{
@@ -90,8 +79,6 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 	fmt.Printf("Archive Path: %v \n", localArchivePath)
 	fmt.Printf("Ranges Path: %v \n", localRangesCSVPath)
 
-	// If a targetbucket is defined it will copy the datasource to that bucket.
-	// Otherwise it will use the envBuckets to seed the datasets.
 	defer os.RemoveAll(tmpprefix)
 	for _, record := range event.Records {
 		if record.EventSource == "aws:s3" {

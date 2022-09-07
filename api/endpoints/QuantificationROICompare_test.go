@@ -185,10 +185,10 @@ func prepROICompareGetCalls() ([]s3.GetObjectInput, []*s3.GetObjectOutput) {
 	"params": {
 		"pmcsCount": 225,
 		"name": "quant test v6 Al \u003e 100%",
-		"dataBucket": "devstack-persistencepixlisedata4f446ecf-1corom7nbx3uv",
+		"dataBucket": "devstack-persistencepixlisedata",
 		"datasetPath": "Datasets/052822532/dataset.bin",
 		"datasetID": "052822532",
-		"jobBucket": "devstack-persistencepiquantjobs65c7175e-1dg51nw1ye1rk",
+		"jobBucket": "devstack-persistencepiquantjobs",
 		"detectorConfig": "PIXL/PiquantConfigs/v6",
 		"elements": [
 			"Ca",
@@ -243,10 +243,10 @@ func prepROICompareGetCalls() ([]s3.GetObjectInput, []*s3.GetObjectOutput) {
 	"params": {
 		"pmcsCount": 225,
 		"name": "quant test v6 Al \u003e 100%",
-		"dataBucket": "devstack-persistencepixlisedata4f446ecf-1corom7nbx3uv",
+		"dataBucket": "devstack-persistencepixlisedata",
 		"datasetPath": "Datasets/052822532/dataset.bin",
 		"datasetID": "052822532",
-		"jobBucket": "devstack-persistencepiquantjobs65c7175e-1dg51nw1ye1rk",
+		"jobBucket": "devstack-persistencepiquantjobs",
 		"detectorConfig": "PIXL/PiquantConfigs/v6",
 		"elements": [
 			"Ca",
