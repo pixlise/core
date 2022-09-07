@@ -323,10 +323,9 @@ func processFiles(inpath string, name DatasourceEvent, importers map[string]impo
 		return "", err
 	}
 	if targetbucket == "" {
-		//err = uploadDirectoryToAllEnvironments(fs, outPath, data.DatasetID, getDatasourceBucket(), envBuckets, jobLog)
 		jobLog.Errorf("No Target Bucket Defined, exiting")
 	} else {
-		err = uploadDirectoryToAllEnvironments(fs, outPath, data.DatasetID, getDatasourceBucket(), []string{targetbucket}, jobLog)
+		err = uploadDirectoryToAllEnvironments(fs, outPath, data.DatasetID, []string{targetbucket}, jobLog)
 	}
 	if err != nil {
 		return "", err
