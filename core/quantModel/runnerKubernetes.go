@@ -103,6 +103,10 @@ func (r kubernetesRunner) runPiquant(piquantDockerImage string, params PiquantPa
 func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jobid, namespace string, creator pixlUser.UserInfo, length int) *apiv1.Pod {
 	sec := apiv1.LocalObjectReference{Name: "api-auth"}
 	parts := strings.Split(params.PMCListName, ".")
+	san := "pixlise-api"
+	if namespace == "piquant-fit" {
+		san = "piquant-fit"
+	}
 	return &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      jobid + "-" + parts[0],
@@ -115,9 +119,9 @@ func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jo
 			},
 		},
 		Spec: apiv1.PodSpec{
-			ImagePullSecrets: []apiv1.LocalObjectReference{sec},
-			RestartPolicy:    apiv1.RestartPolicyNever,
-
+			ImagePullSecrets:   []apiv1.LocalObjectReference{sec},
+			RestartPolicy:      apiv1.RestartPolicyNever,
+			ServiceAccountName: san,
 			Containers: []apiv1.Container{
 				{
 					Name:            parts[0],
@@ -131,8 +135,6 @@ func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jo
 
 					Env: []apiv1.EnvVar{
 						{Name: "QUANT_PARAMS", Value: paramsStr},
-						{Name: "AWS_ACCESS_KEY_ID", Value: os.Getenv("AWS_ACCESS_KEY_ID")},
-						{Name: "AWS_SECRET_ACCESS_KEY", Value: os.Getenv("AWS_SECRET_ACCESS_KEY")},
 						{Name: "AWS_DEFAULT_REGION", Value: os.Getenv("AWS_DEFAULT_REGION")},
 						{Name: "PYTHONUNBUFFERED", Value: "TRUE"},
 					},
