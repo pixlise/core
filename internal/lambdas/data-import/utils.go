@@ -224,27 +224,31 @@ func checkLocalExisting(prefix string, path string) ([]string, error) {
 
 // makeNotificationStack - Create a notification stack
 func makeNotificationStack(fs fileaccess.FileAccess, log logger.ILogger) apiNotifications.NotificationManager {
-	seccache, err := secretcache.New()
+	if os.Getenv("MongoSecret") != "" {
+		seccache, err := secretcache.New()
 
-	mongo := apiNotifications.MongoUtils{
-		SecretsCache:     seccache,
-		ConnectionSecret: os.Getenv("MongoSecret"),
-		MongoUsername:    os.Getenv("MongoUsername"),
-		MongoEndpoint:    os.Getenv("MongoEndpoint"),
-		Log:              log,
-	}
-	err = mongo.Connect()
-	if err != nil {
-		fmt.Printf("Couldn't connect to mongodb: %v", err)
-	}
-	return &apiNotifications.NotificationStack{
-		Notifications: []apiNotifications.UINotificationObj{},
-		FS:            fs,
-		Track:         cmap.New(), //make(map[string]bool),
-		Bucket:        os.Getenv("notificationBucket"),
-		Environment:   "prod",
-		MongoUtils:    &mongo,
-		Logger:        log,
+		mongo := apiNotifications.MongoUtils{
+			SecretsCache:     seccache,
+			ConnectionSecret: os.Getenv("MongoSecret"),
+			MongoUsername:    os.Getenv("MongoUsername"),
+			MongoEndpoint:    os.Getenv("MongoEndpoint"),
+			Log:              log,
+		}
+		err = mongo.Connect()
+		if err != nil {
+			fmt.Printf("Couldn't connect to mongodb: %v", err)
+		}
+		return &apiNotifications.NotificationStack{
+			Notifications: []apiNotifications.UINotificationObj{},
+			FS:            fs,
+			Track:         cmap.New(), //make(map[string]bool),
+			Bucket:        os.Getenv("notificationBucket"),
+			Environment:   "prod",
+			MongoUtils:    &mongo,
+			Logger:        log,
+		}
+	} else {
+		return nil
 	}
 }
 

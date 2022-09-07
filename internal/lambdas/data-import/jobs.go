@@ -31,7 +31,7 @@ func createDatasourceEvent(inpath string) DatasourceEvent {
 }
 
 // JobInit - Create name, Filesystem Access, Notification Stack
-func jobinit(inpath string) (DatasourceEvent, fileaccess.S3Access, apiNotifications.NotificationManager, error) {
+func jobinit(inpath string, log logger.ILogger) (DatasourceEvent, fileaccess.S3Access, apiNotifications.NotificationManager, error) {
 	name := createDatasourceEvent(inpath)
 	sess, err := awsutil.GetSession()
 	svc, err := awsutil.GetS3(sess)
@@ -39,7 +39,7 @@ func jobinit(inpath string) (DatasourceEvent, fileaccess.S3Access, apiNotificati
 		return DatasourceEvent{}, fileaccess.S3Access{}, nil, err
 	}
 	fs := fileaccess.MakeS3Access(svc)
-	ns := makeNotificationStack(fs)
+	ns := makeNotificationStack(fs, log)
 	return name, fs, ns, err
 }
 
@@ -54,14 +54,14 @@ func processS3(makeLog bool, record awsutil.Record) (string, error) {
 	if strings.Contains(record.S3.Object.Key, "dataset-addons") {
 		jobLog.Infof("Re-processing dataset due to file: \"%v\"\n", record.S3.Object.Key)
 		splits := strings.Split(record.S3.Object.Key, "/")
-		name, fs, ns, err := jobinit(record.S3.Object.Key)
+		name, fs, ns, err := jobinit(record.S3.Object.Key, jobLog)
 		if err != nil {
 			return "", err
 		}
 		return executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
 	} else {
 		jobLog.Infof("Datasource Path: " + record.S3.Object.Key)
-		name, fs, ns, err := jobinit(record.S3.Object.Key)
+		name, fs, ns, err := jobinit(record.S3.Object.Key, jobLog)
 		sourcebucket := record.S3.Bucket.Name
 		str, err := executePipeline(name, fs, ns, time.Now().Unix(), sourcebucket, targetbucket, jobLog)
 		if err != nil {
