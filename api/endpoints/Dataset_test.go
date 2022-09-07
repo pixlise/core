@@ -213,25 +213,25 @@ func Example_datasetHandler_List() {
 	defer mockS3.FinishTest()
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
+			Bucket: aws.String(ConfigBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
 		},
 		{
-			Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
+			Bucket: aws.String(ConfigBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
 		},
 		{
-			Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
+			Bucket: aws.String(ConfigBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
 		},
 		{
-			Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
+			Bucket: aws.String(ConfigBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
 		},
 		{
-			Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
+			Bucket: aws.String(ConfigBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
 		},
 		{
-			Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
+			Bucket: aws.String(ConfigBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
 		},
 		{
-			Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
+			Bucket: aws.String(ConfigBucketForUnitTest), Key: aws.String("PixliseConfig/datasets.json"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
