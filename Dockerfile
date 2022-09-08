@@ -22,7 +22,7 @@ RUN apk --no-cache add ca-certificates libc6-compat wget make bash
 
 COPY . /build
 
-RUN cd /build && BUILD_VERSION=${VERSION} GITHUB_SHA=${GITHUB_SHA} make build-linux
+RUN cd /build && export BUILD_VERSION=${VERSION} && export GITHUB_SHA=${GITHUB_SHA} && make build-linux
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates libc6-compat wget
