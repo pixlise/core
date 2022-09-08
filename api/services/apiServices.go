@@ -161,7 +161,6 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 	if err != nil {
 		log.Fatalf("Failed to create AWS session for region: %v. Error: %v", cfg.AWSCloudwatchRegion, err)
 	}
-
 	// Init default logger
 	ourLogger, err := logger.Init(logger.DefaultGroup, cfg.LogLevel, cfg.EnvironmentName, sessCW)
 

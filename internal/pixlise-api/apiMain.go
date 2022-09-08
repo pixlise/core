@@ -84,6 +84,7 @@ func main() {
 	}()
 	rand.Seed(time.Now().UnixNano())
 
+	log.Println("Version: " + services.ApiVersion)
 	cfg, err := config.Init()
 	if err != nil {
 		log.Fatalf("Something went wrong with API config. Check that your AWS region is set the same as the bucket. Error: %v\n", err)
@@ -94,7 +95,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error trying to display config\n")
 	}
-
 	// Core count can't be 0!
 	if cfg.CoresPerNode <= 0 {
 		cfg.CoresPerNode = 6 // Reasonable, our laptops have 6...
