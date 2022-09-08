@@ -196,7 +196,7 @@ func (s *PIXLISEDataSaver) Save(
 
 	// Now loop through them, saving in this order...
 	fmt.Println("Now loop through them, saving in this order...")
-	for i, pmcI := range pmcs {
+	for _, pmcI := range pmcs {
 		pmc := int32(pmcI)
 		dataForPMC := data.PerPMCData[pmc]
 		err := s.saveExperimentLocationItem(&exp, pmc, *dataForPMC, data.HousekeepingHeaders, pmcsWithBeamIJs, jobLog)
