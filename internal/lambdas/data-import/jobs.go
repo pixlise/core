@@ -40,7 +40,7 @@ func jobinit(inpath string, log logger.ILogger) (DatasourceEvent, fileaccess.S3A
 	sess, err := awsutil.GetSession()
 	svc, err := awsutil.GetS3(sess)
 	if err != nil {
-		return DatasourceEvent{}, fileaccess.S3Access{}, nil, err, nil
+		return DatasourceEvent{}, fileaccess.S3Access{}, nil, err
 	}
 	fs := fileaccess.MakeS3Access(svc)
 	ns := makeNotificationStack(fs, log)
