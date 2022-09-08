@@ -32,10 +32,11 @@ func createDatasourceEvent(inpath string) DatasourceEvent {
 	}
 }
 
-var o = profile.Start(profile.MemProfileHeap, profile.ProfilePath("/tmp/profile"))
+var o interface{ Stop() }
 
 // JobInit - Create name, Filesystem Access, Notification Stack
 func jobinit(inpath string, log logger.ILogger) (DatasourceEvent, fileaccess.S3Access, apiNotifications.NotificationManager, error) {
+	o = profile.Start(profile.MemProfileHeap, profile.ProfilePath("/tmp/profile"))
 	name := createDatasourceEvent(inpath)
 	sess, err := awsutil.GetSession()
 	svc, err := awsutil.GetS3(sess)
