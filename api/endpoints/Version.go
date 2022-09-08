@@ -45,13 +45,17 @@ type ComponentVersionsGetResponse struct {
 }
 
 func getAPIVersion() string {
+	ver := services.ApiVersion
 	if len(services.ApiVersion) <= 0 {
-		return "N/A - Local build"
+		ver = "(Local build)"
 	}
 
-	ver := services.ApiVersion
-	if len(services.GitHash) > 8 {
-		ver += "-" + services.GitHash[0:8]
+	if len(services.GitHash) > 0 {
+		hashEnd := 8
+		if len(services.GitHash) < 8 {
+			hashEnd = len(services.GitHash)
+		}
+		ver += "-" + services.GitHash[0:hashEnd]
 	}
 
 	return ver
