@@ -768,6 +768,12 @@ func filterUnusedWidgetStates(state *wholeViewState) {
 	// This is due to the evolution of our saving of view state, early on we didn't even have configurable layouts
 	// and things were added gradually.
 
+	// NOTE: we don't do any filtering unless the layout sections have been filled out. For example, with a blank view
+	// state we want the UI to decide what to do with the widget data we pass in
+	if len(state.AnalysisLayout.TopWidgetSelectors) != 2 || len(state.AnalysisLayout.BottomWidgetSelectors) != 4 {
+		return
+	}
+
 	layoutNameToWidgetFileName := map[string]string{
 		"chord-view-widget":       "chord",
 		"binary-plot-widget":      "binary",

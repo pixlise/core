@@ -131,7 +131,7 @@ func (stack *NotificationStack) GetUINotifications(userid string) ([]UINotificat
 			n.Notifications.UINotifications = []UINotificationObj{}
 			err = stack.FS.WriteJSONNoIndent(stack.Bucket, path, &n)
 			if err != nil {
-				fmt.Printf("Failed to write cleared notification file for user: %v. Error: %v\n", userid, err)
+				stack.Logger.Errorf("Failed to write cleared notification file for user: %v. Error: %v\n", userid, err)
 			}
 		}
 		return notifications, nil

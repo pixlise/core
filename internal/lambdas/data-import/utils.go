@@ -19,6 +19,15 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"path"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	cmap "github.com/orcaman/concurrent-map"
 	ccopy "github.com/otiai10/copy"
@@ -30,13 +39,6 @@ import (
 	"github.com/pixlise/core/core/utils"
 	"github.com/pixlise/core/data-converter/output"
 	diffractionDetection "github.com/pixlise/core/diffraction-detector"
-	"io/ioutil"
-	"log"
-	"os"
-	"path/filepath"
-	"sort"
-	"strings"
-	"time"
 )
 
 // setupLocalPaths - Setup the local paths for the files required for datasource processing
@@ -46,10 +48,10 @@ func setupLocalPaths() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	localUnzipPath = tmpprefix + "/unzippath"
-	localInputPath = tmpprefix + "/inputfiles"
-	localArchivePath = tmpprefix + "/archive"
-	localRangesCSVPath = tmpprefix + "/ranges.csv"
+	localUnzipPath = path.Join(tmpprefix, "unzippath")
+	localInputPath = path.Join(tmpprefix, "inputfiles")
+	localArchivePath = path.Join(tmpprefix, "archive")
+	localRangesCSVPath = path.Join(tmpprefix, "ranges.csv")
 }
 
 // generatePrefix - Generate the prefix requried for storage in the archive and retrieval
@@ -109,9 +111,11 @@ func copyAdditionalDirectories(outpath string, jobLog logger.ILogger) error {
 	dirs := []string{"RGBU", "DISCO", "MATCHED"}
 	for _, d := range dirs {
 		jobLog.Infof("CHECKING %v EXISTS \n", d)
-		if _, err := os.Stat(localInputPath + "/" + d); !os.IsNotExist(err) {
+
+		localFilePath := path.Join(localInputPath, d)
+		if _, err := os.Stat(localFilePath); !os.IsNotExist(err) {
 			jobLog.Infof("%v EXISTS COPYING TO ARCHIVE\n", d)
-			err := ccopy.Copy(localInputPath+"/"+d, outpath+"/"+d)
+			err := ccopy.Copy(localFilePath, path.Join(outpath, d))
 			if err != nil {
 				return err
 			}
@@ -197,7 +201,7 @@ func checkExisting(bucket string, prefix string, fs fileaccess.FileAccess, jobLo
 }
 
 // importAutoQuickLook - Import the quicklook files.
-func importAutoQuickLook(path string) {
+func importAutoQuickLook(quickLookPath string) {
 	files, err := checkLocalExisting("APIX", localUnzipPath)
 	if err != nil {
 		// REFACTOR: found this empty, shouldn't we error check something?
@@ -205,14 +209,14 @@ func importAutoQuickLook(path string) {
 
 	for _, i := range files {
 		filename := filepath.Base(i)
-		os.Rename(path, path+"/"+filename)
+		os.Rename(quickLookPath, path.Join(quickLookPath, filename))
 	}
 }
 
 // checkLocalExisting - Check for local existing files
-func checkLocalExisting(prefix string, path string) ([]string, error) {
+func checkLocalExisting(prefix string, filePath string) ([]string, error) {
 	var files []string
-	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(filePath, func(path string, info os.FileInfo, err error) error {
 		fn := filepath.Base(path)
 		if strings.HasPrefix(fn, prefix) {
 			files = append(files, path)
@@ -280,7 +284,7 @@ func createLogger(makeLog bool) logger.ILogger {
 // downloadExtraFile - Download addon files
 func downloadExtraFiles(rtt string, fs fileaccess.FileAccess) error {
 	fmt.Printf("Downloading addons\n")
-	a, err := fs.ListObjects(getManualBucket(), "dataset-addons/"+rtt)
+	a, err := fs.ListObjects(getManualBucket(), path.Join("dataset-addons", rtt))
 	if err != nil {
 		return err
 	}
@@ -297,9 +301,9 @@ func downloadExtraFiles(rtt string, fs fileaccess.FileAccess) error {
 			splits = splits[:len(splits)-1]
 			splits = splits[2:]
 			newpath := strings.Join(splits, "/")
-			newpath = localUnzipPath + newpath
+			newpath = path.Join(localUnzipPath, newpath)
 			os.MkdirAll(newpath, 0755)
-			writepath := newpath + "/" + filename
+			writepath := path.Join(newpath, filename)
 			fmt.Printf("Writing to path: %v\n", writepath)
 			err = ioutil.WriteFile(writepath, bytes, 0644)
 			if err != nil {
