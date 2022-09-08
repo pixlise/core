@@ -24,18 +24,18 @@ build: build-linux build-mac
 
 build-linux:
 	mkdir -p _out
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X ${PKG}/api/services.ApiVersion=${BUILD_VERSION} -X ${PKG}/api/services.GitHash=${CI_COMMIT_SHA}" -v -o ./_out/pixlise-api-linux ./internal/pixlise-api
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X services.ApiVersion=${BUILD_VERSION} -X services.GitHash=${CI_COMMIT_SHA}" -v -o ./_out/pixlise-api-linux ./internal/pixlise-api
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/jobupdater-linux ./internal/lambdas/quant-job-updater
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/datasourceupdater-linux ./internal/lambdas/dataset-tile-updater
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/integrationtest-linux ./internal/cmdline-tools/api-integration-test
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/dataimport-linux ./internal/lambdas/data-import
 
 build-mac:
-	GOPRIVATE=github.com/pixlise GOOS=darwin GOARCH=amd64 go build -ldflags "-X ${PKG}/api/services.ApiVersion=${BUILD_VERSION} -X ${PKG}/api/services.GitHash=${CI_COMMIT_SHA}" -v -o ./_out/pixlise-api-mac ./internal/pixlise-api
+	GOPRIVATE=github.com/pixlise GOOS=darwin GOARCH=amd64 go build -ldflags "-X services.ApiVersion=${BUILD_VERSION} -X services.GitHash=${CI_COMMIT_SHA}" -v -o ./_out/pixlise-api-mac ./internal/pixlise-api
 	GOPRIVATE=github.com/pixlise GOOS=darwin GOARCH=amd64 go build -v -o ./_out/jobupdater-mac ./internal/lambdas/quant-job-updater
 
 build-windows:
-	GOPRIVATE=github.com/pixlise GOOS=windows GOARCH=amd64 go build -ldflags "-X ${PKG}/api/services.ApiVersion=${BUILD_VERSION} -X ${PKG}/api/services.GitHash=${CI_COMMIT_SHA}" -v -o ./_out/pixlise-api-windows ./internal/pixlise-api
+	GOPRIVATE=github.com/pixlise GOOS=windows GOARCH=amd64 go build -ldflags "-X services.ApiVersion=${BUILD_VERSION} -X services.GitHash=${CI_COMMIT_SHA}" -v -o ./_out/pixlise-api-windows ./internal/pixlise-api
 
 clean: ## Remove previous build
 	@rm -f $(PROJECT_NAME)
