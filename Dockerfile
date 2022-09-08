@@ -16,12 +16,13 @@
 # under the License.
 FROM golang:1.18-alpine
 ARG VERSION
+ARG GITHUB_SHA
 
 RUN apk --no-cache add ca-certificates libc6-compat wget make bash
 
 COPY . /build
 
-RUN cd /build && BUILD_VERSION=${VERSION} make build-linux
+RUN cd /build && BUILD_VERSION=${VERSION} GITHUB_SHA=${GITHUB_SHA} make build-linux
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates libc6-compat wget
