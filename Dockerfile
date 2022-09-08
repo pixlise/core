@@ -15,11 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 FROM golang:1.18-alpine
+ARG VERSION
+
 RUN apk --no-cache add ca-certificates libc6-compat wget make bash
 
 COPY . /build
 
-RUN cd /build && make build-linux
+RUN cd /build && BUILD_VERSION=${VERSION} make build-linux
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates libc6-compat wget
