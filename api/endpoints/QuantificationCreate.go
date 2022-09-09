@@ -115,7 +115,7 @@ func quantificationPost(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	var wg sync.WaitGroup
-	jobID, err := quantModel.CreateJob(params.Svcs, req, true, &wg)
+	jobID, err := quantModel.CreateJob(params.Svcs, req, &wg)
 
 	if err != nil {
 		return jobID, err

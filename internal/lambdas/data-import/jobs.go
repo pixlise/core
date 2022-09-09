@@ -46,7 +46,12 @@ func jobinit(inpath string, log logger.ILogger) (DatasourceEvent, fileaccess.S3A
 
 // processS3 - If the message received is an S3 trigger, then process the S3 trigger
 func processS3(makeLog bool, record awsutil.Record) (string, error) {
-	jobLog := createLogger(makeLog)
+	jobLog := logger.StdOutLogger{}
+
+	jobLog.Infof("=========================================")
+	jobLog.Infof("=  PIXLISE dataset importer process S3  =")
+	jobLog.Infof("=========================================")
+
 	jobLog.Infof("HandleRequest for: \"%v\"\n", record)
 	jobLog.Infof("Key: \"%v\"\n", record.S3.Object.Key)
 
@@ -82,7 +87,11 @@ func processS3(makeLog bool, record awsutil.Record) (string, error) {
 // processSNS - If the message received is an SNS message, then process the SNS message
 func processSns(makeLog bool, record awsutil.Record) (string, error) {
 	message := record.SNS.Message
-	jobLog := createLogger(makeLog)
+	jobLog := logger.StdOutLogger{}
+
+	jobLog.Infof("==========================================")
+	jobLog.Infof("=  PIXLISE dataset importer process SNS  =")
+	jobLog.Infof("==========================================")
 
 	targetbucket := os.Getenv("DATASETS_BUCKET")
 

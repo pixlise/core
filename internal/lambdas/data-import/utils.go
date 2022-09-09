@@ -31,7 +31,6 @@ import (
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	cmap "github.com/orcaman/concurrent-map"
 	ccopy "github.com/otiai10/copy"
-	"github.com/pixlise/core/core/awsutil"
 	datasetModel "github.com/pixlise/core/core/dataset"
 	"github.com/pixlise/core/core/fileaccess"
 	"github.com/pixlise/core/core/logger"
@@ -254,31 +253,6 @@ func makeNotificationStack(fs fileaccess.FileAccess, log logger.ILogger) apiNoti
 	} else {
 		return nil
 	}
-}
-
-// createLogger - Create a logger
-func createLogger(makeLog bool) logger.ILogger {
-	var jobLog logger.ILogger
-	jobID := utils.RandStringBytesMaskImpr(16)
-	if !makeLog {
-		// Creator doesn't want it logged - used for unit tests so we don't have to set up AWS credentials
-		jobLog = logger.NullLogger{}
-	} else {
-		var err error
-		var loglevel = logger.LogDebug
-		sess, _ := awsutil.GetSession()
-		fmt.Printf("Creating CloudwatchLogger\n")
-		t := time.Now()
-		ti := fmt.Sprintf(t.Format("20060102150405"))
-		jobLog, err = logger.Init("dataimport-"+ti+jobID, loglevel, "prod", sess)
-		if err != nil {
-			fmt.Printf("Failed to create logger for Job ID: %v\n %v\n", jobID, err)
-		}
-	}
-	jobLog.Infof("==============================")
-	jobLog.Infof("=  PIXLISE dataset importer  =")
-	jobLog.Infof("==============================")
-	return jobLog
 }
 
 // downloadExtraFile - Download addon files
