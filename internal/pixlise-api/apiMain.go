@@ -87,7 +87,7 @@ func main() {
 	}()
 	rand.Seed(time.Now().UnixNano())
 
-	log.Println("API version: " + services.ApiVersion)
+	log.Printf("API version: \"%v\"", services.ApiVersion)
 
 	cfg, err := config.Init()
 	if err != nil {
@@ -118,6 +118,8 @@ func main() {
 	var notes []notifications.UINotificationObj
 
 	svcs := services.InitAPIServices(cfg, api.RealJWTReader{}, &idGen, &signer, &exporter, &notifications.NotificationStack{})
+
+	svcs.Log.Infof(cfgStr)
 
 	seccache, err := secretcache.New()
 	mongo := notifications.MongoUtils{
@@ -157,7 +159,7 @@ func main() {
 	router.Router.Use(authware.Middleware, logware.Middleware)
 
 	// Now also log this to the world...
-	svcs.Log.Infof("API version %v started...", services.ApiVersion)
+	svcs.Log.Infof("API version \"%v\" started...", services.ApiVersion)
 
 	log.Fatal(
 		http.ListenAndServe(":8080",
