@@ -49,6 +49,7 @@ func getDatasourceBucket() string {
 func getInputBucket() string {
 	return os.Getenv("INPUT_BUCKET")
 }
+
 //{
 //  "inpath": "pixl.zip",
 //  "rangespath": "configs/StandardPseudoIntensities.csv",
@@ -94,5 +95,6 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 }
 
 func main() {
+	os.Mkdir("/tmp/profile", 0750)
 	lambda.Start(HandleRequest)
 }

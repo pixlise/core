@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/pkg/profile"
 	"os"
 	"path"
 	"strings"
@@ -31,8 +32,11 @@ func createDatasourceEvent(inpath string) DatasourceEvent {
 	}
 }
 
+var o interface{ Stop() }
+
 // JobInit - Create name, Filesystem Access, Notification Stack
 func jobinit(inpath string, log logger.ILogger) (DatasourceEvent, fileaccess.S3Access, apiNotifications.NotificationManager, error) {
+	o = profile.Start(profile.MemProfile, profile.ProfilePath("/tmp/profile"))
 	name := createDatasourceEvent(inpath)
 	sess, err := awsutil.GetSession()
 	svc, err := awsutil.GetS3(sess)
@@ -64,7 +68,9 @@ func processS3(makeLog bool, record awsutil.Record) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+		s, err := executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+		stopProfiler(fs)
+		return s, err
 	} else {
 		jobLog.Infof("Datasource Path: " + record.S3.Object.Key)
 		name, fs, ns, err := jobinit(record.S3.Object.Key, jobLog)
@@ -80,6 +86,7 @@ func processS3(makeLog bool, record awsutil.Record) (string, error) {
 			_, err = triggerErrorNotifications(ns)
 			jobLog.Errorf("Could not trigger error notification: %v", err)
 		}
+		stopProfiler(fs)
 		return str, err
 	}
 }
@@ -112,7 +119,9 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 
 		splits := strings.Split(snsMsg.Key.Dir, "/")
 
-		return executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+		s, err := executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+		stopProfiler(fs)
+		return s, err
 	}
 	var e awsutil.Event
 	err := e.UnmarshalJSON([]byte(message))
@@ -134,7 +143,9 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 		}
 		sourcebucket := e.Records[0].S3.Bucket.Name
 		jobLog.Infof("Sourcebucket: " + sourcebucket)
-		return executePipeline(name, fs, ns, time.Now().Unix(), sourcebucket, targetbucket, jobLog)
+		s, err := executePipeline(name, fs, ns, time.Now().Unix(), sourcebucket, targetbucket, jobLog)
+		stopProfiler(fs)
+		return s, err
 	} else if strings.HasPrefix(message, "datasource:") {
 		// run execution
 	} else {
@@ -143,9 +154,20 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 		if err != nil {
 			fmt.Printf("error initialising job: %v", err)
 		}
-		return executeReprocess(record.SNS.Message, name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+		s, err := executeReprocess(record.SNS.Message, name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+		stopProfiler(fs)
+		return s, err
 	}
 	return "", nil
+}
+
+func stopProfiler(fs fileaccess.S3Access) {
+	o.Stop()
+	dir, err := utils.ZipDirectory("/tmp/profile")
+	if err != nil {
+		fmt.Println("Failed to zip profile")
+	}
+	fs.WriteObject("devpixlise-manualuploadf14e9f17-x59rn61oxeh0", "/profile.zip", dir)
 }
 
 // executeReprocess - If the request is to reprocess an existing data source, then execute the reprocess pipeline and download the existing files
@@ -256,6 +278,7 @@ func executePipeline(name DatasourceEvent, fs fileaccess.FileAccess, ns apiNotif
 	}
 	r, err := processFiles(inpath, name, importers, creationUnixTimeSec, updateExisting, fs, ns, targetbucket, jobLog)
 	return r, err
+
 }
 
 // processFiles - Once files have been downloasded, process the files to generate the datasource and upload the results

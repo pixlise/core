@@ -20,13 +20,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	"log"
 	"math/rand"
 	"net/http"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 
 	"github.com/pixlise/core/core/notifications"
 
@@ -39,9 +40,10 @@ import (
 	"github.com/pixlise/core/core/awsutil"
 	"github.com/pixlise/core/core/utils"
 
+	_ "net/http/pprof"
+
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/pixlise/core/core/export"
-	_ "net/http/pprof"
 )
 
 func printRoutePermissions(routePermissions map[string]string) {
@@ -79,10 +81,13 @@ func printRoutePermissions(routePermissions map[string]string) {
 }
 
 func main() {
+	// This was added for a profiler to be able to connect, otherwise uses no reasources really
 	go func() {
 		http.ListenAndServe(":1234", nil)
 	}()
 	rand.Seed(time.Now().UnixNano())
+
+	log.Println("API version: " + services.ApiVersion)
 
 	cfg, err := config.Init()
 	if err != nil {
@@ -94,7 +99,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error trying to display config\n")
 	}
-
 	// Core count can't be 0!
 	if cfg.CoresPerNode <= 0 {
 		cfg.CoresPerNode = 6 // Reasonable, our laptops have 6...
@@ -153,7 +157,7 @@ func main() {
 	router.Router.Use(authware.Middleware, logware.Middleware)
 
 	// Now also log this to the world...
-	svcs.Log.Infof("API Started...")
+	svcs.Log.Infof("API version %v started...", services.ApiVersion)
 
 	log.Fatal(
 		http.ListenAndServe(":8080",
