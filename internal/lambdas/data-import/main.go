@@ -75,8 +75,6 @@ type APISnsMessage struct {
 
 func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 	setupLocalPaths()
-	var makeLog = true
-	// Init a logger for this job
 
 	fmt.Printf("Unzip Path: %v \n", localUnzipPath)
 	fmt.Printf("Input Path: %v \n", localInputPath)
@@ -86,9 +84,9 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 	defer os.RemoveAll(tmpprefix)
 	for _, record := range event.Records {
 		if record.EventSource == "aws:s3" {
-			return processS3(makeLog, record)
+			return processS3(record)
 		} else if record.EventSource == "aws:sns" {
-			return processSns(makeLog, record)
+			return processSns(record)
 		}
 	}
 	return fmt.Sprintf("----- DONE -----\n"), nil
