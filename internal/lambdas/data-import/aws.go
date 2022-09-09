@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/pixlise/core/core/logger"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/pixlise/core/core/logger"
 
 	"github.com/pixlise/core/core/fileaccess"
 	"github.com/pixlise/core/core/utils"
@@ -30,6 +31,9 @@ func downloadDirectoryZip(s3bucket string, s3path string, fs fileaccess.FileAcce
 		return "", err
 	}
 	f.Sync()
+
+	// Clear, not used after this
+	bytes = []byte{}
 
 	_, err = utils.UnzipDirectory(f.Name(), localUnzipPath)
 	if err != nil {
