@@ -51,7 +51,7 @@ func jobinit(inpath string, log logger.ILogger) (DatasourceEvent, fileaccess.S3A
 
 // processS3 - If the message received is an S3 trigger, then process the S3 trigger
 func processS3(record awsutil.Record) (string, error) {
-	jobLog := logger.StdOutLogger{}
+	jobLog := &logger.StdOutLogger{}
 
 	jobLog.Infof("=========================================")
 	jobLog.Infof("=  PIXLISE dataset importer process S3  =")
@@ -95,7 +95,7 @@ func processS3(record awsutil.Record) (string, error) {
 // processSNS - If the message received is an SNS message, then process the SNS message
 func processSns(record awsutil.Record) (string, error) {
 	message := record.SNS.Message
-	jobLog := logger.StdOutLogger{}
+	jobLog := &logger.StdOutLogger{}
 
 	jobLog.Infof("==========================================")
 	jobLog.Infof("=  PIXLISE dataset importer process SNS  =")
@@ -206,7 +206,7 @@ func executeReprocess(rtt string, name DatasourceEvent, creationUnixTimeSec int6
 // executePipeline - Run the full pipeline
 func executePipeline(name DatasourceEvent, fs fileaccess.FileAccess, ns apiNotifications.NotificationManager, creationUnixTimeSec int64, sourcebucket string, targetbucket string, jobLog logger.ILogger) (string, error) {
 	if jobLog == nil {
-		jobLog = logger.NullLogger{}
+		jobLog = &logger.NullLogger{}
 	}
 	err := os.MkdirAll(localUnzipPath, os.ModePerm)
 	if err != nil {

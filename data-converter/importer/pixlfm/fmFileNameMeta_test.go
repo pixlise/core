@@ -19,8 +19,9 @@ package pixlfm
 
 import (
 	"fmt"
-	"github.com/pixlise/core/core/logger"
 	"sort"
+
+	"github.com/pixlise/core/core/logger"
 )
 
 func printFNValues(m FileNameMeta) {
@@ -323,7 +324,7 @@ func Example_getLatestFileVersions() {
 		"PE__D140_0654321404_000RXL_N001000011000045300331__J04.CSV",
 	}
 
-	latests := getLatestFileVersions(files, logger.NullLogger{})
+	latests := getLatestFileVersions(files, &logger.NullLogger{})
 
 	versionStrs := []string{}
 	for key := range latests {

@@ -72,7 +72,7 @@ func Example_testInsert() {
 		Environment: "Test",
 		User:        "5838239847",
 	}
-	resp, err := InsertLogRecord(connection, o, ilogger)
+	resp, err := InsertLogRecord(connection, o, &ilogger)
 	if err != nil {
 		fmt.Printf("%v", err)
 	}
@@ -85,7 +85,7 @@ func Example_testInsert() {
 		Environment: "Test",
 		User:        "5838239847",
 	}
-	resp2, err := InsertLogRecord(connection, o, ilogger)
+	resp2, err := InsertLogRecord(connection, o, &ilogger)
 	if err != nil {
 		fmt.Printf("%v", err)
 	}
@@ -150,7 +150,7 @@ func Example_checkErrorHandling() {
 		Environment: "Test",
 		User:        "5838239847",
 	}
-	resp, err := InsertLogRecord(connection, o, ilogger)
+	resp, err := InsertLogRecord(connection, o, &ilogger)
 	if err != nil {
 		fmt.Printf("%v", err)
 	}

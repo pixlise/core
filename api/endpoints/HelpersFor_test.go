@@ -138,7 +138,7 @@ func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, sign
 
 	return services.APIServices{
 		Config:        cfg,
-		Log:           logger.NullLogger{},
+		Log:           &logger.NullLogger{},
 		AWSSessionCW:  nil,
 		S3:            mockS3,
 		JWTReader:     MockJWTReader{},

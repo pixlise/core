@@ -271,7 +271,7 @@ func handler(ctx context.Context, s3Event events.S3Event) error {
 	fs := fileaccess.MakeS3Access(s3svc)
 
 	// We have to write to stdout so it gets to cloudwatch logs via lambda magic
-	stdLog := logger.StdOutLogger{}
+	stdLog := &logger.StdOutLogger{}
 
 	/*
 	   NOTE: S3 event at this point is:
@@ -349,6 +349,6 @@ func main() {
 	lambda.Start(handler)
 	/*	sess, _ := awsutil.GetSession()
 		s3svc, _ := awsutil.GetS3(sess)
-		stdLog := logger.StdOutLogger{}
+		stdLog := &logger.StdOutLogger{}
 		regenJobSummary(s3svc, "devstack-persistencepiquantjobs65c7175e-1dg51nw1ye1rk", filepaths.RootJobStatus, stdLog)*/
 }

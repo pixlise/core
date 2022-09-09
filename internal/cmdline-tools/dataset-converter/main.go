@@ -37,7 +37,7 @@ func main() {
 	fmt.Println("=  PIXLISE dataset importer  =")
 	fmt.Println("==============================")
 
-	var jobLog logger.ILogger = logger.StdOutLogger{}
+	var jobLog logger.ILogger = &logger.StdOutLogger{}
 
 	importers := map[string]importer.Importer{"test-msa": msatestdata.MSATestData{}, "pixl-fm": pixlfm.PIXLFM{}}
 	importerNames := []string{} // TODO: REFACTOR: Make this work instead importerNames := utils.GetStringMapKeys(importers)

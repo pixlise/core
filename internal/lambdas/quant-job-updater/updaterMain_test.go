@@ -67,7 +67,7 @@ func Example_regenJobSummaryListBucketFail() {
 	const jobBucket = "dev-pixlise-piquant-jobs"
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
-	l := logger.NullLogger{}
+	l := &logger.NullLogger{}
 
 	// Listing returns an error
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
@@ -88,7 +88,7 @@ func Example_regenJobSummaryBadTrigger() {
 	const jobBucket = "dev-pixlise-piquant-jobs"
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
-	l := logger.NullLogger{}
+	l := &logger.NullLogger{}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
 	fmt.Println(regenJobSummary(fs, jobBucket, filepaths.RootJobStatus+"/data123/readme.txt", l))
@@ -102,7 +102,7 @@ func Example_regenJobSummaryErrorsGettingFiles() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 	mockS3.AllowGetInAnyOrder = true
-	l := logger.NullLogger{}
+	l := &logger.NullLogger{}
 
 	// Listing returns 1 item, get status returns error, check that it still requests 2nd item, 2nd item will fail to parse
 	// but the func should still upload a blank jobs.json
@@ -173,7 +173,7 @@ func Example_regenJobSummaryOneJobItem() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 	mockS3.AllowGetInAnyOrder = true
-	l := logger.NullLogger{}
+	l := &logger.NullLogger{}
 
 	// Listing returns 1 item, get status returns error, requests second and third item
 	// and properly combines the json files into a jobs.json
@@ -332,7 +332,7 @@ func Example_regenJobSummaryOneJobItemParamFail() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 	mockS3.AllowGetInAnyOrder = true
-	l := logger.NullLogger{}
+	l := &logger.NullLogger{}
 
 	// Listing returns 1 item, get status returns error, requests second and third item
 	// third item returns status error, empty jobs.json is uploaded
