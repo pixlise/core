@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/api/filepaths"
-	datasetModel "github.com/pixlise/core/core/dataset"
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/logger"
-	"github.com/pixlise/core/core/notifications"
-	"github.com/pixlise/core/core/pixlUser"
-	"github.com/pixlise/core/data-converter/importer/pixlfm"
+	"github.com/pixlise/core/v2/api/filepaths"
+	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/data-converter/importer/pixlfm"
 )
 
 type PublisherConfig struct {

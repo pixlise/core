@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/pixlise/core/core/logger"
-	"github.com/pixlise/core/data-converter/converterModels"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/data-converter/converterModels"
 )
 
 func Example_splitSpectraCSVTables_OneTable() {

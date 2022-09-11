@@ -26,7 +26,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/pixlise/core/core/utils"
+	"github.com/pixlise/core/v2/core/utils"
 )
 
 // Implementation of file access using local file system

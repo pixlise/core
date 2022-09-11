@@ -20,8 +20,8 @@ package quantModel
 import (
 	"io/ioutil"
 
-	"github.com/pixlise/core/api/services"
-	protos "github.com/pixlise/core/generated-protos"
+	"github.com/pixlise/core/v2/api/services"
+	protos "github.com/pixlise/core/v2/generated-protos"
 	"google.golang.org/protobuf/proto"
 )
 

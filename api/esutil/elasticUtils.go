@@ -22,10 +22,10 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/core/logger"
 
 	"github.com/olivere/elastic/v7"
-	"github.com/pixlise/core/api/config"
+	"github.com/pixlise/core/v2/api/config"
 )
 
 // LoggingObject - Object used for adding metric to ES

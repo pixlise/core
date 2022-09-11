@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/pixlise/core/core/logger"
 
-	"github.com/pixlise/core/core/fileaccess"
-	apiNotifications "github.com/pixlise/core/core/notifications"
+	"github.com/pixlise/core/v2/core/logger"
+
+	"github.com/pixlise/core/v2/core/fileaccess"
+	apiNotifications "github.com/pixlise/core/v2/core/notifications"
 )
 
 func triggerErrorNotifications(ns apiNotifications.NotificationManager) (string, error) {

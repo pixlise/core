@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
 )
 
 // REFACTOR: Top of this file is practically IDENTICAL to uiNotificationmanagement.go ???
@@ -67,7 +67,7 @@ func (stack *DummyNotificationStack) AddNotification(obj UINotificationObj) {
 	stack.Notifications = append(stack.Notifications, obj)
 }
 
-//SendUINotification - Dispatch notification to the stack
+// SendUINotification - Dispatch notification to the stack
 func (stack *DummyNotificationStack) SendUINotification(newNotification UINotificationObj) error {
 	//Add time of arrival
 	newNotification.Timestamp = time.Now()
@@ -94,7 +94,7 @@ func (stack *DummyNotificationStack) SendUINotification(newNotification UINotifi
 	return nil
 }
 
-//GetUINotifications - Return Notifications for user and remove from stack
+// GetUINotifications - Return Notifications for user and remove from stack
 func (stack *DummyNotificationStack) GetUINotifications(userid string) ([]UINotificationObj, error) {
 	// REFACTOR: These paths should be coming from filepaths, we don't want random paths being built around
 	// the place, want to centralise so can document/edit easily
@@ -125,7 +125,7 @@ func (stack *DummyNotificationStack) GetUINotifications(userid string) ([]UINoti
 	return notifications, nil
 }
 
-//SendGlobalEmail - Send an email to all users.
+// SendGlobalEmail - Send an email to all users.
 func (stack *DummyNotificationStack) SendGlobalEmail(content string, subject string) error {
 
 	stack.Logger.Infof("Sending dummy email. \n Subject: %v\n Content: %v", content, subject)
@@ -133,7 +133,7 @@ func (stack *DummyNotificationStack) SendGlobalEmail(content string, subject str
 	return nil
 }
 
-//SendEmail - Send an email for a topic type
+// SendEmail - Send an email for a topic type
 func (stack *DummyNotificationStack) SendEmail(topic string, templateInput map[string]interface{}, userOverride []string, userOverrideEmails []string, topiclookupoverride string, includeadmin bool) error {
 
 	sub := UserStruct{

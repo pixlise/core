@@ -24,11 +24,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pixlise/core/core/notifications"
+	"github.com/pixlise/core/v2/core/notifications"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/v2/core/awsutil"
 )
 
 const emptyUserJSON = `{"userid":"600f2a0806b6c70071d3d174","notifications":{"topics":[],"hints":[],"uinotifications":[]},"userconfig":{"name":"Niko Bellic","email":"niko@spicule.co.uk","cell":"","data_collection":"unknown"}}`

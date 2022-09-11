@@ -31,13 +31,13 @@ import (
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	cmap "github.com/orcaman/concurrent-map"
 	ccopy "github.com/otiai10/copy"
-	datasetModel "github.com/pixlise/core/core/dataset"
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/logger"
-	apiNotifications "github.com/pixlise/core/core/notifications"
-	"github.com/pixlise/core/core/utils"
-	"github.com/pixlise/core/data-converter/output"
-	diffractionDetection "github.com/pixlise/core/diffraction-detector"
+	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
+	apiNotifications "github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v2/data-converter/output"
+	diffractionDetection "github.com/pixlise/core/v2/diffraction-detector"
 )
 
 // setupLocalPaths - Setup the local paths for the files required for datasource processing

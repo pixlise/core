@@ -6,10 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/core/logger"
 
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/utils"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/utils"
 )
 
 func downloadDirectoryZip(s3bucket string, s3path string, fs fileaccess.FileAccess) (string, error) {

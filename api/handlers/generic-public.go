@@ -20,7 +20,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/pixlise/core/api/services"
+	"github.com/pixlise/core/v2/api/services"
 )
 
 // As with generic handler, but for public API endpoints ONLY

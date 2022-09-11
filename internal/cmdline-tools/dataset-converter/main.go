@@ -24,12 +24,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/core/logger"
 
-	"github.com/pixlise/core/data-converter/importer"
-	"github.com/pixlise/core/data-converter/importer/msatestdata"
-	"github.com/pixlise/core/data-converter/importer/pixlfm"
-	"github.com/pixlise/core/data-converter/output"
+	"github.com/pixlise/core/v2/data-converter/importer"
+	"github.com/pixlise/core/v2/data-converter/importer/msatestdata"
+	"github.com/pixlise/core/v2/data-converter/importer/pixlfm"
+	"github.com/pixlise/core/v2/data-converter/output"
 )
 
 func main() {

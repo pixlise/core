@@ -18,8 +18,8 @@
 package quantModel
 
 import (
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/core/fileaccess"
 )
 
 // JobSummaryItem all metadata stored for an individual job/quant file (even after it was generated)
@@ -30,7 +30,7 @@ type JobSummaryItem struct {
 	*JobStatus
 }
 
-//SetMissingSummaryFields - ensure the fields all exist over time.
+// SetMissingSummaryFields - ensure the fields all exist over time.
 func SetMissingSummaryFields(summary JobSummaryItem) JobSummaryItem {
 	// Fields were introduced over time after there were many quantifications already in existance, so here
 	// we ensure that any older JSONs we read are patched with the new field, because it's a smaller surface area

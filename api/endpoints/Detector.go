@@ -18,11 +18,11 @@
 package endpoints
 
 import (
-	"github.com/pixlise/core/api/handlers"
-	"github.com/pixlise/core/api/permission"
-	apiRouter "github.com/pixlise/core/api/router"
-	"github.com/pixlise/core/core/detector"
-	"github.com/pixlise/core/core/piquant"
+	"github.com/pixlise/core/v2/api/handlers"
+	"github.com/pixlise/core/v2/api/permission"
+	apiRouter "github.com/pixlise/core/v2/api/router"
+	"github.com/pixlise/core/v2/core/detector"
+	"github.com/pixlise/core/v2/core/piquant"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

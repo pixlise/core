@@ -33,13 +33,13 @@ import (
 	"strings"
 	"time"
 
-	apiNotifications "github.com/pixlise/core/core/notifications"
+	apiNotifications "github.com/pixlise/core/v2/core/notifications"
 
-	"github.com/pixlise/core/api/endpoints"
-	"github.com/pixlise/core/core/auth0login"
-	datasetModel "github.com/pixlise/core/core/dataset"
-	"github.com/pixlise/core/core/utils"
-	protos "github.com/pixlise/core/generated-protos"
+	"github.com/pixlise/core/v2/api/endpoints"
+	"github.com/pixlise/core/v2/core/auth0login"
+	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v2/core/utils"
+	protos "github.com/pixlise/core/v2/generated-protos"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -270,7 +270,7 @@ func quantVerification(JWT string, environment string, datasetID string, pmcList
 	return jobID, err
 }
 
-//deletes quant after running it
+// deletes quant after running it
 func deleteQuant(JWT string, jobID string, environment string, datasetID string) error {
 	req, err := http.NewRequest("DELETE", generateURL(environment)+"/quantification/"+datasetID+"/"+jobID, nil)
 	if err != nil {
@@ -295,7 +295,7 @@ func deleteQuant(JWT string, jobID string, environment string, datasetID string)
 	return nil
 }
 
-//checks the exporter works on the hardcoded datasets added below
+// checks the exporter works on the hardcoded datasets added below
 func verifyExport(JWT string, jobID string, environment string, datasetID string, fileName string, fileIds []string) error {
 	jsonStr := `{"fileName": "` + fileName + `", "quantificationId":"` + jobID + `", "fileIds":[`
 	for c, file := range fileIds {

@@ -23,7 +23,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/v2/core/awsutil"
 )
 
 type DatasourceEvent struct {

@@ -25,18 +25,18 @@ import (
 
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/notifications"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/notifications"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/pixlise/core/api/esutil"
-	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/v2/api/esutil"
+	"github.com/pixlise/core/v2/core/pixlUser"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/pixlise/core/api/config"
-	"github.com/pixlise/core/core/awsutil"
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/api/config"
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/logger"
 )
 
 // NOTE: these 2 vars are set during compilation in gitlab CI build (see Makefile)

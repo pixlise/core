@@ -11,16 +11,16 @@ import (
 
 	"github.com/pkg/profile"
 
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/core/awsutil"
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/logger"
-	apiNotifications "github.com/pixlise/core/core/notifications"
-	"github.com/pixlise/core/core/utils"
-	"github.com/pixlise/core/data-converter/importer"
-	"github.com/pixlise/core/data-converter/importer/msatestdata"
-	"github.com/pixlise/core/data-converter/importer/pixlfm"
-	"github.com/pixlise/core/data-converter/output"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
+	apiNotifications "github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v2/data-converter/importer"
+	"github.com/pixlise/core/v2/data-converter/importer/msatestdata"
+	"github.com/pixlise/core/v2/data-converter/importer/pixlfm"
+	"github.com/pixlise/core/v2/data-converter/output"
 )
 
 func createDatasourceEvent(inpath string) DatasourceEvent {

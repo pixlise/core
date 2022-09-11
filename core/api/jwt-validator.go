@@ -25,7 +25,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/v2/core/pixlUser"
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 

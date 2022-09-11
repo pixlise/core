@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/core/logger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"

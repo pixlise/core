@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/core/logger"
 )
 
 func printFNValues(m FileNameMeta) {

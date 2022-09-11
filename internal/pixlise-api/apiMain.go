@@ -29,21 +29,21 @@ import (
 
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 
-	"github.com/pixlise/core/core/notifications"
+	"github.com/pixlise/core/v2/core/notifications"
 
 	"github.com/gorilla/handlers"
 
-	"github.com/pixlise/core/api/config"
-	"github.com/pixlise/core/api/endpoints"
-	"github.com/pixlise/core/api/services"
-	"github.com/pixlise/core/core/api"
-	"github.com/pixlise/core/core/awsutil"
-	"github.com/pixlise/core/core/utils"
+	"github.com/pixlise/core/v2/api/config"
+	"github.com/pixlise/core/v2/api/endpoints"
+	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/utils"
 
 	_ "net/http/pprof"
 
 	cmap "github.com/orcaman/concurrent-map"
-	"github.com/pixlise/core/core/export"
+	"github.com/pixlise/core/v2/core/export"
 )
 
 func printRoutePermissions(routePermissions map[string]string) {

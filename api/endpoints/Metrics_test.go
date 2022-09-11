@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/v2/core/awsutil"
 )
 
 func Example_registerMetricsHandlerTest() {

@@ -24,10 +24,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/core/logger"
-	"github.com/pixlise/core/data-converter/converterModels"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/data-converter/converterModels"
 
-	"github.com/pixlise/core/data-converter/importer"
+	"github.com/pixlise/core/v2/data-converter/importer"
 )
 
 // We expect a JSON with these values in test datasets to provide us all required parameters

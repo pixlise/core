@@ -31,11 +31,11 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/core/logger"
-	"github.com/pixlise/core/core/utils"
-	"github.com/pixlise/core/data-converter/converterModels"
-	protos "github.com/pixlise/core/generated-protos"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v2/data-converter/converterModels"
+	protos "github.com/pixlise/core/v2/generated-protos"
 )
 
 // PIXLISEDataSaver - module to save the internal representation of a dataset

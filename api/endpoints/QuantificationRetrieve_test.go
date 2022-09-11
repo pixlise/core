@@ -26,10 +26,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/core/awsutil"
-	"github.com/pixlise/core/core/pixlUser"
-	"github.com/pixlise/core/core/quantModel"
-	"github.com/pixlise/core/core/utils"
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/quantModel"
+	"github.com/pixlise/core/v2/core/utils"
 )
 
 func Example_quantHandler_AdminList() {
