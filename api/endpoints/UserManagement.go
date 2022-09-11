@@ -22,12 +22,12 @@ import (
 	"io/ioutil"
 	"time"
 
-	apiNotifications "github.com/pixlise/core/core/notifications"
+	apiNotifications "github.com/pixlise/core/v2/core/notifications"
 
-	"github.com/pixlise/core/api/config"
-	"github.com/pixlise/core/api/handlers"
-	"github.com/pixlise/core/api/permission"
-	apiRouter "github.com/pixlise/core/api/router"
+	"github.com/pixlise/core/v2/api/config"
+	"github.com/pixlise/core/v2/api/handlers"
+	"github.com/pixlise/core/v2/api/permission"
+	apiRouter "github.com/pixlise/core/v2/api/router"
 	"gopkg.in/auth0.v4/management"
 )
 

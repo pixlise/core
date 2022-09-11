@@ -22,18 +22,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-lambda-go/lambda"
 	"math/rand"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-lambda-go/lambda"
+
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/core/awsutil"
-	datasetModel "github.com/pixlise/core/core/dataset"
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/logger"
-	"github.com/pixlise/core/core/utils"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/core/awsutil"
+	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/core/utils"
 	"k8s.io/utils/env"
 )
 
@@ -97,7 +98,7 @@ func updateDatasets(fs fileaccess.FileAccess, datasetBucket string, configBucket
 }
 
 func handler(ctx context.Context, s3Event events.S3Event) error {
-	stdLog := logger.StdOutLogger{}
+	stdLog := &logger.StdOutLogger{}
 	errCount := 0
 
 	for _, record := range s3Event.Records {
@@ -143,6 +144,6 @@ func main() {
 	/*sess, _ := awsutil.GetSession()
 	s3svc, _ := awsutil.GetS3(sess)
 	fs := fileaccess.MakeS3Access(s3svc)
-	stdLog := logger.StdOutLogger{}
+	stdLog := &logger.StdOutLogger{}
 	updateDatasets(fs, "devpixlise-datasets0030ee04-ox1crk4uej2x", "devpixlise-config57d1d894-f139lsgzotpf", stdLog)*/
 }

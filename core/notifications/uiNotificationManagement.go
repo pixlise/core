@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
 
 	cmap "github.com/orcaman/concurrent-map"
 )
@@ -43,7 +43,7 @@ type NotificationManager interface {
 	SendGlobalEmail(content string, subject string) error
 }
 
-//NotificationStack - Controller for UI Notifications
+// NotificationStack - Controller for UI Notifications
 type NotificationStack struct {
 	Notifications []UINotificationObj
 	FS            fileaccess.FileAccess
@@ -55,7 +55,7 @@ type NotificationStack struct {
 	MongoUtils    *MongoUtils
 }
 
-//UINotificationObj - UI Notification Object
+// UINotificationObj - UI Notification Object
 type UINotificationObj struct {
 	Topic     string    `json:"topic"`
 	Message   string    `json:"message"`
@@ -78,7 +78,7 @@ func (stack *NotificationStack) AddNotification(obj UINotificationObj) {
 	stack.Notifications = append(stack.Notifications, obj)
 }
 
-//SendUINotification - Dispatch notification to the stack
+// SendUINotification - Dispatch notification to the stack
 func (stack *NotificationStack) SendUINotification(newNotification UINotificationObj) error {
 	//Add time of arrival
 	newNotification.Timestamp = time.Now()
@@ -109,7 +109,7 @@ func (stack *NotificationStack) SendUINotification(newNotification UINotificatio
 	return nil
 }
 
-//GetUINotifications - Return Notifications for user and remove from stack
+// GetUINotifications - Return Notifications for user and remove from stack
 func (stack *NotificationStack) GetUINotifications(userid string) ([]UINotificationObj, error) {
 	// REFACTOR: These paths should be coming from filepaths, we don't want random paths being built around the place, want to centralise so can document/edit easily
 	path := "UserContent/notifications/" + userid + ".json"
@@ -131,7 +131,7 @@ func (stack *NotificationStack) GetUINotifications(userid string) ([]UINotificat
 			n.Notifications.UINotifications = []UINotificationObj{}
 			err = stack.FS.WriteJSONNoIndent(stack.Bucket, path, &n)
 			if err != nil {
-				fmt.Printf("Failed to write cleared notification file for user: %v. Error: %v\n", userid, err)
+				stack.Logger.Errorf("Failed to write cleared notification file for user: %v. Error: %v\n", userid, err)
 			}
 		}
 		return notifications, nil

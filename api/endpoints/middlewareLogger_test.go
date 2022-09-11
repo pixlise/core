@@ -10,11 +10,11 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/api/config"
-	"github.com/pixlise/core/api/esutil"
-	"github.com/pixlise/core/core/api"
-	"github.com/pixlise/core/core/awsutil"
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/api/config"
+	"github.com/pixlise/core/v2/api/esutil"
+	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/logger"
 )
 
 func Example_testLoggingDebug() {

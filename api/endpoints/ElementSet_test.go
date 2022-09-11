@@ -25,7 +25,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/v2/core/awsutil"
 )
 
 const elemUserS3Path = "UserContent/600f2a0806b6c70071d3d174/ElementSets.json"

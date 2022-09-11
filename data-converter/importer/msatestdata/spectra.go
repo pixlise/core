@@ -26,11 +26,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/core/logger"
-	"github.com/pixlise/core/core/utils"
-	"github.com/pixlise/core/data-converter/converterModels"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v2/data-converter/converterModels"
 
-	"github.com/pixlise/core/data-converter/importer"
+	"github.com/pixlise/core/v2/data-converter/importer"
 )
 
 func listMSAFilesToProcess(path string, ignoreMSAFiles string, jobLog logger.ILogger) ([]string, error) {

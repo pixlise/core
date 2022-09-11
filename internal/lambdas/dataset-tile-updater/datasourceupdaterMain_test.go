@@ -24,9 +24,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/core/awsutil"
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
 )
 
 const datasetBucket = "dev-pixlise-data"
@@ -35,7 +35,7 @@ const configBucket = "dev-pixlise-config"
 func Example_updateDatasetsBucketFail() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
-	l := logger.NullLogger{}
+	l := &logger.NullLogger{}
 
 	// Listing returns an error
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
@@ -56,7 +56,7 @@ func Example_updateDatasetsBucketFail() {
 func Example_updateDatasetsErrorGettingFiles() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
-	l := logger.NullLogger{}
+	l := &logger.NullLogger{}
 
 	// Listing returns 1 item, get status returns error, check that it still requests 2nd item, 2nd item will fail to parse
 	// but the func should still upload a blank datasets.json
@@ -121,7 +121,7 @@ func Example_updateDatasetsErrorGettingFiles() {
 func Example_updateDatasetsTwoSummaryCombineNilJson() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
-	l := logger.NullLogger{}
+	l := &logger.NullLogger{}
 
 	// Listing returns 1 item, get status returns error, requests 2nd and 3rd item and properly combines the
 	//two jsons into datasets.json
@@ -287,7 +287,7 @@ func Example_updateDatasetsTwoSummaryCombineNilJson() {
 func Example_updateDatasetsTwoSummaryCombineBadJson() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
-	l := logger.NullLogger{}
+	l := &logger.NullLogger{}
 
 	// Listing returns 1 item that is invalid json, does not parse it, returnrs error, and moves on
 	// requests 2nd and 3rd item and properly combines the two jsons into datasets.json
@@ -455,7 +455,7 @@ func Example_updateDatasetsTwoSummaryCombineBadJson() {
 func Example_updateDatasetsTwoSummaryCombineBadJsonWithBadIDMarked() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
-	l := logger.NullLogger{}
+	l := &logger.NullLogger{}
 
 	// Listing returns 1 item that is invalid json, does not parse it, returnrs error, and moves on
 	// requests 2nd and 3rd item and properly combines the two jsons into datasets.json

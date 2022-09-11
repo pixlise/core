@@ -24,10 +24,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/core/awsutil"
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/pixlUser"
-	"github.com/pixlise/core/core/roiModel"
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/roiModel"
 )
 
 /*

@@ -26,10 +26,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/api/config"
-	"github.com/pixlise/core/api/esutil"
-	"github.com/pixlise/core/core/api"
-	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/v2/api/config"
+	"github.com/pixlise/core/v2/api/esutil"
+	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v2/core/awsutil"
 )
 
 const viewStateS3Path = "UserContent/600f2a0806b6c70071d3d174/TheDataSetID/ViewState/"

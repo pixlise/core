@@ -23,8 +23,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/core/logger"
-	"github.com/pixlise/core/data-converter/importer"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/data-converter/importer"
 )
 
 func processContextImages(path string, jobLog logger.ILogger) (map[int32]string, error) {

@@ -20,14 +20,15 @@ package notifications
 import (
 	"bytes"
 	"fmt"
-	"github.com/pixlise/core/core/notifications/templates"
 	"html/template"
 	"log"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/pixlise/core/core/awsutil"
+	textTemplates "github.com/pixlise/core/v2/core/notifications/templates"
+
+	"github.com/pixlise/core/v2/core/awsutil"
 )
 
 const (
@@ -74,17 +75,17 @@ type UserStruct struct {
 	Config        `json:"userconfig"`
 }
 
-//TemplateContents - Structure for template injection
+// TemplateContents - Structure for template injection
 type TemplateContents struct {
 	ContentMap  UserStruct
 	TemplateMap map[string]interface{}
 }
 
-//SendGlobalEmail - Send an email to all users.
+// SendGlobalEmail - Send an email to all users.
 func (stack *NotificationStack) SendGlobalEmail(content string, subject string) error {
 
 	users, err := stack.GetAllUsers()
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	var bcc []string
@@ -99,7 +100,7 @@ func (stack *NotificationStack) SendGlobalEmail(content string, subject string) 
 	return nil
 }
 
-//SendEmail - Send an email for a topic type
+// SendEmail - Send an email for a topic type
 func (stack *NotificationStack) SendEmail(topic string, templateInput map[string]interface{}, userOverride []string, userOverrideEmails []string, topiclookupoverride string, includeadmin bool) error {
 	var subscribers []UserStruct
 	var err error
@@ -107,13 +108,13 @@ func (stack *NotificationStack) SendEmail(topic string, templateInput map[string
 	if topiclookupoverride != "" {
 		searchtopic = topiclookupoverride
 	}
-		if userOverride != nil {
-			subscribers, err = stack.GetSubscribersByTopicID(userOverride, searchtopic)
-		} else if userOverrideEmails != nil {
-			subscribers, err = stack.GetSubscribersByEmailTopicID(userOverride, searchtopic)
-		} else {
-			subscribers, err = stack.GetSubscribersByTopic(searchtopic)
-		}
+	if userOverride != nil {
+		subscribers, err = stack.GetSubscribersByTopicID(userOverride, searchtopic)
+	} else if userOverrideEmails != nil {
+		subscribers, err = stack.GetSubscribersByEmailTopicID(userOverride, searchtopic)
+	} else {
+		subscribers, err = stack.GetSubscribersByTopic(searchtopic)
+	}
 
 	if err != nil {
 		return err

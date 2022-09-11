@@ -20,12 +20,12 @@ package endpoints
 import (
 	"fmt"
 
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/api/handlers"
-	"github.com/pixlise/core/core/quantModel"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/api/handlers"
+	"github.com/pixlise/core/v2/core/quantModel"
 
-	"github.com/pixlise/core/core/api"
-	"github.com/pixlise/core/core/utils"
+	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v2/core/utils"
 )
 
 func quantificationBless(params handlers.ApiHandlerParams) (interface{}, error) {

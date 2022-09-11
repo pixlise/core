@@ -30,20 +30,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/notifications"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/notifications"
 
-	datasetModel "github.com/pixlise/core/core/dataset"
-	"github.com/pixlise/core/core/piquant"
-	"github.com/pixlise/core/core/pixlUser"
-	"github.com/pixlise/core/core/roiModel"
-	"github.com/pixlise/core/core/utils"
-	protos "github.com/pixlise/core/generated-protos"
+	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v2/core/piquant"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/roiModel"
+	"github.com/pixlise/core/v2/core/utils"
+	protos "github.com/pixlise/core/v2/generated-protos"
 
-	"github.com/pixlise/core/api/config"
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/api/services"
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/api/config"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v2/core/logger"
 )
 
 const QuantModeSeparateAB = "AB"
@@ -56,7 +56,7 @@ const QuantModeCombinedMultiQuant = "CombinedMultiQuant"
 const QuantModeABMultiQuant = "ABMultiQuant"
 
 // CreateJob - creates a new quantification job
-func CreateJob(svcs *services.APIServices, createParams JobCreateParams, makeLog bool, wg *sync.WaitGroup) (string, error) {
+func CreateJob(svcs *services.APIServices, createParams JobCreateParams, wg *sync.WaitGroup) (string, error) {
 	jobID := svcs.IDGen.GenObjectID()
 
 	// NOTE: if we're NOT running a map job, we make weird job IDs that help us identify this as a piquant that doesn't need to be
@@ -76,29 +76,32 @@ func CreateJob(svcs *services.APIServices, createParams JobCreateParams, makeLog
 	coresPerNode := svcs.Config.CoresPerNode
 
 	var jobLog logger.ILogger
+	var err error
+
 	// Init a logger for this job
-	if !makeLog {
-		// Creator doesn't want it logged - used for unit tests so we don't have to set up AWS credentials
-		jobLog = logger.NullLogger{}
-	} else {
-		var err error
-		jobLog, err = logger.Init("job-"+jobID, svcs.Config.LogLevel, svcs.Config.EnvironmentName, svcs.AWSSessionCW)
-		if err != nil {
-			log.Errorf("Failed to create logger for Job ID: %v", jobID)
-		}
+	jobLog, err = logger.InitCloudWatchLogger(
+		svcs.AWSSessionCW,
+		"/api/"+svcs.Config.EnvironmentName,
+		"job-"+jobID,
+		svcs.Config.LogLevel,
+		30, // Log retention for 30 days
+		3,  // Send logs every 3 seconds in batches
+	)
+	if err != nil {
+		log.Errorf("Failed to create logger for Job ID: %v", jobID)
 	}
 
 	jobLog.Infof(createMsg)
 
 	if len(createParams.PMCs) <= 0 {
-		txt := "No PMCs specified, quant job not created."
+		txt := "No PMCs specified, quant job not created"
 		jobLog.Errorf(txt)
 		return jobID, errors.New(txt)
 	}
 
 	// Make sure AWS env vars are available, because that's what we'll be passing to PIQUANT docker container
 	if len(os.Getenv("AWS_ACCESS_KEY_ID")) <= 0 || len(os.Getenv("AWS_SECRET_ACCESS_KEY")) <= 0 || len(os.Getenv("AWS_DEFAULT_REGION")) <= 0 {
-		txt := "No AWS environment variables defined."
+		txt := "No AWS environment variables defined"
 		jobLog.Errorf(txt)
 		return jobID, errors.New(txt)
 	}

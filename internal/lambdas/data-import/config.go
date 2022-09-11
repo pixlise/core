@@ -1,6 +1,6 @@
 package main
 
-import "github.com/pixlise/core/core/fileaccess"
+import "github.com/pixlise/core/v2/core/fileaccess"
 
 type configfile struct {
 	Name       string `json:"name"`

@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/pixlise/core/core/logger"
-	"github.com/pixlise/core/data-converter/converterModels"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/data-converter/converterModels"
 )
 
 func Example_splitSpectraCSVTables_OneTable() {
@@ -98,7 +98,7 @@ func Example_parseSpectraCSVData_OK() {
 		[]string{"41", "42", "43", "44", "45", "46"},
 		[]string{"141", "142", "143", "144", "145", "146"},
 	}
-	data, err := parseSpectraCSVData(lines, "Normal", logger.NullLogger{})
+	data, err := parseSpectraCSVData(lines, "Normal", &logger.NullLogger{})
 
 	fmt.Printf("%v\n", err)
 
@@ -178,42 +178,42 @@ func Example_parseSpectraCSVData_TopTableErrors() {
 	lines := [][]string{
 		[]string{"SCLK_A", "SCLK_B", "PMC", "XPERCHAN_A", "XPERCHAN_B"},
 	}
-	data, err := parseSpectraCSVData(lines, "Normal", logger.NullLogger{})
+	data, err := parseSpectraCSVData(lines, "Normal", &logger.NullLogger{})
 	fmt.Printf("%v|%v\n", data, err)
 
 	lines = [][]string{
 		[]string{"SCLK_A", "SCLK_B", "PMC", "real_time_A", "real_time_B", "live_time_A", "live_time_B", "XPERCHAN_A", "XPERCHAN_B", "OFFSET_A", "OFFSET_B"},
 		[]string{"11", "12", "33", "17.7", "17.8", "17.1", "17.2", "17.5", "17.6", "17.3"},
 	}
-	data, err = parseSpectraCSVData(lines, "Normal", logger.NullLogger{})
+	data, err = parseSpectraCSVData(lines, "Normal", &logger.NullLogger{})
 	fmt.Printf("%v|%v\n", data, err)
 
 	lines = [][]string{
 		[]string{"SCLK_A", "SCLK_B", "PMC", "real_time_A", "real_time_B", "live_time_A", "live_time_B", "XPERCHAN_A", "XPERCHAN_B", "OFFSET_A", "OFFSET_B"},
 		[]string{"11", "12", "33", "17.7", "17.8", "17.1", "17.2", "17.5", "17.6", "17.3", "17.4", "666"},
 	}
-	data, err = parseSpectraCSVData(lines, "Normal", logger.NullLogger{})
+	data, err = parseSpectraCSVData(lines, "Normal", &logger.NullLogger{})
 	fmt.Printf("%v|%v\n", data, err)
 
 	lines = [][]string{
 		[]string{"SCLK_A", "SCLK_B", "PMC", "real_time_A", "real_time_B", "live_time_A", "live_time_B", "XPERCHAN_A", "XPERCHAN_B", "OFFSET_A", "OFFSET_B"},
 		[]string{"11", "something", "33", "17.7", "17.8", "17.1", "17.2", "17.5", "17.6", "17.3", "17.4"},
 	}
-	data, err = parseSpectraCSVData(lines, "Normal", logger.NullLogger{})
+	data, err = parseSpectraCSVData(lines, "Normal", &logger.NullLogger{})
 	fmt.Printf("%v|%v\n", data, err)
 
 	lines = [][]string{
 		[]string{"SCLK_A", "SCLK_B", "PMC", "real_time_A", "real_time_B", "live_time_A", "live_time_B", "XPERCHAN_A", "XPERCHAN_B", "OFFSET_A", "OFFSET_B"},
 		[]string{"11", "12", "something", "17.7", "17.8", "17.1", "17.2", "17.5", "17.6", "17.3", "17.4"},
 	}
-	data, err = parseSpectraCSVData(lines, "Normal", logger.NullLogger{})
+	data, err = parseSpectraCSVData(lines, "Normal", &logger.NullLogger{})
 	fmt.Printf("%v|%v\n", data, err)
 
 	lines = [][]string{
 		[]string{"SCLK_A", "SCLK_B", "PMC", "real_time_A", "real_time_B", "live_time_A", "live_time_B", "XPERCHAN_A", "XPERCHAN_B", "OFFSET_A", "OFFSET_B"},
 		[]string{"11", "12", "33", "17.7", "17.8", "17.1", "something", "17.5", "17.6", "17.3", "17.4"},
 	}
-	data, err = parseSpectraCSVData(lines, "Normal", logger.NullLogger{})
+	data, err = parseSpectraCSVData(lines, "Normal", &logger.NullLogger{})
 	fmt.Printf("%v|%v\n", data, err)
 
 	// Output:
@@ -241,7 +241,7 @@ func Example_parseSpectraCSVData_SpectrumTableDiffColCounts() {
 		[]string{"141", "142", "143", "144", "145", "146", "147"},
 	}
 
-	data, err := parseSpectraCSVData(lines, "Normal", logger.NullLogger{})
+	data, err := parseSpectraCSVData(lines, "Normal", &logger.NullLogger{})
 	fmt.Printf("%v|%v\n", data, err)
 
 	// Output:
@@ -264,7 +264,7 @@ func Example_parseSpectraCSVData_SpectrumTableBadData() {
 		[]string{"141", "142", "143", "144", "145", "146"},
 	}
 
-	data, err := parseSpectraCSVData(lines, "Normal", logger.NullLogger{})
+	data, err := parseSpectraCSVData(lines, "Normal", &logger.NullLogger{})
 	fmt.Printf("%v|%v\n", data, err)
 
 	// Output:
@@ -286,7 +286,7 @@ func Example_parseSpectraCSVData_SpectrumTablesDifferingRows() {
 		[]string{"41", "42", "43", "44", "45", "46"},
 	}
 
-	data, err := parseSpectraCSVData(lines, "Normal", logger.NullLogger{})
+	data, err := parseSpectraCSVData(lines, "Normal", &logger.NullLogger{})
 	fmt.Printf("%v|%v\n", data, err)
 
 	// Output:

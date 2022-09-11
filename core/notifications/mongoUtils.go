@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/core/logger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -170,8 +170,8 @@ func (m *MongoUtils) GetMongoSubscribersByTopicID(override []string, searchtopic
 	}
 	sort := bson.D{{"timestamp", -1}}
 	//projection := bson.D{{"type", 1}, {"rating", 1}, {"_id", 0}}
-	jsonString, _ := json.Marshal(filter)
-	fmt.Printf("\n%v\n", string(jsonString))
+	//jsonString, _ := json.Marshal(filter)
+	//fmt.Printf("\n%v\n", string(jsonString))
 	opts := options.Find().SetSort(sort) //.SetProjection(projection)
 	cursor, err := m.userCollection.Find(context.TODO(), filter, opts)
 	if err != nil {
@@ -230,8 +230,8 @@ func (m *MongoUtils) GetMongoSubscribersByEmailTopicID(override []string, search
 	}
 	sort := bson.D{{"timestamp", -1}}
 	//projection := bson.D{{"type", 1}, {"rating", 1}, {"_id", 0}}
-	jsonString, _ := json.Marshal(filter)
-	fmt.Printf("\n%v\n", string(jsonString))
+	//jsonString, _ := json.Marshal(filter)
+	//fmt.Printf("\n%v\n", string(jsonString))
 	opts := options.Find().SetSort(sort) //.SetProjection(projection)
 	cursor, err := m.userCollection.Find(context.TODO(), filter, opts)
 	if err != nil {
@@ -271,8 +271,8 @@ func (m *MongoUtils) GetMongoSubscribersByTopic(searchtopic string, logger logge
 
 	sort := bson.D{{"timestamp", -1}}
 	//projection := bson.D{{"type", 1}, {"rating", 1}, {"_id", 0}}
-	jsonString, _ := json.Marshal(filter)
-	fmt.Printf("\n%v\n", string(jsonString))
+	//jsonString, _ := json.Marshal(filter)
+	//fmt.Printf("\n%v\n", string(jsonString))
 	opts := options.Find().SetSort(sort) //.SetProjection(projection)
 	cursor, err := m.userCollection.Find(context.TODO(), filter, opts)
 	if err != nil {
@@ -333,7 +333,7 @@ func (m *MongoUtils) GetUINotifications(user string) ([]UINotificationObj, error
 		}
 		notifications = append(notifications, l)
 	}
-	m.Log.Infof("Fetched Mongo Notifications for user: %v", user)
+	//m.Log.Infof("Fetched Mongo Notifications for user: %v", user)
 
 	return notifications, nil
 }

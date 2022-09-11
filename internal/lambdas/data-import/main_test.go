@@ -25,12 +25,12 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/core/awsutil"
-	datasetModel "github.com/pixlise/core/core/dataset"
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/logger"
-	apiNotifications "github.com/pixlise/core/core/notifications"
-	"github.com/pixlise/core/core/utils"
+	"github.com/pixlise/core/v2/core/awsutil"
+	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
+	apiNotifications "github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/utils"
 )
 
 var envBuckets = []string{
@@ -57,7 +57,7 @@ func makeTestNotifications(fs fileaccess.FileAccess) apiNotifications.Notificati
 		Bucket:        os.Getenv("notificationBucket"),
 		Track:         make(map[string]bool),
 		Environment:   "prod",
-		Logger:        logger.NullLogger{},
+		Logger:        &logger.NullLogger{},
 	}
 }
 
@@ -171,7 +171,7 @@ func TestRunFull(t *testing.T) {
 	setupLocalPaths()
 	fs := fileaccess.MakeS3Access(&mockS3)
 	ns := makeTestNotifications(fs)
-	str, err := executePipeline(e, fs, ns, testFileCreationUnixTimeSec, getInputBucket(), "devbucket", logger.NullLogger{})
+	str, err := executePipeline(e, fs, ns, testFileCreationUnixTimeSec, getInputBucket(), "devbucket", &logger.NullLogger{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -336,7 +336,7 @@ func TestRunLocalTestMissingFilesAppend(t *testing.T) {
 
 	fs := fileaccess.MakeS3Access(&mockS3)
 	ns := makeTestNotifications(fs)
-	str, err := executePipeline(e, fs, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), logger.NullLogger{})
+	str, err := executePipeline(e, fs, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), &logger.NullLogger{})
 	// Expecting an error
 	if err.Error() != "Failed to determine dataset RTT" {
 		t.Errorf("Unexpected error when executing pipeline")
@@ -376,7 +376,7 @@ func TestRunLocalTestMissingFilesAppend(t *testing.T) {
 		DetectorConfig: "PIXL-EM-E2E",
 	}
 	setupLocalPaths()
-	str, err = executePipeline(e, fs, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), logger.NullLogger{})
+	str, err = executePipeline(e, fs, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), &logger.NullLogger{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -579,7 +579,7 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 
 	s3access := fileaccess.MakeS3Access(&mockS3)
 	ns := makeTestNotifications(s3access)
-	str, err := executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), logger.NullLogger{})
+	str, err := executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), &logger.NullLogger{})
 	if err != nil {
 		t.Errorf("Error executing pipeline: %v", err)
 	}
@@ -636,7 +636,7 @@ func TestRunLocalTestMissingFilesBrokenAppend(t *testing.T) {
 		DatasetID:      "test_datasource_missingfiles_name",
 		DetectorConfig: "PIXL-EM-E2E",
 	}
-	str, err = executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), logger.NullLogger{})
+	str, err = executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), &logger.NullLogger{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -874,7 +874,7 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 
 	s3access := fileaccess.MakeS3Access(&mockS3)
 	ns := makeTestNotifications(s3access)
-	str, err := executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), logger.NullLogger{})
+	str, err := executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), &logger.NullLogger{})
 	if err != nil {
 		t.Errorf("Error executing pipeline: %v", err)
 	}
@@ -919,7 +919,7 @@ func TestRunBrokenAppendWithCustomName(t *testing.T) {
 		DetectorConfig: "PIXL-EM-E2E",
 	}
 
-	str, err = executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), logger.NullLogger{})
+	str, err = executePipeline(e, s3access, ns, testFileCreationUnixTimeSec, getInputBucket(), getDatasourceBucket(), &logger.NullLogger{})
 	if err != nil {
 		t.Errorf("Error executing pipeline: %v", err)
 	}

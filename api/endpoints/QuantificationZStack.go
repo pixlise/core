@@ -22,10 +22,10 @@ import (
 	"errors"
 	"io/ioutil"
 
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/api/handlers"
-	"github.com/pixlise/core/api/permission"
-	"github.com/pixlise/core/core/api"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/api/handlers"
+	"github.com/pixlise/core/v2/api/permission"
+	"github.com/pixlise/core/v2/core/api"
 )
 
 func quantificationCombineListSave(params handlers.ApiHandlerParams) (interface{}, error) {

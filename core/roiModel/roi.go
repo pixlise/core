@@ -22,13 +22,13 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/api/services"
-	"github.com/pixlise/core/core/api"
-	datasetModel "github.com/pixlise/core/core/dataset"
-	"github.com/pixlise/core/core/pixlUser"
-	"github.com/pixlise/core/core/utils"
-	protos "github.com/pixlise/core/generated-protos"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v2/core/api"
+	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/utils"
+	protos "github.com/pixlise/core/v2/generated-protos"
 )
 
 // ROIItem - Region of interest item, only public so Go can reflect/interogate it

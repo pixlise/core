@@ -24,11 +24,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pixlise/core/api/config"
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/api/permission"
-	"github.com/pixlise/core/core/api"
-	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/v2/api/config"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/api/permission"
+	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v2/core/fileaccess"
 
 	auth0 "github.com/auth0-community/go-auth0"
 	jose "gopkg.in/square/go-jose.v2"

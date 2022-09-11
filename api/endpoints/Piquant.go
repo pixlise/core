@@ -28,15 +28,15 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/api/config"
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/api/handlers"
-	"github.com/pixlise/core/api/permission"
-	apiRouter "github.com/pixlise/core/api/router"
-	"github.com/pixlise/core/api/services"
-	"github.com/pixlise/core/core/api"
-	"github.com/pixlise/core/core/detector"
-	"github.com/pixlise/core/core/piquant"
+	"github.com/pixlise/core/v2/api/config"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/api/handlers"
+	"github.com/pixlise/core/v2/api/permission"
+	apiRouter "github.com/pixlise/core/v2/api/router"
+	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v2/core/detector"
+	"github.com/pixlise/core/v2/core/piquant"
 )
 
 type quantConfig struct {

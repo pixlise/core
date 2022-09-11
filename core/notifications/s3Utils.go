@@ -25,15 +25,15 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/athena"
-	"github.com/pixlise/core/core/awsutil"
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
 )
 
 type s3utils struct {
-
 }
-//GetAllS3Users - Get a minimal list of all users
+
+// GetAllS3Users - Get a minimal list of all users
 func (s3 *s3utils) GetAllS3Users(envname string, log logger.ILogger) ([]UserStruct, error) {
 	table := envname + "_notifications"
 	query := fmt.Sprintf(`SELECT userconfig.name, userconfig.email FROM "userdatabase"."%v";`, table)
@@ -41,7 +41,7 @@ func (s3 *s3utils) GetAllS3Users(envname string, log logger.ILogger) ([]UserStru
 	return executeAthenaQuery(query, true, log)
 }
 
-//GetS3SubscribersByTopic - Provide a topic, get some subscribers
+// GetS3SubscribersByTopic - Provide a topic, get some subscribers
 func (s3 *s3utils) GetS3SubscribersByTopic(topic string, envname string, log logger.ILogger) ([]UserStruct, error) {
 
 	table := envname + "_notifications"
@@ -87,7 +87,7 @@ func getS3SubscribersByID(users []string, envname string, log logger.ILogger) ([
 	return executeAthenaQuery(query, false, log)
 }
 
-//GetS3SubscribersByTopicID - Get Subs by topic
+// GetS3SubscribersByTopicID - Get Subs by topic
 func (s3 *s3utils) GetS3SubscribersByTopicID(users []string, topic string, envname string, log logger.ILogger) ([]UserStruct, error) {
 	table := envname + "_notifications"
 	appusers := []string{}

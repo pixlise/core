@@ -26,14 +26,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/api/handlers"
-	"github.com/pixlise/core/api/permission"
-	apiRouter "github.com/pixlise/core/api/router"
-	"github.com/pixlise/core/core/api"
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/quantModel"
-	"github.com/pixlise/core/core/utils"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/api/handlers"
+	"github.com/pixlise/core/v2/api/permission"
+	apiRouter "github.com/pixlise/core/v2/api/router"
+	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/quantModel"
+	"github.com/pixlise/core/v2/core/utils"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -767,6 +767,12 @@ func filterUnusedWidgetStates(state *wholeViewState) {
 	// Unfortunately the names of things don't match in analysis layout vs the file names for the widgets :(
 	// This is due to the evolution of our saving of view state, early on we didn't even have configurable layouts
 	// and things were added gradually.
+
+	// NOTE: we don't do any filtering unless the layout sections have been filled out. For example, with a blank view
+	// state we want the UI to decide what to do with the widget data we pass in
+	if len(state.AnalysisLayout.TopWidgetSelectors) != 2 || len(state.AnalysisLayout.BottomWidgetSelectors) != 4 {
+		return
+	}
 
 	layoutNameToWidgetFileName := map[string]string{
 		"chord-view-widget":       "chord",

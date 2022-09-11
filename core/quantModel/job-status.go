@@ -21,10 +21,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/api/services"
-	"github.com/pixlise/core/core/logger"
-	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/core/pixlUser"
 )
 
 func setJobStatus(statusobj *JobStatus, status JobStatusValue, message string) {

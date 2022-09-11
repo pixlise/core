@@ -15,41 +15,29 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package quantModel
+package logger
 
 import (
-	"io/ioutil"
-
-	"github.com/pixlise/core/v2/api/services"
-	protos "github.com/pixlise/core/v2/generated-protos"
-	"google.golang.org/protobuf/proto"
+	"fmt"
+	"log"
 )
 
-func GetQuantification(svcs *services.APIServices, s3Path string) (*protos.Quantification, error) {
-	bytes, err := svcs.FS.ReadObject(svcs.Config.UsersBucket, s3Path)
-	if err != nil {
-		return nil, err
-	}
-
-	quantPB := &protos.Quantification{}
-	err = proto.Unmarshal(bytes, quantPB)
-	if err != nil {
-		return nil, err
-	}
-
-	return quantPB, nil
+// StdOutLogger - For mocking out in tests
+type StdOutLogger struct {
+	logs []string
 }
 
-func ReadQuantificationFile(path string) (*protos.Quantification, error) {
-	qbytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	q := &protos.Quantification{}
-	err = proto.Unmarshal(qbytes, q)
-	if err != nil {
-		return nil, err
-	}
-	return q, nil
+func (l *StdOutLogger) Printf(level LogLevel, format string, a ...interface{}) {
+	txt := logLevelPrefix[level] + ": " + fmt.Sprintf(format, a...)
+	l.logs = append(l.logs, txt)
+	log.Println(txt)
+}
+func (l *StdOutLogger) Debugf(format string, a ...interface{}) {
+	l.Printf(LogDebug, format, a...)
+}
+func (l *StdOutLogger) Infof(format string, a ...interface{}) {
+	l.Printf(LogInfo, format, a...)
+}
+func (l *StdOutLogger) Errorf(format string, a ...interface{}) {
+	l.Printf(LogError, format, a...)
 }

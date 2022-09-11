@@ -16,7 +16,6 @@ tasks:
       make build-linux
 
 
-
 jetbrains:
   intellij:
     plugins:

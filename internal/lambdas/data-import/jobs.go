@@ -9,16 +9,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/core/awsutil"
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/logger"
-	apiNotifications "github.com/pixlise/core/core/notifications"
-	"github.com/pixlise/core/core/utils"
-	"github.com/pixlise/core/data-converter/importer"
-	"github.com/pixlise/core/data-converter/importer/msatestdata"
-	"github.com/pixlise/core/data-converter/importer/pixlfm"
-	"github.com/pixlise/core/data-converter/output"
+	"github.com/pkg/profile"
+
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
+	apiNotifications "github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v2/data-converter/importer"
+	"github.com/pixlise/core/v2/data-converter/importer/msatestdata"
+	"github.com/pixlise/core/v2/data-converter/importer/pixlfm"
+	"github.com/pixlise/core/v2/data-converter/output"
 )
 
 func createDatasourceEvent(inpath string) DatasourceEvent {
@@ -31,8 +33,11 @@ func createDatasourceEvent(inpath string) DatasourceEvent {
 	}
 }
 
+var o interface{ Stop() }
+
 // JobInit - Create name, Filesystem Access, Notification Stack
 func jobinit(inpath string, log logger.ILogger) (DatasourceEvent, fileaccess.S3Access, apiNotifications.NotificationManager, error) {
+	o = profile.Start(profile.MemProfile, profile.ProfilePath("/tmp/profile"))
 	name := createDatasourceEvent(inpath)
 	sess, err := awsutil.GetSession()
 	svc, err := awsutil.GetS3(sess)
@@ -45,8 +50,13 @@ func jobinit(inpath string, log logger.ILogger) (DatasourceEvent, fileaccess.S3A
 }
 
 // processS3 - If the message received is an S3 trigger, then process the S3 trigger
-func processS3(makeLog bool, record awsutil.Record) (string, error) {
-	jobLog := createLogger(makeLog)
+func processS3(record awsutil.Record) (string, error) {
+	jobLog := &logger.StdOutLogger{}
+
+	jobLog.Infof("=========================================")
+	jobLog.Infof("=  PIXLISE dataset importer process S3  =")
+	jobLog.Infof("=========================================")
+
 	jobLog.Infof("HandleRequest for: \"%v\"\n", record)
 	jobLog.Infof("Key: \"%v\"\n", record.S3.Object.Key)
 
@@ -59,7 +69,9 @@ func processS3(makeLog bool, record awsutil.Record) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+		s, err := executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+		stopProfiler(fs)
+		return s, err
 	} else {
 		jobLog.Infof("Datasource Path: " + record.S3.Object.Key)
 		name, fs, ns, err := jobinit(record.S3.Object.Key, jobLog)
@@ -75,14 +87,19 @@ func processS3(makeLog bool, record awsutil.Record) (string, error) {
 			_, err = triggerErrorNotifications(ns)
 			jobLog.Errorf("Could not trigger error notification: %v", err)
 		}
+		stopProfiler(fs)
 		return str, err
 	}
 }
 
 // processSNS - If the message received is an SNS message, then process the SNS message
-func processSns(makeLog bool, record awsutil.Record) (string, error) {
+func processSns(record awsutil.Record) (string, error) {
 	message := record.SNS.Message
-	jobLog := createLogger(makeLog)
+	jobLog := &logger.StdOutLogger{}
+
+	jobLog.Infof("==========================================")
+	jobLog.Infof("=  PIXLISE dataset importer process SNS  =")
+	jobLog.Infof("==========================================")
 
 	targetbucket := os.Getenv("DATASETS_BUCKET")
 
@@ -103,7 +120,9 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 
 		splits := strings.Split(snsMsg.Key.Dir, "/")
 
-		return executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+		s, err := executeReprocess(splits[1], name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+		stopProfiler(fs)
+		return s, err
 	}
 	var e awsutil.Event
 	err := e.UnmarshalJSON([]byte(message))
@@ -125,7 +144,9 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 		}
 		sourcebucket := e.Records[0].S3.Bucket.Name
 		jobLog.Infof("Sourcebucket: " + sourcebucket)
-		return executePipeline(name, fs, ns, time.Now().Unix(), sourcebucket, targetbucket, jobLog)
+		s, err := executePipeline(name, fs, ns, time.Now().Unix(), sourcebucket, targetbucket, jobLog)
+		stopProfiler(fs)
+		return s, err
 	} else if strings.HasPrefix(message, "datasource:") {
 		// run execution
 	} else {
@@ -134,9 +155,20 @@ func processSns(makeLog bool, record awsutil.Record) (string, error) {
 		if err != nil {
 			fmt.Printf("error initialising job: %v", err)
 		}
-		return executeReprocess(record.SNS.Message, name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+		s, err := executeReprocess(record.SNS.Message, name, time.Now().Unix(), fs, ns, targetbucket, jobLog)
+		stopProfiler(fs)
+		return s, err
 	}
 	return "", nil
+}
+
+func stopProfiler(fs fileaccess.S3Access) {
+	o.Stop()
+	dir, err := utils.ZipDirectory("/tmp/profile")
+	if err != nil {
+		fmt.Println("Failed to zip profile")
+	}
+	fs.WriteObject("devpixlise-manualuploadf14e9f17-x59rn61oxeh0", "/profile.zip", dir)
 }
 
 // executeReprocess - If the request is to reprocess an existing data source, then execute the reprocess pipeline and download the existing files
@@ -174,7 +206,7 @@ func executeReprocess(rtt string, name DatasourceEvent, creationUnixTimeSec int6
 // executePipeline - Run the full pipeline
 func executePipeline(name DatasourceEvent, fs fileaccess.FileAccess, ns apiNotifications.NotificationManager, creationUnixTimeSec int64, sourcebucket string, targetbucket string, jobLog logger.ILogger) (string, error) {
 	if jobLog == nil {
-		jobLog = logger.NullLogger{}
+		jobLog = &logger.NullLogger{}
 	}
 	err := os.MkdirAll(localUnzipPath, os.ModePerm)
 	if err != nil {
@@ -247,6 +279,7 @@ func executePipeline(name DatasourceEvent, fs fileaccess.FileAccess, ns apiNotif
 	}
 	r, err := processFiles(inpath, name, importers, creationUnixTimeSec, updateExisting, fs, ns, targetbucket, jobLog)
 	return r, err
+
 }
 
 // processFiles - Once files have been downloasded, process the files to generate the datasource and upload the results

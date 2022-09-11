@@ -36,14 +36,14 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/api/services"
-	datasetModel "github.com/pixlise/core/core/dataset"
-	"github.com/pixlise/core/core/pixlUser"
-	"github.com/pixlise/core/core/quantModel"
-	"github.com/pixlise/core/core/roiModel"
-	"github.com/pixlise/core/core/utils"
-	protos "github.com/pixlise/core/generated-protos"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/api/services"
+	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/quantModel"
+	"github.com/pixlise/core/v2/core/roiModel"
+	"github.com/pixlise/core/v2/core/utils"
+	protos "github.com/pixlise/core/v2/generated-protos"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -250,7 +250,7 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 		}
 
 		defer csv.Close()
-		
+
 		locations := files.diffraction.Locations
 		sort.Slice(locations, func(i, j int) bool {
 			firstLocID, err := strconv.Atoi(locations[i].Id)

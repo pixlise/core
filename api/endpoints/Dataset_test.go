@@ -25,10 +25,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/core/awsutil"
+	"github.com/pixlise/core/v2/core/awsutil"
 
-	datasetModel "github.com/pixlise/core/core/dataset"
-	"github.com/pixlise/core/core/pixlUser"
+	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v2/core/pixlUser"
 )
 
 func Example_parseQueryParams() {
