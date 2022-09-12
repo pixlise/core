@@ -37,16 +37,16 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
 
-	"github.com/pixlise/core/api/handlers"
-	"github.com/pixlise/core/api/permission"
-	apiRouter "github.com/pixlise/core/api/router"
-	"github.com/pixlise/core/api/services"
+	"github.com/pixlise/core/v2/api/handlers"
+	"github.com/pixlise/core/v2/api/permission"
+	apiRouter "github.com/pixlise/core/v2/api/router"
+	"github.com/pixlise/core/v2/api/services"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/api/filepaths"
-	datasetModel "github.com/pixlise/core/core/dataset"
-	"github.com/pixlise/core/core/utils"
+	"github.com/pixlise/core/v2/api/filepaths"
+	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v2/core/utils"
 )
 
 const datasetURLEnd = "dataset"

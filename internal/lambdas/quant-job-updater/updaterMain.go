@@ -30,11 +30,11 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/core/awsutil"
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/logger"
-	"github.com/pixlise/core/core/quantModel"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/core/quantModel"
 )
 
 // How long to keep showing completed quantification jobs once they're done
@@ -271,7 +271,7 @@ func handler(ctx context.Context, s3Event events.S3Event) error {
 	fs := fileaccess.MakeS3Access(s3svc)
 
 	// We have to write to stdout so it gets to cloudwatch logs via lambda magic
-	stdLog := logger.StdOutLogger{}
+	stdLog := &logger.StdOutLogger{}
 
 	/*
 	   NOTE: S3 event at this point is:
@@ -349,6 +349,6 @@ func main() {
 	lambda.Start(handler)
 	/*	sess, _ := awsutil.GetSession()
 		s3svc, _ := awsutil.GetS3(sess)
-		stdLog := logger.StdOutLogger{}
+		stdLog := &logger.StdOutLogger{}
 		regenJobSummary(s3svc, "devstack-persistencepiquantjobs65c7175e-1dg51nw1ye1rk", filepaths.RootJobStatus, stdLog)*/
 }

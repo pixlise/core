@@ -20,8 +20,8 @@ package msatestdata
 import (
 	"fmt"
 
-	"github.com/pixlise/core/data-converter/converterModels"
-	protos "github.com/pixlise/core/generated-protos"
+	"github.com/pixlise/core/v2/data-converter/converterModels"
+	protos "github.com/pixlise/core/v2/generated-protos"
 )
 
 // This is a specific feature for msa test data to generate a beam location when there isn't one

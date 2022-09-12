@@ -15,23 +15,33 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package importer
+package logger
 
-import (
-	"fmt"
+// LogLevel - log level type
+type LogLevel int
 
-	"github.com/pixlise/core/v2/core/logger"
-	"github.com/pixlise/core/v2/data-converter/converterModels"
+const (
+
+	// LogDebug - DEBUG log level
+	LogDebug LogLevel = iota
+
+	// LogInfo - INFO log level
+	LogInfo LogLevel = iota
+
+	// LogError - ERROR log level (does not call os.Exit!)
+	LogError LogLevel = iota
 )
 
-type Importer interface {
-	Import(importPath string, pseudoIntensityRangesPath string, jobLog logger.ILogger) (*converterModels.OutputData, string, error)
+var logLevelPrefix = map[LogLevel]string{
+	LogDebug: "DEBUG",
+	LogInfo:  "INFO",
+	LogError: "ERROR",
 }
 
-func LogIfMoreFoundMSA(m converterModels.DetectorSampleByPMC, typename string, morethan int) {
-	for k, v := range m {
-		if len(v) > morethan {
-			fmt.Printf("PMC %d has %d %s entries\n", k, len(v), typename)
-		}
-	}
+// ILogger - Generic logger interface
+type ILogger interface {
+	Printf(level LogLevel, format string, a ...interface{})
+	Debugf(format string, a ...interface{})
+	Infof(format string, a ...interface{})
+	Errorf(format string, a ...interface{})
 }

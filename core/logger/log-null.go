@@ -15,23 +15,21 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package importer
+package logger
 
-import (
-	"fmt"
-
-	"github.com/pixlise/core/v2/core/logger"
-	"github.com/pixlise/core/v2/data-converter/converterModels"
-)
-
-type Importer interface {
-	Import(importPath string, pseudoIntensityRangesPath string, jobLog logger.ILogger) (*converterModels.OutputData, string, error)
+// NullLogger - For mocking out in tests
+type NullLogger struct {
 }
 
-func LogIfMoreFoundMSA(m converterModels.DetectorSampleByPMC, typename string, morethan int) {
-	for k, v := range m {
-		if len(v) > morethan {
-			fmt.Printf("PMC %d has %d %s entries\n", k, len(v), typename)
-		}
-	}
+func (l *NullLogger) Printf(level LogLevel, format string, a ...interface{}) {
+	// We do nothing!
+}
+func (l *NullLogger) Debugf(format string, a ...interface{}) {
+	// We do nothing!
+}
+func (l *NullLogger) Infof(format string, a ...interface{}) {
+	// We do nothing!
+}
+func (l *NullLogger) Errorf(format string, a ...interface{}) {
+	// We do nothing!
 }

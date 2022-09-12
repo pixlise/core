@@ -26,10 +26,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/api/handlers"
-	"github.com/pixlise/core/core/api"
-	"github.com/pixlise/core/core/quantModel"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/api/handlers"
+	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v2/core/quantModel"
 )
 
 func quantificationPost(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -115,7 +115,7 @@ func quantificationPost(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	var wg sync.WaitGroup
-	jobID, err := quantModel.CreateJob(params.Svcs, req, true, &wg)
+	jobID, err := quantModel.CreateJob(params.Svcs, req, &wg)
 
 	if err != nil {
 		return jobID, err

@@ -24,13 +24,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/core/awsutil"
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/core/logger"
 
-	"github.com/pixlise/core/data-converter/importer"
-	"github.com/pixlise/core/data-converter/importer/msatestdata"
-	"github.com/pixlise/core/data-converter/importer/pixlfm"
-	"github.com/pixlise/core/data-converter/output"
+	"github.com/pixlise/core/v2/data-converter/importer"
+	"github.com/pixlise/core/v2/data-converter/importer/msatestdata"
+	"github.com/pixlise/core/v2/data-converter/importer/pixlfm"
+	"github.com/pixlise/core/v2/data-converter/output"
 )
 
 func main() {
@@ -38,21 +37,7 @@ func main() {
 	fmt.Println("=  PIXLISE dataset importer  =")
 	fmt.Println("==============================")
 
-	var jobLog logger.ILogger
-	makeLog := true
-	if !makeLog {
-		// Creator doesn't want it logged - used for unit tests so we don't have to set up AWS credentials
-		jobLog = logger.NullLogger{}
-	} else {
-		var err error
-		var loglevel = logger.LogDebug
-		sess, _ := awsutil.GetSession()
-		jobLog, err = logger.Init("dataimport-manual", loglevel, "prod", sess)
-		if err != nil {
-			fmt.Printf("WARNING: Failed to create log group stream. Logging to stdout. Error was: \"%v\"\n", err)
-			jobLog = logger.StdOutLogger{}
-		}
-	}
+	var jobLog logger.ILogger = &logger.StdOutLogger{}
 
 	importers := map[string]importer.Importer{"test-msa": msatestdata.MSATestData{}, "pixl-fm": pixlfm.PIXLFM{}}
 	importerNames := []string{} // TODO: REFACTOR: Make this work instead importerNames := utils.GetStringMapKeys(importers)

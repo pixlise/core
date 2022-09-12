@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pixlise/core/core/fileaccess"
+	"github.com/pixlise/core/v2/core/fileaccess"
 )
 
 type Loaded struct {

@@ -18,8 +18,8 @@
 package endpoints
 
 import (
-	"github.com/pixlise/core/api/handlers"
-	"github.com/pixlise/core/core/quantModel"
+	"github.com/pixlise/core/v2/api/handlers"
+	"github.com/pixlise/core/v2/core/quantModel"
 )
 
 func quantificationShare(params handlers.ApiHandlerParams) (interface{}, error) {

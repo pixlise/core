@@ -19,23 +19,24 @@ package services
 
 import (
 	"fmt"
-	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/notifications"
+	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
+
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/notifications"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/pixlise/core/api/esutil"
-	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/v2/api/esutil"
+	"github.com/pixlise/core/v2/core/pixlUser"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/pixlise/core/api/config"
-	"github.com/pixlise/core/core/awsutil"
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/api/config"
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/logger"
 )
 
 // NOTE: these 2 vars are set during compilation in gitlab CI build (see Makefile)
@@ -162,11 +163,26 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 		log.Fatalf("Failed to create AWS session for region: %v. Error: %v", cfg.AWSCloudwatchRegion, err)
 	}
 
-	// Init default logger
-	ourLogger, err := logger.Init(logger.DefaultGroup, cfg.LogLevel, cfg.EnvironmentName, sessCW)
+	// Init default logger - if we're local, we just output to stdout
+	// NOTE: we contain multiple streams for the one application in the one log group. Here we define
+	// a log group for the API for this environment, and other parts of the code that deal with logging will write
+	// there also
+	var ourLogger logger.ILogger
+	if cfg.EnvironmentName == "local" {
+		ourLogger = &logger.StdOutLogger{}
+	} else {
+		ourLogger, err = logger.InitCloudWatchLogger(
+			sessCW,
+			"/api/"+cfg.EnvironmentName,
+			"API",
+			cfg.LogLevel,
+			30, // Log retention for 30 days
+			3,  // Send logs every 3 seconds in batches
+		)
 
-	if err != nil {
-		log.Fatalf("Failed to initialise API logger: %v", err)
+		if err != nil {
+			log.Fatalf("Failed to initialise API logger: %v", err)
+		}
 	}
 
 	client := esutil.FullFatClient(cfg, ourLogger)
@@ -175,18 +191,6 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 		ourLogger.Errorf("Failed to connect to Elastic Search: %v", err)
 	}
 
-	/* Took this out because it looked like test code that was left in?
-	o := esutil.LoggingObject{
-		Instance:  "Test",
-		Time:      time.Now(),
-		Component: "Test Component",
-		Message:   "Test Message",
-		Params:    nil,
-		Environment: "Test",
-		User: "5838239847",
-	}
-	esutil.InsertLogRecord(es, o, ourLogger)
-	*/
 	secretscache, err := secretcache.New()
 	if err != nil {
 		ourLogger.Errorf("Failed to bootstrap secrets manager")

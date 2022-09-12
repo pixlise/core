@@ -31,11 +31,11 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/core/logger"
-	"github.com/pixlise/core/core/utils"
-	"github.com/pixlise/core/data-converter/converterModels"
-	protos "github.com/pixlise/core/generated-protos"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v2/data-converter/converterModels"
+	protos "github.com/pixlise/core/v2/generated-protos"
 )
 
 // PIXLISEDataSaver - module to save the internal representation of a dataset
@@ -169,28 +169,33 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	// Verify that main has this set...
+	fmt.Println("Verify that main has this set...")
 	if len(exp.MainContextImage) > 0 && !mainContextMatched {
 		return fmt.Errorf("Main context image inconsistant: \"%v\" does not match any context images defined for PMCs", exp.MainContextImage)
 	}
 
 	// Remainder are unaligned
+	fmt.Println("Remainder are unaligned")
 	for _, img := range contextImagesByPMC {
 		exp.UnalignedContextImages = append(exp.UnalignedContextImages, img)
 	}
 
 	// RGBU images are also unaligned for now
+	fmt.Println("RGBU images are also unaligned for now")
 	for _, meta := range data.RGBUImages {
 		//exp.UnalignedContextImages = append(exp.UnalignedContextImages, img)
 		exp.UnalignedContextImages = append(exp.UnalignedContextImages, makeRGBUFileName(meta))
 	}
 
 	// As are other context images for visual spectroscopy taken with the "disco" setup - different coloured LEDs
+	fmt.Println("As are other context images for visual spectroscopy taken with the \"disco\" setup - different coloured LEDs")
 	for _, meta := range data.DISCOImages {
 		//exp.UnalignedContextImages = append(exp.UnalignedContextImages, img)
 		exp.UnalignedContextImages = append(exp.UnalignedContextImages, makeDiscoFileName(meta))
 	}
 
 	// Now loop through them, saving in this order...
+	fmt.Println("Now loop through them, saving in this order...")
 	for _, pmcI := range pmcs {
 		pmc := int32(pmcI)
 		dataForPMC := data.PerPMCData[pmc]

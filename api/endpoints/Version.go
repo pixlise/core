@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pixlise/core/api/handlers"
-	apiRouter "github.com/pixlise/core/api/router"
-	"github.com/pixlise/core/api/services"
-	"github.com/pixlise/core/core/api"
-	"github.com/pixlise/core/core/piquant"
+	"github.com/pixlise/core/v2/api/handlers"
+	apiRouter "github.com/pixlise/core/v2/api/router"
+	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v2/core/piquant"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,13 +45,17 @@ type ComponentVersionsGetResponse struct {
 }
 
 func getAPIVersion() string {
+	ver := services.ApiVersion
 	if len(services.ApiVersion) <= 0 {
-		return "N/A - Local build"
+		ver = "(Local build)"
 	}
 
-	ver := services.ApiVersion
-	if len(services.GitHash) > 8 {
-		ver += "-" + services.GitHash[0:8]
+	if len(services.GitHash) > 0 {
+		hashEnd := 8
+		if len(services.GitHash) < 8 {
+			hashEnd = len(services.GitHash)
+		}
+		ver += "-" + services.GitHash[0:hashEnd]
 	}
 
 	return ver

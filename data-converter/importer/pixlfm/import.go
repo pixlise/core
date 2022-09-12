@@ -27,12 +27,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/api/filepaths"
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/logger"
-	"github.com/pixlise/core/data-converter/converterModels"
+	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/data-converter/converterModels"
 
-	"github.com/pixlise/core/data-converter/importer"
+	"github.com/pixlise/core/v2/data-converter/importer"
 )
 
 // These are structured differently to test data-sets in our test-data repo. One can be found in test-data called FM-cal-target-crosshair

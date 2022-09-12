@@ -20,8 +20,8 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/pixlise/core/api/services"
-	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v2/core/pixlUser"
 )
 
 // If all else fails, use this. Is the most generic handler, passes in request & response writer like raw ServeHTTP

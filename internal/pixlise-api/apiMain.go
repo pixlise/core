@@ -20,7 +20,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	"log"
 	"math/rand"
 	"net/http"
@@ -28,20 +27,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/core/notifications"
+	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
+
+	"github.com/pixlise/core/v2/core/notifications"
 
 	"github.com/gorilla/handlers"
 
-	"github.com/pixlise/core/api/config"
-	"github.com/pixlise/core/api/endpoints"
-	"github.com/pixlise/core/api/services"
-	"github.com/pixlise/core/core/api"
-	"github.com/pixlise/core/core/awsutil"
-	"github.com/pixlise/core/core/utils"
+	"github.com/pixlise/core/v2/api/config"
+	"github.com/pixlise/core/v2/api/endpoints"
+	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/utils"
+
+	_ "net/http/pprof"
 
 	cmap "github.com/orcaman/concurrent-map"
-	"github.com/pixlise/core/core/export"
-	_ "net/http/pprof"
+	"github.com/pixlise/core/v2/core/export"
 )
 
 func printRoutePermissions(routePermissions map[string]string) {
@@ -79,10 +81,13 @@ func printRoutePermissions(routePermissions map[string]string) {
 }
 
 func main() {
+	// This was added for a profiler to be able to connect, otherwise uses no reasources really
 	go func() {
 		http.ListenAndServe(":1234", nil)
 	}()
 	rand.Seed(time.Now().UnixNano())
+
+	log.Printf("API version: \"%v\"", services.ApiVersion)
 
 	cfg, err := config.Init()
 	if err != nil {
@@ -94,7 +99,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error trying to display config\n")
 	}
-
 	// Core count can't be 0!
 	if cfg.CoresPerNode <= 0 {
 		cfg.CoresPerNode = 6 // Reasonable, our laptops have 6...
@@ -114,6 +118,8 @@ func main() {
 	var notes []notifications.UINotificationObj
 
 	svcs := services.InitAPIServices(cfg, api.RealJWTReader{}, &idGen, &signer, &exporter, &notifications.NotificationStack{})
+
+	svcs.Log.Infof(cfgStr)
 
 	seccache, err := secretcache.New()
 	mongo := notifications.MongoUtils{
@@ -153,7 +159,7 @@ func main() {
 	router.Router.Use(authware.Middleware, logware.Middleware)
 
 	// Now also log this to the world...
-	svcs.Log.Infof("API Started...")
+	svcs.Log.Infof("API version \"%v\" started...", services.ApiVersion)
 
 	log.Fatal(
 		http.ListenAndServe(":8080",

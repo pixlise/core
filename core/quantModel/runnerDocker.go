@@ -20,16 +20,17 @@ package quantModel
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pixlise/core/core/notifications"
 	"log"
 	"os"
 	"os/exec"
 	"sync"
 
-	"github.com/pixlise/core/core/logger"
+	"github.com/pixlise/core/v2/core/notifications"
 
-	"github.com/pixlise/core/api/config"
-	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/v2/core/logger"
+
+	"github.com/pixlise/core/v2/api/config"
+	"github.com/pixlise/core/v2/core/pixlUser"
 )
 
 ///////////////////////////////////////////////////////////////////////////////////////////

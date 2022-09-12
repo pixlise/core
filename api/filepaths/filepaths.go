@@ -21,8 +21,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/pixlise/core/core/fileaccess"
-	"github.com/pixlise/core/core/pixlUser"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/pixlUser"
 )
 
 // This package contains all file paths that the PIXLISE API should ever need to access. All been centralised
