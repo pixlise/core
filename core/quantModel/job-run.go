@@ -70,8 +70,7 @@ func CreateJob(svcs *services.APIServices, createParams JobCreateParams, wg *syn
 	startTime := time.Now().Unix()
 
 	createMsg := fmt.Sprintf("quantCreate: %v, %v pmcs, elems=%v, cfg=%v, params=%v. Job ID: %v", createParams.DatasetPath, len(createParams.PMCs), createParams.Elements, createParams.DetectorConfig, createParams.Parameters, jobID)
-	log := svcs.Log
-	log.Infof(createMsg)
+	svcs.Log.Infof(createMsg)
 
 	coresPerNode := svcs.Config.CoresPerNode
 
@@ -88,7 +87,7 @@ func CreateJob(svcs *services.APIServices, createParams JobCreateParams, wg *syn
 		3,  // Send logs every 3 seconds in batches
 	)
 	if err != nil {
-		log.Errorf("Failed to create logger for Job ID: %v", jobID)
+		svcs.Log.Errorf("Failed to create logger for Job ID: %v", jobID)
 	}
 
 	jobLog.Infof(createMsg)
