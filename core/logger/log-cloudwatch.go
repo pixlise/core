@@ -179,7 +179,8 @@ func (l *CloudwatchLogger) processQueue(logIntervalSec time.Duration) error {
 			if l.sequenceToken == "" {
 				err := l.createLogStream(l.logStreamName)
 				if err != nil {
-					panic(err)
+					// Write to stderr
+					log.Printf("createLogStream failed: %v", err)
 				}
 			} else {
 				input = *input.SetSequenceToken(l.sequenceToken)
@@ -189,7 +190,8 @@ func (l *CloudwatchLogger) processQueue(logIntervalSec time.Duration) error {
 
 			resp, err := l.cwClient.PutLogEvents(&input)
 			if err != nil {
-				log.Println(err)
+				// Write to stderr
+				log.Printf("PutLogEvents failed: %v", err)
 			}
 
 			if resp != nil {

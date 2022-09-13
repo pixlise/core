@@ -19,7 +19,9 @@ package fileaccess
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -133,6 +135,7 @@ func Example_localFileSystem() {
 }
 
 func Example_s3() {
+	rand.Seed(time.Now().UnixNano())
 	sess, err := awsutil.GetSessionWithRegion("us-east-1")
 	if err != nil {
 		fmt.Println("Failed to get AWS session")

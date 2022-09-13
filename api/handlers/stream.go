@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 
@@ -121,7 +120,7 @@ func (h ApiCacheControlledStreamFromS3Handler) ServeHTTP(w http.ResponseWriter, 
 					if err != nil {
 						err = fmt.Errorf("Error copying file to the http response %s", err.Error())
 					} else {
-						log.Printf("Download of \"%s\" complete. Wrote %v bytes\n", name, bytesWritten)
+						h.APIServices.Log.Debugf("Download of \"%s\" complete. Wrote %v bytes\n", name, bytesWritten)
 					}
 				}
 			}
@@ -184,9 +183,9 @@ func (h ApiStreamFromS3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				var bytesWritten int64
 				bytesWritten, err = io.Copy(w, result.Body)
 				if err != nil {
-					err = fmt.Errorf("Error copying file to the http response %s", err.Error())
+					err = fmt.Errorf("error copying file to the http response %s", err.Error())
 				} else {
-					log.Printf("Download of \"%s\" complete. Wrote %v bytes", name, bytesWritten)
+					h.APIServices.Log.Debugf("Download of \"%s\" complete. Wrote %v bytes", name, bytesWritten)
 				}
 			}
 		}
