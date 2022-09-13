@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -403,7 +402,7 @@ func downloadDatasetFromS3(params handlers.ApiHandlerGenericParams, rtt string, 
 	}
 	dir, err := ioutil.TempDir("/tmp/", "datasetexport")
 	if err != nil {
-		log.Fatal(err)
+		params.Svcs.Log.Errorf("Failed to create temp dir for dataset export: %v", err)
 	}
 	//defer os.RemoveAll(dir)
 	for _, f := range files {

@@ -27,6 +27,7 @@ import (
 
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/utils"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/pixlise/core/v2/api/esutil"
@@ -174,7 +175,8 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 		ourLogger, err = logger.InitCloudWatchLogger(
 			sessCW,
 			"/api/"+cfg.EnvironmentName,
-			"API",
+			// Startup date/time, but with randomness after so it's likely unique
+			fmt.Sprintf("%v (%v)", time.Now().Format("02-Jan-2006 15-04-05"), utils.RandStringBytesMaskImpr(8)),
 			cfg.LogLevel,
 			30, // Log retention for 30 days
 			3,  // Send logs every 3 seconds in batches

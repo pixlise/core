@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -243,10 +242,10 @@ func (s *PIXLISEDataSaver) Save(
 	jobLog.Infof("Writing binary file: %v\n", outFilePath)
 	out, err := proto.Marshal(&exp)
 	if err != nil {
-		log.Fatalln("Failed to encode dataset:", err)
+		return fmt.Errorf("Failed to encode dataset: %v", err)
 	}
 	if err := ioutil.WriteFile(outFilePath, out, 0644); err != nil {
-		log.Fatalln("Failed to write dataset file:", err)
+		return fmt.Errorf("Failed to write dataset file: %v", err)
 	}
 
 	fi, err := os.Stat(outFilePath)
