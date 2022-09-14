@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -30,6 +29,7 @@ var wgPod chan string
 type KubeHelper struct {
 	Clientset  *kubernetes.Clientset
 	Kubeconfig string
+	Log        logger.ILogger
 }
 
 func homeDir() string {
@@ -39,73 +39,75 @@ func homeDir() string {
 	return os.Getenv("USERPROFILE") // windows
 }
 
-func (k *KubeHelper) Bootstrap(location string, log logger.ILogger) {
-	if location == "external" && (k.Clientset == nil || reflect.ValueOf(k.Clientset.CoreV1()).IsNil()) {
-		log.Infof("TIME TO BOOTSTRAP")
-		k.Clientset = k.externalKubernetes(log)
-	} else if k.Clientset == nil || reflect.ValueOf(k.Clientset.CoreV1()).IsNil() {
-		log.Debugf("TIME TO BOOTSTRAP")
-		k.Clientset = k.internalKubernetes(log)
-	}
-}
+func (k *KubeHelper) Bootstrap(location string, apiLog logger.ILogger) {
+	// We'll need the logger later...
+	k.Log = apiLog
+	var err error
 
-func (k *KubeHelper) internalKubernetes(log logger.ILogger) *kubernetes.Clientset {
-	cfg, err := rest.InClusterConfig()
-	if err != nil {
-		log.Errorf("Kubernetes Error: %v", err.Error())
+	// Don't run multiple times (?)
+	if k.Clientset != nil && !reflect.ValueOf(k.Clientset.CoreV1()).IsNil() {
+		k.Log.Infof("KubeHelper Bootstrap not run...")
+		return
 	}
 
-	clientset, err := kubernetes.NewForConfig(cfg)
+	// Decide if internal or external kubernetes
+	var conf *rest.Config
 
-	if err != nil {
-		log.Errorf("Kubernetes Error: %v", err.Error())
+	if location == "external" {
+		k.Log.Infof("Bootstrapping kubernetes as external")
+
+		// use the current context in kubeconfig
+		conf, err = clientcmd.BuildConfigFromFlags("", k.Kubeconfig)
+		if err != nil {
+			k.Log.Errorf("Kubernetes BuildConfigFromFlags error: %v", err.Error())
+		}
+	} else {
+		k.Log.Debugf("Bootstrapping kubernetes as internal")
+
+		conf, err = rest.InClusterConfig()
+		if err != nil {
+			k.Log.Errorf("Kubernetes InClusterConfig failed: %v", err.Error())
+		}
 	}
 
-	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		log.Errorf("Kubernetes Error: %v", err.Error())
-	}
-	log.Infof("There are %d pods in the cluster\n", len(pods.Items))
-
-	return clientset
-
-}
-
-func (k *KubeHelper) externalKubernetes(log logger.ILogger) *kubernetes.Clientset {
-
-	// use the current context in kubeconfig
-	conf, err := clientcmd.BuildConfigFromFlags("", k.Kubeconfig)
-	if err != nil {
-		log.Errorf("Kubernetes Error: %v", err.Error())
-	}
-
-	// create the Clientset
 	clientset := &kubernetes.Clientset{}
 	clientset, err = kubernetes.NewForConfig(conf)
 	if err != nil {
-		log.Errorf("Kubernetes Error: %v", err.Error())
+		k.Log.Errorf("Kubernetes NewForConfig failed: %v", err.Error())
 	}
 
 	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		log.Errorf("Kubernetes Error: %v", err.Error())
+		k.Log.Errorf("Kubernetes Error: %v", err.Error())
 	}
 	if pods == nil {
-		log.Errorf("No pods found!!")
+		k.Log.Errorf("No pods found!!")
 	} else {
-		log.Infof("There are %d pods in the cluster\n", len(pods.Items))
+		k.Log.Infof("There are %d pods in the cluster\n", len(pods.Items))
 	}
-	return clientset
+	k.Clientset = clientset
 }
 
-func (k *KubeHelper) RunPod(cmd []string, args []string, env map[string]string, volumes []apiv1.Volume, volumeMounts []apiv1.VolumeMount, dockerImage string, namespace string, podnameprefix string, labels map[string]string, creator pixlUser.UserInfo, log logger.ILogger, background bool) (string, error) {
+func (k *KubeHelper) RunPod(
+	cmd []string,
+	args []string,
+	env map[string]string,
+	volumes []apiv1.Volume,
+	volumeMounts []apiv1.VolumeMount,
+	dockerImage string,
+	namespace string,
+	podnameprefix string,
+	labels map[string]string,
+	creator pixlUser.UserInfo,
+	background bool) (string, error) {
+
 	var err error
 	var wg sync.WaitGroup
 	fatalErrors = make(chan error)
 	wgDone := make(chan bool)
 	wgPod = make(chan string, 2)
 	wg.Add(1)
-	go k.launchPod(&wg, cmd, args, env, volumes, volumeMounts, dockerImage, namespace, podnameprefix, labels, creator, log, background)
+	go k.launchPod(&wg, cmd, args, env, volumes, volumeMounts, dockerImage, namespace, podnameprefix, labels, creator, background)
 	// Wait for all piquant instances to finish
 	//wg.Wait()
 	go func() {
@@ -113,37 +115,37 @@ func (k *KubeHelper) RunPod(cmd []string, args []string, env map[string]string, 
 		close(wgDone)
 	}()
 
-	log.Infof("Waiting for pod...")
+	k.Log.Infof("Waiting for pod...")
 
 	podname := ""
 	select {
 	case <-wgDone:
-		log.Infof("Kubernetes pods reported complete")
+		k.Log.Infof("Kubernetes pods reported complete")
 		msg := <-wgPod
 		podname = fmt.Sprintf("%v", msg)
 		break
 	case kerr := <-fatalErrors:
-		log.Errorf("Kubernetes Error: %v", kerr.Error())
+		k.Log.Errorf("Kubernetes Error: %v", kerr.Error())
 		err = kerr
 	}
 
 	return podname, err
 }
 
-func (k *KubeHelper) launchPod(wg *sync.WaitGroup, cmd []string, args []string, env map[string]string, volumes []apiv1.Volume, volumeMounts []apiv1.VolumeMount, dockerImage string, namespace string, podnameprefix string, labels map[string]string, creator pixlUser.UserInfo, log logger.ILogger, background bool) {
+func (k *KubeHelper) launchPod(wg *sync.WaitGroup, cmd []string, args []string, env map[string]string, volumes []apiv1.Volume, volumeMounts []apiv1.VolumeMount, dockerImage string, namespace string, podnameprefix string, labels map[string]string, creator pixlUser.UserInfo, background bool) {
 	defer wg.Done()
 
-	podobj := getPodObject(cmd, args, env, volumes, volumeMounts, dockerImage, namespace, podnameprefix, labels, creator)
+	podobj := k.getPodObject(cmd, args, env, volumes, volumeMounts, dockerImage, namespace, podnameprefix, labels, creator)
 
 	co := metav1.CreateOptions{}
 	pod, err := k.Clientset.CoreV1().Pods(podobj.Namespace).Create(context.TODO(), podobj, co)
 	if err != nil {
-		log.Errorf("Pod create failed for: %v. namespace: %v.", podnameprefix, namespace)
+		k.Log.Errorf("Pod create failed for: %v. namespace: %v.", podnameprefix, namespace)
 		fatalErrors <- err
 	}
 
 	// Create Deployment
-	log.Debugf("Creating pod for %v in namespace %v...", pod.Name, namespace)
+	k.Log.Debugf("Creating pod for %v in namespace %v...", pod.Name, namespace)
 
 	// Now wait for it to finish
 	startUnix := time.Now().Unix()
@@ -155,27 +157,28 @@ func (k *KubeHelper) launchPod(wg *sync.WaitGroup, cmd []string, args []string, 
 		// Check kubernetes pod status
 		pod, _ := k.Clientset.CoreV1().Pods(pod.Namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
 
-		log.Infof("%v phase: %v, namespace: %v", pod.Name, pod.Status.Phase, pod.Namespace)
+		k.Log.Infof("%v phase: %v, namespace: %v", pod.Name, pod.Status.Phase, pod.Namespace)
 
 		phase := ""
 		phase = string(pod.Status.Phase)
 		if lastPhase != phase {
-			log.Debugf("%v phase: %v, namespace: %v", pod.Name, pod.Status.Phase, pod.Namespace)
+			k.Log.Debugf("%v phase: %v, namespace: %v", pod.Name, pod.Status.Phase, pod.Namespace)
 			lastPhase = phase
 		}
 
-		if (background == false && pod.Status.Phase != apiv1.PodRunning && pod.Status.Phase != apiv1.PodPending) || (background == true && pod.Status.Phase != apiv1.PodPending) {
-			log.Debugf("Deleting pod: %v from namespace: %v", pod.Name, pod.Namespace)
+		if (!background && pod.Status.Phase != apiv1.PodRunning && pod.Status.Phase != apiv1.PodPending) ||
+			(background && pod.Status.Phase != apiv1.PodPending) {
+			k.Log.Debugf("Deleting pod: %v from namespace: %v", pod.Name, pod.Namespace)
 			if pod.Status.Phase == apiv1.PodFailed {
 				logs := k.getPodLogs(*pod)
-				log.Errorf("Pod Logs: %v", logs)
-				fatalErrors <- errors.New(fmt.Sprintf("Pod %v, failed to complete", pod.Name))
+				k.Log.Errorf("Pod Logs: %v", logs)
+				fatalErrors <- fmt.Errorf("Pod %v, failed to complete", pod.Name)
 			}
 			if pod.Status.Phase != apiv1.PodRunning {
 				err = k.DeletePod(pod.Namespace, pod.Name)
 				if err != nil {
-					log.Errorf("Failed to remove pod: %v, namespace: %v\n", pod.Name, pod.Namespace)
-					fatalErrors <- errors.New(fmt.Sprintf("Failed to remove pod: %v, namespace: %v\n", pod.Name, pod.Namespace))
+					k.Log.Errorf("Failed to remove pod: %v, namespace: %v\n", pod.Name, pod.Namespace)
+					fatalErrors <- fmt.Errorf("Failed to remove pod: %v, namespace: %v\n", pod.Name, pod.Namespace)
 				}
 			}
 			wgPod <- pod.Name
@@ -190,18 +193,17 @@ func (k *KubeHelper) getPodLogs(pod apiv1.Pod) string {
 	req := k.Clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
 	podLogs, err := req.Stream(context.TODO())
 	if err != nil {
-		return "error in opening stream"
+		return "error in opening pod log stream"
 	}
 	defer podLogs.Close()
 
 	buf := new(bytes.Buffer)
 	_, err = io.Copy(buf, podLogs)
 	if err != nil {
-		return "error in copy information from podLogs to buf"
+		return "error copying log from pod"
 	}
-	str := buf.String()
 
-	return str
+	return buf.String()
 }
 
 func (k *KubeHelper) DeletePod(namespace string, name string) error {
@@ -212,7 +214,7 @@ func (k *KubeHelper) DeletePod(namespace string, name string) error {
 	return k.Clientset.CoreV1().Pods(namespace).Delete(context.TODO(), name, *do)
 }
 
-func getPodObject(cmd []string, args []string, env map[string]string, volumes []apiv1.Volume, volumeMounts []apiv1.VolumeMount, dockerImage string, namespace string, podnameprefix string, labels map[string]string, creator pixlUser.UserInfo) *apiv1.Pod {
+func (k *KubeHelper) getPodObject(cmd []string, args []string, env map[string]string, volumes []apiv1.Volume, volumeMounts []apiv1.VolumeMount, dockerImage string, namespace string, podnameprefix string, labels map[string]string, creator pixlUser.UserInfo) *apiv1.Pod {
 	sec := apiv1.LocalObjectReference{Name: "api-auth"}
 	rand.Seed(time.Now().UnixNano())
 	podname := podnameprefix + utils.RandStringBytesMaskImpr(16)

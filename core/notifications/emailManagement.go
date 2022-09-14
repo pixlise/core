@@ -21,11 +21,9 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"log"
-	"os"
-	"strconv"
 	"time"
 
+	"github.com/pixlise/core/v2/core/logger"
 	textTemplates "github.com/pixlise/core/v2/core/notifications/templates"
 
 	"github.com/pixlise/core/v2/core/awsutil"
@@ -83,7 +81,6 @@ type TemplateContents struct {
 
 // SendGlobalEmail - Send an email to all users.
 func (stack *NotificationStack) SendGlobalEmail(content string, subject string) error {
-
 	users, err := stack.GetAllUsers()
 	if err != nil {
 		return err
@@ -119,26 +116,26 @@ func (stack *NotificationStack) SendEmail(topic string, templateInput map[string
 	if err != nil {
 		return err
 	}
-	fmt.Println("Email Subs found: " + strconv.Itoa(len(subscribers)))
+	stack.Logger.Debugf("Email Subs found: %v", len(subscribers))
 	for i, sub := range subscribers {
 		stack.Logger.Debugf("Sub %v : %v, enabled: %v", i, sub.Name, sub.Topics[0].Config.Method.Email)
 		if sub.Topics[0].Config.Method.Email == true {
-			fmt.Println("Generating Email Content")
-			html, e := generateEmailContent(sub, topic, templateInput, "HTML")
+			stack.Logger.Debugf("Generating Email Content")
+			html, e := generateEmailContent(stack.Logger, sub, topic, templateInput, "HTML")
 			if e != nil {
-				fmt.Printf("Error Found: %v", e.Error())
+				stack.Logger.Errorf("generateEmailContent error: %v", e)
 				return e
 			}
-			fmt.Println("Generating Text Email Content")
-			text, f := generateEmailContent(sub, topic, templateInput, "TXT")
+			stack.Logger.Debugf("Generating Text Email Content")
+			text, f := generateEmailContent(stack.Logger, sub, topic, templateInput, "TXT")
 			if f != nil {
 				return f
 			}
 
-			fmt.Println("Setting subject and sender")
+			stack.Logger.Debugf("Setting subject and sender")
 			subject := fmt.Sprintf("%v", templateInput["subject"])
 			sender := fmt.Sprintf("%v", "info@mail.pixlise.org")
-			fmt.Printf("Sending %v, to %v", subject, sender)
+			stack.Logger.Infof("Sending %v, to %v", subject, sender)
 			//Needs extracting to config
 			var adminaddresses []string
 			if includeadmin {
@@ -167,12 +164,13 @@ func (stack *NotificationStack) SendUI(topic string, templateInput map[string]in
 	if err != nil {
 		return err
 	}
-	fmt.Println("UI Subs found: " + strconv.Itoa(len(subscribers)))
+
+	stack.Logger.Debugf("UI Subs found: %v", len(subscribers))
 
 	for _, sub := range subscribers {
 		if sub.Topics[0].Config.Method.UI == true {
-			text, err := generateEmailContent(sub, topic, templateInput, "UI")
-			fmt.Println("Adding notification to UI stack: " + sub.Userid)
+			text, err := generateEmailContent(stack.Logger, sub, topic, templateInput, "UI")
+			stack.Logger.Debugf("Adding notification to UI stack: %v", sub.Userid)
 			if err != nil {
 				return err
 			}
@@ -224,28 +222,20 @@ func (stack *NotificationStack) SendAllDataSource(topic string, templateInput ma
 	return nil
 }
 
-func generateEmailContent(subscriber UserStruct, templateName string, templateInput map[string]interface{}, format string) (string, error) {
-	path, err := os.Getwd()
-	if err != nil {
-		log.Println(path)
-	}
+func generateEmailContent(log logger.ILogger, subscriber UserStruct, templateName string, templateInput map[string]interface{}, format string) (string, error) {
 	t := textTemplates.GetTemplates()
 	var templates = template.Must(template.New(templateName).Parse(t[templateName+"-"+format]))
-	if err != nil {
-		fmt.Println("Failed to read template strings")
-		return "", err
-	}
 
-	//fmt.Println("Generating Contents")
 	inv := TemplateContents{ContentMap: subscriber, TemplateMap: templateInput}
 	var tpl bytes.Buffer
-	//fmt.Printf("Executing Template: %v, %v", templateName, inv)
-	err = templates.ExecuteTemplate(&tpl, templateName, inv)
+
+	log.Debugf("Executing Template: %v, %v", templateName, inv)
+	err := templates.ExecuteTemplate(&tpl, templateName, inv)
 	if err != nil {
-		fmt.Printf("Failed to generate template: %v \n", err.Error())
+		errToReturn := fmt.Errorf("Failed to generate template: %v", err)
+		log.Errorf("%v", errToReturn)
 		return "", err
 	}
 	result := tpl.String()
 	return result, nil
-
 }

@@ -138,14 +138,6 @@ type APIServices struct {
 
 // InitAPIServices sets up a new APIServices instance
 func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerator, signer URLSigner, exporter ExportZipper, notifications notifications.NotificationManager) APIServices {
-	if err := sentry.Init(sentry.ClientOptions{
-		Dsn:         cfg.SentryEndpoint,
-		Environment: cfg.EnvironmentName,
-		Release:     ApiVersion,
-	}); err != nil {
-		fmt.Printf("Sentry initialization failed: %v\n", err)
-	}
-
 	// Get a session for the bucket region
 	sessBucket, err := awsutil.GetSessionWithRegion(cfg.AWSBucketRegion)
 	if err != nil {
@@ -185,6 +177,14 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 		if err != nil {
 			log.Fatalf("Failed to initialise API logger: %v", err)
 		}
+	}
+
+	if err := sentry.Init(sentry.ClientOptions{
+		Dsn:         cfg.SentryEndpoint,
+		Environment: cfg.EnvironmentName,
+		Release:     ApiVersion,
+	}); err != nil {
+		ourLogger.Errorf("Sentry initialization failed: %v", err)
 	}
 
 	client := esutil.FullFatClient(cfg, ourLogger)

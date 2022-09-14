@@ -20,7 +20,6 @@ package quantModel
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"sync"
@@ -39,13 +38,13 @@ import (
 type dockerRunner struct {
 }
 
-func runDockerInstance(wg *sync.WaitGroup, params PiquantParams, dockerImage string) {
+func runDockerInstance(wg *sync.WaitGroup, params PiquantParams, dockerImage string, log logger.ILogger) {
 	defer wg.Done()
 
 	// Make a JSON string out of params so it can be passed in
 	paramsJSON, err := json.Marshal(params)
 	if err != nil {
-		fmt.Printf("Error serialising params for docker instance: %v\n", err)
+		fmt.Errorf("Error serialising params for docker instance: %v\n", err)
 		return
 	}
 	paramsStr := string(paramsJSON)
@@ -65,16 +64,16 @@ func runDockerInstance(wg *sync.WaitGroup, params PiquantParams, dockerImage str
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Printf("Running piquant %v in docker failed: %v\n", params.PMCListName, err)
-		log.Println(string(out))
+		log.Infof("Running piquant %v in docker failed: %v\n", params.PMCListName, err)
+		log.Infof(string(out))
 		return
 	}
 
-	log.Printf("Piquant %v ran successfully:\n", params.PMCListName)
-	log.Println(string(out))
+	log.Infof("Piquant %v ran successfully:\n", params.PMCListName)
+	log.Infof(string(out))
 }
 
-func (r dockerRunner) runPiquant(piquantDockerImage string, params PiquantParams, pmcListNames []string, cfg config.APIConfig, notifications notifications.NotificationManager, creator pixlUser.UserInfo, log logger.ILogger) error {
+func (r *dockerRunner) runPiquant(piquantDockerImage string, params PiquantParams, pmcListNames []string, cfg config.APIConfig, notifications notifications.NotificationManager, creator pixlUser.UserInfo, log logger.ILogger) error {
 	// Here we start multiple instances of docker and wait for them all to finish using the WaitGroup
 	var wg sync.WaitGroup
 
@@ -84,7 +83,7 @@ func (r dockerRunner) runPiquant(piquantDockerImage string, params PiquantParams
 		// Set list name
 		params.PMCListName = name
 
-		go runDockerInstance(&wg, params, piquantDockerImage)
+		go runDockerInstance(&wg, params, piquantDockerImage, log)
 	}
 
 	// Wait for all piquant instances to finish

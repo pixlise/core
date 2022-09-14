@@ -25,7 +25,7 @@ import (
 	"strings"
 )
 
-//Auth0TokenResponse - The token response type
+// Auth0TokenResponse - The token response type
 type Auth0TokenResponse struct {
 	AccessToken string `json:"access_token"`
 	IDToken     string `json:"id_token"`
@@ -50,9 +50,6 @@ func GetJWT(username string, password string, clientID string, clientSecret stri
 	if err != nil {
 		return "", fmt.Errorf("Failed to read login response: %v", err)
 	}
-
-	//str := string(body)
-	//fmt.Printf(str)
 
 	bodyData := Auth0TokenResponse{}
 	err = json.Unmarshal(body, &bodyData)

@@ -118,7 +118,7 @@ func (stack *DummyNotificationStack) GetUINotifications(userid string) ([]UINoti
 
 		err = stack.FS.WriteJSONNoIndent(stack.Bucket, path, &n)
 		if err != nil {
-			fmt.Printf("Failed to write cleared notification file for user: %v. Error: %v\n", userid, err)
+			stack.Logger.Errorf("Failed to write cleared notification file for user: %v. Error: %v\n", userid, err)
 		}
 	}
 
@@ -150,7 +150,7 @@ func (stack *DummyNotificationStack) SendEmail(topic string, templateInput map[s
 			DataCollection: "",
 		},
 	}
-	text, f := generateEmailContent(sub, topic, templateInput, "TXT")
+	text, f := generateEmailContent(stack.Logger, sub, topic, templateInput, "TXT")
 	if f != nil {
 		return f
 	}
@@ -207,7 +207,7 @@ func (stack *DummyNotificationStack) SendUI(topic string, templateInput map[stri
 			DataCollection: "",
 		},
 	}
-	text, err := generateEmailContent(sub, topic+"-ui", templateInput, "TXT")
+	text, err := generateEmailContent(stack.Logger, sub, topic+"-ui", templateInput, "TXT")
 	fmt.Println("Adding notification to UI stack: " + sub.Userid)
 	if err != nil {
 		return err
