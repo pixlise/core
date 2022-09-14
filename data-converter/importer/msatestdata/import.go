@@ -19,7 +19,6 @@ package msatestdata
 
 import (
 	"errors"
-	"fmt"
 	"path"
 	"strconv"
 	"strings"
@@ -101,7 +100,7 @@ func (m MSATestData) Import(importJSONPath string, pseudoIntensityRangesPath str
 	var beamLookup = make(converterModels.BeamLocationByPMC)
 
 	if params.MsaBeamParams == "" && params.BeamFile != "" {
-		fmt.Printf("  Reading Beam Locations: \"%v\", using minimum context image PMC detected: %v\n", params.BeamFile, minContextPMC)
+		jobLog.Infof("  Reading Beam Locations: \"%v\", using minimum context image PMC detected: %v\n", params.BeamFile, minContextPMC)
 		beamLookup, err = importer.ReadBeamLocationsFile(path.Join(importPath, params.BeamFile), false, minContextPMC, jobLog)
 		if err != nil {
 			return nil, "", err
@@ -112,7 +111,7 @@ func (m MSATestData) Import(importJSONPath string, pseudoIntensityRangesPath str
 
 	// Housekeeping file
 	if params.HousekeepingFile != "" {
-		fmt.Printf("  Reading Housekeeping: %v\n", params.HousekeepingFile)
+		jobLog.Infof("  Reading Housekeeping: %v\n", params.HousekeepingFile)
 		hkData, err = importer.ReadHousekeepingFile(path.Join(importPath, params.HousekeepingFile), 0, jobLog)
 		if err != nil {
 			return nil, "", err
@@ -150,8 +149,8 @@ func (m MSATestData) Import(importJSONPath string, pseudoIntensityRangesPath str
 		verifyreadtype = false
 	}
 
-	fmt.Printf("  Reading %v spectrum files...\n", len(allMSAFiles))
-	spectrafiles, _ := getSpectraFiles(allMSAFiles, verifyreadtype)
+	jobLog.Infof("  Reading %v spectrum files...\n", len(allMSAFiles))
+	spectrafiles, _ := getSpectraFiles(allMSAFiles, verifyreadtype, jobLog)
 	spectraLookup, err := makeSpectraLookup(path.Join(importPath, params.MsaDir), spectrafiles, params.SingleDetectorMSAs, params.GenPMCs, params.ReadTypeOverride, params.DetectorADuplicate, jobLog)
 	if err != nil {
 		return nil, "", err

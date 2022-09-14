@@ -19,6 +19,8 @@ package quantModel
 
 import (
 	"fmt"
+
+	"github.com/pixlise/core/v2/core/logger"
 )
 
 func Example_filterListItems() {
@@ -121,17 +123,18 @@ value two,444,555
 }
 
 func Example_matchPMCsWithDataset() {
+	l := &logger.StdOutLogger{}
 	data := csvData{[]string{"X", "Y", "Z", "filename", "Ca_%"}, [][]string{[]string{"1", "0.40", "0", "Roastt_Laguna_Salinas_28kV_230uA_03_03_2020_111.msa", "4.5"}}}
 
-	fmt.Println(matchPMCsWithDataset(&data, "non-existant-file.bin", true))
+	fmt.Println(matchPMCsWithDataset(&data, "non-existant-file.bin", true, l))
 
-	fmt.Printf("%v, header[%v]=%v, data[%v]=%v\n", matchPMCsWithDataset(&data, "./testdata/LagunaSalinasdataset.bin", true), len(data.header)-1, data.header[5], len(data.data[0])-1, data.data[0][5])
+	fmt.Printf("%v, header[%v]=%v, data[%v]=%v\n", matchPMCsWithDataset(&data, "./testdata/LagunaSalinasdataset.bin", true, l), len(data.header)-1, data.header[5], len(data.data[0])-1, data.data[0][5])
 
 	data = csvData{[]string{"X", "Y", "Z", "filename", "Ca_%"}, [][]string{[]string{"1", "930.40", "0", "Roastt_Laguna_Salinas_28kV_230uA_03_03_2020_111.msa", "4.5"}}}
-	fmt.Println(matchPMCsWithDataset(&data, "./testdata/LagunaSalinasdataset.bin", true))
+	fmt.Println(matchPMCsWithDataset(&data, "./testdata/LagunaSalinasdataset.bin", true, l))
 
 	data = csvData{[]string{"X", "Y", "Z", "filename", "Ca_%"}, [][]string{[]string{"1", "0.40", "0", "Roastt_Laguna_Salinas_28kV_230uA_03_03_2020_116.msa", "4.5"}}}
-	fmt.Printf("%v, header[%v]=%v, data[%v]=%v\n", matchPMCsWithDataset(&data, "./testdata/LagunaSalinasdataset.bin", false), len(data.header)-1, data.header[5], len(data.data[0])-1, data.data[0][5])
+	fmt.Printf("%v, header[%v]=%v, data[%v]=%v\n", matchPMCsWithDataset(&data, "./testdata/LagunaSalinasdataset.bin", false, l), len(data.header)-1, data.header[5], len(data.data[0])-1, data.data[0][5])
 
 	// Output:
 	// open non-existant-file.bin: no such file or directory

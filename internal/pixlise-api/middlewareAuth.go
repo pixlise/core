@@ -29,6 +29,7 @@ import (
 	"github.com/pixlise/core/v2/api/permission"
 	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
 
 	auth0 "github.com/auth0-community/go-auth0"
 	jose "gopkg.in/square/go-jose.v2"
@@ -71,6 +72,7 @@ func loadPublicKey(data []byte) (interface{}, error) {
 type authMiddleWareData struct {
 	routePermissionsRequired map[string]string
 	jwtValidator             api.JWTInterface
+	logger                   logger.ILogger
 }
 
 func isMatch(uri string, route string) bool {
@@ -128,12 +130,12 @@ func isMatch(uri string, route string) bool {
 	return true
 }
 
-func initJWTValidator(auth0Domain string, fs fileaccess.FileAccess, config config.APIConfig) *auth0.JWTValidator {
+func initJWTValidator(auth0Domain string, fs fileaccess.FileAccess, config config.APIConfig, apiLog logger.ILogger) *auth0.JWTValidator {
 	// Create a configuration with the Auth0 information
 	auth0PEM, err := fs.ReadObject(config.ConfigBucket, filepaths.GetConfigFilePath(filepaths.Auth0PemFileName))
 	secret, err := loadPublicKey(auth0PEM)
 	if err != nil {
-		fmt.Printf("Couldn't load pem from S3: %v\n", err.Error())
+		apiLog.Errorf("Couldn't load pem from S3: %v", err.Error())
 	}
 
 	secretProvider := auth0.NewKeyProvider(secret)
@@ -168,13 +170,11 @@ func (a *authMiddleWareData) getPermissionsForURI(method string, uri string) (st
 
 func (a *authMiddleWareData) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//		vars := mux.Vars(r)
-		//		fmt.Printf("%v\n", vars)
 		// Get the permission required for this route
 		permissionRequired, err := a.getPermissionsForURI(r.Method, r.RequestURI)
 		if err != nil {
 			// No permission defined, so just fail it
-			fmt.Printf("%v\n", err)
+			a.logger.Errorf("No permission found for URI %v. %v", r.RequestURI, err)
 
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorized - Bad route permissions"))
@@ -200,7 +200,7 @@ func (a *authMiddleWareData) Middleware(next http.Handler) http.Handler {
 		claims := map[string]interface{}{}
 		err = a.jwtValidator.Claims(r, token, &claims)
 		if err != nil {
-			fmt.Printf("Failed to read claims from JWT: %v\n", err)
+			a.logger.Errorf("Failed to read claims from JWT: %v", err)
 
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorized - Bad claims"))
@@ -211,7 +211,7 @@ func (a *authMiddleWareData) Middleware(next http.Handler) http.Handler {
 		permissions, err := api.ReadPermissions(claims)
 		if err != nil {
 			// No permission defined, so just fail it
-			fmt.Printf("%v\n", err)
+			a.logger.Errorf("No permissions defined in claims. Error: %v", err)
 
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorized - Bad claim permissions"))
@@ -221,7 +221,7 @@ func (a *authMiddleWareData) Middleware(next http.Handler) http.Handler {
 		// Check if it exists in permissions of user
 		if !permissions[permissionRequired] {
 			// Required permission is not in the claims of the JWT, so reject it
-			fmt.Printf("Claim permissions did not contain %v for route: %v\n", permissionRequired, r.RequestURI)
+			a.logger.Errorf("Claim permissions did not contain %v for route: %v", permissionRequired, r.RequestURI)
 
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorized - Route not permitted"))

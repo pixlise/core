@@ -160,7 +160,7 @@ func (l *CloudwatchLogger) processQueue(logIntervalSec time.Duration) error {
 		if len(l.queue) > 0 {
 			for _, item := range l.queue {
 				logQueue = append(logQueue, &cloudwatchlogs.InputLogEvent{
-					Message:   &item,
+					Message:   aws.String(item),
 					Timestamp: aws.Int64(time.Now().UnixNano() / int64(time.Millisecond)),
 				})
 			}

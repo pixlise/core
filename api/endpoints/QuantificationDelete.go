@@ -114,9 +114,7 @@ func quantificationDelete(params handlers.ApiHandlerParams) (interface{}, error)
 		if len(errs) > 0 {
 			params.Svcs.Log.Errorf("Failed to delete %v logs from s3://%v/%v", len(errs), logPathRoot)
 		}
-	} /* else {
-		fmt.Printf("Failed to list log files in: " + logPathRoot)
-	}*/
+	}
 
 	return nil, nil
 }
