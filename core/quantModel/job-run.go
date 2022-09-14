@@ -78,16 +78,20 @@ func CreateJob(svcs *services.APIServices, createParams JobCreateParams, wg *syn
 	var err error
 
 	// Init a logger for this job
-	jobLog, err = logger.InitCloudWatchLogger(
-		svcs.AWSSessionCW,
-		"/api/"+svcs.Config.EnvironmentName,
-		"job-"+jobID,
-		svcs.Config.LogLevel,
-		30, // Log retention for 30 days
-		3,  // Send logs every 3 seconds in batches
-	)
-	if err != nil {
-		svcs.Log.Errorf("Failed to create logger for Job ID: %v", jobID)
+	if svcs.Config.EnvironmentName == "local" {
+		jobLog = &logger.StdOutLogger{}
+	} else {
+		jobLog, err = logger.InitCloudWatchLogger(
+			svcs.AWSSessionCW,
+			"/api/"+svcs.Config.EnvironmentName,
+			"job-"+jobID,
+			svcs.Config.LogLevel,
+			30, // Log retention for 30 days
+			3,  // Send logs every 3 seconds in batches
+		)
+		if err != nil {
+			svcs.Log.Errorf("Failed to create logger for Job ID: %v", jobID)
+		}
 	}
 
 	jobLog.Infof(createMsg)
@@ -381,7 +385,7 @@ func triggerPiquantNodes(svcs *services.APIServices, jobLog logger.ILogger, jobI
 	}
 
 	// Convert to binary format
-	binFileBytes, elements, err := ConvertQuantificationCSV(cfg.EnvironmentName, outputCSV, []string{"PMC", "SCLK", "RTT", "filename"}, "", false, "", false)
+	binFileBytes, elements, err := ConvertQuantificationCSV(jobLog, outputCSV, []string{"PMC", "SCLK", "RTT", "filename"}, "", false, "", false)
 	if err != nil {
 		setJobError(&status, fmt.Sprintf("Error when converting quant CSV to PIXLISE bin: %v", err))
 		saveQuantJobStatus(svcs, params.DatasetID, piquantParams.QuantName, &status, jobLog, creator)

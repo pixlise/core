@@ -444,7 +444,6 @@ func datasetCustomImagesDelete(params handlers.ApiHandlerParams) (interface{}, e
 		s3Path := filepaths.GetCustomImagePath(datasetID, imgType, jsonFileName)
 		err := params.Svcs.FS.DeleteObject(params.Svcs.Config.ManualUploadBucket, s3Path)
 		if err != nil {
-			//fmt.Printf("%v\n", err)
 			return nil, api.MakeNotFoundError(jsonFileName)
 		}
 	}
@@ -454,7 +453,6 @@ func datasetCustomImagesDelete(params handlers.ApiHandlerParams) (interface{}, e
 
 	err := params.Svcs.FS.DeleteObject(params.Svcs.Config.ManualUploadBucket, s3Path)
 	if err != nil {
-		//fmt.Printf("%v\n", err)
 		return nil, api.MakeNotFoundError(fileName)
 	}
 	return nil, nil

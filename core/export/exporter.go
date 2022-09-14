@@ -242,8 +242,7 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 		}
 	}
 	if wantDiffractionPeak {
-		fmt.Println(files.diffraction.Title)
-		fmt.Printf("%v Locations with Peaks found\n", len(files.diffraction.Locations))
+		svcs.Log.Debugf("  Diffraction: %v - Found %v locations with peaks", files.diffraction.Title, len(files.diffraction.Locations))
 		csv, err := os.Create(path.Join(outDir, fileNamePrefix+"-diffraction-peaks.csv"))
 		if err != nil {
 			return nil, err

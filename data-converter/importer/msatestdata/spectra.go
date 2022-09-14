@@ -57,7 +57,7 @@ func listMSAFilesToProcess(path string, ignoreMSAFiles string, jobLog logger.ILo
 	return allMSAFiles, nil
 }
 
-func getSpectraFiles(allFiles []string, verifyReadType bool) ([]string, []string) {
+func getSpectraFiles(allFiles []string, verifyReadType bool, jobLog logger.ILogger) ([]string, []string) {
 	var toRead []string
 	var logs []string
 
@@ -86,18 +86,19 @@ func getSpectraFiles(allFiles []string, verifyReadType bool) ([]string, []string
 		iPMC, err1 := getMSASeqNo(toRead[i])
 		jPMC, err2 := getMSASeqNo(toRead[j])
 		if err1 != nil {
-			fmt.Printf("ERROR when sorting in getSpectraFiles, filename: %v\n", toRead[i])
+			jobLog.Errorf("ERROR when sorting in getSpectraFiles, filename: %v", toRead[i])
 			iPMC = 0
 		}
 		if err2 != nil {
-			fmt.Printf("ERROR when sorting in getSpectraFiles, filename: %v\n", toRead[j])
+			jobLog.Errorf("ERROR when sorting in getSpectraFiles, filename: %v", toRead[j])
 			jPMC = 0
 		}
 		return iPMC < jPMC
 	})
 
 	if len(toRead) != count {
-		panic("COUNT MISMATCH when sorting spectra file names")
+		jobLog.Errorf("COUNT MISMATCH when sorting spectra file names")
+		toRead = []string{}
 	}
 
 	return toRead, logs

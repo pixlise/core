@@ -170,8 +170,6 @@ func (m *MongoUtils) GetMongoSubscribersByTopicID(override []string, searchtopic
 	}
 	sort := bson.D{{"timestamp", -1}}
 	//projection := bson.D{{"type", 1}, {"rating", 1}, {"_id", 0}}
-	//jsonString, _ := json.Marshal(filter)
-	//fmt.Printf("\n%v\n", string(jsonString))
 	opts := options.Find().SetSort(sort) //.SetProjection(projection)
 	cursor, err := m.userCollection.Find(context.TODO(), filter, opts)
 	if err != nil {
@@ -230,8 +228,6 @@ func (m *MongoUtils) GetMongoSubscribersByEmailTopicID(override []string, search
 	}
 	sort := bson.D{{"timestamp", -1}}
 	//projection := bson.D{{"type", 1}, {"rating", 1}, {"_id", 0}}
-	//jsonString, _ := json.Marshal(filter)
-	//fmt.Printf("\n%v\n", string(jsonString))
 	opts := options.Find().SetSort(sort) //.SetProjection(projection)
 	cursor, err := m.userCollection.Find(context.TODO(), filter, opts)
 	if err != nil {
@@ -271,8 +267,6 @@ func (m *MongoUtils) GetMongoSubscribersByTopic(searchtopic string, logger logge
 
 	sort := bson.D{{"timestamp", -1}}
 	//projection := bson.D{{"type", 1}, {"rating", 1}, {"_id", 0}}
-	//jsonString, _ := json.Marshal(filter)
-	//fmt.Printf("\n%v\n", string(jsonString))
 	opts := options.Find().SetSort(sort) //.SetProjection(projection)
 	cursor, err := m.userCollection.Find(context.TODO(), filter, opts)
 	if err != nil {

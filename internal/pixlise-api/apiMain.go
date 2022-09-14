@@ -144,7 +144,7 @@ func main() {
 		MongoUtils:    &mongo,
 	}
 	svcs.Notifications = &notificationStack
-	jwtReader := api.RealJWTReader{Validator: initJWTValidator(cfg.Auth0Domain, svcs.FS, cfg)}
+	jwtReader := api.RealJWTReader{Validator: initJWTValidator(cfg.Auth0Domain, svcs.FS, cfg, svcs.Log)}
 	svcs.JWTReader = jwtReader
 
 	router := endpoints.MakeRouter(svcs)

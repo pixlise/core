@@ -22,13 +22,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v2/core/logger"
 	protos "github.com/pixlise/core/v2/generated-protos"
 	"google.golang.org/protobuf/proto"
 )
@@ -37,7 +37,7 @@ import (
 // as it has to work the same as python, so tests are the same as for the python program, making functions/
 // structure match it too.
 
-func matchPMCsWithDataset(data *csvData, matchPMCDatasetFileName string, matchByCoord bool) error {
+func matchPMCsWithDataset(data *csvData, matchPMCDatasetFileName string, matchByCoord bool, logger logger.ILogger) error {
 	// Open the dataset
 	datasetPB, err := datasetModel.ReadDatasetFile(matchPMCDatasetFileName)
 	if err != nil {
@@ -120,7 +120,7 @@ func matchPMCsWithDataset(data *csvData, matchPMCDatasetFileName string, matchBy
 		// Add this column to the CSV data we read in
 		pmcColIdx = len(data.header)
 		data.header = append(data.header, "PMC")
-		log.Println("CSV does not contain PMC column, adding one in memory to store matched PMCs into")
+		logger.Infof("CSV does not contain PMC column, adding one in memory to store matched PMCs into")
 	} else if matchByCoord && (xIdx == -1 || yIdx == -1 || zIdx == -1) {
 		return fmt.Errorf("PMC matching failed: CSV does not contain X/Y/Z columns")
 	}
@@ -574,7 +574,7 @@ func saveToProto(data quantData, detectorIDSpecified string, detectorDuplicateAB
 
 // ConvertQuantificationCSV - converts from incoming string CSV data to serialised binary data
 // Returns the serialised quantification bytes and the elements that were quantified
-func ConvertQuantificationCSV(logName string, data string, expectMetaColumns []string, matchPMCDatasetFileName string, matchPMCByCoord bool, detectorIDOverride string, detectorDuplicateAB bool) ([]byte, []string, error) {
+func ConvertQuantificationCSV(logger logger.ILogger, data string, expectMetaColumns []string, matchPMCDatasetFileName string, matchPMCByCoord bool, detectorIDOverride string, detectorDuplicateAB bool) ([]byte, []string, error) {
 	mapData, err := readCSV(data, 1)
 	if err != nil {
 		return []byte{}, []string{}, err
@@ -582,7 +582,7 @@ func ConvertQuantificationCSV(logName string, data string, expectMetaColumns []s
 
 	// Match PMCS if required
 	if len(matchPMCDatasetFileName) > 0 {
-		if err = matchPMCsWithDataset(&mapData, matchPMCDatasetFileName, matchPMCByCoord); err != nil {
+		if err = matchPMCsWithDataset(&mapData, matchPMCDatasetFileName, matchPMCByCoord, logger); err != nil {
 			return []byte{}, []string{}, err
 		}
 
@@ -606,13 +606,13 @@ func ConvertQuantificationCSV(logName string, data string, expectMetaColumns []s
 		return []byte{}, []string{}, err
 	}
 
-	log.Println("Data Types Saved:")
+	logger.Infof("Data Types Saved:")
 	for c, label := range quantToSave.labels {
-		log.Printf("  %v as %v\n", label, quantToSave.types[c])
+		logger.Infof("  %v as %v", label, quantToSave.types[c])
 	}
 
 	elements := getElements(mapData.header)
-	log.Printf("Elements found: %v\n", elements)
+	logger.Infof("Elements found: %v", elements)
 
 	// Write to bytes
 	quantProto, err := saveToProto(quantToSave, detectorIDOverride, detectorDuplicateAB)

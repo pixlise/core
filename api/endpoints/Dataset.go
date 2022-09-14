@@ -20,7 +20,6 @@ package endpoints
 import (
 	"archive/zip"
 	"bytes"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -44,6 +43,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/core/api"
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
 	"github.com/pixlise/core/v2/core/utils"
 )
@@ -365,6 +365,7 @@ func datasetExportConcat(params handlers.ApiHandlerGenericParams) error {
 	return downloadDatasetFromS3(params, rtt, true)
 
 }
+
 func datasetReprocess(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 
@@ -373,20 +374,17 @@ func datasetReprocess(params handlers.ApiHandlerParams) (interface{}, error) {
 	}))
 
 	svc := sns.New(sess)
-	msgPtr := flag.String("m", datasetID, "The message to send to the subscribed users of the topic")
-	topicPtr := flag.String("t", params.Svcs.Config.DataSourceSNSTopic, "The ARN of the topic to which the user subscribes")
 	result, err := svc.Publish(&sns.PublishInput{
-		Message:  msgPtr,
-		TopicArn: topicPtr,
+		Message:  aws.String(datasetID),
+		TopicArn: aws.String(params.Svcs.Config.DataSourceSNSTopic),
 	})
+
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	} else {
-		fmt.Printf("Result: %v", result)
+		return nil, api.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to publish SNS topic for dataset regeneration: %v", err))
 	}
 
-	return "{}", nil
+	params.Svcs.Log.Infof("Published SNS topic: %v", result)
+	return nil, nil
 }
 
 func downloadDatasetFromS3(params handlers.ApiHandlerGenericParams, rtt string, concat bool) error {
@@ -408,6 +406,11 @@ func downloadDatasetFromS3(params handlers.ApiHandlerGenericParams, rtt string, 
 	for _, f := range files {
 		if strings.Contains(f, rtt) && strings.HasSuffix(f, filetype) {
 			b, err := params.Svcs.FS.ReadObject(params.Svcs.Config.DatasourceArtifactsBucket, f)
+			if err != nil {
+				params.Svcs.Log.Errorf("Failed to download artifacts file: %v. Error: %v", f, err)
+				return err
+			}
+
 			fileName := filepath.Base(f)
 			err = ioutil.WriteFile(dir+"/"+fileName, b, 0644)
 			if err != nil {
@@ -455,7 +458,7 @@ func downloadDatasetFromS3(params handlers.ApiHandlerGenericParams, rtt string, 
 	loadfiletoStream, err := os.ReadFile(outFile.Name())
 	_, copyErr := io.Copy(params.Writer, bytes.NewReader(loadfiletoStream))
 	if copyErr != nil {
-		fmt.Printf("Failed to write zip contents of %v to response", outFile.Name())
+		params.Svcs.Log.Errorf("Failed to write zip contents of %v to response", outFile.Name())
 	}
 	return nil
 }
@@ -538,13 +541,13 @@ func datasetFileStream(params handlers.ApiHandlerStreamParams) (*s3.GetObjectOut
 	var etag = ""
 	var lm = time.Time{}
 	if result != nil && result.ETag != nil {
-		fmt.Printf("ETAG for cache: %s, s3://%v/%v\n", *result.ETag, imgBucket, s3Path)
+		params.Svcs.Log.Debugf("ETAG for cache: %s, s3://%v/%v\n", *result.ETag, imgBucket, s3Path)
 		etag = *result.ETag
 	}
 
 	if result != nil && result.LastModified != nil {
 		lm = *result.LastModified
-		fmt.Printf("Last Modified for cache: %v, s3://%v/%v\n", lm, imgBucket, s3Path)
+		params.Svcs.Log.Debugf("Last Modified for cache: %v, s3://%v/%v\n", lm, imgBucket, s3Path)
 	}
 
 	return result, fileName, etag, lm.String(), 0, err
@@ -560,7 +563,7 @@ func concatDatasetFiles(basePath string) (string, error) {
 	m := make(map[int]string)
 	var keys []string
 
-	if files != nil && len(files) > 0 {
+	if len(files) > 0 {
 		for _, f := range files {
 			splits := strings.SplitN(f.Name(), "-", 2)
 			timestamp := strings.Split(splits[1], ".")[0]
@@ -587,7 +590,7 @@ func concatDatasetFiles(basePath string) (string, error) {
 		return "", err
 	}
 	defer os.Remove(dest)
-	var filenames []string
+	//var filenames []string
 	for _, z := range keys {
 		r, err := zip.OpenReader(basePath + "/" + z)
 		if err != nil {
@@ -601,7 +604,7 @@ func concatDatasetFiles(basePath string) (string, error) {
 				return "", fmt.Errorf("%s: illegal file path", fpath)
 			}
 
-			filenames = append(filenames, fpath)
+			//filenames = append(filenames, fpath)
 
 			if f.FileInfo().IsDir() {
 				// Make Folder

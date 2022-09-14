@@ -54,11 +54,11 @@ type quantRunner interface {
 
 func getQuantRunner(name string) (quantRunner, error) {
 	if name == "docker" {
-		return dockerRunner{}, nil
+		return &dockerRunner{}, nil
 	} else if name == "kubernetes" {
-		return kubernetesRunner{}, nil
+		return &kubernetesRunner{}, nil
 	} else if name == "null" {
-		return nullRunner{}, nil
+		return &nullRunner{}, nil
 	}
 	return nil, fmt.Errorf("Unknown quant runner: %v", name)
 }

@@ -121,7 +121,7 @@ func exportFilesPost(params handlers.ApiHandlerGenericParams) error {
 
 	_, copyErr := io.Copy(params.Writer, bytes.NewReader(zipData))
 	if copyErr != nil {
-		fmt.Printf("Failed to write zip contents of %v to response", req.FileName)
+		params.Svcs.Log.Errorf("Failed to write zip contents of %v to response", req.FileName)
 	}
 
 	return nil
