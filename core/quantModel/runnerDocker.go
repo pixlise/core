@@ -44,7 +44,7 @@ func runDockerInstance(wg *sync.WaitGroup, params PiquantParams, dockerImage str
 	// Make a JSON string out of params so it can be passed in
 	paramsJSON, err := json.Marshal(params)
 	if err != nil {
-		fmt.Errorf("Error serialising params for docker instance: %v\n", err)
+		log.Errorf("Error serialising params for docker instance: %v", err)
 		return
 	}
 	paramsStr := string(paramsJSON)

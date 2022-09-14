@@ -406,6 +406,11 @@ func downloadDatasetFromS3(params handlers.ApiHandlerGenericParams, rtt string, 
 	for _, f := range files {
 		if strings.Contains(f, rtt) && strings.HasSuffix(f, filetype) {
 			b, err := params.Svcs.FS.ReadObject(params.Svcs.Config.DatasourceArtifactsBucket, f)
+			if err != nil {
+				params.Svcs.Log.Errorf("Failed to download artifacts file: %v. Error: %v", f, err)
+				return err
+			}
+
 			fileName := filepath.Base(f)
 			err = ioutil.WriteFile(dir+"/"+fileName, b, 0644)
 			if err != nil {
@@ -536,13 +541,13 @@ func datasetFileStream(params handlers.ApiHandlerStreamParams) (*s3.GetObjectOut
 	var etag = ""
 	var lm = time.Time{}
 	if result != nil && result.ETag != nil {
-		params.Svcs.Log.Infof("ETAG for cache: %s, s3://%v/%v\n", *result.ETag, imgBucket, s3Path)
+		params.Svcs.Log.Debugf("ETAG for cache: %s, s3://%v/%v\n", *result.ETag, imgBucket, s3Path)
 		etag = *result.ETag
 	}
 
 	if result != nil && result.LastModified != nil {
 		lm = *result.LastModified
-		params.Svcs.Log.Infof("Last Modified for cache: %v, s3://%v/%v\n", lm, imgBucket, s3Path)
+		params.Svcs.Log.Debugf("Last Modified for cache: %v, s3://%v/%v\n", lm, imgBucket, s3Path)
 	}
 
 	return result, fileName, etag, lm.String(), 0, err
@@ -558,7 +563,7 @@ func concatDatasetFiles(basePath string) (string, error) {
 	m := make(map[int]string)
 	var keys []string
 
-	if files != nil && len(files) > 0 {
+	if len(files) > 0 {
 		for _, f := range files {
 			splits := strings.SplitN(f.Name(), "-", 2)
 			timestamp := strings.Split(splits[1], ".")[0]
@@ -585,7 +590,7 @@ func concatDatasetFiles(basePath string) (string, error) {
 		return "", err
 	}
 	defer os.Remove(dest)
-	var filenames []string
+	//var filenames []string
 	for _, z := range keys {
 		r, err := zip.OpenReader(basePath + "/" + z)
 		if err != nil {
@@ -599,7 +604,7 @@ func concatDatasetFiles(basePath string) (string, error) {
 				return "", fmt.Errorf("%s: illegal file path", fpath)
 			}
 
-			filenames = append(filenames, fpath)
+			//filenames = append(filenames, fpath)
 
 			if f.FileInfo().IsDir() {
 				// Make Folder
