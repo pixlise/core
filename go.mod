@@ -11,11 +11,11 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
-	github.com/jcxplorer/cwlogger v0.0.0-20170704082755-4e30a5a47e6a
 	github.com/olivere/elastic/v7 v7.0.32
 	github.com/orcaman/concurrent-map v1.0.0
 	github.com/otiai10/copy v1.7.0
 	github.com/pkg/errors v0.9.1
+	github.com/pkg/profile v1.6.0
 	go.mongodb.org/mongo-driver v1.10.2
 	golang.org/x/image v0.0.0-20220902085622-e7cb96979f69
 	google.golang.org/protobuf v1.28.1
@@ -50,7 +50,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.6.6 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/pkg/profile v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect

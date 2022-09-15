@@ -30,6 +30,7 @@ build-linux:
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/jobupdater-linux ./internal/lambdas/quant-job-updater
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/datasourceupdater-linux ./internal/lambdas/dataset-tile-updater
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/integrationtest-linux ./internal/cmdline-tools/api-integration-test
+	GOOS=linux GOARCH=amd64 go build -v -o ./_out/notification-sync-linux ./internal/cmdline-tools/notification-sync
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/dataimport-linux ./internal/lambdas/data-import
 
 build-mac:
