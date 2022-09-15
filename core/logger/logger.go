@@ -67,4 +67,6 @@ type ILogger interface {
 	Debugf(format string, a ...interface{})
 	Infof(format string, a ...interface{})
 	Errorf(format string, a ...interface{})
+	SetLogLevel(level LogLevel)
+	GetLogLevel() LogLevel
 }

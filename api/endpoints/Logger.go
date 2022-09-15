@@ -28,7 +28,7 @@ func logRequest(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func getLogLevel(params handlers.ApiHandlerParams) (interface{}, error) {
-	return logger.GetLogLevelName(params.Svcs.Config.LogLevel)
+	return logger.GetLogLevelName(params.Svcs.Log.GetLogLevel())
 }
 
 func putLogLevel(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -39,8 +39,8 @@ func putLogLevel(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	// Set the level
-	params.Svcs.Config.LogLevel = logLevel
+	// Also set it on the actual logger
+	params.Svcs.Log.SetLogLevel(logLevel)
 
 	// Not really an error, but we log in this level to ensure it always gets printed
 	params.Svcs.Log.Errorf("User %v request changed log level to: %v", params.UserInfo.UserID, logLevelName)
