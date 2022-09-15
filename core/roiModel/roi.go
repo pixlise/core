@@ -35,8 +35,9 @@ type MistROIItem struct {
 	Species             string `json:"species"`
 	MineralGroupID      string `json:"mineralGroupID"`
 	ID_Depth            int32  `json:"ID_Depth"`
-	ClassificationTrail string `json:"classificationTrail"`
+	ClassificationTrail string `json:"ClassificationTrail"`
 	Formula             string `json:"formula"`
+	IsStandardROI       bool   `json:"isStandardROI"`
 }
 
 // ROIItem - Region of interest item, only public so Go can reflect/interogate it
@@ -46,8 +47,14 @@ type ROIItem struct {
 	Description     string  `json:"description"`
 	ImageName       string  `json:"imageName,omitempty"` // Name of image whose pixels are present in this ROI.
 	// If no imageName, it's a traditional ROI consisting of PMCs
-	PixelIndexes []int32       `json:"pixelIndexes,omitempty"`
-	MistROIItem  []MistROIItem `json:"mistROIItem"`
+	PixelIndexes []int32     `json:"pixelIndexes,omitempty"`
+	MistROIItem  MistROIItem `json:"mistROIItem"`
+}
+
+type ROIItemOptions struct {
+	ROIItems       []ROIItem `json:"roiItems"`
+	Overwrite      bool      `json:"overwrite"`
+	SkipDuplicates bool      `json:"skipDuplicates"`
 }
 
 // ROISavedItem - Region of interest item as saved to S3, only public so Go can reflect/interogate it
