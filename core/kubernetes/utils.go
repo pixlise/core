@@ -54,7 +54,7 @@ func (k *KubeHelper) Bootstrap(location string, apiLog logger.ILogger) {
 	var conf *rest.Config
 
 	if location == "external" {
-		k.Log.Infof("Bootstrapping kubernetes as external")
+		k.Log.Debugf("Bootstrapping kubernetes as external")
 
 		// use the current context in kubeconfig
 		conf, err = clientcmd.BuildConfigFromFlags("", k.Kubeconfig)
@@ -78,12 +78,12 @@ func (k *KubeHelper) Bootstrap(location string, apiLog logger.ILogger) {
 
 	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		k.Log.Errorf("Kubernetes Error: %v", err.Error())
+		k.Log.Errorf("Failed to list pods: %v", err.Error())
 	}
 	if pods == nil {
-		k.Log.Errorf("No pods found!!")
+		k.Log.Errorf("Pod list returned is nil")
 	} else {
-		k.Log.Infof("There are %d pods in the cluster\n", len(pods.Items))
+		k.Log.Infof("There are %d pods in the cluster", len(pods.Items))
 	}
 	k.Clientset = clientset
 }
@@ -159,8 +159,7 @@ func (k *KubeHelper) launchPod(wg *sync.WaitGroup, cmd []string, args []string, 
 
 		k.Log.Infof("%v phase: %v, namespace: %v", pod.Name, pod.Status.Phase, pod.Namespace)
 
-		phase := ""
-		phase = string(pod.Status.Phase)
+		phase := string(pod.Status.Phase)
 		if lastPhase != phase {
 			k.Log.Debugf("%v phase: %v, namespace: %v", pod.Name, pod.Status.Phase, pod.Namespace)
 			lastPhase = phase

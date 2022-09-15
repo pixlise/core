@@ -59,7 +59,7 @@ func (m *MongoUtils) Connect() error {
 
 	cmdMonitor := &event.CommandMonitor{
 		Started: func(_ context.Context, evt *event.CommandStartedEvent) {
-			m.Log.Infof("%v", evt.Command)
+			m.Log.Debugf("Mongo event: %v", evt.Command)
 		},
 	}
 	//ctx := context.Background()
@@ -108,7 +108,7 @@ func (m *MongoUtils) Connect() error {
 }
 
 func (m *MongoUtils) GetAllMongoUsers(log logger.ILogger) ([]UserStruct, error) {
-	m.Log.Infof("Fetching All Subscribers Mongo Object")
+	m.Log.Debugf("Fetching All Subscribers Mongo Object")
 
 	filter := bson.D{}
 	sort := bson.D{{"timestamp", -1}}
@@ -129,12 +129,12 @@ func (m *MongoUtils) GetAllMongoUsers(log logger.ILogger) ([]UserStruct, error) 
 		}
 		notifications = append(notifications, l)
 	}
-	m.Log.Infof("Fetched All Subscribers Mongo Object")
+	m.Log.Debugf("Fetched All Subscribers Mongo Object")
 	return notifications, nil
 }
 
 func (m *MongoUtils) GetMongoSubscribersByTopicID(override []string, searchtopic string, logger logger.ILogger) ([]UserStruct, error) {
-	m.Log.Infof("Fetching Subscriber Mongo Object for topic: %v", searchtopic)
+	m.Log.Debugf("Fetching Subscriber Mongo Object for topic: %v", searchtopic)
 
 	var filter bson.M
 	if override != nil && len(override) > 0 {
@@ -186,13 +186,13 @@ func (m *MongoUtils) GetMongoSubscribersByTopicID(override []string, searchtopic
 		}
 		notifications = append(notifications, l)
 	}
-	m.Log.Infof("Fetched Subscriber Mongo Object for topic: %v", searchtopic)
+	m.Log.Debugf("Fetched Subscriber Mongo Object for topic: %v", searchtopic)
 
 	return notifications, nil
 }
 
 func (m *MongoUtils) GetMongoSubscribersByEmailTopicID(override []string, searchtopic string, logger logger.ILogger) ([]UserStruct, error) {
-	m.Log.Infof("Fetching Subscriber Mongo Object for topic: %v", searchtopic)
+	m.Log.Debugf("Fetching Subscriber Mongo Object for topic: %v", searchtopic)
 
 	var filter bson.M
 	if override != nil && len(override) > 0 {
@@ -244,13 +244,13 @@ func (m *MongoUtils) GetMongoSubscribersByEmailTopicID(override []string, search
 		}
 		notifications = append(notifications, l)
 	}
-	m.Log.Infof("Fetched Subscriber Mongo Object for topic: %v", searchtopic)
+	m.Log.Debugf("Fetched Subscriber Mongo Object for topic: %v", searchtopic)
 
 	return notifications, nil
 }
 
 func (m *MongoUtils) GetMongoSubscribersByTopic(searchtopic string, logger logger.ILogger) ([]UserStruct, error) {
-	m.Log.Infof("Fetching Subscribers Mongo Object for topic: %v", searchtopic)
+	m.Log.Debugf("Fetching Subscribers Mongo Object for topic: %v", searchtopic)
 
 	var filter bson.M
 
@@ -283,7 +283,7 @@ func (m *MongoUtils) GetMongoSubscribersByTopic(searchtopic string, logger logge
 		}
 		notifications = append(notifications, l)
 	}
-	m.Log.Infof("Fetched Subscribers Mongo Object for topic: %v", searchtopic)
+	m.Log.Debugf("Fetched Subscribers Mongo Object for topic: %v", searchtopic)
 
 	return notifications, nil
 }
@@ -293,19 +293,19 @@ func (m *MongoUtils) InsertUINotification(newNotification UINotificationObj) err
 		return errors.New("Mongo not connected")
 	}
 
-	m.Log.Infof("Inserting UI Notification Mongo Object for user: %v", newNotification.UserID)
+	m.Log.Debugf("Inserting UI Notification Mongo Object for user: %v", newNotification.UserID)
 
 	_, err := m.notificationCollection.InsertOne(context.TODO(), newNotification)
 	if err != nil {
 		return err
 	}
-	m.Log.Infof("Inserted UI Notification Mongo Object for user: %v", newNotification.UserID)
+	m.Log.Debugf("Inserted UI Notification Mongo Object for user: %v", newNotification.UserID)
 
 	return nil
 }
 
 func (m *MongoUtils) GetUINotifications(user string) ([]UINotificationObj, error) {
-	m.Log.Infof("Fetching Mongo Notifications for user: %v", user)
+	m.Log.Debugf("Fetching Mongo Notifications for user: %v", user)
 
 	filter := bson.D{{"userid", user}}
 	sort := bson.D{{"timestamp", -1}}
@@ -327,7 +327,7 @@ func (m *MongoUtils) GetUINotifications(user string) ([]UINotificationObj, error
 		}
 		notifications = append(notifications, l)
 	}
-	//m.Log.Infof("Fetched Mongo Notifications for user: %v", user)
+	m.Log.Debugf("Fetched Mongo Notifications for user: %v", user)
 
 	return notifications, nil
 }
@@ -344,10 +344,10 @@ func (m *MongoUtils) CreateMongoUserObject(user UserStruct) error {
 		return errors.New("Mongo not connected")
 	}
 
-	m.Log.Infof("Creating Mongo Object for user: %v", user.Userid)
+	m.Log.Debugf("Creating Mongo Object for user: %v", user.Userid)
 
 	_, err := m.userCollection.InsertOne(context.TODO(), user)
-	m.Log.Infof("Created Mongo Object for user: %v", user.Userid)
+	m.Log.Debugf("Created Mongo Object for user: %v", user.Userid)
 
 	return err
 }
@@ -357,7 +357,7 @@ func (m *MongoUtils) FetchMongoUserObject(userid string, exist bool, name string
 		return UserStruct{}, errors.New("Mongo not connected")
 	}
 
-	m.Log.Infof("Fetching Mongo Object for user: %v", userid)
+	m.Log.Debugf("Fetching Mongo Object for user: %v", userid)
 	filter := bson.D{{"userid", userid}}
 	sort := bson.D{{"timestamp", -1}}
 	//projection := bson.D{{"type", 1}, {"rating", 1}, {"_id", 0}}
@@ -365,12 +365,12 @@ func (m *MongoUtils) FetchMongoUserObject(userid string, exist bool, name string
 	cursor := m.userCollection.FindOne(context.TODO(), filter, opts)
 
 	var notifications UserStruct
-	m.Log.Infof("Decoding Mongo Object for user: %v", userid)
+	m.Log.Debugf("Decoding Mongo Object for user: %v", userid)
 	err := cursor.Decode(&notifications)
 	if err != nil {
 		return UserStruct{}, err
 	}
-	m.Log.Infof("Fetched Mongo Object for user: %v", userid)
+	m.Log.Debugf("Fetched Mongo Object for user: %v", userid)
 
 	return notifications, nil
 }
@@ -380,14 +380,14 @@ func (m *MongoUtils) UpdateMongoUserConfig(userid string, data UserStruct) error
 		return errors.New("Mongo not connected")
 	}
 
-	m.Log.Infof("Updating Mongo Object for user: %v", userid)
+	m.Log.Debugf("Updating Mongo Object for user: %v", userid)
 
 	filter := bson.D{{"userid", userid}}
 	update := bson.D{{"$set", data}}
 	opts := options.Update().SetUpsert(true)
 
 	_, err := m.userCollection.UpdateOne(context.TODO(), filter, update, opts)
-	m.Log.Infof("Updated Mongo Object for user: %v", userid)
+	m.Log.Debugf("Updated Mongo Object for user: %v", userid)
 
 	return err
 }

@@ -17,6 +17,11 @@
 
 package logger
 
+import (
+	"errors"
+	"fmt"
+)
+
 // LogLevel - log level type
 type LogLevel int
 
@@ -36,6 +41,24 @@ var logLevelPrefix = map[LogLevel]string{
 	LogDebug: "DEBUG",
 	LogInfo:  "INFO",
 	LogError: "ERROR",
+}
+
+func GetLogLevelName(level LogLevel) (string, error) {
+	name, ok := logLevelPrefix[level]
+	if !ok {
+		return "", fmt.Errorf("Invalid log level: %v", level)
+	}
+	return name, nil
+}
+
+func GetLogLevel(name string) (LogLevel, error) {
+	for lev, levName := range logLevelPrefix {
+		if levName == name {
+			return lev, nil
+		}
+	}
+
+	return LogDebug, errors.New("Invalid log level name: " + name)
 }
 
 // ILogger - Generic logger interface

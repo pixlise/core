@@ -164,7 +164,7 @@ func (r *kubernetesRunner) runQuantJob(wg *sync.WaitGroup, params PiquantParams,
 	}
 
 	// Create Deployment
-	r.kubeHelper.Log.Debugf("Creating pod for %v in namespace %v...", params.PMCListName, namespace)
+	r.kubeHelper.Log.Infof("Creating pod for %v in namespace %v...", params.PMCListName, namespace)
 
 	// Now wait for it to finish
 	startUnix := time.Now().Unix()
@@ -180,15 +180,14 @@ func (r *kubernetesRunner) runQuantJob(wg *sync.WaitGroup, params PiquantParams,
 		//fmt.Println(pod.Status.Phase)
 		//log.Infof("%v phase: %v, pod name: %v, namespace: %v", params.PMCListName, pod.Status.Phase, pod.Name, pod.Namespace)
 
-		phase := ""
-		phase = string(pod.Status.Phase)
+		phase := string(pod.Status.Phase)
 		if lastPhase != phase {
-			r.kubeHelper.Log.Debugf("%v phase: %v, pod name: %v, namespace: %v", params.PMCListName, pod.Status.Phase, pod.Name, pod.Namespace)
+			r.kubeHelper.Log.Infof("%v phase: %v, pod name: %v, namespace: %v", params.PMCListName, pod.Status.Phase, pod.Name, pod.Namespace)
 			lastPhase = phase
 		}
 
 		if pod.Status.Phase != apiv1.PodRunning && pod.Status.Phase != apiv1.PodPending {
-			r.kubeHelper.Log.Debugf("Deleting pod: %v from namespace: %v", pod.Name, pod.Namespace)
+			r.kubeHelper.Log.Infof("Deleting pod: %v from namespace: %v", pod.Name, pod.Namespace)
 
 			deletePolicy := metav1.DeletePropagationForeground
 			do := &metav1.DeleteOptions{
