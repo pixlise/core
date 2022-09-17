@@ -48,6 +48,7 @@ func registerROIHandler(router *apiRouter.ApiObjectRouter) {
 
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), roiList)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteDataAnalysis), roiPost)
+
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier, "bulk"), apiRouter.MakeMethodPermission("POST", permission.PermWriteDataAnalysis), roiBulkPost)
 
 	//router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("GET", permReadDataAnalysis), roiGet)
@@ -78,7 +79,7 @@ func roiList(params handlers.ApiHandlerParams) (interface{}, error) {
 	return &rois, nil
 }
 
-func createROIs(params handlers.ApiHandlerParams, rois []roiModel.ROIItem, overwriteName bool, skipDuplicate bool) (interface{}, error) {
+func createROIs(params handlers.ApiHandlerParams, rois []roiModel.ROIItem, overwriteName bool, skipDuplicate bool, deleteExistingMistROIs bool) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	s3Path := filepaths.GetROIPath(params.UserInfo.UserID, datasetID)
 	allROIs, err := roiModel.ReadROIData(params.Svcs, s3Path)
@@ -88,19 +89,30 @@ func createROIs(params handlers.ApiHandlerParams, rois []roiModel.ROIItem, overw
 		return nil, err
 	}
 
-	for _, roi := range rois {
+	// Need to run this first so we don't delete newly created MIST ROIs
+	if deleteExistingMistROIs {
+		for roiID := range allROIs {
+			if allROIs[roiID].MistROIItem.ClassificationTrail != "" {
+				// All users have the ability to wipe out all Mist ROIs
+				delete(allROIs, roiID)
+			}
+		}
+	}
+
+	for i := range rois {
 		// Validate
-		if !fileaccess.IsValidObjectName(roi.Name) {
-			return nil, api.MakeBadRequestError(fmt.Errorf("Invalid ROI name: %v", roi.Name))
+		if !fileaccess.IsValidObjectName(rois[i].Name) {
+			return nil, api.MakeBadRequestError(fmt.Errorf("Invalid ROI name: %v", rois[i].Name))
 		}
 		// Check that name is not duplicate. At first we didn't care, because we operate on IDs, but it came up that when exporting
 		// using ROI names, files overwrote each other, so better to have unique names
-		saveID := ""
 		skipROI := false
 		for roiID, roi := range allROIs {
-			if roi.Name == roi.Name && roi.Creator.UserID == params.UserInfo.UserID {
+			// Mist ROIs can be overwritten by others, but regular ROIs can only be overwritten by their creators
+			if roi.Name == rois[i].Name && (rois[i].MistROIItem.ClassificationTrail != "" || roi.Creator.UserID == params.UserInfo.UserID) {
 				if overwriteName {
-					saveID = roiID
+					// Delete any existing ROI keys if we're overwriting
+					delete(allROIs, roiID)
 				} else if skipDuplicate {
 					skipROI = true
 					break
@@ -114,17 +126,15 @@ func createROIs(params handlers.ApiHandlerParams, rois []roiModel.ROIItem, overw
 			continue
 		}
 
-		// Save it & upload
-		if saveID == "" {
-			saveID = params.Svcs.IDGen.GenObjectID()
-		}
+		// If saveID is empty, this means it's either new or we're not overwriting, so we generate a new one
+		saveID := params.Svcs.IDGen.GenObjectID()
 		_, exists := allROIs[saveID]
 		if exists {
-			return nil, fmt.Errorf("Failed to generate unique ID")
+			return nil, fmt.Errorf("failed to generate unique ID")
 		}
 
 		allROIs[saveID] = roiModel.ROISavedItem{
-			ROIItem: &roi,
+			ROIItem: &rois[i],
 			APIObjectItem: &pixlUser.APIObjectItem{
 				Shared:  false,
 				Creator: params.UserInfo,
@@ -148,7 +158,7 @@ func roiBulkPost(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Bulk create ROIs with overwrite options
-	return createROIs(params, roiOptions.ROIItems, roiOptions.Overwrite, roiOptions.SkipDuplicates)
+	return createROIs(params, roiOptions.ROIItems, roiOptions.Overwrite, roiOptions.SkipDuplicates, roiOptions.DeleteExistingMistROIs)
 }
 
 func roiPost(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -165,7 +175,7 @@ func roiPost(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	rois := []roiModel.ROIItem{roi}
-	return createROIs(params, rois, false, false)
+	return createROIs(params, rois, false, false, false)
 }
 
 func roiPut(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -222,15 +232,24 @@ func roiPut(params handlers.ApiHandlerParams) (interface{}, error) {
 
 func roiDelete(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
-
-	// If deleting a shared item, we need to strip the prefix from the ID and also ensure that only the creator can delete
 	itemID := params.PathParams[idIdentifier]
 	s3Path := filepaths.GetROIPath(params.UserInfo.UserID, datasetID)
 
-	strippedID, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
-	if isSharedReq {
-		s3Path = filepaths.GetROIPath(pixlUser.ShareUserID, datasetID)
-		itemID = strippedID
+	// Read in body
+	body, err := ioutil.ReadAll(params.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// If id is "bulk", then check body for a list of ROI IDs
+	var roiIDs roiModel.ROIIDs
+	if itemID == "bulk" {
+		err = json.Unmarshal(body, &roiIDs)
+		if err != nil {
+			return nil, api.MakeBadRequestError(err)
+		}
+	} else {
+		roiIDs.IDs = append(roiIDs.IDs, itemID)
 	}
 
 	// Using path params, work out path
@@ -239,17 +258,28 @@ func roiDelete(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	sharedItem, ok := items[itemID]
-	if !ok {
-		return nil, api.MakeNotFoundError(itemID)
-	}
+	for i := range roiIDs.IDs {
+		itemID := roiIDs.IDs[i]
 
-	if isSharedReq && sharedItem.Creator.UserID != params.UserInfo.UserID {
-		return nil, api.MakeStatusError(http.StatusUnauthorized, fmt.Errorf("%v not owned by %v", itemID, params.UserInfo.UserID))
-	}
+		strippedID, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
+		if isSharedReq {
+			s3Path = filepaths.GetROIPath(pixlUser.ShareUserID, datasetID)
+			itemID = strippedID
+		}
 
-	// Found it, delete & we're done
-	delete(items, itemID)
+		sharedItem, ok := items[itemID]
+		if !ok {
+			return nil, api.MakeNotFoundError(itemID)
+		}
+
+		// Only allow item to be deleted if it's a MIST ROI or same user requested it
+		if isSharedReq && (sharedItem.MistROIItem.ClassificationTrail != "" || sharedItem.Creator.UserID != params.UserInfo.UserID) {
+			return nil, api.MakeStatusError(http.StatusUnauthorized, fmt.Errorf("%v not owned by %v", itemID, params.UserInfo.UserID))
+		}
+
+		// Found it, delete & we're done
+		delete(items, itemID)
+	}
 
 	return nil, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, items)
 }
@@ -258,7 +288,23 @@ func roiShare(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	idToFind := params.PathParams[idIdentifier]
 
-	sharedIDs, err := roiModel.ShareROIs(params.Svcs, params.UserInfo.UserID, datasetID, []string{idToFind})
+	// Read in body
+	body, err := ioutil.ReadAll(params.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var roiIDs roiModel.ROIIDs
+	if idToFind == "bulk" {
+		err = json.Unmarshal(body, &roiIDs)
+		if err != nil {
+			return nil, api.MakeBadRequestError(err)
+		}
+	} else {
+		roiIDs.IDs = append(roiIDs.IDs, idToFind)
+	}
+
+	sharedIDs, err := roiModel.ShareROIs(params.Svcs, params.UserInfo.UserID, datasetID, roiIDs.IDs)
 	if err != nil {
 		return nil, err
 	}

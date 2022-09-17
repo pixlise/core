@@ -52,9 +52,14 @@ type ROIItem struct {
 }
 
 type ROIItemOptions struct {
-	ROIItems       []ROIItem `json:"roiItems"`
-	Overwrite      bool      `json:"overwrite"`
-	SkipDuplicates bool      `json:"skipDuplicates"`
+	ROIItems               []ROIItem `json:"roiItems"`
+	Overwrite              bool      `json:"overwrite"`
+	SkipDuplicates         bool      `json:"skipDuplicates"`
+	DeleteExistingMistROIs bool      `json:"deleteExistingMistROIs"`
+}
+
+type ROIIDs struct {
+	IDs []string `json:"ids"`
 }
 
 // ROISavedItem - Region of interest item as saved to S3, only public so Go can reflect/interogate it
