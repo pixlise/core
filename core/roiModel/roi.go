@@ -37,7 +37,6 @@ type MistROIItem struct {
 	ID_Depth            int32  `json:"ID_Depth"`
 	ClassificationTrail string `json:"ClassificationTrail"`
 	Formula             string `json:"formula"`
-	IsStandardROI       bool   `json:"isStandardROI"`
 }
 
 // ROIItem - Region of interest item, only public so Go can reflect/interogate it
@@ -56,10 +55,16 @@ type ROIItemOptions struct {
 	Overwrite              bool      `json:"overwrite"`
 	SkipDuplicates         bool      `json:"skipDuplicates"`
 	DeleteExistingMistROIs bool      `json:"deleteExistingMistROIs"`
+	ShareROIs              bool      `json:"shareROIs"`
 }
 
 type ROIIDs struct {
 	IDs []string `json:"ids"`
+}
+
+type ROIReference struct {
+	ID  string  `json:"id"`
+	ROI ROIItem `json:"roi"`
 }
 
 // ROISavedItem - Region of interest item as saved to S3, only public so Go can reflect/interogate it
