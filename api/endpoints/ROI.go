@@ -258,17 +258,19 @@ func roiPut(params handlers.ApiHandlerParams) (interface{}, error) {
 func roiDelete(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	itemID := params.PathParams[idIdentifier]
-	userS3Path := filepaths.GetROIPath(params.UserInfo.UserID, datasetID)
 
-	// Read in body
-	body, err := ioutil.ReadAll(params.Request.Body)
-	if err != nil {
-		return nil, err
-	}
+	userS3Path := filepaths.GetROIPath(params.UserInfo.UserID, datasetID)
+	sharedS3Path := filepaths.GetROIPath(pixlUser.ShareUserID, datasetID)
 
 	// If id is "bulk", then check body for a list of ROI IDs
 	var roiIDs roiModel.ROIIDs
 	if itemID == "bulk" {
+		// Read in body
+		body, err := ioutil.ReadAll(params.Request.Body)
+		if err != nil {
+			return nil, err
+		}
+
 		err = json.Unmarshal(body, &roiIDs)
 		if err != nil {
 			return nil, api.MakeBadRequestError(err)
@@ -277,19 +279,40 @@ func roiDelete(params handlers.ApiHandlerParams) (interface{}, error) {
 		roiIDs.IDs = append(roiIDs.IDs, itemID)
 	}
 
+	// Run through ROIs and do an initial check of whether we need to update user or shared ROIs
+	// This is mainly done to make test cases easier
+	userIDFound := false
+	sharedIDFound := false
+	for i := range roiIDs.IDs {
+		roiID := roiIDs.IDs[i]
+		_, isSharedReq := utils.StripSharedItemIDPrefix(roiID)
+		if isSharedReq {
+			sharedIDFound = true
+		} else {
+			userIDFound = true
+		}
+	}
+
+	var err error
+
 	// Read in user ROIs and keep track of whether we deleted any
 	userROIsChanged := false
-	userROIs, err := roiModel.ReadROIData(params.Svcs, userS3Path)
-	if err != nil {
-		return nil, err
+	var userROIs roiModel.ROILookup
+	if userIDFound {
+		userROIs, err = roiModel.ReadROIData(params.Svcs, userS3Path)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Read in shared ROIs and keep track of whether we deleted any
 	sharedROIsChanged := false
-	sharedS3Path := filepaths.GetROIPath(pixlUser.ShareUserID, datasetID)
-	sharedROIs, err := roiModel.ReadROIData(params.Svcs, sharedS3Path)
-	if err != nil {
-		return nil, err
+	var sharedROIs roiModel.ROILookup
+	if sharedIDFound {
+		sharedROIs, err = roiModel.ReadROIData(params.Svcs, sharedS3Path)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for i := range roiIDs.IDs {
