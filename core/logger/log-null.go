@@ -33,3 +33,9 @@ func (l *NullLogger) Infof(format string, a ...interface{}) {
 func (l *NullLogger) Errorf(format string, a ...interface{}) {
 	// We do nothing!
 }
+func (l *NullLogger) SetLogLevel(level LogLevel) {
+	// We do nothing!
+}
+func (l *NullLogger) GetLogLevel() LogLevel {
+	return LogDebug
+}

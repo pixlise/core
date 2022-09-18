@@ -24,7 +24,8 @@ import (
 
 // StdOutLogger - For mocking out in tests
 type StdOutLogger struct {
-	logs []string
+	logs     []string
+	logLevel LogLevel
 }
 
 func (l *StdOutLogger) Printf(level LogLevel, format string, a ...interface{}) {
@@ -40,4 +41,11 @@ func (l *StdOutLogger) Infof(format string, a ...interface{}) {
 }
 func (l *StdOutLogger) Errorf(format string, a ...interface{}) {
 	l.Printf(LogError, format, a...)
+}
+
+func (l *StdOutLogger) SetLogLevel(level LogLevel) {
+	l.logLevel = level
+}
+func (l *StdOutLogger) GetLogLevel() LogLevel {
+	return l.logLevel
 }
