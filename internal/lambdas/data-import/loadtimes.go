@@ -15,7 +15,7 @@ type LastLoaded struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func saveLoadtime(name string, loads Loaded, fs fileaccess.FileAccess) error {
+func saveLoadtime(configBucket string, name string, loads Loaded, fs fileaccess.FileAccess) error {
 	var newloads []LastLoaded
 	for _, l := range loads.LastLoaded {
 		if l.Name == name {
@@ -25,12 +25,12 @@ func saveLoadtime(name string, loads Loaded, fs fileaccess.FileAccess) error {
 	}
 	var l = Loaded{newloads}
 
-	return fs.WriteJSONNoIndent(getConfigBucket(), "DatasetConfig/lastloaded.json", l)
+	return fs.WriteJSONNoIndent(configBucket, "DatasetConfig/lastloaded.json", l)
 }
 
-func lookupLoadtime(name string, fs fileaccess.FileAccess) (Loaded, bool) {
+func lookupLoadtime(configBucket string, name string, fs fileaccess.FileAccess) (Loaded, bool) {
 	var loads Loaded
-	err := fs.ReadJSON(getConfigBucket(), "DatasetConfig/lastloaded.json", &loads, false)
+	err := fs.ReadJSON(configBucket, "DatasetConfig/lastloaded.json", &loads, false)
 	if err != nil {
 		// REFACTOR: Return an error? What if this fails, is it bad? Should we use the "return empty if not found" flag above?
 		fmt.Println(err)

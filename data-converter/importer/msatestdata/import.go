@@ -186,7 +186,7 @@ func (m MSATestData) Import(importJSONPath string, pseudoIntensityRangesPath str
 		}
 	}
 
-	importer.LogIfMoreFoundMSA(spectraLookup, "MSA/spectrum", 2)
+	importer.LogIfMoreFoundMSA(spectraLookup, "MSA/spectrum", 2, jobLog)
 	// Not really relevant, what would we show? It's a list of meta, how many is too many?
 	//importer.LogIfMoreFoundHousekeeping(hkData, "Housekeeping", 1)
 

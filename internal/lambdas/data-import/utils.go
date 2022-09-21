@@ -19,70 +19,17 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
-	"path"
-	"path/filepath"
-	"sort"
-	"strings"
-	"time"
 
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	cmap "github.com/orcaman/concurrent-map"
-	ccopy "github.com/otiai10/copy"
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
 	apiNotifications "github.com/pixlise/core/v2/core/notifications"
-	"github.com/pixlise/core/v2/core/utils"
 	"github.com/pixlise/core/v2/data-converter/output"
 	diffractionDetection "github.com/pixlise/core/v2/diffraction-detector"
 )
-
-// setupLocalPaths - Setup the local paths for the files required for datasource processing
-func setupLocalPaths() {
-	var err error
-	tmpprefix, err = ioutil.TempDir("", "archive")
-	if err != nil {
-		log.Fatal(err)
-	}
-	localUnzipPath = path.Join(tmpprefix, "unzippath")
-	localInputPath = path.Join(tmpprefix, "inputfiles")
-	localArchivePath = path.Join(tmpprefix, "archive")
-	localRangesCSVPath = path.Join(tmpprefix, "ranges.csv")
-}
-
-// generatePrefix - Generate the prefix requried for storage in the archive and retrieval
-func generatePrefix(name string) string {
-	filename := strings.Split(name, ".")
-	splits := strings.Split(filename[0], "-")
-	return splits[0]
-}
-
-// checkExistingArchive - Check the existing archive for any older files already processed for this dataset
-func checkExistingArchive(allthefiles []string, name string, updateExisting *bool, fs fileaccess.FileAccess, jobLog logger.ILogger) ([]string, error) {
-	prefix := generatePrefix(name)
-	paths, err := checkExisting(getDatasourceBucket(), prefix, fs, jobLog)
-	if err != nil {
-		return allthefiles, err
-	}
-
-	for _, p := range paths {
-		//set update flag
-		*updateExisting = true
-		//Download the other parts found
-		jobLog.Infof("----- Importing file %v -----\n", p)
-		_, err := downloadDirectoryZip(getDatasourceBucket(), p, fs)
-		if err != nil {
-			return allthefiles, err
-		}
-		//allthefiles = append(allthefiles, addpath)
-	}
-
-	return allthefiles, err
-
-}
 
 // getUpdateNotificationType - Get the notificationtype for a dataset update
 func getUpdateNotificationType(datasetID string, bucket string, fs fileaccess.FileAccess) (string, error) {
@@ -105,124 +52,37 @@ func getUpdateNotificationType(datasetID string, bucket string, fs fileaccess.Fi
 	return "unknown", nil
 }
 
-// copyAdditionalDirectories - Copy in additional directories
-func copyAdditionalDirectories(outpath string, jobLog logger.ILogger) error {
-	dirs := []string{"RGBU", "DISCO", "MATCHED"}
-	for _, d := range dirs {
-		jobLog.Infof("CHECKING %v EXISTS \n", d)
-
-		localFilePath := path.Join(localInputPath, d)
-		if _, err := os.Stat(localFilePath); !os.IsNotExist(err) {
-			jobLog.Infof("%v EXISTS COPYING TO ARCHIVE\n", d)
-			err := ccopy.Copy(localFilePath, path.Join(outpath, d))
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
 // createPeakDiffractoinDB - Use the diffraction engine to calculate the diffraction peaks
 func createPeakDiffractionDB(path string, savepath string, jobLog logger.ILogger) error {
 	protoParsed, err := datasetModel.ReadDatasetFile(path)
 	if err != nil {
-		jobLog.Errorf("Failed to open dataset \"%v\": \"%v\"\n", path, err)
+		jobLog.Errorf("Failed to open dataset \"%v\": \"%v\"", path, err)
 		return err
 	}
 
-	jobLog.Infof("  Opened %v, got RTT: %v, title %v\n", path, protoParsed.Rtt, protoParsed.Title)
+	jobLog.Infof("  Opened %v, got RTT: %v, title %v. Scanning for diffraction peaks...", path, protoParsed.Rtt, protoParsed.Title)
 
-	fmt.Println("  Scanning dataset for diffraction peaks...")
 	datasetPeaks, err := diffractionDetection.ScanDataset(protoParsed)
 	if err != nil {
-		jobLog.Errorf("Error Encoundered During Scanning: %v\n", err)
+		jobLog.Errorf("Error Encoundered During Scanning: %v", err)
 		return err
 	}
 
-	fmt.Println("  Completed scan successfully")
+	jobLog.Infof("  Completed scan successfully")
 
 	if savepath != "" {
-		jobLog.Infof("  Saving diffraction db file: %v\n", savepath)
+		jobLog.Infof("  Saving diffraction db file: %v", savepath)
 		diffractionPB := diffractionDetection.BuildDiffractionProtobuf(protoParsed, datasetPeaks)
 		err := diffractionDetection.SaveDiffractionProtobuf(diffractionPB, savepath)
 		if err != nil {
-			jobLog.Errorf("Error Encoundered During Saving: %v\n", err)
+			jobLog.Errorf("Error Encoundered During Saving: %v", err)
 			return err
 		}
 
-		fmt.Println("  Diffraction db saved successfully")
+		jobLog.Infof("  Diffraction db saved successfully")
 	}
 
 	return nil
-}
-
-// checkExisting - Check existing files in S3
-func checkExisting(bucket string, prefix string, fs fileaccess.FileAccess, jobLog logger.ILogger) ([]string, error) {
-	path := fmt.Sprintf("Datasets/archive/%v", prefix)
-	jobLog.Infof(fmt.Sprintf("----- Checking for other files in %v, %v -----\n", bucket, path))
-	files, err := fs.ListObjects(bucket, path)
-	if err != nil {
-		return nil, err
-	}
-	m := make(map[int]string)
-	var keys []string
-	if files != nil && len(files) > 0 {
-		for _, f := range files {
-			splits := strings.SplitN(f, "-", 2)
-			timestamp := strings.Split(splits[1], ".")[0]
-
-			layout := "02-01-2006-15-04-05"
-			t, err := time.Parse(layout, timestamp)
-			if err != nil {
-			}
-			m[int(utils.AbsI64(t.Unix()))] = f
-		}
-		key := make([]int, 0, len(m))
-		for k := range m {
-			key = append(key, k)
-		}
-		sort.Ints(key)
-
-		for _, k := range key {
-			fmt.Println(k, m[k])
-			keys = append(keys, m[k])
-		}
-	}
-	jobLog.Infof("Number of other files found: %v\n", len(keys))
-	jobLog.Infof("Found file names: \n")
-	for _, j := range keys {
-		jobLog.Infof("Filename: %v \n", j)
-	}
-	jobLog.Infof("End of filenames \n")
-	return keys, nil
-}
-
-// importAutoQuickLook - Import the quicklook files.
-func importAutoQuickLook(quickLookPath string) {
-	files, err := checkLocalExisting("APIX", localUnzipPath)
-	if err != nil {
-		// REFACTOR: found this empty, shouldn't we error check something?
-	}
-
-	for _, i := range files {
-		filename := filepath.Base(i)
-		os.Rename(quickLookPath, path.Join(quickLookPath, filename))
-	}
-}
-
-// checkLocalExisting - Check for local existing files
-func checkLocalExisting(prefix string, filePath string) ([]string, error) {
-	var files []string
-	err := filepath.Walk(filePath, func(path string, info os.FileInfo, err error) error {
-		fn := filepath.Base(path)
-		if strings.HasPrefix(fn, prefix) {
-			files = append(files, path)
-		}
-		return nil
-	})
-	return files, err
 }
 
 // makeNotificationStack - Create a notification stack
@@ -253,62 +113,4 @@ func makeNotificationStack(fs fileaccess.FileAccess, log logger.ILogger) apiNoti
 	} else {
 		return nil
 	}
-}
-
-// downloadExtraFile - Download addon files
-func downloadExtraFiles(rtt string, fs fileaccess.FileAccess) error {
-	fmt.Printf("Downloading addons\n")
-	a, err := fs.ListObjects(getManualBucket(), path.Join("dataset-addons", rtt))
-	if err != nil {
-		return err
-	}
-	if a != nil {
-		for _, obj := range a {
-			fmt.Printf("Processing addon: %v\n", obj)
-			bytes, err := fs.ReadObject(getManualBucket(), obj)
-			if err != nil {
-				return err
-			}
-			objpath := obj
-			splits := strings.Split(objpath, "/")
-			filename := splits[len(splits)-1]
-			splits = splits[:len(splits)-1]
-			splits = splits[2:]
-			newpath := strings.Join(splits, "/")
-			newpath = path.Join(localUnzipPath, newpath)
-			os.MkdirAll(newpath, 0755)
-			writepath := path.Join(newpath, filename)
-			fmt.Printf("Writing to path: %v\n", writepath)
-			err = ioutil.WriteFile(writepath, bytes, 0644)
-			if err != nil {
-				fmt.Printf("Couldn't write custom meta")
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-// fetchRanges - Fetch the ranges files
-func fetchRanges(s3bucket string, s3path string, fs fileaccess.FileAccess) error {
-	bytes, err := fs.ReadObject(s3bucket, s3path)
-	if err != nil {
-		return err
-	}
-
-	f, err := os.Create(localRangesCSVPath)
-	if err != nil {
-		fmt.Printf("Couldn't write local ranges")
-		return err
-	}
-
-	defer f.Close()
-
-	_, err = f.Write(bytes)
-	if err != nil {
-		return err
-	}
-	f.Sync()
-
-	return nil
 }

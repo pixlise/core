@@ -32,9 +32,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sns"
-
 	"github.com/pixlise/core/v2/api/handlers"
 	"github.com/pixlise/core/v2/api/permission"
 	apiRouter "github.com/pixlise/core/v2/api/router"
@@ -43,7 +40,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/core/api"
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
 	"github.com/pixlise/core/v2/core/utils"
 )
@@ -364,27 +360,6 @@ func datasetExportConcat(params handlers.ApiHandlerGenericParams) error {
 
 	return downloadDatasetFromS3(params, rtt, true)
 
-}
-
-func datasetReprocess(params handlers.ApiHandlerParams) (interface{}, error) {
-	datasetID := params.PathParams[datasetIdentifier]
-
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-
-	svc := sns.New(sess)
-	result, err := svc.Publish(&sns.PublishInput{
-		Message:  aws.String(datasetID),
-		TopicArn: aws.String(params.Svcs.Config.DataSourceSNSTopic),
-	})
-
-	if err != nil {
-		return nil, api.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to publish SNS topic for dataset regeneration: %v", err))
-	}
-
-	params.Svcs.Log.Infof("Published SNS topic: %v", result)
-	return nil, nil
 }
 
 func downloadDatasetFromS3(params handlers.ApiHandlerGenericParams, rtt string, concat bool) error {

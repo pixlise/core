@@ -18,8 +18,6 @@
 package importer
 
 import (
-	"fmt"
-
 	"github.com/pixlise/core/v2/core/logger"
 	"github.com/pixlise/core/v2/data-converter/converterModels"
 )
@@ -28,10 +26,10 @@ type Importer interface {
 	Import(importPath string, pseudoIntensityRangesPath string, jobLog logger.ILogger) (*converterModels.OutputData, string, error)
 }
 
-func LogIfMoreFoundMSA(m converterModels.DetectorSampleByPMC, typename string, morethan int) {
+func LogIfMoreFoundMSA(m converterModels.DetectorSampleByPMC, typename string, morethan int, log logger.ILogger) {
 	for k, v := range m {
 		if len(v) > morethan {
-			fmt.Printf("PMC %d has %d %s entries\n", k, len(v), typename)
+			log.Infof("PMC %d has %d %s entries\n", k, len(v), typename)
 		}
 	}
 }

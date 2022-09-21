@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/pixlise/core/v2/core/logger"
@@ -9,9 +10,10 @@ import (
 	apiNotifications "github.com/pixlise/core/v2/core/notifications"
 )
 
+/*
 func triggerErrorNotifications(ns apiNotifications.NotificationManager) (string, error) {
-	/*var pinusers = []string{"tom.barber@jpl.nasa.gov", "scott.davidoff@jpl.nasa.gov",
-	"adrian.e.galvin@jpl.nasa.gov", "peter.nemere@qut.edu.au"}*/
+	/ * var pinusers = []string{"tom.barber@jpl.nasa.gov", "scott.davidoff@jpl.nasa.gov",
+	"adrian.e.galvin@jpl.nasa.gov", "peter.nemere@qut.edu.au"}* /
 
 	if ns != nil {
 		fmt.Println("Wait over, dispatching notification for new datasource")
@@ -31,54 +33,57 @@ func triggerErrorNotifications(ns apiNotifications.NotificationManager) (string,
 	}
 	return "", nil
 }
+*/
 
-func triggernotifications(fs fileaccess.FileAccess, update bool, updatetype string, notificationStack apiNotifications.NotificationManager, jobLog logger.ILogger) (string, error) {
+func triggerNotifications(
+	configBucket string,
+	datasetName string,
+	fs fileaccess.FileAccess,
+	update bool,
+	updatetype string,
+	notificationStack apiNotifications.NotificationManager,
+	jobLog logger.ILogger) error {
 	/*var pinusers = []string{"tom.barber@jpl.nasa.gov", "scott.davidoff@jpl.nasa.gov",
 	"adrian.e.galvin@jpl.nasa.gov", "peter.nemere@qut.edu.au"}*/
-	if notificationStack != nil {
-		var err error
+	if notificationStack == nil {
+		return errors.New("Notification Stack is empty, this is a success notification")
+	}
+	var err error
 
-		template := make(map[string]interface{})
-		dsname, err := computeName()
-		if err != nil {
-			jobLog.Infof(err.Error())
-			return "", err
-		}
-		template["datasourcename"] = dsname
+	template := make(map[string]interface{})
+	template["datasourcename"] = datasetName
 
-		if update {
-			loads, b := lookupLoadtime(dsname, fs)
-			if b {
-				jobLog.Infof("Last sent a notification within an hour not resending\n")
-			} else {
-				template["subject"] = fmt.Sprintf("Datasource %v Processing Complete", template["datasourcename"])
-				fmt.Println("Wait over, dispatching notification for updated datasource")
-				err = notificationStack.SendAllDataSource(fmt.Sprintf("dataset-%v-updated", updatetype), template, nil, true, "dataset-updated")
-				if err != nil {
-					jobLog.Infof(err.Error())
-					return "", err
-				}
-
-				saveLoadtime(dsname, loads, fs)
-			}
+	if update {
+		loads, b := lookupLoadtime(configBucket, datasetName, fs)
+		if b {
+			jobLog.Infof("Last sent a notification within an hour not resending\n")
 		} else {
-			loads, b := lookupLoadtime(dsname, fs)
-			if b {
-				jobLog.Infof("Last sent a notification within an hour not resending\n")
-			} else {
-				template["subject"] = fmt.Sprintf("Datasource %v Processing Complete", "")
-
-				fmt.Println("Wait over, dispatching notification for new datasource")
-				err = notificationStack.SendAllDataSource("new-dataset-available", template, nil, true, "")
-				if err != nil {
-					jobLog.Infof(err.Error())
-					return "", err
-				}
-				saveLoadtime(dsname, loads, fs)
+			template["subject"] = fmt.Sprintf("Datasource %v Processing Complete", template["datasourcename"])
+			jobLog.Infof("Wait over, dispatching notification for updated datasource")
+			err = notificationStack.SendAllDataSource(fmt.Sprintf("dataset-%v-updated", updatetype), template, nil, true, "dataset-updated")
+			if err != nil {
+				jobLog.Infof(err.Error())
+				return err
 			}
+
+			saveLoadtime(configBucket, datasetName, loads, fs)
 		}
 	} else {
-		fmt.Println("Notification Stack is empty, this is a success notification")
+		loads, b := lookupLoadtime(configBucket, datasetName, fs)
+		if b {
+			jobLog.Infof("Last sent a notification within an hour not resending\n")
+		} else {
+			template["subject"] = fmt.Sprintf("Datasource %v Processing Complete", "")
+
+			jobLog.Infof("Wait over, dispatching notification for new datasource")
+			err = notificationStack.SendAllDataSource("new-dataset-available", template, nil, true, "")
+			if err != nil {
+				jobLog.Infof(err.Error())
+				return err
+			}
+			saveLoadtime(configBucket, datasetName, loads, fs)
+		}
 	}
-	return "", nil
+
+	return nil
 }

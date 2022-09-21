@@ -19,80 +19,32 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/pixlise/core/v2/core/awsutil"
 )
 
-type DatasourceEvent struct {
-	Inpath         string `json:"inpath"`
-	Rangespath     string `json:"rangespath"`
-	Outpath        string `json:"outpath"`
-	DatasetID      string `json:"datasetid"`
-	DetectorConfig string `json:"detectorconfig"`
-}
+func HandleRequest(ctx context.Context, event awsutil.Event) error {
 
-func getConfigBucket() string {
-	return os.Getenv("CONFIG_BUCKET")
-}
-
-func getManualBucket() string {
-	return os.Getenv("MANUAL_BUCKET")
-}
-
-func getDatasourceBucket() string {
-	return os.Getenv("DATASETS_BUCKET")
-}
-
-func getInputBucket() string {
-	return os.Getenv("INPUT_BUCKET")
-}
-
-//{
-//  "inpath": "pixl.zip",
-//  "rangespath": "configs/StandardPseudoIntensities.csv",
-//  "outpath": "/tmp/",
-//  "datasetid": "pixl_data_drive_dir_structure",
-//  "detectorconfig": "PIXL"
-//}
-///
-
-var tmpprefix = ""
-var localUnzipPath = ""
-var localInputPath = ""
-var localArchivePath = ""
-var localRangesCSVPath = ""
-
-type StructKeys struct {
-	Dir string
-	Log string
-}
-type APISnsMessage struct {
-	Key StructKeys `json:"datasetaddons"`
-}
-
-func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
-	setupLocalPaths()
-
-	fmt.Printf("Unzip Path: %v \n", localUnzipPath)
-	fmt.Printf("Input Path: %v \n", localInputPath)
-	fmt.Printf("Archive Path: %v \n", localArchivePath)
-	fmt.Printf("Ranges Path: %v \n", localRangesCSVPath)
-
-	defer os.RemoveAll(tmpprefix)
 	for _, record := range event.Records {
-		if record.EventSource == "aws:s3" {
-			return processS3(record)
-		} else if record.EventSource == "aws:sns" {
-			return processSns(record)
-		}
+		return processImportTrigger([]byte(record.SNS.Message))
 	}
-	return fmt.Sprintf("----- DONE -----\n"), nil
+	return nil
 }
 
 func main() {
+	/*
+		// Garde failing: 76481028 Matched image PMC is 0
+		// Dourbes 245: 89063943
+		err := processImportTrigger([]byte(`{
+			"datasetaddons": {
+				"dir": "dataset-addons/089063943/custom-meta.json",
+				"log": "dataimport-12345678"
+			}
+		}`))
+		fmt.Printf("%v", err)
+	*/
 	os.Mkdir("/tmp/profile", 0750)
 	lambda.Start(HandleRequest)
 }

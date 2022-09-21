@@ -53,8 +53,9 @@ func (s *PIXLISEDataSaver) Save(
 	data converterModels.OutputData,
 	contextImageSrcPath string,
 	outPath string,
-	creationUnixTimeSec int64, jobLog logger.ILogger) error {
-	fmt.Println("Serializing dataset...")
+	creationUnixTimeSec int64,
+	jobLog logger.ILogger) error {
+	jobLog.Infof("Serializing dataset...")
 
 	outPrefix := ""
 
@@ -74,15 +75,15 @@ func (s *PIXLISEDataSaver) Save(
 	exp.Rtt = data.Meta.RTT
 	exp.Sclk = data.Meta.SCLK
 
-	jobLog.Infof("This dataset's detector config is %v\n", data.DetectorConfig)
+	jobLog.Infof("This dataset's detector config is %v", data.DetectorConfig)
 	exp.DetectorConfig = data.DetectorConfig
 
 	// NOTE: count values are saved after we saved locations, see: saveSpectrumTypeCounts
 
 	if len(data.DefaultContextImage) <= 0 {
-		jobLog.Infof("WARNING: No main context image determined\n")
+		jobLog.Infof("WARNING: No main context image determined")
 	} else {
-		jobLog.Infof("Main context image: %v\n", data.DefaultContextImage)
+		jobLog.Infof("Main context image: %v", data.DefaultContextImage)
 	}
 
 	if len(data.BulkQuantFile) > 0 {
@@ -148,7 +149,7 @@ func (s *PIXLISEDataSaver) Save(
 		if !ok {
 			// Looks like we had IJ's defined in beam location for a PMC, but we don't have a context image for it.
 			// Just print a warning...
-			jobLog.Infof("WARNING: Context image not found for PMC: %v\n", pmc)
+			jobLog.Infof("WARNING: Context image not found for PMC: %v", pmc)
 		} else {
 			// If it's the main context image, note that we found one...
 			if exp.MainContextImage == img {
@@ -168,33 +169,29 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	// Verify that main has this set...
-	fmt.Println("Verify that main has this set...")
 	if len(exp.MainContextImage) > 0 && !mainContextMatched {
 		return fmt.Errorf("Main context image inconsistant: \"%v\" does not match any context images defined for PMCs", exp.MainContextImage)
 	}
 
 	// Remainder are unaligned
-	fmt.Println("Remainder are unaligned")
 	for _, img := range contextImagesByPMC {
 		exp.UnalignedContextImages = append(exp.UnalignedContextImages, img)
 	}
 
 	// RGBU images are also unaligned for now
-	fmt.Println("RGBU images are also unaligned for now")
 	for _, meta := range data.RGBUImages {
 		//exp.UnalignedContextImages = append(exp.UnalignedContextImages, img)
 		exp.UnalignedContextImages = append(exp.UnalignedContextImages, makeRGBUFileName(meta))
 	}
 
 	// As are other context images for visual spectroscopy taken with the "disco" setup - different coloured LEDs
-	fmt.Println("As are other context images for visual spectroscopy taken with the \"disco\" setup - different coloured LEDs")
 	for _, meta := range data.DISCOImages {
 		//exp.UnalignedContextImages = append(exp.UnalignedContextImages, img)
 		exp.UnalignedContextImages = append(exp.UnalignedContextImages, makeDiscoFileName(meta))
 	}
 
 	// Now loop through them, saving in this order...
-	fmt.Println("Now loop through them, saving in this order...")
+	jobLog.Infof("Saving images by PMC...")
 	for _, pmcI := range pmcs {
 		pmc := int32(pmcI)
 		dataForPMC := data.PerPMCData[pmc]
@@ -204,14 +201,14 @@ func (s *PIXLISEDataSaver) Save(
 		}
 	}
 
-	jobLog.Infof("Saving %v field names...\n", len(s.metaLookup))
+	jobLog.Infof("Saving %v field names...", len(s.metaLookup))
 	err := s.saveMetaData(&exp)
 	if err != nil {
 		return err
 	}
 
 	if len(data.PseudoRanges) > 0 {
-		jobLog.Infof("Saving %v pseudo-intensity ranges...\n", len(data.PseudoRanges))
+		jobLog.Infof("Saving %v pseudo-intensity ranges...", len(data.PseudoRanges))
 		savePseudoIntensityRanges(&exp, data.PseudoRanges)
 	}
 
@@ -219,7 +216,7 @@ func (s *PIXLISEDataSaver) Save(
 	saveSpectrumTypeCounts(&exp, data)
 
 	if _, err := os.Stat(outPath); os.IsNotExist(err) {
-		jobLog.Infof("Creating output directory: \"%v\"\n", outPath)
+		jobLog.Infof("Creating output directory: \"%v\"", outPath)
 		err := os.MkdirAll(outPath, os.ModePerm)
 		if err != nil {
 			return fmt.Errorf("Failed to create output directory: %v", outPath)
@@ -239,7 +236,7 @@ func (s *PIXLISEDataSaver) Save(
 	outfileName := outPrefix + filepaths.DatasetFileName
 	outFilePath := path.Join(outPath, outfileName)
 
-	jobLog.Infof("Writing binary file: %v\n", outFilePath)
+	jobLog.Infof("Writing binary file: %v", outFilePath)
 	out, err := proto.Marshal(&exp)
 	if err != nil {
 		return fmt.Errorf("Failed to encode dataset: %v", err)
@@ -262,10 +259,10 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	if summaryData.BulkSpectra < 2 || summaryData.MaxSpectra < 2 {
-		jobLog.Infof("\nWARNING: NOT ENOUGH BULK/MAX SPECTRA DEFINED! Bulk: %v, Max: %v\n", summaryData.BulkSpectra, summaryData.MaxSpectra)
+		jobLog.Infof("WARNING: NOT ENOUGH BULK/MAX SPECTRA DEFINED! Bulk: %v, Max: %v", summaryData.BulkSpectra, summaryData.MaxSpectra)
 	}
 
-	jobLog.Infof("Writing summary file: %v\n", summaryFile)
+	jobLog.Infof("Writing summary file: %v", summaryFile)
 	err = ioutil.WriteFile(summaryFile, file, 0644)
 	if err != nil {
 		return err
@@ -346,14 +343,14 @@ func copyImagesToOutput(contextImgDir string, outPath string, data converterMode
 			// Make sure output format is PNG
 			if strings.ToUpper(filepath.Ext(fromImgFile)) == ".TIF" {
 				outImgFile = outImgFile[0:len(outImgFile)-3] + "png"
-				jobLog.Infof("  Convert img PMC[%v] %v -> %v\n", pmc, fromImgFile, outImgFile)
+				jobLog.Infof("  Convert img PMC[%v] %v -> %v", pmc, fromImgFile, outImgFile)
 
 				err := convertTiffToPNG(fromImgFile, outImgFile)
 				if err != nil {
 					return "", err
 				}
 			} else {
-				jobLog.Infof("  Copy img PMC[%v] %v -> %v\n", pmc, fromImgFile, outImgFile)
+				jobLog.Infof("  Copy img PMC[%v] %v -> %v", pmc, fromImgFile, outImgFile)
 
 				err := copyFile(fromImgFile, outImgFile)
 				if err != nil {
@@ -377,7 +374,7 @@ func copyImagesToOutput(contextImgDir string, outPath string, data converterMode
 		// NOTE: THIS MUST MATCH WHAT WAS WRITTEN INTO UnalignedContextImages!!!
 		outImgFile := path.Join(outPath, makeRGBUFileName(img)) //path.Base(rgbuPath))
 
-		jobLog.Infof("  Copy RGBU img %v -> %v\n", fromImgFile, outImgFile)
+		jobLog.Infof("  Copy RGBU img %v -> %v", fromImgFile, outImgFile)
 
 		err := copyFile(fromImgFile, outImgFile)
 		if err != nil {
@@ -395,7 +392,7 @@ func copyImagesToOutput(contextImgDir string, outPath string, data converterMode
 		outFileName := makeDiscoFileName(meta)
 		outImgFile := path.Join(outPath, outFileName)
 
-		jobLog.Infof("  Copy MCC multispectral img %v -> %v\n", fromImgFile, outImgFile)
+		jobLog.Infof("  Copy MCC multispectral img %v -> %v", fromImgFile, outImgFile)
 
 		err := copyFile(fromImgFile, outImgFile)
 		if err != nil {
@@ -417,7 +414,7 @@ func copyImagesToOutput(contextImgDir string, outPath string, data converterMode
 
 		outImgFile := path.Join(outPath, matchedFileName)
 
-		jobLog.Infof("  Copy matched aligned img %v -> %v\n", fromImgFile, outImgFile)
+		jobLog.Infof("  Copy matched aligned img %v -> %v", fromImgFile, outImgFile)
 
 		err := copyFile(fromImgFile, outImgFile)
 		if err != nil {
@@ -459,7 +456,7 @@ func setMatchedImageInfo(fromData converterModels.OutputData, toExperiment *prot
 		matchItem.YScale = matchedImg.YScale
 
 		toExperiment.MatchedAlignedContextImages = append(toExperiment.MatchedAlignedContextImages, matchItem)
-		jobLog.Infof("Matched aligned image: %v, offset(%v, %v), scale(%v, %v). Match for aligned index: %v\n", matchItem.Image, matchItem.XOffset, matchItem.YOffset, matchItem.XScale, matchItem.YScale, matchItem.AlignedIndex)
+		jobLog.Infof("Matched aligned image: %v, offset(%v, %v), scale(%v, %v). Match for aligned index: %v", matchItem.Image, matchItem.XOffset, matchItem.YOffset, matchItem.XScale, matchItem.YScale, matchItem.AlignedIndex)
 	}
 
 	return nil
@@ -538,7 +535,7 @@ func (s *PIXLISEDataSaver) saveExperimentLocationItem(saveToExperiment *protos.E
 
 		spectraReadTypeValid := readType.SValue == "BulkSum" || readType.SValue == "MaxValue" || readType.SValue == "Normal" || readType.SValue == "Dwell"
 		if !spectraReadTypeValid {
-			jobLog.Infof("WARNING: Not saving spectrum for PMC %v, READTYPE \"%v\" is not valid\n", pmc, readType)
+			jobLog.Infof("WARNING: Not saving spectrum for PMC %v, READTYPE \"%v\" is not valid", pmc, readType)
 			continue
 		}
 

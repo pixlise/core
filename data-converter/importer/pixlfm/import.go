@@ -131,7 +131,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 	pathsToRead := map[string]fileStructure{"beamDir": beamDir, "spectraDir": spectraDir, "bulkSpectraDir": bulkSpectraDir, "contextImgDir": contexImgDir, "housekeepingDir": housekeepingDir, "pseudoIntensityDir": pseudoIntensityDir, "rgbuImgDir": rgbuImgDir, "discoImgDir": discoImgDir}
 	for dirType, subdir := range pathsToRead {
 		pathToSubdir := importPath
-		log.Infof("READING %v from \"%v\", subdirs: \"%v\"...\n", dirType, pathToSubdir, strings.Join(subdir.directories, ","))
+		log.Infof("READING %v from \"%v\", subdirs: \"%v\"...", dirType, pathToSubdir, strings.Join(subdir.directories, ","))
 
 		var allFoundPaths []string
 		for _, d := range subdir.directories {
@@ -142,7 +142,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 			}
 
 			if err != nil {
-				log.Infof("  WARNING: Failed to read dir \"%v\". SKIPPING. Error was: \"%v\"\n", pathToSubdir, err)
+				log.Infof("  WARNING: Failed to read dir \"%v\". SKIPPING. Error was: \"%v\"", pathToSubdir, err)
 				err = nil
 			}
 		}
@@ -154,7 +154,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 			// Print out all the files ignored due to being old versions...
 			for _, allFoundItem := range allFoundPaths {
 				if _, ok := latestVersionFoundPaths[allFoundItem]; !ok {
-					log.Infof("  IGNORED: \"%v\", due to being older version\n", allFoundItem)
+					log.Infof("  IGNORED: \"%v\", due to being older version", allFoundItem)
 				}
 			}
 		}
@@ -163,9 +163,9 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 		if subdir.expectedFileCount > 0 {
 			expVsFoundPathsCount := subdir.expectedFileCount - numFoundPaths
 			if expVsFoundPathsCount > 0 {
-				log.Infof("  WARNING: Not enough %v files found in %v, only found %v!\n", subdir.extensions, strings.Join(subdir.directories, ","), numFoundPaths)
+				log.Infof("  WARNING: Not enough %v files found in %v, only found %v!", subdir.extensions, strings.Join(subdir.directories, ","), numFoundPaths)
 			} else if expVsFoundPathsCount < 0 {
-				log.Infof("  WARNING: Unexpected %v file count %v in %v. Check that we read the right one!\n", subdir.extensions, numFoundPaths, strings.Join(subdir.directories, ","))
+				log.Infof("  WARNING: Unexpected %v file count %v in %v. Check that we read the right one!", subdir.extensions, numFoundPaths, strings.Join(subdir.directories, ","))
 			}
 		}
 
@@ -187,7 +187,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 			// Check that we did end up with beam data...
 			if len(beamLookup) <= 0 {
 				//return nil, "", errors.New("Failed to find beam location CSV")
-				fmt.Println("No beam location found for this dataset. Continuing in case it's a \"disco\" dataset")
+				log.Infof("No beam location found for this dataset. Continuing in case it's a \"disco\" dataset")
 			}
 		case "spectraDir":
 			file := ""
@@ -220,7 +220,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 
 				pmc, err := meta.PMC()
 				if err != nil {
-					log.Infof("  WARNING: No PMC in context image file name: \"%v\"\n", file)
+					log.Infof("  WARNING: No PMC in context image file name: \"%v\"", file)
 				} else {
 					contextImgsPerPMC[pmc] = file
 				}
@@ -262,7 +262,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 				pmc, err := meta.PMC()
 				if err != nil {
 					//return result, nil
-					log.Infof("RGBU image file name \"%v\" did not contain PMC: %v\n", file, err)
+					log.Infof("RGBU image file name \"%v\" did not contain PMC: %v", file, err)
 				}
 
 				info.PMC = pmc
@@ -279,7 +279,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 				pmc, err := meta.PMC()
 				if err != nil {
 					//return result, nil
-					log.Infof("DISCO image file name \"%v\" did not contain PMC: %v\n", file, err)
+					log.Infof("DISCO image file name \"%v\" did not contain PMC: %v", file, err)
 				}
 
 				discoInfo.PMC = pmc
@@ -311,7 +311,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 		locSpectraLookup[pmc] = append(locSpectraLookup[pmc], bulkMaxSpectraLookup[pmc]...)
 	}
 
-	importer.LogIfMoreFoundMSA(locSpectraLookup, "MSA/spectrum", 2)
+	importer.LogIfMoreFoundMSA(locSpectraLookup, "MSA/spectrum", 2, jobLog)
 	// Not really relevant, what would we show? It's a list of meta, how many is too many?
 	//importer.LogIfMoreFoundHousekeeping(hkData, "Housekeeping", 1)
 
@@ -362,20 +362,20 @@ func readCustomMeta(jobLog logger.ILogger, importPath string) (map[string]interf
 	var result map[string]interface{}
 
 	metapath := path.Join(importPath, filepaths.DatasetCustomMetaFileName)
-	jobLog.Infof("Checking for custom meta: %v\n", metapath)
+	jobLog.Infof("Checking for custom meta: %v", metapath)
 
 	if _, err := os.Stat(metapath); os.IsNotExist(err) {
-		jobLog.Infof("Can't find custom meta file\n")
+		jobLog.Infof("Custom meta not found, ignoring...")
 		return result, nil
 	}
 
 	localFS := fileaccess.FSAccess{}
 	err := localFS.ReadJSON("", metapath, &result, false)
 	if err != nil {
-		jobLog.Infof("Can't read custom meta file\n")
-		return result, err
+		jobLog.Errorf("Failed to read custom meta file: %v", err)
 	}
-	fmt.Println("Successfully Opened custom-meta")
+
+	jobLog.Infof("Successfully read custom-meta")
 	return result, err
 }
 
@@ -415,7 +415,7 @@ func makeDatasetFileMeta(fMeta FileNameMeta, cmeta map[string]interface{}, jobLo
 	sol, err := fMeta.SOL()
 	if err != nil {
 		//return result, nil
-		jobLog.Infof("Dataset Metadata did not contain SOL: %v\n", err)
+		jobLog.Infof("Dataset Metadata did not contain SOL: %v", err)
 	}
 
 	rtt, err := fMeta.RTT()
@@ -426,7 +426,7 @@ func makeDatasetFileMeta(fMeta FileNameMeta, cmeta map[string]interface{}, jobLo
 	sclk, err := fMeta.SCLK()
 	if err != nil {
 		//return result, nil
-		jobLog.Infof("Dataset Metadata did not contain SCLK: %v\n", err)
+		jobLog.Infof("Dataset Metadata did not contain SCLK: %v", err)
 	}
 
 	site, err := fMeta.site()
@@ -441,9 +441,8 @@ func makeDatasetFileMeta(fMeta FileNameMeta, cmeta map[string]interface{}, jobLo
 
 	title := strconv.Itoa(int(rtt))
 	if val, ok := cmeta["title"]; ok {
-		jobLog.Infof("Found custom title")
+		jobLog.Infof("Found custom title: %v", val)
 		v := fmt.Sprintf("%v", val)
-		jobLog.Infof("Setting title to: %v", v)
 		if len(v) > 0 && val != " " {
 			title = v
 		}
@@ -485,7 +484,7 @@ func readBulkMaxSpectra(inPath string, files []string, jobLog logger.ILogger) (c
 		}
 
 		csvPath := path.Join(inPath, file)
-		jobLog.Infof("  Reading %v MSA: %v\n", readType, csvPath)
+		jobLog.Infof("  Reading %v MSA: %v", readType, csvPath)
 		lines, err := importer.ReadFileLines(csvPath, jobLog)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to load %v: %v", csvPath, err)
@@ -524,7 +523,7 @@ func readMatchedImages(matchedPath string, beamLookup converterModels.BeamLocati
 	files, err := importer.GetDirListing(matchedPath, "json", jobLog)
 
 	if err != nil {
-		fmt.Println("readMatchedImages: directory not found, SKIPPING")
+		jobLog.Infof("readMatchedImages: directory not found, SKIPPING")
 		return result, nil
 	}
 

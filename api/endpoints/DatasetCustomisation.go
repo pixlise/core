@@ -22,11 +22,14 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"path"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/pixlise/core/v2/core/api"
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
@@ -50,6 +53,55 @@ func isValidCustomImageType(imgType string) bool {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// Dataset regenerate request
+
+type datasetReprocessSNSRequest struct {
+	DatasetID string `json:"datasetID"`
+	LogID     string `json:"logID"`
+}
+
+type datasetReprocessResponse struct {
+	LogID string
+}
+
+func datasetReprocess(params handlers.ApiHandlerParams) (interface{}, error) {
+	datasetID := params.PathParams[datasetIdentifier]
+
+	// Generate a new log ID that this reprocess job will write to
+	// which we also return to the caller, so they can track what happens
+	// with this async task
+
+	reprocessId := fmt.Sprintf("dataimport-%s", utils.RandStringBytesMaskImpr(16))
+
+	snsReq := datasetReprocessSNSRequest{
+		DatasetID: datasetID,
+		LogID:     reprocessId,
+	}
+
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	snsReqJSON, err := json.Marshal(snsReq)
+	if err != nil {
+		return nil, api.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to trigger dataset reprocess: %v", err))
+	}
+
+	svc := sns.New(sess)
+	result, err := svc.Publish(&sns.PublishInput{
+		Message:  aws.String(snsReqJSON),
+		TopicArn: aws.String(params.Svcs.Config.DataSourceSNSTopic),
+	})
+
+	if err != nil {
+		return nil, api.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to publish SNS topic for dataset regeneration: %v", err))
+	}
+
+	params.Svcs.Log.Infof("Published SNS topic: %v", result)
+	return nil, nil
+}
+
+////////////////////////////////////////////////////////////////////////
 // Meta data get/set
 
 type datasetCustomMeta struct {
@@ -68,10 +120,6 @@ func datasetCustomMetaGet(params handlers.ApiHandlerParams) (interface{}, error)
 	}
 
 	return meta, nil
-}
-
-type CustomResponse struct {
-	LogID string
 }
 
 func datasetCustomMetaPut(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -96,21 +144,7 @@ func datasetCustomMetaPut(params handlers.ApiHandlerParams) (interface{}, error)
 		return nil, err
 	}
 
-	// Check cloudwatch is inited...
-	if params.Svcs.AWSSessionCW != nil {
-		svc := sns.New(params.Svcs.AWSSessionCW)
-		topicArn := params.Svcs.Config.DataSourceSNSTopic
-		jobId := fmt.Sprintf("dataimport-%s", utils.RandStringBytesMaskImpr(16))
-		msgPtr := fmt.Sprintf(`{"datasetaddons":{"dir": "%v", "log": "%v"}}`, s3Path, jobId)
-		_, err = svc.Publish(&sns.PublishInput{
-			Message:  &msgPtr,
-			TopicArn: &topicArn,
-		})
-		resp := CustomResponse{LogID: jobId}
-		return resp, err
-	} else {
-		return nil, errors.New("AWS Session Not Configured.")
-	}
+	return nil, nil
 }
 
 ////////////////////////////////////////////////////////////////////////
