@@ -13,7 +13,7 @@ import (
 	"github.com/pixlise/core/v2/core/logger"
 	"github.com/pixlise/core/v2/core/notifications"
 	"github.com/pixlise/core/v2/core/pixlUser"
-	"github.com/pixlise/core/v2/data-converter/importer/pixlfm"
+	"github.com/pixlise/core/v2/data-import/data-converters/pixlfm"
 )
 
 type PublisherConfig struct {
@@ -179,7 +179,8 @@ func checkCurrentlyPublishedQuantVersion(fs fileaccess.FileAccess, dataBucket st
 }
 
 // getQuantVersion - Get the greatest version number from the list of publications for a particular dataset;
-//  return 0 if datasetID is not found in the publications list
+//
+//	return 0 if datasetID is not found in the publications list
 func getQuantVersion(publications Publications, datasetID string) int {
 	var currVersion int
 	for _, publicationSet := range publications.Datasets {

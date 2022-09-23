@@ -63,6 +63,12 @@ const RootArchive = "Archive"
 // Config Bucket
 ////////////////////////////////////////////////////////////////////////////////////
 
+// - DatasetConfig/
+const RootDatasetConfig = "DatasetConfig"
+
+// import-times.json - Specifies when each dataset was imported (map id->unix time)
+const DatasetLastImportTimesPath = RootDatasetConfig + "/import-times.json"
+
 // - DetectorConfig/
 const RootDetectorConfig = "DetectorConfig"
 

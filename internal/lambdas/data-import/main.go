@@ -23,12 +23,17 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/pixlise/core/v2/core/awsutil"
+	dataImportRunner "github.com/pixlise/core/v2/data-import/runner"
 )
 
 func HandleRequest(ctx context.Context, event awsutil.Event) error {
+	configBucket := os.Getenv("CONFIG_BUCKET")
+	datasetBucket := os.Getenv("DATASETS_BUCKET")
+	manualBucket := os.Getenv("MANUAL_BUCKET")
+	envName := os.Getenv("ENVIRONMENT_NAME")
 
 	for _, record := range event.Records {
-		return processImportTrigger([]byte(record.SNS.Message))
+		return dataImportRunner.RunDatasetImport([]byte(record.SNS.Message), configBucket, datasetBucket, manualBucket, envName)
 	}
 	return nil
 }

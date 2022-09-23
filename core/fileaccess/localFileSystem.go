@@ -19,6 +19,7 @@ package fileaccess
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -178,5 +179,29 @@ func (fs *FSAccess) IsNotFoundError(err error) bool {
 }
 
 func (fs *FSAccess) filePath(rootPath string, filePath string) string {
-	return path.Join(rootPath, filePath)
+	// Return them joined, but obey ./ at the start as this will be required for running local tests for example
+	result := path.Join(rootPath, filePath)
+	if strings.HasPrefix(rootPath, "./") {
+		result = "./" + result
+	}
+	return result
+}
+
+// Creates a directory under the specified root, ensures it's empty (eg if it already existed)
+func MakeEmptyLocalDirectory(root string, subdir string) (string, error) {
+	emptyDirPath := path.Join(root, subdir)
+
+	// Create and make sure it's empty
+	err := os.MkdirAll(emptyDirPath, os.ModePerm)
+	if err != nil {
+		return emptyDirPath, fmt.Errorf("Failed to create directory %v for importer: %v", emptyDirPath, err)
+	}
+
+	localFS := FSAccess{}
+	err = localFS.EmptyObjects(emptyDirPath)
+	if err != nil {
+		return emptyDirPath, fmt.Errorf("Failed to clear directory %v for importer: %v", emptyDirPath, err)
+	}
+
+	return emptyDirPath, nil
 }

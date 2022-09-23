@@ -26,10 +26,10 @@ import (
 
 	"github.com/pixlise/core/v2/core/logger"
 
-	"github.com/pixlise/core/v2/data-converter/importer"
-	"github.com/pixlise/core/v2/data-converter/importer/msatestdata"
-	"github.com/pixlise/core/v2/data-converter/importer/pixlfm"
-	"github.com/pixlise/core/v2/data-converter/output"
+	dataConverter "github.com/pixlise/core/v2/data-import/data-converter"
+	"github.com/pixlise/core/v2/data-import/data-converters/jplbreadboard"
+	"github.com/pixlise/core/v2/data-import/data-converters/pixlfm"
+	"github.com/pixlise/core/v2/data-import/output"
 )
 
 func main() {
@@ -39,7 +39,7 @@ func main() {
 
 	var jobLog logger.ILogger = &logger.StdOutLogger{}
 
-	importers := map[string]importer.Importer{"test-msa": msatestdata.MSATestData{}, "pixl-fm": pixlfm.PIXLFM{}}
+	importers := map[string]dataConverter.DataConverter{"test-msa": jplbreadboard.MSATestData{}, "pixl-fm": pixlfm.PIXLFM{}}
 	importerNames := []string{} // TODO: REFACTOR: Make this work instead importerNames := utils.GetStringMapKeys(importers)
 	for k := range importers {
 		importerNames = append(importerNames, k)
