@@ -105,25 +105,25 @@ jobs:
       run: |
         echo "BUILDING VERSION ${{ steps.version.outputs.version }}-${GITHUB_REF##*/}"
         echo "Tag name: ${{ steps.version.outputs.version_tag }}"
-        echo "::set-output name=semverbranch::${{ steps.version.outputs.version}}-${GITHUB_REF_NAME}"
+        echo "::set-output name=semverslug::${GITHUB_REF_NAME}"
 
     - uses: gacts/github-slug@v1
       id: slug
       with:
         # replace value in "to-slug" this on your choice
-        to-slug: ${{ steps.taggen.outputs.semverbranch }}
+        to-slug: ${{ steps.taggen.outputs.semverslug }}
     - name: Build package
-      run: BUILD_VERSION="${{ steps.slug.outputs.slug }}" make build-linux
+      run: BUILD_VERSION="${{ steps.version.outputs.version }}-${{ steps.slug.outputs.slug }}" make build-linux
     - name: Copy to S3 Archive
       run: |
         cd _out && \
-        zip jobupdater-linux-${{ steps.slug.outputs.slug }}.zip jobupdater-linux && \
+        zip jobupdater-linux-${{ steps.version.outputs.version }}-${{ steps.slug.outputs.slug }}.zip jobupdater-linux && \
         rm jobupdater-linux && \
-        zip datasourceupdater-linux-${{ steps.slug.outputs.slug }}.zip datasourceupdater-linux && \
+        zip datasourceupdater-linux-${{ steps.version.outputs.version }}-${{ steps.slug.outputs.slug }}.zip datasourceupdater-linux && \
         rm datasourceupdater-linux && \
-        zip integrationtest-linux-${{ steps.slug.outputs.slug }}.zip integrationtest-linux && \
+        zip integrationtest-linux-${{ steps.version.outputs.version }}-${{ steps.slug.outputs.slug }}.zip integrationtest-linux && \
         rm integrationtest-linux && \
-        zip dataimport-linux-${{ steps.slug.outputs.slug }}.zip dataimport-linux && \
+        zip dataimport-linux-${{ steps.version.outputs.version }}-${{ steps.slug.outputs.slug }}.zip dataimport-linux && \
         rm dataimport-linux && \
         aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
 
@@ -181,13 +181,13 @@ jobs:
         id: taggen
         run: |
           echo "BUILDING VERSION ${{ steps.version.outputs.version }}-${GITHUB_REF##*/}"
-          echo "::set-output name=semverbranch::${{ steps.version.outputs.version}}-${GITHUB_REF_NAME}"
+          echo "::set-output name=semverslug::${GITHUB_REF_NAME}"
 
       - uses: gacts/github-slug@v1
         id: slug
         with:
           # replace value in "to-slug" this on your choice
-          to-slug: ${{ steps.taggen.outputs.semverbranch }}
+          to-slug: ${{ steps.taggen.outputs.semverslug }}
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
@@ -218,7 +218,7 @@ jobs:
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: type=raw,value=${{ steps.slug.outputs.slug }}
+          tags: type=raw,value=${{ steps.version.outputs.version }}-${{ steps.slug.outputs.slug }}
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
