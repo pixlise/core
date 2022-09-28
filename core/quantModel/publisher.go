@@ -13,7 +13,7 @@ import (
 	"github.com/pixlise/core/v2/core/logger"
 	"github.com/pixlise/core/v2/core/notifications"
 	"github.com/pixlise/core/v2/core/pixlUser"
-	"github.com/pixlise/core/v2/data-import/data-converters/pixlfm"
+	gdsfilename "github.com/pixlise/core/v2/data-import/gds-filename"
 )
 
 type PublisherConfig struct {
@@ -318,7 +318,7 @@ func makeQuantProducts(fs fileaccess.FileAccess, usersBucket string, datasetsBuc
 	// This filename contains much information that is also valid for the published Quantification files;
 	//   we parse it to a struct to tweak the parts relevant to PiQuant publications
 	contextImageName := datasetSummary.ContextImage
-	contextImageFileMeta, err := pixlfm.ParseFileName(contextImageName)
+	contextImageFileMeta, err := gdsfilename.ParseFileName(contextImageName)
 	if err != nil {
 		return products, err
 	}

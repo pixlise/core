@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package pixlfm
+package gdsfilename
 
 import (
 	"fmt"
@@ -28,13 +28,13 @@ func printFNValues(m FileNameMeta) {
 	x, e := m.PMC()
 	fmt.Printf("PMC=%v|%v\n", x, e)
 
-	x, e = m.RTT()
-	fmt.Printf("RTT=%v|%v\n", x, e)
+	s, e := m.RTT()
+	fmt.Printf("RTT=%v|%v\n", s, e)
 
 	x, e = m.SCLK()
 	fmt.Printf("SCLK=%v|%v\n", x, e)
 
-	s, e := m.SOL()
+	s, e = m.SOL()
 	fmt.Printf("SOL=%v|%v\n", s, e)
 }
 
@@ -79,38 +79,38 @@ func Example_parseFileName() {
 	// Output:
 	// <nil>|{IN C S PRIM V SECONDARYT TER PRO G T SIT DRIV SEQNUMRTT CAMS D CO P VE}
 	// PMC=0|PMC only stored for PIXL files
-	// RTT=0|Failed to get RTT from: SEQNUMRTT
+	// RTT=|Failed to get RTT from: SEQNUMRTT
 	// SCLK=0|Failed to get SCLK from: SECONDARYT
 	// SOL=PRIM|<nil>
 	// Failed to parse meta from file name
 	// <nil>|{PS _ _ D077 T 0637741109 000 RPM _ N 001 0036 000983561 0064 0 __ J 01}
 	// PMC=64|<nil>
-	// RTT=983561|<nil>
+	// RTT=000983561|<nil>
 	// SCLK=637741109|<nil>
 	// SOL=D077|<nil>
 	// <nil>|{PC R _ D077 T 0637741562 000 EDR _ N 001 0036 000983561 0066 0 00 J 01}
 	// PMC=66|<nil>
-	// RTT=983561|<nil>
+	// RTT=000983561|<nil>
 	// SCLK=637741562|<nil>
 	// SOL=D077|<nil>
 	// <nil>|{PS _ _ D077 T 0637746318 000 RBS _ N 001 0036 000983561 0376 0 __ J 01}
 	// PMC=376|<nil>
-	// RTT=983561|<nil>
+	// RTT=000983561|<nil>
 	// SCLK=637746318|<nil>
 	// SOL=D077|<nil>
 	// <nil>|{PE _ _ D077 T 0637741109 000 RSI _ N 001 0036 000983561 0066 0 __ J 01}
 	// PMC=66|<nil>
-	// RTT=983561|<nil>
+	// RTT=000983561|<nil>
 	// SCLK=637741109|<nil>
 	// SOL=D077|<nil>
 	// <nil>|{PS _ _ D077 T 0637741109 000 RFS _ N 001 0036 000983561 0064 0 __ J 01}
 	// PMC=64|<nil>
-	// RTT=983561|<nil>
+	// RTT=000983561|<nil>
 	// SCLK=637741109|<nil>
 	// SOL=D077|<nil>
 	// <nil>|{PS _ _ 1033 _ 0012345678 000 RFS _ N 001 0036 000983561 0064 0 __ J 01}
 	// PMC=64|<nil>
-	// RTT=983561|<nil>
+	// RTT=000983561|<nil>
 	// SCLK=12345678|<nil>
 	// SOL=1033|<nil>
 }
@@ -324,7 +324,7 @@ func Example_getLatestFileVersions() {
 		"PE__D140_0654321404_000RXL_N001000011000045300331__J04.CSV",
 	}
 
-	latests := getLatestFileVersions(files, &logger.NullLogger{})
+	latests := GetLatestFileVersions(files, &logger.NullLogger{})
 
 	versionStrs := []string{}
 	for key := range latests {

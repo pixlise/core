@@ -20,8 +20,10 @@ package dataConverter
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/pixlise/core/v2/api/filepaths"
@@ -33,6 +35,7 @@ import (
 	"github.com/pixlise/core/v2/data-import/internal/data-converters/jplbreadboard"
 	"github.com/pixlise/core/v2/data-import/internal/data-converters/pixlfm"
 	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
+	importerNotification "github.com/pixlise/core/v2/data-import/internal/notification"
 	"github.com/pixlise/core/v2/data-import/output"
 	diffractionDetection "github.com/pixlise/core/v2/diffraction-detector"
 )
@@ -41,6 +44,10 @@ import (
 // for different scenarios, but internally it all runs the same way
 
 // ImportFromArchive - Importing from dataset archive area. Calls ImportFromLocalFileSystem
+// Returns:
+// Dataset ID imported
+// Number of archived zip files downloaded
+// Error (if any)
 func ImportFromArchive(
 	localFS fileaccess.FileAccess,
 	remoteFS fileaccess.FileAccess,
@@ -48,21 +55,79 @@ func ImportFromArchive(
 	manualUploadBucket string,
 	datasetBucket string,
 	datasetID string,
-	log logger.ILogger) (*dataConvertModels.OutputData, string, error) {
+	log logger.ILogger,
+	justArchived bool, // Set to true if a file was just saved to the archive prior to calling this. Affects notifications sent out
+) (string, int, error) {
+
+	workingDir, err := ioutil.TempDir("", "archive")
+	if err != nil {
+		return "", 0, err
+	}
+
 	// Firstly, we download from the archive
 	archive := datasetArchive.NewDatasetArchiveDownloader(remoteFS, localFS, log, datasetBucket, manualUploadBucket)
-	archive.DownloadFromDatasetArchive(datasetID)
+	localDownloadPath, localUnzippedPath, zipCount, err := archive.DownloadFromDatasetArchive(datasetID, workingDir)
+	if err != nil {
+		return "", zipCount, err
+	}
+
+	localRangesPath, err := archive.DownloadPseudoIntensityRangesFile(configBucket, localDownloadPath)
+	if err != nil {
+		return "", zipCount, err
+	}
+
+	// Now that we have data down, we can run the importer from local file system
+	datasetIDImported, err := ImportFromLocalFileSystem(
+		localFS,
+		remoteFS,
+		workingDir,
+		localUnzippedPath,
+		localRangesPath,
+		datasetBucket,
+		log,
+	)
+	if err != nil {
+		return "", zipCount, err
+	}
+
+	// Decide what notifications (if any) to send
+	err = sendNotificationsIfRequired(remoteFS, log, configBucket, datasetBucket, datasetIDImported, !justArchived && zipCount > 1)
+	if err != nil {
+		log.Errorf("Failed to send notification: %v", err)
+	}
+
+	return datasetIDImported, zipCount, nil
 }
 
 // ImportFromManualUpload - Importing from manually uploaded area. Calls ImportFromLocalFileSystem
-//func ImportFromManualUpload(datasetBucket string, datasetID string, jobLog logger.ILogger) (*dataConvertModels.OutputData, string, error) {
-//}
+func ImportFromManualUpload(
+	localFS fileaccess.FileAccess,
+	remoteFS fileaccess.FileAccess,
+	configBucket string,
+	manualUploadBucket string,
+	datasetBucket string,
+	datasetID string,
+	jobLog logger.ILogger) (string, error) {
+
+	//DatasetUploadRoot
+
+	/*
+		// Decide what notifications (if any) to send
+		err = sendNotificationsIfRequired(remoteFS, log, datasetBucket, !justArchived && zipCount > 1, datasetIDImported)
+		if err != nil {
+			log.Errorf("Failed to send notification: %v", err)
+		}*/
+	return "", nil
+}
 
 // ImportFromLocalFileSystem - As the name says, imports from directory on local file system
-// Returns the dataset ID (in case it was modified during conversion), and an error if there was one
+// Returns:
+// Dataset ID (in case it was modified during conversion)
+// Error (if there was one)
 func ImportFromLocalFileSystem(
 	localFS fileaccess.FileAccess,
 	remoteFS fileaccess.FileAccess, // For uploading result
+	workingDir string, // Working dir, under which we may form our output dir
 	localImportPath string, // Path on local file system with directory ready to import
 	localPseudoIntensityRangesPath string, // Path on local file system
 	datasetBucket string, // Where we import to
@@ -76,26 +141,30 @@ func ImportFromLocalFileSystem(
 	}
 
 	// Create an output directory
-	outputPath := fileaccess.MakeEmptyLocalDirectory(path.Dir(localImportPath)), "output")
+	outputPath, err := fileaccess.MakeEmptyLocalDirectory(workingDir, "output")
+
+	if err != nil {
+		return "", err
+	}
 
 	log.Infof("Running dataset converter...")
 	data, contextImageSrcPath, err := importer.Import(localImportPath, localPseudoIntensityRangesPath, log)
 	if err != nil {
 		return "", fmt.Errorf("Import failed: %v", err)
 	}
+	/*
+		// Apply any customisations/overrides:
+		if len(config.Name) > 1 { // 1 for spaces?
+			data.DatasetID = config.Name
+		}
 
-	// Apply any customisations/overrides:
-	if len(config.Name) > 1 { // 1 for spaces?
-		data.DatasetID = config.Name
-	}
+		overrideDetector := getOverrideDetectorForSol(data.Meta.SOL)
+		if len(overrideDetector) > 0 {
+			data.DetectorConfig = overrideDetector
+		}
 
-	overrideDetector := getOverrideDetectorForSol(data.Meta.SOL)
-	if len(overrideDetector) > 0 {
-		data.DetectorConfig = overrideDetector
-	}
-
-	data.Group = getDatasetGroup(data.DetectorConfig)
-
+		data.Group = getDatasetGroup(data.DetectorConfig)
+	*/
 	// Form the output path
 	outPath := path.Join(outputPath, data.DatasetID)
 
@@ -115,9 +184,9 @@ func ImportFromLocalFileSystem(
 
 	// Finally, copy the whole thing to our target bucket
 	log.Infof("Copying generated dataset to bucket: %v...", datasetBucket)
-	err = copyToBucket(data.DatasetID, outputPath, datasetBucket, filepaths.RootDatasets)
+	err = copyToBucket(remoteFS, data.DatasetID, outputPath, datasetBucket, filepaths.RootDatasets, log)
 	if err != nil {
-		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", i.datasetBucket, err)
+		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
 	}
 
 	return data.DatasetID, nil
@@ -130,14 +199,16 @@ type DataConverter interface {
 // selectImporter - Looks in specified path and determines what importer to use
 func selectImporter(importPath string) (DataConverter, error) {
 	// If we find a "config.json", assume it's a FM dataset from the pipeline
-	_, err := os.Stat(path.Join(importPath, "config.json"))
-	if err != nil {
+	pathType, err := pixlfm.DetectPIXLFMStructure(importPath)
+	if len(pathType) > 0 && err == nil {
+		// We know it's a PIXL FM type dataset... it'll later be determined which one
 		return pixlfm.PIXLFM{}, nil
 	}
 
 	// If we find an "import.json", assume it's a JPL breadboard dataset
 	_, err = os.Stat(path.Join(importPath, "import.json"))
-	if err != nil {
+	if err == nil {
+		// We found it
 		return jplbreadboard.MSATestData{}, nil
 	}
 
@@ -177,5 +248,58 @@ func createPeakDiffractionDB(path string, savepath string, jobLog logger.ILogger
 		jobLog.Infof("  Diffraction db saved successfully")
 	}
 
+	return nil
+}
+
+// Copies files to bucket
+// NOTE: Assumes flat list of files, no folder structure!
+func copyToBucket(remoteFS fileaccess.FileAccess, datasetID string, sourcePath string, destBucket string, destPath string, log logger.ILogger) error {
+	var uploadError error
+
+	err := filepath.Walk(sourcePath, func(sourcePath string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			data, err := os.ReadFile(sourcePath)
+			if err != nil {
+				log.Errorf("Failed to read file for upload: %v", sourcePath)
+				uploadError = err
+			} else {
+				uploadPath := path.Join(destPath, datasetID, path.Base(sourcePath))
+
+				log.Infof("-Uploading: %v", sourcePath)
+				log.Infof("---->to s3://%v/%v", destBucket, uploadPath)
+				err = remoteFS.WriteObject(destBucket, uploadPath, data)
+
+				if err != nil {
+					log.Errorf("Failed to upload to s3://%v/%v: %v", destBucket, uploadPath, err)
+					uploadError = err
+				}
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return uploadError
+}
+
+// Sends dataset import related notifications as required
+func sendNotificationsIfRequired(remoteFS fileaccess.FileAccess, log logger.ILogger, configBucket string, datasetBucket string, datasetID string, isUpdate bool) error {
+	// It worked! Trigger notifications
+	log.Infof("Triggering Notifications...")
+	/*if updateType != "trivial"*/ {
+		updatenotificationtype, err := importerNotification.GetUpdateNotificationType(datasetID, datasetBucket, remoteFS)
+		if err != nil {
+			return err
+		}
+
+		ns := importerNotification.MakeNotificationStack(remoteFS, log)
+		err = importerNotification.TriggerNotifications(configBucket, datasetID, remoteFS, isUpdate, updatenotificationtype, ns, log)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

@@ -104,9 +104,6 @@ const RootPixliseConfigPath = "PixliseConfig"
 // ----auth0.pem - Certificate needed by Auth0 to verify a user request is valid
 const Auth0PemFileName = "auth0.pem"
 
-// ----config.json - API config file it downloads on startup, contains buckets, keys, kubernetes settings, etc
-const APIConfigFileName = "config.json"
-
 // ----datasets.json - Dataset list (tiles). Regenerated every time Datasets/ changes by lambda function: dataset-tile-updater
 func GetDatasetListPath() string {
 	return GetConfigFilePath("datasets.json")
@@ -287,7 +284,7 @@ func GetJobSummaryPath(datasetID string) string {
 ////////////////////////////////////////////////////////////////////////////////////
 
 // - dataset-addons/
-const datasetCustomRoot = "dataset-addons"
+const DatasetCustomRoot = "dataset-addons"
 
 // ----<dataset-id>/
 // --------custom-meta.json - Custom metadata for this dataset, usually to set dataset title, but can also contain matched image scale/bias or other fields
@@ -300,16 +297,27 @@ const DatasetCustomMetaFileName = "custom-meta.json"
 // ------------RGBU/
 // ----------------images, *.tif - NOTE: Went unused, these are now all stored as MATCHED images
 func GetCustomMetaPath(datasetID string) string {
-	return path.Join(datasetCustomRoot, datasetID, DatasetCustomMetaFileName)
+	return path.Join(DatasetCustomRoot, datasetID, DatasetCustomMetaFileName)
 }
 func GetCustomImagePath(datasetID string, imgType string, fileName string) string {
 	// NOTE: We assume imgType is valid!
-	s3Path := path.Join(datasetCustomRoot, datasetID, strings.ToUpper(imgType))
+	s3Path := path.Join(DatasetCustomRoot, datasetID, strings.ToUpper(imgType))
 	if len(fileName) > 0 {
 		s3Path = path.Join(s3Path, fileName)
 	}
 	return s3Path
 }
+
+// Users can upload datasets here:
+// - Uploaded/
+const DatasetUploadRoot = "Uploaded"
+
+// ----<dataset-type>/ (eg Breadboard)
+// --------<dataset-id>/
+// ------------Files for that dataset importer type. For example, with breadboards we expect:
+// ------------import.json <-- Describes what's what
+// ------------spectra.zip <-- Spectra .msa files zipped up
+// ------------context_image_1.jpg <-- 1 or more context images
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Artifacts Built Bucket - where we go to download built PIQUANT, etc

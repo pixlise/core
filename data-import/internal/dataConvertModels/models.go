@@ -159,7 +159,7 @@ type PMCData struct {
 
 // FileMetaData - dataset metadata
 type FileMetaData struct {
-	RTT      int32
+	RTT      string
 	SCLK     int32
 	SOL      string
 	SiteID   int32

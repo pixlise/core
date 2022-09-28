@@ -20,16 +20,16 @@ package main
 import (
 	"flag"
 	"fmt"
-	"path"
-	"strings"
-	"time"
+	"io/ioutil"
+	"log"
+	"os"
 
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
 
 	dataConverter "github.com/pixlise/core/v2/data-import/data-converter"
-	"github.com/pixlise/core/v2/data-import/data-converters/jplbreadboard"
-	"github.com/pixlise/core/v2/data-import/data-converters/pixlfm"
-	"github.com/pixlise/core/v2/data-import/output"
+	"github.com/pixlise/core/v2/data-import/importer"
 )
 
 func main() {
@@ -37,73 +37,110 @@ func main() {
 	fmt.Println("=  PIXLISE dataset importer  =")
 	fmt.Println("==============================")
 
-	var jobLog logger.ILogger = &logger.StdOutLogger{}
+	ilog := &logger.StdOutLogger{}
 
-	importers := map[string]dataConverter.DataConverter{"test-msa": jplbreadboard.MSATestData{}, "pixl-fm": pixlfm.PIXLFM{}}
-	importerNames := []string{} // TODO: REFACTOR: Make this work instead importerNames := utils.GetStringMapKeys(importers)
-	for k := range importers {
-		importerNames = append(importerNames, k)
-	}
+	// This can be run in various modes...
 
-	var argFormat = flag.String("format", "", "Input format, one of: "+strings.Join(importerNames, ","))
-	var argInPath = flag.String("inpath", "", "Path to directory containing input dataset")
-	var argRangesPath = flag.String("rangespath", "", "Path to pseudo-intensity range CSV, only required if dataset contains pseudo-intensity data")
-	var argOutPath = flag.String("outpath", "", "Output path")
-	var argOutDirPrefix = flag.String("outdirprefix", "", "Output directory prefix")
-	var argOutTitleOverride = flag.String("outtitle", "", "Output title override")
-	var argDetectorOverride = flag.String("outdetector", "", "Output detector config override")
-	var argGroupOverride = flag.String("outgroup", "", "Output dataset group override")
+	var argImportFrom = flag.String("source", "local", "Source to import from: local, uploaded, archive, trigger")
+	var argDatasetBucket = flag.String("dataset-bucket", "", "Dataset bucket name")
+	var argPseudoPath = flag.String("pseudo-path", "", "Path to pseudo-intensity file")
+	var argImportPath = flag.String("import-path", "", "Path to import directory")
+	var argConfigBucket = flag.String("config-bucket", "", "Config bucket name")
+	var argManualUploadBucket = flag.String("manual-bucket", "", "Manual uploads bucket name")
+	var argDatasetID = flag.String("dataset-id", "", "Dataset ID to import")
+	var argTrigger = flag.String("trigger", "", "SNS trigger message, serialised as string")
 
 	flag.Parse()
 
-	importer, ok := importers[*argFormat]
-	if !ok {
-		jobLog.Infof("Importer for format \"%v\" not found\n", *argFormat)
-		printFail()
-		return
-	}
+	var datasetIDImported string
+	var err error
 
-	jobLog.Infof("----- Importing %v dataset: %v -----\n", *argFormat, *argInPath)
-
-	data, contextImageSrcPath, err := importer.Import(*argInPath, *argRangesPath, jobLog)
+	sess, err := awsutil.GetSession()
 	if err != nil {
-		jobLog.Infof("IMPORT ERROR: %v\n", err)
-		printFail()
-		return
+		log.Fatalf("AWS GetSession failed: %v", err)
 	}
 
-	// Override dataset ID for output if required
-	if argOutTitleOverride != nil && len(*argOutTitleOverride) > 0 {
-		data.Meta.Title = *argOutTitleOverride
-	}
-
-	// Override detector config if required
-	if argDetectorOverride != nil && len(*argDetectorOverride) > 0 {
-		data.DetectorConfig = *argDetectorOverride
-	}
-
-	// Override dataset group if required
-	if argGroupOverride != nil && len(*argGroupOverride) > 0 {
-		data.Group = *argGroupOverride
-	}
-
-	// Form the output path
-	outPath := path.Join(*argOutPath, *argOutDirPrefix+data.DatasetID)
-
-	jobLog.Infof("----- Writing Dataset to: %v -----\n", outPath)
-	saver := output.PIXLISEDataSaver{}
-	err = saver.Save(*data, contextImageSrcPath, outPath, time.Now().Unix(), jobLog)
+	svc, err := awsutil.GetS3(sess)
 	if err != nil {
-		jobLog.Infof("WRITE ERROR: %v\n", err)
-		printFail()
+		log.Fatalf("AWS GetS3 failed: %v", err)
+	}
+
+	localFS := &fileaccess.FSAccess{}
+	remoteFS := fileaccess.MakeS3Access(svc)
+
+	// Ensure this exists
+	if len(*argDatasetBucket) <= 0 {
+		log.Fatalf("dataset-bucket not set")
+	}
+
+	switch *argImportFrom {
+	case "local":
+		// Ensure these exist
+		if len(*argImportPath) <= 0 {
+			log.Fatalf("import-path not set")
+		}
+		if len(*argPseudoPath) <= 0 {
+			log.Fatalf("pseudo-path not set")
+		}
+
+		workingDir := ""
+		workingDir, err = ioutil.TempDir("", "data-converter")
+		if err != nil {
+			log.Fatalf("Failed to create working dir: %v", err)
+		}
+		datasetIDImported, err = dataConverter.ImportFromLocalFileSystem(localFS, remoteFS, workingDir, *argImportPath, *argPseudoPath, *argDatasetBucket, ilog)
+	case "uploaded":
+		// Ensure these exist
+		if len(*argConfigBucket) <= 0 {
+			log.Fatalf("config-bucket not set")
+		}
+		if len(*argManualUploadBucket) <= 0 {
+			log.Fatalf("manual-bucket not set")
+		}
+		if len(*argDatasetID) <= 0 {
+			log.Fatalf("dataset-id not set")
+		}
+		datasetIDImported, err = dataConverter.ImportFromManualUpload(localFS, remoteFS, *argConfigBucket, *argManualUploadBucket, *argDatasetBucket, *argDatasetID, ilog)
+	case "archive":
+		// Ensure these exist
+		if len(*argConfigBucket) <= 0 {
+			log.Fatalf("config-bucket not set")
+		}
+		if len(*argManualUploadBucket) <= 0 {
+			log.Fatalf("manual-bucket not set")
+		}
+		if len(*argDatasetID) <= 0 {
+			log.Fatalf("dataset-id not set")
+		}
+		datasetIDImported, _, err = dataConverter.ImportFromArchive(localFS, remoteFS, *argConfigBucket, *argManualUploadBucket, *argDatasetBucket, *argDatasetID, ilog, true)
+	case "trigger":
+		/* An example case, where trigger message is set to:
+		{
+			"datasetaddons": {
+				"dir": "dataset-addons/089063943/custom-meta.json",
+				"log": "dataimport-12345678"
+			}
+		}*/
+		// Ensure these exist
+		if len(*argConfigBucket) <= 0 {
+			log.Fatalf("config-bucket not set")
+		}
+		if len(*argManualUploadBucket) <= 0 {
+			log.Fatalf("manual-bucket not set")
+		}
+		if len(*argTrigger) <= 0 {
+			log.Fatalf("trigger not set")
+		}
+		err = importer.ImportForTrigger([]byte(*argTrigger), "cmd-line", *argConfigBucket, *argDatasetBucket, *argManualUploadBucket, ilog)
+	default:
+		log.Fatalf("Unknown source: %v", *argImportFrom)
 		return
 	}
 
-	jobLog.Infof("\n--------  SUCCESS  --------\n\n\n")
-}
+	if err != nil {
+		ilog.Errorf("Import error: %v", err)
+		os.Exit(1)
+	}
 
-func printFail() {
-	fmt.Printf("\n****************************\n")
-	fmt.Printf("**  FAIL    FAIL    FAIL  **\n")
-	fmt.Printf("****************************\n\n\n")
+	ilog.Infof("Import complete: %v", datasetIDImported)
 }

@@ -89,7 +89,7 @@ func datasetReprocess(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	svc := sns.New(sess)
 	result, err := svc.Publish(&sns.PublishInput{
-		Message:  aws.String(snsReqJSON),
+		Message:  aws.String(string(snsReqJSON)),
 		TopicArn: aws.String(params.Svcs.Config.DataSourceSNSTopic),
 	})
 

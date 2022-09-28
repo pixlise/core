@@ -47,7 +47,8 @@ type APIConfig struct {
 	CoresPerNode int32
 
 	DataSourceSNSTopic string
-	DatasetsBucket     string
+
+	DatasetsBucket string
 
 	DatasourceArtifactsBucket string // Goes away
 

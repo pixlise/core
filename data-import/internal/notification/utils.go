@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package runner
+package importerNotification
 
 import (
 	"fmt"
@@ -30,8 +30,8 @@ import (
 	"github.com/pixlise/core/v2/data-import/output"
 )
 
-// getUpdateNotificationType - Get the notificationtype for a dataset update
-func getUpdateNotificationType(datasetID string, bucket string, fs fileaccess.FileAccess) (string, error) {
+// GetUpdateNotificationType - Get the notification type for a dataset update
+func GetUpdateNotificationType(datasetID string, bucket string, fs fileaccess.FileAccess) (string, error) {
 	datasetSummary, err := datasetModel.ReadDataSetSummary(fs, bucket, datasetID)
 	if err != nil {
 		return "", err
@@ -51,32 +51,32 @@ func getUpdateNotificationType(datasetID string, bucket string, fs fileaccess.Fi
 	return "unknown", nil
 }
 
-// makeNotificationStack - Create a notification stack
-func makeNotificationStack(fs fileaccess.FileAccess, log logger.ILogger) apiNotifications.NotificationManager {
-	if os.Getenv("MongoSecret") != "" {
-		seccache, err := secretcache.New()
-
-		mongo := apiNotifications.MongoUtils{
-			SecretsCache:     seccache,
-			ConnectionSecret: os.Getenv("MongoSecret"),
-			MongoUsername:    os.Getenv("MongoUsername"),
-			MongoEndpoint:    os.Getenv("MongoEndpoint"),
-			Log:              log,
-		}
-		err = mongo.Connect()
-		if err != nil {
-			fmt.Printf("Couldn't connect to mongodb: %v", err)
-		}
-		return &apiNotifications.NotificationStack{
-			Notifications: []apiNotifications.UINotificationObj{},
-			FS:            fs,
-			Track:         cmap.New(), //make(map[string]bool),
-			Bucket:        os.Getenv("notificationBucket"),
-			Environment:   "prod",
-			MongoUtils:    &mongo,
-			Logger:        log,
-		}
-	} else {
+// MakeNotificationStack - Create a notification stack
+func MakeNotificationStack(fs fileaccess.FileAccess, log logger.ILogger) apiNotifications.NotificationManager {
+	if os.Getenv("MongoSecret") == "" {
 		return nil
+	}
+
+	seccache, err := secretcache.New()
+
+	mongo := apiNotifications.MongoUtils{
+		SecretsCache:     seccache,
+		ConnectionSecret: os.Getenv("MongoSecret"),
+		MongoUsername:    os.Getenv("MongoUsername"),
+		MongoEndpoint:    os.Getenv("MongoEndpoint"),
+		Log:              log,
+	}
+	err = mongo.Connect()
+	if err != nil {
+		fmt.Printf("Couldn't connect to mongodb: %v", err)
+	}
+	return &apiNotifications.NotificationStack{
+		Notifications: []apiNotifications.UINotificationObj{},
+		FS:            fs,
+		Track:         cmap.New(), //make(map[string]bool),
+		Bucket:        os.Getenv("notificationBucket"),
+		Environment:   "prod",
+		MongoUtils:    &mongo,
+		Logger:        log,
 	}
 }

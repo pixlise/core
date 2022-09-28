@@ -20,8 +20,6 @@ package datasetArchive
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path"
 	"strings"
 
@@ -54,38 +52,26 @@ func NewDatasetArchiveDownloader(
 	}
 }
 
-// Returns output path, how many zips loaded from archive, and error if any
-func (dl *DatasetArchiveDownloader) DownloadFromDatasetArchive(datasetID string) (string, int, error) {
+// Returns:
+// Downloads path (raw zip files go here),
+// Unzipped files path (archive zips unzipped here),
+// How many zips loaded from archive
+// Error (if any)
+func (dl *DatasetArchiveDownloader) DownloadFromDatasetArchive(datasetID string, workingDir string) (string, string, int, error) {
 	// Create a directories to process data in
 	dl.log.Debugf("Preparing download dataset %v...", datasetID)
 
-	downloadRoot, err := ioutil.TempDir("", "archive")
+	downloadPath, err := fileaccess.MakeEmptyLocalDirectory(workingDir, "download")
 	if err != nil {
 		err = fmt.Errorf("Failed to generate directory for importer downloads: %v", err)
 		dl.log.Errorf("%v", err)
-		return "", 0, err
+		return "", "", 0, err
 	}
-	downloadPath := path.Join(downloadRoot, "downloads")
-	unzippedPath := path.Join(downloadRoot, "unzipped")
-	outputPath := path.Join(downloadRoot, "output")
-
-	// Make sure both exist and are empty
-	prepDirs := []string{downloadPath, unzippedPath, outputPath}
-
-	for _, dir := range prepDirs {
-		err = os.MkdirAll(dir, os.ModePerm)
-		if err != nil {
-			err = fmt.Errorf("Failed to create directory %v for importer: %v", dir, err)
-			dl.log.Errorf("%v", err)
-			return outputPath, 0, err
-		}
-
-		err = dl.localFS.EmptyObjects(dir)
-		if err != nil {
-			err = fmt.Errorf("Failed to clear directory %v for importer: %v", dir, err)
-			dl.log.Errorf("%v", err)
-			return outputPath, 0, err
-		}
+	unzippedPath, err := fileaccess.MakeEmptyLocalDirectory(workingDir, "unzipped")
+	if err != nil {
+		err = fmt.Errorf("Failed to generate directory for importer unzips: %v", err)
+		dl.log.Errorf("%v", err)
+		return "", "", 0, err
 	}
 
 	// Download all zip files from archive for this dataset ID, and extract them as required
@@ -95,7 +81,7 @@ func (dl *DatasetArchiveDownloader) DownloadFromDatasetArchive(datasetID string)
 	if err != nil {
 		err = fmt.Errorf("Failed to download archived zip files for dataset ID: %v. Error: %v", datasetID, err)
 		dl.log.Errorf("%v", err)
-		return outputPath, zipCount, err
+		return downloadPath, unzippedPath, zipCount, err
 	}
 
 	// Download any additional files users may have manually added, eg custom config (dataset name), custom images, RGBU images
@@ -105,11 +91,25 @@ func (dl *DatasetArchiveDownloader) DownloadFromDatasetArchive(datasetID string)
 	if err != nil {
 		err = fmt.Errorf("Failed to download user customisations for dataset ID: %v. Error: %v", datasetID, err)
 		dl.log.Errorf("%v", err)
-		return outputPath, zipCount, err
+		return downloadPath, unzippedPath, zipCount, err
 	}
 
 	dl.log.Debugf("Dataset %v downloaded from archive", datasetID)
-	return outputPath, zipCount, nil
+	return downloadPath, unzippedPath, zipCount, nil
+}
+
+func (dl *DatasetArchiveDownloader) DownloadPseudoIntensityRangesFile(configBucket string, downloadPath string) (string, error) {
+	// Download the ranges file
+	dl.log.Debugf("Downloading pseudo-intensity ranges...")
+
+	localRangesPath := path.Join(downloadPath, "StandardPseudoIntensities.csv")
+	err := dl.fetchFile(configBucket, path.Join(filepaths.RootDatasetConfig, "StandardPseudoIntensities.csv"), localRangesPath)
+	if err != nil {
+		dl.log.Errorf("%v", err)
+		return "", err
+	}
+
+	return localRangesPath, err
 }
 
 // Fetches from given bucket/path, writes to given savePath, ensures any intermediate directories in savePath exist

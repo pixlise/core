@@ -72,7 +72,13 @@ func (s *PIXLISEDataSaver) Save(
 	exp.Site = data.Meta.Site
 	exp.Title = data.Meta.Title
 	exp.Sol = data.Meta.SOL
-	exp.Rtt = data.Meta.RTT
+
+	rtt, err := strconv.Atoi(data.Meta.RTT)
+	if err != nil {
+		return fmt.Errorf("Failed to convert RTT %v to number: %v", data.Meta.RTT, err)
+	}
+	exp.Rtt = int32(rtt)
+
 	exp.Sclk = data.Meta.SCLK
 
 	jobLog.Infof("This dataset's detector config is %v", data.DetectorConfig)
@@ -202,7 +208,7 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	jobLog.Infof("Saving %v field names...", len(s.metaLookup))
-	err := s.saveMetaData(&exp)
+	err = s.saveMetaData(&exp)
 	if err != nil {
 		return err
 	}

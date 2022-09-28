@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package pixlfm
+package gdsfilename
 
 import (
 	"errors"
@@ -31,14 +31,14 @@ import (
 // FileNameMeta See docs/PIXL_filename.docx
 type FileNameMeta struct {
 	instrument         string // PC=PIXL MCC, PE=PIXL engineering, PS=PIXL spectrometer
-	colourFilter       string // R=red, G=green, B=blue, W=multiple, U=UV, D=SLI-A(dense), S=SLI-B(sparse), _=N/A, M=greyscale (PIXL MCC)
+	ColourFilter       string // R=red, G=green, B=blue, W=multiple, U=UV, D=SLI-A(dense), S=SLI-B(sparse), _=N/A, M=greyscale (PIXL MCC)
 	special            string // Only images, otherwise _. If image, this is user defined special processing copy of an image, eg remove shadows. Ad-hoc, can look up in a DB
 	primaryTimestamp   string // ____=out of range, cruise=Year-DOY(A-Z=2017-2042, 01-365 DOY), surface=SOL 4 integers, ground test either SOL, Year-DOY or DOY-Year
 	venue              string // _=surface/cruise, A=AVSTB, F=FSWTB, M=MSTB, R=ROASTT, S=Scarecrow, V=VSTB
 	secondaryTimestamp string // SCLK or ERT for ground tests: MMDDHHmmss
 	// _ always separates
 	ternaryTimestamp string // Milliseconds of SCLK or UTC
-	prodType         string // Product identifier
+	ProdType         string // Product identifier
 	geometry         string // _=N/A, L=linearised with normal stereo partner, A=linearised with actual stereo partner
 	thumbnail        string // _=N/A, T=thumbnail, N= nominal product (full frame, sub-frame or downsample)
 	siteStr          string // Site ID 000-999=0-999, A00-A99=1000-1099 ... ZZ0-ZZ9=10350-10359
@@ -54,11 +54,11 @@ type FileNameMeta struct {
 }
 
 func (m *FileNameMeta) SetColourFilter(colourFilter string) {
-	m.colourFilter = colourFilter
+	m.ColourFilter = colourFilter
 }
 
 func (m *FileNameMeta) SetProdType(prodType string) {
-	m.prodType = prodType
+	m.ProdType = prodType
 }
 
 func (m *FileNameMeta) SetVersionStr(versionStr string) {
@@ -77,14 +77,14 @@ func (m FileNameMeta) PMC() (int32, error) {
 	return int32(i), nil
 }
 
-func (m FileNameMeta) RTT() (int32, error) {
+func (m FileNameMeta) RTT() (string, error) {
 	// Seems RTT is usually stored, but this can be a seq ID
-	// TODO: do we need to make this fail for some conditions?
-	i, err := strconv.Atoi(m.seqRTT)
-	if err != nil {
-		return 0, errors.New("Failed to get RTT from: " + m.seqRTT)
+	// NOTE: we expect it to be a number, but we save it as a string
+	rttNum, err := strconv.Atoi(m.seqRTT)
+	if err != nil || rttNum <= 0 {
+		return "", errors.New("Failed to get RTT from: " + m.seqRTT)
 	}
-	return int32(i), nil
+	return m.seqRTT, nil
 }
 
 func (m FileNameMeta) SOL() (string, error) {
@@ -102,11 +102,11 @@ func (m FileNameMeta) SCLK() (int32, error) {
 	return int32(i), nil
 }
 
-func (m FileNameMeta) site() (int32, error) {
+func (m FileNameMeta) Site() (int32, error) {
 	return stringToSiteID(m.siteStr)
 }
 
-func (m FileNameMeta) drive() (int32, error) {
+func (m FileNameMeta) Drive() (int32, error) {
 	return stringToDriveID(m.driveStr)
 }
 
@@ -118,14 +118,14 @@ func (m FileNameMeta) ToString() string {
 	var s strings.Builder
 
 	s.WriteString(m.instrument)
-	s.WriteString(m.colourFilter)
+	s.WriteString(m.ColourFilter)
 	s.WriteString(m.special)
 	s.WriteString(m.primaryTimestamp)
 	s.WriteString(m.venue)
 	s.WriteString(m.secondaryTimestamp)
 	s.WriteString("_")
 	s.WriteString(m.ternaryTimestamp)
-	s.WriteString(m.prodType)
+	s.WriteString(m.ProdType)
 	s.WriteString(m.geometry)
 	s.WriteString(m.thumbnail)
 	s.WriteString(m.siteStr)
@@ -167,14 +167,14 @@ func ParseFileName(fileName string) (FileNameMeta, error) {
 	// Read anything we can get out of the file name
 	// See docs/PIXL_filename.docx
 	result.instrument = fileName[0:2]
-	result.colourFilter = fileName[2:3]
+	result.ColourFilter = fileName[2:3]
 	result.special = fileName[3:4]
 	result.primaryTimestamp = fileName[4:8]
 	result.venue = fileName[8:9]
 	result.secondaryTimestamp = fileName[9:19]
 	// _
 	result.ternaryTimestamp = fileName[20:23]
-	result.prodType = fileName[23:26]
+	result.ProdType = fileName[23:26]
 	result.geometry = fileName[26:27]
 	result.thumbnail = fileName[27:28]
 	result.siteStr = fileName[28:31]
@@ -197,7 +197,7 @@ func ParseFileName(fileName string) (FileNameMeta, error) {
 // The "latest" file has the highest version, AND lowest SCLK value.
 // NOTE: If there are different kinds of files (different extensions), it returns the
 // latest of each one, not just the latest of ALL files blindly.
-func getLatestFileVersions(fileNames []string, jobLog logger.ILogger) map[string]FileNameMeta {
+func GetLatestFileVersions(fileNames []string, jobLog logger.ILogger) map[string]FileNameMeta {
 	byNonVerFields := map[string]map[string]FileNameMeta{}
 
 	for _, file := range fileNames {
@@ -210,7 +210,7 @@ func getLatestFileVersions(fileNames []string, jobLog logger.ILogger) map[string
 
 			// Store the key as all the fields we're NOT interested in comparing:
 			// this way if we have 2 TIF files with different PMCs, we won't think we need to ignore some due to versioning
-			nonVerFields := ext + meta.instrument + meta.colourFilter + meta.prodType + meta.siteStr + meta.driveStr + meta.seqRTT + meta.camSpecific + meta.downsample + meta.compression + meta.producer
+			nonVerFields := ext + meta.instrument + meta.ColourFilter + meta.ProdType + meta.siteStr + meta.driveStr + meta.seqRTT + meta.camSpecific + meta.downsample + meta.compression + meta.producer
 
 			if _, ok := byNonVerFields[nonVerFields]; !ok {
 				// Add an empty map for this

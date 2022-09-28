@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package runner
+package importer
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ import (
 
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/utils"
-	"github.com/pixlise/core/v2/data-import/internal/importerutils"
+	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
 )
 
 type datasetAddonData struct {
@@ -82,7 +82,7 @@ func decodeImportTrigger(triggerMessageBody []byte) (string, string, string, str
 		sourceBucket = snsMsg.Records[0].S3.Bucket.Name
 
 		// Based on the file name, we can get a dataset ID
-		datasetID, _, err = importerutils.DecodeArchiveFileName(sourceFilePath)
+		datasetID, _, err = datasetArchive.DecodeArchiveFileName(sourceFilePath)
 
 		if err != nil {
 			// We expected a valid archive file name, if this isn't one, stop here

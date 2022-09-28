@@ -24,12 +24,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 
 	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
+	gdsfilename "github.com/pixlise/core/v2/data-import/gds-filename"
 	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
 	"github.com/pixlise/core/v2/data-import/internal/importerutils"
 )
@@ -72,9 +72,6 @@ var log logger.ILogger
 
 func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobLog logger.ILogger) (*dataConvertModels.OutputData, string, error) {
 	// For now this is hard-coded, we may need to parse metadata from a file name to work this out, or it may need to be a param eventually
-	const detectorConfig = "PIXL-EM-E2E"
-	const group = "PIXL-FM"
-	const targetID = "Insert-Target-ID-Here"
 	log = jobLog
 	beamDir := fileStructure{}
 	spectraDir := fileStructure{}
@@ -85,19 +82,14 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 	rgbuImgDir := fileStructure{}
 	discoImgDir := fileStructure{}
 
-	pathType, err := detectPaths(importPath)
+	pathType, err := DetectPIXLFMStructure(importPath)
 	if err != nil {
 		return nil, "", err
 	}
 
-	if pathType == "PIXL-FM" {
-		beamDir = fileStructure{[]string{"drift_corr_x_ray_beam_location"}, "csv", 2}
-		spectraDir = fileStructure{[]string{"localized_full_spectra"}, "csv", 1}
-		bulkSpectraDir = fileStructure{[]string{"bulk_histogram_inputs"}, "msa", 2}
-		contexImgDir = fileStructure{[]string{"image_mark_up"}, "tif", -1}
-		housekeepingDir = fileStructure{[]string{"spatial_inputs"}, "csv", 1}
-		pseudoIntensityDir = fileStructure{[]string{"pseudointensity_maps"}, "csv", 1}
-	} else if pathType == "DataDrive" {
+	if pathType == "DataDrive" {
+		// This is the official way we receive PIXL FM data from Mars
+		// We expect these directories to exist...
 		beamDir = fileStructure{[]string{"RXL"}, "csv", 1} // The BGT file contains the positions of the commanded X-ray shots and the actual X-ray shots (in x,y,z). We need RXL (containing image i/js)
 		spectraDir = fileStructure{[]string{"RFS"}, "csv", 1}
 		bulkSpectraDir = fileStructure{[]string{"RBS", "RMS"}, "msa", 2}
@@ -108,6 +100,15 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 		discoImgDir = fileStructure{[]string{"DISCO"}, "png", -1}
 		// These all contain pseudointensity data, but they're just PNG maps so we ignore them:
 		// "PAL", "PAS", "PBA", "PCA", "PCB", "PCE", "PCF", "PCL", "PCR", "PCS", "PFE", "PGE", "PKC", "PKX", "PMF", "PMG", "PMN", "PNA", "PNI", "PPX", "PSB", "PSC", "PSI", "PSR", "PST", "PSX", "PSZ", "PTF", "PTI", "PYX", "PZN", "PZR"
+	} else if pathType == "PreDataDriveFormat" {
+		// This was an early version of the dir structure of PIXL FM data. We had a few datasets from the EM given to us
+		// in this form, with these subdirs
+		beamDir = fileStructure{[]string{"drift_corr_x_ray_beam_location"}, "csv", 2}
+		spectraDir = fileStructure{[]string{"localized_full_spectra"}, "csv", 1}
+		bulkSpectraDir = fileStructure{[]string{"bulk_histogram_inputs"}, "msa", 2}
+		contexImgDir = fileStructure{[]string{"image_mark_up"}, "tif", -1}
+		housekeepingDir = fileStructure{[]string{"spatial_inputs"}, "csv", 1}
+		pseudoIntensityDir = fileStructure{[]string{"pseudointensity_maps"}, "csv", 1}
 	}
 
 	// Allocate everything needed (empty, if we find & load stuff, great, but we still need the data struct for the last step)
@@ -123,7 +124,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 	whiteDiscoImage := ""
 
 	//spectraFileNameMeta := FileNameMeta{}
-	housekeepingFileNameMeta := FileNameMeta{}
+	housekeepingFileNameMeta := gdsfilename.FileNameMeta{}
 
 	// Get a path for each file
 	//pathsToRead := [][]string{beamDir, spectraDir, bulkSpectraDir, contexImgDir, housekeepingDir, pseudoIntensityDir}
@@ -146,7 +147,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 			}
 		}
 
-		latestVersionFoundPaths := getLatestFileVersions(allFoundPaths, log)
+		latestVersionFoundPaths := gdsfilename.GetLatestFileVersions(allFoundPaths, log)
 		numFoundPaths := len(latestVersionFoundPaths)
 
 		if numFoundPaths < len(allFoundPaths) {
@@ -172,7 +173,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 		switch dirType {
 		case "beamDir":
 			for file, beamCsvMeta := range latestVersionFoundPaths {
-				if beamCsvMeta.prodType == "RXL" {
+				if beamCsvMeta.ProdType == "RXL" {
 					// If files don't conform, don't read...
 					beamLookup, err = importerutils.ReadBeamLocationsFile(path.Join(pathToSubdir, file), true, 1, log)
 					if err != nil {
@@ -265,8 +266,8 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 				}
 
 				info.PMC = pmc
-				info.LEDs = meta.colourFilter
-				info.ProdType = meta.prodType
+				info.LEDs = meta.ColourFilter
+				info.ProdType = meta.ProdType
 
 				// RGBU data sits in its own directory, TIFF files which must be output unchanged
 				rgbuImages = append(rgbuImages, info)
@@ -282,9 +283,9 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 				}
 
 				discoInfo.PMC = pmc
-				discoInfo.LEDs = meta.colourFilter
+				discoInfo.LEDs = meta.ColourFilter
 
-				if meta.colourFilter == "W" {
+				if meta.ColourFilter == "W" {
 					whiteDiscoImage = file
 				}
 
@@ -323,12 +324,22 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 	}
 
 	// Expecting RTT to be read
-	if meta.RTT <= 0 {
+	if len(meta.RTT) <= 0 {
 		return nil, "", errors.New("Failed to determine dataset RTT")
 	}
 
+	detectorConfig := "PIXL"
+	group := "PIXL-FM"
+
+	// Depending on the SOL we may override the group and detector, as we have some test datasets that came
+	// from the EM and have special characters as first part of SOL
+	if len(meta.SOL) > 0 && (meta.SOL[0] == 'D' || meta.SOL[0] == 'C') {
+		detectorConfig = "PIXL-EM-E2E"
+		group = "PIXL-EM"
+	}
+
 	data := &dataConvertModels.OutputData{
-		DatasetID:      strconv.Itoa(int(meta.RTT)),
+		DatasetID:      meta.RTT,
 		Group:          group,
 		Meta:           meta,
 		DetectorConfig: detectorConfig,
@@ -339,6 +350,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 		DISCOImages:          discoImages,
 		MatchedAlignedImages: matchedAlignedImages,
 	}
+
 	data.SetPMCData(beamLookup, hkData, locSpectraLookup, contextImgsPerPMC, pseudoIntensityData)
 	if data.DefaultContextImage != "" {
 		log.Infof("Setting context image to: " + data.DefaultContextImage)
@@ -378,11 +390,11 @@ func readCustomMeta(jobLog logger.ILogger, importPath string) (map[string]interf
 	return result, err
 }
 
-func detectPaths(importPath string) (string, error) {
+func DetectPIXLFMStructure(importPath string) (string, error) {
 	c, _ := ioutil.ReadDir(importPath)
 	for _, entry := range c {
 		if entry.IsDir() && entry.Name() == "drift_corr_x_ray_beam_location" {
-			return "PIXL-FM", nil
+			return "PreDataDriveFormat", nil
 		}
 
 		// All datasets (even ones without PIXL scans) have housekeeping files
@@ -408,7 +420,8 @@ func validatePaths(importPath string, validpaths []string) error {
 	}
 	return nil
 }
-func makeDatasetFileMeta(fMeta FileNameMeta, cmeta map[string]interface{}, jobLog logger.ILogger) (dataConvertModels.FileMetaData, error) {
+
+func makeDatasetFileMeta(fMeta gdsfilename.FileNameMeta, cmeta map[string]interface{}, jobLog logger.ILogger) (dataConvertModels.FileMetaData, error) {
 	result := dataConvertModels.FileMetaData{}
 
 	sol, err := fMeta.SOL()
@@ -428,17 +441,17 @@ func makeDatasetFileMeta(fMeta FileNameMeta, cmeta map[string]interface{}, jobLo
 		jobLog.Infof("Dataset Metadata did not contain SCLK: %v", err)
 	}
 
-	site, err := fMeta.site()
+	site, err := fMeta.Site()
 	if err != nil {
 		return result, nil
 	}
 
-	drive, err := fMeta.drive()
+	drive, err := fMeta.Drive()
 	if err != nil {
 		return result, nil
 	}
 
-	title := strconv.Itoa(int(rtt))
+	title := rtt
 	if val, ok := cmeta["title"]; ok {
 		jobLog.Infof("Found custom title: %v", val)
 		v := fmt.Sprintf("%v", val)
@@ -462,19 +475,19 @@ func readBulkMaxSpectra(inPath string, files []string, jobLog logger.ILogger) (d
 
 	for _, file := range files {
 		// Parse metadata for file
-		csvMeta, err := ParseFileName(file)
+		csvMeta, err := gdsfilename.ParseFileName(file)
 		if err != nil {
 			return nil, err
 		}
 
 		// Make sure it's one of the products we're expecting
 		readType := ""
-		if csvMeta.prodType == "RBS" {
+		if csvMeta.ProdType == "RBS" {
 			readType = "BulkSum"
-		} else if csvMeta.prodType == "RMS" {
+		} else if csvMeta.ProdType == "RMS" {
 			readType = "MaxValue"
 		} else {
-			return nil, fmt.Errorf("Unexpected bulk/max MSA product type: %v", csvMeta.prodType)
+			return nil, fmt.Errorf("Unexpected bulk/max MSA product type: %v", csvMeta.ProdType)
 		}
 
 		pmc, err := csvMeta.PMC()

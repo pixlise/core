@@ -23,7 +23,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/pixlise/core/v2/core/awsutil"
-	dataImportRunner "github.com/pixlise/core/v2/data-import/runner"
+	"github.com/pixlise/core/v2/data-import/importer"
 )
 
 func HandleRequest(ctx context.Context, event awsutil.Event) error {
@@ -32,24 +32,17 @@ func HandleRequest(ctx context.Context, event awsutil.Event) error {
 	manualBucket := os.Getenv("MANUAL_BUCKET")
 	envName := os.Getenv("ENVIRONMENT_NAME")
 
+	// Normally we'd only expect event.Records to be of length 1...
 	for _, record := range event.Records {
-		return dataImportRunner.RunDatasetImport([]byte(record.SNS.Message), configBucket, datasetBucket, manualBucket, envName)
+		err := importer.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, nil)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func main() {
-	/*
-		// Garde failing: 76481028 Matched image PMC is 0
-		// Dourbes 245: 89063943
-		err := processImportTrigger([]byte(`{
-			"datasetaddons": {
-				"dir": "dataset-addons/089063943/custom-meta.json",
-				"log": "dataimport-12345678"
-			}
-		}`))
-		fmt.Printf("%v", err)
-	*/
 	os.Mkdir("/tmp/profile", 0750)
 	lambda.Start(HandleRequest)
 }

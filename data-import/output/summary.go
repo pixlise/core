@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"path"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/pixlise/core/v2/api/filepaths"
@@ -57,6 +58,8 @@ func makeSummaryFileContent(exp *protos.Experiment, datasetID string, group stri
 		contextImgCount = 1
 	}
 
+	rtt, _ := strconv.Atoi(meta.RTT)
+
 	s := datasetModel.SummaryFileData{
 		DatasetID:           datasetID,
 		Group:               group,
@@ -68,7 +71,7 @@ func makeSummaryFileContent(exp *protos.Experiment, datasetID string, group stri
 		Site:                meta.Site,
 		Title:               meta.Title,
 		SOL:                 meta.SOL,
-		RTT:                 meta.RTT,
+		RTT:                 int32(rtt),
 		SCLK:                meta.SCLK,
 		LocationCount:       len(exp.Locations),
 		DataFileSize:        fileSize,
