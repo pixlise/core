@@ -159,8 +159,15 @@ func main() {
 	routePermissions := router.GetPermissions()
 	printRoutePermissions(routePermissions)
 
-	authware := authMiddleWareData{routePermissionsRequired: routePermissions, jwtValidator: jwtReader.Validator}
-	logware := endpoints.LoggerMiddleware{APIServices: &svcs, JwtValidator: jwtReader.Validator}
+	authware := authMiddleWareData{
+		routePermissionsRequired: routePermissions,
+		jwtValidator:             jwtReader.Validator,
+		logger:                   svcs.Log,
+	}
+	logware := endpoints.LoggerMiddleware{
+		APIServices:  &svcs,
+		JwtValidator: jwtReader.Validator,
+	}
 
 	router.Router.Use(authware.Middleware, logware.Middleware)
 
