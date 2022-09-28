@@ -28,8 +28,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
-
 	"github.com/pixlise/core/v2/core/notifications"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gorilla/handlers"
 
@@ -85,6 +85,12 @@ func main() {
 	go func() {
 		http.ListenAndServe(":1234", nil)
 	}()
+	// This is for prometheus
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":2112", nil)
+	}()
+
 	rand.Seed(time.Now().UnixNano())
 
 	log.Printf("API version: \"%v\"", services.ApiVersion)
