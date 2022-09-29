@@ -38,9 +38,8 @@ func savePMCList(svcs *services.APIServices, jobBucket string, contents string, 
 	return pmcListName, nil
 }
 
-func makeQuantJobPMCLists(PMCs []int32, spectraPerNode int32) [][]int32 {
+func makeQuantJobPMCLists(PMCs []int32, pmcsPerNode int) [][]int32 {
 	var result [][]int32 = make([][]int32, 1)
-	PMCsPerNode := int(spectraPerNode)
 
 	writeList := 0
 	for c, PMC := range PMCs {
@@ -50,7 +49,7 @@ func makeQuantJobPMCLists(PMCs []int32, spectraPerNode int32) [][]int32 {
 
 		result[writeList] = append(result[writeList], PMC)
 
-		if len(result[writeList]) > 0 && (len(result[writeList]) >= PMCsPerNode || c >= len(PMCs)) {
+		if len(result[writeList]) > 0 && (len(result[writeList]) >= pmcsPerNode || c >= len(PMCs)) {
 			writeList = writeList + 1
 		}
 	}
