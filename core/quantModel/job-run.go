@@ -639,11 +639,7 @@ func makePMCListFilesForQuantPMCs(svcs *services.APIServices, combinedSpectra bo
 		spectraCount *= 2
 	}
 
-	jobLog.Infof("estimateNodeCount %v, %v, %v, %v, %v", spectraCount, int32(len(params.Elements)), params.RunTimeSec, params.CoresPerNode, cfg.MaxQuantNodes)
-
 	nodeCount := estimateNodeCount(spectraCount, int32(len(params.Elements)), params.RunTimeSec, params.CoresPerNode, cfg.MaxQuantNodes)
-
-	jobLog.Infof("estimateNodeCount returned %v", nodeCount)
 
 	if cfg.NodeCountOverride > 0 {
 		nodeCount = cfg.NodeCountOverride
@@ -655,14 +651,18 @@ func makePMCListFilesForQuantPMCs(svcs *services.APIServices, combinedSpectra bo
 		nodeCount = 1
 	}
 
-	jobLog.Infof("spectraPerNode nodeCount: %v", nodeCount)
-
 	spectraPerNode := filesPerNode(spectraCount, nodeCount)
+	pmcsPerNode := spectraPerNode
+	if !combinedSpectra {
+		// If we're separate, we have 2x as many spectra as PMCs, so here we calculate how many
+		// pmcs per node accurately for the next step to generate the right number of PMC lists
+		pmcsPerNode /= 2
+	}
 
-	jobLog.Infof("spectraPerNode: %v", spectraPerNode)
+	jobLog.Debugf("spectraPerNode: %v, PMCs per node: %v for %v spectra, nodes: %v", spectraPerNode, pmcsPerNode, spectraCount, nodeCount)
 
 	// Generate the lists and save to S3
-	pmcLists := makeQuantJobPMCLists(params.PMCs, spectraPerNode)
+	pmcLists := makeQuantJobPMCLists(params.PMCs, int(pmcsPerNode))
 
 	pmcHasDwellLookup, err := datasetModel.MakePMCHasDwellLookup(dataset)
 	if err != nil {
