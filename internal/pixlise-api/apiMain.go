@@ -105,13 +105,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error trying to display config\n")
 	}
+
 	// Core count can't be 0!
 	if cfg.CoresPerNode <= 0 {
 		cfg.CoresPerNode = 6 // Reasonable, our laptops have 6...
 	}
 
 	if cfg.MaxQuantNodes <= 0 {
-		cfg.MaxQuantNodes = 20 // Was hard-coded to this anyway
+		cfg.MaxQuantNodes = 40
 	}
 
 	cfgStr := string(cfgJSON)
@@ -159,8 +160,15 @@ func main() {
 	routePermissions := router.GetPermissions()
 	printRoutePermissions(routePermissions)
 
-	authware := authMiddleWareData{routePermissionsRequired: routePermissions, jwtValidator: jwtReader.Validator}
-	logware := endpoints.LoggerMiddleware{APIServices: &svcs, JwtValidator: jwtReader.Validator}
+	authware := authMiddleWareData{
+		routePermissionsRequired: routePermissions,
+		jwtValidator:             jwtReader.Validator,
+		logger:                   svcs.Log,
+	}
+	logware := endpoints.LoggerMiddleware{
+		APIServices:  &svcs,
+		JwtValidator: jwtReader.Validator,
+	}
 
 	router.Router.Use(authware.Middleware, logware.Middleware)
 

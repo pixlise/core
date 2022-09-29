@@ -75,6 +75,8 @@ func (k *KubeHelper) Bootstrap(location string, apiLog logger.ILogger) {
 	if err != nil {
 		k.Log.Errorf("Kubernetes NewForConfig failed: %v", err.Error())
 	}
+	/* Took this out because it was erroring due to permissions - we should probably be querying just for this namespace.
+	Since it didn't do anything with the number queried, we don't need it...
 
 	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
@@ -85,6 +87,7 @@ func (k *KubeHelper) Bootstrap(location string, apiLog logger.ILogger) {
 	} else {
 		k.Log.Infof("There are %d pods in the cluster", len(pods.Items))
 	}
+	*/
 	k.Clientset = clientset
 }
 
