@@ -112,7 +112,7 @@ func main() {
 	}
 
 	if cfg.MaxQuantNodes <= 0 {
-		cfg.MaxQuantNodes = 20
+		cfg.MaxQuantNodes = 40
 	}
 
 	cfgStr := string(cfgJSON)
