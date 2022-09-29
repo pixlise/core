@@ -639,10 +639,15 @@ func makePMCListFilesForQuantPMCs(svcs *services.APIServices, combinedSpectra bo
 		spectraCount *= 2
 	}
 
+	jobLog.Infof("estimateNodeCount %v, %v, %v, %v, %v", spectraCount, int32(len(params.Elements)), params.RunTimeSec, params.CoresPerNode, cfg.MaxQuantNodes)
+
 	nodeCount := estimateNodeCount(spectraCount, int32(len(params.Elements)), params.RunTimeSec, params.CoresPerNode, cfg.MaxQuantNodes)
+
+	jobLog.Infof("estimateNodeCount returned %v", nodeCount)
+
 	if cfg.NodeCountOverride > 0 {
 		nodeCount = cfg.NodeCountOverride
-		jobLog.Infof("Using node count override: %v\n", nodeCount)
+		jobLog.Infof("Using node count override: %v", nodeCount)
 	}
 
 	// NOTE: if we're running anything but the map command, the result is pretty quick, so we don't need to farm it out to multiple nodes
@@ -650,7 +655,11 @@ func makePMCListFilesForQuantPMCs(svcs *services.APIServices, combinedSpectra bo
 		nodeCount = 1
 	}
 
+	jobLog.Infof("spectraPerNode nodeCount: %v", nodeCount)
+
 	spectraPerNode := filesPerNode(spectraCount, nodeCount)
+
+	jobLog.Infof("spectraPerNode: %v", spectraPerNode)
 
 	// Generate the lists and save to S3
 	pmcLists := makeQuantJobPMCLists(params.PMCs, spectraPerNode)

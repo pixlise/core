@@ -106,9 +106,6 @@ func main() {
 		log.Fatalf("Error trying to display config\n")
 	}
 
-	// TEMPORARY HACK introduced to test running multi-threaded:
-	cfg.CoresPerNode *= 2 // Our environments are configured to run 4 threads, this will run 8 but on same hardware, testing hyper-threading in AWS EC2/Fargate nodes
-
 	// Core count can't be 0!
 	if cfg.CoresPerNode <= 0 {
 		cfg.CoresPerNode = 6 // Reasonable, our laptops have 6...
