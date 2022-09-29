@@ -105,13 +105,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error trying to display config\n")
 	}
+
+	// TEMPORARY HACK introduced to test running multi-threaded:
+	cfg.CoresPerNode *= 2 // Our environments are configured to run 4 threads, this will run 8 but on same hardware, testing hyper-threading in AWS EC2/Fargate nodes
+
 	// Core count can't be 0!
 	if cfg.CoresPerNode <= 0 {
 		cfg.CoresPerNode = 6 // Reasonable, our laptops have 6...
 	}
 
 	if cfg.MaxQuantNodes <= 0 {
-		cfg.MaxQuantNodes = 20 // Was hard-coded to this anyway
+		cfg.MaxQuantNodes = 20
 	}
 
 	cfgStr := string(cfgJSON)
@@ -159,8 +163,15 @@ func main() {
 	routePermissions := router.GetPermissions()
 	printRoutePermissions(routePermissions)
 
-	authware := authMiddleWareData{routePermissionsRequired: routePermissions, jwtValidator: jwtReader.Validator}
-	logware := endpoints.LoggerMiddleware{APIServices: &svcs, JwtValidator: jwtReader.Validator}
+	authware := authMiddleWareData{
+		routePermissionsRequired: routePermissions,
+		jwtValidator:             jwtReader.Validator,
+		logger:                   svcs.Log,
+	}
+	logware := endpoints.LoggerMiddleware{
+		APIServices:  &svcs,
+		JwtValidator: jwtReader.Validator,
+	}
 
 	router.Router.Use(authware.Middleware, logware.Middleware)
 
