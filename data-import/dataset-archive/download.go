@@ -59,7 +59,7 @@ func NewDatasetArchiveDownloader(
 // Error (if any)
 func (dl *DatasetArchiveDownloader) DownloadFromDatasetArchive(datasetID string, workingDir string) (string, string, int, error) {
 	// Create a directories to process data in
-	dl.log.Debugf("Preparing download dataset %v...", datasetID)
+	dl.log.Debugf("Preparing to download archived dataset %v...", datasetID)
 
 	downloadPath, err := fileaccess.MakeEmptyLocalDirectory(workingDir, "download")
 	if err != nil {
@@ -162,7 +162,7 @@ func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID str
 		}
 
 		// Unzip the file
-		unzippedFileNames, err := utils.UnzipDirectory(savePath, unzippedPath)
+		unzippedFileNames, err := utils.UnzipDirectory(savePath, unzippedPath, false)
 		if err != nil {
 			return 0, err
 		}
@@ -202,4 +202,86 @@ func (dl *DatasetArchiveDownloader) downloadUserCustomisationsForDataset(dataset
 	}
 
 	return nil
+}
+
+// Downloads from user uploaded dataset zip area. Expects the following files to exist:
+// - creator.json - describing who uploaded the dataset, and when
+// - detector.json - describing what detector, hence what dataset type this is
+// Other files depending on what type of detector:
+// BREADBOARD:
+// - import.json - import parameters for the jpl breadboard importer
+// - spectra.zip - all .MSA files
+//
+// Returns:
+// Downloads path (raw zip files go here),
+// Unzipped files path (archive zips unzipped here),
+// Error (if any)
+func (dl *DatasetArchiveDownloader) DownloadFromDatasetUploads(datasetID string, workingDir string) (string, string, error) {
+	// Create a directories to process data in
+	dl.log.Debugf("Preparing to download manually-uploaded dataset %v...", datasetID)
+
+	downloadPath, err := fileaccess.MakeEmptyLocalDirectory(workingDir, "download")
+	if err != nil {
+		err = fmt.Errorf("Failed to generate directory for importer downloads: %v", err)
+		dl.log.Errorf("%v", err)
+		return "", "", err
+	}
+	unzippedPath, err := fileaccess.MakeEmptyLocalDirectory(workingDir, "unzipped")
+	if err != nil {
+		err = fmt.Errorf("Failed to generate directory for importer unzips: %v", err)
+		dl.log.Errorf("%v", err)
+		return "", "", err
+	}
+
+	// Download all files for this dataset...
+	pathsToDownload, err := dl.remoteFS.ListObjects(dl.manualUploadBucket, path.Join(filepaths.DatasetUploadRoot, datasetID))
+	if err != nil {
+		err = fmt.Errorf("Failed to list files for download from user upload area: %v", err)
+		dl.log.Errorf("%v", err)
+		return "", "", err
+	}
+
+	for _, filePath := range pathsToDownload {
+		// Zip files go to download area and get unzipped into unzip dir, non-zips go straight to unzip dir
+		savePath := path.Base(filePath)
+		zipName := ""
+		if strings.HasSuffix(filePath, ".zip") {
+			savePath = path.Join(downloadPath, savePath)
+			zipName = path.Base(filePath)
+			zipName = zipName[0 : len(zipName)-4] // Snip off the .zip
+		} else {
+			savePath = path.Join(unzippedPath, savePath)
+		}
+
+		err = dl.fetchFile(dl.manualUploadBucket, filePath, savePath)
+		if err != nil {
+			err = fmt.Errorf("Failed to download file: %v", err)
+			dl.log.Errorf("%v", err)
+			return "", "", err
+		}
+
+		if len(zipName) > 0 {
+			// Unzip it!
+			zipDest := path.Join(unzippedPath, zipName)
+			_, err := utils.UnzipDirectory(savePath, zipDest, true)
+			if err != nil {
+				err = fmt.Errorf("Failed to unzip %v: %v", savePath, err)
+				dl.log.Errorf("%v", err)
+				return "", "", err
+			}
+		}
+	}
+
+	// Download any additional files users may have manually added, eg custom config (dataset name), custom images, RGBU images
+	dl.log.Debugf("Downloading user customisation files...")
+
+	err = dl.downloadUserCustomisationsForDataset(datasetID, unzippedPath)
+	if err != nil {
+		err = fmt.Errorf("Failed to download user customisations for dataset ID: %v. Error: %v", datasetID, err)
+		dl.log.Errorf("%v", err)
+		return downloadPath, unzippedPath, err
+	}
+
+	dl.log.Debugf("Dataset %v downloaded from manual upload area", datasetID)
+	return downloadPath, unzippedPath, nil
 }

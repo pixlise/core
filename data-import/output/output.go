@@ -75,9 +75,10 @@ func (s *PIXLISEDataSaver) Save(
 
 	rtt, err := strconv.Atoi(data.Meta.RTT)
 	if err != nil {
-		return fmt.Errorf("Failed to convert RTT %v to number: %v", data.Meta.RTT, err)
+		jobLog.Infof("Warning: Failed to convert RTT %v to number. Error: %v. This can be ignored for non-FM datasets", data.Meta.RTT, err)
+	} else {
+		exp.Rtt = int32(rtt)
 	}
-	exp.Rtt = int32(rtt)
 
 	exp.Sclk = data.Meta.SCLK
 
@@ -440,19 +441,23 @@ func setMatchedImageInfo(fromData dataConvertModels.OutputData, toExperiment *pr
 		matchItem := &protos.Experiment_MatchedContextImageInfo{}
 
 		// Search for the index to set for the referenced aligned image
-		found := false
+		// NOTE: if we don't have aligned images, we just have to ignore this, as this dataset will be created with ONLY 1 or more matched
+		// images - matched to the beam location PMC...
+		if len(toExperiment.AlignedContextImages) > 0 {
+			found := false
 
-		// look up the saved name of the image
-		for c, aligned := range toExperiment.AlignedContextImages {
-			if aligned.Pmc == matchedImg.AlignedBeamPMC {
-				matchItem.AlignedIndex = int32(c)
-				found = true
-				break
+			// look up the saved name of the image
+			for c, aligned := range toExperiment.AlignedContextImages {
+				if aligned.Pmc == matchedImg.AlignedBeamPMC {
+					matchItem.AlignedIndex = int32(c)
+					found = true
+					break
+				}
 			}
-		}
 
-		if !found {
-			return fmt.Errorf("Failed to find index of aligned image %v for PMC %v", matchedImg.MatchedImageFullPath, matchedImg.AlignedBeamPMC)
+			if !found {
+				return fmt.Errorf("Failed to find index of aligned image %v for PMC %v", matchedImg.MatchedImageFullPath, matchedImg.AlignedBeamPMC)
+			}
 		}
 
 		matchItem.Image = matchedImg.MatchedImageName

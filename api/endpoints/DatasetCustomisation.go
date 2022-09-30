@@ -34,6 +34,7 @@ import (
 	"github.com/pixlise/core/v2/core/api"
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
 	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v2/data-import/internal/importerutils"
 
 	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/api/handlers"
@@ -104,15 +105,11 @@ func datasetReprocess(params handlers.ApiHandlerParams) (interface{}, error) {
 ////////////////////////////////////////////////////////////////////////
 // Meta data get/set
 
-type datasetCustomMeta struct {
-	Title string `json:"title"`
-}
-
 func datasetCustomMetaGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	s3Path := filepaths.GetCustomMetaPath(datasetID)
 
-	meta := datasetCustomMeta{}
+	meta := importerutils.DatasetCustomMeta{}
 	err := params.Svcs.FS.ReadJSON(params.Svcs.Config.ManualUploadBucket, s3Path, &meta, false)
 
 	if err != nil {
@@ -132,7 +129,7 @@ func datasetCustomMetaPut(params handlers.ApiHandlerParams) (interface{}, error)
 		return nil, err
 	}
 
-	var req datasetCustomMeta
+	var req importerutils.DatasetCustomMeta
 	err = json.Unmarshal(body, &req)
 	if err != nil {
 		return nil, api.MakeBadRequestError(err)

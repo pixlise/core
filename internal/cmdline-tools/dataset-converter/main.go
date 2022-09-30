@@ -82,13 +82,16 @@ func main() {
 		if len(*argPseudoPath) <= 0 {
 			log.Fatalf("pseudo-path not set")
 		}
+		if len(*argDatasetID) <= 0 {
+			log.Fatalf("dataset-id not set")
+		}
 
 		workingDir := ""
 		workingDir, err = ioutil.TempDir("", "data-converter")
 		if err != nil {
 			log.Fatalf("Failed to create working dir: %v", err)
 		}
-		datasetIDImported, err = dataConverter.ImportFromLocalFileSystem(localFS, remoteFS, workingDir, *argImportPath, *argPseudoPath, *argDatasetBucket, ilog)
+		datasetIDImported, err = dataConverter.ImportFromLocalFileSystem(localFS, remoteFS, workingDir, *argImportPath, *argPseudoPath, *argDatasetBucket, *argDatasetID, ilog)
 	case "uploaded":
 		// Ensure these exist
 		if len(*argConfigBucket) <= 0 {
@@ -112,7 +115,7 @@ func main() {
 		if len(*argDatasetID) <= 0 {
 			log.Fatalf("dataset-id not set")
 		}
-		datasetIDImported, _, err = dataConverter.ImportFromArchive(localFS, remoteFS, *argConfigBucket, *argManualUploadBucket, *argDatasetBucket, *argDatasetID, ilog, true)
+		datasetIDImported, err = dataConverter.ImportFromArchive(localFS, remoteFS, *argConfigBucket, *argManualUploadBucket, *argDatasetBucket, *argDatasetID, ilog, true)
 	case "trigger":
 		/* An example case, where trigger message is set to:
 		{

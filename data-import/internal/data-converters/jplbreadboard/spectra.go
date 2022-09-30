@@ -32,30 +32,6 @@ import (
 	"github.com/pixlise/core/v2/data-import/internal/importerutils"
 )
 
-func listMSAFilesToProcess(path string, ignoreMSAFiles string, jobLog logger.ILogger) ([]string, error) {
-	allMSAFiles, err := importerutils.GetDirListing(path, "", jobLog)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if ignoreMSAFiles != "" {
-		var splitmsas = strings.Split(ignoreMSAFiles, ",")
-
-		for _, ignoreMSA := range splitmsas {
-			for i, f := range allMSAFiles {
-				if strings.HasSuffix(f, ignoreMSA) {
-					copy(allMSAFiles[i:], allMSAFiles[i+1:])
-					allMSAFiles[len(allMSAFiles)-1] = ""
-					allMSAFiles = allMSAFiles[:len(allMSAFiles)-1]
-				}
-			}
-		}
-	}
-
-	return allMSAFiles, nil
-}
-
 func getSpectraFiles(allFiles []string, verifyReadType bool, jobLog logger.ILogger) ([]string, []string) {
 	var toRead []string
 	var logs []string
@@ -80,29 +56,51 @@ func getSpectraFiles(allFiles []string, verifyReadType bool, jobLog logger.ILogg
 		}
 	}
 
-	count := len(toRead)
-	sort.SliceStable(toRead, func(i, j int) bool {
-		iPMC, err1 := getMSASeqNo(toRead[i])
-		jPMC, err2 := getMSASeqNo(toRead[j])
+	// Get the sequence number from each file name and sort them
+	// We call SliceStable here because we may have duplicates, where 2 sequence numbers match
+	// for example if we have just 1 detector in an msa, and we have an A and B file
+	// First, we scan through all the file names to make sure we filter out any where we can't find
+	// a sequence number. This is because the breadboard exports a "notes" file (may not exist) and
+	// we can't rely on its file name containing "notes" or something... but it ends in date usually.
+	// Example:
+	// Notes file: YL_DAKP_rock_28V_230uA_08_15_2022_notes_08-16-22-18-04-58.msa
+	// MSA file:   YL_DAKP_rock_28V_230uA_08_15_2022_5625.msa
+
+	toReadFiltered := make([]string, 0, len(toRead))
+	for _, name := range toRead {
+		iPMC, err := getMSASeqNo(name)
+		if err == nil && iPMC > 0 {
+			toReadFiltered = append(toReadFiltered, name)
+		} else {
+			jobLog.Infof("Warning: ignoring spectrum file, due to not finding sequence number: %v", name)
+		}
+	}
+
+	count := len(toReadFiltered)
+	sort.SliceStable(toReadFiltered, func(i, j int) bool {
+		iPMC, err1 := getMSASeqNo(toReadFiltered[i])
+		jPMC, err2 := getMSASeqNo(toReadFiltered[j])
 		if err1 != nil {
-			jobLog.Errorf("ERROR when sorting in getSpectraFiles, filename: %v", toRead[i])
+			jobLog.Errorf("Failed to sort1 in getSpectraFiles, filename: %v", toReadFiltered[i])
 			iPMC = 0
 		}
 		if err2 != nil {
-			jobLog.Errorf("ERROR when sorting in getSpectraFiles, filename: %v", toRead[j])
+			jobLog.Errorf("Failed to sort2 in getSpectraFiles, filename: %v", toReadFiltered[j])
 			jPMC = 0
 		}
 		return iPMC < jPMC
 	})
 
-	if len(toRead) != count {
+	if len(toReadFiltered) != count {
 		jobLog.Errorf("COUNT MISMATCH when sorting spectra file names")
-		toRead = []string{}
+		toReadFiltered = []string{}
 	}
 
-	return toRead, logs
+	return toReadFiltered, logs
 }
 
+// Assumes file name ends in _00123.msa
+// Returns 123
 func getMSASeqNo(path string) (int64, error) {
 	ext := filepath.Ext(path)
 
@@ -128,20 +126,31 @@ func getMSASeqNo(path string) (int64, error) {
 func makeSpectraLookup(inputpath string, spectraFiles []string, singleDetectorMSAs bool, genPMCs bool, readTypeOverride string, detectorADuplicate bool, jobLog logger.ILogger) (dataConvertModels.DetectorSampleByPMC, error) {
 	spectraLookup := make(dataConvertModels.DetectorSampleByPMC)
 
+	reportInterval := len(spectraFiles) / 10
+
 	c := 1
-	for _, f := range spectraFiles {
+	for idx, f := range spectraFiles {
 		path := path.Join(inputpath, f)
 		lines, err := importerutils.ReadFileLines(path, jobLog)
 		if err != nil {
 			return spectraLookup, fmt.Errorf("Error in %v: %v", path, err)
 		}
 
-		// Make this overwrite last line, don't want to print 1000s of lines
-		ending := "\n"
-		if c < len(spectraFiles) {
-			ending = "\r"
+		/*
+			// This was useful for showing on command line tool, but we don't want to spam cloudwatch logs with this stuff
+			// Make this overwrite last line, don't want to print 1000s of lines
+			ending := "\n"
+			if c < len(spectraFiles) {
+				ending = "\r"
+			}
+
+			//fmt.Printf("  Reading spectrum [%v/%v] from: %v       %v", c, len(spectraFiles), f, ending)
+		*/
+
+		// Rate limit progress reporting to logs
+		if idx%reportInterval == 0 {
+			jobLog.Infof("  Reading spectrum [%v/%v] %v%%", c, len(spectraFiles), 100*c/len(spectraFiles))
 		}
-		fmt.Printf("  Reading spectrum [%v/%v] from: %v       %v", c, len(spectraFiles), f, ending)
 
 		spectrumList, err := importerutils.ReadMSAFileLines(lines, singleDetectorMSAs, !genPMCs, detectorADuplicate)
 		if err != nil {
@@ -209,6 +218,8 @@ func eVCalibrationOverride(spectraLookup *dataConvertModels.DetectorSampleByPMC,
 	return nil
 }
 
+// Assumes a file name like: Normal_A_0612673072_000001C5_000013.msa
+// Returns Normal from the above example
 func getSpectraReadType(filename string) (string, error) {
 	_, f := filepath.Split(filename)
 	bits := strings.Split(f, "_")

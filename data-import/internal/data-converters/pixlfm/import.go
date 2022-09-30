@@ -18,16 +18,12 @@
 package pixlfm
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path"
 	"strings"
 
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
 	gdsfilename "github.com/pixlise/core/v2/data-import/gds-filename"
 	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
@@ -70,7 +66,7 @@ type fileStructure struct {
 
 var log logger.ILogger
 
-func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobLog logger.ILogger) (*dataConvertModels.OutputData, string, error) {
+func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, datasetIDExpected string, jobLog logger.ILogger) (*dataConvertModels.OutputData, string, error) {
 	// For now this is hard-coded, we may need to parse metadata from a file name to work this out, or it may need to be a param eventually
 	log = jobLog
 	beamDir := fileStructure{}
@@ -296,16 +292,6 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 		}
 	}
 
-	cmeta, err := readCustomMeta(log, importPath)
-	if err != nil {
-		return nil, "", err
-	}
-	matchedAlignedImages, err := readMatchedImages(path.Join(importPath, "MATCHED"), beamLookup, log)
-
-	if err != nil {
-		return nil, "", err
-	}
-
 	// Now that all have been read, combine the bulk/max spectra into our lookup
 	for pmc := range bulkMaxSpectraLookup {
 		locSpectraLookup[pmc] = append(locSpectraLookup[pmc], bulkMaxSpectraLookup[pmc]...)
@@ -315,10 +301,15 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 	// Not really relevant, what would we show? It's a list of meta, how many is too many?
 	//importer.LogIfMoreFoundHousekeeping(hkData, "Housekeeping", 1)
 
+	matchedAlignedImages, err := importerutils.ReadMatchedImages(path.Join(importPath, "MATCHED"), beamLookup, log)
+
+	if err != nil {
+		return nil, "", err
+	}
+
 	// Build internal representation of the data that we can pass to the output code
 	// We now read the metadata from the housekeeping file name, as it's the only file we expect to always exist!
-	meta, err := makeDatasetFileMeta(housekeepingFileNameMeta, cmeta, log)
-	//meta, err := makeDatasetFileMeta(spectraFileNameMeta)
+	meta, err := makeDatasetFileMeta(housekeepingFileNameMeta, log)
 	if err != nil {
 		return nil, "", fmt.Errorf("Failed to parse file metadata: %v", err)
 	}
@@ -326,6 +317,11 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 	// Expecting RTT to be read
 	if len(meta.RTT) <= 0 {
 		return nil, "", errors.New("Failed to determine dataset RTT")
+	}
+
+	// Ensure it matches what we're expecting
+	if meta.RTT != datasetIDExpected {
+		return nil, "", fmt.Errorf("Expected dataset ID %v, read %v", datasetIDExpected, meta.RTT)
 	}
 
 	detectorConfig := "PIXL"
@@ -369,27 +365,6 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, jobL
 	return data, importPath, nil
 }
 
-func readCustomMeta(jobLog logger.ILogger, importPath string) (map[string]interface{}, error) {
-	var result map[string]interface{}
-
-	metapath := path.Join(importPath, filepaths.DatasetCustomMetaFileName)
-	jobLog.Infof("Checking for custom meta: %v", metapath)
-
-	if _, err := os.Stat(metapath); os.IsNotExist(err) {
-		jobLog.Infof("Custom meta not found, ignoring...")
-		return result, nil
-	}
-
-	localFS := fileaccess.FSAccess{}
-	err := localFS.ReadJSON("", metapath, &result, false)
-	if err != nil {
-		jobLog.Errorf("Failed to read custom meta file: %v", err)
-	}
-
-	jobLog.Infof("Successfully read custom-meta")
-	return result, err
-}
-
 func DetectPIXLFMStructure(importPath string) (string, error) {
 	c, _ := ioutil.ReadDir(importPath)
 	for _, entry := range c {
@@ -421,7 +396,7 @@ func validatePaths(importPath string, validpaths []string) error {
 	return nil
 }
 
-func makeDatasetFileMeta(fMeta gdsfilename.FileNameMeta, cmeta map[string]interface{}, jobLog logger.ILogger) (dataConvertModels.FileMetaData, error) {
+func makeDatasetFileMeta(fMeta gdsfilename.FileNameMeta, jobLog logger.ILogger) (dataConvertModels.FileMetaData, error) {
 	result := dataConvertModels.FileMetaData{}
 
 	sol, err := fMeta.SOL()
@@ -451,22 +426,13 @@ func makeDatasetFileMeta(fMeta gdsfilename.FileNameMeta, cmeta map[string]interf
 		return result, nil
 	}
 
-	title := rtt
-	if val, ok := cmeta["title"]; ok {
-		jobLog.Infof("Found custom title: %v", val)
-		v := fmt.Sprintf("%v", val)
-		if len(v) > 0 && val != " " {
-			title = v
-		}
-	}
-
 	result.SOL = sol
 	result.RTT = rtt
 	result.SCLK = sclk
 	result.SiteID = site
 	result.DriveID = drive
 	result.TargetID = "?"
-	result.Title = title
+	result.Title = rtt
 	return result, nil
 }
 
@@ -523,62 +489,6 @@ func readBulkMaxSpectra(inPath string, files []string, jobLog logger.ILogger) (d
 			result[pmc] = []dataConvertModels.DetectorSample{}
 		}
 		result[pmc] = append(result[pmc], spectrumList...)
-	}
-
-	return result, nil
-}
-
-func readMatchedImages(matchedPath string, beamLookup dataConvertModels.BeamLocationByPMC, jobLog logger.ILogger) ([]dataConvertModels.MatchedAlignedImageMeta, error) {
-	result := []dataConvertModels.MatchedAlignedImageMeta{}
-
-	// Read all JSON files in the directory, if they reference a context image by file name great, otherwise error
-	files, err := importerutils.GetDirListing(matchedPath, "json", jobLog)
-
-	if err != nil {
-		jobLog.Infof("readMatchedImages: directory not found, SKIPPING")
-		return result, nil
-	}
-
-	for _, jsonFile := range files {
-		jsonPath := path.Join(matchedPath, jsonFile)
-		// Read JSON file
-		jsonBytes, err := ioutil.ReadFile(jsonPath)
-		if err != nil {
-			return result, err
-		}
-
-		var meta dataConvertModels.MatchedAlignedImageMeta
-		err = json.Unmarshal(jsonBytes, &meta)
-		if err != nil {
-			return result, err
-		}
-
-		// Verify the images exist
-		if _, ok := beamLookup[meta.AlignedBeamPMC]; !ok {
-			return result, fmt.Errorf("Matched image %v references beam locations for PMC which cannot be found: %v", jsonPath, meta.AlignedBeamPMC)
-		}
-
-		// Work out the full path, will be needed when copying to output dir
-		meta.MatchedImageFullPath = path.Join(matchedPath, meta.MatchedImageName)
-
-		_, err = os.Stat(meta.MatchedImageFullPath)
-		if err != nil {
-			return result, fmt.Errorf("Matched image %v references image which cannot be found: %v", jsonPath, meta.MatchedImageName)
-		}
-
-		// And the offsets are valid. I doubt we'll be loading images much larger than maxSize:
-		const maxSize = 10000.0
-		if meta.XOffset < -maxSize || meta.XOffset > maxSize || meta.YOffset < -maxSize || meta.YOffset > maxSize {
-			return result, fmt.Errorf("%v x/y offsets invalid", jsonPath)
-		}
-
-		// And the scale values are valid
-		const maxScale = 100.0 // 100x greater/less resolution... not likely!
-		if meta.XScale < 1/maxScale || meta.XScale > maxScale || meta.YScale < 1/maxScale || meta.YScale > maxScale {
-			return result, fmt.Errorf("%v x/y scales invalid", jsonPath)
-		}
-
-		result = append(result, meta)
 	}
 
 	return result, nil

@@ -19,10 +19,12 @@ package jplbreadboard
 
 import (
 	"errors"
+	"fmt"
 	"path"
 	"strconv"
 	"strings"
 
+	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
 	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
 	"github.com/pixlise/core/v2/data-import/internal/importerutils"
@@ -62,35 +64,60 @@ type importParams struct {
 type MSATestData struct {
 }
 
-// Import - Implementing Importer interface, expects importPath to point to a JSON file with import params
-func (m MSATestData) Import(importJSONPath string, pseudoIntensityRangesPath string, jobLog logger.ILogger) (*dataConvertModels.OutputData, string, error) {
-	if path.Ext(importJSONPath) != ".json" {
-		return nil, "", errors.New("expected import path to point to import parameter JSON file")
-	}
+// Import - Implementing Importer interface, expects importPath to point to a directory containing importable files, with an import.json
+//
+//	containing fields specific to this importer
+func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string, datasetID string, jobLog logger.ILogger) (*dataConvertModels.OutputData, string, error) {
+	localFS := fileaccess.FSAccess{}
 
+	// Check if we can load the import instructions JSON file
 	var params importParams
-	err := importerutils.ReadJSON(importJSONPath, &params, jobLog)
+	err := localFS.ReadJSON(importPath, "import.json", &params, false)
 	if err != nil {
-		return nil, "", err
-	}
+		// If there is no import.json file, we can use some suitable defaults, so just warn here
+		//return nil, "", err
+		jobLog.Infof("Warning: No import.json found, defaults will be used")
 
-	if len(params.DatasetID) <= 0 {
-		return nil, "", errors.New("Import parameter file did not specify a DatasetID")
-	}
-	if len(params.Group) <= 0 {
-		return nil, "", errors.New("Import parameter file did not specify a Group")
-	}
+		// Set defaults
+		params.MsaDir = "spectra" // We now assume we will have a spectra.zip extracted into a spectra dir!
+		params.MsaBeamParams = "10,0,10,0"
+		params.GenBulkMax = true
+		params.GenPMCs = true
+		params.ReadTypeOverride = "Normal"
+		params.DetectorConfig = "Breadboard"
+		params.Group = "JPL Breadboard"
+		params.TargetID = "0"
+		params.SiteID = 0
 
-	// So the import path itself is the dir the json file sits in
-	importPath := path.Dir(importJSONPath)
+		// The rest we set to the dataset ID
+		params.DatasetID = datasetID
+		//params.Site = datasetID
+		//params.Target = datasetID
+		params.Title = datasetID
+	} else {
+		if len(params.DatasetID) <= 0 {
+			return nil, "", errors.New("Import parameter file did not specify a DatasetID")
+		}
+		if len(params.Group) <= 0 {
+			return nil, "", errors.New("Import parameter file did not specify a Group")
+		}
+		// Ensure expected ID matches what we're given
+		if params.DatasetID != datasetID {
+			return nil, "", fmt.Errorf("Expected dataset ID %v, read %v", datasetID, params.DatasetID)
+		}
+	}
 
 	// Process the context images first, so if we're assigning an image to a PMC, we know what PMC it is
 	// NOTE: this only matters for msa test datasets where the context image file names contain the PMC. In the
 	// case where there is no PMC info in the file name, we just assign it to PMC 1 anyway.
-	contextImageSrcDir := path.Join(importPath, params.ContextImgDir)
-	contextImgsPerPMC, err := processContextImages(contextImageSrcDir, jobLog)
-	if err != nil {
-		return nil, "", err
+	contextImgsPerPMC := map[int32]string{}
+	contextImageSrcDir := ""
+	if len(params.ContextImgDir) > 0 {
+		contextImageSrcDir = path.Join(importPath, params.ContextImgDir)
+		contextImgsPerPMC, err = processContextImages(contextImageSrcDir, jobLog)
+		if err != nil {
+			return nil, "", err
+		}
 	}
 
 	minContextPMC := getMinimumContextPMC(contextImgsPerPMC)
@@ -138,7 +165,8 @@ func (m MSATestData) Import(importJSONPath string, pseudoIntensityRangesPath str
 		}
 	}
 
-	allMSAFiles, err := listMSAFilesToProcess(path.Join(importPath, params.MsaDir), params.IgnoreMSAFiles, jobLog)
+	spectraPath := path.Join(importPath, params.MsaDir)
+	allMSAFiles, err := localFS.ListObjects(spectraPath, "")
 	if err != nil {
 		return nil, "", err
 	}
@@ -148,8 +176,10 @@ func (m MSATestData) Import(importJSONPath string, pseudoIntensityRangesPath str
 		verifyreadtype = false
 	}
 
-	jobLog.Infof("  Reading %v spectrum files...\n", len(allMSAFiles))
+	jobLog.Infof("  Reading %v files from spectrum directory...", len(allMSAFiles))
 	spectrafiles, _ := getSpectraFiles(allMSAFiles, verifyreadtype, jobLog)
+
+	jobLog.Infof("  Found %v usable spectrum files...", len(allMSAFiles))
 	spectraLookup, err := makeSpectraLookup(path.Join(importPath, params.MsaDir), spectrafiles, params.SingleDetectorMSAs, params.GenPMCs, params.ReadTypeOverride, params.DetectorADuplicate, jobLog)
 	if err != nil {
 		return nil, "", err
@@ -189,6 +219,12 @@ func (m MSATestData) Import(importJSONPath string, pseudoIntensityRangesPath str
 	// Not really relevant, what would we show? It's a list of meta, how many is too many?
 	//importer.LogIfMoreFoundHousekeeping(hkData, "Housekeeping", 1)
 
+	matchedAlignedImages, err := importerutils.ReadMatchedImages(path.Join(importPath, "MATCHED"), beamLookup, jobLog)
+
+	if err != nil {
+		return nil, "", err
+	}
+
 	// Build internal representation of the data that we can pass to the output code
 	meta := dataConvertModels.FileMetaData{
 		TargetID: params.TargetID,
@@ -200,13 +236,14 @@ func (m MSATestData) Import(importJSONPath string, pseudoIntensityRangesPath str
 	}
 
 	data := &dataConvertModels.OutputData{
-		DatasetID:      params.DatasetID,
-		Group:          params.Group,
-		Meta:           meta,
-		DetectorConfig: params.DetectorConfig,
-		BulkQuantFile:  params.BulkQuantFile,
-		PseudoRanges:   pseudoIntensityRanges,
-		PerPMCData:     map[int32]*dataConvertModels.PMCData{},
+		DatasetID:            params.DatasetID,
+		Group:                params.Group,
+		Meta:                 meta,
+		DetectorConfig:       params.DetectorConfig,
+		BulkQuantFile:        params.BulkQuantFile,
+		PseudoRanges:         pseudoIntensityRanges,
+		PerPMCData:           map[int32]*dataConvertModels.PMCData{},
+		MatchedAlignedImages: matchedAlignedImages,
 	}
 
 	data.SetPMCData(beamLookup, hkData, spectraLookup, contextImgsPerPMC, pseudoIntensityData)

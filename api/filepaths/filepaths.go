@@ -60,6 +60,13 @@ func GetDatasetFilePath(datasetID string, fileName string) string {
 // - Archive/
 const RootArchive = "Archive"
 
+// - DatasetSummaries/
+const RootDatasetSummaries = "DatasetSummaries" // Where we put all dataset summary files, named <datset-id>.json
+
+func GetDatasetSummaryFilePath(datasetID string) string {
+	return path.Join(RootDatasetSummaries, datasetID+".json")
+}
+
 ////////////////////////////////////////////////////////////////////////////////////
 // Config Bucket
 ////////////////////////////////////////////////////////////////////////////////////
@@ -310,14 +317,17 @@ func GetCustomImagePath(datasetID string, imgType string, fileName string) strin
 
 // Users can upload datasets here:
 // - Uploaded/
-const DatasetUploadRoot = "Uploaded"
+const DatasetUploadRoot = "UploadedDatasets"
 
-// ----<dataset-type>/ (eg Breadboard)
-// --------<dataset-id>/
-// ------------Files for that dataset importer type. For example, with breadboards we expect:
-// ------------import.json <-- Describes what's what
-// ------------spectra.zip <-- Spectra .msa files zipped up
-// ------------context_image_1.jpg <-- 1 or more context images
+// ----<dataset-id>/
+// --------Files for that dataset importer type. For example, with breadboards we expect:
+// --------import.json <-- Describes what's what
+// --------spectra.zip <-- Spectra .msa files zipped up
+// --------context_image_1.jpg <-- 1 or more context images
+
+func GetDatasetUploadPath(datasetID string, fileName string) string {
+	return path.Join(DatasetUploadRoot, datasetID, fileName)
+}
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Artifacts Built Bucket - where we go to download built PIQUANT, etc

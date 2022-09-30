@@ -51,13 +51,14 @@ func makeSummaryFileContent(exp *protos.Experiment, datasetID string, group stri
 			tiffContextImgCount++
 		}
 	}
-	// Even if we didn't find any context images set for a given PMC, we show it as 1 because the context image
-	// may have been specified as just a default file name (this is to support old test datasets that didn't have
-	// the concept of PMCs, just a bunch of spectrum files and a jpeg img)
-	if contextImgCount <= 0 {
-		contextImgCount = 1
-	}
-
+	/*
+		// Even if we didn't find any context images set for a given PMC, we show it as 1 because the context image
+		// may have been specified as just a default file name (this is to support old test datasets that didn't have
+		// the concept of PMCs, just a bunch of spectrum files and a jpeg img)
+		if contextImgCount <= 0 {
+			contextImgCount = 1
+		}
+	*/
 	rtt, _ := strconv.Atoi(meta.RTT)
 
 	s := datasetModel.SummaryFileData{

@@ -59,6 +59,7 @@ func Example_S3ListingWithContinuation() {
 			Contents: []*s3.Object{
 				{Key: aws.String("Datasets/abc-456/summary.json")},
 				{Key: aws.String("Datasets/abc-789/summary.json")},
+				{Key: aws.String("Datasets/")}, // Happens when we create a path in S3 web console, but has no use for us, so we filter it
 				{Key: aws.String("Datasets/abc-456/params.json")},
 			},
 		},

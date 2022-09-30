@@ -18,7 +18,6 @@
 package jplbreadboard
 
 import (
-	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -28,17 +27,17 @@ import (
 )
 
 func processContextImages(path string, jobLog logger.ILogger) (map[int32]string, error) {
-	fmt.Printf("  Reading context image files from directory: %v\n", path)
+	jobLog.Infof("  Reading context image files from directory: %v", path)
 	contextImgDirFiles, err := importerutils.GetDirListing(path, "", jobLog)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return getContextImagesPerPMCFromListing(contextImgDirFiles), nil
+	return getContextImagesPerPMCFromListing(contextImgDirFiles, jobLog), nil
 }
 
-func getContextImagesPerPMCFromListing(paths []string) map[int32]string {
+func getContextImagesPerPMCFromListing(paths []string, jobLog logger.ILogger) map[int32]string {
 	result := make(map[int32]string)
 
 	for _, pathitem := range paths {
@@ -47,13 +46,13 @@ func getContextImagesPerPMCFromListing(paths []string) map[int32]string {
 		if extension == ".jpg" {
 			fileNameBits := strings.Split(file, "_")
 			if len(fileNameBits) != 3 {
-				fmt.Printf("Ignored unexpected image file name \"%v\" when searching for context images.\n", pathitem)
+				jobLog.Infof("Ignored unexpected image file name \"%v\" when searching for context images.", pathitem)
 			} else {
 				pmcStr := fileNameBits[len(fileNameBits)-1]
 				pmcStr = pmcStr[0 : len(pmcStr)-len(extension)]
 				pmcI, err := strconv.Atoi(pmcStr)
 				if err != nil {
-					fmt.Printf("Ignored unexpected image file name \"%v\", couldn't parse PMC.\n", pathitem)
+					jobLog.Infof("Ignored unexpected image file name \"%v\", couldn't parse PMC.", pathitem)
 				} else {
 					result[int32(pmcI)] = file
 				}
