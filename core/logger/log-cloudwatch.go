@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 )
@@ -117,22 +118,17 @@ func (l *CloudwatchLogger) deleteOldGroups(prefix string, contToken string) (str
 	}
 */
 func (l *CloudwatchLogger) ensureLogGroupExists(name string, retentionDays int64) error {
-	resp, err := l.cwClient.DescribeLogGroups(&cloudwatchlogs.DescribeLogGroupsInput{})
-	if err != nil {
-		return err
-	}
-
-	for _, logGroup := range resp.LogGroups {
-		if *logGroup.LogGroupName == name {
-			return nil
-		}
-	}
-
-	_, err = l.cwClient.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
+	_, err := l.cwClient.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
 		LogGroupName: aws.String(name),
 	})
 
 	if err != nil {
+		// If it already exists, don't fail!
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Message() == "The specified log group already exists" {
+				return nil
+			}
+		}
 		return err
 	}
 
