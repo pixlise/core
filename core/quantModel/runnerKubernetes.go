@@ -50,6 +50,7 @@ type kubernetesRunner struct {
 }
 
 func (r *kubernetesRunner) runPiquant(piquantDockerImage string, params PiquantParams, pmcListNames []string, cfg config.APIConfig, notificationStack notifications.NotificationManager, creator pixlUser.UserInfo, log logger.ILogger) error {
+	var err error
 	r.kubeHelper.Kubeconfig = cfg.KubeConfig
 	// Setup, create namespace
 	jobid := fmt.Sprintf("job-%v", params.JobID)
@@ -74,7 +75,13 @@ func (r *kubernetesRunner) runPiquant(piquantDockerImage string, params PiquantP
 		go r.runQuantJob(&wg, params, jobid, kubeNamespace, piquantDockerImage, creator, len(pmcListNames))
 	}
 
-	err := startQuantNotification(params, notificationStack, creator)
+	if params.Command == "map" {
+		err = startQuantNotification(params, notificationStack, creator)
+		if err != nil {
+			log.Errorf("Failed to send quantification started notification: %v", err)
+			err = nil
+		}
+	}
 
 	// Wait for all piquant instances to finish
 	//wg.Wait()
