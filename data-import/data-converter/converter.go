@@ -36,7 +36,6 @@ import (
 	"github.com/pixlise/core/v2/data-import/internal/data-converters/jplbreadboard"
 	"github.com/pixlise/core/v2/data-import/internal/data-converters/pixlfm"
 	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
-	"github.com/pixlise/core/v2/data-import/internal/importerutils"
 	importerNotification "github.com/pixlise/core/v2/data-import/internal/notification"
 	"github.com/pixlise/core/v2/data-import/output"
 	diffractionDetection "github.com/pixlise/core/v2/diffraction-detector"
@@ -200,7 +199,7 @@ func ImportFromLocalFileSystem(
 	*/
 
 	// Apply any overrides we may have
-	customMetaFields, err := importerutils.ReadLocalCustomMeta(log, localImportPath)
+	customMetaFields, err := readLocalCustomMeta(log, localImportPath)
 	if err != nil {
 		return "", err
 	} else if len(customMetaFields.Title) > 0 && customMetaFields.Title != " " {

@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package importerutils
+package dataConverter
 
 import (
 	"os"
@@ -30,7 +30,7 @@ type DatasetCustomMeta struct {
 	Title string `json:"title"`
 }
 
-func ReadLocalCustomMeta(jobLog logger.ILogger, importPath string) (DatasetCustomMeta, error) {
+func readLocalCustomMeta(jobLog logger.ILogger, importPath string) (DatasetCustomMeta, error) {
 	result := DatasetCustomMeta{}
 
 	metapath := path.Join(importPath, filepaths.DatasetCustomMetaFileName)
