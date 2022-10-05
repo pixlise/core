@@ -57,5 +57,9 @@ func GetJWT(username string, password string, clientID string, clientSecret stri
 		return "", fmt.Errorf("Failed to parse login response: %v", err)
 	}
 
+	if len(bodyData.AccessToken) <= 0 {
+		return "", fmt.Errorf("Failed to get access token: %v", string(body))
+	}
+
 	return bodyData.AccessToken, nil
 }
