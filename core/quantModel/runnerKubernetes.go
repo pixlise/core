@@ -107,9 +107,12 @@ func (r *kubernetesRunner) runPiquant(piquantDockerImage string, params PiquantP
 func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jobid, namespace string, creator pixlUser.UserInfo, length int) *apiv1.Pod {
 	sec := apiv1.LocalObjectReference{Name: "api-auth"}
 	parts := strings.Split(params.PMCListName, ".")
+	// Set the serviceaccount for the piquant pods based on namespace
+	// Piquant Fit commands will run in the same namespace and share a service account
+	// Piquant Map commands (jobs) will run in the piquant-map namespace with a more limited service account
 	san := "pixlise-api"
-	if namespace == "piquant-fit" {
-		san = "piquant-fit"
+	if namespace == "piquant-map" {
+		san = "piquant-map"
 	}
 	return &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
