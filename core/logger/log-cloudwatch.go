@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 )
@@ -40,6 +41,7 @@ type CloudwatchLogger struct {
 	queue         []string
 	lock          sync.Mutex
 	wg            sync.WaitGroup
+	retentionDays int
 }
 
 // InitCloudWatchLogger - initialises the logger, given settings and AWS session
@@ -52,6 +54,7 @@ func InitCloudWatchLogger(sess *session.Session, logGroupName string, logStreamN
 		sequenceToken: "",
 		queue:         []string{},
 		lock:          sync.Mutex{},
+		retentionDays: retentionDays,
 	}
 	/*
 		tok := ""
@@ -115,22 +118,17 @@ func (l *CloudwatchLogger) deleteOldGroups(prefix string, contToken string) (str
 	}
 */
 func (l *CloudwatchLogger) ensureLogGroupExists(name string, retentionDays int64) error {
-	resp, err := l.cwClient.DescribeLogGroups(&cloudwatchlogs.DescribeLogGroupsInput{})
-	if err != nil {
-		return err
-	}
-
-	for _, logGroup := range resp.LogGroups {
-		if *logGroup.LogGroupName == name {
-			return nil
-		}
-	}
-
-	_, err = l.cwClient.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
+	_, err := l.cwClient.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
 		LogGroupName: aws.String(name),
 	})
 
 	if err != nil {
+		// If it already exists, don't fail!
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Message() == "The specified log group already exists" {
+				return nil
+			}
+		}
 		return err
 	}
 
@@ -143,7 +141,14 @@ func (l *CloudwatchLogger) ensureLogGroupExists(name string, retentionDays int64
 }
 
 func (l *CloudwatchLogger) createLogStream(name string) error {
-	_, err := l.cwClient.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
+	// Ensure it exists here because it may be deleted at runtime from cloudwatch, if we're creating or re-creating
+	// our log stream, it's good to know that the group is there
+	err := l.ensureLogGroupExists(l.logGroupName, int64(l.retentionDays))
+	if err != nil {
+		return err
+	}
+
+	_, err = l.cwClient.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
 		LogGroupName:  aws.String(l.logGroupName),
 		LogStreamName: aws.String(name),
 	})
@@ -160,7 +165,7 @@ func (l *CloudwatchLogger) processQueue(logIntervalSec time.Duration) error {
 		if len(l.queue) > 0 {
 			for _, item := range l.queue {
 				logQueue = append(logQueue, &cloudwatchlogs.InputLogEvent{
-					Message:   &item,
+					Message:   aws.String(item),
 					Timestamp: aws.Int64(time.Now().UnixNano() / int64(time.Millisecond)),
 				})
 			}
@@ -195,7 +200,11 @@ func (l *CloudwatchLogger) processQueue(logIntervalSec time.Duration) error {
 			}
 
 			if resp != nil {
-				l.sequenceToken = *resp.NextSequenceToken
+				if resp.NextSequenceToken != nil {
+					l.sequenceToken = *resp.NextSequenceToken
+				} else {
+					l.sequenceToken = ""
+				}
 			}
 
 			logQueue = []*cloudwatchlogs.InputLogEvent{}
@@ -243,4 +252,11 @@ func (l *CloudwatchLogger) Infof(format string, a ...interface{}) {
 // Errorf - Print error to log, with format string
 func (l *CloudwatchLogger) Errorf(format string, a ...interface{}) {
 	l.Printf(LogError, format, a...)
+}
+
+func (l *CloudwatchLogger) SetLogLevel(level LogLevel) {
+	l.logLevel = level
+}
+func (l *CloudwatchLogger) GetLogLevel() LogLevel {
+	return l.logLevel
 }

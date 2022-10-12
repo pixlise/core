@@ -28,8 +28,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
-
 	"github.com/pixlise/core/v2/core/notifications"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gorilla/handlers"
 
@@ -85,6 +85,12 @@ func main() {
 	go func() {
 		http.ListenAndServe(":1234", nil)
 	}()
+	// This is for prometheus
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":2112", nil)
+	}()
+
 	rand.Seed(time.Now().UnixNano())
 
 	log.Printf("API version: \"%v\"", services.ApiVersion)
@@ -99,13 +105,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error trying to display config\n")
 	}
+
 	// Core count can't be 0!
 	if cfg.CoresPerNode <= 0 {
 		cfg.CoresPerNode = 6 // Reasonable, our laptops have 6...
 	}
 
 	if cfg.MaxQuantNodes <= 0 {
-		cfg.MaxQuantNodes = 20 // Was hard-coded to this anyway
+		cfg.MaxQuantNodes = 40
 	}
 
 	cfgStr := string(cfgJSON)
@@ -144,7 +151,7 @@ func main() {
 		MongoUtils:    &mongo,
 	}
 	svcs.Notifications = &notificationStack
-	jwtReader := api.RealJWTReader{Validator: initJWTValidator(cfg.Auth0Domain, svcs.FS, cfg)}
+	jwtReader := api.RealJWTReader{Validator: initJWTValidator(cfg.Auth0Domain, svcs.FS, cfg, svcs.Log)}
 	svcs.JWTReader = jwtReader
 
 	router := endpoints.MakeRouter(svcs)
@@ -153,8 +160,15 @@ func main() {
 	routePermissions := router.GetPermissions()
 	printRoutePermissions(routePermissions)
 
-	authware := authMiddleWareData{routePermissionsRequired: routePermissions, jwtValidator: jwtReader.Validator}
-	logware := endpoints.LoggerMiddleware{APIServices: &svcs, JwtValidator: jwtReader.Validator}
+	authware := authMiddleWareData{
+		routePermissionsRequired: routePermissions,
+		jwtValidator:             jwtReader.Validator,
+		logger:                   svcs.Log,
+	}
+	logware := endpoints.LoggerMiddleware{
+		APIServices:  &svcs,
+		JwtValidator: jwtReader.Validator,
+	}
 
 	router.Router.Use(authware.Middleware, logware.Middleware)
 

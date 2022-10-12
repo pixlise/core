@@ -19,7 +19,6 @@ package endpoints
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 
 	apiNotifications "github.com/pixlise/core/v2/core/notifications"
@@ -43,30 +42,29 @@ type Config struct {
 	Methods Method `json:"method"`
 }
 
-//AppData - App data type for JSON conversion
+// AppData - App data type for JSON conversion
 type AppData struct {
 	Topics []apiNotifications.Topics `json:"topics"`
 }
 
-//HintsData - Hints Object
+// HintsData - Hints Object
 type HintsData struct {
 	Hints []string `json:"hints"`
 }
 
-//TestData - JSON Data for test emails
+// TestData - JSON Data for test emails
 type TestData struct {
 	TestType    string `json:"type"`
 	TestContact string `json:"contact"`
 }
 
-//GlobalData - JSON Data for global emails
+// GlobalData - JSON Data for global emails
 type GlobalData struct {
 	GlobalContent string `json:"content"`
 	GlobalSubject string `json:"subject"`
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Notification management.
+// Notification management
 const alertsPrefix = "notification/alerts"
 
 func registerNotificationHandler(router *apiRouter.ApiObjectRouter) {
@@ -117,7 +115,7 @@ func executeTest(params handlers.ApiHandlerParams) (interface{}, error) {
 	if req.TestType == "sms" {
 		err := awsutil.SNSSendSms(req.TestContact, "THIS IS A TEST SMS MESSAGE. PLEASE DISREGARD")
 		if err != nil {
-			fmt.Printf("%v", err)
+			params.Svcs.Log.Errorf("SNSSendSms failed: %v", err)
 		}
 
 	} else if req.TestType == "email" {
@@ -234,7 +232,7 @@ func updateSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) 
 
 	if val, ok := params.PathParams["userid"]; ok {
 		if perm, ok := params.UserInfo.Permissions[permission.PermWriteUserRoles]; ok {
-			if perm == true {
+			if perm {
 				user, err := params.Svcs.Notifications.FetchUserObject(val, true, params.UserInfo.Name, params.UserInfo.Email)
 				if err != nil {
 					if params.Svcs.Config.MongoEndpoint == "" && params.Svcs.FS.IsNotFoundError(err) {
@@ -250,7 +248,7 @@ func updateSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) 
 				user.Topics = req.Topics
 
 				err = params.Svcs.Notifications.UpdateUserConfigFile(params.UserInfo.UserID, user)
-				return user.Topics, nil
+				return user.Topics, err
 			}
 
 			return "Unable to lookup userid by user, check your permissions", nil
@@ -275,6 +273,9 @@ func updateSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) 
 		}
 	} else if user.Userid == "" {
 		user, err = params.Svcs.Notifications.CreateUserObject(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
+		if err != nil {
+			return nil, err
+		}
 	}
 	user.Topics = req.Topics
 	err = params.Svcs.Notifications.UpdateUserConfigFile(params.UserInfo.UserID, user)

@@ -78,16 +78,20 @@ func CreateJob(svcs *services.APIServices, createParams JobCreateParams, wg *syn
 	var err error
 
 	// Init a logger for this job
-	jobLog, err = logger.InitCloudWatchLogger(
-		svcs.AWSSessionCW,
-		"/api/"+svcs.Config.EnvironmentName,
-		"job-"+jobID,
-		svcs.Config.LogLevel,
-		30, // Log retention for 30 days
-		3,  // Send logs every 3 seconds in batches
-	)
-	if err != nil {
-		svcs.Log.Errorf("Failed to create logger for Job ID: %v", jobID)
+	if svcs.Config.EnvironmentName == "local" {
+		jobLog = &logger.StdOutLogger{}
+	} else {
+		jobLog, err = logger.InitCloudWatchLogger(
+			svcs.AWSSessionCW,
+			"/api/"+svcs.Config.EnvironmentName,
+			"job-"+jobID,
+			svcs.Config.LogLevel,
+			30, // Log retention for 30 days
+			3,  // Send logs every 3 seconds in batches
+		)
+		if err != nil {
+			svcs.Log.Errorf("Failed to create logger for Job ID: %v", jobID)
+		}
 	}
 
 	jobLog.Infof(createMsg)
@@ -381,7 +385,7 @@ func triggerPiquantNodes(svcs *services.APIServices, jobLog logger.ILogger, jobI
 	}
 
 	// Convert to binary format
-	binFileBytes, elements, err := ConvertQuantificationCSV(cfg.EnvironmentName, outputCSV, []string{"PMC", "SCLK", "RTT", "filename"}, "", false, "", false)
+	binFileBytes, elements, err := ConvertQuantificationCSV(jobLog, outputCSV, []string{"PMC", "SCLK", "RTT", "filename"}, "", false, "", false)
 	if err != nil {
 		setJobError(&status, fmt.Sprintf("Error when converting quant CSV to PIXLISE bin: %v", err))
 		saveQuantJobStatus(svcs, params.DatasetID, piquantParams.QuantName, &status, jobLog, creator)
@@ -636,9 +640,10 @@ func makePMCListFilesForQuantPMCs(svcs *services.APIServices, combinedSpectra bo
 	}
 
 	nodeCount := estimateNodeCount(spectraCount, int32(len(params.Elements)), params.RunTimeSec, params.CoresPerNode, cfg.MaxQuantNodes)
+
 	if cfg.NodeCountOverride > 0 {
 		nodeCount = cfg.NodeCountOverride
-		jobLog.Infof("Using node count override: %v\n", nodeCount)
+		jobLog.Infof("Using node count override: %v", nodeCount)
 	}
 
 	// NOTE: if we're running anything but the map command, the result is pretty quick, so we don't need to farm it out to multiple nodes
@@ -647,9 +652,17 @@ func makePMCListFilesForQuantPMCs(svcs *services.APIServices, combinedSpectra bo
 	}
 
 	spectraPerNode := filesPerNode(spectraCount, nodeCount)
+	pmcsPerNode := spectraPerNode
+	if !combinedSpectra {
+		// If we're separate, we have 2x as many spectra as PMCs, so here we calculate how many
+		// pmcs per node accurately for the next step to generate the right number of PMC lists
+		pmcsPerNode /= 2
+	}
+
+	jobLog.Debugf("spectraPerNode: %v, PMCs per node: %v for %v spectra, nodes: %v", spectraPerNode, pmcsPerNode, spectraCount, nodeCount)
 
 	// Generate the lists and save to S3
-	pmcLists := makeQuantJobPMCLists(params.PMCs, spectraPerNode)
+	pmcLists := makeQuantJobPMCLists(params.PMCs, int(pmcsPerNode))
 
 	pmcHasDwellLookup, err := datasetModel.MakePMCHasDwellLookup(dataset)
 	if err != nil {

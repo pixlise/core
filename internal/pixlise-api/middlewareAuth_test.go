@@ -19,6 +19,8 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/pixlise/core/v2/core/logger"
 )
 
 func Example_isMatch() {
@@ -97,6 +99,7 @@ func Example_isMatch() {
 
 func Example_getPermissionsForURI() {
 	var a authMiddleWareData
+	a.logger = &logger.StdOutLogger{}
 	a.routePermissionsRequired = map[string]string{
 		"GET/the/{id}/something": "root3",
 		"GET/the/path":           "root1",

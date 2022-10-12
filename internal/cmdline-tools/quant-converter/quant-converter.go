@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/pixlise/core/v2/core/logger"
 	"github.com/pixlise/core/v2/core/quantModel"
 )
 
@@ -118,7 +119,7 @@ func main() {
 		log.Fatalf("Failed to read CSV %v. Error: %v", mapCSVFileName, err)
 	}
 
-	serialisedBytes, _, err := quantModel.ConvertQuantificationCSV("local", string(data), metaColumns, matchPMCDatasetFileName, matchPMCMode == "coord", detectorIDOverride, detectorDuplicateAB)
+	serialisedBytes, _, err := quantModel.ConvertQuantificationCSV(&logger.StdOutLogger{}, string(data), metaColumns, matchPMCDatasetFileName, matchPMCMode == "coord", detectorIDOverride, detectorDuplicateAB)
 	if err != nil {
 		log.Fatalf("Conversion error: %v", err)
 	}

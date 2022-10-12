@@ -45,18 +45,16 @@ import (
 // PIQUANT in Kubernetes
 
 type kubernetesRunner struct {
+	fatalErrors chan error
+	kubeHelper  kubernetes.KubeHelper
 }
 
-var fatalErrors chan error
-var kubeHelper kubernetes.KubeHelper
-
-func (r kubernetesRunner) runPiquant(piquantDockerImage string, params PiquantParams, pmcListNames []string, cfg config.APIConfig, notificationStack notifications.NotificationManager, creator pixlUser.UserInfo, log logger.ILogger) error {
-	log.Infof("kubernetesRunner runPiquant called...")
-
-	kubeHelper.Kubeconfig = cfg.KubeConfig
+func (r *kubernetesRunner) runPiquant(piquantDockerImage string, params PiquantParams, pmcListNames []string, cfg config.APIConfig, notificationStack notifications.NotificationManager, creator pixlUser.UserInfo, log logger.ILogger) error {
+	var err error
+	r.kubeHelper.Kubeconfig = cfg.KubeConfig
 	// Setup, create namespace
 	jobid := fmt.Sprintf("job-%v", params.JobID)
-	kubeHelper.Bootstrap(cfg.KubernetesLocation, log)
+	r.kubeHelper.Bootstrap(cfg.KubernetesLocation, log)
 
 	log.Infof("Starting %v pods...", len(pmcListNames))
 
@@ -67,17 +65,23 @@ func (r kubernetesRunner) runPiquant(piquantDockerImage string, params PiquantPa
 	}
 
 	var wg sync.WaitGroup
-	fatalErrors = make(chan error)
+	r.fatalErrors = make(chan error)
 	wgDone := make(chan bool)
 	for _, name := range pmcListNames {
 		wg.Add(1)
 
 		// Set the pmc name so it gets sent to the container
 		params.PMCListName = name
-		go runQuantJob(&wg, params, jobid, kubeNamespace, piquantDockerImage, creator, len(pmcListNames), log)
+		go r.runQuantJob(&wg, params, jobid, kubeNamespace, piquantDockerImage, creator, len(pmcListNames))
 	}
 
-	err := startQuantNotification(params, notificationStack, creator)
+	if params.Command == "map" {
+		err = startQuantNotification(params, notificationStack, creator)
+		if err != nil {
+			log.Errorf("Failed to send quantification started notification: %v", err)
+			err = nil
+		}
+	}
 
 	// Wait for all piquant instances to finish
 	//wg.Wait()
@@ -92,7 +96,7 @@ func (r kubernetesRunner) runPiquant(piquantDockerImage string, params PiquantPa
 	case <-wgDone:
 		log.Infof("Kubernetes pods reported complete")
 		break
-	case kerr := <-fatalErrors:
+	case kerr := <-r.fatalErrors:
 		log.Errorf("Kubernetes Error: %v", kerr.Error())
 		err = kerr
 	}
@@ -144,13 +148,13 @@ func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jo
 	}
 }
 
-func runQuantJob(wg *sync.WaitGroup, params PiquantParams, jobid string, namespace string, dockerImage string, creator pixlUser.UserInfo, count int, log logger.ILogger) {
+func (r *kubernetesRunner) runQuantJob(wg *sync.WaitGroup, params PiquantParams, jobid string, namespace string, dockerImage string, creator pixlUser.UserInfo, count int) {
 	defer wg.Done()
 
 	// Make a JSON string out of params so it can be passed in
 	paramsJSON, err := json.Marshal(params)
 	if err != nil {
-		log.Errorf("Failed to serialise JSON params for node: %v", params.PMCListName)
+		r.kubeHelper.Log.Errorf("Failed to serialise JSON params for node: %v", params.PMCListName)
 		return
 	}
 	paramsStr := string(paramsJSON)
@@ -159,15 +163,15 @@ func runQuantJob(wg *sync.WaitGroup, params PiquantParams, jobid string, namespa
 	pod := getPodObject(paramsStr, params, dockerImage, jobid, namespace, creator, count)
 
 	co := metav1.CreateOptions{}
-	pod, err = kubeHelper.Clientset.CoreV1().Pods(pod.Namespace).Create(context.TODO(), pod, co)
+	pod, err = r.kubeHelper.Clientset.CoreV1().Pods(pod.Namespace).Create(context.TODO(), pod, co)
 	if err != nil {
-		log.Errorf("Pod create failed for: %v. namespace: %v, count: %v", params.PMCListName, namespace, count)
-		fatalErrors <- err
+		r.kubeHelper.Log.Errorf("Pod create failed for: %v. namespace: %v, count: %v", params.PMCListName, namespace, count)
+		r.fatalErrors <- err
 		return
 	}
 
 	// Create Deployment
-	log.Debugf("Creating pod for %v in namespace %v...", params.PMCListName, namespace)
+	r.kubeHelper.Log.Infof("Creating pod for %v in namespace %v...", params.PMCListName, namespace)
 
 	// Now wait for it to finish
 	startUnix := time.Now().Unix()
@@ -177,29 +181,28 @@ func runQuantJob(wg *sync.WaitGroup, params PiquantParams, jobid string, namespa
 
 	for currUnix := time.Now().Unix(); currUnix < maxEndUnix; currUnix = time.Now().Unix() {
 		// Check kubernetes pod status
-		pod, _ := kubeHelper.Clientset.CoreV1().Pods(pod.Namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
+		pod, _ := r.kubeHelper.Clientset.CoreV1().Pods(pod.Namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
 
 		// TODO: is this needed, now that we log?
 		//fmt.Println(pod.Status.Phase)
 		//log.Infof("%v phase: %v, pod name: %v, namespace: %v", params.PMCListName, pod.Status.Phase, pod.Name, pod.Namespace)
 
-		phase := ""
-		phase = string(pod.Status.Phase)
+		phase := string(pod.Status.Phase)
 		if lastPhase != phase {
-			log.Debugf("%v phase: %v, pod name: %v, namespace: %v", params.PMCListName, pod.Status.Phase, pod.Name, pod.Namespace)
+			r.kubeHelper.Log.Infof("%v phase: %v, pod name: %v, namespace: %v", params.PMCListName, pod.Status.Phase, pod.Name, pod.Namespace)
 			lastPhase = phase
 		}
 
 		if pod.Status.Phase != apiv1.PodRunning && pod.Status.Phase != apiv1.PodPending {
-			log.Debugf("Deleting pod: %v from namespace: %v", pod.Name, pod.Namespace)
+			r.kubeHelper.Log.Infof("Deleting pod: %v from namespace: %v", pod.Name, pod.Namespace)
 
 			deletePolicy := metav1.DeletePropagationForeground
 			do := &metav1.DeleteOptions{
 				PropagationPolicy: &deletePolicy,
 			}
-			err := kubeHelper.Clientset.CoreV1().Pods(pod.Namespace).Delete(context.TODO(), pod.Name, *do)
+			err := r.kubeHelper.Clientset.CoreV1().Pods(pod.Namespace).Delete(context.TODO(), pod.Name, *do)
 			if err != nil {
-				log.Errorf("Failed to remove pod: %v, namespace: %v\n", pod.Name, pod.Namespace)
+				r.kubeHelper.Log.Errorf("Failed to remove pod: %v, namespace: %v\n", pod.Name, pod.Namespace)
 			}
 			break
 		}

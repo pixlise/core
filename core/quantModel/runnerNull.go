@@ -36,7 +36,7 @@ import (
 type nullRunner struct {
 }
 
-func (r nullRunner) runPiquant(piquantDockerImage string, params PiquantParams, pmcListNames []string, cfg config.APIConfig, notifications notifications.NotificationManager, creator pixlUser.UserInfo, log logger.ILogger) error {
+func (r *nullRunner) runPiquant(piquantDockerImage string, params PiquantParams, pmcListNames []string, cfg config.APIConfig, notifications notifications.NotificationManager, creator pixlUser.UserInfo, log logger.ILogger) error {
 	namespace := fmt.Sprintf("job-%v", params.JobID)
 
 	// Start each container in the namespace
@@ -47,7 +47,7 @@ func (r nullRunner) runPiquant(piquantDockerImage string, params PiquantParams, 
 		// Set the pmc name so it gets sent to the container
 		params.PMCListName = name
 
-		go runNullQuantJob(&wg, params, namespace, piquantDockerImage)
+		go runNullQuantJob(&wg, params, namespace, piquantDockerImage, log)
 	}
 
 	// Wait for all piquant instances to finish
@@ -58,7 +58,7 @@ func (r nullRunner) runPiquant(piquantDockerImage string, params PiquantParams, 
 
 // This is currently very dumb, we should extend it like the mock s3 backend to mock different failures
 // to allow us to test failure modes.
-func runNullQuantJob(wg *sync.WaitGroup, params PiquantParams, namespace string, dockerImage string) {
+func runNullQuantJob(wg *sync.WaitGroup, params PiquantParams, namespace string, dockerImage string, log logger.ILogger) {
 	defer wg.Done()
 
 	fmt.Println("Creating pod...")
@@ -70,7 +70,7 @@ func runNullQuantJob(wg *sync.WaitGroup, params PiquantParams, namespace string,
 		// Check kubernetes pod status
 
 		for i := 1; i < 5; i++ {
-			fmt.Printf("Loop: " + string(rune(i)))
+			log.Infof("NullQuantJob Loop: " + string(rune(i)))
 		}
 		time.Sleep(5 * time.Second)
 	}

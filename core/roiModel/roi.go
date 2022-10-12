@@ -31,6 +31,14 @@ import (
 	protos "github.com/pixlise/core/v2/generated-protos"
 )
 
+type MistROIItem struct {
+	Species             string `json:"species"`
+	MineralGroupID      string `json:"mineralGroupID"`
+	ID_Depth            int32  `json:"ID_Depth"`
+	ClassificationTrail string `json:"ClassificationTrail"`
+	Formula             string `json:"formula"`
+}
+
 // ROIItem - Region of interest item, only public so Go can reflect/interogate it
 type ROIItem struct {
 	Name            string  `json:"name"`
@@ -38,7 +46,25 @@ type ROIItem struct {
 	Description     string  `json:"description"`
 	ImageName       string  `json:"imageName,omitempty"` // Name of image whose pixels are present in this ROI.
 	// If no imageName, it's a traditional ROI consisting of PMCs
-	PixelIndexes []int32 `json:"pixelIndexes,omitempty"`
+	PixelIndexes []int32     `json:"pixelIndexes,omitempty"`
+	MistROIItem  MistROIItem `json:"mistROIItem"`
+}
+
+type ROIItemOptions struct {
+	ROIItems               []ROIItem `json:"roiItems"`
+	Overwrite              bool      `json:"overwrite"`
+	SkipDuplicates         bool      `json:"skipDuplicates"`
+	DeleteExistingMistROIs bool      `json:"deleteExistingMistROIs"`
+	ShareROIs              bool      `json:"shareROIs"`
+}
+
+type ROIIDs struct {
+	IDs []string `json:"ids"`
+}
+
+type ROIReference struct {
+	ID  string  `json:"id"`
+	ROI ROIItem `json:"roi"`
 }
 
 // ROISavedItem - Region of interest item as saved to S3, only public so Go can reflect/interogate it
@@ -224,6 +250,7 @@ func ShareROIs(svcs *services.APIServices, userID string, datasetID string, roiI
 				Description:     roiItem.Description,
 				ImageName:       roiItem.ImageName,
 				PixelIndexes:    roiItem.PixelIndexes,
+				MistROIItem:     roiItem.MistROIItem,
 			},
 			APIObjectItem: &pixlUser.APIObjectItem{
 				Shared:  true,

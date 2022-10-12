@@ -32,7 +32,7 @@ func ImportQuantCSV(svcs *services.APIServices, datasetID string, importUser pix
 	jobID := idPrefix + "_" + svcs.IDGen.GenObjectID()
 
 	// We can now convert the CSV to a quantification bin file
-	binFileBytes, elements, err := ConvertQuantificationCSV(svcs.Config.EnvironmentName, csvBody, []string{"PMC", "SCLK", "RTT", "filename"}, "", false, "", false)
+	binFileBytes, elements, err := ConvertQuantificationCSV(svcs.Log, csvBody, []string{"PMC", "SCLK", "RTT", "filename"}, "", false, "", false)
 	if err != nil {
 		return jobID, api.MakeBadRequestError(err)
 	}
