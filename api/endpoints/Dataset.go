@@ -709,5 +709,11 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	return nil, nil
+	// Now we trigger a dataset conversion
+	_, logId, err := triggerDatasetReprocessViaSNS(params.Svcs.SNS, params.Svcs.IDGen, datasetID, params.Svcs.Config.DataSourceSNSTopic)
+	if err != nil {
+		return nil, err
+	}
+
+	return logId, nil
 }

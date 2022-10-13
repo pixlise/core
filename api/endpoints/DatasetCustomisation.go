@@ -29,15 +29,16 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v2/core/awsutil"
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
 	"github.com/pixlise/core/v2/core/utils"
 	dataConverter "github.com/pixlise/core/v2/data-import/data-converter"
 
 	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/api/handlers"
+	"github.com/pixlise/core/v2/api/services"
 )
 
 // NOTE: No registration function here, this sits in the dataset registration function, shares paths with it. Only separated
@@ -67,39 +68,39 @@ type datasetReprocessResponse struct {
 
 func datasetReprocess(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
+	result, logId, err := triggerDatasetReprocessViaSNS(params.Svcs.SNS, params.Svcs.IDGen, datasetID, params.Svcs.Config.DataSourceSNSTopic)
 
+	params.Svcs.Log.Infof("Published SNS topic: %v. Log ID: %v", result, logId)
+	return nil, err
+}
+
+func triggerDatasetReprocessViaSNS(snsSvc awsutil.SNSInterface, idGen services.IDGenerator, datasetID string, snsTopic string) (*sns.PublishOutput, string, error) {
 	// Generate a new log ID that this reprocess job will write to
 	// which we also return to the caller, so they can track what happens
 	// with this async task
 
-	reprocessId := fmt.Sprintf("dataimport-%s", utils.RandStringBytesMaskImpr(16))
+	reprocessId := fmt.Sprintf("dataimport-%s", idGen.GenObjectID())
 
 	snsReq := datasetReprocessSNSRequest{
 		DatasetID: datasetID,
 		LogID:     reprocessId,
 	}
 
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-
 	snsReqJSON, err := json.Marshal(snsReq)
 	if err != nil {
-		return nil, api.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to trigger dataset reprocess: %v", err))
+		return nil, "", api.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to trigger dataset reprocess: %v", err))
 	}
 
-	svc := sns.New(sess)
-	result, err := svc.Publish(&sns.PublishInput{
+	result, err := snsSvc.Publish(&sns.PublishInput{
 		Message:  aws.String(string(snsReqJSON)),
-		TopicArn: aws.String(params.Svcs.Config.DataSourceSNSTopic),
+		TopicArn: aws.String(snsTopic),
 	})
 
 	if err != nil {
-		return nil, api.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to publish SNS topic for dataset regeneration: %v", err))
+		return nil, "", api.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to publish SNS topic for dataset regeneration: %v", err))
 	}
 
-	params.Svcs.Log.Infof("Published SNS topic: %v", result)
-	return nil, nil
+	return result, reprocessId, nil
 }
 
 ////////////////////////////////////////////////////////////////////////

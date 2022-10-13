@@ -30,14 +30,16 @@ import (
 )
 
 type datasetAddonData struct {
-	Dir string `json:"dir"`
-	Log string `json:"log"`
+	Dir       string `json:"dir"`                 // Originally this message was used with a path within dataset-addons to eg custom-meta.json
+	DatasetID string `json:"datasetID,omitempty"` // We may also want to trigger a specific dataset ID generation
+	Log       string `json:"log"`
 }
 
 type datasetAddonTrigger struct {
 	DatasetAddons datasetAddonData `json:"datasetaddons"`
 }
 
+// Returns: sourceBucket (optional), sourceFilePath (optional), datasetID, logID
 func decodeImportTrigger(triggerMessageBody []byte) (string, string, string, string, error) {
 	datasetID := ""
 
@@ -57,14 +59,20 @@ func decodeImportTrigger(triggerMessageBody []byte) (string, string, string, str
 			return "", "", "", "", fmt.Errorf("Failed to decode dataset addon trigger: %v", err)
 		}
 
-		// It's just a dataset reprocess request, read the dataset ID that's being requested
-		// NOTE: Path here is something like /dataset-addons/<datasetID>/custom_meta.json
-		// So we need the middle parth of the path
-		parts := strings.Split(datasetAddon.DatasetAddons.Dir, "/")
-		datasetID = parts[1]
-		if len(parts) != 3 || len(datasetID) <= 1 {
-			return "", "", "", "", fmt.Errorf("Failed to find dataset ID from path: %v", datasetAddon.DatasetAddons.Dir)
+		// If we have a dataset ID specified, just use that
+		if len(datasetAddon.DatasetAddons.DatasetID) > 0 {
+			datasetID = datasetAddon.DatasetAddons.DatasetID
+		} else {
+			// It's just a dataset reprocess request, read the dataset ID that's being requested
+			// NOTE: Path here is something like /dataset-addons/<datasetID>/custom_meta.json
+			// So we need the middle parth of the path
+			parts := strings.Split(datasetAddon.DatasetAddons.Dir, "/")
+			datasetID = parts[1]
+			if len(parts) != 3 || len(datasetID) <= 1 {
+				return "", "", "", "", fmt.Errorf("Failed to find dataset ID from path: %v", datasetAddon.DatasetAddons.Dir)
+			}
 		}
+
 		logID = datasetAddon.DatasetAddons.Log
 	} else {
 		// Maybe it's a packaged S3 object inside an SNS message
