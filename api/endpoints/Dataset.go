@@ -20,6 +20,7 @@ package endpoints
 import (
 	"archive/zip"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -42,6 +43,7 @@ import (
 	"github.com/pixlise/core/v2/api/filepaths"
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
 	"github.com/pixlise/core/v2/core/utils"
+	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
 )
 
 const datasetURLEnd = "dataset"
@@ -77,6 +79,9 @@ var allowedQueryNames = map[string]bool{
 func registerDatasetHandler(router *apiRouter.ApiObjectRouter) {
 	// Listing datasets (tiles screen)
 	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), datasetListing)
+
+	// Creating datasets
+	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteDataset), datasetCreatePost)
 
 	// Regeneration/manual editing of datasets
 	// Setting/getting meta fields
@@ -615,4 +620,94 @@ func concatDatasetFiles(basePath string) (string, error) {
 	}
 
 	return dest, nil
+}
+
+// Creation of a dataset - this takes in a POST body that it expects to be a zip file. Query parameter format describes what
+// to interpret the POST data to be.
+// NOTE: In future we will have to support multiple formats, but for now we only support breadboard MSA files zipped up
+// with format set to jpl-breadboard
+func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
+	datasetID := params.PathParams[datasetIdentifier]
+	format := params.PathParams["format"]
+
+	if format != "jpl-breadboard" {
+		return nil, fmt.Errorf("Unexpected format: \"%v\"", format)
+	}
+
+	s3PathStart := path.Join(filepaths.DatasetUploadRoot, datasetID)
+
+	// Check if this exists already...
+	existingPaths, err := params.Svcs.FS.ListObjects(params.Svcs.Config.ManualUploadBucket, s3PathStart)
+	if err != nil {
+		err = fmt.Errorf("Failed to list existing files for dataset ID: %v. Error: %v", datasetID, err)
+		params.Svcs.Log.Errorf("%v", err)
+		return nil, err
+	}
+
+	// If there are any existing paths, we stop here
+	if len(existingPaths) > 0 {
+		err = fmt.Errorf("Dataset ID already exists: %v", datasetID)
+		params.Svcs.Log.Errorf("%v", err)
+		return nil, err
+	}
+
+	// Read in body
+	body, err := ioutil.ReadAll(params.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check the contents is just a root dir of .MSA files and NOTHING ELSE
+	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		return nil, err
+	}
+
+	count := 0
+	for _, f := range zipReader.File {
+		// If the zip path starts with __MACOSX, ignore it, it's garbage that a mac laptop has included...
+		//if strings.HasPrefix(f.Name, "__MACOSX") {
+		//	continue
+		//}
+
+		if f.FileInfo().IsDir() {
+			return nil, fmt.Errorf("Zip file must not contain sub-directories. Found: %v", f.Name)
+		}
+
+		if !strings.HasSuffix(f.Name, ".msa") {
+			return nil, fmt.Errorf("Zip file must only contain MSA files. Found: %v", f.Name)
+		}
+		count++
+	}
+
+	// Make sure it has at least one msa!
+	if count <= 0 {
+		return nil, errors.New("Zip file did not contain any MSA files")
+	}
+
+	// Save the contents as a zip file in the uploads area
+	savePath := path.Join(s3PathStart, "spectra.zip")
+	err = params.Svcs.FS.WriteObject(params.Svcs.Config.ManualUploadBucket, savePath, body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Now save detector info
+	savePath = path.Join(s3PathStart, "detector.json")
+	detectorFile := datasetArchive.DetectorChoice{
+		Detector: "JPL Breadboard",
+	}
+	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.ManualUploadBucket, savePath, detectorFile)
+	if err != nil {
+		return nil, err
+	}
+
+	// Now save creator info
+	savePath = path.Join(s3PathStart, "creator.json")
+	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.ManualUploadBucket, savePath, params.UserInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }
