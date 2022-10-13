@@ -36,6 +36,10 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 	// Normally we'd only expect event.Records to be of length 1...
 	worked := 0
 	for _, record := range event.Records {
+		// Print this to stdout - not that useful, won't be in the log file, but lambda cloudwatch log should have it
+		// and it'll be useful for initial debugging
+		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
+
 		err := importer.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, nil)
 		if err != nil {
 			return "", err
@@ -43,6 +47,7 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 			worked++
 		}
 	}
+
 	return fmt.Sprintf("Imported %v records", worked), nil
 }
 

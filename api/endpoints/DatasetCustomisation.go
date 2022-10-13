@@ -70,7 +70,7 @@ func datasetReprocess(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	result, logId, err := triggerDatasetReprocessViaSNS(params.Svcs.SNS, params.Svcs.IDGen, datasetID, params.Svcs.Config.DataSourceSNSTopic)
 
-	params.Svcs.Log.Infof("Triggered dataset reprocess via SNS topic: %v. Log ID: %v", result, logId)
+	params.Svcs.Log.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Log ID: %v", result, logId)
 	return nil, err
 }
 

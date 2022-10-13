@@ -715,12 +715,12 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 	params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", params.Svcs.Config.ManualUploadBucket, savePath)
 
 	// Now we trigger a dataset conversion
-	_, logId, err := triggerDatasetReprocessViaSNS(params.Svcs.SNS, params.Svcs.IDGen, datasetID, params.Svcs.Config.DataSourceSNSTopic)
+	result, logId, err := triggerDatasetReprocessViaSNS(params.Svcs.SNS, params.Svcs.IDGen, datasetID, params.Svcs.Config.DataSourceSNSTopic)
 	if err != nil {
 		return nil, err
 	}
 
-	params.Svcs.Log.Infof("Triggered dataset reprocess via SNS topic: %v. Log ID: %v", result, logId)
+	params.Svcs.Log.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Log ID: %v", result, logId)
 
 	return logId, nil
 }
