@@ -19,6 +19,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -26,20 +27,23 @@ import (
 	"github.com/pixlise/core/v2/data-import/importer"
 )
 
-func HandleRequest(ctx context.Context, event awsutil.Event) error {
+func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 	configBucket := os.Getenv("CONFIG_BUCKET")
 	datasetBucket := os.Getenv("DATASETS_BUCKET")
 	manualBucket := os.Getenv("MANUAL_BUCKET")
 	envName := os.Getenv("ENVIRONMENT_NAME")
 
 	// Normally we'd only expect event.Records to be of length 1...
+	worked := 0
 	for _, record := range event.Records {
 		err := importer.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, nil)
 		if err != nil {
-			return err
+			return "", err
+		} else {
+			worked++
 		}
 	}
-	return nil
+	return fmt.Sprintf("Imported %v records", worked), nil
 }
 
 func main() {

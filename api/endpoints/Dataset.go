@@ -630,6 +630,8 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	format := params.PathParams["format"]
 
+	params.Svcs.Log.Debugf("Dataset create started for format: %v, id: %v", datasetID, format)
+
 	if format != "jpl-breadboard" {
 		return nil, fmt.Errorf("Unexpected format: \"%v\"", format)
 	}
@@ -691,6 +693,7 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", params.Svcs.Config.ManualUploadBucket, savePath)
 
 	// Now save detector info
 	savePath = path.Join(s3PathStart, "detector.json")
@@ -701,6 +704,7 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", params.Svcs.Config.ManualUploadBucket, savePath)
 
 	// Now save creator info
 	savePath = path.Join(s3PathStart, "creator.json")
@@ -708,12 +712,15 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", params.Svcs.Config.ManualUploadBucket, savePath)
 
 	// Now we trigger a dataset conversion
 	_, logId, err := triggerDatasetReprocessViaSNS(params.Svcs.SNS, params.Svcs.IDGen, datasetID, params.Svcs.Config.DataSourceSNSTopic)
 	if err != nil {
 		return nil, err
 	}
+
+	params.Svcs.Log.Infof("Triggered dataset reprocess via SNS topic: %v. Log ID: %v", result, logId)
 
 	return logId, nil
 }

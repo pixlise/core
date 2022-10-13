@@ -41,6 +41,10 @@ type datasetAddonTrigger struct {
 
 // Returns: sourceBucket (optional), sourceFilePath (optional), datasetID, logID
 func decodeImportTrigger(triggerMessageBody []byte) (string, string, string, string, error) {
+	// Print this to stdout - not that useful, won't be in the log file, but lambda cloudwatch log should have it
+	// and it'll be useful for initial debugging
+	fmt.Printf("decodeImportTrigger for message: \"%v\"\n", string(triggerMessageBody))
+
 	datasetID := ""
 
 	// Log ID to use - this forms part of the log stream in cloudwatch
