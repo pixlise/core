@@ -317,7 +317,3 @@ func (o *OutputData) SetPMCData(
 		o.PerPMCData[pmc].PseudoIntensities = ps
 	}
 }
-
-type DetectorChoice struct {
-	Detector string `json:"detector"`
-}

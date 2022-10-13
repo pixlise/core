@@ -41,7 +41,7 @@ func main() {
 
 	// This can be run in various modes...
 
-	var argImportFrom = flag.String("source", "local", "Source to import from: local, uploaded, archive, trigger")
+	var argImportFrom = flag.String("source", "local", "Source to import from: local, cloud, trigger")
 	var argDatasetBucket = flag.String("dataset-bucket", "", "Dataset bucket name")
 	var argPseudoPath = flag.String("pseudo-path", "", "Path to pseudo-intensity file")
 	var argImportPath = flag.String("import-path", "", "Path to import directory")
@@ -92,7 +92,7 @@ func main() {
 			log.Fatalf("Failed to create working dir: %v", err)
 		}
 		datasetIDImported, err = dataConverter.ImportFromLocalFileSystem(localFS, remoteFS, workingDir, *argImportPath, *argPseudoPath, *argDatasetBucket, *argDatasetID, ilog)
-	case "uploaded":
+	case "cloud":
 		// Ensure these exist
 		if len(*argConfigBucket) <= 0 {
 			log.Fatalf("config-bucket not set")
@@ -103,19 +103,7 @@ func main() {
 		if len(*argDatasetID) <= 0 {
 			log.Fatalf("dataset-id not set")
 		}
-		datasetIDImported, err = dataConverter.ImportFromManualUpload(localFS, remoteFS, *argConfigBucket, *argManualUploadBucket, *argDatasetBucket, *argDatasetID, ilog)
-	case "archive":
-		// Ensure these exist
-		if len(*argConfigBucket) <= 0 {
-			log.Fatalf("config-bucket not set")
-		}
-		if len(*argManualUploadBucket) <= 0 {
-			log.Fatalf("manual-bucket not set")
-		}
-		if len(*argDatasetID) <= 0 {
-			log.Fatalf("dataset-id not set")
-		}
-		datasetIDImported, err = dataConverter.ImportFromArchive(localFS, remoteFS, *argConfigBucket, *argManualUploadBucket, *argDatasetBucket, *argDatasetID, ilog, true)
+		datasetIDImported, err = dataConverter.ImportDataset(localFS, remoteFS, *argConfigBucket, *argManualUploadBucket, *argDatasetBucket, *argDatasetID, ilog, true)
 	case "trigger":
 		/* An example case, where trigger message is set to:
 		{

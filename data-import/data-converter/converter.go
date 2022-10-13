@@ -48,7 +48,7 @@ import (
 // Returns:
 // Dataset ID imported
 // Error (if any)
-func ImportFromArchive(
+func ImportDataset(
 	localFS fileaccess.FileAccess,
 	remoteFS fileaccess.FileAccess,
 	configBucket string,
@@ -71,10 +71,28 @@ func ImportFromArchive(
 		return "", err
 	}
 
+	// If no zip files were loaded, maybe this dataset is a manually uploaded one, try to import from there instead
+	if zipCount == 0 {
+		log.Infof("No zip files found in archive, dataset may have been manually uploaded. Trying to download...")
+		localDownloadPath, localUnzippedPath, err = archive.DownloadFromDatasetUploads(datasetID, workingDir)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	localRangesPath, err := archive.DownloadPseudoIntensityRangesFile(configBucket, localDownloadPath)
 	if err != nil {
 		return "", err
 	}
+
+	log.Infof("Downloading user customisation files...")
+
+	err = archive.DownloadUserCustomisationsForDataset(datasetID, localUnzippedPath)
+	if err != nil {
+		return "", err
+	}
+
+	log.Debugf("Dataset %v downloaded from manual upload area", datasetID)
 
 	// Now that we have data down, we can run the importer from local file system
 	datasetIDImported, err := ImportFromLocalFileSystem(
@@ -93,57 +111,6 @@ func ImportFromArchive(
 
 	// Decide what notifications (if any) to send
 	err = sendNotificationsIfRequired(remoteFS, log, configBucket, datasetBucket, datasetIDImported, !justArchived && zipCount > 1)
-	if err != nil {
-		log.Errorf("Failed to send notification: %v", err)
-	}
-
-	return datasetIDImported, nil
-}
-
-// ImportFromManualUpload - Importing from manually uploaded area. Calls ImportFromLocalFileSystem
-func ImportFromManualUpload(
-	localFS fileaccess.FileAccess,
-	remoteFS fileaccess.FileAccess,
-	configBucket string,
-	manualUploadBucket string,
-	datasetBucket string,
-	datasetID string,
-	log logger.ILogger,
-) (string, error) {
-	workingDir, err := ioutil.TempDir("", "manual")
-	if err != nil {
-		return "", err
-	}
-
-	// Firstly, we download from the archive
-	archive := datasetArchive.NewDatasetArchiveDownloader(remoteFS, localFS, log, datasetBucket, manualUploadBucket)
-	localDownloadPath, localUnzippedPath, err := archive.DownloadFromDatasetUploads(datasetID, workingDir)
-	if err != nil {
-		return "", err
-	}
-
-	localRangesPath, err := archive.DownloadPseudoIntensityRangesFile(configBucket, localDownloadPath)
-	if err != nil {
-		return "", err
-	}
-
-	// Now that we have data down, we can run the importer from local file system
-	datasetIDImported, err := ImportFromLocalFileSystem(
-		localFS,
-		remoteFS,
-		workingDir,
-		localUnzippedPath,
-		localRangesPath,
-		datasetBucket,
-		datasetID,
-		log,
-	)
-	if err != nil {
-		return "", err
-	}
-
-	// Decide what notifications (if any) to send
-	err = sendNotificationsIfRequired(remoteFS, log, configBucket, datasetBucket, datasetIDImported, false)
 	if err != nil {
 		log.Errorf("Failed to send notification: %v", err)
 	}
@@ -264,7 +231,7 @@ func selectImporter(localFS fileaccess.FileAccess, importPath string) (DataConve
 
 	// Try to read a detector.json - manually uploaded datasets will contain this to direct our operation...
 	detPath := path.Join(importPath, "detector.json")
-	var detectorFile dataConvertModels.DetectorChoice
+	var detectorFile datasetArchive.DetectorChoice
 	err = localFS.ReadJSON(detPath, "", &detectorFile, false)
 	if err == nil {
 		// We found it, work out based on what's in there

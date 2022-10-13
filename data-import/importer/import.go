@@ -55,29 +55,24 @@ func ImportForTrigger(triggerMessage []byte, envName string, configBucket string
 	localFS := &fileaccess.FSAccess{}
 	remoteFS := fileaccess.MakeS3Access(svc)
 
-	// If the source bucket is the manual bucket, we're importing a manually uploaded dataset, so we behave differently
-	if sourceBucket == manualBucket {
-		_, err = dataConverter.ImportFromManualUpload(localFS, remoteFS, configBucket, manualBucket, datasetBucket, datasetID, log)
-	} else {
-		// Check if we were triggered via a new file arriving, if so, archive it
-		archived := false
-		if len(sourceBucket) > 0 && len(sourceFilePath) > 0 {
-			err = datasetArchive.AddToDatasetArchive(remoteFS, log, datasetBucket, sourceBucket, sourceFilePath)
-			if err != nil {
-				err = fmt.Errorf("Failed to archive incoming file: \"s3://%v/%v\"", sourceBucket, sourceFilePath)
-				log.Errorf("%v", err)
-				return err
-			}
-			archived = true
-		} else if len(sourceBucket) > 0 || len(sourceFilePath) > 0 {
-			// We need BOTH to be set to something for this to work, only one of them is set
-			err = fmt.Errorf("Trigger message must specify bucket AND path, received bucket=%v, path=%v", sourceBucket, sourceFilePath)
+	// Check if we were triggered via a new file arriving, if so, archive it
+	archived := false
+	if len(sourceBucket) > 0 && len(sourceFilePath) > 0 {
+		err = datasetArchive.AddToDatasetArchive(remoteFS, log, datasetBucket, sourceBucket, sourceFilePath)
+		if err != nil {
+			err = fmt.Errorf("Failed to archive incoming file: \"s3://%v/%v\"", sourceBucket, sourceFilePath)
 			log.Errorf("%v", err)
 			return err
 		}
-
-		_, err = dataConverter.ImportFromArchive(localFS, remoteFS, configBucket, manualBucket, datasetBucket, datasetID, log, archived)
+		archived = true
+	} else if len(sourceBucket) > 0 || len(sourceFilePath) > 0 {
+		// We need BOTH to be set to something for this to work, only one of them is set
+		err = fmt.Errorf("Trigger message must specify bucket AND path, received bucket=%v, path=%v", sourceBucket, sourceFilePath)
+		log.Errorf("%v", err)
+		return err
 	}
+
+	_, err = dataConverter.ImportDataset(localFS, remoteFS, configBucket, manualBucket, datasetBucket, datasetID, log, archived)
 
 	return err
 }

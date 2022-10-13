@@ -84,16 +84,6 @@ func (dl *DatasetArchiveDownloader) DownloadFromDatasetArchive(datasetID string,
 		return downloadPath, unzippedPath, zipCount, err
 	}
 
-	// Download any additional files users may have manually added, eg custom config (dataset name), custom images, RGBU images
-	dl.log.Debugf("Downloading user customisation files...")
-
-	err = dl.downloadUserCustomisationsForDataset(datasetID, unzippedPath)
-	if err != nil {
-		err = fmt.Errorf("Failed to download user customisations for dataset ID: %v. Error: %v", datasetID, err)
-		dl.log.Errorf("%v", err)
-		return downloadPath, unzippedPath, zipCount, err
-	}
-
 	dl.log.Debugf("Dataset %v downloaded from archive", datasetID)
 	return downloadPath, unzippedPath, zipCount, nil
 }
@@ -174,7 +164,7 @@ func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID str
 	return len(orderedArchivedFiles), nil
 }
 
-func (dl *DatasetArchiveDownloader) downloadUserCustomisationsForDataset(datasetID string, downloadPath string) error {
+func (dl *DatasetArchiveDownloader) DownloadUserCustomisationsForDataset(datasetID string, downloadPath string) error {
 	// Download all files for the given dataset ID from user manual upload bucket/path
 	// into downloadPath
 	uploadedFiles, err := dl.remoteFS.ListObjects(dl.manualUploadBucket, path.Join(filepaths.DatasetCustomRoot, datasetID))
@@ -272,16 +262,10 @@ func (dl *DatasetArchiveDownloader) DownloadFromDatasetUploads(datasetID string,
 		}
 	}
 
-	// Download any additional files users may have manually added, eg custom config (dataset name), custom images, RGBU images
-	dl.log.Debugf("Downloading user customisation files...")
-
-	err = dl.downloadUserCustomisationsForDataset(datasetID, unzippedPath)
-	if err != nil {
-		err = fmt.Errorf("Failed to download user customisations for dataset ID: %v. Error: %v", datasetID, err)
-		dl.log.Errorf("%v", err)
-		return downloadPath, unzippedPath, err
-	}
-
 	dl.log.Debugf("Dataset %v downloaded from manual upload area", datasetID)
 	return downloadPath, unzippedPath, nil
+}
+
+type DetectorChoice struct {
+	Detector string `json:"detector"`
 }
