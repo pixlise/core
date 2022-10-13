@@ -24,10 +24,8 @@ import (
 // Trigger for a manual dataset regeneration (user clicks save button on dataset edit page)
 func Example_decodeImportTrigger_Manual() {
 	trigger := `{
-	"datasetaddons": {
-		"dir": "dataset-addons/189137412/custom-meta.json",
-		"log": "dataimport-zmzddoytch2krd7n"
-	}
+	"datasetID": "189137412",
+	"logID": "dataimport-zmzddoytch2krd7n"
 }`
 
 	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger([]byte(trigger))
@@ -149,12 +147,9 @@ func Example_decodeImportTrigger_OCS2() {
 	// Err: "<nil>"
 }
 
-func Example_decodeImportTrigger_ManualBadPath() {
+func Example_decodeImportTrigger_ManualBadMsg() {
 	trigger := `{
-	"datasetaddons": {
-		"dir": "dataset-addons/readme.txt",
-		"log": "dataimport-zmzddoytch2krd7n"
-	}
+	"weird": "message"
 }`
 
 	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger([]byte(trigger))
@@ -165,13 +160,13 @@ func Example_decodeImportTrigger_ManualBadPath() {
 	// Source file: ""
 	// Dataset: ""
 	// Log: ""
-	// Err: "Failed to find dataset ID from path: dataset-addons/readme.txt"
+	// Err: "Unexpected or no message type embedded in triggering SNS message"
 }
 
-func Example_decodeImportTrigger_ManualErrors() {
+func Example_decodeImportTrigger_ManualBadDatasetID() {
 	trigger := `{
-	"datasetaddons": {
-		"dir": "dataset-a
+	"datasetID": "",
+	"logID": "dataimport-zmzddoytch2krd7n"
 }`
 
 	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger([]byte(trigger))
@@ -182,7 +177,23 @@ func Example_decodeImportTrigger_ManualErrors() {
 	// Source file: ""
 	// Dataset: ""
 	// Log: ""
-	// Err: "Failed to decode dataset addon trigger: invalid character '\n' in string literal"
+	// Err: "Failed to find dataset ID in reprocess trigger"
+}
+
+func Example_decodeImportTrigger_ManualBadLogID() {
+	trigger := `{
+		"datasetID": "qwerty"
+	}`
+
+	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger([]byte(trigger))
+	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nLog: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, logID, err)
+
+	// Output:
+	// Source Bucket: ""
+	// Source file: ""
+	// Dataset: ""
+	// Log: ""
+	// Err: "Failed to find log ID in reprocess trigger"
 }
 
 func Example_decodeImportTrigger_OCS_Error() {
