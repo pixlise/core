@@ -239,6 +239,9 @@ func Example_viewStateHandler_GetCollection() {
 	//             "singleAxisRGBU": {},
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
+	//             "annotations": {
+	//                 "savedAnnotations": []
+	//             },
 	//             "rois": {
 	//                 "roiColours": {},
 	//                 "roiShapes": {}
@@ -281,6 +284,9 @@ func Example_viewStateHandler_GetCollection() {
 	//             "singleAxisRGBU": {},
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
+	//             "annotations": {
+	//                 "savedAnnotations": []
+	//             },
 	//             "rois": {
 	//                 "roiColours": {},
 	//                 "roiShapes": {}
@@ -335,6 +341,9 @@ func Example_viewStateHandler_GetCollection() {
 	//             "singleAxisRGBU": {},
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
+	//             "annotations": {
+	//                 "savedAnnotations": []
+	//             },
 	//             "rois": {
 	//                 "roiColours": {},
 	//                 "roiShapes": {}
@@ -385,6 +394,9 @@ func Example_viewStateHandler_GetCollection() {
 	//             "singleAxisRGBU": {},
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
+	//             "annotations": {
+	//                 "savedAnnotations": []
+	//             },
 	//             "rois": {
 	//                 "roiColours": {},
 	//                 "roiShapes": {}
@@ -466,6 +478,9 @@ func Example_viewStateHandler_GetCollectionShared() {
             "singleAxisRGBU": {},
             "rgbuImages": {},
             "parallelograms": {},
+            "annotations": {
+                "savedAnnotations": []
+            },
             "rois": {
                 "roiColours": {},
                 "roiShapes": {}
@@ -508,6 +523,9 @@ func Example_viewStateHandler_GetCollectionShared() {
             "singleAxisRGBU": {},
             "rgbuImages": {},
             "parallelograms": {},
+            "annotations": {
+                "savedAnnotations": []
+            },
             "rois": {
                 "roiColours": {},
 				"roiShapes": {}
@@ -585,6 +603,9 @@ func Example_viewStateHandler_GetCollectionShared() {
 	//             "singleAxisRGBU": {},
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
+	//             "annotations": {
+	//                 "savedAnnotations": []
+	//             },
 	//             "rois": {
 	//                 "roiColours": {},
 	//                 "roiShapes": {}
@@ -627,6 +648,9 @@ func Example_viewStateHandler_GetCollectionShared() {
 	//             "singleAxisRGBU": {},
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
+	//             "annotations": {
+	//                 "savedAnnotations": []
+	//             },
 	//             "rois": {
 	//                 "roiColours": {},
 	//                 "roiShapes": {}
@@ -928,6 +952,9 @@ func Example_viewStateHandler_ShareCollection() {
             "singleAxisRGBU": {},
             "rgbuImages": {},
             "parallelograms": {},
+            "annotations": {
+                "savedAnnotations": []
+            },
             "rois": {
                 "roiColours": {},
                 "roiShapes": {}
@@ -970,6 +997,9 @@ func Example_viewStateHandler_ShareCollection() {
             "singleAxisRGBU": {},
             "rgbuImages": {},
             "parallelograms": {},
+            "annotations": {
+                "savedAnnotations": []
+            },
             "rois": {
                 "roiColours": {},
                 "roiShapes": {}
