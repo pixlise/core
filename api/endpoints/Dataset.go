@@ -44,6 +44,7 @@ import (
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
 	"github.com/pixlise/core/v2/core/utils"
 	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
+	"github.com/pixlise/core/v2/data-import/importer"
 )
 
 const datasetURLEnd = "dataset"
@@ -715,7 +716,7 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 	params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", params.Svcs.Config.ManualUploadBucket, savePath)
 
 	// Now we trigger a dataset conversion
-	result, logId, err := triggerDatasetReprocessViaSNS(params.Svcs.SNS, params.Svcs.IDGen, datasetID, params.Svcs.Config.DataSourceSNSTopic)
+	result, logId, err := importer.TriggerDatasetReprocessViaSNS(params.Svcs.SNS, params.Svcs.IDGen, datasetID, params.Svcs.Config.DataSourceSNSTopic)
 	if err != nil {
 		return nil, err
 	}

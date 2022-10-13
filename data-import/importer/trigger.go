@@ -21,24 +21,26 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/utils"
 	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
 )
 
-type datasetAddonData struct {
-	Dir       string `json:"dir"`                 // Originally this message was used with a path within dataset-addons to eg custom-meta.json
-	DatasetID string `json:"datasetID,omitempty"` // We may also want to trigger a specific dataset ID generation
-	Log       string `json:"log"`
+// One of the 2 SNS messages we accept. The other is an AWS S3 event message
+type datasetReprocessSNSRequest struct {
+	DatasetID string `json:"datasetID"`
+	LogID     string `json:"logID"`
 }
 
-type datasetAddonTrigger struct {
-	DatasetAddons datasetAddonData `json:"datasetaddons"`
-}
-
+// Decoding trigger message
 // Returns: sourceBucket (optional), sourceFilePath (optional), datasetID, logID
 func decodeImportTrigger(triggerMessageBody []byte) (string, string, string, string, error) {
 	datasetID := ""
@@ -50,30 +52,27 @@ func decodeImportTrigger(triggerMessageBody []byte) (string, string, string, str
 	sourceFilePath := ""
 	sourceBucket := ""
 
-	if strings.Contains(string(triggerMessageBody), "\"datasetaddons\":") {
+	if strings.Contains(string(triggerMessageBody), "\"datasetID\":") {
 		// Assume it's a dataset add-on
-		var datasetAddon datasetAddonTrigger
+		var triggerSNS datasetReprocessSNSRequest
 		// Work out which kind of trigger it is
-		err := json.Unmarshal(triggerMessageBody, &datasetAddon)
+		err := json.Unmarshal(triggerMessageBody, &triggerSNS)
 		if err != nil {
-			return "", "", "", "", fmt.Errorf("Failed to decode dataset addon trigger: %v", err)
+			return "", "", "", "", fmt.Errorf("Failed to decode dataset reprocess trigger: %v", err)
 		}
 
 		// If we have a dataset ID specified, just use that
-		if len(datasetAddon.DatasetAddons.DatasetID) > 0 {
-			datasetID = datasetAddon.DatasetAddons.DatasetID
+		if len(triggerSNS.DatasetID) > 0 {
+			datasetID = triggerSNS.DatasetID
 		} else {
-			// It's just a dataset reprocess request, read the dataset ID that's being requested
-			// NOTE: Path here is something like /dataset-addons/<datasetID>/custom_meta.json
-			// So we need the middle parth of the path
-			parts := strings.Split(datasetAddon.DatasetAddons.Dir, "/")
-			datasetID = parts[1]
-			if len(parts) != 3 || len(datasetID) <= 1 {
-				return "", "", "", "", fmt.Errorf("Failed to find dataset ID from path: %v", datasetAddon.DatasetAddons.Dir)
-			}
+			return "", "", "", "", fmt.Errorf("Failed to find dataset ID in reprocess trigger")
 		}
 
-		logID = datasetAddon.DatasetAddons.Log
+		if len(triggerSNS.LogID) > 0 {
+			logID = triggerSNS.LogID
+		} else {
+			return "", "", "", "", fmt.Errorf("Failed to find log ID in reprocess trigger")
+		}
 	} else {
 		// Maybe it's a packaged S3 object inside an SNS message
 		var snsMsg awsutil.Event
@@ -102,4 +101,34 @@ func decodeImportTrigger(triggerMessageBody []byte) (string, string, string, str
 	}
 
 	return sourceBucket, sourceFilePath, datasetID, logID, nil
+}
+
+// Firing a trigger message. Anything calling this is triggering a dataset reimport via a lambda function
+func TriggerDatasetReprocessViaSNS(snsSvc awsutil.SNSInterface, idGen services.IDGenerator, datasetID string, snsTopic string) (*sns.PublishOutput, string, error) {
+	// Generate a new log ID that this reprocess job will write to
+	// which we also return to the caller, so they can track what happens
+	// with this async task
+
+	reprocessId := fmt.Sprintf("dataimport-%s", idGen.GenObjectID())
+
+	snsReq := datasetReprocessSNSRequest{
+		DatasetID: datasetID,
+		LogID:     reprocessId,
+	}
+
+	snsReqJSON, err := json.Marshal(snsReq)
+	if err != nil {
+		return nil, "", api.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to trigger dataset reprocess: %v", err))
+	}
+
+	result, err := snsSvc.Publish(&sns.PublishInput{
+		Message:  aws.String(string(snsReqJSON)),
+		TopicArn: aws.String(snsTopic),
+	})
+
+	if err != nil {
+		return nil, "", api.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to publish SNS topic for dataset regeneration: %v", err))
+	}
+
+	return result, reprocessId, nil
 }
