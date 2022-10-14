@@ -130,5 +130,8 @@ func TriggerDatasetReprocessViaSNS(snsSvc awsutil.SNSInterface, idGen services.I
 		return nil, "", api.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to publish SNS topic for dataset regeneration: %v", err))
 	}
 
-	return result, reprocessId, nil
+	// The actual log stream name that gets generated is prefixed with the dataset ID
+	// so return that one here, any users of our function should only need to be given
+	// the stream name, log group is more fixed.
+	return result, datasetID + "-" + reprocessId, nil
 }
