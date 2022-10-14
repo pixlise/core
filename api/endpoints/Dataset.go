@@ -42,6 +42,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/api/filepaths"
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/utils"
 	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
 	"github.com/pixlise/core/v2/data-import/importer"
@@ -632,6 +633,9 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 	format := params.PathParams["format"]
 
 	params.Svcs.Log.Debugf("Dataset create started for format: %v, id: %v", datasetID, format)
+
+	// Validate the dataset ID - can't contain funny characters because it ends up as an S3 path
+	datasetID = fileaccess.MakeValidObjectName(datasetID)
 
 	if format != "jpl-breadboard" {
 		return nil, fmt.Errorf("Unexpected format: \"%v\"", format)
