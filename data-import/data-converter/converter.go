@@ -92,8 +92,6 @@ func ImportDataset(
 		return "", err
 	}
 
-	log.Debugf("Dataset %v downloaded from manual upload area", datasetID)
-
 	// Now that we have data down, we can run the importer from local file system
 	datasetIDImported, err := ImportFromLocalFileSystem(
 		localFS,
