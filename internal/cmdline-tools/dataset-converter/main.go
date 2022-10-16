@@ -122,7 +122,7 @@ func main() {
 		if len(*argTrigger) <= 0 {
 			log.Fatalf("trigger not set")
 		}
-		err = importer.ImportForTrigger([]byte(*argTrigger), "cmd-line", *argConfigBucket, *argDatasetBucket, *argManualUploadBucket, ilog)
+		err = importer.ImportForTrigger([]byte(*argTrigger), "cmd-line", *argConfigBucket, *argDatasetBucket, *argManualUploadBucket, ilog, remoteFS)
 	default:
 		log.Fatalf("Unknown source: %v", *argImportFrom)
 		return

@@ -24,6 +24,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/data-import/importer"
 )
 
@@ -33,6 +34,18 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 	manualBucket := os.Getenv("MANUAL_BUCKET")
 	envName := os.Getenv("ENVIRONMENT_NAME")
 
+	sess, err := awsutil.GetSession()
+	if err != nil {
+		return "", err
+	}
+
+	svc, err := awsutil.GetS3(sess)
+	if err != nil {
+		return "", err
+	}
+
+	remoteFS := fileaccess.MakeS3Access(svc)
+
 	// Normally we'd only expect event.Records to be of length 1...
 	worked := 0
 	for _, record := range event.Records {
@@ -40,7 +53,7 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		// and it'll be useful for initial debugging
 		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
 
-		err := importer.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, nil)
+		err := importer.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, nil, remoteFS)
 		if err != nil {
 			return "", err
 		} else {

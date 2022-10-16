@@ -27,7 +27,7 @@ import (
 	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
 )
 
-func ImportForTrigger(triggerMessage []byte, envName string, configBucket string, datasetBucket string, manualBucket string, log logger.ILogger) error {
+func ImportForTrigger(triggerMessage []byte, envName string, configBucket string, datasetBucket string, manualBucket string, log logger.ILogger, remoteFS fileaccess.FileAccess) error {
 	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger(triggerMessage)
 
 	if err != nil {
@@ -47,23 +47,27 @@ func ImportForTrigger(triggerMessage []byte, envName string, configBucket string
 		}
 	}
 
-	svc, err := awsutil.GetS3(sess)
-	if err != nil {
-		return err
-	}
-
 	localFS := &fileaccess.FSAccess{}
-	remoteFS := fileaccess.MakeS3Access(svc)
 
 	// Check if we were triggered via a new file arriving, if so, archive it
 	archived := false
 	if len(sourceBucket) > 0 && len(sourceFilePath) > 0 {
-		err = datasetArchive.AddToDatasetArchive(remoteFS, log, datasetBucket, sourceBucket, sourceFilePath)
+		exists, err := datasetArchive.AddToDatasetArchive(remoteFS, log, datasetBucket, sourceBucket, sourceFilePath)
 		if err != nil {
 			err = fmt.Errorf("Failed to archive incoming file: \"s3://%v/%v\"", sourceBucket, sourceFilePath)
 			log.Errorf("%v", err)
 			return err
 		}
+
+		if exists {
+			// This file existed already in our archive, so it must've been processed already and we have nothing to do
+			// NOTE: This condition exists because the pipeline seems to deliver the same zip file multiple times
+			log.Infof("File already exists in archive, processing stopped. File was: \"%v\"", sourceFilePath)
+
+			// Not an error, we just consider ourselves succesfully complete now
+			return nil
+		}
+
 		archived = true
 	} else if len(sourceBucket) > 0 || len(sourceFilePath) > 0 {
 		// We need BOTH to be set to something for this to work, only one of them is set
