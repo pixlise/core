@@ -60,6 +60,19 @@ func (fs *FSAccess) ListObjects(rootPath string, prefix string) ([]string, error
 	return result, err
 }
 
+func (fs *FSAccess) ObjectExists(rootPath string, path string) (bool, error) {
+	fullPath := fs.filePath(rootPath, path)
+	_, err := os.Stat(fullPath)
+
+	// If we got a not exist error, file doesn't exist, and this is not an error...
+	if err != nil && os.IsNotExist(err) {
+		return false, nil
+	}
+
+	// Otherwise, return the bool flag and error itself
+	return err == nil, err
+}
+
 func (fs *FSAccess) ReadObject(rootPath string, path string) ([]byte, error) {
 	fullPath := fs.filePath(rootPath, path)
 	return os.ReadFile(fullPath)

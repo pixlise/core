@@ -42,14 +42,22 @@ func runTest(fs FileAccess, bucket string) {
 	// Write non-indented JSON
 	fmt.Printf("JSON no-indent: %v\n", fs.WriteJSONNoIndent(bucket, "the-files/subdir/ugly.json", testData{Name: "Hello", Value: 778, Description: "World"}))
 
+	// Check file exists, should fail
+	exists, err := fs.ObjectExists(bucket, "the-files/data.bin")
+	fmt.Printf("Exists1: %v|%v\n", exists, err)
+
 	// Write binary data
 	fmt.Printf("Binary: %v\n", fs.WriteObject(bucket, "the-files/data.bin", []byte{250, 130, 10, 0, 33}))
+
+	// Check file exists, should exist now...
+	exists, err = fs.ObjectExists(bucket, "the-files/data.bin")
+	fmt.Printf("Exists2: %v|%v\n", exists, err)
 
 	// Copy a file
 	fmt.Printf("Copy: %v\n", fs.CopyObject(bucket, "the-files/pretty.json", bucket, "the-files/subdir/copied.json"))
 
 	// Copy a file, bad path
-	err := fs.CopyObject(bucket, "the-files/prettyzzz.json", bucket, "the-files/subdir/copied2.json")
+	err = fs.CopyObject(bucket, "the-files/prettyzzz.json", bucket, "the-files/subdir/copied2.json")
 	fmt.Printf("Copy bad path, got not found error: %v\n", fs.IsNotFoundError(err)) // Don't print aws error because it changes between tests (contains req id)
 
 	// Read each back/verify their contents
@@ -115,7 +123,9 @@ func Example_localFileSystem() {
 	// Setup: <nil>
 	// JSON: <nil>
 	// JSON no-indent: <nil>
+	// Exists1: false|<nil>
 	// Binary: <nil>
+	// Exists2: true|<nil>
 	// Copy: <nil>
 	// Copy bad path, got not found error: true
 	// Read JSON: <nil>, {Hello 778 World}
@@ -178,7 +188,9 @@ func Example_s3() {
 	// Setup: <nil>
 	// JSON: <nil>
 	// JSON no-indent: <nil>
+	// Exists1: false|<nil>
 	// Binary: <nil>
+	// Exists2: true|<nil>
 	// Copy: <nil>
 	// Copy bad path, got not found error: true
 	// Read JSON: <nil>, {Hello 778 World}

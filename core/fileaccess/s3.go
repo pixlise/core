@@ -76,6 +76,25 @@ func (s3Access S3Access) ListObjects(bucket string, prefix string) ([]string, er
 	return result, nil
 }
 
+func (s3Access S3Access) ObjectExists(bucket string, path string) (bool, error) {
+	_, err := s3Access.s3Api.HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(path),
+	})
+
+	if err == nil {
+		return true, nil
+	}
+
+	if aerr, ok := err.(awserr.Error); ok {
+		if aerr.Code() == "NotFound" {
+			return false, nil
+		}
+	}
+
+	return false, err
+}
+
 func (s3Access S3Access) ReadObject(bucket string, path string) ([]byte, error) {
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
