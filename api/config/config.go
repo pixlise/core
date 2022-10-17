@@ -33,47 +33,62 @@ import (
 
 // APIConfig combines env vars and config JSON values
 type APIConfig struct {
-	AWSBucketRegion         string
-	AWSCloudwatchRegion     string
-	EnvironmentName         string
-	LogLevel                logger.LogLevel
-	KubernetesLocation      string
-	QuantExecutor           string
-	NodeCountOverride       int32
-	CoresPerNode            int32
-	MaxQuantNodes           int32
-	QuantNamespace          string
-	HotQuantNamespace       string
-	ElasticURL              string
-	ElasticUser             string
-	ElasticPassword         string
-	SentryEndpoint          string
+	AWSBucketRegion     string
+	AWSCloudwatchRegion string
+	AdminEmails         []string
+
 	Auth0Domain             string
 	Auth0ManagementClientID string
 	Auth0ManagementSecret   string
-	AdminEmails             []string
-	DataSourceSNSTopic      string
-	QuantDestinationPackage string
-	QuantObjectType         string
-	PosterImage             string
-	KubeConfig              string
-	PiquantDockerImage      string
 
-	// Our buckets
-	DatasetsBucket     string
-	UsersBucket        string
-	ConfigBucket       string
-	ManualUploadBucket string
-	PiquantJobsBucket  string
+	BuildsBucket string // Piquant download bucket
+	ConfigBucket string
 
-	// Old buckets
-	BuildsBucket              string // Piquant download bucket
+	CoresPerNode int32
+
+	DataSourceSNSTopic string
+
+	DatasetsBucket string
+
 	DatasourceArtifactsBucket string // Goes away
+
+	ElasticPassword string
+	ElasticURL      string
+	ElasticUser     string
+
+	EnvironmentName string
+
+	HotQuantNamespace string // Used for faster PIQUANT runs, eg executing a spectral fit
+
+	KubernetesLocation string // "internal" vs "external"
+
+	LogLevel           logger.LogLevel // Can be changed at runtime, but if API restarts, it goes back to configured value
+	ManualUploadBucket string
 
 	// Mongo Connection
 	MongoEndpoint string
 	MongoUsername string
 	MongoSecret   string
+
+	PiquantDockerImage string // PIQUANT docker image to use to run a job
+	PiquantJobsBucket  string // PIQUANT job scratch drive
+
+	PosterImage             string
+	QuantDestinationPackage string
+
+	QuantExecutor  string
+	QuantNamespace string // Used for running large multi-node quants
+
+	QuantObjectType string
+
+	SentryEndpoint string
+
+	UsersBucket string
+
+	// Vars not set by environment
+	NodeCountOverride int32
+	MaxQuantNodes     int32
+	KubeConfig        string // Env sets this via command line parameter
 }
 
 func homeDir() string {

@@ -31,7 +31,6 @@ import (
 	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/api"
 	dataExpression "github.com/pixlise/core/v2/core/expression"
-	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/quantModel"
 	"github.com/pixlise/core/v2/core/roiModel"
@@ -139,6 +138,7 @@ func savedViewStateGet(params handlers.ApiHandlerParams) (interface{}, error) {
 func savedViewStatePut(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	viewStateID := params.PathParams[idIdentifier]
+	forceFlag := params.PathParams["force"]
 
 	_, isSharedReq := utils.StripSharedItemIDPrefix(viewStateID)
 	if isSharedReq {
@@ -165,6 +165,22 @@ func savedViewStatePut(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
+	// At this point, if the force flag is not true, we check if it already exists and send back an error if it does
+	if forceFlag != "true" {
+		existingSaved := workspace{
+			ViewState: defaultWholeViewState(),
+		}
+
+		err = params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, s3Path, &existingSaved, false)
+		if err == nil {
+			// NO error, so this file exists. Here we return a 409 to UI so it knows this would be an overwrite
+			return nil, api.StatusError{
+				Code: http.StatusConflict,
+				Err:  fmt.Errorf("%v already exists", viewStateID),
+			}
+		}
+	}
+
 	// Quant storage changed a while back, we have a fallback though
 	applyQuantByROIFallback(&stateToSave.ViewState.Quantification)
 
@@ -183,112 +199,6 @@ func savedViewStatePut(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	return nil, nil
-}
-
-func savedViewStateRenamePost(params handlers.ApiHandlerParams) (interface{}, error) {
-	datasetID := params.PathParams[datasetIdentifier]
-	existingViewStateID := params.PathParams[idIdentifier]
-
-	// Body should contain new name
-	body, err := ioutil.ReadAll(params.Request.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	newViewStateID := string(body)
-
-	// NOTE: we convert the new ID to a saveable one here
-	newViewStateID = fileaccess.MakeValidObjectName(newViewStateID)
-
-	// Ensure new name is valid and different
-	if len(newViewStateID) <= 0 || newViewStateID == existingViewStateID {
-		return nil, api.MakeBadRequestError(errors.New("New workspace name must be different to previous name"))
-	}
-
-	// Check that it exists first!
-	existingS3Path := filepaths.GetWorkspacePath(params.UserInfo.UserID, datasetID, existingViewStateID)
-
-	state := workspace{
-		ViewState: defaultWholeViewState(),
-	}
-	err = params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, existingS3Path, &state, false)
-	if err != nil {
-		return nil, api.MakeNotFoundError(existingViewStateID)
-	}
-
-	applyQuantByROIFallback(&state.ViewState.Quantification)
-
-	// Work out the path to save to
-	newS3Path := filepaths.GetWorkspacePath(params.UserInfo.UserID, datasetID, newViewStateID)
-
-	// Now the tedious part - look through all collections, if we find this item in there, rename in the collection
-	listing, err := getViewStateCollectionListing(params.Svcs, datasetID, params.UserInfo.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Run through each collection, retrieve and complain if we find the view state in it
-	for _, listingItem := range listing {
-		collectionS3Path := filepaths.GetCollectionPath(params.UserInfo.UserID, datasetID, listingItem.Name)
-
-		err = renameWorkspaceIfExistsInCollection(params.Svcs, listingItem.Name, collectionS3Path, existingViewStateID, newViewStateID)
-		// Here we can only log! If we fail here, we're part-way through a "transaction" type situation... even if we fail to update
-		// one collection, we'd prefer the rest to be updated and the operation to go through
-		params.Svcs.Log.Errorf("Failed to check collection \"%v\" in case it needs workspace \"%v\" renamed to: \"%v\". Error: %v", collectionS3Path, existingViewStateID, newViewStateID, err)
-	}
-
-	// Delete the old view state file
-	err = params.Svcs.FS.DeleteObject(params.Svcs.Config.UsersBucket, existingS3Path)
-	if err != nil {
-		// Here we can only log! If we fail here, we've renamed in collections but don't have a new copy yet!
-		params.Svcs.Log.Errorf("Failed to delete old named workspace: %v", existingS3Path)
-		//return nil, err
-	}
-
-	// Save under the new name
-	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, newS3Path, state)
-	if err != nil {
-		return nil, err
-	}
-
-	return nil, nil
-}
-
-func renameWorkspaceIfExistsInCollection(svcs *services.APIServices, collectionID string, collectionS3Path string, existingViewStateID string, newViewStateID string) error {
-	collectionContents := workspaceCollection{ViewStateIDs: []string{}}
-
-	err := svcs.FS.ReadJSON(svcs.Config.UsersBucket, collectionS3Path, &collectionContents, false)
-	if err != nil {
-		return api.MakeStatusError(http.StatusNotFound, fmt.Errorf("Failed to load collection: \"%v\"", collectionID))
-	}
-
-	// Run through all items in the file
-	collectionToSave := []string{}
-	renames := 0
-	for _, workspace := range collectionContents.ViewStateIDs {
-		toSave := workspace
-		if workspace == existingViewStateID {
-			renames++
-			toSave = newViewStateID
-		}
-
-		collectionToSave = append(collectionToSave, toSave)
-	}
-
-	if renames > 0 {
-		// we've renamed at least one workspace in this collection, so we have to save it
-		collectionContents.ViewStateIDs = collectionToSave
-
-		// Ensure we aren't writing view state info to the collection file, as this should ONLY be called for non-shared!
-		collectionContents.ViewStates = nil
-
-		err = svcs.FS.WriteJSON(svcs.Config.UsersBucket, collectionS3Path, collectionContents)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func savedViewStateDelete(params handlers.ApiHandlerParams) (interface{}, error) {

@@ -25,6 +25,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/pixlise/core/v2/core/awsutil"
 
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
@@ -911,4 +912,205 @@ func Example_datasetHandler_MCC_Stream_OK() {
 	// []
 	// []
 	// indiana-jones.txt not found
+}
+
+func Example_datasetCreatePost_BadFormat() {
+	var mockS3 awsutil.MockS3Client
+	defer mockS3.FinishTest()
+
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
+	apiRouter := MakeRouter(svcs)
+
+	req, _ := http.NewRequest("POST", "/dataset/abc-123", bytes.NewReader([]byte("data goes here")))
+	resp := executeRequest(req, apiRouter.Router)
+
+	fmt.Println(resp.Code)
+	fmt.Println(resp.Body)
+
+	req, _ = http.NewRequest("POST", "/dataset/abc-123?format=some-format", bytes.NewReader([]byte("data goes here")))
+	resp = executeRequest(req, apiRouter.Router)
+
+	fmt.Println(resp.Code)
+	fmt.Println(resp.Body)
+
+	// Output:
+	// 500
+	// Unexpected format: ""
+	//
+	// 500
+	// Unexpected format: "some-format"
+}
+
+func Example_datasetCreatePost_CantCheckExists() {
+	var mockS3 awsutil.MockS3Client
+	defer mockS3.FinishTest()
+
+	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
+		{Bucket: aws.String(artifactManualUploadBucket), Prefix: aws.String("UploadedDatasets/the-test dataset")},
+	}
+	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
+		nil,
+	}
+
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
+	apiRouter := MakeRouter(svcs)
+
+	body, err := ioutil.ReadFile("./test-data/just-image.zip")
+	fmt.Println(err)
+
+	req, _ := http.NewRequest("POST", "/dataset/the-test dataset?format=jpl-breadboard", bytes.NewReader(body))
+	resp := executeRequest(req, apiRouter.Router)
+
+	fmt.Println(resp.Code)
+	fmt.Println(resp.Body)
+
+	// Output:
+	// <nil>
+	// 500
+	// Failed to list existing files for dataset ID: the-test dataset. Error: Returning error from ListObjectsV2
+}
+
+func Example_datasetCreatePost_BadZip() {
+	var mockS3 awsutil.MockS3Client
+	defer mockS3.FinishTest()
+
+	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
+		{Bucket: aws.String(artifactManualUploadBucket), Prefix: aws.String("UploadedDatasets/the-test dataset")},
+	}
+	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
+		{
+			Contents: []*s3.Object{},
+		},
+	}
+
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
+	apiRouter := MakeRouter(svcs)
+
+	body, err := ioutil.ReadFile("./test-data/just-image.zip")
+	fmt.Println(err)
+
+	req, _ := http.NewRequest("POST", "/dataset/the-test dataset?format=jpl-breadboard", bytes.NewReader(body))
+	resp := executeRequest(req, apiRouter.Router)
+
+	fmt.Println(resp.Code)
+	fmt.Println(resp.Body)
+
+	// Output:
+	// <nil>
+	// 500
+	// Zip file must only contain MSA files. Found: Non-abraded sample.png
+}
+
+func Example_datasetCreatePost_Exists() {
+	var mockS3 awsutil.MockS3Client
+	defer mockS3.FinishTest()
+
+	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
+		{Bucket: aws.String(artifactManualUploadBucket), Prefix: aws.String("UploadedDatasets/the-test dataset")},
+	}
+	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
+		{
+			Contents: []*s3.Object{
+				{Key: aws.String("UploadedDatasets/the-test dataset/file.txt")},
+			},
+		},
+	}
+
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
+	apiRouter := MakeRouter(svcs)
+
+	body, err := ioutil.ReadFile("./test-data/just-image.zip")
+	fmt.Println(err)
+
+	req, _ := http.NewRequest("POST", "/dataset/the-test dataset?format=jpl-breadboard", bytes.NewReader(body))
+	resp := executeRequest(req, apiRouter.Router)
+
+	fmt.Println(resp.Code)
+	fmt.Println(resp.Body)
+
+	// Output:
+	// <nil>
+	// 500
+	// Dataset ID already exists: the-test dataset
+}
+
+func Example_datasetCreatePost_Success() {
+	var mockS3 awsutil.MockS3Client
+	defer mockS3.FinishTest()
+
+	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
+		{Bucket: aws.String(artifactManualUploadBucket), Prefix: aws.String("UploadedDatasets/the-test dataset")},
+	}
+	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
+		{
+			Contents: []*s3.Object{},
+		},
+	}
+
+	expectedSpectraBytes, err := ioutil.ReadFile("./test-data/expected-spectra.zip")
+	fmt.Printf("expected spectra read error: %v\n", err)
+
+	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
+		{
+			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("UploadedDatasets/the-test dataset/spectra.zip"), Body: bytes.NewReader(expectedSpectraBytes),
+		},
+		{
+			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("UploadedDatasets/the-test dataset/detector.json"), Body: bytes.NewReader([]byte(`{
+    "detector": "JPL Breadboard"
+}`)),
+		},
+		{
+			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("UploadedDatasets/the-test dataset/creator.json"), Body: bytes.NewReader([]byte(`{
+    "name": "Niko Bellic",
+    "user_id": "600f2a0806b6c70071d3d174",
+    "email": "niko@spicule.co.uk"
+}`)),
+		},
+	}
+
+	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
+		{},
+		{},
+		{},
+	}
+
+	var idGen MockIDGenerator
+	idGen.ids = []string{"uuu333"}
+
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+
+	mockSNS := awsutil.MockSNS{
+		ExpInput: []sns.PublishInput{
+			{
+				Message:  aws.String("{\"datasetID\":\"the-test dataset\",\"logID\":\"dataimport-uuu333\"}"),
+				TopicArn: aws.String("arn:1:2:3:4:5"),
+			},
+		},
+		QueuedOutput: []sns.PublishOutput{
+			{},
+		},
+	}
+	svcs.SNS = &mockSNS
+
+	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
+	apiRouter := MakeRouter(svcs)
+
+	body, err := ioutil.ReadFile("./test-data/just-msas.zip")
+	fmt.Printf("expected upload file read error: %v\n", err)
+
+	req, _ := http.NewRequest("POST", "/dataset/the-test dataset?format=jpl-breadboard", bytes.NewReader(body))
+	resp := executeRequest(req, apiRouter.Router)
+
+	fmt.Println(resp.Code)
+	fmt.Println(resp.Body)
+
+	// Output:
+	// expected spectra read error: <nil>
+	// expected upload file read error: <nil>
+	// 200
+	// "the-test dataset-dataimport-uuu333"
 }

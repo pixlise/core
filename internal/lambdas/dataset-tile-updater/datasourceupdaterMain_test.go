@@ -40,7 +40,7 @@ func Example_updateDatasetsBucketFail() {
 	// Listing returns an error
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(datasetBucket), Prefix: aws.String("Datasets/"),
+			Bucket: aws.String(datasetBucket), Prefix: aws.String("DatasetSummaries/"),
 		},
 	}
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{nil}
@@ -62,20 +62,16 @@ func Example_updateDatasetsErrorGettingFiles() {
 	// but the func should still upload a blank datasets.json
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(datasetBucket), Prefix: aws.String("Datasets/"),
+			Bucket: aws.String(datasetBucket), Prefix: aws.String("DatasetSummaries/"),
 		},
 	}
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
 		{
 			IsTruncated: aws.Bool(false),
 			Contents: []*s3.Object{
-				{Key: aws.String("Datasets/abc-123/summary.json")},
-				{Key: aws.String("Datasets/abc-123/node1.json")},
-				{Key: aws.String("Datasets/abc-123/params.json")},
-				{Key: aws.String("Datasets/abc-456/summary.json")},
-				{Key: aws.String("Datasets/abc-456/node1.json")},
-				{Key: aws.String("Datasets/abc-456/params.json")},
-				{Key: aws.String("Datasets/abc-456/output/combined.csv")},
+				{Key: aws.String("DatasetSummaries/abc-123.json")},
+				{Key: aws.String("DatasetSummaries/abc-456.json")},
+				{Key: aws.String("DatasetSummaries/abc-456-shouldnt-be-here.csv")},
 			},
 		},
 	}
@@ -85,10 +81,10 @@ func Example_updateDatasetsErrorGettingFiles() {
 			Bucket: aws.String(configBucket), Key: aws.String("PixliseConfig/bad-dataset-ids.json"),
 		},
 		{
-			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-123/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("DatasetSummaries/abc-123.json"),
 		},
 		{
-			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-456/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("DatasetSummaries/abc-456.json"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -127,20 +123,17 @@ func Example_updateDatasetsTwoSummaryCombineNilJson() {
 	//two jsons into datasets.json
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(datasetBucket), Prefix: aws.String("Datasets/"),
+			Bucket: aws.String(datasetBucket), Prefix: aws.String("DatasetSummaries/"),
 		},
 	}
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
 		{
 			IsTruncated: aws.Bool(false),
 			Contents: []*s3.Object{
-				{Key: aws.String("Datasets/abc-123/summary.json")},
-				{Key: aws.String("Datasets/abc-123/node1.json")},
-				{Key: aws.String("Datasets/abc-123/params.json")},
-				{Key: aws.String("Datasets/abc-456/summary.json")},
-				{Key: aws.String("Datasets/abc-789/summary.json")},
-				{Key: aws.String("Datasets/abc-456/params.json")},
-				{Key: aws.String("Datasets/abc-456/output/combined.csv")},
+				{Key: aws.String("DatasetSummaries/abc-123.json")},
+				{Key: aws.String("DatasetSummaries/abc-456.json")},
+				{Key: aws.String("DatasetSummaries/abc-789.json")},
+				{Key: aws.String("DatasetSummaries/abc-456-shouldnt-be-here.csv")},
 			},
 		},
 	}
@@ -150,13 +143,13 @@ func Example_updateDatasetsTwoSummaryCombineNilJson() {
 			Bucket: aws.String(configBucket), Key: aws.String("PixliseConfig/bad-dataset-ids.json"),
 		},
 		{
-			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-123/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("DatasetSummaries/abc-123.json"),
 		},
 		{
-			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-456/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("DatasetSummaries/abc-456.json"),
 		},
 		{
-			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-789/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("DatasetSummaries/abc-789.json"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -293,20 +286,17 @@ func Example_updateDatasetsTwoSummaryCombineBadJson() {
 	// requests 2nd and 3rd item and properly combines the two jsons into datasets.json
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(datasetBucket), Prefix: aws.String("Datasets/"),
+			Bucket: aws.String(datasetBucket), Prefix: aws.String("DatasetSummaries/"),
 		},
 	}
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
 		{
 			IsTruncated: aws.Bool(false),
 			Contents: []*s3.Object{
-				{Key: aws.String("Datasets/abc-123/summary.json")},
-				{Key: aws.String("Datasets/abc-123/node1.json")},
-				{Key: aws.String("Datasets/abc-123/params.json")},
-				{Key: aws.String("Datasets/abc-456/summary.json")},
-				{Key: aws.String("Datasets/abc-789/summary.json")},
-				{Key: aws.String("Datasets/abc-456/params.json")},
-				{Key: aws.String("Datasets/abc-456/output/combined.csv")},
+				{Key: aws.String("DatasetSummaries/abc-123.json")},
+				{Key: aws.String("DatasetSummaries/abc-456.json")},
+				{Key: aws.String("DatasetSummaries/abc-789.json")},
+				{Key: aws.String("DatasetSummaries/abc-456-shouldnt-be-here.csv")},
 			},
 		},
 	}
@@ -316,13 +306,13 @@ func Example_updateDatasetsTwoSummaryCombineBadJson() {
 			Bucket: aws.String(configBucket), Key: aws.String("PixliseConfig/bad-dataset-ids.json"),
 		},
 		{
-			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-123/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("DatasetSummaries/abc-123.json"),
 		},
 		{
-			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-456/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("DatasetSummaries/abc-456.json"),
 		},
 		{
-			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-789/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("DatasetSummaries/abc-789.json"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -457,24 +447,21 @@ func Example_updateDatasetsTwoSummaryCombineBadJsonWithBadIDMarked() {
 	defer mockS3.FinishTest()
 	l := &logger.NullLogger{}
 
-	// Listing returns 1 item that is invalid json, does not parse it, returnrs error, and moves on
+	// Listing returns 1 item that is invalid json, does not parse it, returns error, and moves on
 	// requests 2nd and 3rd item and properly combines the two jsons into datasets.json
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
 		{
-			Bucket: aws.String(datasetBucket), Prefix: aws.String("Datasets/"),
+			Bucket: aws.String(datasetBucket), Prefix: aws.String("DatasetSummaries/"),
 		},
 	}
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
 		{
 			IsTruncated: aws.Bool(false),
 			Contents: []*s3.Object{
-				{Key: aws.String("Datasets/abc-123/summary.json")},
-				{Key: aws.String("Datasets/abc-123/node1.json")},
-				{Key: aws.String("Datasets/abc-123/params.json")},
-				{Key: aws.String("Datasets/abc-456/summary.json")},
-				{Key: aws.String("Datasets/abc-789/summary.json")},
-				{Key: aws.String("Datasets/abc-456/params.json")},
-				{Key: aws.String("Datasets/abc-456/output/combined.csv")},
+				{Key: aws.String("DatasetSummaries/abc-123.json")},
+				{Key: aws.String("DatasetSummaries/abc-456.json")},
+				{Key: aws.String("DatasetSummaries/abc-789.json")},
+				{Key: aws.String("DatasetSummaries/abc-456-shouldnt-be-here.csv")},
 			},
 		},
 	}
@@ -484,13 +471,13 @@ func Example_updateDatasetsTwoSummaryCombineBadJsonWithBadIDMarked() {
 			Bucket: aws.String(configBucket), Key: aws.String("PixliseConfig/bad-dataset-ids.json"),
 		},
 		{
-			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-123/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("DatasetSummaries/abc-123.json"),
 		},
 		{
-			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-456/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("DatasetSummaries/abc-456.json"),
 		},
 		{
-			Bucket: aws.String(datasetBucket), Key: aws.String("Datasets/abc-789/summary.json"),
+			Bucket: aws.String(datasetBucket), Key: aws.String("DatasetSummaries/abc-789.json"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{

@@ -31,6 +31,8 @@ import "strings"
 type FileAccess interface {
 	ListObjects(bucket string, prefix string) ([]string, error)
 
+	ObjectExists(rootPath string, path string) (bool, error)
+
 	ReadObject(bucket string, path string) ([]byte, error)
 	WriteObject(bucket string, path string, data []byte) error
 

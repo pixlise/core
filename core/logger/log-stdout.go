@@ -24,13 +24,11 @@ import (
 
 // StdOutLogger - For mocking out in tests
 type StdOutLogger struct {
-	logs     []string
 	logLevel LogLevel
 }
 
 func (l *StdOutLogger) Printf(level LogLevel, format string, a ...interface{}) {
 	txt := logLevelPrefix[level] + ": " + fmt.Sprintf(format, a...)
-	l.logs = append(l.logs, txt)
 	log.Println(txt)
 }
 func (l *StdOutLogger) Debugf(format string, a ...interface{}) {

@@ -20,6 +20,7 @@ package endpoints
 import (
 	"archive/zip"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -32,9 +33,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sns"
-
 	"github.com/pixlise/core/v2/api/handlers"
 	"github.com/pixlise/core/v2/api/permission"
 	apiRouter "github.com/pixlise/core/v2/api/router"
@@ -43,9 +41,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/core/api"
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/utils"
+	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
+	"github.com/pixlise/core/v2/data-import/importer"
 )
 
 const datasetURLEnd = "dataset"
@@ -81,6 +81,9 @@ var allowedQueryNames = map[string]bool{
 func registerDatasetHandler(router *apiRouter.ApiObjectRouter) {
 	// Listing datasets (tiles screen)
 	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), datasetListing)
+
+	// Creating datasets
+	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteDataset), datasetCreatePost)
 
 	// Regeneration/manual editing of datasets
 	// Setting/getting meta fields
@@ -366,27 +369,6 @@ func datasetExportConcat(params handlers.ApiHandlerGenericParams) error {
 
 }
 
-func datasetReprocess(params handlers.ApiHandlerParams) (interface{}, error) {
-	datasetID := params.PathParams[datasetIdentifier]
-
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-
-	svc := sns.New(sess)
-	result, err := svc.Publish(&sns.PublishInput{
-		Message:  aws.String(datasetID),
-		TopicArn: aws.String(params.Svcs.Config.DataSourceSNSTopic),
-	})
-
-	if err != nil {
-		return nil, api.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to publish SNS topic for dataset regeneration: %v", err))
-	}
-
-	params.Svcs.Log.Infof("Published SNS topic: %v", result)
-	return nil, nil
-}
-
 func downloadDatasetFromS3(params handlers.ApiHandlerGenericParams, rtt string, concat bool) error {
 	filetype := ""
 	folder := rtt
@@ -640,4 +622,110 @@ func concatDatasetFiles(basePath string) (string, error) {
 	}
 
 	return dest, nil
+}
+
+// Creation of a dataset - this takes in a POST body that it expects to be a zip file. Query parameter format describes what
+// to interpret the POST data to be.
+// NOTE: In future we will have to support multiple formats, but for now we only support breadboard MSA files zipped up
+// with format set to jpl-breadboard
+func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
+	datasetID := params.PathParams[datasetIdentifier]
+	format := params.PathParams["format"]
+
+	params.Svcs.Log.Debugf("Dataset create started for format: %v, id: %v", datasetID, format)
+
+	// Validate the dataset ID - can't contain funny characters because it ends up as an S3 path
+	datasetID = fileaccess.MakeValidObjectName(datasetID)
+
+	if format != "jpl-breadboard" {
+		return nil, fmt.Errorf("Unexpected format: \"%v\"", format)
+	}
+
+	s3PathStart := path.Join(filepaths.DatasetUploadRoot, datasetID)
+
+	// Check if this exists already...
+	existingPaths, err := params.Svcs.FS.ListObjects(params.Svcs.Config.ManualUploadBucket, s3PathStart)
+	if err != nil {
+		err = fmt.Errorf("Failed to list existing files for dataset ID: %v. Error: %v", datasetID, err)
+		params.Svcs.Log.Errorf("%v", err)
+		return nil, err
+	}
+
+	// If there are any existing paths, we stop here
+	if len(existingPaths) > 0 {
+		err = fmt.Errorf("Dataset ID already exists: %v", datasetID)
+		params.Svcs.Log.Errorf("%v", err)
+		return nil, err
+	}
+
+	// Read in body
+	body, err := ioutil.ReadAll(params.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check the contents is just a root dir of .MSA files and NOTHING ELSE
+	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		return nil, err
+	}
+
+	count := 0
+	for _, f := range zipReader.File {
+		// If the zip path starts with __MACOSX, ignore it, it's garbage that a mac laptop has included...
+		//if strings.HasPrefix(f.Name, "__MACOSX") {
+		//	continue
+		//}
+
+		if f.FileInfo().IsDir() {
+			return nil, fmt.Errorf("Zip file must not contain sub-directories. Found: %v", f.Name)
+		}
+
+		if !strings.HasSuffix(f.Name, ".msa") {
+			return nil, fmt.Errorf("Zip file must only contain MSA files. Found: %v", f.Name)
+		}
+		count++
+	}
+
+	// Make sure it has at least one msa!
+	if count <= 0 {
+		return nil, errors.New("Zip file did not contain any MSA files")
+	}
+
+	// Save the contents as a zip file in the uploads area
+	savePath := path.Join(s3PathStart, "spectra.zip")
+	err = params.Svcs.FS.WriteObject(params.Svcs.Config.ManualUploadBucket, savePath, body)
+	if err != nil {
+		return nil, err
+	}
+	params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", params.Svcs.Config.ManualUploadBucket, savePath)
+
+	// Now save detector info
+	savePath = path.Join(s3PathStart, "detector.json")
+	detectorFile := datasetArchive.DetectorChoice{
+		Detector: "JPL Breadboard",
+	}
+	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.ManualUploadBucket, savePath, detectorFile)
+	if err != nil {
+		return nil, err
+	}
+	params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", params.Svcs.Config.ManualUploadBucket, savePath)
+
+	// Now save creator info
+	savePath = path.Join(s3PathStart, "creator.json")
+	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.ManualUploadBucket, savePath, params.UserInfo)
+	if err != nil {
+		return nil, err
+	}
+	params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", params.Svcs.Config.ManualUploadBucket, savePath)
+
+	// Now we trigger a dataset conversion
+	result, logId, err := importer.TriggerDatasetReprocessViaSNS(params.Svcs.SNS, params.Svcs.IDGen, datasetID, params.Svcs.Config.DataSourceSNSTopic)
+	if err != nil {
+		return nil, err
+	}
+
+	params.Svcs.Log.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Log ID: %v", result, logId)
+
+	return logId, nil
 }

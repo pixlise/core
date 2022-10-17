@@ -730,9 +730,10 @@ func Example_viewStateHandler_GetSavedShared() {
 	// }
 }
 
-func Example_viewStateHandler_PutSaved() {
+func Example_viewStateHandler_PutSaved_Force() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
+
 	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
 		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/viewstate123.json"), Body: bytes.NewReader([]byte(`{
@@ -807,7 +808,7 @@ func Example_viewStateHandler_PutSaved() {
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
-	req, _ := http.NewRequest("PUT", "/view-state/saved/TheDataSetID/viewstate123", bytes.NewReader([]byte(`{
+	req, _ := http.NewRequest("PUT", "/view-state/saved/TheDataSetID/viewstate123?force=true", bytes.NewReader([]byte(`{
     "viewState": {
         "analysisLayout": {
             "bottomWidgetSelectors": []
@@ -848,59 +849,21 @@ func Example_viewStateHandler_PutSaved() {
 	//
 }
 
-func Example_viewStateHandler_RenamingWorkspaces() {
+func Example_viewStateHandler_PutSaved_OverwriteFail() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	collectionRoot := "UserContent/600f2a0806b6c70071d3d174/TheDataSetID/ViewState/WorkspaceCollections"
-
+	// Checking if it exists
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		// Test 3
 		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/viewstate123.json"),
 		},
-
-		// Test 4
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/viewstate555.json"),
-		},
-
-		// Test 5: the view state
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/viewstate999.json"),
-		},
-		// And the collections
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(collectionRoot + "/a collection.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(collectionRoot + "/Another-Collection.json"),
-		},
 	}
-
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		// Test 3: no view state file
-		nil,
-		// Test 4: exists
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"viewState": {"spectrum": {"panX": 993}}}`))),
-		},
-		// Test 5: exists
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"viewState": {"spectrum": {"panX": 993}}}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"name": "a collection", "viewStateIDs": ["some view state", "viewstate999", "third one"]}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"name": "Another-Collection", "viewStateIDs": ["also not the one"]}`))),
-		},
-	}
-
-	savedRenamedViewState := `{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
     "viewState": {
         "analysisLayout": {
-            "topWidgetSelectors": [],
             "bottomWidgetSelectors": []
         },
         "spectrum": {
@@ -931,140 +894,71 @@ func Example_viewStateHandler_RenamingWorkspaces() {
             "savedAnnotations": []
         },
         "rois": {
-            "roiColours": {},
-            "roiShapes": {}
+            "roiColours": {
+                "roi22": "rgba(128,0,255,0.5)",
+                "roi99": "rgba(255,255,0,1)"
+            }
         },
         "quantification": {
-            "appliedQuantID": ""
+            "appliedQuantID": "quant111"
         },
         "selection": {
-            "roiID": "",
-            "roiName": "",
-            "locIdxs": []
-        }
-    },
+            "roiID": "roi12345",
+            "roiName": "The best region",
+            "locIdxs": [
+                3,
+                5,
+                7
+            ]
+        },
     "name": "",
     "description": ""
-}`
-
-	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
-		// Test 4: saving new workspace
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/new-ID_here.json"), Body: bytes.NewReader([]byte(savedRenamedViewState)),
-		},
-		// Test 5: upload collection first
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "WorkspaceCollections/a collection.json"), Body: bytes.NewReader([]byte(`{
-    "viewStateIDs": [
-        "some view state",
-        "new-ID_here",
-        "third one"
-    ],
-    "name": "a collection",
-    "description": "",
-    "viewStates": null
-}`)),
-		},
-		// saving new workspace
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/new-ID_here.json"), Body: bytes.NewReader([]byte(savedRenamedViewState)),
-		},
-	}
-	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
-		{},
-		{},
-		{},
-	}
-
-	mockS3.ExpDeleteObjectInput = []s3.DeleteObjectInput{
-		// Test 4
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/viewstate555.json"),
-		},
-		// Test 5
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/viewstate999.json"),
-		},
-	}
-	mockS3.QueuedDeleteObjectOutput = []*s3.DeleteObjectOutput{
-		{},
-		{},
-	}
-
-	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(collectionRoot),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(collectionRoot),
-		},
-	}
-	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
-		// Test 4: no collections
-		{
-			Contents: []*s3.Object{},
-		},
-		// Test 5: 2 collections
-		{
-			Contents: []*s3.Object{
-				{Key: aws.String(collectionRoot + "/a collection.json"), LastModified: aws.Time(time.Unix(1634731910, 0))},
-				{Key: aws.String(collectionRoot + "/Another-Collection.json"), LastModified: aws.Time(time.Unix(1634731916, 0))},
-			},
+}
+}`))),
 		},
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
-	// Same name, should fail
-	req, _ := http.NewRequest("POST", "/view-state/saved/TheDataSetID/viewstate123/rename", bytes.NewReader([]byte("viewstate123")))
+	req, _ := http.NewRequest("PUT", "/view-state/saved/TheDataSetID/viewstate123", bytes.NewReader([]byte(`{
+    "viewState": {
+        "analysisLayout": {
+            "bottomWidgetSelectors": []
+        },
+        "rois": {
+            "roiColours": {
+                "roi22": "rgba(128,0,255,0.5)",
+                "roi99": "rgba(255,255,0,1)"
+            }
+        },
+        "quantification": {
+            "appliedQuantID": "quant111",
+            "quantificationByROI": {
+                "roi22": "quant222",
+                "roi88": "quant333"
+            }
+        },
+        "selection": {
+            "roiID": "roi12345",
+            "roiName": "The best region",
+            "locIdxs": [
+                3,
+                5,
+                7
+            ]
+        }
+    },
+    "name": "viewstate123 INCORRECT VIEW STATE SHOULD BE REPLACED!"
+}`)))
 	resp := executeRequest(req, apiRouter.Router)
 
 	fmt.Println(resp.Code)
 	fmt.Println(resp.Body)
 
-	// Empty name, should fail
-	req, _ = http.NewRequest("POST", "/view-state/saved/TheDataSetID/viewstate456/rename", bytes.NewReader([]byte("")))
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Doesn't exist, should fail
-	req, _ = http.NewRequest("POST", "/view-state/saved/TheDataSetID/viewstate123/rename", bytes.NewReader([]byte("new-ID/here!")))
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Exists, no collections, success
-	req, _ = http.NewRequest("POST", "/view-state/saved/TheDataSetID/viewstate555/rename", bytes.NewReader([]byte("new-ID/here!")))
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Exists, renamed in 1 collection, success
-	req, _ = http.NewRequest("POST", "/view-state/saved/TheDataSetID/viewstate999/rename", bytes.NewReader([]byte("new-ID/here!")))
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
 	// Output:
-	// 400
-	// New workspace name must be different to previous name
-	//
-	// 400
-	// New workspace name must be different to previous name
-	//
-	// 404
-	// viewstate123 not found
-	//
-	// 200
-	//
-	// 200
-	//
+	// 409
+	// viewstate123 already exists
 }
 
 func Example_viewStateHandler_DeleteSaved() {

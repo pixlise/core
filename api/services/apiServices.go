@@ -35,6 +35,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/pixlise/core/v2/api/config"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/logger"
@@ -108,6 +109,8 @@ type APIServices struct {
 
 	// Anything talking to S3 should use this
 	S3 s3iface.S3API
+
+	SNS awsutil.SNSInterface
 
 	// Anything accessing files should use this
 	FS fileaccess.FileAccess
@@ -197,12 +200,20 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 	if err != nil {
 		ourLogger.Errorf("Failed to bootstrap secrets manager")
 	}
+
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	snsSvc := sns.New(sess)
+
 	return APIServices{
 		Config:         cfg,
 		Log:            ourLogger,
 		AWSSessionCW:   sessCW,
 		FS:             fs,
 		S3:             s3svc,
+		SNS:            awsutil.RealSNS{SNS: snsSvc},
 		ES:             es,
 		JWTReader:      jwtReader,
 		IDGen:          idGen,

@@ -123,6 +123,7 @@ func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, sign
 		KubernetesLocation:  "external",
 		QuantExecutor:       "null",
 		NodeCountOverride:   0,
+		DataSourceSNSTopic:  "arn:1:2:3:4:5",
 	}
 
 	fs := fileaccess.MakeS3Access(mockS3)
@@ -141,6 +142,7 @@ func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, sign
 		Log:           &logger.NullLogger{},
 		AWSSessionCW:  nil,
 		S3:            mockS3,
+		SNS:           &awsutil.MockSNS{},
 		JWTReader:     MockJWTReader{},
 		IDGen:         idGen,
 		Signer:        signer,

@@ -27,10 +27,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/pixlise/core/v2/core/api"
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
 	"github.com/pixlise/core/v2/core/utils"
+	dataConverter "github.com/pixlise/core/v2/data-import/data-converter"
+	"github.com/pixlise/core/v2/data-import/importer"
 
 	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/api/handlers"
@@ -50,17 +51,24 @@ func isValidCustomImageType(imgType string) bool {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// Meta data get/set
+// Dataset regenerate request
 
-type datasetCustomMeta struct {
-	Title string `json:"title"`
+func datasetReprocess(params handlers.ApiHandlerParams) (interface{}, error) {
+	datasetID := params.PathParams[datasetIdentifier]
+	result, logId, err := importer.TriggerDatasetReprocessViaSNS(params.Svcs.SNS, params.Svcs.IDGen, datasetID, params.Svcs.Config.DataSourceSNSTopic)
+
+	params.Svcs.Log.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Log ID: %v", result, logId)
+	return logId, err
 }
+
+////////////////////////////////////////////////////////////////////////
+// Meta data get/set
 
 func datasetCustomMetaGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	s3Path := filepaths.GetCustomMetaPath(datasetID)
 
-	meta := datasetCustomMeta{}
+	meta := dataConverter.DatasetCustomMeta{}
 	err := params.Svcs.FS.ReadJSON(params.Svcs.Config.ManualUploadBucket, s3Path, &meta, false)
 
 	if err != nil {
@@ -68,10 +76,6 @@ func datasetCustomMetaGet(params handlers.ApiHandlerParams) (interface{}, error)
 	}
 
 	return meta, nil
-}
-
-type CustomResponse struct {
-	LogID string
 }
 
 func datasetCustomMetaPut(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -84,7 +88,7 @@ func datasetCustomMetaPut(params handlers.ApiHandlerParams) (interface{}, error)
 		return nil, err
 	}
 
-	var req datasetCustomMeta
+	var req dataConverter.DatasetCustomMeta
 	err = json.Unmarshal(body, &req)
 	if err != nil {
 		return nil, api.MakeBadRequestError(err)
@@ -96,21 +100,7 @@ func datasetCustomMetaPut(params handlers.ApiHandlerParams) (interface{}, error)
 		return nil, err
 	}
 
-	// Check cloudwatch is inited...
-	if params.Svcs.AWSSessionCW != nil {
-		svc := sns.New(params.Svcs.AWSSessionCW)
-		topicArn := params.Svcs.Config.DataSourceSNSTopic
-		jobId := fmt.Sprintf("dataimport-%s", utils.RandStringBytesMaskImpr(16))
-		msgPtr := fmt.Sprintf(`{"datasetaddons":{"dir": "%v", "log": "%v"}}`, s3Path, jobId)
-		_, err = svc.Publish(&sns.PublishInput{
-			Message:  &msgPtr,
-			TopicArn: &topicArn,
-		})
-		resp := CustomResponse{LogID: jobId}
-		return resp, err
-	} else {
-		return nil, errors.New("AWS Session Not Configured.")
-	}
+	return nil, nil
 }
 
 ////////////////////////////////////////////////////////////////////////

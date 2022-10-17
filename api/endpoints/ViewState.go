@@ -54,7 +54,7 @@ func registerViewStateHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWritePIXLISESettings), savedViewStatePut)
 	// Renaming a view state
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier, idIdentifier)+"/references", apiRouter.MakeMethodPermission("GET", permission.PermReadPIXLISESettings), savedViewStateGetReferencedIDs)
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier, idIdentifier)+"/rename", apiRouter.MakeMethodPermission("POST", permission.PermWritePIXLISESettings), savedViewStateRenamePost)
+	//router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier, idIdentifier)+"/rename", apiRouter.MakeMethodPermission("POST", permission.PermWritePIXLISESettings), savedViewStateRenamePost)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("DELETE", permission.PermWritePIXLISESettings), savedViewStateDelete)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadPIXLISESettings), savedViewStateList)
 

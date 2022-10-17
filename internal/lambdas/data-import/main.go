@@ -24,72 +24,44 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/data-import/importer"
 )
 
-type DatasourceEvent struct {
-	Inpath         string `json:"inpath"`
-	Rangespath     string `json:"rangespath"`
-	Outpath        string `json:"outpath"`
-	DatasetID      string `json:"datasetid"`
-	DetectorConfig string `json:"detectorconfig"`
-}
-
-func getConfigBucket() string {
-	return os.Getenv("CONFIG_BUCKET")
-}
-
-func getManualBucket() string {
-	return os.Getenv("MANUAL_BUCKET")
-}
-
-func getDatasourceBucket() string {
-	return os.Getenv("DATASETS_BUCKET")
-}
-
-func getInputBucket() string {
-	return os.Getenv("INPUT_BUCKET")
-}
-
-//{
-//  "inpath": "pixl.zip",
-//  "rangespath": "configs/StandardPseudoIntensities.csv",
-//  "outpath": "/tmp/",
-//  "datasetid": "pixl_data_drive_dir_structure",
-//  "detectorconfig": "PIXL"
-//}
-///
-
-var tmpprefix = ""
-var localUnzipPath = ""
-var localInputPath = ""
-var localArchivePath = ""
-var localRangesCSVPath = ""
-
-type StructKeys struct {
-	Dir string
-	Log string
-}
-type APISnsMessage struct {
-	Key StructKeys `json:"datasetaddons"`
-}
-
 func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
-	setupLocalPaths()
+	configBucket := os.Getenv("CONFIG_BUCKET")
+	datasetBucket := os.Getenv("DATASETS_BUCKET")
+	manualBucket := os.Getenv("MANUAL_BUCKET")
+	envName := os.Getenv("ENVIRONMENT_NAME")
 
-	fmt.Printf("Unzip Path: %v \n", localUnzipPath)
-	fmt.Printf("Input Path: %v \n", localInputPath)
-	fmt.Printf("Archive Path: %v \n", localArchivePath)
-	fmt.Printf("Ranges Path: %v \n", localRangesCSVPath)
+	sess, err := awsutil.GetSession()
+	if err != nil {
+		return "", err
+	}
 
-	defer os.RemoveAll(tmpprefix)
+	svc, err := awsutil.GetS3(sess)
+	if err != nil {
+		return "", err
+	}
+
+	remoteFS := fileaccess.MakeS3Access(svc)
+
+	// Normally we'd only expect event.Records to be of length 1...
+	worked := 0
 	for _, record := range event.Records {
-		if record.EventSource == "aws:s3" {
-			return processS3(record)
-		} else if record.EventSource == "aws:sns" {
-			return processSns(record)
+		// Print this to stdout - not that useful, won't be in the log file, but lambda cloudwatch log should have it
+		// and it'll be useful for initial debugging
+		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
+
+		err := importer.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, nil, remoteFS)
+		if err != nil {
+			return "", err
+		} else {
+			worked++
 		}
 	}
-	return fmt.Sprintf("----- DONE -----\n"), nil
+
+	return fmt.Sprintf("Imported %v records", worked), nil
 }
 
 func main() {
