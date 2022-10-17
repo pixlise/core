@@ -89,6 +89,14 @@ func runTest(fs FileAccess, bucket string) {
 	listing, err = fs.ListObjects(bucket, "the-files/subdir")
 	fmt.Printf("Listing subdir: %v, %v\n", err, listing)
 
+	// Listing with a prefix
+	listing, err = fs.ListObjects(bucket, "the-files/subdir/ug")
+	fmt.Printf("Listing with prefix: %v, %v\n", err, listing)
+
+	// Listing with bad path
+	listing, err = fs.ListObjects(bucket, "the-files/non-existant-path/ug")
+	fmt.Printf("Listing bad path: %v, %v\n", err, listing)
+
 	// Delete the copy
 	fmt.Printf("Delete copy: %v\n", fs.DeleteObject(bucket, "the-files/subdir/copied.json"))
 
@@ -136,6 +144,8 @@ func Example_localFileSystem() {
 	// Not a "not found" error: true
 	// Listing: <nil>, [the-files/data.bin the-files/pretty.json the-files/subdir/copied.json the-files/subdir/ugly.json]
 	// Listing subdir: <nil>, [the-files/subdir/copied.json the-files/subdir/ugly.json]
+	// Listing with prefix: <nil>, [the-files/subdir/ugly.json]
+	// Listing bad path: <nil>, []
 	// Delete copy: <nil>
 	// Delete bin: <nil>
 	// Listing2: <nil>, [the-files/pretty.json the-files/subdir/ugly.json]
@@ -201,6 +211,8 @@ func Example_s3() {
 	// Not a "not found" error: true
 	// Listing: <nil>, [the-files/data.bin the-files/pretty.json the-files/subdir/copied.json the-files/subdir/ugly.json]
 	// Listing subdir: <nil>, [the-files/subdir/copied.json the-files/subdir/ugly.json]
+	// Listing with prefix: <nil>, [the-files/subdir/ugly.json]
+	// Listing bad path: <nil>, []
 	// Delete copy: <nil>
 	// Delete bin: <nil>
 	// Listing2: <nil>, [the-files/pretty.json the-files/subdir/ugly.json]

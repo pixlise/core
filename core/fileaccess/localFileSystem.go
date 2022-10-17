@@ -40,11 +40,48 @@ func (fs *FSAccess) ListObjects(rootPath string, prefix string) ([]string, error
 	rootOnly := path.Join(rootPath) // Using path.Join to make it match the fullPath cleans off ./ for example
 	fullPath := fs.filePath(rootPath, prefix)
 
-	err := filepath.Walk(fullPath, func(pathFound string, info os.FileInfo, err error) error {
+	// To have common behaviour on S3 vs local file system, here we check if the path exists
+	// because user may be querying for files with a given path prefix, so we my have to go up
+	// one directory and walk those files WITH a prefix check
+	filePrefix := ""
+	fullPathExists, err := fs.ObjectExists(fullPath, "")
+	if err != nil {
+		return result, err
+	}
+
+	if !fullPathExists {
+		// Try go up a directory
+		filePrefix = path.Base(fullPath)
+		fullPath = path.Dir(fullPath)
+
+		// Check this directory exists...
+		fullPathExists, err = fs.ObjectExists(fullPath, "")
+		if err != nil {
+			return result, err
+		}
+
+		// If this doesn't exist, no files found like this...
+		if !fullPathExists {
+			return result, nil
+		}
+	}
+
+	err = filepath.Walk(fullPath, func(pathFound string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if !info.IsDir() {
+
+			// If we are dealing with a file prefix check, do the check here, where we have
+			// the entire path to look at
+			if len(filePrefix) > 0 {
+				prefixToCheck := path.Join(fullPath, filePrefix)
+				if !strings.HasPrefix(pathFound, prefixToCheck) {
+					// Doesn't have the prefix, so we're not saving this one!
+					return nil
+				}
+			}
+
 			// Copy out the file names only. This may be too limiting and we may need to return
 			// some kind of structs but enough for now
 			// Also note pathFound contains the root directory, so we chop it off
@@ -52,6 +89,7 @@ func (fs *FSAccess) ListObjects(rootPath string, prefix string) ([]string, error
 			if strings.HasPrefix(toSave, rootOnly) {
 				toSave = toSave[len(rootOnly)+1:]
 			}
+
 			result = append(result, toSave)
 		}
 		return nil
