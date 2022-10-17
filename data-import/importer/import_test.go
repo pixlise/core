@@ -374,6 +374,7 @@ func Example_ImportForTrigger_Manual() {
 	// Logged "PMC 1261 has 4 MSA/spectrum entries": true
 	// Logged "WARNING: No main context image determined": true
 	// Logged "Diffraction db saved successfully": true
+	// Logged "Warning: No import.json found, defaults will be used": true
 	// {DatasetID:test1234 Group:JPL Breadboard DriveID:0 SiteID:0 TargetID:0 Site: Target: Title:test1234 SOL: RTT:0 SCLK:0 ContextImage: LocationCount:1261 DataFileSize:6786781 ContextImages:0 TIFFContextImages:0 NormalSpectra:2520 DwellSpectra:0 BulkSpectra:2 MaxSpectra:2 PseudoIntensities:0 DetectorConfig:Breadboard CreationUnixTimeSec:0}
 }
 
