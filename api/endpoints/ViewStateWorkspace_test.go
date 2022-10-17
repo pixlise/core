@@ -444,6 +444,9 @@ func Example_viewStateHandler_GetSaved() {
 	//         "singleAxisRGBU": {},
 	//         "rgbuImages": {},
 	//         "parallelograms": {},
+	//         "annotations": {
+	//             "savedAnnotations": []
+	//         },
 	//         "rois": {
 	//             "roiColours": {
 	//                 "roi22": "rgba(128,0,255,0.5)",
@@ -573,6 +576,9 @@ func Example_viewStateHandler_GetSaved_ROIQuantFallbackCheck() {
 	//         "singleAxisRGBU": {},
 	//         "rgbuImages": {},
 	//         "parallelograms": {},
+	//         "annotations": {
+	//             "savedAnnotations": []
+	//         },
 	//         "rois": {
 	//             "roiColours": {
 	//                 "roi22": "rgba(128,0,255,0.5)",
@@ -696,6 +702,9 @@ func Example_viewStateHandler_GetSavedShared() {
 	//         "singleAxisRGBU": {},
 	//         "rgbuImages": {},
 	//         "parallelograms": {},
+	//         "annotations": {
+	//             "savedAnnotations": []
+	//         },
 	//         "rois": {
 	//             "roiColours": {
 	//                 "roi22": "rgba(128,0,255,0.5)",
@@ -756,6 +765,9 @@ func Example_viewStateHandler_PutSaved() {
         "singleAxisRGBU": {},
         "rgbuImages": {},
         "parallelograms": {},
+        "annotations": {
+            "savedAnnotations": []
+        },
         "rois": {
             "roiColours": {
                 "roi22": "rgba(128,0,255,0.5)",
@@ -915,6 +927,9 @@ func Example_viewStateHandler_RenamingWorkspaces() {
         "singleAxisRGBU": {},
         "rgbuImages": {},
         "parallelograms": {},
+        "annotations": {
+            "savedAnnotations": []
+        },
         "rois": {
             "roiColours": {},
             "roiShapes": {}
@@ -1703,6 +1718,9 @@ func Example_viewStateHandler_ShareViewState() {
         "singleAxisRGBU": {},
         "rgbuImages": {},
         "parallelograms": {},
+        "annotations": {
+            "savedAnnotations": []
+        },
         "rois": {
             "roiColours": {},
             "roiShapes": {}
@@ -2147,6 +2165,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
         "singleAxisRGBU": {},
         "rgbuImages": {},
         "parallelograms": {},
+        "annotations": {
+            "savedAnnotations": []
+        },
         "rois": {
             "roiColours": {},
             "roiShapes": {}
