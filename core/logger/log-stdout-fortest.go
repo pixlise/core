@@ -20,30 +20,50 @@ package logger
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
-// StdOutLogger - For mocking out in tests
-type StdOutLogger struct {
+// StdOutLoggerForTest - For mocking out in tests, but saves logs so they are searchable
+type StdOutLoggerForTest struct {
+	logs     []string
 	logLevel LogLevel
 }
 
-func (l *StdOutLogger) Printf(level LogLevel, format string, a ...interface{}) {
+func (l *StdOutLoggerForTest) Printf(level LogLevel, format string, a ...interface{}) {
 	txt := logLevelPrefix[level] + ": " + fmt.Sprintf(format, a...)
+	l.logs = append(l.logs, txt)
 	log.Println(txt)
 }
-func (l *StdOutLogger) Debugf(format string, a ...interface{}) {
+func (l *StdOutLoggerForTest) Debugf(format string, a ...interface{}) {
 	l.Printf(LogDebug, format, a...)
 }
-func (l *StdOutLogger) Infof(format string, a ...interface{}) {
+func (l *StdOutLoggerForTest) Infof(format string, a ...interface{}) {
 	l.Printf(LogInfo, format, a...)
 }
-func (l *StdOutLogger) Errorf(format string, a ...interface{}) {
+func (l *StdOutLoggerForTest) Errorf(format string, a ...interface{}) {
 	l.Printf(LogError, format, a...)
 }
 
-func (l *StdOutLogger) SetLogLevel(level LogLevel) {
+func (l *StdOutLoggerForTest) SetLogLevel(level LogLevel) {
 	l.logLevel = level
 }
-func (l *StdOutLogger) GetLogLevel() LogLevel {
+func (l *StdOutLoggerForTest) GetLogLevel() LogLevel {
 	return l.logLevel
+}
+
+// Checking logs (for tests)
+func (l *StdOutLoggerForTest) LastLogLine() string {
+	if len(l.logs) <= 0 {
+		return ""
+	}
+	return l.logs[len(l.logs)-1]
+}
+
+func (l *StdOutLoggerForTest) LogContains(txt string) bool {
+	for _, line := range l.logs {
+		if strings.Contains(line, txt) {
+			return true
+		}
+	}
+	return false
 }
