@@ -183,6 +183,11 @@ func getViewStateFiles(state *wholeViewState, fs fileaccess.FileAccess, bucket s
 			if err != nil && !fs.IsNotFoundError(err) {
 				return err
 			}
+		} else if dataType == "annotations" {
+			err = fs.ReadJSON(bucket, path, &state.Annotations, false)
+			if err != nil && !fs.IsNotFoundError(err) {
+				return err
+			}
 		} else if len(whichInstance) > 0 {
 			// Check the ones where we DO require an instance name
 			if dataType == "contextImage" {
@@ -317,9 +322,10 @@ func viewStatePut(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	// For every widget, we have a separate save method
 	// First try saving the ones that are singular
-
 	if len(whichInstance) <= 0 {
 		switch dataType {
+		case "annotations":
+			return saveAnnotationState(params, body)
 		case "roi":
 			return saveROIState(params, body)
 		case "quantification":
@@ -587,6 +593,18 @@ func saveParallelogramState(params handlers.ApiHandlerParams, body []byte, which
 	return nil, writeViewStateFile(params, req)
 }
 
+func saveAnnotationState(params handlers.ApiHandlerParams, body []byte) (interface{}, error) {
+	// Read in body
+	var req annotationDisplayState
+	err := json.Unmarshal(body, &req)
+	if err != nil {
+		return nil, api.MakeBadRequestError(err)
+	}
+
+	// Replace existing
+	return nil, writeViewStateFile(params, req)
+}
+
 func saveROIState(params handlers.ApiHandlerParams, body []byte) (interface{}, error) {
 	// Read in body
 	var req roiDisplayState
@@ -628,6 +646,12 @@ func saveAllState(params handlers.ApiHandlerParams, body []byte) (interface{}, e
 	datasetID := params.PathParams[datasetIdentifier]
 
 	// Single saves
+	params.PathParams[idIdentifier] = "annotations"
+	err = writeViewStateFile(params, state.Annotations)
+	if err != nil {
+		return nil, err
+	}
+
 	params.PathParams[idIdentifier] = "roi"
 	err = writeViewStateFile(params, state.ROIs)
 	if err != nil {

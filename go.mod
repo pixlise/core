@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-secretsmanager-caching-go v1.1.0
 	github.com/getsentry/sentry-go v0.13.0
 	github.com/golang/protobuf v1.5.2
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/olivere/elastic/v7 v7.0.32

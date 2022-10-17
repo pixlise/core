@@ -444,6 +444,9 @@ func Example_viewStateHandler_GetSaved() {
 	//         "singleAxisRGBU": {},
 	//         "rgbuImages": {},
 	//         "parallelograms": {},
+	//         "annotations": {
+	//             "savedAnnotations": []
+	//         },
 	//         "rois": {
 	//             "roiColours": {
 	//                 "roi22": "rgba(128,0,255,0.5)",
@@ -573,6 +576,9 @@ func Example_viewStateHandler_GetSaved_ROIQuantFallbackCheck() {
 	//         "singleAxisRGBU": {},
 	//         "rgbuImages": {},
 	//         "parallelograms": {},
+	//         "annotations": {
+	//             "savedAnnotations": []
+	//         },
 	//         "rois": {
 	//             "roiColours": {
 	//                 "roi22": "rgba(128,0,255,0.5)",
@@ -696,6 +702,9 @@ func Example_viewStateHandler_GetSavedShared() {
 	//         "singleAxisRGBU": {},
 	//         "rgbuImages": {},
 	//         "parallelograms": {},
+	//         "annotations": {
+	//             "savedAnnotations": []
+	//         },
 	//         "rois": {
 	//             "roiColours": {
 	//                 "roi22": "rgba(128,0,255,0.5)",
@@ -757,6 +766,9 @@ func Example_viewStateHandler_PutSaved_Force() {
         "singleAxisRGBU": {},
         "rgbuImages": {},
         "parallelograms": {},
+        "annotations": {
+            "savedAnnotations": []
+        },
         "rois": {
             "roiColours": {
                 "roi22": "rgba(128,0,255,0.5)",
@@ -853,6 +865,33 @@ func Example_viewStateHandler_PutSaved_OverwriteFail() {
     "viewState": {
         "analysisLayout": {
             "bottomWidgetSelectors": []
+        },
+        "spectrum": {
+            "panX": 993,
+            "panY": 0,
+            "zoomX": 1,
+            "zoomY": 1,
+            "spectrumLines": [],
+            "logScale": true,
+            "xrflines": [],
+            "showXAsEnergy": false,
+            "energyCalibration": []
+        },
+        "contextImages": {},
+        "histograms": {},
+        "chordDiagrams": {},
+        "ternaryPlots": {},
+        "binaryPlots": {},
+        "tables": {},
+        "roiQuantTables": {},
+        "variograms": {},
+        "spectrums": {},
+        "rgbuPlots": {},
+        "singleAxisRGBU": {},
+        "rgbuImages": {},
+        "parallelograms": {},
+        "annotations": {
+            "savedAnnotations": []
         },
         "rois": {
             "roiColours": {
@@ -1573,6 +1612,9 @@ func Example_viewStateHandler_ShareViewState() {
         "singleAxisRGBU": {},
         "rgbuImages": {},
         "parallelograms": {},
+        "annotations": {
+            "savedAnnotations": []
+        },
         "rois": {
             "roiColours": {},
             "roiShapes": {}
@@ -2017,6 +2059,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
         "singleAxisRGBU": {},
         "rgbuImages": {},
         "parallelograms": {},
+        "annotations": {
+            "savedAnnotations": []
+        },
         "rois": {
             "roiColours": {},
             "roiShapes": {}
