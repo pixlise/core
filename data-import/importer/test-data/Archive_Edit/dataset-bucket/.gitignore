@@ -1,0 +1,5 @@
+# Nothing should be checked in here, but running tests copies stuff here
+
+Datasets/
+DatasetSummaries/
+Archive/

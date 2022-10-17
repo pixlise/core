@@ -31,6 +31,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pixlise/core/v2/api/filepaths"
+	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
 	"github.com/pixlise/core/v2/core/utils"
 	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
@@ -359,7 +360,7 @@ func copyImagesToOutput(contextImgDir string, outPath string, data dataConvertMo
 			} else {
 				jobLog.Infof("  Copy img PMC[%v] %v -> %v", pmc, fromImgFile, outImgFile)
 
-				err := copyFile(fromImgFile, outImgFile)
+				err := fileaccess.CopyFileLocally(fromImgFile, outImgFile)
 				if err != nil {
 					return "", err
 				}
@@ -383,7 +384,7 @@ func copyImagesToOutput(contextImgDir string, outPath string, data dataConvertMo
 
 		jobLog.Infof("  Copy RGBU img %v -> %v", fromImgFile, outImgFile)
 
-		err := copyFile(fromImgFile, outImgFile)
+		err := fileaccess.CopyFileLocally(fromImgFile, outImgFile)
 		if err != nil {
 			return "", err
 		}
@@ -401,7 +402,7 @@ func copyImagesToOutput(contextImgDir string, outPath string, data dataConvertMo
 
 		jobLog.Infof("  Copy MCC multispectral img %v -> %v", fromImgFile, outImgFile)
 
-		err := copyFile(fromImgFile, outImgFile)
+		err := fileaccess.CopyFileLocally(fromImgFile, outImgFile)
 		if err != nil {
 			return "", err
 		}
@@ -423,7 +424,7 @@ func copyImagesToOutput(contextImgDir string, outPath string, data dataConvertMo
 
 		jobLog.Infof("  Copy matched aligned img %v -> %v", fromImgFile, outImgFile)
 
-		err := copyFile(fromImgFile, outImgFile)
+		err := fileaccess.CopyFileLocally(fromImgFile, outImgFile)
 		if err != nil {
 			return "", err
 		}
