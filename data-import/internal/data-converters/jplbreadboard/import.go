@@ -68,7 +68,7 @@ type MSATestData struct {
 //
 //	containing fields specific to this importer
 func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string, datasetID string, jobLog logger.ILogger) (*dataConvertModels.OutputData, string, error) {
-	localFS := fileaccess.FSAccess{}
+	localFS := &fileaccess.FSAccess{}
 
 	// Check if we can load the import instructions JSON file
 	var params importParams
@@ -114,7 +114,7 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 	contextImageSrcDir := ""
 	if len(params.ContextImgDir) > 0 {
 		contextImageSrcDir = path.Join(importPath, params.ContextImgDir)
-		contextImgsPerPMC, err = processContextImages(contextImageSrcDir, jobLog)
+		contextImgsPerPMC, err = processContextImages(contextImageSrcDir, jobLog, localFS)
 		if err != nil {
 			return nil, "", err
 		}
@@ -219,7 +219,7 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 	// Not really relevant, what would we show? It's a list of meta, how many is too many?
 	//importer.LogIfMoreFoundHousekeeping(hkData, "Housekeeping", 1)
 
-	matchedAlignedImages, err := importerutils.ReadMatchedImages(path.Join(importPath, "MATCHED"), beamLookup, jobLog)
+	matchedAlignedImages, err := importerutils.ReadMatchedImages(path.Join(importPath, "MATCHED"), beamLookup, jobLog, localFS)
 
 	if err != nil {
 		return nil, "", err

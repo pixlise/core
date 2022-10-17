@@ -22,13 +22,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
-	"github.com/pixlise/core/v2/data-import/internal/importerutils"
 )
 
-func processContextImages(path string, jobLog logger.ILogger) (map[int32]string, error) {
+func processContextImages(path string, jobLog logger.ILogger, fs fileaccess.FileAccess) (map[int32]string, error) {
 	jobLog.Infof("  Reading context image files from directory: %v", path)
-	contextImgDirFiles, err := importerutils.GetDirListing(path, "", jobLog)
+	contextImgDirFiles, err := fs.ListObjects(path, "")
+	//contextImgDirFiles, err := importerutils.GetDirListing(path, "", jobLog)
 
 	if err != nil {
 		return nil, err

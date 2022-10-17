@@ -23,16 +23,19 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 
+	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
 	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
 )
 
-func ReadMatchedImages(matchedPath string, beamLookup dataConvertModels.BeamLocationByPMC, jobLog logger.ILogger) ([]dataConvertModels.MatchedAlignedImageMeta, error) {
+func ReadMatchedImages(matchedPath string, beamLookup dataConvertModels.BeamLocationByPMC, jobLog logger.ILogger, fs fileaccess.FileAccess) ([]dataConvertModels.MatchedAlignedImageMeta, error) {
 	result := []dataConvertModels.MatchedAlignedImageMeta{}
 
 	// Read all JSON files in the directory, if they reference a context image by file name great, otherwise error
-	files, err := GetDirListing(matchedPath, "json", jobLog)
+	//files, err := GetDirListing(matchedPath, "json", jobLog)
+	files, err := fs.ListObjects(matchedPath, "")
 
 	if err != nil {
 		jobLog.Infof("readMatchedImages: directory not found, SKIPPING")
@@ -40,6 +43,11 @@ func ReadMatchedImages(matchedPath string, beamLookup dataConvertModels.BeamLoca
 	}
 
 	for _, jsonFile := range files {
+		// Ensure they are .json files
+		if strings.ToUpper(path.Ext(jsonFile)) != ".JSON" {
+			continue
+		}
+
 		jsonPath := path.Join(matchedPath, jsonFile)
 		// Read JSON file
 		jsonBytes, err := ioutil.ReadFile(jsonPath)

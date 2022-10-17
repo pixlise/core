@@ -24,6 +24,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
 	gdsfilename "github.com/pixlise/core/v2/data-import/gds-filename"
 	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
@@ -67,8 +68,9 @@ type fileStructure struct {
 var log logger.ILogger
 
 func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, datasetIDExpected string, jobLog logger.ILogger) (*dataConvertModels.OutputData, string, error) {
-	// For now this is hard-coded, we may need to parse metadata from a file name to work this out, or it may need to be a param eventually
 	log = jobLog
+	localFS := &fileaccess.FSAccess{}
+
 	beamDir := fileStructure{}
 	spectraDir := fileStructure{}
 	bulkSpectraDir := fileStructure{}
@@ -129,16 +131,26 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		pathToSubdir := importPath
 		log.Infof("READING %v from \"%v\", subdirs: \"%v\"...", dirType, pathToSubdir, strings.Join(subdir.directories, ","))
 
+		extUpper := strings.ToUpper(subdir.extensions)
+		if extUpper[0:1] != "." {
+			extUpper = "." + extUpper
+		}
+
 		var allFoundPaths []string
 		for _, d := range subdir.directories {
-			paths, err := importerutils.GetDirListing(path.Join(pathToSubdir, d), subdir.extensions, log)
+			paths, err := localFS.ListObjects(path.Join(pathToSubdir, d), "")
 
 			for _, p := range paths {
-				allFoundPaths = append(allFoundPaths, path.Join(d, p))
+				if strings.HasSuffix(strings.ToUpper(path.Ext(p)), extUpper) {
+					allFoundPaths = append(allFoundPaths, path.Join(d, p))
+				}
 			}
 
 			if err != nil {
 				log.Infof("  WARNING: Failed to read dir \"%v\". SKIPPING. Error was: \"%v\"", pathToSubdir, err)
+				err = nil
+			} else if len(paths) <= 0 {
+				log.Infof("  WARNING: No files read from dir \"%v\". SKIPPING", pathToSubdir)
 				err = nil
 			}
 		}
@@ -301,7 +313,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 	// Not really relevant, what would we show? It's a list of meta, how many is too many?
 	//importer.LogIfMoreFoundHousekeeping(hkData, "Housekeeping", 1)
 
-	matchedAlignedImages, err := importerutils.ReadMatchedImages(path.Join(importPath, "MATCHED"), beamLookup, log)
+	matchedAlignedImages, err := importerutils.ReadMatchedImages(path.Join(importPath, "MATCHED"), beamLookup, log, localFS)
 
 	if err != nil {
 		return nil, "", err
