@@ -20,6 +20,7 @@ package endpoints
 import (
 	"bytes"
 	"fmt"
+	"github.com/google/uuid"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -178,7 +179,7 @@ func (h *LoggerMiddleware) Middleware(next http.Handler) http.Handler {
 					h.Notifications.SetTrack(requestingUser.UserID, true)
 				}
 			}
-			if track && len(contType) > 0 && contType != "application/octet-stream" {
+			if track && len(contType) > 0 && (contType == "application/json" || strings.HasPrefix(contType, "text")) {
 				o := esutil.LoggingObject{
 					Time:        time.Now(),
 					Component:   r.URL.Path,
@@ -189,10 +190,13 @@ func (h *LoggerMiddleware) Middleware(next http.Handler) http.Handler {
 					User:        requestingUser.UserID,
 				}
 				go func() {
-					_, err := esutil.InsertLogRecord(h.ES, o, h.Log)
-					if err != nil {
-						h.Log.Printf(level, "ES Post error: %v", err)
-					}
+					t := time.Now()
+					datestamp := t.Format("2006-01-02")
+					id := uuid.New()
+					path := fmt.Sprintf("Activity/%v/%v.json", datestamp, id.String())
+					err := h.FS.WriteJSON(h.Config.UsersBucket, path, o)
+					h.Log.Errorf("Failure to write to activity bucket: %v", err)
+
 				}()
 				if hadError || h.Config.LogLevel == logger.LogDebug {
 					h.Log.Printf(level, "Request: %v (%v), body: %v\nResponse status: %v, body: %v", r.URL, r.Method, reqBodyText, w2.StatusText(), respBodyTxt)
