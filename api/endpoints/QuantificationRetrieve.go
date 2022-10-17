@@ -18,7 +18,6 @@
 package endpoints
 
 import (
-	"encoding/json"
 	"path"
 	"sort"
 	"strings"
@@ -70,20 +69,15 @@ func quantificationJobAdminList(params handlers.ApiHandlerParams) (interface{}, 
 	var summaries []quantModel.JobSummaryItem
 
 	for _, qpath := range pathsToRequest {
-		jobsData, err := params.Svcs.FS.ReadObject(params.Svcs.Config.PiquantJobsBucket, qpath)
+		var jobsMap quantModel.JobSummaryMap
+		err := params.Svcs.FS.ReadJSON(params.Svcs.Config.PiquantJobsBucket, qpath, &jobsMap, false)
 		if err != nil {
 			// We failed to get the jobs list, so it probably doesn't exist (yet), so just return an empty joblist
-			params.Svcs.Log.Errorf("Failed to download job list: s3://%v/%v, jobs for this dataset not included in quant job admin list", params.Svcs.Config.PiquantJobsBucket, qpath)
+			params.Svcs.Log.Errorf("Failed to get job list: s3://%v/%v, jobs for this dataset not included in quant job admin list", params.Svcs.Config.PiquantJobsBucket, qpath)
 		} else {
-			var jobsMap quantModel.JobSummaryMap
-			err = json.Unmarshal(jobsData, &jobsMap)
-			if err != nil {
-				params.Svcs.Log.Errorf("Failed to parse job list: s3://%v/%v, jobs for this dataset not included in quant job admin list", params.Svcs.Config.PiquantJobsBucket, qpath)
-			} else {
-				// read into our summary list
-				for _, item := range jobsMap {
-					summaries = append(summaries, quantModel.SetMissingSummaryFields(item))
-				}
+			// read into our summary list
+			for _, item := range jobsMap {
+				summaries = append(summaries, quantModel.SetMissingSummaryFields(item))
 			}
 		}
 	}
