@@ -45,7 +45,6 @@ func AddToDatasetArchive(remoteFS fileaccess.FileAccess, log logger.ILogger, dat
 		err = remoteFS.CopyObject(sourceBucket, sourceFilePath, datasetBucket, writePath)
 		if err != nil {
 			err = fmt.Errorf("Failed to archive incoming file: \"s3://%v/%v\"", sourceBucket, sourceFilePath)
-			log.Errorf("%v", err)
 		}
 	}
 

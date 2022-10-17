@@ -54,7 +54,6 @@ func ImportForTrigger(triggerMessage []byte, envName string, configBucket string
 	if len(sourceBucket) > 0 && len(sourceFilePath) > 0 {
 		exists, err := datasetArchive.AddToDatasetArchive(remoteFS, log, datasetBucket, sourceBucket, sourceFilePath)
 		if err != nil {
-			err = fmt.Errorf("Failed to archive incoming file: \"s3://%v/%v\"", sourceBucket, sourceFilePath)
 			log.Errorf("%v", err)
 			return err
 		}
@@ -77,6 +76,10 @@ func ImportForTrigger(triggerMessage []byte, envName string, configBucket string
 	}
 
 	_, err = dataConverter.ImportDataset(localFS, remoteFS, configBucket, manualBucket, datasetBucket, datasetID, log, archived)
+
+	if err != nil {
+		log.Errorf("%v", err)
+	}
 
 	return err
 }
