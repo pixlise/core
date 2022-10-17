@@ -169,6 +169,7 @@ type contextImageState struct {
 
 type roiDisplayState struct {
 	ROIColours map[string]string `json:"roiColours"`
+	ROIShapes  map[string]string `json:"roiShapes"`
 }
 
 type rgbuPlotWidgetState struct {
@@ -367,6 +368,7 @@ func defaultWholeViewState() wholeViewState {
 
 	state.ROIs = roiDisplayState{}
 	state.ROIs.ROIColours = map[string]string{}
+	state.ROIs.ROIShapes = map[string]string{}
 
 	state.Histograms = map[string]histogramState{}
 	state.ChordDiagrams = map[string]chordState{}

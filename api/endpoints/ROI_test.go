@@ -35,12 +35,26 @@ const roi2XItems = `{
         "name": "Dark patch 2",
         "description": "The second dark patch",
         "locationIndexes": [4, 55, 394],
-        "creator": { "name": "Peter", "user_id": "u123" }
+        "creator": { "name": "Peter", "user_id": "u123" },
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        }
     },
     "772": {
         "name": "White spot",
         "locationIndexes": [14, 5, 94],
-        "creator": { "name": "Tom", "user_id": "u124" }
+        "creator": { "name": "Tom", "user_id": "u124" },
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        }
     }
 }`
 
@@ -83,7 +97,14 @@ func Example_roiHandler_List() {
 					"locationIndexes": [4, 55, 394],
 					"shared": false,
 					"creator": { "name": "Peter", "user_id": "u77", "email": "" },
-					"imageName": "dtu_context_rgbu.tif"
+					"imageName": "dtu_context_rgbu.tif",
+					"mistROIItem": {
+                        "species": "",
+                        "mineralGroupID": "",
+                        "ID_Depth": 0,
+                        "ClassificationTrail": "",
+                        "formula": ""
+                    }
 				}
 			}`))),
 		},
@@ -94,7 +115,14 @@ func Example_roiHandler_List() {
 					"name": "james bond",
 					"locationIndexes": [99],
 					"shared": false,
-					"creator": { "name": "Tom", "user_id": "u85", "email": ""}
+					"creator": { "name": "Tom", "user_id": "u85", "email": ""},
+					"mistROIItem": {
+                        "species": "",
+                        "mineralGroupID": "",
+                        "ID_Depth": 0,
+                        "ClassificationTrail": "",
+                        "formula": ""
+                    }
 				}
 			}`))),
 		},
@@ -139,6 +167,13 @@ func Example_roiHandler_List() {
 	//         ],
 	//         "description": "",
 	//         "imageName": "dtu_context_rgbu.tif",
+	//         "mistROIItem": {
+	//             "species": "",
+	//             "mineralGroupID": "",
+	//             "ID_Depth": 0,
+	//             "ClassificationTrail": "",
+	//             "formula": ""
+	//         },
 	//         "shared": false,
 	//         "creator": {
 	//             "name": "Peter",
@@ -152,6 +187,13 @@ func Example_roiHandler_List() {
 	//             99
 	//         ],
 	//         "description": "james bonds shared ROI",
+	//         "mistROIItem": {
+	//             "species": "",
+	//             "mineralGroupID": "",
+	//             "ID_Depth": 0,
+	//             "ClassificationTrail": "",
+	//             "formula": ""
+	//         },
 	//         "shared": true,
 	//         "creator": {
 	//             "name": "Tom",
@@ -162,126 +204,6 @@ func Example_roiHandler_List() {
 	// }
 }
 
-/*
-func Example_roiHandler_Get() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiSharedS3Path),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil,
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(roi2XItems))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(roi2XItems))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(roi2XItems))),
-		},
-	}
-
-	svcs := MakeMockSvcs(&mockS3, nil, nil)
-	apiRouter := MakeRouter(svcs)
-
-	// File not in S3, should return 404
-	req, _ := http.NewRequest("GET", "/roi/TheDataSetID/331", nil)
-	resp := executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// File in S3 empty, should return 404
-	req, _ = http.NewRequest("GET", "/roi/TheDataSetID/331", nil)
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// File contains stuff, using ID thats not in there, should return 404
-	req, _ = http.NewRequest("GET", "/roi/TheDataSetID/222", nil)
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// File contains stuff, using ID that exists
-	req, _ = http.NewRequest("GET", "/roi/TheDataSetID/331", nil)
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Check that shared file was loaded if shared ID sent in
-	req, _ = http.NewRequest("GET", "/roi/TheDataSetID/shared-331", nil)
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Output:
-	// 404
-	// 331 not found
-	//
-	// 404
-	// 331 not found
-	//
-	// 404
-	// 222 not found
-	//
-	// 200
-	// {
-	//     "name": "Dark patch 2",
-	//     "locationIndexes": [
-	//         4,
-	//         55,
-	//         394
-	//     ],
-	//     "description": "The second dark patch",
-	//     "shared": false,
-	//     "creator": {
-	//         "name": "Peter",
-	//         "user_id": "u123",
-    //         "email": ""
-	//     }
-	// }
-	//
-	// 200
-	// {
-	//     "name": "Dark patch 2",
-	//     "locationIndexes": [
-	//         4,
-	//         55,
-	//         394
-	//     ],
-	//     "description": "The second dark patch",
-	//     "shared": true,
-	//     "creator": {
-	//         "name": "Peter",
-	//         "user_id": "u123",
-    //         "email": ""
-	//     }
-	// }
-}
-*/
 func Example_roiHandler_Post() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
@@ -320,6 +242,13 @@ func Example_roiHandler_Post() {
             9
         ],
         "description": "",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -345,6 +274,13 @@ func Example_roiHandler_Post() {
             199
         ],
         "description": "Posted item!",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -364,6 +300,13 @@ func Example_roiHandler_Post() {
             199
         ],
         "description": "Posted item!",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -383,6 +326,13 @@ func Example_roiHandler_Post() {
             394
         ],
         "description": "The second dark patch",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": false,
         "creator": {
             "name": "Peter",
@@ -398,6 +348,13 @@ func Example_roiHandler_Post() {
             94
         ],
         "description": "",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": false,
         "creator": {
             "name": "Tom",
@@ -413,6 +370,13 @@ func Example_roiHandler_Post() {
             199
         ],
         "description": "Posted item!",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -433,6 +397,13 @@ func Example_roiHandler_Post() {
         ],
         "description": "Posted item!",
         "imageName": "the_img.png",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -537,11 +508,17 @@ func Example_roiHandler_Put() {
 		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
 		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
+		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		nil,
 		{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+		},
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(roi2XItems))),
 		},
 		{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(roi2XItems))),
@@ -565,6 +542,13 @@ func Example_roiHandler_Put() {
             199
         ],
         "description": "Updated item!",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -580,6 +564,13 @@ func Example_roiHandler_Put() {
             94
         ],
         "description": "",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": false,
         "creator": {
             "name": "Tom",
@@ -636,13 +627,6 @@ func Example_roiHandler_Put() {
 	fmt.Println(resp.Code)
 	fmt.Println(resp.Body)
 
-	// Put finds item, OK
-	req, _ = http.NewRequest("PUT", "/roi/TheDataSetID/331", bytes.NewReader([]byte(putItem)))
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
 	// Put shared item, ERROR
 	req, _ = http.NewRequest("PUT", "/roi/TheDataSetID/shared-331", bytes.NewReader([]byte(putItem)))
 	resp = executeRequest(req, apiRouter.Router)
@@ -650,23 +634,30 @@ func Example_roiHandler_Put() {
 	fmt.Println(resp.Code)
 	fmt.Println(resp.Body)
 
+	// Put finds item, OK
+	req, _ = http.NewRequest("PUT", "/roi/TheDataSetID/331", bytes.NewReader([]byte(putItem)))
+	resp = executeRequest(req, apiRouter.Router)
+
+	fmt.Println(resp.Code)
+	fmt.Println(resp.Body)
+
 	// Output:
 	// 404
-	// ROI 331 not found
+	// roi 331 not found
 	//
 	// 404
-	// ROI 331 not found
+	// roi 331 not found
 	//
 	// 404
-	// ROI 22 not found
+	// roi 22 not found
 	//
 	// 400
-	// Invalid ROI name: ""
+	// invalid roi name: ""
+	//
+	// 400
+	// cannot edit shared rois
 	//
 	// 200
-	//
-	// 400
-	// Cannot edit shared ROIs
 }
 
 func Example_roiHandler_Delete() {
@@ -675,25 +666,59 @@ func Example_roiHandler_Delete() {
 
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
-		},
-		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiSharedS3Path),
 		},
 		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiSharedS3Path),
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
+		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
+		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
+		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+    "331": {
+        "name": "Dark patch 2",
+        "description": "The second dark patch",
+        "locationIndexes": [
+            4,
+            55,
+            394
+        ],
+        "creator": { "name": "Peter", "user_id": "600f2a0806b6c70071d3d174" },
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        }
+    },
+    "772": {
+        "name": "White spot",
+        "locationIndexes": [
+            14,
+            5,
+            94
+        ],
+        "creator": { "name": "Tom", "user_id": "u124" },
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        }
+    }
+}`))),
+		},
 		nil,
 		{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
@@ -704,28 +729,11 @@ func Example_roiHandler_Delete() {
 		{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(roi2XItems))),
 		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(roi2XItems))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-    "99": {
-        "name": "Shared item to delete",
-        "locationIndexes": [33],
-        "description": "",
-        "shared": false,
-        "creator": {
-            "name": "The user who can delete",
-            "user_id": "600f2a0806b6c70071d3d174"
-        }
-    }
-}`))),
-		},
 	}
 
 	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
 		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path), Body: bytes.NewReader([]byte(`{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiSharedS3Path), Body: bytes.NewReader([]byte(`{
     "772": {
         "name": "White spot",
         "locationIndexes": [
@@ -734,6 +742,13 @@ func Example_roiHandler_Delete() {
             94
         ],
         "description": "",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": false,
         "creator": {
             "name": "Tom",
@@ -743,21 +758,24 @@ func Example_roiHandler_Delete() {
     }
 }`)),
 		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiSharedS3Path), Body: bytes.NewReader([]byte(`{}`)),
-		},
 	}
 	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
-		{},
 		{},
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
-	// Delete finds file missing, ERROR
-	req, _ := http.NewRequest("DELETE", "/roi/TheDataSetID/331", nil)
+	// Delete shared item, OK
+	req, _ := http.NewRequest("DELETE", "/roi/TheDataSetID/shared-331", nil)
 	resp := executeRequest(req, apiRouter.Router)
+
+	fmt.Println(resp.Code)
+	fmt.Println(resp.Body)
+
+	// Delete finds file missing, ERROR
+	req, _ = http.NewRequest("DELETE", "/roi/TheDataSetID/331", nil)
+	resp = executeRequest(req, apiRouter.Router)
 
 	fmt.Println(resp.Code)
 	fmt.Println(resp.Body)
@@ -783,21 +801,9 @@ func Example_roiHandler_Delete() {
 	fmt.Println(resp.Code)
 	fmt.Println(resp.Body)
 
-	// Delete shared item but from wrong user, ERROR
-	req, _ = http.NewRequest("DELETE", "/roi/TheDataSetID/shared-331", nil)
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Delete shared item, OK
-	req, _ = http.NewRequest("DELETE", "/roi/TheDataSetID/shared-99", nil)
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
 	// Output:
+	// 200
+	//
 	// 404
 	// 331 not found
 	//
@@ -807,12 +813,8 @@ func Example_roiHandler_Delete() {
 	// 404
 	// 22 not found
 	//
-	// 200
-	//
 	// 401
 	// 331 not owned by 600f2a0806b6c70071d3d174
-	//
-	// 200
 }
 
 func Example_roiHandler_Share() {
@@ -821,6 +823,13 @@ func Example_roiHandler_Share() {
         "name": "Shared already",
         "locationIndexes": [33],
         "description": "",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": true,
         "creator": {
             "name": "The user who shared",
@@ -897,6 +906,13 @@ func Example_roiHandler_Share() {
             394
         ],
         "description": "The second dark patch",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": true,
         "creator": {
             "name": "Peter",
@@ -910,6 +926,13 @@ func Example_roiHandler_Share() {
             33
         ],
         "description": "",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": true,
         "creator": {
             "name": "The user who shared",

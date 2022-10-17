@@ -233,7 +233,8 @@ func Example_viewStateHandler_List() {
 	"roiColours": {
 		"roi99": "rgba(255,255,0,1)",
 		"roi22": "rgba(128,0,255,0.5)"
-	}
+	},
+	"roiShapes": {}
 }`))),
 		},
 		{ // analysisLayout
@@ -512,7 +513,8 @@ func Example_viewStateHandler_List() {
 	//         "roiColours": {
 	//             "roi22": "rgba(128,0,255,0.5)",
 	//             "roi99": "rgba(255,255,0,1)"
-	//         }
+	//         },
+	//         "roiShapes": {}
 	//     },
 	//     "quantification": {
 	//         "appliedQuantID": "quant111"
@@ -615,7 +617,8 @@ func Example_viewStateHandler_List_WithReset() {
 	//     "rgbuImages": {},
 	//     "parallelograms": {},
 	//     "rois": {
-	//         "roiColours": {}
+	//         "roiColours": {},
+	//         "roiShapes": {}
 	//     },
 	//     "quantification": {
 	//         "appliedQuantID": ""
@@ -1538,7 +1541,8 @@ func Example_viewStateHandler_Put_roi() {
     "roiColours": {
         "roi22": "rgba(128,0,255,0.5)",
         "roi33": "rgba(255,255,0,1)"
-    }
+    },
+    "roiShapes": {}
 }`)),
 		},
 	}
@@ -1553,7 +1557,8 @@ func Example_viewStateHandler_Put_roi() {
 	"roiColours": {
 		"roi33": "rgba(255,255,0,1)",
 		"roi22": "rgba(128,0,255,0.5)"
-	}
+	},
+    "roiShapes": {}
 }`
 
 	const routePath = "/view-state/TheDataSetID/"
@@ -1680,7 +1685,8 @@ func Example_viewStateHandler_Put_all() {
     "roiColours": {
         "roi22": "rgba(128,0,255,0.5)",
         "roi33": "rgba(255,255,0,1)"
-    }
+    },
+    "roiShapes": {}
 }`)),
 		},
 		{
@@ -2167,7 +2173,8 @@ func Example_viewStateHandler_Put_all() {
 		"roiColours": {
 			"roi22": "rgba(128,0,255,0.5)",
 			"roi33": "rgba(255,255,0,1)"
-		}
+		},
+		"roiShapes": {}
 	},
 	"quantification": {
 		"appliedQuantID": "9qntb8w2joq4elti"

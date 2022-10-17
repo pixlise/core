@@ -240,7 +240,8 @@ func Example_viewStateHandler_GetCollection() {
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
 	//             "rois": {
-	//                 "roiColours": {}
+	//                 "roiColours": {},
+	//                 "roiShapes": {}
 	//             },
 	//             "quantification": {
 	//                 "appliedQuantID": "quant for state one"
@@ -281,7 +282,8 @@ func Example_viewStateHandler_GetCollection() {
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
 	//             "rois": {
-	//                 "roiColours": {}
+	//                 "roiColours": {},
+	//                 "roiShapes": {}
 	//             },
 	//             "quantification": {
 	//                 "appliedQuantID": "quant for the end"
@@ -334,7 +336,8 @@ func Example_viewStateHandler_GetCollection() {
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
 	//             "rois": {
-	//                 "roiColours": {}
+	//                 "roiColours": {},
+	//                 "roiShapes": {}
 	//             },
 	//             "quantification": {
 	//                 "appliedQuantID": "quant for state one"
@@ -383,7 +386,8 @@ func Example_viewStateHandler_GetCollection() {
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
 	//             "rois": {
-	//                 "roiColours": {}
+	//                 "roiColours": {},
+	//                 "roiShapes": {}
 	//             },
 	//             "quantification": {
 	//                 "appliedQuantID": "quant for the end"
@@ -463,7 +467,8 @@ func Example_viewStateHandler_GetCollectionShared() {
             "rgbuImages": {},
             "parallelograms": {},
             "rois": {
-                "roiColours": {}
+                "roiColours": {},
+                "roiShapes": {}
             },
             "quantification": {
                 "appliedQuantID": "quant for state one"
@@ -504,7 +509,8 @@ func Example_viewStateHandler_GetCollectionShared() {
             "rgbuImages": {},
             "parallelograms": {},
             "rois": {
-                "roiColours": {}
+                "roiColours": {},
+				"roiShapes": {}
             },
             "quantification": {
                 "appliedQuantID": "quant for the end"
@@ -580,7 +586,8 @@ func Example_viewStateHandler_GetCollectionShared() {
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
 	//             "rois": {
-	//                 "roiColours": {}
+	//                 "roiColours": {},
+	//                 "roiShapes": {}
 	//             },
 	//             "quantification": {
 	//                 "appliedQuantID": "quant for state one"
@@ -621,7 +628,8 @@ func Example_viewStateHandler_GetCollectionShared() {
 	//             "rgbuImages": {},
 	//             "parallelograms": {},
 	//             "rois": {
-	//                 "roiColours": {}
+	//                 "roiColours": {},
+	//                 "roiShapes": {}
 	//             },
 	//             "quantification": {
 	//                 "appliedQuantID": "quant for the end"
@@ -921,7 +929,8 @@ func Example_viewStateHandler_ShareCollection() {
             "rgbuImages": {},
             "parallelograms": {},
             "rois": {
-                "roiColours": {}
+                "roiColours": {},
+                "roiShapes": {}
             },
             "quantification": {
                 "appliedQuantID": "quant2"
@@ -962,7 +971,8 @@ func Example_viewStateHandler_ShareCollection() {
             "rgbuImages": {},
             "parallelograms": {},
             "rois": {
-                "roiColours": {}
+                "roiColours": {},
+                "roiShapes": {}
             },
             "quantification": {
                 "appliedQuantID": "quant1"

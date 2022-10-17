@@ -370,7 +370,8 @@ func Example_viewStateHandler_GetSaved() {
             "roiColours": {
                 "roi22": "rgba(128,0,255,0.5)",
                 "roi99": "rgba(255,255,0,1)"
-            }
+            },
+			"roiShapes": {}
         },
         "quantification": {
             "appliedQuantID": "quant111"
@@ -447,7 +448,8 @@ func Example_viewStateHandler_GetSaved() {
 	//             "roiColours": {
 	//                 "roi22": "rgba(128,0,255,0.5)",
 	//                 "roi99": "rgba(255,255,0,1)"
-	//             }
+	//             },
+	//             "roiShapes": {}
 	//         },
 	//         "quantification": {
 	//             "appliedQuantID": "quant111"
@@ -491,7 +493,8 @@ func Example_viewStateHandler_GetSaved_ROIQuantFallbackCheck() {
             "roiColours": {
                 "roi22": "rgba(128,0,255,0.5)",
                 "roi99": "rgba(255,255,0,1)"
-            }
+            },
+            "roiShapes": {}
         },
         "quantification": {
             "appliedQuantID": "",
@@ -574,7 +577,8 @@ func Example_viewStateHandler_GetSaved_ROIQuantFallbackCheck() {
 	//             "roiColours": {
 	//                 "roi22": "rgba(128,0,255,0.5)",
 	//                 "roi99": "rgba(255,255,0,1)"
-	//             }
+	//             },
+	//             "roiShapes": {}
 	//         },
 	//         "quantification": {
 	//             "appliedQuantID": "quant222"
@@ -618,7 +622,8 @@ func Example_viewStateHandler_GetSavedShared() {
             "roiColours": {
                 "roi22": "rgba(128,0,255,0.5)",
                 "roi99": "rgba(255,255,0,1)"
-            }
+            },
+            "roiShapes": {}
         },
         "quantification": {
             "appliedQuantID": "quant111"
@@ -695,7 +700,8 @@ func Example_viewStateHandler_GetSavedShared() {
 	//             "roiColours": {
 	//                 "roi22": "rgba(128,0,255,0.5)",
 	//                 "roi99": "rgba(255,255,0,1)"
-	//             }
+	//             },
+	//             "roiShapes": {}
 	//         },
 	//         "quantification": {
 	//             "appliedQuantID": "quant111"
@@ -754,7 +760,8 @@ func Example_viewStateHandler_PutSaved() {
             "roiColours": {
                 "roi22": "rgba(128,0,255,0.5)",
                 "roi99": "rgba(255,255,0,1)"
-            }
+            },
+            "roiShapes": {}
         },
         "quantification": {
             "appliedQuantID": "quant111"
@@ -797,7 +804,8 @@ func Example_viewStateHandler_PutSaved() {
             "roiColours": {
                 "roi22": "rgba(128,0,255,0.5)",
                 "roi99": "rgba(255,255,0,1)"
-            }
+            },
+            "roiShapes": {}
         },
         "quantification": {
             "appliedQuantID": "quant111",
@@ -908,7 +916,8 @@ func Example_viewStateHandler_RenamingWorkspaces() {
         "rgbuImages": {},
         "parallelograms": {},
         "rois": {
-            "roiColours": {}
+            "roiColours": {},
+            "roiShapes": {}
         },
         "quantification": {
             "appliedQuantID": ""
@@ -1695,7 +1704,8 @@ func Example_viewStateHandler_ShareViewState() {
         "rgbuImages": {},
         "parallelograms": {},
         "rois": {
-            "roiColours": {}
+            "roiColours": {},
+            "roiShapes": {}
         },
         "quantification": {
             "appliedQuantID": "shared-quant123"
@@ -1946,6 +1956,13 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             394
         ],
         "description": "The shared patch",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": true,
         "creator": {
             "name": "PeterN",
@@ -1961,6 +1978,13 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             394
         ],
         "description": "The second dark patch",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
         "shared": true,
         "creator": {
             "name": "Peter",
@@ -2124,7 +2148,8 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
         "rgbuImages": {},
         "parallelograms": {},
         "rois": {
-            "roiColours": {}
+            "roiColours": {},
+            "roiShapes": {}
         },
         "quantification": {
             "appliedQuantID": "shared-quant123"
