@@ -195,7 +195,9 @@ func (h *LoggerMiddleware) Middleware(next http.Handler) http.Handler {
 					id := uuid.New()
 					path := fmt.Sprintf("Activity/%v/%v.json", datestamp, id.String())
 					err := h.FS.WriteJSON(h.Config.UsersBucket, path, o)
-					h.Log.Errorf("Failure to write to activity bucket: %v", err)
+					if err != nil{
+					  h.Log.Errorf("Failure to write to activity bucket: %v", err)
+					}
 
 				}()
 				if hadError || h.Config.LogLevel == logger.LogDebug {
