@@ -111,18 +111,23 @@ func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jo
 	// Piquant Fit commands will run in the same namespace and share a service account
 	// Piquant Map commands (jobs) will run in the piquant-map namespace with a more limited service account
 	san := "pixlise-api"
-	if namespace == "piquant-map" {
+	cpu := "500m"
+	if params.Command == "map" {
 		san = "piquant-map"
+		// PiQuant Map Commands will need much more CPU (and can safely request it since they are running on Fargate nodes)
+		cpu = "3500m"
 	}
 	return &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      jobid + "-" + parts[0],
 			Namespace: namespace,
 			Labels: map[string]string{
-				"app":          parts[0],
-				"owner":        creator.UserID,
-				"jobid":        jobid,
-				"numberofpods": strconv.Itoa(length),
+				"pixlise/application": "piquant-runner",
+				"piquant/command":     params.Command,
+				"app":                 parts[0],
+				"owner":               creator.UserID,
+				"jobid":               jobid,
+				"numberofpods":        strconv.Itoa(length),
 			},
 		},
 		Spec: apiv1.PodSpec{
@@ -136,6 +141,11 @@ func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jo
 					ImagePullPolicy: apiv1.PullAlways,
 					Resources: apiv1.ResourceRequirements{
 						Requests: apiv1.ResourceList{
+							// The request determines how much cpu is reserved on the Node and will affect scheduling
+							"cpu": resource.MustParse(cpu),
+						},
+						Limits: apiv1.ResourceList{
+							// Allow the pod to use up to 3500m cpu if it's available on the node
 							"cpu": resource.MustParse("3500m"),
 						},
 					},
