@@ -68,11 +68,13 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 
 		// Delete the working directory here, there's no point leaving it on a lambda machine, we can't debug it
 		// but if this code ran elsewhere we wouldn't delete it, to have something to look at
-		removeErr := os.RemoveAll(workingDir)
-		if removeErr == nil {
-			fmt.Printf("Failed to remove working dir: \"%v\". Error: %v\n", workingDir, removeErr)
-		} else {
-			fmt.Printf("Removed working dir: \"%v\"\n", workingDir)
+		if len(workingDir) > 0 {
+			removeErr := os.RemoveAll(workingDir)
+			if removeErr == nil {
+				fmt.Printf("Failed to remove working dir: \"%v\". Error: %v\n", workingDir, removeErr)
+			} else {
+				fmt.Printf("Removed working dir: \"%v\"\n", workingDir)
+			}
 		}
 
 		if err != nil {
