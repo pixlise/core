@@ -27,23 +27,23 @@ import (
 	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
 )
 
-func ImportForTrigger(triggerMessage []byte, envName string, configBucket string, datasetBucket string, manualBucket string, log logger.ILogger, remoteFS fileaccess.FileAccess) error {
+func ImportForTrigger(triggerMessage []byte, envName string, configBucket string, datasetBucket string, manualBucket string, log logger.ILogger, remoteFS fileaccess.FileAccess) (string, error) {
 	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger(triggerMessage)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Initialise stuff
 	sess, err := awsutil.GetSession()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if log == nil {
 		log, err = logger.InitCloudWatchLogger(sess, "/dataset-importer/"+envName, datasetID+"-"+logID, logger.LogDebug, 30, 3)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 
@@ -55,7 +55,7 @@ func ImportForTrigger(triggerMessage []byte, envName string, configBucket string
 		exists, err := datasetArchive.AddToDatasetArchive(remoteFS, log, datasetBucket, sourceBucket, sourceFilePath)
 		if err != nil {
 			log.Errorf("%v", err)
-			return err
+			return "", err
 		}
 
 		if exists {
@@ -64,7 +64,7 @@ func ImportForTrigger(triggerMessage []byte, envName string, configBucket string
 			log.Infof("File already exists in archive, processing stopped. File was: \"%v\"", sourceFilePath)
 
 			// Not an error, we just consider ourselves succesfully complete now
-			return nil
+			return "", nil
 		}
 
 		archived = true
@@ -72,14 +72,14 @@ func ImportForTrigger(triggerMessage []byte, envName string, configBucket string
 		// We need BOTH to be set to something for this to work, only one of them is set
 		err = fmt.Errorf("Trigger message must specify bucket AND path, received bucket=%v, path=%v", sourceBucket, sourceFilePath)
 		log.Errorf("%v", err)
-		return err
+		return "", err
 	}
 
-	_, err = dataConverter.ImportDataset(localFS, remoteFS, configBucket, manualBucket, datasetBucket, datasetID, log, archived)
+	workingDir, _, err := dataConverter.ImportDataset(localFS, remoteFS, configBucket, manualBucket, datasetBucket, datasetID, log, archived)
 
 	if err != nil {
 		log.Errorf("%v", err)
 	}
 
-	return err
+	return workingDir, err
 }

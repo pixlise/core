@@ -20,6 +20,7 @@ package datasetArchive
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"strings"
 
@@ -151,6 +152,8 @@ func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID str
 			return 0, err
 		}
 
+		dl.log.Debugf("Unzipping: \"%v\"", savePath)
+
 		// Unzip the file
 		unzippedFileNames, err := utils.UnzipDirectory(savePath, unzippedPath, false)
 		if err != nil {
@@ -158,6 +161,16 @@ func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID str
 		}
 
 		fileCount += len(unzippedFileNames)
+
+		// Delete the source zip file so we don't keep expanding the space we're using
+		err = os.RemoveAll(savePath)
+		if err != nil {
+			dl.log.Errorf("Failed to delete zip file after unzipping: \"%v\". Error: %v", savePath, err)
+			// Don't die for this
+			err = nil
+		} else {
+			dl.log.Debugf("Deleted zip file after unzipping: \"%v\"", savePath)
+		}
 	}
 
 	dl.log.Infof("Downloaded %v zip files, unzipped %v files", len(orderedArchivedFiles), fileCount)
@@ -258,6 +271,16 @@ func (dl *DatasetArchiveDownloader) DownloadFromDatasetUploads(datasetID string,
 				err = fmt.Errorf("Failed to unzip %v: %v", savePath, err)
 				dl.log.Errorf("%v", err)
 				return "", "", err
+			}
+
+			// Delete the source zip file so we don't keep expanding the space we're using
+			err = os.RemoveAll(savePath)
+			if err != nil {
+				dl.log.Errorf("Failed to delete zip file after unzipping: \"%v\". Error: %v", savePath, err)
+				// Don't die for this
+				err = nil
+			} else {
+				dl.log.Infof("Deleted zip file after unzipping: \"%v\"", savePath)
 			}
 		}
 	}

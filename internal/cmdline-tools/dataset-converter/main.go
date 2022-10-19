@@ -103,7 +103,7 @@ func main() {
 		if len(*argDatasetID) <= 0 {
 			log.Fatalf("dataset-id not set")
 		}
-		datasetIDImported, err = dataConverter.ImportDataset(localFS, remoteFS, *argConfigBucket, *argManualUploadBucket, *argDatasetBucket, *argDatasetID, ilog, true)
+		_, datasetIDImported, err = dataConverter.ImportDataset(localFS, remoteFS, *argConfigBucket, *argManualUploadBucket, *argDatasetBucket, *argDatasetID, ilog, true)
 	case "trigger":
 		/* An example case, where trigger message is set to:
 		{
@@ -122,7 +122,7 @@ func main() {
 		if len(*argTrigger) <= 0 {
 			log.Fatalf("trigger not set")
 		}
-		err = importer.ImportForTrigger([]byte(*argTrigger), "cmd-line", *argConfigBucket, *argDatasetBucket, *argManualUploadBucket, ilog, remoteFS)
+		_, err = importer.ImportForTrigger([]byte(*argTrigger), "cmd-line", *argConfigBucket, *argDatasetBucket, *argManualUploadBucket, ilog, remoteFS)
 	default:
 		log.Fatalf("Unknown source: %v", *argImportFrom)
 		return

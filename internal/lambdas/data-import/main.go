@@ -44,6 +44,17 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		return "", err
 	}
 
+	// Print contents of /tmp directory... AWS reuses nodes, we may have left files in the past
+	localFS := fileaccess.FSAccess{}
+	tmpFiles, err := localFS.ListObjects("/tmp", "")
+	if err == nil {
+		for c, tmpFile := range tmpFiles {
+			fmt.Printf("%v: %v\n", c+1, tmpFile)
+		}
+	} else {
+		fmt.Printf("Failed to list tmp files: %v\n", err)
+	}
+
 	remoteFS := fileaccess.MakeS3Access(svc)
 
 	// Normally we'd only expect event.Records to be of length 1...
@@ -53,7 +64,17 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		// and it'll be useful for initial debugging
 		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
 
-		err := importer.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, nil, remoteFS)
+		workingDir, err := importer.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, nil, remoteFS)
+
+		// Delete the working directory here, there's no point leaving it on a lambda machine, we can't debug it
+		// but if this code ran elsewhere we wouldn't delete it, to have something to look at
+		removeErr := os.RemoveAll(workingDir)
+		if removeErr == nil {
+			fmt.Printf("Failed to remove working dir: \"%v\". Error: %v\n", workingDir, removeErr)
+		} else {
+			fmt.Printf("Removed working dir: \"%v\"\n", workingDir)
+		}
+
 		if err != nil {
 			return "", err
 		} else {
