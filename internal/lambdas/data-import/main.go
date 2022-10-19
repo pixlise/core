@@ -44,6 +44,17 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		return "", err
 	}
 
+	// Print contents of /tmp directory... AWS reuses nodes, we may have left files in the past
+	localFS := fileaccess.FSAccess{}
+	tmpFiles, err := localFS.ListObjects("/tmp", "")
+	if err == nil {
+		for c, tmpFile := range tmpFiles {
+			fmt.Printf("%v: %v\n", c+1, tmpFile)
+		}
+	} else {
+		fmt.Printf("Failed to list tmp files: %v\n", err)
+	}
+
 	remoteFS := fileaccess.MakeS3Access(svc)
 
 	// Normally we'd only expect event.Records to be of length 1...

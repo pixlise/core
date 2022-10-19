@@ -167,7 +167,7 @@ func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID str
 			// Don't die for this
 			err = nil
 		} else {
-			dl.log.Infof("Delete zip file after unzipping: \"%v\"", savePath)
+			dl.log.Infof("Deleted zip file after unzipping: \"%v\"", savePath)
 		}
 	}
 
@@ -278,7 +278,7 @@ func (dl *DatasetArchiveDownloader) DownloadFromDatasetUploads(datasetID string,
 				// Don't die for this
 				err = nil
 			} else {
-				dl.log.Infof("Delete zip file after unzipping: \"%v\"", savePath)
+				dl.log.Infof("Deleted zip file after unzipping: \"%v\"", savePath)
 			}
 		}
 	}
