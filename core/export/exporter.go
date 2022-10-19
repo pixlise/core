@@ -192,6 +192,15 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 				if err != nil {
 					return nil, err
 				}
+			} else {
+				// TIF images are exported as-is
+				f, err := os.Create(path.Join(outDir, imgName))
+				if err != nil {
+					return nil, err
+				}
+				defer f.Close()
+
+				f.Write(imgMetaData.data)
 			}
 		}
 	}
