@@ -167,6 +167,27 @@ type contextImageState struct {
 	// PMCToolPMC int32 `json:"pmcToolPMC"`
 }
 
+type AnnotationPoint struct {
+	X            float32 `json:"x"`
+	Y            float32 `json:"y"`
+	ScreenWidth  float32 `json:"screenWidth"`
+	ScreenHeight float32 `json:"screenHeight"`
+}
+
+type FullScreenAnnotationItem struct {
+	Type     string            `json:"type"`
+	Points   []AnnotationPoint `json:"points"`
+	Colour   string            `json:"colour"`
+	Complete bool              `json:"complete"`
+	Text     string            `json:"text,omitempty"`
+	FontSize int               `json:"fontSize,omitempty"`
+	ID       int               `json:"id,omitempty"`
+}
+
+type annotationDisplayState struct {
+	SavedAnnotations []FullScreenAnnotationItem `json:"savedAnnotations"`
+}
+
 type roiDisplayState struct {
 	ROIColours map[string]string `json:"roiColours"`
 	ROIShapes  map[string]string `json:"roiShapes"`
@@ -225,6 +246,9 @@ type wholeViewState struct {
 	SingleAxisRGBU map[string]singleAxisRGBUWidgetState `json:"singleAxisRGBU"`
 	RGBUImageViews map[string]rgbuImagesWidgetState     `json:"rgbuImages"`
 	Parallelograms map[string]parallelogramWidgetState  `json:"parallelograms"`
+
+	// Full Screen Annotations
+	Annotations annotationDisplayState `json:"annotations"`
 
 	// Not strictly the view-state of a widget, but the shared display state of ROIs
 	// for the given user/dataset
@@ -365,6 +389,9 @@ func defaultWholeViewState() wholeViewState {
 	state.Spectrum = defaultSpectrum()
 
 	state.Selection = defaultSelectionState()
+
+	state.Annotations = annotationDisplayState{}
+	state.Annotations.SavedAnnotations = []FullScreenAnnotationItem{}
 
 	state.ROIs = roiDisplayState{}
 	state.ROIs.ROIColours = map[string]string{}

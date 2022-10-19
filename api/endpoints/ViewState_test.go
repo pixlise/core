@@ -509,6 +509,9 @@ func Example_viewStateHandler_List() {
 	//     "singleAxisRGBU": {},
 	//     "rgbuImages": {},
 	//     "parallelograms": {},
+	//     "annotations": {
+	//         "savedAnnotations": []
+	//     },
 	//     "rois": {
 	//         "roiColours": {
 	//             "roi22": "rgba(128,0,255,0.5)",
@@ -616,6 +619,9 @@ func Example_viewStateHandler_List_WithReset() {
 	//     "singleAxisRGBU": {},
 	//     "rgbuImages": {},
 	//     "parallelograms": {},
+	//     "annotations": {
+	//         "savedAnnotations": []
+	//     },
 	//     "rois": {
 	//         "roiColours": {},
 	//         "roiShapes": {}
@@ -1681,6 +1687,11 @@ func Example_viewStateHandler_Put_all() {
 	// NOTE: PUT expected JSON needs to have spaces not tabs
 	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
 		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "annotations.json"), Body: bytes.NewReader([]byte(`{
+    "savedAnnotations": []
+}`)),
+		},
+		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "roi.json"), Body: bytes.NewReader([]byte(`{
     "roiColours": {
         "roi22": "rgba(128,0,255,0.5)",
@@ -2169,6 +2180,9 @@ func Example_viewStateHandler_Put_all() {
 		}
 	},
 	"parallelograms": {},
+	"annotations": {
+		"savedAnnotations": []
+	},
 	"rois": {
 		"roiColours": {
 			"roi22": "rgba(128,0,255,0.5)",

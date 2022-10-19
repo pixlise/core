@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -73,6 +74,25 @@ func (s3Access S3Access) ListObjects(bucket string, prefix string) ([]string, er
 	}
 
 	return result, nil
+}
+
+func (s3Access S3Access) ObjectExists(bucket string, path string) (bool, error) {
+	_, err := s3Access.s3Api.HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(path),
+	})
+
+	if err == nil {
+		return true, nil
+	}
+
+	if aerr, ok := err.(awserr.Error); ok {
+		if aerr.Code() == "NotFound" {
+			return false, nil
+		}
+	}
+
+	return false, err
 }
 
 func (s3Access S3Access) ReadObject(bucket string, path string) ([]byte, error) {
@@ -178,14 +198,19 @@ func (s3Access S3Access) IsNotFoundError(err error) bool {
 
 // getPathsFromBucketContents - Returns only the paths that came back as part of listing a buckets contents
 func getPathsFromBucketContents(contents *s3.ListObjectsV2Output) []string {
-	result := make([]string, len(contents.Contents))
+	result := make([]string, 0, len(contents.Contents))
 
-	for i, item := range contents.Contents {
+	for _, item := range contents.Contents {
 		//fmt.Println("Name:         ", *item.Key)
 		//fmt.Println("Last modified:", *item.LastModified)
 		//fmt.Println("Size:         ", *item.Size)
 		//fmt.Println("Storage class:", *item.StorageClass)
-		result[i] = *item.Key
+
+		// We filter out paths that end in / from S3, these are pointless but can happen if
+		// something was made via the web console with create directory, it creates these empty objects...
+		if !strings.HasSuffix(*item.Key, "/") {
+			result = append(result, *item.Key)
+		}
 	}
 
 	return result

@@ -41,14 +41,14 @@ import (
 func updateDatasets(fs fileaccess.FileAccess, datasetBucket string, configBucket string, log logger.ILogger) error {
 	log.Infof("Requesting file listing from: %v", datasetBucket)
 
-	allPaths, err := fs.ListObjects(datasetBucket, filepaths.RootDatasets+"/")
+	allPaths, err := fs.ListObjects(datasetBucket, filepaths.RootDatasetSummaries+"/")
 	if err != nil {
 		return err
 	}
 
 	summaryPaths := []string{}
 	for _, k := range allPaths {
-		if strings.HasSuffix(k, filepaths.DatasetSummaryFileName) {
+		if strings.HasSuffix(k, ".json") {
 			summaryPaths = append(summaryPaths, k)
 		}
 	}

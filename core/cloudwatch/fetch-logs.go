@@ -1,28 +1,12 @@
 package cloudwatch
 
 import (
-	"errors"
-
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/pixlise/core/v2/api/services"
 )
 
-func getLogEvents(sess *session.Session, limit *int64, logGroupName *string, logStreamName *string) (*cloudwatchlogs.GetLogEventsOutput, error) {
-	svc := cloudwatchlogs.New(sess)
-
-	resp, err := svc.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
-		Limit:         limit,
-		LogGroupName:  logGroupName,
-		LogStreamName: logStreamName,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
+/* Used to query the latest log stream name within a group...
 
 func lookUpStreamName(sess *session.Session, logGroup string) (*string, error) {
 	svc := cloudwatchlogs.New(sess)
@@ -40,6 +24,7 @@ func lookUpStreamName(sess *session.Session, logGroup string) (*string, error) {
 		return nil, errors.New("could not find any log groups")
 	}
 }
+*/
 
 type LogLine struct {
 	TimestampUnixMs int64  `json:"timeStampUnixMs"`
@@ -50,21 +35,24 @@ type LogData struct {
 	Lines []LogLine `json:"lines"`
 }
 
-func FetchLogs(logGroupName string, services *services.APIServices) (LogData, error) {
+func FetchLogs(services *services.APIServices, logGroupName string, logStreamName string) (LogData, error) {
 	var limit int64 = 10000
-	//log := services.Log
 
 	result := LogData{Lines: []LogLine{}}
 
-	sname, err := lookUpStreamName(services.AWSSessionCW, logGroupName)
+	//logStreamName, err := lookUpStreamName(services.AWSSessionCW, logGroupName)
 
-	resp, err := getLogEvents(services.AWSSessionCW, &limit, &logGroupName, sname)
+	svc := cloudwatchlogs.New(services.AWSSessionCW)
+	resp, err := svc.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
+		Limit:         &limit,
+		LogGroupName:  aws.String(logGroupName),
+		LogStreamName: aws.String(logStreamName),
+	})
+
 	if err != nil {
 		//log.Errorf("Got error getting log events: %v", err)
 		return result, err
 	}
-
-	//log.Infof("Event messages for log group  " + logGroupName)
 
 	for _, event := range resp.Events {
 		result.Lines = append(result.Lines, LogLine{TimestampUnixMs: *event.IngestionTime, Message: *event.Message})

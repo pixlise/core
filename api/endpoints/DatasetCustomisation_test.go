@@ -103,8 +103,7 @@ func Example_datasetCustomMetaPut() {
 	fmt.Println(resp.Body)
 
 	// Output:
-	// 500
-	// AWS Session Not Configured.
+	// 200
 }
 
 func Example_datasetCustomImagesList_missingtype() {

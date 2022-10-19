@@ -2,6 +2,7 @@ package awsutil
 
 import (
 	"encoding/json"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/pkg/errors"
@@ -35,13 +36,15 @@ func (event *Event) getEventType(data []byte) eventType {
 	json.Unmarshal(data, &temp)
 
 	recordsList, _ := temp["Records"].([]interface{})
+	if len(recordsList) <= 0 {
+		return unknownEventType
+	}
 	record, _ := recordsList[0].(map[string]interface{})
 
 	var eventSource string
 
 	if es, ok := record["EventSource"]; ok {
 		eventSource = es.(string)
-
 	} else if es, ok := record["eventSource"]; ok {
 		eventSource = es.(string)
 	}

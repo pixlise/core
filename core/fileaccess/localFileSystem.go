@@ -19,7 +19,9 @@ package fileaccess
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -39,11 +41,48 @@ func (fs *FSAccess) ListObjects(rootPath string, prefix string) ([]string, error
 	rootOnly := path.Join(rootPath) // Using path.Join to make it match the fullPath cleans off ./ for example
 	fullPath := fs.filePath(rootPath, prefix)
 
-	err := filepath.Walk(fullPath, func(pathFound string, info os.FileInfo, err error) error {
+	// To have common behaviour on S3 vs local file system, here we check if the path exists
+	// because user may be querying for files with a given path prefix, so we my have to go up
+	// one directory and walk those files WITH a prefix check
+	filePrefix := ""
+	fullPathExists, err := fs.ObjectExists(fullPath, "")
+	if err != nil {
+		return result, err
+	}
+
+	if !fullPathExists {
+		// Try go up a directory
+		filePrefix = path.Base(fullPath)
+		fullPath = path.Dir(fullPath)
+
+		// Check this directory exists...
+		fullPathExists, err = fs.ObjectExists(fullPath, "")
+		if err != nil {
+			return result, err
+		}
+
+		// If this doesn't exist, no files found like this...
+		if !fullPathExists {
+			return result, nil
+		}
+	}
+
+	err = filepath.Walk(fullPath, func(pathFound string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if !info.IsDir() {
+
+			// If we are dealing with a file prefix check, do the check here, where we have
+			// the entire path to look at
+			if len(filePrefix) > 0 {
+				prefixToCheck := path.Join(fullPath, filePrefix)
+				if !strings.HasPrefix(pathFound, prefixToCheck) {
+					// Doesn't have the prefix, so we're not saving this one!
+					return nil
+				}
+			}
+
 			// Copy out the file names only. This may be too limiting and we may need to return
 			// some kind of structs but enough for now
 			// Also note pathFound contains the root directory, so we chop it off
@@ -51,12 +90,26 @@ func (fs *FSAccess) ListObjects(rootPath string, prefix string) ([]string, error
 			if strings.HasPrefix(toSave, rootOnly) {
 				toSave = toSave[len(rootOnly)+1:]
 			}
+
 			result = append(result, toSave)
 		}
 		return nil
 	})
 
 	return result, err
+}
+
+func (fs *FSAccess) ObjectExists(rootPath string, path string) (bool, error) {
+	fullPath := fs.filePath(rootPath, path)
+	_, err := os.Stat(fullPath)
+
+	// If we got a not exist error, file doesn't exist, and this is not an error...
+	if err != nil && os.IsNotExist(err) {
+		return false, nil
+	}
+
+	// Otherwise, return the bool flag and error itself
+	return err == nil, err
 }
 
 func (fs *FSAccess) ReadObject(rootPath string, path string) ([]byte, error) {
@@ -178,5 +231,40 @@ func (fs *FSAccess) IsNotFoundError(err error) bool {
 }
 
 func (fs *FSAccess) filePath(rootPath string, filePath string) string {
-	return path.Join(rootPath, filePath)
+	// Return them joined, but obey ./ at the start as this will be required for running local tests for example
+	result := path.Join(rootPath, filePath)
+	if strings.HasPrefix(rootPath, "./") {
+		result = "./" + result
+	}
+	return result
+}
+
+// Creates a directory under the specified root, ensures it's empty (eg if it already existed)
+func MakeEmptyLocalDirectory(root string, subdir string) (string, error) {
+	emptyDirPath := path.Join(root, subdir)
+
+	// Create and make sure it's empty
+	err := os.MkdirAll(emptyDirPath, os.ModePerm)
+	if err != nil {
+		return emptyDirPath, fmt.Errorf("Failed to create directory %v for importer: %v", emptyDirPath, err)
+	}
+
+	localFS := FSAccess{}
+	err = localFS.EmptyObjects(emptyDirPath)
+	if err != nil {
+		return emptyDirPath, fmt.Errorf("Failed to clear directory %v for importer: %v", emptyDirPath, err)
+	}
+
+	return emptyDirPath, nil
+}
+
+func CopyFileLocally(srcPath string, dstPath string) error {
+	// Read all content of src to data
+	data, err := ioutil.ReadFile(srcPath)
+	if err != nil {
+		return err
+	}
+
+	// Write data to dst
+	return ioutil.WriteFile(dstPath, data, 0644)
 }

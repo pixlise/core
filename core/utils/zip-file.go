@@ -66,7 +66,7 @@ func AddFilesToZip(w *zip.Writer, basePath, baseInZip string) {
 	}
 }
 
-func UnzipDirectory(src string, dest string) ([]string, error) {
+func UnzipDirectory(src string, dest string, flattenPaths bool) ([]string, error) {
 	var filenames []string
 	r, err := zip.OpenReader(src)
 	if err != nil {
@@ -75,9 +75,22 @@ func UnzipDirectory(src string, dest string) ([]string, error) {
 	defer r.Close()
 
 	for _, f := range r.File {
+		// If the zip path starts with __MACOSX, ignore it, it's garbage that a mac laptop has included...
+		if strings.HasPrefix(f.Name, "__MACOSX") {
+			continue
+		}
+
+		thisPath := f.Name
+		if flattenPaths {
+			// This may end in a /, in which case there's nothing to write
+			if strings.HasSuffix(thisPath, "/") {
+				continue
+			}
+			thisPath = path.Base(thisPath)
+		}
 
 		// Store filename/path for returning and using later on
-		fpath := filepath.Join(dest, f.Name)
+		fpath := filepath.Join(dest, thisPath)
 
 		// Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
 		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {

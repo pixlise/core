@@ -1,9 +1,12 @@
 package endpoints
 
 import (
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/pixlise/core/v2/api/handlers"
 	"github.com/pixlise/core/v2/api/permission"
 	apiRouter "github.com/pixlise/core/v2/api/router"
+	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/cloudwatch"
 	"github.com/pixlise/core/v2/core/logger"
 )
@@ -12,18 +15,31 @@ import (
 // Logger
 
 const logLevelId = "logLevel"
+const logStreamId = "logStream"
 
 func registerLoggerHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "logger"
 
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/fetch", "logGroup"), apiRouter.MakeMethodPermission("GET", permission.PermWriteMetrics), logRequest)
+	// Adjusting and getting log level
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/level"), apiRouter.MakeMethodPermission("GET", permission.PermReadPIXLISESettings), getLogLevel)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/level", logLevelId), apiRouter.MakeMethodPermission("PUT", permission.PermWriteMetrics), putLogLevel)
+
+	// Querying logs
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/fetch", logStreamId), apiRouter.MakeMethodPermission("GET", permission.PermWriteMetrics), logRequest)
 }
 
 func logRequest(params handlers.ApiHandlerParams) (interface{}, error) {
-	logGroup := "/api/prod-" + params.PathParams["logGroup"]
-	logs, err := cloudwatch.FetchLogs(logGroup, params.Svcs)
+	logGroup := "/dataset-importer/" + params.Svcs.Config.EnvironmentName
+	logStream := params.PathParams[logStreamId]
+
+	logs, err := cloudwatch.FetchLogs(params.Svcs, logGroup, logStream)
+
+	if aerr, ok := err.(awserr.Error); ok {
+		if aerr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
+			return nil, api.MakeNotFoundError(logStream)
+		}
+	}
+
 	return logs, err
 }
 
