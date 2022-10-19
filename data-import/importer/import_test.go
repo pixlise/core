@@ -84,7 +84,7 @@ func Example_ImportForTrigger_OCS_Archive_BadData() {
 	]
 }`
 
-	err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
+	_, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
 
 	fmt.Printf("Errors: %v\n", err)
 
@@ -152,7 +152,7 @@ func Example_ImportForTrigger_OCS_Archive_Exists() {
 	]
 }`
 
-	err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
+	_, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
 
 	fmt.Printf("Errors: %v\n", err)
 
@@ -241,7 +241,7 @@ func Example_ImportForTrigger_OCS_Archive_OK() {
 	]
 }`
 
-	err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
+	_, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
 
 	fmt.Printf("Errors: %v\n", err)
 
@@ -294,7 +294,7 @@ func Example_ImportForTrigger_OCS_DatasetEdit() {
 	"logID": "dataimport-unittest123"
 }`
 
-	err = ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
+	_, err = ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
 
 	fmt.Printf("Errors: %v\n", err)
 
@@ -355,7 +355,7 @@ func Example_ImportForTrigger_Manual() {
 	"logID": "dataimport-unittest123"
 }`
 
-	err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
+	_, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
 
 	fmt.Printf("Errors: %v\n", err)
 

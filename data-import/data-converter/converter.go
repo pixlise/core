@@ -57,18 +57,18 @@ func ImportDataset(
 	datasetID string,
 	log logger.ILogger,
 	justArchived bool, // Set to true if a file was just saved to the archive prior to calling this. Affects notifications sent out
-) (string, error) {
+) (string, string, error) {
 
 	workingDir, err := ioutil.TempDir("", "archive")
 	if err != nil {
-		return "", err
+		return workingDir, "", err
 	}
 
 	// Firstly, we download from the archive
 	archive := datasetArchive.NewDatasetArchiveDownloader(remoteFS, localFS, log, datasetBucket, manualUploadBucket)
 	localDownloadPath, localUnzippedPath, zipCount, err := archive.DownloadFromDatasetArchive(datasetID, workingDir)
 	if err != nil {
-		return "", err
+		return workingDir, "", err
 	}
 
 	// If no zip files were loaded, maybe this dataset is a manually uploaded one, try to import from there instead
@@ -76,20 +76,20 @@ func ImportDataset(
 		log.Infof("No zip files found in archive, dataset may have been manually uploaded. Trying to download...")
 		localDownloadPath, localUnzippedPath, err = archive.DownloadFromDatasetUploads(datasetID, workingDir)
 		if err != nil {
-			return "", err
+			return workingDir, "", err
 		}
 	}
 
 	localRangesPath, err := archive.DownloadPseudoIntensityRangesFile(configBucket, localDownloadPath)
 	if err != nil {
-		return "", err
+		return workingDir, "", err
 	}
 
 	log.Infof("Downloading user customisation files...")
 
 	err = archive.DownloadUserCustomisationsForDataset(datasetID, localUnzippedPath)
 	if err != nil {
-		return "", err
+		return workingDir, "", err
 	}
 
 	// Now that we have data down, we can run the importer from local file system
@@ -104,7 +104,7 @@ func ImportDataset(
 		log,
 	)
 	if err != nil {
-		return "", err
+		return workingDir, "", err
 	}
 
 	// Decide what notifications (if any) to send
@@ -113,7 +113,7 @@ func ImportDataset(
 		log.Errorf("Failed to send notification: %v", err)
 	}
 
-	return datasetIDImported, nil
+	return workingDir, datasetIDImported, nil
 }
 
 // ImportFromLocalFileSystem - As the name says, imports from directory on local file system
