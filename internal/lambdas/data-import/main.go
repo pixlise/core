@@ -44,16 +44,19 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		return "", err
 	}
 
-	// Print contents of /tmp directory... AWS reuses nodes, we may have left files in the past
-	localFS := fileaccess.FSAccess{}
-	tmpFiles, err := localFS.ListObjects("/tmp", "")
-	if err == nil {
-		for c, tmpFile := range tmpFiles {
-			fmt.Printf("%v: %v\n", c+1, tmpFile)
+	// Was used to try to diagnose issues, but not needed as it appears /tmp is empty when we start!
+	/*
+		// Print contents of /tmp directory... AWS reuses nodes, we may have left files in the past
+		localFS := fileaccess.FSAccess{}
+		tmpFiles, err := localFS.ListObjects("/tmp", "")
+		if err == nil {
+			for c, tmpFile := range tmpFiles {
+				fmt.Printf("%v: %v\n", c+1, tmpFile)
+			}
+		} else {
+			fmt.Printf("Failed to list tmp files: %v\n", err)
 		}
-	} else {
-		fmt.Printf("Failed to list tmp files: %v\n", err)
-	}
+	*/
 
 	remoteFS := fileaccess.MakeS3Access(svc)
 
