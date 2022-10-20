@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strings"
+	"sync"
 	"time"
 
 	"github.com/pixlise/core/v2/core/auth0login"
@@ -129,50 +129,114 @@ func main() {
 	// Test quantifications on a few pre-determined datasets
 	elementList := []string{"Ca", "Ti"}
 	quantColumns := []string{"CaO_%", "TiO2_%"}
-	detectorConfig := []string{"PIXL/v5", "PIXL/v5", "Breadboard/v1"}
-	pmcsFor5x5 := []int32{}
-	for c := 4043; c < 5806; c++ {
-		if c != 4827 {
-			pmcsFor5x5 = append(pmcsFor5x5, int32(c))
-		}
+	detectorConfig := []string{
+		"PIXL/v5",
+		"PIXL/v5",
+		"Breadboard/v1",
+		`"PIXL/v5"`, // fails! Added because it's an easy way to ensure a quant fails
 	}
-	pmcList := [][]int32{{68, 69, 70, 71}, pmcsFor5x5, {68, 69, 70, 71}}
-	datasetIDs := []string{"983561", "test-fm-5x5-full", "test-kingscourt"} // test-laguna was timing out because saving the high rest TIFFs took longer than 1 minute, which seems to be the test limit
+	pmcsFor5x5 := []int32{}
+	//for c := 4043; c < 5806; c++ {
+	for c := 4043; c < 4300; c++ {
+		//if c != 4827 {
+		pmcsFor5x5 = append(pmcsFor5x5, int32(c))
+		//}
+	}
+	pmcList := [][]int32{{68, 69, 70, 71, 72, 73, 74, 75}, pmcsFor5x5, {68, 69, 70, 71, 72, 73, 74, 75}, {68, 69, 70, 71, 72, 73, 74, 75}}
+	datasetIDs := []string{
+		"983561",
+		"test-fm-5x5-full",
+		"test-kingscourt",
+		"983561", // again, but fail case!
+	}
+	// Once used test-laguna but stopped due to something about timing out because saving the high res TIFs took longer than 1 minute, which seems to be the test limit?!
 
 	// NOTE: By using 2 of the same names, we also test that the delete
 	// didn't leave something behind and another can't be named that way
 	quantNameSuffix := utils.RandStringBytesMaskImpr(8)
-	quantNames := []string{"integration-test-same-name-" + quantNameSuffix, "integration-test-5x5-" + quantNameSuffix, "integration-test-same-name-" + quantNameSuffix}
-
-	quantJobIDs := []string{}
-	for i, datasetID := range datasetIDs {
-		jobID := runQuantificationTestsForDataset(JWT, environment, datasetID, detectorConfig[i], pmcList[i], elementList, quantNames[i], quantColumns)
-		if jobID == "" {
-			printTestResult(fmt.Errorf("No JOB ID Returned for quant execution %v", quantNames[i]), "")
-		}
-		quantJobIDs = append(quantJobIDs, jobID)
+	quantNames := []string{
+		"integration-test 983561 " + quantNameSuffix,
+		"integration-test 5x5 " + quantNameSuffix,
+		"integration-test kingscourt " + quantNameSuffix,
+		"integration-test 983561(fail) " + quantNameSuffix,
 	}
 
-	// Test quant failing by supplying an invalid detector config (missing the /version)
-	printTestStart("Check quantification failure return values")
-	jobID, err := quantVerification(JWT, environment, "983561", pmcList[0], elementList, `"PIXL/v5"`, quantNames[0])
-	if jobID != "" && (err != nil && err.Error() != "Error starting quantification: 400 Bad Request, response: DetectorConfig not in expected format") {
-		printTestResult(fmt.Errorf("Unexpected result when running invalid quant: %v", err), "")
-	} else {
-		printTestResult(nil, "")
+	// Start each quant
+	quantJobIDs := make([]string, len(datasetIDs))
+	expectedFailJobID := ""
+	var wg sync.WaitGroup
+
+	for i, datasetID := range datasetIDs {
+		wg.Add(1)
+		go func(i int, datasetID string) {
+			defer wg.Done()
+
+			now := time.Now().Format(timeFormat)
+			fmt.Printf(" %v   Quantify [dataset: %v, quant name: %v] with config: %v, PMC count: %v\n", now, datasetID, quantNames[i], detectorConfig[i], len(pmcList[i]))
+			jobID, err := runQuantification(JWT, environment, datasetID, pmcList[i], elementList, detectorConfig[i], quantNames[i])
+
+			if i == len(datasetIDs)-1 {
+				expectedFailJobID = jobID
+			}
+
+			quantJobIDs[i] = jobID
+
+			now = time.Now().Format(timeFormat)
+			if err != nil {
+				fmt.Printf(" %v   Quant FAILED [dataset: %v, quant name: %v, job id: %v]\n", now, datasetID, quantNames[i], jobID)
+			} else if jobID == "" {
+				fmt.Printf(" %v   No Quant Job ID returned [dataset: %v, quant name: %v]\n", now, datasetID, quantNames[i])
+			} else {
+				fmt.Printf(" %v   Completed Quantification [dataset: %v, quant name: %v, job id: %v]\n", now, datasetID, quantNames[i], jobID)
+			}
+		}(i, datasetID)
+	}
+
+	// Wait for all
+	fmt.Println("\n---------------------------------------------------------")
+	now := time.Now().Format(timeFormat)
+	fmt.Printf(" %v  STARTING quantifications, will wait for them to complete...\n", now)
+	fmt.Printf("---------------------------------------------------------\n\n")
+
+	wg.Wait()
+
+	fmt.Println("---------------------------------------------------------")
+	now = time.Now().Format(timeFormat)
+	fmt.Printf(" %v  QUANTIFICATIONS completed, verifying results...\n", now)
+	fmt.Printf("---------------------------------------------------------\n\n")
+
+	// Wait a bit before querying
+	//time.Sleep(2 * time.Second)
+
+	// Now verify all the quants (except the last one, which should've failed)
+	for i, jobID := range quantJobIDs {
+		if jobID != expectedFailJobID {
+			verifyQuantificationOKThenDelete(jobID, JWT, environment, datasetIDs[i], detectorConfig[i], pmcList[i], elementList, quantNames[i], quantColumns)
+		}
 	}
 
 	// Check that the expected alerts were generated during quantifications
 	// This a start & finish alert for each job ID...
-	expAlerts := map[string]bool{}
+	expAlerts := []string{}
+	expAlertTopics := []string{}
 
 	for c, jobId := range quantJobIDs {
 		qj := fmt.Sprintf("Started Quantification: %v (id: %v). Click on Quant Tracker tab to follow progress.", quantNames[c], jobId)
-		qjf := fmt.Sprintf("Quantification %v Processing Complete", quantNames[c])
-		fmt.Printf("%v\n", qj)
-		fmt.Printf("%v\n", qjf)
-		expAlerts[qj] = true
-		expAlerts[qjf] = true
+
+		// The last job fails (above)!
+		result := "Complete"
+		if c == len(quantJobIDs)-1 {
+			result = "Failed"
+		}
+
+		qjf := fmt.Sprintf("Quantification %v Processing %v", quantNames[c], result)
+		//fmt.Printf("%v\n", qj)
+		//fmt.Printf("%v\n", qjf)
+		expAlerts = append(expAlerts, qj)
+		expAlertTopics = append(expAlertTopics, "Quantification Processing Start")
+
+		expAlerts = append(expAlerts, qjf)
+		expAlertTopics = append(expAlertTopics, "Quantification Processing Complete")
 	}
 
 	printTestStart("Alerts (Post quantification tests)")
@@ -205,20 +269,22 @@ func main() {
 					break
 				}
 
-				if _, ok := expAlerts[alert.Message]; !ok {
-					err = fmt.Errorf("Alert message was unexpected: %v. Available Messages:\n", alert.Message)
-					for k, _ := range expAlerts {
-						fmt.Printf("Message: %v\n", k)
+				// Find it in our expected output
+				expMatchIdx := -1
+				for c, exp := range expAlerts {
+					if exp == alert.Message {
+						expMatchIdx = c
+						break
 					}
+				}
+
+				if expMatchIdx < 0 {
+					err = fmt.Errorf("Alert message was unexpected: \"%v\"", alert.Message)
 					break
 				}
 
-				// We should be able to work out the topic based on message
-				expTopic := "Quantification Processing Start"
-				if strings.HasSuffix(alert.Message, "Processing Complete") {
-					expTopic = "Quantification Processing Complete"
-					break
-				}
+				// Now verify the topic is as expected
+				expTopic := expAlertTopics[expMatchIdx]
 
 				if alert.Topic != expTopic {
 					err = fmt.Errorf("Alert topic was unexpected: %v", alert.Topic)
@@ -230,7 +296,10 @@ func main() {
 
 	if err != nil {
 		// Print out what was received, to aid debugging
-		fmt.Printf("Alerts received: +%v\n", postQuantAlerts)
+		fmt.Println("Alerts received:")
+		for _, alert := range postQuantAlerts {
+			fmt.Printf(" %v\n", alert.Message)
+		}
 	}
 
 	printTestResult(err, "")

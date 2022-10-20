@@ -35,17 +35,110 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func runQuantificationTestsForDataset(
-	JWT string, environment string, datasetID string, detectorConfig string, pmcList []int32, elementList []string, quantName string, exportColumns []string) string {
-	resultPrint := printTestStart(fmt.Sprintf("Quantification of dataset: %v with config: %v, PMC count: %v", datasetID, detectorConfig, len(pmcList)))
-	jobID, err := quantVerification(JWT, environment, datasetID, pmcList, elementList, detectorConfig, quantName)
-	printTestResult(err, resultPrint)
-	if err != nil {
-		// If quant failed, don't try the rest of these...
-		return ""
+// Runs a quantification and checks that it steps through the expected states
+func runQuantification(JWT string, environment string, datasetID string, pmcList []int32, elementList []string, detectorConfig string, quantName string) (string, error) {
+	reqBody := quantModel.JobCreateParams{
+		Name: quantName,
+		//DatasetPath
+		PMCs:           pmcList,
+		Elements:       elementList,
+		DetectorConfig: detectorConfig,
+		Parameters:     "-q,pPIETXCFsr -b,0,12,60,910,2800,16",
+		RunTimeSec:     60,
+		//RoiID
+		//ElementSetID
+		DatasetID: datasetID,
+		//Creator
+		QuantMode: "Combined",
+		//RoiIDs
+		//IncludeDwells
+		Command: "map",
 	}
 
-	resultPrint = printTestStart(fmt.Sprintf("Export of quantification: %v", jobID))
+	jsonBytes, err := json.Marshal(reqBody)
+
+	req, err := http.NewRequest("POST", generateURL(environment)+"/quantification/"+datasetID, bytes.NewBuffer(jsonBytes))
+	req.Header.Set("Authorization", "Bearer "+JWT)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	bodyStr := string(body)
+
+	jobID := ""
+	if len(bodyStr) > 0 {
+		// Get jobID from response body
+		jobID = strings.TrimSpace(bodyStr)
+		jobID = strings.ReplaceAll(jobID, `"`, "")
+	}
+
+	if resp.Status != "200 OK" {
+		return jobID, fmt.Errorf("Error starting quantification: %v, response: %v", resp.Status, bodyStr)
+	}
+
+	// Now we wait, job should step through various states
+	expectedJobStates := []string{"starting", "preparing_nodes", "nodes_running", "gathering_results", "complete"}
+
+	// We allow a max quant run time of 5 minutes, should finish wayyy before then
+	const maxRunTimeSec = 600
+	const checkInterval = 15
+	nextCheckInterval := 60 // we wait a bit longer for the first go, wasn't that reliable after 10sec.
+	lastStatus := ""
+	for c := 0; c < maxRunTimeSec/checkInterval; c++ {
+		time.Sleep(time.Duration(nextCheckInterval) * time.Second)
+
+		nextCheckInterval = checkInterval // subsequent checks are more frequent
+
+		status, err := getQuantStatus(JWT, environment, datasetID, jobID)
+
+		// If we ever fail to get a status back, stop here
+		if err != nil {
+			return jobID, fmt.Errorf("getQuantStatus failed for dataset %v: %v, response: %v", datasetID, resp.Status, err)
+		}
+
+		// Make sure the state returned is one of the ones we expect
+		validStatus := false
+		for _, expStatus := range expectedJobStates {
+			if status == expStatus {
+				validStatus = true
+				break
+			}
+		}
+
+		if !validStatus {
+			return jobID, fmt.Errorf("Found unexpected job status '%v' for dataset %v, job id: %v", status, datasetID, jobID)
+		}
+
+		//if status != lastStatus {
+		now := time.Now().Format(timeFormat)
+		fmt.Printf(" %v    Job: %v, dataset: %v, status is: %v\n", now, jobID, datasetID, status)
+		lastStatus = status
+		//}
+
+		if status == "complete" {
+			break
+		}
+	}
+
+	// If the status never completed in our wait time, that's an error
+	if lastStatus != "complete" {
+		return jobID, fmt.Errorf("Quant job: %v for dataset %v: timed out!", jobID, datasetID)
+	}
+
+	return jobID, err
+}
+
+func verifyQuantificationOKThenDelete(jobID string, JWT string, environment string, datasetID string, detectorConfig string, pmcList []int32, elementList []string, quantName string, exportColumns []string) error {
+	resultPrint := printTestStart(fmt.Sprintf("Export of quantification: %v", jobID))
 	exportColumnsStr := "["
 	for c, col := range exportColumns {
 		if c > 0 {
@@ -64,8 +157,11 @@ func runQuantificationTestsForDataset(
 		"unquantified-weight",
 	}
 
-	err = verifyExport(JWT, jobID, environment, datasetID, "export-test.zip", fileIds)
+	err := verifyExport(JWT, jobID, environment, datasetID, "export-test.zip", fileIds)
 	printTestResult(err, resultPrint)
+	if err != nil {
+		return err
+	}
 
 	// Download the quant file
 	resultPrint = printTestStart(fmt.Sprintf("Download and verify quantification: %v", jobID))
@@ -77,12 +173,15 @@ func runQuantificationTestsForDataset(
 		err = checkQuantificationContents(quantBytes, pmcList, exportColumns)
 	}
 	printTestResult(err, resultPrint)
+	if err != nil {
+		return err
+	}
 
 	resultPrint = printTestStart(fmt.Sprintf("Delete generated quantification: %v for dataset: %v", jobID, datasetID))
 	err = deleteQuant(JWT, jobID, environment, datasetID)
 	printTestResult(err, resultPrint)
 
-	return jobID
+	return err
 }
 
 func checkQuantificationContents(quantBytes []byte, expPMCList []int32, expOutputElements []string) error {
@@ -193,104 +292,6 @@ func getQuantStatus(JWT string, environment string, datasetID string, jobID stri
 	}
 
 	return string(result.Summaries[jobIndex].JobStatus.Status), nil
-}
-
-// Runs a quantification and checks that it steps through the expected states
-func quantVerification(JWT string, environment string, datasetID string, pmcList []int32, elementList []string, detectorConfig string, quantName string) (string, error) {
-	reqBody := quantModel.JobCreateParams{
-		Name: quantName,
-		//DatasetPath
-		PMCs:           pmcList,
-		Elements:       elementList,
-		DetectorConfig: detectorConfig,
-		Parameters:     "-q,pPIETXCFsr -b,0,12,60,910,2800,16",
-		RunTimeSec:     60,
-		//RoiID
-		//ElementSetID
-		DatasetID: datasetID,
-		//Creator
-		QuantMode: "Combined",
-		//RoiIDs
-		//IncludeDwells
-		Command: "map",
-	}
-
-	jsonBytes, err := json.Marshal(reqBody)
-
-	req, err := http.NewRequest("POST", generateURL(environment)+"/quantification/"+datasetID, bytes.NewBuffer(jsonBytes))
-	req.Header.Set("Authorization", "Bearer "+JWT)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	bodyStr := string(body)
-	if resp.Status != "200 OK" {
-		return "", fmt.Errorf("Error starting quantification: %v, response: %v", resp.Status, bodyStr)
-	}
-
-	// Get jobID from response body
-	jobID := strings.TrimSpace(bodyStr)
-	jobID = strings.ReplaceAll(jobID, `"`, "")
-
-	// Now we wait, job should step through various states
-	expectedJobStates := []string{"starting", "preparing_nodes", "nodes_running", "gathering_results", "complete"}
-
-	// We allow a max quant run time of 5 minutes, should finish wayyy before then
-	const maxRunTimeSec = 600
-	const checkInterval = 10
-	nextCheckInterval := 90 // we wait a bit longer for the first go, wasn't that reliable after 10sec.
-	lastStatus := ""
-	for c := 0; c < maxRunTimeSec/checkInterval; c++ {
-		time.Sleep(time.Duration(nextCheckInterval) * time.Second)
-
-		nextCheckInterval = checkInterval // subsequent checks are more frequent
-
-		status, err := getQuantStatus(JWT, environment, datasetID, jobID)
-
-		// If we ever fail to get a status back, stop here
-		if err != nil {
-			return "", fmt.Errorf("getQuantStatus failed for dataset %v: %v, response: %v", datasetID, resp.Status, err)
-		}
-
-		// Make sure the state returned is one of the ones we expect
-		validStatus := false
-		for _, expStatus := range expectedJobStates {
-			if status == expStatus {
-				validStatus = true
-				break
-			}
-		}
-
-		if !validStatus {
-			return "", fmt.Errorf("Found unexpected job status '%v' for dataset %v, job id: %v", status, datasetID, jobID)
-		}
-
-		if status != lastStatus {
-			now := time.Now().Format(timeFormat)
-			fmt.Printf(" %v   Quant job: %v for dataset: %v - status changed to: %v\n", now, jobID, datasetID, status)
-			lastStatus = status
-		}
-
-		if status == "complete" {
-			break
-		}
-	}
-
-	// If the status never completed in our wait time, that's an error
-	if lastStatus != "complete" {
-		return "", fmt.Errorf("Quant job: %v for dataset %v: timed out!", jobID, datasetID)
-	}
-
-	return jobID, err
 }
 
 // deletes quant after running it
