@@ -42,7 +42,7 @@ func main() {
 		fmt.Println("  - auth0_user_id - Auth0 user id (without Auth0| prefix)")
 		fmt.Println("  - auth0_client_id - Auth0 API client id")
 		fmt.Println("  - auth0_secret - Auth0 API secret")
-		fmt.Println("  - auth0_domain - Auth0 API domain eg sometihng.au.auth0.com")
+		fmt.Println("  - auth0_domain - Auth0 API domain eg something.au.auth0.com")
 		fmt.Println("  - auth0_audience - Auth0 API audience")
 		fmt.Println("  - expected_version is what we expect the API to return, eg 2.0.8-RC12. Or nil to skip check")
 		os.Exit(1)
@@ -121,9 +121,13 @@ func main() {
 	printTestResult(err, "")
 
 	if err == nil {
-		printTestStart(fmt.Sprintf("Downloading dataset context image file for: %v, id=%v", datasets[downloadTestIdx].Title, datasets[downloadTestIdx].DatasetID))
-		_, err = checkFileDownload(JWT, datasets[downloadTestIdx].ContextImageLink)
-		printTestResult(err, "")
+		if len(datasets[downloadTestIdx].ContextImageLink) > 0 {
+			printTestStart(fmt.Sprintf("Downloading dataset context image file for: %v, id=%v", datasets[downloadTestIdx].Title, datasets[downloadTestIdx].DatasetID))
+			_, err = checkFileDownload(JWT, datasets[downloadTestIdx].ContextImageLink)
+			printTestResult(err, "")
+		} else {
+			fmt.Println("Image download not attempted because dataset appears to not contain a context image")
+		}
 	}
 
 	// Test quantifications on a few pre-determined datasets
@@ -305,21 +309,6 @@ func main() {
 	printTestResult(err, "")
 
 	fmt.Println("\n==============================")
-	/*
-		if environment == "staging" || environment == "prod" {
-			printTestStart("OCS Integration Test")
-			err = runOCSTests()
-			printTestResult(err, "")
-
-			fmt.Println("\n==============================")
-
-			printTestStart("Publish Integration Test")
-			err = runPublishTests()
-			printTestResult(err, "")
-
-			fmt.Println("\n==============================")
-		}
-	*/
 
 	if len(failedTestNames) == 0 {
 		fmt.Println("PASSED All Tests!")
