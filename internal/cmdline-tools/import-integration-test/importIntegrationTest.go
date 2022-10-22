@@ -112,6 +112,8 @@ func main() {
 		log.Fatalf("%v\n", err)
 	}
 
+	showSubHeading("Waiting before checking it worked...")
+
 	// Now we poll for the dataset files to appear. If they don't in the timeout period
 	// we give up and say it failed
 	timeoutSec := 300
