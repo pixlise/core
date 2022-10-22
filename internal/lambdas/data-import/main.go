@@ -73,7 +73,7 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		// but if this code ran elsewhere we wouldn't delete it, to have something to look at
 		if len(workingDir) > 0 {
 			removeErr := os.RemoveAll(workingDir)
-			if removeErr == nil {
+			if removeErr != nil {
 				fmt.Printf("Failed to remove working dir: \"%v\". Error: %v\n", workingDir, removeErr)
 			} else {
 				fmt.Printf("Removed working dir: \"%v\"\n", workingDir)
