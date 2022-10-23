@@ -76,7 +76,7 @@ func Example_DecodeArchiveFileName() {
 	// Output:
 	// 161677829, 1655016060, <nil>
 	// /Archive/161677829, 1655016060, <nil>
-	// , 0, parsing time "06-2022-06-41-00": month out of range
+	// , 0, DecodeArchiveFileName "12-06-2022-06-41-00.zip" error: parsing time "06-2022-06-41-00": month out of range
 	// , 0, DecodeArchiveFileName unexpected file name: readme.txt
 	// , 0, DecodeArchiveFileName unexpected file name: /Archive/readme.txt
 }
@@ -103,8 +103,8 @@ func Example_getOrderedArchiveFiles() {
 	// Output:
 	// [161677829-12-05-2022-06-40-00.zip 161677829-12-06-2022-06-39-00.zip 161677829-12-06-2022-06-41-00.zip 161677829-12-06-2022-06-42-00.zip], <nil>
 	// [161677829-12-05-2022-06-40-00.zip Archive/161677829-12-06-2022-06-39-00.zip Archive/161677829-12-06-2022-06-41-00.zip Archive/161677829-12-06-2022-06-42-00.zip], <nil>
-	// [], parsing time "12-05-2022-24-40-00": hour out of range
-	// [], parsing time "06-2022-06-39-00": month out of range
+	// [], DecodeArchiveFileName "161677829-12-05-2022-24-40-00.zip" error: parsing time "12-05-2022-24-40-00": hour out of range
+	// [], DecodeArchiveFileName "12-06-2022-06-39-00.zip" error: parsing time "06-2022-06-39-00": month out of range
 	// [], DecodeArchiveFileName unexpected file name: readme.txt
 	// [], <nil>
 }
