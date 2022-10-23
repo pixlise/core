@@ -89,6 +89,8 @@ jobs:
         rm integrationtest-linux && \
         zip dataimport-linux-${{ steps.version.outputs.version }}.zip dataimport-linux && \
         rm dataimport-linux && \
+        zip importtest-linux-${{ steps.version.outputs.version }}.zip importtest-linux && \
+        rm importtest-linux && \
         aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
     needs: test
 
