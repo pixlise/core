@@ -20,14 +20,15 @@ package importerutils
 import (
 	"bufio"
 	"encoding/csv"
+	"fmt"
 	"io"
 	"os"
 
 	"github.com/pixlise/core/v2/core/logger"
 )
 
-func ReadCSV(path string, headerIdx int, sep rune, jobLog logger.ILogger) ([][]string, error) {
-	csvFile, err := os.Open(path)
+func ReadCSV(filePath string, headerIdx int, sep rune, jobLog logger.ILogger) ([][]string, error) {
+	csvFile, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +57,7 @@ func ReadCSV(path string, headerIdx int, sep rune, jobLog logger.ILogger) ([][]s
 	// "wrong number of fields", we can ignore it and keep reading
 	rows := [][]string{}
 	var lineRecord []string
-	for true {
+	for {
 		lineRecord, err = r.Read()
 		if err == io.EOF {
 			break
@@ -71,11 +72,14 @@ func ReadCSV(path string, headerIdx int, sep rune, jobLog logger.ILogger) ([][]s
 		rows = append(rows, lineRecord)
 	}
 
+	if len(rows) <= 0 {
+		return rows, fmt.Errorf("Read 0 rows from: %v", filePath)
+	}
 	return rows, nil
 }
 
-func ReadFileLines(path string, jobLog logger.ILogger) ([]string, error) {
-	file, err := os.Open(path)
+func ReadFileLines(filePath string, jobLog logger.ILogger) ([]string, error) {
+	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
