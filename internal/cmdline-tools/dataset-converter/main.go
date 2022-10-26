@@ -133,5 +133,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	ilog.Infof("Import complete: %v", datasetIDImported)
+	ilog.Infof("Import complete. ID was: \"%v\"", datasetIDImported)
 }
