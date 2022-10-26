@@ -84,5 +84,8 @@ func ImportForTrigger(triggerMessage []byte, envName string, configBucket string
 		log.Errorf("%v", err)
 	}
 
+	// Ensure we write everything out...
+	log.Close()
+
 	return workingDir, err
 }

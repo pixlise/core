@@ -85,4 +85,4 @@ func HandlePanicWithLog(withLog ILogger) {
 		panic(err)
 		//os.Exit(1)
 	}
-}()
+}
