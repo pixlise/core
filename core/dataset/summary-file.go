@@ -18,35 +18,56 @@
 package dataset
 
 import (
+	"fmt"
+
 	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/core/fileaccess"
 )
 
 // SummaryFileData - Structure of dataset summary JSON files
 type SummaryFileData struct {
-	DatasetID           string `json:"dataset_id"`
-	Group               string `json:"group"`
-	DriveID             int32  `json:"drive_id"`
-	SiteID              int32  `json:"site_id"`
-	TargetID            string `json:"target_id"`
-	Site                string `json:"site"`
-	Target              string `json:"target"`
-	Title               string `json:"title"`
-	SOL                 string `json:"sol"`
-	RTT                 int32  `json:"rtt"`
-	SCLK                int32  `json:"sclk"`
-	ContextImage        string `json:"context_image"`
-	LocationCount       int    `json:"location_count"`
-	DataFileSize        int    `json:"data_file_size"`
-	ContextImages       int    `json:"context_images"`
-	TIFFContextImages   int    `json:"tiff_context_images"`
-	NormalSpectra       int    `json:"normal_spectra"`
-	DwellSpectra        int    `json:"dwell_spectra"`
-	BulkSpectra         int    `json:"bulk_spectra"`
-	MaxSpectra          int    `json:"max_spectra"`
-	PseudoIntensities   int    `json:"pseudo_intensities"`
-	DetectorConfig      string `json:"detector_config"`
-	CreationUnixTimeSec int64  `json:"create_unixtime_sec"`
+	DatasetID           string      `json:"dataset_id"`
+	Group               string      `json:"group"`
+	DriveID             int32       `json:"drive_id"`
+	SiteID              int32       `json:"site_id"`
+	TargetID            string      `json:"target_id"`
+	Site                string      `json:"site"`
+	Target              string      `json:"target"`
+	Title               string      `json:"title"`
+	SOL                 string      `json:"sol"`
+	RTT                 interface{} `json:"rtt,string"` // Unfortunately we stored it as int initially, so this has to accept files stored that way
+	SCLK                int32       `json:"sclk"`
+	ContextImage        string      `json:"context_image"`
+	LocationCount       int         `json:"location_count"`
+	DataFileSize        int         `json:"data_file_size"`
+	ContextImages       int         `json:"context_images"`
+	TIFFContextImages   int         `json:"tiff_context_images"`
+	NormalSpectra       int         `json:"normal_spectra"`
+	DwellSpectra        int         `json:"dwell_spectra"`
+	BulkSpectra         int         `json:"bulk_spectra"`
+	MaxSpectra          int         `json:"max_spectra"`
+	PseudoIntensities   int         `json:"pseudo_intensities"`
+	DetectorConfig      string      `json:"detector_config"`
+	CreationUnixTimeSec int64       `json:"create_unixtime_sec"`
+}
+
+func (s SummaryFileData) GetRTT() string {
+	result := fmt.Sprintf("%v", s.RTT)
+	padding := 9 - len(result)
+	if padding > 0 {
+		for i := 0; i < padding; i++ {
+			result = "0" + result
+		}
+	}
+	/*
+		switch s.RTT.(type) {
+		case int:
+			rttI := int(s.RTT)
+			return fmt.Sprintf("%09d", rttI)
+		default:
+		}
+	*/
+	return result
 }
 
 // DatasetConfig is the container of the above

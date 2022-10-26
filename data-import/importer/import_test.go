@@ -259,7 +259,7 @@ func Example_ImportForTrigger_OCS_Archive_OK() {
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Applying custom title: Naltsos": true
 	// Logged "Matched aligned image: PCCR0577_0718181212_000MSA_N029000020073728500030LUD01.tif, offset(0, 0), scale(1, 1). Match for aligned index: 0": true
-	// {DatasetID:048300551 Group:PIXL-FM DriveID:1712 SiteID:4 TargetID:? Site: Target: Title:Naltsos SOL:0125 RTT:48300551 SCLK:678031418 ContextImage:PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png LocationCount:133 DataFileSize:843541 ContextImages:5 TIFFContextImages:1 NormalSpectra:242 DwellSpectra:0 BulkSpectra:2 MaxSpectra:2 PseudoIntensities:121 DetectorConfig:PIXL CreationUnixTimeSec:0}
+	// {DatasetID:048300551 Group:PIXL-FM DriveID:1712 SiteID:4 TargetID:? Site: Target: Title:Naltsos SOL:0125 RTT:048300551 SCLK:678031418 ContextImage:PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png LocationCount:133 DataFileSize:843541 ContextImages:5 TIFFContextImages:1 NormalSpectra:242 DwellSpectra:0 BulkSpectra:2 MaxSpectra:2 PseudoIntensities:121 DetectorConfig:PIXL CreationUnixTimeSec:0}
 }
 
 // Import FM-style (simulate trigger by dataset edit screen), should create dataset with custom name+image
@@ -312,7 +312,7 @@ func Example_ImportForTrigger_OCS_DatasetEdit() {
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Applying custom title: Naltsos": true
 	// Logged "Matched aligned image: PCCR0577_0718181212_000MSA_N029000020073728500030LUD01.tif, offset(0, 0), scale(1, 1). Match for aligned index: 0": true
-	// {DatasetID:048300551 Group:PIXL-FM DriveID:1712 SiteID:4 TargetID:? Site: Target: Title:Naltsos SOL:0125 RTT:48300551 SCLK:678031418 ContextImage:PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png LocationCount:133 DataFileSize:843541 ContextImages:5 TIFFContextImages:1 NormalSpectra:242 DwellSpectra:0 BulkSpectra:2 MaxSpectra:2 PseudoIntensities:121 DetectorConfig:PIXL CreationUnixTimeSec:0}
+	// {DatasetID:048300551 Group:PIXL-FM DriveID:1712 SiteID:4 TargetID:? Site: Target: Title:Naltsos SOL:0125 RTT:048300551 SCLK:678031418 ContextImage:PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png LocationCount:133 DataFileSize:843541 ContextImages:5 TIFFContextImages:1 NormalSpectra:242 DwellSpectra:0 BulkSpectra:2 MaxSpectra:2 PseudoIntensities:121 DetectorConfig:PIXL CreationUnixTimeSec:0}
 }
 
 func printManualOKLogOutput(log *logger.StdOutLoggerForTest, datasetBucket string, remoteFS fileaccess.FileAccess) {
@@ -375,7 +375,7 @@ func Example_ImportForTrigger_Manual() {
 	// Logged "WARNING: No main context image determined": true
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Warning: No import.json found, defaults will be used": true
-	// {DatasetID:test1234 Group:JPL Breadboard DriveID:0 SiteID:0 TargetID:0 Site: Target: Title:test1234 SOL: RTT:0 SCLK:0 ContextImage: LocationCount:1261 DataFileSize:6786781 ContextImages:0 TIFFContextImages:0 NormalSpectra:2520 DwellSpectra:0 BulkSpectra:2 MaxSpectra:2 PseudoIntensities:0 DetectorConfig:Breadboard CreationUnixTimeSec:0}
+	// {DatasetID:test1234 Group:JPL Breadboard DriveID:0 SiteID:0 TargetID:0 Site: Target: Title:test1234 SOL: RTT: SCLK:0 ContextImage: LocationCount:1261 DataFileSize:6786781 ContextImages:0 TIFFContextImages:0 NormalSpectra:2520 DwellSpectra:0 BulkSpectra:2 MaxSpectra:2 PseudoIntensities:0 DetectorConfig:Breadboard CreationUnixTimeSec:0}
 }
 
 /* NOT TESTED YET, because it's not done yet!

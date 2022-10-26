@@ -85,36 +85,36 @@ func Example_matchesSearch() {
 	}
 
 	queryItems := [][]queryItem{
-		[]queryItem{queryItem{"location_count", "=", "446"}},
-		[]queryItem{queryItem{"location_count", "=", "445"}},
-		[]queryItem{queryItem{"location_count", ">", "445"}},
-		[]queryItem{queryItem{"location_count", "<", "500"}},
-		[]queryItem{queryItem{"dataset_id", ">", "590300"}},
-		[]queryItem{queryItem{"sol", ">", "7"}, queryItem{"sol", "<", "141"}},
-		[]queryItem{queryItem{"location_count", "=", "446"}, queryItem{"detector_config", "=", "PIXL"}},
-		[]queryItem{
+		{queryItem{"location_count", "=", "446"}},
+		{queryItem{"location_count", "=", "445"}},
+		{queryItem{"location_count", ">", "445"}},
+		{queryItem{"location_count", "<", "500"}},
+		{queryItem{"dataset_id", ">", "590300"}},
+		{queryItem{"sol", ">", "7"}, queryItem{"sol", "<", "141"}},
+		{queryItem{"location_count", "=", "446"}, queryItem{"detector_config", "=", "PIXL"}},
+		{
 			queryItem{"location_count", "=", "446"},
 			queryItem{"sol", "=", "10"},
-			queryItem{"rtt", "<", "600000"},
+			queryItem{"rtt", "=", "1590340"},
 			queryItem{"sclk", ">", "123450"},
 			queryItem{"data_file_size", ">", "2600000"},
 			queryItem{"normal_spectra", ">", "800"},
 			queryItem{"drive_id", ">", "290"},
 			queryItem{"site_id", "=", "1"},
 		},
-		[]queryItem{
+		{
 			queryItem{"location_count", "=", "446"},
 			queryItem{"sol", "=", "10"},
-			queryItem{"rtt", "<", "600000"},
+			queryItem{"rtt", "=", "590340"},
 			queryItem{"sclk", ">", "123450"},
 			queryItem{"data_file_size", ">", "2600000"},
 			queryItem{"normal_spectra", ">", "800"},
 			queryItem{"drive_id", ">", "292"},
 			queryItem{"site_id", "=", "1"},
 		},
-		[]queryItem{},
-		[]queryItem{queryItem{"group_id", "=", "group1|the-group|anotherone"}},
-		[]queryItem{queryItem{"group_id", "=", "group1|not-the-group|anotherone"}},
+		{},
+		{queryItem{"group_id", "=", "group1|the-group|anotherone"}},
+		{queryItem{"group_id", "=", "group1|not-the-group|anotherone"}},
 	}
 
 	for _, q := range queryItems {
@@ -130,7 +130,7 @@ func Example_matchesSearch() {
 	// Failed to compare dataset_id, can only use = for values "590300", "590340"|false
 	// <nil>|true
 	// <nil>|true
-	// <nil>|true
+	// <nil>|false
 	// <nil>|false
 	// <nil>|true
 	// <nil>|true
