@@ -32,7 +32,7 @@ func generateURL(environment string) string {
 	// Prod or other fixed environments...
 	if environment == "prod" {
 		url += "www-api"
-	} else if environment == "dev" || environment == "staging" {
+	} else if environment == "dev" || environment == "staging" || environment == "test" {
 		url += environment + "-api"
 	} else {
 		// Review environments have more stuff added on, eg:
