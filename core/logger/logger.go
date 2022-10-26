@@ -69,4 +69,20 @@ type ILogger interface {
 	Errorf(format string, a ...interface{})
 	SetLogLevel(level LogLevel)
 	GetLogLevel() LogLevel
+	Close()
 }
+
+// This can be called from anywhere that wants to handle a panic gracefully and ensure that
+// any logging is done (eg completing sending to cloudwatch)
+func HandlePanicWithLog(withLog ILogger) {
+	err := recover()
+	if err != nil {
+		withLog.Errorf("PANIC %v", err)
+
+		// Wait for the above and other msgs to get sent to cloudwatch
+		withLog.Close()
+
+		panic(err)
+		//os.Exit(1)
+	}
+}()

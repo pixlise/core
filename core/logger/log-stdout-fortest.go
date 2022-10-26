@@ -67,3 +67,6 @@ func (l *StdOutLoggerForTest) LogContains(txt string) bool {
 	}
 	return false
 }
+
+func (l *StdOutLoggerForTest) Close() {
+}

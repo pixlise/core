@@ -33,28 +33,31 @@ import (
 
 // CloudwatchLogger - Structure holding API logger internals
 type CloudwatchLogger struct {
-	cwClient      *cloudwatchlogs.CloudWatchLogs
-	logGroupName  string
-	logStreamName string
-	logLevel      LogLevel
-	sequenceToken string
-	queue         []string
-	lock          sync.Mutex
-	wg            sync.WaitGroup
-	retentionDays int
+	cwClient       *cloudwatchlogs.CloudWatchLogs
+	logGroupName   string
+	logStreamName  string
+	logLevel       LogLevel
+	sequenceToken  string
+	queue          []string
+	lock           sync.Mutex
+	retentionDays  int
+	logIntervalSec time.Duration
+	running        bool
 }
 
 // InitCloudWatchLogger - initialises the logger, given settings and AWS session
 func InitCloudWatchLogger(sess *session.Session, logGroupName string, logStreamName string, logLevel LogLevel, retentionDays int, logIntervalSec time.Duration) (ILogger, error) {
 	result := CloudwatchLogger{
-		cwClient:      cloudwatchlogs.New(sess),
-		logGroupName:  logGroupName,
-		logStreamName: logStreamName,
-		logLevel:      logLevel,
-		sequenceToken: "",
-		queue:         []string{},
-		lock:          sync.Mutex{},
-		retentionDays: retentionDays,
+		cwClient:       cloudwatchlogs.New(sess),
+		logGroupName:   logGroupName,
+		logStreamName:  logStreamName,
+		logLevel:       logLevel,
+		sequenceToken:  "",
+		queue:          []string{},
+		lock:           sync.Mutex{},
+		retentionDays:  retentionDays,
+		logIntervalSec: logIntervalSec,
+		running:        true,
 	}
 	/*
 		tok := ""
@@ -82,7 +85,8 @@ func InitCloudWatchLogger(sess *session.Session, logGroupName string, logStreamN
 }
 
 func (l *CloudwatchLogger) Close() {
-	l.wg.Wait() // wait for all log entries to be accepted
+	// Sleep this thread for long enough that the other thread pumps any messages left in its queue to cloudwatch
+	time.Sleep(time.Second * l.logIntervalSec * 2)
 }
 
 /*
@@ -160,7 +164,7 @@ func (l *CloudwatchLogger) createLogStream(name string) error {
 func (l *CloudwatchLogger) processQueue(logIntervalSec time.Duration) error {
 	var logQueue []*cloudwatchlogs.InputLogEvent
 
-	for {
+	for l.running {
 		l.lock.Lock()
 		if len(l.queue) > 0 {
 			for _, item := range l.queue {
@@ -212,6 +216,10 @@ func (l *CloudwatchLogger) processQueue(logIntervalSec time.Duration) error {
 
 		time.Sleep(time.Second * logIntervalSec)
 	}
+
+	// Might be useful seeing this on shutdown...
+	fmt.Println("logger processQueue complete")
+	return nil
 }
 
 // Log enqueues a log message to be written to a log stream.

@@ -25,7 +25,7 @@ import (
 func LogIfMoreFoundMSA(m dataConvertModels.DetectorSampleByPMC, typename string, morethan int, log logger.ILogger) {
 	for k, v := range m {
 		if len(v) > morethan {
-			log.Infof("PMC %d has %d %s entries\n", k, len(v), typename)
+			log.Infof("PMC %d has %d %s entries", k, len(v), typename)
 		}
 	}
 }

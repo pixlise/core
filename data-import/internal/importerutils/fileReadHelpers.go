@@ -20,7 +20,6 @@ package importerutils
 import (
 	"bufio"
 	"encoding/csv"
-	"fmt"
 	"io"
 	"os"
 
@@ -72,9 +71,9 @@ func ReadCSV(filePath string, headerIdx int, sep rune, jobLog logger.ILogger) ([
 		rows = append(rows, lineRecord)
 	}
 
-	if len(rows) <= 0 {
+	/*if len(rows) <= 0 {
 		return rows, fmt.Errorf("Read 0 rows from: %v", filePath)
-	}
+	}*/
 	return rows, nil
 }
 
