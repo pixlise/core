@@ -255,7 +255,7 @@ func matchesSearch(queryParams []queryItem, dataset datasetModel.SummaryFileData
 		} else if query.name == "sol" {
 			match, err = query.compareSAllowIntConvert(dataset.SOL)
 		} else if query.name == "rtt" {
-			match, err = query.compareI(int(dataset.RTT))
+			match, err = query.compareS(dataset.GetRTT())
 		} else if query.name == "sclk" {
 			match, err = query.compareI(int(dataset.SCLK))
 		} else if query.name == "data_file_size" {
