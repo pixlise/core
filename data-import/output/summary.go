@@ -147,6 +147,7 @@ func lookUpPreviousSummary(datasetID string, bucket string, fs fileaccess.FileAc
 	}
 	if len(files) > 0 {
 		err = fs.ReadJSON(bucket, path.Join(datasetID, filepaths.DatasetSummaryFileName), &summaryData, false)
+		summaryData.RTT = summaryData.GetRTT() // For backwards compatibility we can read it as an int, but here we convert to string
 		if err != nil {
 			return summaryData, err
 		}

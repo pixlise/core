@@ -375,7 +375,7 @@ func Example_ImportForTrigger_Manual() {
 	// Logged "WARNING: No main context image determined": true
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Warning: No import.json found, defaults will be used": true
-	// {DatasetID:test1234 Group:JPL Breadboard DriveID:0 SiteID:0 TargetID:0 Site: Target: Title:test1234 SOL: RTT: SCLK:0 ContextImage: LocationCount:1261 DataFileSize:6786781 ContextImages:0 TIFFContextImages:0 NormalSpectra:2520 DwellSpectra:0 BulkSpectra:2 MaxSpectra:2 PseudoIntensities:0 DetectorConfig:Breadboard CreationUnixTimeSec:0}
+	// {DatasetID:test1234 Group:JPL Breadboard DriveID:0 SiteID:0 TargetID:0 Site: Target: Title:test1234 SOL: RTT:000000000 SCLK:0 ContextImage: LocationCount:1261 DataFileSize:6786781 ContextImages:0 TIFFContextImages:0 NormalSpectra:2520 DwellSpectra:0 BulkSpectra:2 MaxSpectra:2 PseudoIntensities:0 DetectorConfig:Breadboard CreationUnixTimeSec:0}
 }
 
 /* NOT TESTED YET, because it's not done yet!
