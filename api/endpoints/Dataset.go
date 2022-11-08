@@ -442,7 +442,9 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 	params.Svcs.Log.Debugf("Dataset create started for format: %v, id: %v", datasetID, format)
 
 	// Validate the dataset ID - can't contain funny characters because it ends up as an S3 path
-	datasetID = fileaccess.MakeValidObjectName(datasetID)
+	// NOTE: we also turn space to _ here! Having spaces in the path broke quants because the
+	// quant summary file was written with a + instead of a space?!
+	datasetID = fileaccess.MakeValidObjectName(datasetID, false)
 
 	if format != "jpl-breadboard" {
 		return nil, fmt.Errorf("Unexpected format: \"%v\"", format)

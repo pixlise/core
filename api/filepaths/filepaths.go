@@ -379,7 +379,7 @@ func GetWorkspacePath(userID string, datasetID string, id string) string {
 		return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateSavedSubpath)
 	}
 	// ensure it's a valid file name
-	id = fileaccess.MakeValidObjectName(id)
+	id = fileaccess.MakeValidObjectName(id, true)
 	return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateSavedSubpath, id+".json")
 }
 
@@ -389,7 +389,7 @@ func GetCollectionPath(userID string, datasetID string, id string) string {
 		return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateCollectionsSubpath)
 	}
 	// ensure it's a valid file name
-	id = fileaccess.MakeValidObjectName(id)
+	id = fileaccess.MakeValidObjectName(id, true)
 	return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateCollectionsSubpath, id+".json")
 }
 
