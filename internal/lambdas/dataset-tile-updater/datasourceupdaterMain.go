@@ -72,6 +72,7 @@ func updateDatasets(fs fileaccess.FileAccess, datasetBucket string, configBucket
 			log.Errorf("Failed to read dataset summary %v: %v", datasetBucket, err)
 			continue
 		}
+		summary.RTT = summary.GetRTT() // For backwards compatibility we can read it as an int, but here we convert to string
 
 		if !utils.StringInSlice(summary.DatasetID, badDatasetIDs) {
 			summaries = append(summaries, summary)
