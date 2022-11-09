@@ -334,6 +334,7 @@ func datasetListing(params handlers.ApiHandlerParams) (interface{}, error) {
 
 			// make a copy of it to be inserted into the returned structure
 			s := item
+			s.RTT = s.GetRTT() // For backwards compatibility we can read it as an int, but here we convert to string
 			saveItem.SummaryFileData = &s
 
 			saveItem.DataSetLink = params.PathParams[handlers.HostParamName] + "/" + path.Join(datasetPathPrefix, handlers.UrlStreamDownloadIndicator, saveItem.DatasetID, datasetURLEnd)
@@ -356,6 +357,7 @@ func datasetExport(params handlers.ApiHandlerGenericParams) error {
 
 	return downloadDatasetFromS3(params, rtt, false)
 }
+
 func datasetExportCompiled(params handlers.ApiHandlerGenericParams) error {
 	rtt := params.PathParams[datasetIdentifier]
 
@@ -366,7 +368,6 @@ func datasetExportConcat(params handlers.ApiHandlerGenericParams) error {
 	rtt := params.PathParams[datasetIdentifier]
 
 	return downloadDatasetFromS3(params, rtt, true)
-
 }
 
 func downloadDatasetFromS3(params handlers.ApiHandlerGenericParams, rtt string, concat bool) error {
@@ -523,13 +524,13 @@ func datasetFileStream(params handlers.ApiHandlerStreamParams) (*s3.GetObjectOut
 	var etag = ""
 	var lm = time.Time{}
 	if result != nil && result.ETag != nil {
-		params.Svcs.Log.Debugf("ETAG for cache: %s, s3://%v/%v\n", *result.ETag, imgBucket, s3Path)
+		params.Svcs.Log.Debugf("ETAG for cache: %s, s3://%v/%v", *result.ETag, imgBucket, s3Path)
 		etag = *result.ETag
 	}
 
 	if result != nil && result.LastModified != nil {
 		lm = *result.LastModified
-		params.Svcs.Log.Debugf("Last Modified for cache: %v, s3://%v/%v\n", lm, imgBucket, s3Path)
+		params.Svcs.Log.Debugf("Last Modified for cache: %v, s3://%v/%v", lm, imgBucket, s3Path)
 	}
 
 	return result, fileName, etag, lm.String(), 0, err

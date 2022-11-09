@@ -52,21 +52,28 @@ type SummaryFileData struct {
 }
 
 func (s SummaryFileData) GetRTT() string {
-	result := fmt.Sprintf("%v", s.RTT)
+	result := ""
+	switch s.RTT.(type) {
+	case float64:
+		f, ok := s.RTT.(float64)
+		if ok {
+			result = fmt.Sprintf("%d", int(f))
+		}
+	case int:
+		i, ok := s.RTT.(int)
+		if ok {
+			result = fmt.Sprintf("%d", i)
+		}
+	default:
+		result = fmt.Sprintf("%v", s.RTT)
+	}
+
 	padding := 9 - len(result)
 	if padding > 0 {
 		for i := 0; i < padding; i++ {
 			result = "0" + result
 		}
 	}
-	/*
-		switch s.RTT.(type) {
-		case int:
-			rttI := int(s.RTT)
-			return fmt.Sprintf("%09d", rttI)
-		default:
-		}
-	*/
 	return result
 }
 
@@ -89,5 +96,10 @@ type APIDatasetSummary struct {
 func ReadDataSetSummary(fs fileaccess.FileAccess, dataBucket string, datasetID string) (SummaryFileData, error) {
 	result := SummaryFileData{}
 	s3Path := filepaths.GetDatasetFilePath(datasetID, filepaths.DatasetSummaryFileName)
-	return result, fs.ReadJSON(dataBucket, s3Path, &result, false)
+
+	err := fs.ReadJSON(dataBucket, s3Path, &result, false)
+	if err == nil {
+		result.RTT = result.GetRTT() // For backwards compatibility we can read it as an int, but here we convert to string
+	}
+	return result, err
 }
