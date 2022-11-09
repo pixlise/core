@@ -223,11 +223,14 @@ func Example_s3() {
 }
 
 func Example_MakeValidObjectName() {
-	fmt.Println(MakeValidObjectName("my file!"))
-	fmt.Println(MakeValidObjectName("this/path/to.bin"))
-	fmt.Println(MakeValidObjectName("Hope \"this\" isn't too $expensive"))
-	fmt.Println(MakeValidObjectName("This-file is it"))
-	fmt.Println(MakeValidObjectName("A!B#C$D/E\\F"))
+	fmt.Println(MakeValidObjectName("my file!", true))
+	fmt.Println(MakeValidObjectName("this/path/to.bin", true))
+	fmt.Println(MakeValidObjectName("Hope \"this\" isn't too $expensive", true))
+	fmt.Println(MakeValidObjectName("This-file is it", true))
+	fmt.Println(MakeValidObjectName("A!B#C$D/E\\F", true))
+	fmt.Println(MakeValidObjectName("This-file; is it", true))
+	fmt.Println(MakeValidObjectName("This-file is it", true))
+	fmt.Println(MakeValidObjectName("This-file is it", false))
 
 	// Output:
 	// my file
@@ -235,6 +238,9 @@ func Example_MakeValidObjectName() {
 	// Hope this isnt too expensive
 	// This-file is it
 	// ABCD_E_F
+	// This-file is it
+	// This-file is it
+	// This-file_is_it
 }
 
 func Example_IsValidObjectName() {

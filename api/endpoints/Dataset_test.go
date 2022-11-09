@@ -947,7 +947,7 @@ func Example_datasetCreatePost_CantCheckExists() {
 	defer mockS3.FinishTest()
 
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
-		{Bucket: aws.String(artifactManualUploadBucket), Prefix: aws.String("UploadedDatasets/the-test dataset")},
+		{Bucket: aws.String(artifactManualUploadBucket), Prefix: aws.String("UploadedDatasets/the-test_dataset")},
 	}
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
 		nil,
@@ -969,7 +969,7 @@ func Example_datasetCreatePost_CantCheckExists() {
 	// Output:
 	// <nil>
 	// 500
-	// Failed to list existing files for dataset ID: the-test dataset. Error: Returning error from ListObjectsV2
+	// Failed to list existing files for dataset ID: the-test_dataset. Error: Returning error from ListObjectsV2
 }
 
 func Example_datasetCreatePost_BadZip() {
@@ -977,7 +977,7 @@ func Example_datasetCreatePost_BadZip() {
 	defer mockS3.FinishTest()
 
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
-		{Bucket: aws.String(artifactManualUploadBucket), Prefix: aws.String("UploadedDatasets/the-test dataset")},
+		{Bucket: aws.String(artifactManualUploadBucket), Prefix: aws.String("UploadedDatasets/the-test_dataset")},
 	}
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
 		{
@@ -1009,12 +1009,12 @@ func Example_datasetCreatePost_Exists() {
 	defer mockS3.FinishTest()
 
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
-		{Bucket: aws.String(artifactManualUploadBucket), Prefix: aws.String("UploadedDatasets/the-test dataset")},
+		{Bucket: aws.String(artifactManualUploadBucket), Prefix: aws.String("UploadedDatasets/the-test_dataset")},
 	}
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
 		{
 			Contents: []*s3.Object{
-				{Key: aws.String("UploadedDatasets/the-test dataset/file.txt")},
+				{Key: aws.String("UploadedDatasets/the-test_dataset/file.txt")},
 			},
 		},
 	}
@@ -1035,7 +1035,7 @@ func Example_datasetCreatePost_Exists() {
 	// Output:
 	// <nil>
 	// 500
-	// Dataset ID already exists: the-test dataset
+	// Dataset ID already exists: the-test_dataset
 }
 
 func Example_datasetCreatePost_Success() {
@@ -1043,7 +1043,7 @@ func Example_datasetCreatePost_Success() {
 	defer mockS3.FinishTest()
 
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
-		{Bucket: aws.String(artifactManualUploadBucket), Prefix: aws.String("UploadedDatasets/the-test dataset")},
+		{Bucket: aws.String(artifactManualUploadBucket), Prefix: aws.String("UploadedDatasets/the-test_dataset")},
 	}
 	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
 		{
@@ -1056,15 +1056,15 @@ func Example_datasetCreatePost_Success() {
 
 	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
 		{
-			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("UploadedDatasets/the-test dataset/spectra.zip"), Body: bytes.NewReader(expectedSpectraBytes),
+			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("UploadedDatasets/the-test_dataset/spectra.zip"), Body: bytes.NewReader(expectedSpectraBytes),
 		},
 		{
-			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("UploadedDatasets/the-test dataset/detector.json"), Body: bytes.NewReader([]byte(`{
+			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("UploadedDatasets/the-test_dataset/detector.json"), Body: bytes.NewReader([]byte(`{
     "detector": "JPL Breadboard"
 }`)),
 		},
 		{
-			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("UploadedDatasets/the-test dataset/creator.json"), Body: bytes.NewReader([]byte(`{
+			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("UploadedDatasets/the-test_dataset/creator.json"), Body: bytes.NewReader([]byte(`{
     "name": "Niko Bellic",
     "user_id": "600f2a0806b6c70071d3d174",
     "email": "niko@spicule.co.uk"
@@ -1086,7 +1086,7 @@ func Example_datasetCreatePost_Success() {
 	mockSNS := awsutil.MockSNS{
 		ExpInput: []sns.PublishInput{
 			{
-				Message:  aws.String("{\"datasetID\":\"the-test dataset\",\"logID\":\"dataimport-uuu333\"}"),
+				Message:  aws.String("{\"datasetID\":\"the-test_dataset\",\"logID\":\"dataimport-uuu333\"}"),
 				TopicArn: aws.String("arn:1:2:3:4:5"),
 			},
 		},
@@ -1112,5 +1112,5 @@ func Example_datasetCreatePost_Success() {
 	// expected spectra read error: <nil>
 	// expected upload file read error: <nil>
 	// 200
-	// "the-test dataset-dataimport-uuu333"
+	// "the-test_dataset-dataimport-uuu333"
 }
