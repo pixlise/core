@@ -24,6 +24,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -100,6 +101,19 @@ func CreateJob(svcs *services.APIServices, createParams JobCreateParams, wg *syn
 		txt := "No PMCs specified, quant job not created"
 		jobLog.Errorf(txt)
 		return jobID, errors.New(txt)
+	}
+
+	// Search for weird characters in parameters. We don't want to allow people to do
+	// command injection attacks here!! PIQUANT commands are fairly simple and take
+	// flags eg -b often with values right after, comma separated. So we allow
+	// only a few characters, to exclude things like ; and & so users can't form other
+	// commands
+	if len(createParams.Parameters) > 0 {
+		err := validateParameters(createParams.Parameters)
+		if err != nil {
+			jobLog.Errorf("%v", err)
+			return jobID, err
+		}
 	}
 
 	// Make sure AWS env vars are available, because that's what we'll be passing to PIQUANT docker container
@@ -921,4 +935,18 @@ func cleanLogName(logName string) string {
 	}
 
 	return result
+}
+
+// Checks parameters don't contain something unexpected, to filter out
+// code execution. Returns error or nil
+func validateParameters(params string) error {
+	r, err := regexp.Compile("^[a-zA-Z0-9 -.,_\"]+$")
+	if err != nil {
+		return err
+	}
+
+	if !r.MatchString(params) {
+		return errors.New("Invalid parameters passed: " + params)
+	}
+	return nil
 }

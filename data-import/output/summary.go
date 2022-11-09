@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"path"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/pixlise/core/v2/api/filepaths"
@@ -51,15 +50,6 @@ func makeSummaryFileContent(exp *protos.Experiment, datasetID string, group stri
 			tiffContextImgCount++
 		}
 	}
-	/*
-		// Even if we didn't find any context images set for a given PMC, we show it as 1 because the context image
-		// may have been specified as just a default file name (this is to support old test datasets that didn't have
-		// the concept of PMCs, just a bunch of spectrum files and a jpeg img)
-		if contextImgCount <= 0 {
-			contextImgCount = 1
-		}
-	*/
-	rtt, _ := strconv.Atoi(meta.RTT)
 
 	s := datasetModel.SummaryFileData{
 		DatasetID:           datasetID,
@@ -72,7 +62,7 @@ func makeSummaryFileContent(exp *protos.Experiment, datasetID string, group stri
 		Site:                meta.Site,
 		Title:               meta.Title,
 		SOL:                 meta.SOL,
-		RTT:                 int32(rtt),
+		RTT:                 meta.RTT,
 		SCLK:                meta.SCLK,
 		LocationCount:       len(exp.Locations),
 		DataFileSize:        fileSize,
@@ -98,7 +88,7 @@ func SummaryDiff(summaryFile datasetModel.SummaryFileData, bucket string, fs fil
 	valuesDiff := reflect.ValueOf(ptrDiff)
 
 	// Query existing Summary Data and reflect values
-	oldSummary, err := lookUpPreviousSummary(summaryFile.RTT, bucket, fs)
+	oldSummary, err := lookUpPreviousSummary(summaryFile.GetRTT(), bucket, fs)
 	ptr := &oldSummary
 	if err != nil {
 		return summaryDiffData, err
@@ -147,16 +137,17 @@ func SummaryDiff(summaryFile datasetModel.SummaryFileData, bucket string, fs fil
 	return summaryDiffData, nil
 }
 
-func lookUpPreviousSummary(rtt int32, bucket string, fs fileaccess.FileAccess) (datasetModel.SummaryFileData, error) {
+func lookUpPreviousSummary(datasetID string, bucket string, fs fileaccess.FileAccess) (datasetModel.SummaryFileData, error) {
 	summaryData := datasetModel.SummaryFileData{}
+
 	// Listing files in artifact bucket/<dataset-id>/
-	datasetID := fmt.Sprintf("%v", rtt)
 	files, err := fs.ListObjects(bucket, datasetID)
 	if err != nil {
 		return summaryData, err
 	}
 	if len(files) > 0 {
 		err = fs.ReadJSON(bucket, path.Join(datasetID, filepaths.DatasetSummaryFileName), &summaryData, false)
+		summaryData.RTT = summaryData.GetRTT() // For backwards compatibility we can read it as an int, but here we convert to string
 		if err != nil {
 			return summaryData, err
 		}

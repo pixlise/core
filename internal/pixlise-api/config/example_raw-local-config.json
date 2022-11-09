@@ -21,6 +21,5 @@
     "PiquantJobsBucket": "devpixlise-piquantjobs2a7b0239-1jde4ubgpr7nn",
     "ManualUploadBucket": "devpixlise-manualuploadf14e9f17-1pkra8amojnkp",
 
-    "BuildsBucket": "artifactsstack-artifactsartifactspixliseorg472f7b-30ts4lssjhdi",
-    "DatasourceArtifactsBucket": "artifactsstack-artifactsdatasourcespixliseorg80e1-tsf7muxvjdyn"
+    "BuildsBucket": "artifactsstack-artifactsartifactspixliseorg472f7b-30ts4lssjhdi"
 }

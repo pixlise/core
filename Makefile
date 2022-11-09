@@ -31,6 +31,7 @@ build-linux:
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/datasourceupdater-linux ./internal/lambdas/dataset-tile-updater
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/integrationtest-linux ./internal/cmdline-tools/api-integration-test
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/dataimport-linux ./internal/lambdas/data-import
+	GOOS=linux GOARCH=amd64 go build -v -o ./_out/importtest-linux ./internal/cmdline-tools/import-integration-test
 
 build-mac:
 	GOPRIVATE=github.com/pixlise GOOS=darwin GOARCH=amd64 go build -ldflags "-X services.ApiVersion=${BUILD_VERSION} -X services.GitHash=${GITHUB_SHA}" -v -o ./_out/pixlise-api-mac ./internal/pixlise-api

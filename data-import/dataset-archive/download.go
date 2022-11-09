@@ -65,13 +65,13 @@ func (dl *DatasetArchiveDownloader) DownloadFromDatasetArchive(datasetID string,
 	downloadPath, err := fileaccess.MakeEmptyLocalDirectory(workingDir, "download")
 	if err != nil {
 		err = fmt.Errorf("Failed to generate directory for importer downloads: %v", err)
-		dl.log.Errorf("%v", err)
+		//dl.log.Errorf("%v", err)
 		return "", "", 0, err
 	}
 	unzippedPath, err := fileaccess.MakeEmptyLocalDirectory(workingDir, "unzipped")
 	if err != nil {
 		err = fmt.Errorf("Failed to generate directory for importer unzips: %v", err)
-		dl.log.Errorf("%v", err)
+		//dl.log.Errorf("%v", err)
 		return "", "", 0, err
 	}
 
@@ -81,7 +81,7 @@ func (dl *DatasetArchiveDownloader) DownloadFromDatasetArchive(datasetID string,
 	zipCount, err := dl.downloadArchivedZipsForDataset(datasetID, downloadPath, unzippedPath)
 	if err != nil {
 		err = fmt.Errorf("Failed to download archived zip files for dataset ID: %v. Error: %v", datasetID, err)
-		dl.log.Errorf("%v", err)
+		//dl.log.Errorf("%v", err)
 		return downloadPath, unzippedPath, zipCount, err
 	}
 

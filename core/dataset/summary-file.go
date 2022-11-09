@@ -18,35 +18,63 @@
 package dataset
 
 import (
+	"fmt"
+
 	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/core/fileaccess"
 )
 
 // SummaryFileData - Structure of dataset summary JSON files
 type SummaryFileData struct {
-	DatasetID           string `json:"dataset_id"`
-	Group               string `json:"group"`
-	DriveID             int32  `json:"drive_id"`
-	SiteID              int32  `json:"site_id"`
-	TargetID            string `json:"target_id"`
-	Site                string `json:"site"`
-	Target              string `json:"target"`
-	Title               string `json:"title"`
-	SOL                 string `json:"sol"`
-	RTT                 int32  `json:"rtt"`
-	SCLK                int32  `json:"sclk"`
-	ContextImage        string `json:"context_image"`
-	LocationCount       int    `json:"location_count"`
-	DataFileSize        int    `json:"data_file_size"`
-	ContextImages       int    `json:"context_images"`
-	TIFFContextImages   int    `json:"tiff_context_images"`
-	NormalSpectra       int    `json:"normal_spectra"`
-	DwellSpectra        int    `json:"dwell_spectra"`
-	BulkSpectra         int    `json:"bulk_spectra"`
-	MaxSpectra          int    `json:"max_spectra"`
-	PseudoIntensities   int    `json:"pseudo_intensities"`
-	DetectorConfig      string `json:"detector_config"`
-	CreationUnixTimeSec int64  `json:"create_unixtime_sec"`
+	DatasetID           string      `json:"dataset_id"`
+	Group               string      `json:"group"`
+	DriveID             int32       `json:"drive_id"`
+	SiteID              int32       `json:"site_id"`
+	TargetID            string      `json:"target_id"`
+	Site                string      `json:"site"`
+	Target              string      `json:"target"`
+	Title               string      `json:"title"`
+	SOL                 string      `json:"sol"`
+	RTT                 interface{} `json:"rtt,string"` // Unfortunately we stored it as int initially, so this has to accept files stored that way
+	SCLK                int32       `json:"sclk"`
+	ContextImage        string      `json:"context_image"`
+	LocationCount       int         `json:"location_count"`
+	DataFileSize        int         `json:"data_file_size"`
+	ContextImages       int         `json:"context_images"`
+	TIFFContextImages   int         `json:"tiff_context_images"`
+	NormalSpectra       int         `json:"normal_spectra"`
+	DwellSpectra        int         `json:"dwell_spectra"`
+	BulkSpectra         int         `json:"bulk_spectra"`
+	MaxSpectra          int         `json:"max_spectra"`
+	PseudoIntensities   int         `json:"pseudo_intensities"`
+	DetectorConfig      string      `json:"detector_config"`
+	CreationUnixTimeSec int64       `json:"create_unixtime_sec"`
+}
+
+func (s SummaryFileData) GetRTT() string {
+	result := ""
+	switch s.RTT.(type) {
+	case float64:
+		f, ok := s.RTT.(float64)
+		if ok {
+			result = fmt.Sprintf("%d", int(f))
+		}
+	case int:
+		i, ok := s.RTT.(int)
+		if ok {
+			result = fmt.Sprintf("%d", i)
+		}
+	default:
+		result = fmt.Sprintf("%v", s.RTT)
+	}
+
+	padding := 9 - len(result)
+	if padding > 0 {
+		for i := 0; i < padding; i++ {
+			result = "0" + result
+		}
+	}
+	return result
 }
 
 // DatasetConfig is the container of the above
@@ -68,5 +96,10 @@ type APIDatasetSummary struct {
 func ReadDataSetSummary(fs fileaccess.FileAccess, dataBucket string, datasetID string) (SummaryFileData, error) {
 	result := SummaryFileData{}
 	s3Path := filepaths.GetDatasetFilePath(datasetID, filepaths.DatasetSummaryFileName)
-	return result, fs.ReadJSON(dataBucket, s3Path, &result, false)
+
+	err := fs.ReadJSON(dataBucket, s3Path, &result, false)
+	if err == nil {
+		result.RTT = result.GetRTT() // For backwards compatibility we can read it as an int, but here we convert to string
+	}
+	return result, err
 }

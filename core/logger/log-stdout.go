@@ -47,3 +47,5 @@ func (l *StdOutLogger) SetLogLevel(level LogLevel) {
 func (l *StdOutLogger) GetLogLevel() LogLevel {
 	return l.logLevel
 }
+func (l *StdOutLogger) Close() {
+}

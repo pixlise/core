@@ -52,17 +52,22 @@ type FileAccess interface {
 	IsNotFoundError(err error) bool
 }
 
-func MakeValidObjectName(name string) string {
+func MakeValidObjectName(name string, allowSpace bool) string {
 	//name = strings.ReplaceAll(name, " ", "_")
 	name = strings.ReplaceAll(name, "?", "")
 	name = strings.ReplaceAll(name, "$", "")
 	name = strings.ReplaceAll(name, "#", "")
 	name = strings.ReplaceAll(name, "!", "")
 	name = strings.ReplaceAll(name, "'", "")
+	name = strings.ReplaceAll(name, ";", "")
+	name = strings.ReplaceAll(name, "&", "")
 	name = strings.ReplaceAll(name, "\"", "")
 	name = strings.ReplaceAll(name, "/", "_")
 	name = strings.ReplaceAll(name, "\\", "_")
 	//name = strings.ReplaceAll(name, "-", "_")
+	if !allowSpace {
+		name = strings.ReplaceAll(name, " ", "_")
+	}
 
 	return name
 }

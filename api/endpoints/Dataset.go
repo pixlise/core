@@ -22,13 +22,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path"
-	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -43,7 +39,6 @@ import (
 	"github.com/pixlise/core/v2/api/filepaths"
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
 	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/utils"
 	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
 	"github.com/pixlise/core/v2/data-import/importer"
 )
@@ -92,11 +87,6 @@ func registerDatasetHandler(router *apiRouter.ApiObjectRouter) {
 
 	// Reprocess
 	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/reprocess", datasetIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermReadDataAnalysis), datasetReprocess)
-
-	// Export
-	router.AddGenericHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/export/raw", datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), datasetExport)
-	router.AddGenericHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/export/compiled", datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), datasetExportCompiled)
-	router.AddGenericHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/export/archived", datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), datasetExportConcat)
 
 	// Adding/viewing/removing extra images (eg WATSON)
 	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/images", datasetIdentifier, customImageTypeIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), datasetCustomImagesList)
@@ -255,7 +245,7 @@ func matchesSearch(queryParams []queryItem, dataset datasetModel.SummaryFileData
 		} else if query.name == "sol" {
 			match, err = query.compareSAllowIntConvert(dataset.SOL)
 		} else if query.name == "rtt" {
-			match, err = query.compareI(int(dataset.RTT))
+			match, err = query.compareS(dataset.GetRTT())
 		} else if query.name == "sclk" {
 			match, err = query.compareI(int(dataset.SCLK))
 		} else if query.name == "data_file_size" {
@@ -334,6 +324,7 @@ func datasetListing(params handlers.ApiHandlerParams) (interface{}, error) {
 
 			// make a copy of it to be inserted into the returned structure
 			s := item
+			s.RTT = s.GetRTT() // For backwards compatibility we can read it as an int, but here we convert to string
 			saveItem.SummaryFileData = &s
 
 			saveItem.DataSetLink = params.PathParams[handlers.HostParamName] + "/" + path.Join(datasetPathPrefix, handlers.UrlStreamDownloadIndicator, saveItem.DatasetID, datasetURLEnd)
@@ -349,100 +340,6 @@ func datasetListing(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	return &resp, nil
-}
-
-func datasetExport(params handlers.ApiHandlerGenericParams) error {
-	rtt := params.PathParams[datasetIdentifier]
-
-	return downloadDatasetFromS3(params, rtt, false)
-}
-func datasetExportCompiled(params handlers.ApiHandlerGenericParams) error {
-	rtt := params.PathParams[datasetIdentifier]
-
-	return downloadDatasetFromS3(params, rtt, false)
-}
-
-func datasetExportConcat(params handlers.ApiHandlerGenericParams) error {
-	rtt := params.PathParams[datasetIdentifier]
-
-	return downloadDatasetFromS3(params, rtt, true)
-
-}
-
-func downloadDatasetFromS3(params handlers.ApiHandlerGenericParams, rtt string, concat bool) error {
-	filetype := ""
-	folder := rtt
-	if !strings.Contains(params.Request.RequestURI, "compiled") {
-		filetype = "zip"
-		folder = "archive/" + rtt
-	}
-	files, err := params.Svcs.FS.ListObjects(params.Svcs.Config.DatasourceArtifactsBucket, folder)
-	if err != nil {
-		return err
-	}
-	dir, err := ioutil.TempDir("/tmp/", "datasetexport")
-	if err != nil {
-		params.Svcs.Log.Errorf("Failed to create temp dir for dataset export: %v", err)
-	}
-	//defer os.RemoveAll(dir)
-	for _, f := range files {
-		if strings.Contains(f, rtt) && strings.HasSuffix(f, filetype) {
-			b, err := params.Svcs.FS.ReadObject(params.Svcs.Config.DatasourceArtifactsBucket, f)
-			if err != nil {
-				params.Svcs.Log.Errorf("Failed to download artifacts file: %v. Error: %v", f, err)
-				return err
-			}
-
-			fileName := filepath.Base(f)
-			err = ioutil.WriteFile(dir+"/"+fileName, b, 0644)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	outFile, err := ioutil.TempFile("/tmp/", rtt+"_*.zip")
-	if err != nil {
-		return err
-	}
-	//defer os.Remove(outFile.Name())
-
-	// Create a new zip archive.
-	w := zip.NewWriter(outFile)
-
-	if concat {
-		dest, err := concatDatasetFiles(dir + "/")
-		if err != nil {
-			return err
-		}
-		utils.AddFilesToZip(w, dest+"/", "")
-	} else {
-		// Add some files to the archive.
-		utils.AddFilesToZip(w, dir+"/", "")
-
-		if err != nil {
-			return err
-		}
-	}
-
-	// Make sure to check the error on Close.
-	err = w.Close()
-	if err != nil {
-		return err
-	}
-
-	params.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", outFile.Name()))
-	params.Writer.Header().Set("Content-Type", "application/octet-stream")
-	params.Writer.Header().Set("Cache-Control", "no-store")
-	params.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
-
-	//params.Writer.Header().Set("Content-Length", fmt.Sprintf("%v", len(zipData)))
-
-	loadfiletoStream, err := os.ReadFile(outFile.Name())
-	_, copyErr := io.Copy(params.Writer, bytes.NewReader(loadfiletoStream))
-	if copyErr != nil {
-		params.Svcs.Log.Errorf("Failed to write zip contents of %v to response", outFile.Name())
-	}
-	return nil
 }
 
 func datasetFileStream(params handlers.ApiHandlerStreamParams) (*s3.GetObjectOutput, string, string, string, int, error) {
@@ -523,105 +420,16 @@ func datasetFileStream(params handlers.ApiHandlerStreamParams) (*s3.GetObjectOut
 	var etag = ""
 	var lm = time.Time{}
 	if result != nil && result.ETag != nil {
-		params.Svcs.Log.Debugf("ETAG for cache: %s, s3://%v/%v\n", *result.ETag, imgBucket, s3Path)
+		params.Svcs.Log.Debugf("ETAG for cache: %s, s3://%v/%v", *result.ETag, imgBucket, s3Path)
 		etag = *result.ETag
 	}
 
 	if result != nil && result.LastModified != nil {
 		lm = *result.LastModified
-		params.Svcs.Log.Debugf("Last Modified for cache: %v, s3://%v/%v\n", lm, imgBucket, s3Path)
+		params.Svcs.Log.Debugf("Last Modified for cache: %v, s3://%v/%v", lm, imgBucket, s3Path)
 	}
 
 	return result, fileName, etag, lm.String(), 0, err
-}
-
-// This does not appear to be a generic/reusable function, seems to expect certain file names, so
-// it wasn't moved to a core/utils type place.
-func concatDatasetFiles(basePath string) (string, error) {
-	files, err := ioutil.ReadDir(basePath)
-	if err != nil {
-		return "", err
-	}
-	m := make(map[int]string)
-	var keys []string
-
-	if len(files) > 0 {
-		for _, f := range files {
-			splits := strings.SplitN(f.Name(), "-", 2)
-			timestamp := strings.Split(splits[1], ".")[0]
-
-			layout := "02-01-2006-15-04-05"
-			t, err := time.Parse(layout, timestamp)
-			if err != nil {
-			}
-			m[int(utils.AbsI64(t.Unix()))] = f.Name()
-		}
-		key := make([]int, 0, len(m))
-		for k := range m {
-			key = append(key, k)
-		}
-		sort.Ints(key)
-
-		for _, k := range key {
-			keys = append(keys, m[k])
-		}
-	}
-
-	dest, err := ioutil.TempDir("/tmp/", "concatdatasource")
-	if err != nil {
-		return "", err
-	}
-	defer os.Remove(dest)
-	//var filenames []string
-	for _, z := range keys {
-		r, err := zip.OpenReader(basePath + "/" + z)
-		if err != nil {
-			return "", err
-		}
-		defer r.Close()
-		for _, f := range r.File {
-			fpath := filepath.Join(dest, f.Name)
-
-			if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
-				return "", fmt.Errorf("%s: illegal file path", fpath)
-			}
-
-			//filenames = append(filenames, fpath)
-
-			if f.FileInfo().IsDir() {
-				// Make Folder
-				os.MkdirAll(fpath, os.ModePerm)
-				continue
-			}
-
-			// Make File
-			if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-				return "", err
-			}
-
-			outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-			if err != nil {
-				return "", err
-			}
-
-			rc, err := f.Open()
-			if err != nil {
-				return "", err
-			}
-
-			_, err = io.Copy(outFile, rc)
-
-			// Close the file without defer to close before next iteration of loop
-			outFile.Close()
-			rc.Close()
-
-			if err != nil {
-				return "", err
-			}
-		}
-	}
-
-	return dest, nil
 }
 
 // Creation of a dataset - this takes in a POST body that it expects to be a zip file. Query parameter format describes what
@@ -635,7 +443,9 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 	params.Svcs.Log.Debugf("Dataset create started for format: %v, id: %v", datasetID, format)
 
 	// Validate the dataset ID - can't contain funny characters because it ends up as an S3 path
-	datasetID = fileaccess.MakeValidObjectName(datasetID)
+	// NOTE: we also turn space to _ here! Having spaces in the path broke quants because the
+	// quant summary file was written with a + instead of a space?!
+	datasetID = fileaccess.MakeValidObjectName(datasetID, false)
 
 	if format != "jpl-breadboard" {
 		return nil, fmt.Errorf("Unexpected format: \"%v\"", format)

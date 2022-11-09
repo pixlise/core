@@ -177,6 +177,11 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 			}
 		}
 
+		// To aid debugging, print out the file names we DO consider current version, and will present to be processed
+		for file := range latestVersionFoundPaths {
+			log.Infof("  FOUND: \"%v\"", file)
+		}
+
 		// OK we have the paths, now read this type
 		switch dirType {
 		case "beamDir":

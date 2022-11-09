@@ -19,6 +19,7 @@ package datasetArchive
 
 import (
 	"errors"
+	"fmt"
 	"path"
 	"sort"
 	"strings"
@@ -76,7 +77,7 @@ func DecodeArchiveFileName(fileName string) (string, int, error) {
 	layout := "02-01-2006-15-04-05"
 	timestamp, err := time.Parse(layout, strTimestamp)
 	if err != nil {
-		return "", 0, err
+		return "", 0, fmt.Errorf("DecodeArchiveFileName \"%v\" error: %v", fileName, err)
 	}
 
 	return datasetID, int(utils.AbsI64(timestamp.Unix())), nil

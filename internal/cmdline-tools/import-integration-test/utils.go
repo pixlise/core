@@ -18,31 +18,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"time"
 
-	apiNotifications "github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/fileaccess"
 )
-
-func generateURL(environment string) string {
-	url := "https://"
-	// Prod or other fixed environments...
-	if environment == "prod" {
-		url += "www-api"
-	} else if environment == "dev" || environment == "staging" || environment == "test" {
-		url += environment + "-api"
-	} else {
-		// Review environments have more stuff added on, eg:
-		// https://review-env-blah-api.review.pixlise.org
-		url += environment + "-api.review"
-	}
-
-	url += ".pixlise.org"
-	return url
-}
 
 const timeFormat = "15:04:05" // "2006-01-02 15:04:05"
 var lastStartedTestName = ""
@@ -80,32 +60,22 @@ func printTestResult(err error, name string) {
 	fmt.Println("")
 }
 
-func getAlerts(JWT string, environment string) ([]apiNotifications.UINotificationObj, error) {
-	getReq, err := http.NewRequest("GET", generateURL(environment)+"/notification/alerts", nil)
-	if err != nil {
-		return nil, err
-	}
-	getReq.Header.Set("Authorization", "Bearer "+JWT)
+func showSubHeading(heading string) {
+	fmt.Println("\n---------------------------------------------------------")
+	timeNow := time.Now().Format(timeFormat)
+	fmt.Printf("%v %v...\n\n", timeNow, heading)
+}
 
-	getResp, err := http.DefaultClient.Do(getReq)
-	if err != nil {
-		return nil, err
-	}
-	defer getResp.Body.Close()
-	body, err := ioutil.ReadAll(getResp.Body)
-	if err != nil {
-		return nil, err
-	}
+// Deletes with uniform logging
+func deleteFile(fs fileaccess.FileAccess, bucket string, filePath string) error {
+	err := fs.DeleteObject(bucket, filePath)
 
-	if getResp.Status != "200 OK" {
-		return nil, fmt.Errorf("Alerts status fail: %v, response: %v", getResp.Status, string(body))
+	if err != nil && !fs.IsNotFoundError(err) {
+		err = fmt.Errorf("Failed to delete s3://%v/%v. Error: %v", bucket, filePath, err)
+		//fmt.Printf(" %v\n", err)
+		return err
 	}
 
-	var alerts []apiNotifications.UINotificationObj
-	err = json.Unmarshal(body, &alerts)
-	if err != nil {
-		return nil, err
-	}
-
-	return alerts, nil
+	fmt.Printf("  Deleted: s3://%v/%v\n", bucket, filePath)
+	return nil
 }

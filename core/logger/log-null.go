@@ -39,3 +39,5 @@ func (l *NullLogger) SetLogLevel(level LogLevel) {
 func (l *NullLogger) GetLogLevel() LogLevel {
 	return LogDebug
 }
+func (l *NullLogger) Close() {
+}

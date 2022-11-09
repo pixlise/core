@@ -47,6 +47,9 @@ func ImportForTrigger(triggerMessage []byte, envName string, configBucket string
 		}
 	}
 
+	// Handle panics. Here we close the logger if there is a panic, to ensure anything we have is written out to cloudwatch!
+	defer logger.HandlePanicWithLog(log)
+
 	localFS := &fileaccess.FSAccess{}
 
 	// Check if we were triggered via a new file arriving, if so, archive it
@@ -80,6 +83,9 @@ func ImportForTrigger(triggerMessage []byte, envName string, configBucket string
 	if err != nil {
 		log.Errorf("%v", err)
 	}
+
+	// Ensure we write everything out...
+	log.Close()
 
 	return workingDir, err
 }
