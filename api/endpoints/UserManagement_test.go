@@ -70,7 +70,7 @@ func Example_userManagementUserQuery_And_UserGet() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	setTestAuth0Config(&svcs)
 	apiRouter := MakeRouter(svcs)
 
@@ -105,7 +105,7 @@ func Example_userManagement_AddDeleteRole() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	setTestAuth0Config(&svcs)
 	apiRouter := MakeRouter(svcs)
 
@@ -185,7 +185,7 @@ func Example_userManagement_Roles_And_UserByRole() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	setTestAuth0Config(&svcs)
 	apiRouter := MakeRouter(svcs)
 
@@ -250,7 +250,7 @@ func Example_user_config() {
 	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
 		&s3.PutObjectOutput{},
 	}
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 
 	setTestAuth0Config(&svcs)
 	apiRouter := MakeRouter(svcs)

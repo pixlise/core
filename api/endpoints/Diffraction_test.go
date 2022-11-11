@@ -71,7 +71,7 @@ func Example_diffractionHandler_ListAccepted() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/diffraction/status/rtt-123", nil)
@@ -168,7 +168,7 @@ func Example_diffractionHandler_PostStatuses() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// File missing, first go, should just create
@@ -265,7 +265,7 @@ func Example_diffractionHandler_Delete() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// File missing, 404
@@ -336,7 +336,7 @@ func Example_diffractionHandler_ListManual() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/diffraction/manual/rtt-123", nil)
@@ -449,7 +449,7 @@ func Example_diffractionHandler_PostManual() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"new1", "new2", "new3", "new4"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	postItem := `{
@@ -558,7 +558,7 @@ func Example_diffractionHandler_DeleteManual() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// File missing, 404

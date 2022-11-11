@@ -63,7 +63,7 @@ func Example_subscriptions_empty() {
 	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
 		{},
 	}
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	setTestAuth0Config(&svcs)
 
 	apiRouter := MakeRouter(svcs)
@@ -112,7 +112,7 @@ func Example_subscriptions() {
 	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
 		{},
 	}
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	setTestAuth0Config(&svcs)
 
 	apiRouter := MakeRouter(svcs)
@@ -217,7 +217,7 @@ func Example_alerts_empty() {
 		nil,
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 
 	obj := notifications.UINotificationObj{
 		Topic:     "test-data-source",
@@ -280,7 +280,7 @@ func Example_alerts() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 
 	obj := notifications.UINotificationObj{
 		Topic:     "test-data-source",
@@ -346,7 +346,7 @@ func Example_hints_empty() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	setTestAuth0Config(&svcs)
 
 	apiRouter := MakeRouter(svcs)
@@ -394,7 +394,7 @@ func Example_hints() {
 	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
 		{},
 	}
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	setTestAuth0Config(&svcs)
 
 	apiRouter := MakeRouter(svcs)

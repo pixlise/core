@@ -31,7 +31,7 @@ func Example_registerExportHandlerSunny() {
 	var exp MockExporter
 	exp.downloadReturn = []byte{80, 101, 116, 101, 114, 32, 105, 115, 32, 97, 119, 101, 115, 111, 109, 101}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Exporter = &exp
 	apiRouter := MakeRouter(svcs)
 
@@ -70,7 +70,7 @@ func Example_registerExportHandlerMissingFileName() {
 	var exp MockExporter
 	exp.downloadReturn = []byte{80, 101, 116, 101, 114, 32, 105, 115, 32, 97, 119, 101, 115, 111, 109, 101}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Exporter = &exp
 	apiRouter := MakeRouter(svcs)
 
@@ -93,7 +93,7 @@ func Example_registerExportHandlerMissingColumn() {
 	var exp MockExporter
 	exp.downloadReturn = []byte{80, 101, 116, 101, 114, 32, 105, 115, 32, 97, 119, 101, 115, 111, 109, 101}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Exporter = &exp
 	apiRouter := MakeRouter(svcs)
 
@@ -117,7 +117,7 @@ func Example_registerExportHandlerBadJSONBody() {
 	var exp MockExporter
 	exp.downloadReturn = []byte{80, 101, 116, 101, 114, 32, 105, 115, 32, 97, 119, 101, 115, 111, 109, 101}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Exporter = &exp
 	apiRouter := MakeRouter(svcs)
 

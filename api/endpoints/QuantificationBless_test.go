@@ -106,7 +106,7 @@ func Example_quantHandler_BlessShared1stQuant() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.TimeStamper = &services.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1234567890},
 	}
@@ -244,7 +244,7 @@ func Example_quantHandler_BlessSharedQuantV4() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.TimeStamper = &services.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1234567890},
 	}
@@ -404,7 +404,7 @@ func Example_quantHandler_BlessUserQuant() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.TimeStamper = &services.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1234567890},
 	}

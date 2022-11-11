@@ -47,7 +47,7 @@ func Example_quantHandler_MultiQuantCombine_SimpleFails() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/combine/dataset-123", bytes.NewReader([]byte(`{
@@ -258,7 +258,7 @@ func Example_quantHandler_MultiQuantCombine_DuplicateNameWithInProgressQuant() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/combine/dataset-123", bytes.NewReader([]byte(`{
@@ -324,7 +324,7 @@ func Example_quantHandler_MultiQuantCombine_DatasetFailsToLoad() {
 
 	mockS3.AllowGetInAnyOrder = true
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/combine/dataset-123", bytes.NewReader([]byte(`{
@@ -392,7 +392,7 @@ func Example_quantHandler_MultiQuantCombine_CombineIncompatible() {
 
 	mockS3.AllowGetInAnyOrder = true
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/combine/dataset-123", bytes.NewReader([]byte(`{
@@ -461,7 +461,7 @@ func Example_quantHandler_MultiQuantCombine_UserROIFailsToLoad() {
 
 	mockS3.AllowGetInAnyOrder = true
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/combine/dataset-123", bytes.NewReader([]byte(`{
@@ -530,7 +530,7 @@ func Example_quantHandler_MultiQuantCombine_QuantFailsToLoad() {
 
 	mockS3.AllowGetInAnyOrder = true
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/combine/dataset-123", bytes.NewReader([]byte(`{
@@ -597,7 +597,7 @@ func Example_quantHandler_MultiQuantCombine_ROINotFound() {
 
 	mockS3.AllowGetInAnyOrder = true
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/combine/dataset-123", bytes.NewReader([]byte(`{
@@ -729,7 +729,7 @@ PMC, RTT, SCLK, filename, livetime, CaO_%, CaO_err, FeO-T_%, FeO-T_err, SiO2_%, 
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"combquant123"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	svcs.TimeStamper = &services.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{4234567890},
 	}
@@ -793,7 +793,7 @@ func Example_quantHandler_MultiQuantCombine_SummaryOnly_OK() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"combquant123"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	svcs.TimeStamper = &services.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{4234567890},
 	}

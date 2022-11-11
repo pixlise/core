@@ -18,7 +18,7 @@
 package notifications
 
 import (
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/pixlise/core/v2/core/fileaccess"
@@ -67,6 +67,7 @@ func (stack *NotificationStack) SetTrack(userid string, track bool) {
 	//stack.Track[userid] = track
 	stack.Track.Set(userid, track)
 }
+
 func (stack *NotificationStack) GetTrack(userid string) (bool, bool) {
 	if val, ok := stack.Track.Get(userid); ok {
 		return val.(bool), ok
@@ -84,136 +85,88 @@ func (stack *NotificationStack) SendUINotification(newNotification UINotificatio
 	newNotification.Timestamp = time.Now()
 
 	if stack.MongoUtils == nil {
-		path := "UserContent/notifications/" + newNotification.UserID + ".json"
-
-		// REFACTOR: At least comment here why this would be nil?
-		if stack.FS != nil {
-			n := UserStruct{}
-			err := stack.FS.ReadJSON(stack.Bucket, path, &n, false)
-			if err != nil {
-				return err
-			}
-
-			items := n.Notifications.UINotifications
-			n.Notifications.UINotifications = append(items, newNotification)
-
-			err = stack.FS.WriteJSONNoIndent(stack.Bucket, path, &n)
-			if err != nil {
-				return fmt.Errorf("Failed to upload notifications for user: %v", newNotification.UserID)
-			}
-		}
-	} else {
-		return stack.MongoUtils.InsertUINotification(newNotification)
+		return errors.New("Mongo not configured")
 	}
 
-	return nil
+	return stack.MongoUtils.InsertUINotification(newNotification)
 }
 
 // GetUINotifications - Return Notifications for user and remove from stack
 func (stack *NotificationStack) GetUINotifications(userid string) ([]UINotificationObj, error) {
-	// REFACTOR: These paths should be coming from filepaths, we don't want random paths being built around the place, want to centralise so can document/edit easily
-	path := "UserContent/notifications/" + userid + ".json"
-
-	n := UserStruct{}
 	if stack.MongoUtils == nil {
-		err := stack.FS.ReadJSON(stack.Bucket, path, &n, false)
-		if err != nil {
-			return nil, err
-		}
-
-		// Get the existing notifications
-		notifications := n.Notifications.UINotifications
-		if notifications == nil {
-			notifications = []UINotificationObj{}
-		}
-		// Write an empty file back if it wasn't already empty...
-		if len(notifications) > 0 {
-			n.Notifications.UINotifications = []UINotificationObj{}
-			err = stack.FS.WriteJSONNoIndent(stack.Bucket, path, &n)
-			if err != nil {
-				stack.Logger.Errorf("Failed to write cleared notification file for user: %v. Error: %v\n", userid, err)
-			}
-		}
-		return notifications, nil
-	} else {
-		if stack.MongoUtils.MongoEndpoint == "" {
-			return []UINotificationObj{}, nil
-		}
-		obj, err := stack.MongoUtils.GetUINotifications(userid)
-		if err != nil {
-			return nil, err
-		}
-		err = stack.MongoUtils.DeleteUINotifications(userid)
-		if err != nil {
-			return nil, err
-		}
-		return obj, nil
+		return nil, errors.New("Mongo not configured")
 	}
+
+	if stack.MongoUtils.MongoEndpoint == "" {
+		return []UINotificationObj{}, nil
+	}
+	obj, err := stack.MongoUtils.GetUINotifications(userid)
+	if err != nil {
+		return nil, err
+	}
+	err = stack.MongoUtils.DeleteUINotifications(userid)
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
 }
 
 func (stack *NotificationStack) GetAllUsers() ([]UserStruct, error) {
 	if stack.MongoUtils == nil {
-		u := s3utils{}
-		return u.GetAllS3Users(stack.Environment, stack.Logger)
-	} else {
-		return stack.MongoUtils.GetAllMongoUsers(stack.Logger)
+		return nil, errors.New("Mongo not configured")
 	}
+
+	return stack.MongoUtils.GetAllMongoUsers(stack.Logger)
 }
 
 func (stack *NotificationStack) GetSubscribersByTopicID(useroverride []string, topic string) ([]UserStruct, error) {
 	if stack.MongoUtils == nil {
-		u := s3utils{}
-		return u.GetS3SubscribersByTopicID(useroverride, topic, stack.Environment, stack.Logger)
-	} else {
-		return stack.MongoUtils.GetMongoSubscribersByTopicID(useroverride, topic, stack.Logger)
+		return nil, errors.New("Mongo not configured")
 	}
+
+	return stack.MongoUtils.GetMongoSubscribersByTopicID(useroverride, topic, stack.Logger)
 }
 
 func (stack *NotificationStack) GetSubscribersByEmailTopicID(useroverride []string, topic string) ([]UserStruct, error) {
 	if stack.MongoUtils == nil {
-		u := s3utils{}
-		return u.GetS3SubscribersByEmailTopicID(useroverride, topic, stack.Environment, stack.Logger)
-	} else {
-		return stack.MongoUtils.GetMongoSubscribersByEmailTopicID(useroverride, topic, stack.Logger)
+		return nil, errors.New("Mongo not configured")
 	}
+
+	return stack.MongoUtils.GetMongoSubscribersByEmailTopicID(useroverride, topic, stack.Logger)
 }
 
 func (stack *NotificationStack) GetSubscribersByTopic(topic string) ([]UserStruct, error) {
 	if stack.MongoUtils == nil {
-		u := s3utils{}
-		return u.GetS3SubscribersByTopic(topic, stack.Environment, stack.Logger)
-	} else {
-		return stack.MongoUtils.GetMongoSubscribersByTopic(topic, stack.Logger)
+		return nil, errors.New("Mongo not configured")
 	}
+
+	return stack.MongoUtils.GetMongoSubscribersByTopic(topic, stack.Logger)
 }
 
 func (stack *NotificationStack) CreateUserObject(userid string, name string, email string) (UserStruct, error) {
+	us := stack.InitUser(name, email, userid)
 
 	if stack.MongoUtils == nil {
-		u := s3utils{}
-		return u.CreateS3UserObject(stack.InitUser(name, email, userid), stack.Bucket, stack.FS)
-	} else {
-		us := stack.InitUser(name, email, userid)
-		return us, stack.MongoUtils.CreateMongoUserObject(us)
+		return us, errors.New("Mongo not configured")
 	}
+
+	return us, stack.MongoUtils.CreateMongoUserObject(us)
 }
 
 func (stack *NotificationStack) FetchUserObject(userid string, createIfNotExist bool, name string, email string) (UserStruct, error) {
 	if stack.MongoUtils == nil {
-		u := s3utils{}
-		return u.FetchS3UserObject(stack.FS, stack.Bucket, userid, createIfNotExist, name, email)
-	} else {
-		return stack.MongoUtils.FetchMongoUserObject(userid, createIfNotExist, name, email)
+		return UserStruct{}, errors.New("Mongo not configured")
 	}
+
+	return stack.MongoUtils.FetchMongoUserObject(userid, createIfNotExist, name, email)
 }
 
 func (stack *NotificationStack) UpdateUserConfigFile(userid string, data UserStruct) error {
 	if stack.MongoUtils == nil {
-		u := s3utils{}
-		return u.UpdateS3UserConfigFile(stack.FS, stack.Bucket, userid, data)
-	} else {
-		return stack.MongoUtils.UpdateMongoUserConfig(userid, data)
+		return errors.New("Mongo not configured")
 	}
+
+	return stack.MongoUtils.UpdateMongoUserConfig(userid, data)
 }
 
 func (stack *NotificationStack) InitUser(name string, email string, userid string) UserStruct {

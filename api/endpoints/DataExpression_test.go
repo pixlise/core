@@ -107,7 +107,7 @@ func Example_dataExpressionHandler_List() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/data-expression", nil)
@@ -180,7 +180,7 @@ func Example_dataExpressionHandler_Get() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// POST not implemented! Should return 405
@@ -301,7 +301,7 @@ func Example_dataExpressionHandler_Post() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"id16", "id17", "id18"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -472,7 +472,7 @@ func Example_dataExpressionHandler_Put() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -641,7 +641,7 @@ func Example_dataExpressionHandler_Delete() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Delete finds file missing, ERROR
@@ -828,7 +828,7 @@ func Example_dataExpressionHandler_Share() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"ddd222"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = ""

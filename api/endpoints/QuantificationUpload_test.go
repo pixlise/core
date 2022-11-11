@@ -36,7 +36,7 @@ func Example_quantHandler_UploadFails() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.TimeStamper = &services.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1234567890},
 	}
@@ -240,7 +240,7 @@ PMC, Ca_%, livetime, RTT, SCLK, filename
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"quant123"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	svcs.TimeStamper = &services.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1234567890},
 	}

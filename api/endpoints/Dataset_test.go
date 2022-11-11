@@ -257,7 +257,7 @@ func Example_datasetHandler_List() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	mockUser := pixlUser.UserInfo{
 		Name:   "Niko Bellic",
 		UserID: "600f2a0806b6c70071d3d174",
@@ -596,7 +596,7 @@ func Example_datasetHandler_Stream_BadGroup_403() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	mockUser := pixlUser.UserInfo{
 		"Niko Bellic",
 		"600f2a0806b6c70071d3d174",
@@ -664,7 +664,7 @@ func Example_datasetHandler_Stream_OK() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	mockUser := pixlUser.UserInfo{
 		"Niko Bellic",
 		"600f2a0806b6c70071d3d174",
@@ -704,7 +704,7 @@ func Example_datasetHandler_Stream_NoSuchDataset() {
 		nil,
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	mockUser := pixlUser.UserInfo{
 		"Niko Bellic",
 		"600f2a0806b6c70071d3d174",
@@ -741,7 +741,7 @@ func Example_datasetHandler_Stream_BadSummary() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	mockUser := pixlUser.UserInfo{
 		"Niko Bellic",
 		"600f2a0806b6c70071d3d174",
@@ -858,7 +858,7 @@ func Example_datasetHandler_MCC_Stream_OK() {
 		nil,
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	mockUser := pixlUser.UserInfo{
 		"Niko Bellic",
 		"600f2a0806b6c70071d3d174",
@@ -918,7 +918,7 @@ func Example_datasetCreatePost_BadFormat() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -953,7 +953,7 @@ func Example_datasetCreatePost_CantCheckExists() {
 		nil,
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -985,7 +985,7 @@ func Example_datasetCreatePost_BadZip() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -1019,7 +1019,7 @@ func Example_datasetCreatePost_Exists() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -1081,7 +1081,7 @@ func Example_datasetCreatePost_Success() {
 	var idGen MockIDGenerator
 	idGen.ids = []string{"uuu333"}
 
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 
 	mockSNS := awsutil.MockSNS{
 		ExpInput: []sns.PublishInput{

@@ -128,7 +128,7 @@ func Example_roiHandler_List() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/roi/NewDataSet", nil)
@@ -423,7 +423,7 @@ func Example_roiHandler_Post() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"id3", "id4", "id5", "id6"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const postItem = `{
@@ -585,7 +585,7 @@ func Example_roiHandler_Put() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 
 	apiRouter := MakeRouter(svcs)
 
@@ -763,7 +763,7 @@ func Example_roiHandler_Delete() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Delete shared item, OK
@@ -949,7 +949,7 @@ func Example_roiHandler_Share() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"16"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = ""

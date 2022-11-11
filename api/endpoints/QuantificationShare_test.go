@@ -105,7 +105,7 @@ func Example_quantHandler_ShareQuant() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/share/quantification/rtt-456/job2", nil)

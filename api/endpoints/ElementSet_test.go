@@ -148,7 +148,7 @@ func Example_elementSetHandler_List() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/element-set", nil)
@@ -242,7 +242,7 @@ func Example_elementSetHandler_Get() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// File not in S3, should return 404
@@ -495,7 +495,7 @@ func Example_elementSetHandler_Post() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"55", "56", "57"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const postItem = `{
@@ -623,7 +623,7 @@ func Example_elementSetHandler_Put() {
 		&s3.PutObjectOutput{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -789,7 +789,7 @@ func Example_elementSetHandler_Delete() {
 		&s3.PutObjectOutput{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Delete finds file missing, ERROR
@@ -962,7 +962,7 @@ func Example_elementSetHandler_Share() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"77"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = ""

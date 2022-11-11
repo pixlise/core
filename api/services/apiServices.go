@@ -30,7 +30,6 @@ import (
 	"github.com/pixlise/core/v2/core/utils"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/pixlise/core/v2/api/esutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -115,9 +114,6 @@ type APIServices struct {
 	// Anything accessing files should use this
 	FS fileaccess.FileAccess
 
-	// For Event Logging
-	ES esutil.Connection
-
 	// Validation of JWT tokens
 	JWTReader IJWTReader
 
@@ -190,12 +186,6 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 		ourLogger.Errorf("Sentry initialization failed: %v", err)
 	}
 
-	client := esutil.FullFatClient(cfg, ourLogger)
-	es, err := esutil.Connect(client, cfg)
-	if err != nil {
-		ourLogger.Errorf("Failed to connect to Elastic Search: %v", err)
-	}
-
 	secretscache, err := secretcache.New()
 	if err != nil {
 		ourLogger.Errorf("Failed to bootstrap secrets manager")
@@ -214,7 +204,6 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 		FS:             fs,
 		S3:             s3svc,
 		SNS:            awsutil.RealSNS{SNS: snsSvc},
-		ES:             es,
 		JWTReader:      jwtReader,
 		IDGen:          idGen,
 		Signer:         signer,

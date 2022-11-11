@@ -22,12 +22,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v2/api/config"
-	"github.com/pixlise/core/v2/api/esutil"
+	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/awsutil"
 )
@@ -309,7 +308,7 @@ func Example_viewStateHandler_List() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Various bits should return in the response...
@@ -545,11 +544,14 @@ func Example_viewStateHandler_List_WithReset() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Single request results in loading multiple files from S3. First it gets a directory listing...
 	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(viewStateS3Path),
+		},
 		{
 			Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(viewStateS3Path),
 		},
@@ -561,6 +563,12 @@ func Example_viewStateHandler_List_WithReset() {
 				{Key: aws.String(viewStateS3Path + "Workspaces/workspace.json")},            // workspace file, should not be deleted
 				{Key: aws.String(viewStateS3Path + "WorkspaceCollections/collection.json")}, // collection file, should not be deleted
 				{Key: aws.String(viewStateS3Path + "spectrum.json")},
+			},
+		},
+		{
+			Contents: []*s3.Object{
+				{Key: aws.String(viewStateS3Path + "Workspaces/workspace.json")},            // workspace file, should not be deleted
+				{Key: aws.String(viewStateS3Path + "WorkspaceCollections/collection.json")}, // collection file, should not be deleted
 			},
 		},
 	}
@@ -578,6 +586,16 @@ func Example_viewStateHandler_List_WithReset() {
 	mockS3.QueuedDeleteObjectOutput = []*s3.DeleteObjectOutput{
 		{},
 		{},
+	}
+
+	// Querying blessed quant (because quant it has is empty)
+	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/TheDataSetID/Quantifications/blessed-quant.json"),
+		},
+	}
+	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+		nil, // There isn't a blessed quant!
 	}
 
 	// Various bits should return in the response...
@@ -641,7 +659,7 @@ func Example_viewStateHandler_Get() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/view-state/TheDataSetID/widget", bytes.NewReader([]byte("")))
@@ -658,7 +676,7 @@ func Example_viewStateHandler_Post() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// POST not implemented! Should return 405
@@ -675,40 +693,13 @@ func Example_viewStateHandler_Post() {
 	// 405
 }
 
+// NOTE: This is a special test, because it also has tracking turned on, and has a logger middleware installed
+// This is so we test that the middleware correctly identifies these PUT msgs as something that needs to be
+// saved and does so.
 func Example_viewStateHandler_Put_spectrum_topright() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/myuserid.json"),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		{Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"userid":"myuserid","notifications":{"topics":[],"hints":["point-select-alt","point-select-z-for-zoom","point-select-shift-for-pan","lasso-z-for-zoom","lasso-shift-for-pan","dwell-exists-test-fm-5x5-full","dwell-exists-069927431"],"uinotifications":[]},"userconfig":{"name":"peternemere","email":"peternemere@gmail.com","cell":"","data_collection":"1.0"}}`)))},
-	}
-
-	testServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	defer testServer.Close()
-	//"Component":"http://example.com/foo","Message":"{\"alive\": true}","Version":"","Params":{"method":"GET"},"Environment":"unit-test","User":"myuserid"}
-	var ExpIndexObject = []string{
-		`{"Instance":"","Time":"0000-00-00T00:00:00-00:00","Component":"/view-state/TheDataSetID/spectrum-top1","Message":"{\n    \"panX\": 12,\n    \"zoomX\": 1,\n    \"energyCalibration\": [\n        {\n            \"detector\": \"B\",\n            \"eVStart\": 12.5,\n            \"eVPerChannel\": 17.8\n        }\n    ],\n    \"logScale\": true,\n    \"spectrumLines\": [\n        {\n            \"roiID\": \"dataset\",\n            \"lineExpressions\": [\n                \"bulk(A)\",\n                \"bulk(B)\"\n            ]\n        },\n        {\n            \"roiID\": \"selection\",\n            \"lineExpressions\": [\n                \"sum(bulk(A), bulk(B))\"\n            ]\n        },\n        {\n            \"roiID\": \"roi-123\",\n            \"lineExpressions\": [\n                \"sum(bulk(A), bulk(B))\"\n            ]\n        }\n    ],\n    \"xrflines\": [\n        {\n            \"visible\": true,\n            \"line_info\": {\n                \"Z\": 12,\n                \"K\": true,\n                \"L\": true,\n                \"M\": true,\n                \"Esc\": true\n            }\n        }\n    ],\n    \"showXAsEnergy\": true\n}","Response":"","Version":"","Params":{"method":"PUT"},"Environment":"unit-test","User":"myuserid"}`,
-	}
-	var ExpRespObject = []string{
-		`{"_index":"metrics","_type":"trigger","_id":"B0tzT3wBosV6bFs8gJvY","_version":1,"result":"created","_shards":{"total":2,"successful":2,"failed":0},"_seq_no":8468,"_primary_term":1}`,
-	}
-
-	var adjtime = "0000-00-00T00:00:00-00:00"
-	d := esutil.DummyElasticClient{}
-	foo, err := d.DummyElasticSearchClient(testServer.URL, ExpRespObject, ExpIndexObject, ExpRespObject, &adjtime)
-	//defer d.FinishTest()
-	if err != nil {
-		fmt.Printf("%v\n", err)
-	}
-
-	apiConfig := config.APIConfig{EnvironmentName: "Test"}
-	connection, err := esutil.Connect(foo, apiConfig)
-	// NOTE: PUT expected JSON needs to have spaces not tabs
 	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
 		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "spectrum-top1.json"), Body: bytes.NewReader([]byte(`{
@@ -760,12 +751,41 @@ func Example_viewStateHandler_Put_spectrum_topright() {
     ]
 }`)),
 		},
+		// The middleware should write out a copy of this message to the user activity tracking spot
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("Activity/2022-11-11/id-1234.json"), Body: bytes.NewReader([]byte(`{
+    "Instance": "",
+    "Time": "2022-11-11T04:56:19Z",
+    "Component": "/view-state/TheDataSetID/spectrum-top1",
+    "Message": "{\n    \"panX\": 12,\n    \"zoomX\": 1,\n    \"energyCalibration\": [\n        {\n            \"detector\": \"B\",\n            \"eVStart\": 12.5,\n            \"eVPerChannel\": 17.8\n        }\n    ],\n    \"logScale\": true,\n    \"spectrumLines\": [\n        {\n            \"roiID\": \"dataset\",\n            \"lineExpressions\": [\n                \"bulk(A)\",\n                \"bulk(B)\"\n            ]\n        },\n        {\n            \"roiID\": \"selection\",\n            \"lineExpressions\": [\n                \"sum(bulk(A), bulk(B))\"\n            ]\n        },\n        {\n            \"roiID\": \"roi-123\",\n            \"lineExpressions\": [\n                \"sum(bulk(A), bulk(B))\"\n            ]\n        }\n    ],\n    \"xrflines\": [\n        {\n            \"visible\": true,\n            \"line_info\": {\n                \"Z\": 12,\n                \"K\": true,\n                \"L\": true,\n                \"M\": true,\n                \"Esc\": true\n            }\n        }\n    ],\n    \"showXAsEnergy\": true\n}",
+    "Response": "",
+    "Version": "",
+    "Params": {
+        "method": "PUT"
+    },
+    "Environment": "unit-test",
+    "User": "myuserid"
+}`)),
+		},
 	}
+
 	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
+		{},
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, &connection, nil)
+	// Set up extra bits for middleware testing
+	var idGen MockIDGenerator
+	idGen.ids = []string{"id-1234"}
+
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &services.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
+
+	// Add requestor as a tracked user, so we should see activity saved
+	svcs.Notifications.SetTrack("myuserid", true)
+
 	apiRouter := MakeRouter(svcs)
 	mockvalidator := api.MockJWTValidator{}
 	logware := LoggerMiddleware{&svcs, &mockvalidator}
@@ -821,20 +841,24 @@ func Example_viewStateHandler_Put_spectrum_topright() {
 	const routePath = "/view-state/TheDataSetID/"
 
 	req, _ := http.NewRequest("PUT", routePath+"spectrum-top1", bytes.NewReader([]byte(putItem)))
+	//req.Header.Set("content-type", "application/json")
 	resp := executeRequest(req, apiRouter.Router)
 
 	fmt.Println(resp.Code)
 	fmt.Println(resp.Body)
 
+	// Wait a bit for any threads to finish (part of the middleware test)
+	time.Sleep(2 * time.Second)
+
 	// Output:
-	// &map[]200
+	// 200
 }
 
 func Example_viewStateHandler_Put_spectrum_oldway_FAIL() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -956,7 +980,7 @@ func Example_viewStateHandler_Put_contextImage() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1028,7 +1052,7 @@ func Example_viewStateHandler_Put_quantification() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1074,7 +1098,7 @@ func Example_viewStateHandler_Put_histogram() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1133,7 +1157,7 @@ func Example_viewStateHandler_Put_selection() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1188,7 +1212,7 @@ func Example_viewStateHandler_Put_chord() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1237,7 +1261,7 @@ func Example_viewStateHandler_Put_binary() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1289,7 +1313,7 @@ func Example_viewStateHandler_Put_ternary() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1338,7 +1362,7 @@ func Example_viewStateHandler_Put_table() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1382,7 +1406,7 @@ func Example_viewStateHandler_Put_roiQuantTable() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1425,7 +1449,7 @@ func Example_viewStateHandler_Put_parallelogram() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1465,7 +1489,7 @@ func Example_viewStateHandler_Put_rgbuImages() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1509,7 +1533,7 @@ func Example_viewStateHandler_Put_rgbuPlots() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1556,7 +1580,7 @@ func Example_viewStateHandler_Put_roi() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1601,7 +1625,7 @@ func Example_viewStateHandler_Put_analysisLayout() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -1630,7 +1654,7 @@ func Example_viewStateHandler_Delete() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// DELETE not implemented! Should return 405
@@ -1879,7 +1903,7 @@ func Example_viewStateHandler_Put_all() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const wholeState = `{

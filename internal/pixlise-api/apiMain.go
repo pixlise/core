@@ -138,7 +138,12 @@ func main() {
 	}
 	err = mongo.Connect()
 
-	svcs.Log.Errorf("Failed to connect to Mongo: %v", err)
+	if err != nil {
+		svcs.Log.Errorf("Failed to connect to Mongo: %v", err)
+	} else {
+		svcs.Log.Infof("Connected to Mongo DB!")
+	}
+
 	// Reinitialised because of dependency on S3
 	notificationStack := notifications.NotificationStack{
 		Notifications: notes,

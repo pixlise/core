@@ -66,6 +66,13 @@ type MockS3Client struct {
 	QueuedDeleteObjectOutput  []*s3.DeleteObjectOutput
 	QueuedCopyObjectOutput    []*s3.CopyObjectOutput
 
+	// Unexpected requests we got
+	UnexpListObjectsV2Input []*s3.ListObjectsV2Input
+	UnexpGetObjectInput     []*s3.GetObjectInput
+	UnexpPutObjectInput     []*s3.PutObjectInput
+	UnexpDeleteObjectInput  []*s3.DeleteObjectInput
+	UnexpCopyObjectInput    []*s3.CopyObjectInput
+
 	AllowGetInAnyOrder    bool
 	AllowDeleteInAnyOrder bool
 
@@ -102,6 +109,9 @@ func (m *MockS3Client) getFinishTestResult() error {
 	if len(m.ExpDeleteObjectInput) > 0 {
 		return errors.New("Test expected more DeleteObject calls to func")
 	}
+	if len(m.ExpCopyObjectInput) > 0 {
+		return errors.New("Test expected more CopyObject calls to func")
+	}
 
 	// Expecting nothing left to output
 	if len(m.QueuedListObjectsV2Output) > 0 {
@@ -115,6 +125,29 @@ func (m *MockS3Client) getFinishTestResult() error {
 	}
 	if len(m.QueuedDeleteObjectOutput) > 0 {
 		return errors.New("Remaining output DeleteObject for func")
+	}
+	if len(m.QueuedCopyObjectOutput) > 0 {
+		return errors.New("Remaining output CopyObject for func")
+	}
+
+	// Shouldn't have got anything unexpected
+	if len(m.UnexpListObjectsV2Input) > 0 {
+		return errors.New("Unexpected requests for ListObjectsV2 for func")
+	}
+	if len(m.UnexpGetObjectInput) > 0 {
+		return errors.New("Unexpected requests for GetObject for func")
+	}
+	if len(m.UnexpPutObjectInput) > 0 {
+		return errors.New("Unexpected requests for PutObject for func")
+	}
+	if len(m.UnexpDeleteObjectInput) > 0 {
+		return errors.New("Unexpected requests for DeleteObject for func")
+	}
+	if len(m.UnexpCopyObjectInput) > 0 {
+		return errors.New("Unexpected requests for CopyObject for func")
+	}
+	if len(m.UnexpListObjectsV2Input) > 0 {
+		return errors.New("Unexpected requests for ListObjectsV2 for func")
 	}
 
 	return nil
@@ -169,6 +202,7 @@ func (m *MockS3Client) ListObjectsV2(input *s3.ListObjectsV2Input) (*s3.ListObje
 	outputs := &m.QueuedListObjectsV2Output
 
 	if len(*expList) <= 0 {
+		m.UnexpListObjectsV2Input = append(m.UnexpListObjectsV2Input, input)
 		return nil, errors.New(ErrNoMoreInputsExpected + name)
 	}
 
@@ -209,6 +243,7 @@ func (m *MockS3Client) GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput,
 	outputs := &m.QueuedGetObjectOutput
 
 	if len(*expList) <= 0 {
+		m.UnexpGetObjectInput = append(m.UnexpGetObjectInput, input)
 		return nil, errors.New(ErrNoMoreInputsExpected + name)
 	}
 
@@ -287,6 +322,7 @@ func (m *MockS3Client) PutObject(input *s3.PutObjectInput) (*s3.PutObjectOutput,
 	outputs := &m.QueuedPutObjectOutput
 
 	if len(*expList) <= 0 {
+		m.UnexpPutObjectInput = append(m.UnexpPutObjectInput, input)
 		return nil, errors.New(ErrNoMoreInputsExpected + name)
 	}
 
@@ -361,6 +397,7 @@ func (m *MockS3Client) DeleteObject(input *s3.DeleteObjectInput) (*s3.DeleteObje
 	outputs := &m.QueuedDeleteObjectOutput
 
 	if len(*expList) <= 0 {
+		m.UnexpDeleteObjectInput = append(m.UnexpDeleteObjectInput, input)
 		return nil, errors.New(ErrNoMoreInputsExpected + name)
 	}
 
@@ -430,6 +467,7 @@ func (m *MockS3Client) CopyObject(input *s3.CopyObjectInput) (*s3.CopyObjectOutp
 	outputs := &m.QueuedCopyObjectOutput
 
 	if len(*expList) <= 0 {
+		m.UnexpCopyObjectInput = append(m.UnexpCopyObjectInput, input)
 		return nil, errors.New(ErrNoMoreInputsExpected + name)
 	}
 

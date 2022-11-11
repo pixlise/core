@@ -55,8 +55,6 @@ func (h ApiHandlerJSON) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if resp != nil {
-		// Save result as JSON
-		api.ToJSON(w, resp)
-	}
+	// Save result as JSON
+	api.ToJSON(w, resp)
 }

@@ -52,10 +52,6 @@ type APIConfig struct {
 
 	DatasourceArtifactsBucket string // Goes away
 
-	ElasticPassword string
-	ElasticURL      string
-	ElasticUser     string
-
 	EnvironmentName string
 
 	HotQuantNamespace string // Used for faster PIQUANT runs, eg executing a spectral fit

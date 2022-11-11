@@ -24,7 +24,6 @@ import (
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/notifications"
 
-	"github.com/pixlise/core/v2/api/esutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
 
 	"github.com/gorilla/mux"
@@ -88,29 +87,12 @@ func (m *MockExporter) MakeExportFilesZip(svcs *services.APIServices, fileNamePr
 	return m.downloadReturn, nil
 }
 
-func mockElasticSearch() *esutil.Connection {
-	testServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	defer testServer.Close()
-	var ExpIndexObject = []string{}
-	var ExpRespObject = []string{}
-
-	d := esutil.DummyElasticClient{}
-	foo, _ := d.DummyElasticSearchClient(testServer.URL, ExpRespObject, ExpIndexObject, ExpRespObject, nil)
-
-	apiConfig := config.APIConfig{EnvironmentName: "Test"}
-
-	connection, _ := esutil.Connect(foo, apiConfig)
-	return &connection
-}
-
-func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, signer services.URLSigner, esconnection *esutil.Connection, logLevel *logger.LogLevel) services.APIServices {
+func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, signer services.URLSigner, logLevel *logger.LogLevel) services.APIServices {
 	logging := logger.LogDebug
 	if logLevel != nil {
 		logging = *logLevel
 	}
-	if esconnection == nil {
-		esconnection = mockElasticSearch()
-	}
+
 	cfg := config.APIConfig{
 		DatasetsBucket:      DatasetsBucketForUnitTest,
 		ConfigBucket:        ConfigBucketForUnitTest,
@@ -147,7 +129,6 @@ func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, sign
 		IDGen:         idGen,
 		Signer:        signer,
 		Notifications: &notificationStack,
-		ES:            *esconnection,
 		FS:            fs,
 	}
 }
