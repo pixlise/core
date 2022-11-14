@@ -9,14 +9,10 @@ require (
 	github.com/aws/aws-secretsmanager-caching-go v1.1.0
 	github.com/getsentry/sentry-go v0.13.0
 	github.com/golang/protobuf v1.5.2
-	github.com/google/uuid v1.1.2
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
-	github.com/olivere/elastic/v7 v7.0.32
 	github.com/orcaman/concurrent-map v1.0.0
-	github.com/otiai10/copy v1.7.0
 	github.com/pkg/errors v0.9.1
-	github.com/pkg/profile v1.6.0
 	github.com/prometheus/client_golang v1.13.0
 	go.mongodb.org/mongo-driver v1.10.2
 	golang.org/x/image v0.0.0-20220902085622-e7cb96979f69
@@ -43,6 +39,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
+	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect

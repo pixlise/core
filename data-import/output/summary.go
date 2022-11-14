@@ -79,25 +79,16 @@ func makeSummaryFileContent(exp *protos.Experiment, datasetID string, group stri
 	return s
 }
 
-func SummaryDiff(summaryFile datasetModel.SummaryFileData, bucket string, fs fileaccess.FileAccess) (datasetModel.SummaryFileData, error) {
-	// TODO refactor summary file content out of output to make the diff saner
-
+func SummaryDiff(currentSummary datasetModel.SummaryFileData, previousSummary datasetModel.SummaryFileData) (datasetModel.SummaryFileData, error) {
 	// Create a new Summary struct for collecting the diff
 	summaryDiffData := datasetModel.SummaryFileData{}
-	ptrDiff := &summaryDiffData
-	valuesDiff := reflect.ValueOf(ptrDiff)
+	valuesDiff := reflect.ValueOf(&summaryDiffData)
 
-	// Query existing Summary Data and reflect values
-	oldSummary, err := lookUpPreviousSummary(summaryFile.GetRTT(), bucket, fs)
-	ptr := &oldSummary
-	if err != nil {
-		return summaryDiffData, err
-	}
-	valuesOld := reflect.ValueOf(ptr)
+	valuesOld := reflect.ValueOf(&previousSummary)
 
 	// Prep fields and values of the new Summary struct for iteration
-	fields := reflect.TypeOf(summaryFile)
-	values := reflect.ValueOf(summaryFile)
+	fields := reflect.TypeOf(currentSummary)
+	values := reflect.ValueOf(currentSummary)
 	num := fields.NumField()
 
 	for i := 0; i < num; i++ {
@@ -108,36 +99,45 @@ func SummaryDiff(summaryFile datasetModel.SummaryFileData, bucket string, fs fil
 		valueDiff := reflect.Indirect(valuesDiff).FieldByName(field.Name)
 		//fmt.Print("Type:", field.Type, ",", field.Name, "=", value, "\n")
 
-		// If field has changed, indicate the new value in diff, otherwise leave diff field nil
-		switch value.Kind() {
-		case reflect.String:
-			if value.String() != valueOld.String() {
-				valueDiff.SetString(value.String())
+		// NOTE: RTT has become an interface{} because it has to be able to read old saved files which had int
+		// and now saves as string. This breaks here, because we can't compare interface values in general but
+		// we have a hard-coded work-around here for it
+		if field.Name == "RTT" {
+			oldRTT := fmt.Sprintf("%v", valueOld)
+			newRTT := fmt.Sprintf("%v", value)
+			if oldRTT != newRTT {
+				summaryDiffData.RTT = newRTT
 			}
-			//fmt.Print(value, "\n")
-		case reflect.Int, reflect.Int32, reflect.Int64:
-			if value.Int() != valueOld.Int() {
-				valueDiff.SetInt(value.Int())
+		} else {
+
+			// If field has changed, indicate the new value in diff, otherwise leave diff field nil
+			switch value.Kind() {
+			case reflect.String:
+				if value.String() != valueOld.String() {
+					valueDiff.SetString(value.String())
+				}
+			case reflect.Int, reflect.Int32, reflect.Int64:
+				if value.Int() != valueOld.Int() {
+					valueDiff.SetInt(value.Int())
+				}
+			case reflect.Slice:
+				_, ok := value.Interface().([]string)
+				if !ok {
+					fmt.Println("Couldn't parse slice")
+				}
+				//fmt.Printf("%v", len(slice))
+			case reflect.Struct:
+				reflect.DeepEqual(value, valueOld)
+			default:
+				return summaryDiffData, fmt.Errorf("unable to compare field of type: %s", value.Kind())
 			}
-			//fmt.Print(strconv.FormatInt(value.Int(), 10), "\n")
-		case reflect.Slice:
-			//
-			_, ok := value.Interface().([]string)
-			if !ok {
-				fmt.Println("Couldn't parse slice")
-			}
-			//fmt.Printf("%v", len(slice))
-		case reflect.Struct:
-			reflect.DeepEqual(value, valueOld)
-		default:
-			return summaryDiffData, fmt.Errorf("unable to compare field of type: %s", value.Kind())
 		}
 	}
 
 	return summaryDiffData, nil
 }
 
-func lookUpPreviousSummary(datasetID string, bucket string, fs fileaccess.FileAccess) (datasetModel.SummaryFileData, error) {
+func readPreviousSummary(datasetID string, bucket string, fs fileaccess.FileAccess) (datasetModel.SummaryFileData, error) {
 	summaryData := datasetModel.SummaryFileData{}
 
 	// Listing files in artifact bucket/<dataset-id>/

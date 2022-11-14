@@ -22,12 +22,10 @@ import (
 	"net/http/httptest"
 
 	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/notifications"
 
 	"github.com/pixlise/core/v2/core/pixlUser"
 
 	"github.com/gorilla/mux"
-	cmap "github.com/orcaman/concurrent-map"
 	"github.com/pixlise/core/v2/api/config"
 	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
@@ -110,26 +108,26 @@ func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, sign
 
 	fs := fileaccess.MakeS3Access(mockS3)
 
-	var notes []notifications.UINotificationObj
-
-	notificationStack := notifications.NotificationStack{
-		Notifications: notes,
-		FS:            fs,
-		Bucket:        UsersBucketForUnitTest,
-		Track:         cmap.New(), //make(map[string]bool),
-	}
+	// Most tests don't involve mongo DB and notifications...
+	/*
+		notificationStack := notifications.NotificationStack{
+			Notifications: notes,
+			FS:            fs,
+			Bucket:        UsersBucketForUnitTest,
+			Track:         cmap.New(), //make(map[string]bool),
+		}*/
 
 	return services.APIServices{
-		Config:        cfg,
-		Log:           &logger.NullLogger{},
-		AWSSessionCW:  nil,
-		S3:            mockS3,
-		SNS:           &awsutil.MockSNS{},
-		JWTReader:     MockJWTReader{},
-		IDGen:         idGen,
-		Signer:        signer,
-		Notifications: &notificationStack,
-		FS:            fs,
+		Config:       cfg,
+		Log:          &logger.NullLogger{},
+		AWSSessionCW: nil,
+		S3:           mockS3,
+		SNS:          &awsutil.MockSNS{},
+		JWTReader:    MockJWTReader{},
+		IDGen:        idGen,
+		Signer:       signer,
+		//Notifications: &notificationStack,
+		FS: fs,
 	}
 }
 

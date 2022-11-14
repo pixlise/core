@@ -27,8 +27,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/timestamper"
 )
 
 func Example_detectorQuantConfigHandler_List() {
@@ -462,7 +462,7 @@ func Example_piquantHandler_SetVersion() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	svcs.TimeStamper = &services.MockTimeNowStamper{
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1234567777},
 	}
 	apiRouter := MakeRouter(svcs)

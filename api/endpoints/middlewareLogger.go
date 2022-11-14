@@ -181,13 +181,13 @@ func (h *LoggerMiddleware) Middleware(next http.Handler) http.Handler {
 			if val, ok := h.Notifications.GetTrack(requestingUser.UserID); ok {
 				track = val
 			} else {
-				userObj, err := h.APIServices.Notifications.FetchUserObject(requestingUser.UserID, false, "", "")
+				user, err := h.APIServices.Notifications.GetUser(requestingUser.UserID)
 				if err != nil {
 					h.Notifications.SetTrack(requestingUser.UserID, false)
 					return
 				}
 
-				if userObj.Config.DataCollection != "unknown" && userObj.Config.DataCollection != "false" {
+				if user.Config.DataCollection != "unknown" && user.Config.DataCollection != "false" {
 					track = true
 					h.Notifications.SetTrack(requestingUser.UserID, true)
 				}

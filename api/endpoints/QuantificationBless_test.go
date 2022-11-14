@@ -27,8 +27,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/timestamper"
 )
 
 func Example_quantHandler_BlessShared1stQuant() {
@@ -107,7 +107,7 @@ func Example_quantHandler_BlessShared1stQuant() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	svcs.TimeStamper = &services.MockTimeNowStamper{
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1234567890},
 	}
 	apiRouter := MakeRouter(svcs)
@@ -245,7 +245,7 @@ func Example_quantHandler_BlessSharedQuantV4() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	svcs.TimeStamper = &services.MockTimeNowStamper{
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1234567890},
 	}
 	apiRouter := MakeRouter(svcs)
@@ -405,7 +405,7 @@ func Example_quantHandler_BlessUserQuant() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	svcs.TimeStamper = &services.MockTimeNowStamper{
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1234567890},
 	}
 	apiRouter := MakeRouter(svcs)

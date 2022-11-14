@@ -10,10 +10,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/core/timestamper"
 )
 
 func Example_testLoggingDebug() {
@@ -45,7 +45,7 @@ func Example_testLoggingDebug() {
 	idGen.ids = []string{"id-123"}
 
 	s := MakeMockSvcs(&mockS3, &idGen, nil, nil)
-	s.TimeStamper = &services.MockTimeNowStamper{
+	s.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1668142579},
 	}
 
@@ -115,7 +115,7 @@ func Example_testLoggingInfo() {
 
 	var ll = logger.LogInfo
 	s := MakeMockSvcs(&mockS3, &idGen, nil, &ll)
-	s.TimeStamper = &services.MockTimeNowStamper{
+	s.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1668142579},
 	}
 

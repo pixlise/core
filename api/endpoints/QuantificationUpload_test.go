@@ -26,8 +26,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/timestamper"
 )
 
 // Quantification manual uploads, this has many failure scenarios...
@@ -37,7 +37,7 @@ func Example_quantHandler_UploadFails() {
 	defer mockS3.FinishTest()
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	svcs.TimeStamper = &services.MockTimeNowStamper{
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1234567890},
 	}
 	apiRouter := MakeRouter(svcs)
@@ -241,7 +241,7 @@ PMC, Ca_%, livetime, RTT, SCLK, filename
 	var idGen MockIDGenerator
 	idGen.ids = []string{"quant123"}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
-	svcs.TimeStamper = &services.MockTimeNowStamper{
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1234567890},
 	}
 	apiRouter := MakeRouter(svcs)

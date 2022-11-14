@@ -22,13 +22,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
-
-	"github.com/pixlise/core/v2/core/notifications"
+	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/core/notifications"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
 const emptyUserJSON = `{"userid":"600f2a0806b6c70071d3d174","notifications":{"topics":[],"hints":[],"uinotifications":[]},"userconfig":{"name":"Niko Bellic","email":"niko@spicule.co.uk","cell":"","data_collection":"unknown"}}`
@@ -41,44 +43,56 @@ const userSMSEMAILJSON = `{"userid":"600f2a0806b6c70071d3d174","notifications":{
 
 const userJSONNotification = `{"userid":"600f2a0806b6c70071d3d174","notifications":{"topics":[{"name":"topic c","config":{"method":{"ui":true,"sms":true,"email":true}}},{"name":"topic d","config":{"method":{"ui":true,"sms":true,"email":true}}}],"hints":[],"uinotifications":[{"topic":"test-data-source","message":"New Data Source Available","timestamp":"2021-02-01T01:01:01.000Z","userid":"600f2a0806b6c70071d3d174"}]},"userconfig":{"name":"Niko Bellic","email":"niko@spicule.co.uk","cell":"","data_collection":"unknown"}}`
 
-func Example_subscriptions_empty() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
+func Test_subscriptions_empty(t *testing.T) {
 
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil,
-	}
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"), Body: bytes.NewReader([]byte(emptyUserJSON)),
-		},
-	}
+	mt.Run("success", func(mt *mtest.T) {
+		//userCollection := mt.Coll
+		expectedUser := notifications.UserStruct{
+			Userid:        "600f2a0806b6c70071d3d174",
+			Notifications: notifications.Notifications{},
+			Config: notifications.Config{
+				Name:           "Niko Bellic",
+				Email:          "niko@spicule.co.uk",
+				Cell:           "",
+				DataCollection: "unknown",
+			},
+		}
 
-	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
-		{},
-	}
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	setTestAuth0Config(&svcs)
+		mt.AddMockResponses(mtest.CreateCursorResponse(1, "userdatabase.users", mtest.FirstBatch, bson.D{
+			{"Userid", expectedUser.Userid},
+		}))
 
-	apiRouter := MakeRouter(svcs)
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
 
-	req, _ := http.NewRequest("GET", "/notification/subscriptions", nil)
-	resp := executeRequest(req, apiRouter.Router)
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		setTestAuth0Config(&svcs)
+		notifications, err := notifications.MakeNotificationStack(mt.Client, nil, &logger.StdOutLoggerForTest{}, []string{})
+		if err != nil {
+			t.Error(err)
+		}
 
-	fmt.Printf("ensure-valid: %v\n", resp.Code)
-	fmt.Printf("%v", resp.Body)
+		svcs.Notifications = notifications
 
-	// Output:
-	// ensure-valid: 200
-	// {
-	//     "topics": []
-	// }
+		apiRouter := MakeRouter(svcs)
+
+		req, _ := http.NewRequest("GET", "/notification/subscriptions", nil)
+		resp := executeRequest(req, apiRouter.Router)
+
+		if resp.Code != 200 {
+			t.Errorf("Bad resp code: %v", resp.Code)
+		}
+
+		expRespBody := `{
+    "topics": []
+}`
+		if string(resp.Body.Bytes()) != expRespBody {
+			t.Errorf("Bad resp body: %v", resp.Body)
+		}
+	})
 }
 
 func Example_subscriptions() {
@@ -219,13 +233,13 @@ func Example_alerts_empty() {
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 
-	obj := notifications.UINotificationObj{
+	/*obj := notifications.UINotificationItem{
 		Topic:     "test-data-source",
 		Message:   "New Data Source Available",
 		Timestamp: time.Time{},
 		UserID:    "600f2a0806b6c70071d3d174",
 	}
-	svcs.Notifications.AddNotification(obj)
+	svcs.Notifications.AddNotification(obj)*/
 
 	setTestAuth0Config(&svcs)
 	apiRouter := MakeRouter(svcs)
@@ -282,13 +296,13 @@ func Example_alerts() {
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 
-	obj := notifications.UINotificationObj{
+	/*obj := notifications.UINotificationItem{
 		Topic:     "test-data-source",
 		Message:   "New Data Source Available",
 		Timestamp: time.Time{},
 		UserID:    "600f2a0806b6c70071d3d174",
 	}
-	svcs.Notifications.AddNotification(obj)
+	svcs.Notifications.AddNotification(obj)*/
 
 	setTestAuth0Config(&svcs)
 	apiRouter := MakeRouter(svcs)

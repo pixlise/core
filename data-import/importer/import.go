@@ -21,31 +21,65 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v2/core/awsutil"
+	datasetModel "github.com/pixlise/core/v2/core/dataset"
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
 	dataConverter "github.com/pixlise/core/v2/data-import/data-converter"
 	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
 )
 
-func ImportForTrigger(triggerMessage []byte, envName string, configBucket string, datasetBucket string, manualBucket string, log logger.ILogger, remoteFS fileaccess.FileAccess) (string, error) {
+// Structure returned after importing
+// NOTE: the logger must have Close() called on it, otherwise we may lose the last few log events
+type ImportResult struct {
+	WorkingDir   string         // so it can be cleaned up by caller if needed
+	WhatChanged  string         // what changed between this import and a previous one, for notification reasons
+	IsUpdate     bool           // IsUpdate flag
+	DatasetTitle string         // Name of the dataset that was imported
+	DatasetID    string         // ID of the dataset that was imported
+	Logger       logger.ILogger // Caller must call Close() on it, otherwise we may lose the last few log events
+}
+
+// ImportForTrigger - Parses a trigger message (from SNS) and decides what to import
+// Returns:
+// Result struct - NOTE: logger must have Close() called on it, otherwise we may lose the last few log events
+// Error (or nil)
+func ImportForTrigger(
+	triggerMessage []byte,
+	envName string,
+	configBucket string,
+	datasetBucket string,
+	manualBucket string,
+	log logger.ILogger,
+	remoteFS fileaccess.FileAccess) (ImportResult, error) {
 	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger(triggerMessage)
 
+	result := ImportResult{
+		WorkingDir:   "",
+		WhatChanged:  "",
+		IsUpdate:     false,
+		DatasetTitle: "",
+		DatasetID:    "",
+	}
+
 	if err != nil {
-		return "", err
+		return result, err
 	}
 
 	// Initialise stuff
 	sess, err := awsutil.GetSession()
 	if err != nil {
-		return "", err
+		return result, err
 	}
 
 	if log == nil {
 		log, err = logger.InitCloudWatchLogger(sess, "/dataset-importer/"+envName, datasetID+"-"+logID, logger.LogDebug, 30, 3)
 		if err != nil {
-			return "", err
+			return result, err
 		}
 	}
+
+	// Return the logger...
+	result.Logger = log
 
 	// Handle panics. Here we close the logger if there is a panic, to ensure anything we have is written out to cloudwatch!
 	defer logger.HandlePanicWithLog(log)
@@ -58,7 +92,7 @@ func ImportForTrigger(triggerMessage []byte, envName string, configBucket string
 		exists, err := datasetArchive.AddToDatasetArchive(remoteFS, log, datasetBucket, sourceBucket, sourceFilePath)
 		if err != nil {
 			log.Errorf("%v", err)
-			return "", err
+			return result, err
 		}
 
 		if exists {
@@ -67,7 +101,7 @@ func ImportForTrigger(triggerMessage []byte, envName string, configBucket string
 			log.Infof("File already exists in archive, processing stopped. File was: \"%v\"", sourceFilePath)
 
 			// Not an error, we just consider ourselves succesfully complete now
-			return "", nil
+			return result, err
 		}
 
 		archived = true
@@ -75,17 +109,22 @@ func ImportForTrigger(triggerMessage []byte, envName string, configBucket string
 		// We need BOTH to be set to something for this to work, only one of them is set
 		err = fmt.Errorf("Trigger message must specify bucket AND path, received bucket=%v, path=%v", sourceBucket, sourceFilePath)
 		log.Errorf("%v", err)
-		return "", err
+		return result, err
 	}
 
-	workingDir, _, err := dataConverter.ImportDataset(localFS, remoteFS, configBucket, manualBucket, datasetBucket, datasetID, log, archived)
+	importedSummary := datasetModel.SummaryFileData{}
+	result.WorkingDir, importedSummary, result.WhatChanged, result.IsUpdate, err = dataConverter.ImportDataset(localFS, remoteFS, configBucket, manualBucket, datasetBucket, datasetID, log, archived)
+	result.DatasetID = importedSummary.DatasetID
+	result.DatasetTitle = importedSummary.Title
 
 	if err != nil {
 		log.Errorf("%v", err)
 	}
 
+	// NOTE: We are now passing this responsibility to the caller, because we're very trusting... And they may want
+	// to log something about sending notifications if that happens...
 	// Ensure we write everything out...
-	log.Close()
+	//log.Close()
 
-	return workingDir, err
+	return result, err
 }

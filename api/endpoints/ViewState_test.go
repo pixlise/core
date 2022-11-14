@@ -26,9 +26,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/timestamper"
 )
 
 const viewStateS3Path = "UserContent/600f2a0806b6c70071d3d174/TheDataSetID/ViewState/"
@@ -779,7 +779,7 @@ func Example_viewStateHandler_Put_spectrum_topright() {
 	idGen.ids = []string{"id-1234"}
 
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
-	svcs.TimeStamper = &services.MockTimeNowStamper{
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1668142579},
 	}
 
