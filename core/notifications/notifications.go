@@ -45,7 +45,7 @@ func readUINotifications(notificationCollection *mongo.Collection, filter interf
 		return nil, err
 	}
 
-	var notifications []UINotificationItem
+	notifications := []UINotificationItem{}
 
 	for cursor.Next(context.Background()) {
 		l := UINotificationItem{}

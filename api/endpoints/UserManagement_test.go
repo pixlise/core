@@ -21,12 +21,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
+	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 
 	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
@@ -218,71 +219,89 @@ func Example_userManagement_Roles_And_UserByRole() {
 	// <nil>|true
 }
 
-func Example_user_config() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-
-	userJSON := `{"userid":"600f2a0806b6c70071d3d174","notifications":{"topics":[{"name":"test-dataset-available","config":{"method":{"ui":true,"sms":true,"email":true}}}],"hints":["hint a","hint b"],"uinotifications":null},"userconfig":{"name":"Niko Bellic","email":"niko@spicule.co.uk","cell":"+123456789","data_collection":"true"}}`
-	userUpdatedJSON := `{"userid":"600f2a0806b6c70071d3d174","notifications":{"topics":[{"name":"test-dataset-available","config":{"method":{"ui":true,"sms":true,"email":true}}}],"hints":["hint a","hint b"],"uinotifications":null},"userconfig":{"name":"Niko Bellic","email":"niko@spicule.co.uk","cell":"+123456789","data_collection":"false"}}`
-
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"),
-		},
+func Test_user_config_get(t *testing.T) {
+	expectedResponse := `{
+    "name": "Niko Bellic",
+    "email": "niko@spicule.co.uk",
+    "cell": "+123456789",
+    "data_collection": "true"
+}
+`
+	mockMongoResponses := []primitive.D{
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase.users",
+			mtest.FirstBatch,
+			bson.D{
+				{"Userid", "600f2a0806b6c70071d3d174"},
+				{"Notifications", bson.D{
+					{"Topics", bson.A{
+						bson.D{
+							{"Name", "topic z"},
+							{"Config", bson.D{
+								{"Method", bson.D{
+									{"ui", true},
+									{"sms", false},
+									{"email", true},
+								}},
+							}},
+						}}},
+				}},
+				{"Config", bson.D{
+					{"Name", "Niko Bellic"},
+					{"Email", "niko@spicule.co.uk"},
+					{"Cell", "+123456789"},
+					{"DataCollection", "true"},
+				}},
+			},
+		),
 	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(userJSON))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(userJSON))),
-		},
+
+	runOneURLCallTest(t, "GET", "/user/config", nil, 200, expectedResponse, mockMongoResponses)
+}
+
+func Test_user_config_post(t *testing.T) {
+	requestPayload := bytes.NewReader([]byte(`{"name": "Niko Bellic", "email": "niko@spicule.co.uk","cell": "+1234567890","data_collection": "false"}`))
+
+	expectedResponse := `{
+    "name": "Niko Bellic",
+    "email": "niko@spicule.co.uk",
+    "cell": "+1234567890",
+    "data_collection": "false"
+}
+`
+	mockMongoResponses := []primitive.D{
+		// User read
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase.users",
+			mtest.FirstBatch,
+			bson.D{
+				{"Userid", "600f2a0806b6c70071d3d174"},
+				{"Notifications", bson.D{
+					{"Topics", bson.A{
+						bson.D{
+							{"Name", "topic z"},
+							{"Config", bson.D{
+								{"Method", bson.D{
+									{"ui", true},
+									{"sms", false},
+									{"email", true},
+								}},
+							}},
+						}}},
+				}},
+				{"Config", bson.D{
+					{"Name", "Niko Bellic"},
+					{"Email", "niko@spicule.co.uk"},
+					{"Cell", "+123456789"},
+					{"DataCollection", "true"},
+				}},
+			},
+		),
+		// User saved
+		mtest.CreateSuccessResponse(),
 	}
 
-	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
-		s3.PutObjectInput{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"), Body: bytes.NewReader([]byte(userUpdatedJSON)),
-		},
-	}
-	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
-		&s3.PutObjectOutput{},
-	}
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-
-	setTestAuth0Config(&svcs)
-	apiRouter := MakeRouter(svcs)
-
-	req, _ := http.NewRequest("GET", "/user/config", nil)
-	resp := executeRequest(req, apiRouter.Router)
-
-	fmt.Println(fmt.Sprintf("ensure-valid: %v", resp.Code))
-	fmt.Println(resp.Body)
-
-	j := `{"name": "Niko Bellic", "email": "niko@spicule.co.uk","cell": "+123456789","data_collection": "false"}`
-
-	req, _ = http.NewRequest("POST", "/user/config", bytes.NewReader([]byte(j)))
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(fmt.Sprintf("ensure-valid: %v", resp.Code))
-	fmt.Println(resp.Body)
-
-	// Output:
-	// ensure-valid: 200
-	// {
-	//     "name": "Niko Bellic",
-	//     "email": "niko@spicule.co.uk",
-	//     "cell": "+123456789",
-	//     "data_collection": "true"
-	// }
-	//
-	// ensure-valid: 200
-	// {
-	//     "name": "Niko Bellic",
-	//     "email": "niko@spicule.co.uk",
-	//     "cell": "+123456789",
-	//     "data_collection": "false"
-	// }
+	runOneURLCallTest(t, "POST", "/user/config", requestPayload, 200, expectedResponse, mockMongoResponses)
 }

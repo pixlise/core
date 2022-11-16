@@ -92,7 +92,7 @@ func initUser(name string, email string, userid string) UserStruct {
 func (n *NotificationStack) createUser(userid string, name string, email string) (UserStruct, error) {
 	us := initUser(name, email, userid)
 
-	if n.notificationCollection == nil {
+	if n.userCollection == nil {
 		return us, errors.New("createUser: Mongo not connected")
 	}
 
@@ -114,7 +114,7 @@ func readUsers(userCollection *mongo.Collection, filter interface{}) ([]UserStru
 		return nil, err
 	}
 
-	var users []UserStruct
+	users := []UserStruct{}
 
 	for cursor.Next(context.Background()) {
 		l := UserStruct{}
@@ -129,7 +129,7 @@ func readUsers(userCollection *mongo.Collection, filter interface{}) ([]UserStru
 }
 
 func (n *NotificationStack) getAllUsers() ([]UserStruct, error) {
-	if n.notificationCollection == nil {
+	if n.userCollection == nil {
 		return nil, errors.New("getAllUsers: Mongo not connected")
 	}
 
@@ -143,7 +143,7 @@ func (n *NotificationStack) getAllUsers() ([]UserStruct, error) {
 }
 
 func (n *NotificationStack) getSubscribersByTopicID(useroverride []string, searchtopic string) ([]UserStruct, error) {
-	if n.notificationCollection == nil {
+	if n.userCollection == nil {
 		return nil, errors.New("getSubscribersByTopicID: Mongo not connected")
 	}
 
@@ -190,7 +190,7 @@ func (n *NotificationStack) getSubscribersByTopicID(useroverride []string, searc
 }
 
 func (n *NotificationStack) getSubscribersByEmailTopicID(useroverride []string, searchtopic string) ([]UserStruct, error) {
-	if n.notificationCollection == nil {
+	if n.userCollection == nil {
 		return nil, errors.New("getSubscribersByEmailTopicID: Mongo not connected")
 	}
 
@@ -237,7 +237,7 @@ func (n *NotificationStack) getSubscribersByEmailTopicID(useroverride []string, 
 }
 
 func (n *NotificationStack) getSubscribersByTopic(searchtopic string) ([]UserStruct, error) {
-	if n.notificationCollection == nil {
+	if n.userCollection == nil {
 		return nil, errors.New("getSubscribersByTopic: Mongo not connected")
 	}
 
@@ -264,7 +264,7 @@ func (n *NotificationStack) getSubscribersByTopic(searchtopic string) ([]UserStr
 }
 
 func (n *NotificationStack) GetUser(userid string) (UserStruct, error) {
-	if n.notificationCollection == nil {
+	if n.userCollection == nil {
 		return UserStruct{}, errors.New("GetUser: Mongo not connected")
 	}
 
@@ -289,15 +289,18 @@ func (n *NotificationStack) GetUser(userid string) (UserStruct, error) {
 func (n *NotificationStack) GetUserEnsureExists(userid string, name string, email string) (UserStruct, error) {
 	// Try to read it, if it doesn't exist, create it
 	user, err := n.GetUser(userid)
-	if err == nil {
-		return user, nil
+
+	// If user doesn't exist, we create it
+	if err == mongo.ErrNoDocuments {
+		return n.createUser(userid, name, email)
 	}
 
-	return n.createUser(userid, name, email)
+	// Otherwise return whatever we got
+	return user, err
 }
 
 func (n *NotificationStack) WriteUser(user UserStruct) error {
-	if n.notificationCollection == nil {
+	if n.userCollection == nil {
 		return errors.New("WriteUser: Mongo not connected")
 	}
 

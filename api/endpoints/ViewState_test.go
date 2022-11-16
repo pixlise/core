@@ -22,13 +22,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/core/notifications"
 	"github.com/pixlise/core/v2/core/timestamper"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
 const viewStateS3Path = "UserContent/600f2a0806b6c70071d3d174/TheDataSetID/ViewState/"
@@ -696,13 +700,19 @@ func Example_viewStateHandler_Post() {
 // NOTE: This is a special test, because it also has tracking turned on, and has a logger middleware installed
 // This is so we test that the middleware correctly identifies these PUT msgs as something that needs to be
 // saved and does so.
-func Example_viewStateHandler_Put_spectrum_topright() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
+func Test_viewStateHandler_Put_spectrum_topright_AND_middleware_activity_logging(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "spectrum-top1.json"), Body: bytes.NewReader([]byte(`{
+	mt.Run("success", func(mt *mtest.T) {
+		//mt.AddMockResponses()
+
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+
+		mockS3.ExpPutObjectInput = []s3.PutObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "spectrum-top1.json"), Body: bytes.NewReader([]byte(`{
     "panX": 12,
     "panY": 0,
     "zoomX": 1,
@@ -750,10 +760,10 @@ func Example_viewStateHandler_Put_spectrum_topright() {
         }
     ]
 }`)),
-		},
-		// The middleware should write out a copy of this message to the user activity tracking spot
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("Activity/2022-11-11/id-1234.json"), Body: bytes.NewReader([]byte(`{
+			},
+			// The middleware should write out a copy of this message to the user activity tracking spot
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("Activity/2022-11-11/id-1234.json"), Body: bytes.NewReader([]byte(`{
     "Instance": "",
     "Time": "2022-11-11T04:56:19Z",
     "Component": "/view-state/TheDataSetID/spectrum-top1",
@@ -766,32 +776,42 @@ func Example_viewStateHandler_Put_spectrum_topright() {
     "Environment": "unit-test",
     "User": "myuserid"
 }`)),
-		},
-	}
+			},
+		}
 
-	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
-		{},
-		{},
-	}
+		mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
+			{},
+			{},
+		}
 
-	// Set up extra bits for middleware testing
-	var idGen MockIDGenerator
-	idGen.ids = []string{"id-1234"}
+		// Set up extra bits for middleware testing
+		var idGen MockIDGenerator
+		idGen.ids = []string{"id-1234"}
 
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
-	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
-		QueuedTimeStamps: []int64{1668142579},
-	}
+		svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+		svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+			QueuedTimeStamps: []int64{1668142579},
+		}
 
-	// Add requestor as a tracked user, so we should see activity saved
-	svcs.Notifications.SetTrack("myuserid", true)
+		setTestAuth0Config(&svcs)
 
-	apiRouter := MakeRouter(svcs)
-	mockvalidator := api.MockJWTValidator{}
-	logware := LoggerMiddleware{&svcs, &mockvalidator}
+		notifications, err := notifications.MakeNotificationStack(mt.Client, nil, &logger.StdOutLoggerForTest{}, []string{})
+		if err != nil {
+			t.Error(err)
+		}
 
-	apiRouter.Router.Use(logware.Middleware)
-	const putItem = `{
+		svcs.Notifications = notifications
+
+		// Add requestor as a tracked user, so we should see activity saved
+		svcs.Notifications.SetTrack("myuserid", true)
+
+		apiRouter := MakeRouter(svcs)
+
+		mockvalidator := api.MockJWTValidator{}
+		logware := LoggerMiddleware{&svcs, &mockvalidator}
+
+		apiRouter.Router.Use(logware.Middleware)
+		const putItem = `{
     "panX": 12,
     "zoomX": 1,
     "energyCalibration": [
@@ -838,20 +858,17 @@ func Example_viewStateHandler_Put_spectrum_topright() {
     "showXAsEnergy": true
 }`
 
-	const routePath = "/view-state/TheDataSetID/"
+		const routePath = "/view-state/TheDataSetID/"
 
-	req, _ := http.NewRequest("PUT", routePath+"spectrum-top1", bytes.NewReader([]byte(putItem)))
-	//req.Header.Set("content-type", "application/json")
-	resp := executeRequest(req, apiRouter.Router)
+		req, _ := http.NewRequest("PUT", routePath+"spectrum-top1", bytes.NewReader([]byte(putItem)))
+		//req.Header.Set("content-type", "application/json")
+		resp := executeRequest(req, apiRouter.Router)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		checkResult(t, resp, 200, "")
 
-	// Wait a bit for any threads to finish (part of the middleware test)
-	time.Sleep(2 * time.Second)
-
-	// Output:
-	// 200
+		// Wait a bit for any threads to finish (part of the middleware test)
+		time.Sleep(2 * time.Second)
+	})
 }
 
 func Example_viewStateHandler_Put_spectrum_oldway_FAIL() {

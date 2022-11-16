@@ -69,6 +69,7 @@ If you're wondering what the Gitpod button above is and would like to get a deve
     },
     "args": ["-quantExecutor", "docker"]
 ```
+- Start a local mongo DB in docker: `docker run -d  --name mongo-on-docker  -p 27888:27017 -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=secret mongo`. This container can be stopped, deleted and recreated as needed.
 - Open any file in the main package (`internal/pixlise-api/*.go`)
 - Hit F5 to start debugging
 
@@ -83,4 +84,3 @@ The API takes a few seconds to start up. Watch the Debug Console in VS Code! You
 ### Example CLI flags
 
 `-quantExecutor docker` - this tells the API to use local docker as the quant executor, meaning PIQUANT jobs will start on your local development machine.
-

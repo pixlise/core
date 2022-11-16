@@ -21,7 +21,9 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
+	"github.com/pixlise/core/v2/core/api"
 	apiNotifications "github.com/pixlise/core/v2/core/notifications"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/pixlise/core/v2/api/handlers"
 	"github.com/pixlise/core/v2/api/permission"
@@ -76,10 +78,10 @@ func registerNotificationHandler(router *apiRouter.ApiObjectRouter) {
 
 	router.AddJSONHandler(handlers.MakeEndpointPath(subscriptionPrefix), apiRouter.MakeMethodPermission("GET", permission.PermPublic), listSubscriptions)
 
-	router.AddJSONHandler(handlers.MakeEndpointPath(subscriptionPrefix), apiRouter.MakeMethodPermission("POST", permission.PermPublic), updateSubscriptions)
+	router.AddJSONHandler(handlers.MakeEndpointPath(subscriptionPrefix), apiRouter.MakeMethodPermission("POST", permission.PermPublic), postSubscriptions)
 
 	router.AddJSONHandler(handlers.MakeEndpointPath(hintsPrefix), apiRouter.MakeMethodPermission("GET", permission.PermPublic), listHints)
-	router.AddJSONHandler(handlers.MakeEndpointPath(hintsPrefix), apiRouter.MakeMethodPermission("POST", permission.PermPublic), updateHints)
+	router.AddJSONHandler(handlers.MakeEndpointPath(hintsPrefix), apiRouter.MakeMethodPermission("POST", permission.PermPublic), postHints)
 
 	router.AddJSONHandler(handlers.MakeEndpointPath(alertsPrefix), apiRouter.MakeMethodPermission("GET", permission.PermPublic), listAlerts)
 
@@ -139,6 +141,13 @@ func listHints(params handlers.ApiHandlerParams) (interface{}, error) {
 	user, err := params.Svcs.Notifications.GetUser(params.UserInfo.UserID)
 
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			// If no documents we don't complain, just send back no hints
+			result := HintsData{
+				Hints: []string{},
+			}
+			return result, nil
+		}
 		return nil, err
 	}
 
@@ -149,7 +158,7 @@ func listHints(params handlers.ApiHandlerParams) (interface{}, error) {
 	return result, nil
 }
 
-func updateHints(params handlers.ApiHandlerParams) (interface{}, error) {
+func postHints(params handlers.ApiHandlerParams) (interface{}, error) {
 	body, err := ioutil.ReadAll(params.Request.Body)
 	if err != nil {
 		return nil, err
@@ -181,6 +190,9 @@ func listSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) {
 	user, err := params.Svcs.Notifications.GetUser(params.UserInfo.UserID)
 
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, api.MakeNotFoundError(params.UserInfo.UserID)
+		}
 		return nil, err
 	}
 
@@ -191,7 +203,7 @@ func listSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) {
 	return result, nil
 }
 
-func updateSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) {
+func postSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) {
 	body, err := ioutil.ReadAll(params.Request.Body)
 	if err != nil {
 		return nil, err
@@ -215,5 +227,5 @@ func updateSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) 
 	// Write user back
 	err = params.Svcs.Notifications.WriteUser(user)
 
-	return UserSubscriptions{user.Notifications.Topics}, nil
+	return UserSubscriptions{user.Notifications.Topics}, err
 }

@@ -19,51 +19,411 @@ package endpoints
 
 import (
 	"bytes"
-	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/logger"
 	"github.com/pixlise/core/v2/core/notifications"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
-const emptyUserJSON = `{"userid":"600f2a0806b6c70071d3d174","notifications":{"topics":[],"hints":[],"uinotifications":[]},"userconfig":{"name":"Niko Bellic","email":"niko@spicule.co.uk","cell":"","data_collection":"unknown"}}`
+func Test_subscription_get(t *testing.T) {
+	expectedResponse := `{
+    "topics": [
+        {
+            "name": "topic z",
+            "config": {
+                "method": {
+                    "ui": true,
+                    "sms": false,
+                    "email": true
+                }
+            }
+        }
+    ]
+}
+`
+	mockMongoResponses := []primitive.D{
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase.users",
+			mtest.FirstBatch,
+			bson.D{
+				{"Userid", "600f2a0806b6c70071d3d174"},
+				{"Notifications", bson.D{
+					{"Topics", bson.A{
+						bson.D{
+							{"Name", "topic z"},
+							{"Config", bson.D{
+								{"Method", bson.D{
+									{"ui", true},
+									{"sms", false},
+									{"email", true},
+								}},
+							}},
+						}}},
+				}},
+				{"Config", bson.D{
+					{"Name", "Niko Bellic"},
+					{"Email", "niko@spicule.co.uk"},
+					{"Cell", ""},
+					{"DataCollection", "unknown"},
+				}},
+			},
+		),
+	}
 
-const userJSON = `{"userid":"600f2a0806b6c70071d3d174","notifications":{"topics":[{"name":"topic c","config":{"method":{"ui":true,"sms":false,"email":false}}},{"name":"topic d","config":{"method":{"ui":true,"sms":false,"email":false}}}],"hints":[],"uinotifications":[]},"userconfig":{"name":"Niko Bellic","email":"niko@spicule.co.uk","cell":"","data_collection":"unknown"}}`
+	runOneURLCallTest(t, "GET", "/notification/subscriptions", nil, 200, expectedResponse, mockMongoResponses)
+}
 
-const hintJSON = `{"userid":"600f2a0806b6c70071d3d174","notifications":{"topics":[{"name":"topic c","config":{"method":{"ui":true,"sms":false,"email":false}}},{"name":"topic d","config":{"method":{"ui":true,"sms":false,"email":false}}}],"hints":["hint c","hint d"],"uinotifications":[]},"userconfig":{"name":"Niko Bellic","email":"niko@spicule.co.uk","cell":"","data_collection":"unknown"}}`
+func Test_subscriptions_get_empty_topics(t *testing.T) {
+	expectedResponse := `{
+    "topics": []
+}
+`
+	mockMongoResponses := []primitive.D{
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase.users",
+			mtest.FirstBatch,
+			bson.D{
+				{"Userid", "600f2a0806b6c70071d3d174"},
+				{"Notifications", bson.D{
+					{"Topics", bson.A{}},
+				}},
+				{"Config", bson.D{
+					{"Name", "Niko Bellic"},
+					{"Email", "niko@spicule.co.uk"},
+					{"Cell", ""},
+					{"DataCollection", "unknown"},
+				}},
+			},
+		),
+	}
 
-const userSMSEMAILJSON = `{"userid":"600f2a0806b6c70071d3d174","notifications":{"topics":[{"name":"topic c","config":{"method":{"ui":true,"sms":true,"email":true}}},{"name":"topic d","config":{"method":{"ui":true,"sms":true,"email":true}}}],"hints":[],"uinotifications":[]},"userconfig":{"name":"Niko Bellic","email":"niko@spicule.co.uk","cell":"","data_collection":"unknown"}}`
+	runOneURLCallTest(t, "GET", "/notification/subscriptions", nil, 200, expectedResponse, mockMongoResponses)
+}
 
-const userJSONNotification = `{"userid":"600f2a0806b6c70071d3d174","notifications":{"topics":[{"name":"topic c","config":{"method":{"ui":true,"sms":true,"email":true}}},{"name":"topic d","config":{"method":{"ui":true,"sms":true,"email":true}}}],"hints":[],"uinotifications":[{"topic":"test-data-source","message":"New Data Source Available","timestamp":"2021-02-01T01:01:01.000Z","userid":"600f2a0806b6c70071d3d174"}]},"userconfig":{"name":"Niko Bellic","email":"niko@spicule.co.uk","cell":"","data_collection":"unknown"}}`
+func Test_subscriptions_get_no_user(t *testing.T) {
+	expectedResponse := `600f2a0806b6c70071d3d174 not found
+`
+	mockMongoResponses := []primitive.D{
+		mtest.CreateCursorResponse(
+			1,
+			"userdatabase.users",
+			mtest.FirstBatch,
+		),
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase.users",
+			mtest.NextBatch,
+		),
+	}
 
-func Test_subscriptions_empty(t *testing.T) {
+	runOneURLCallTest(t, "GET", "/notification/subscriptions", nil, 404, expectedResponse, mockMongoResponses)
+}
 
+func Test_subscription_post(t *testing.T) {
+	requestPayload := bytes.NewReader([]byte(`{"topics": [{
+	"name": "topic c",
+	"config": {
+		"method": {
+			"ui": true,
+			"sms": false,
+			"email": false
+		}
+	}
+}, {
+	"name": "topic d",
+	"config": {
+		"method": {
+			"ui": true,
+			"sms": false,
+			"email": false
+		}
+	}
+}]}`))
+
+	expectedResponse := `{
+    "topics": [
+        {
+            "name": "topic c",
+            "config": {
+                "method": {
+                    "ui": true,
+                    "sms": false,
+                    "email": false
+                }
+            }
+        },
+        {
+            "name": "topic d",
+            "config": {
+                "method": {
+                    "ui": true,
+                    "sms": false,
+                    "email": false
+                }
+            }
+        }
+    ]
+}
+`
+	mockMongoResponses := []primitive.D{
+		mtest.CreateCursorResponse(
+			1,
+			"userdatabase.users",
+			mtest.FirstBatch,
+			bson.D{
+				{"Userid", "600f2a0806b6c70071d3d174"},
+				{"Notifications", bson.D{
+					{"Topics", bson.A{}},
+				}},
+				{"Config", bson.D{
+					{"Name", "Niko Bellic"},
+					{"Email", "niko@spicule.co.uk"},
+					{"Cell", ""},
+					{"DataCollection", "unknown"},
+				}},
+			},
+		),
+		mtest.CreateSuccessResponse(), // NOTE: not sure where this gets gobbled up...
+		mtest.CreateSuccessResponse(),
+	}
+
+	runOneURLCallTest(t, "POST", "/notification/subscriptions", requestPayload, 200, expectedResponse, mockMongoResponses)
+}
+
+func Test_subscription_post_no_user(t *testing.T) {
+	requestPayload := bytes.NewReader([]byte(`{"topics": [{
+	"name": "topic c",
+	"config": {
+		"method": {
+			"ui": true,
+			"sms": false,
+			"email": false
+		}
+	}
+}, {
+	"name": "topic d",
+	"config": {
+		"method": {
+			"ui": true,
+			"sms": false,
+			"email": false
+		}
+	}
+}]}`))
+
+	expectedResponse := `{
+    "topics": [
+        {
+            "name": "topic c",
+            "config": {
+                "method": {
+                    "ui": true,
+                    "sms": false,
+                    "email": false
+                }
+            }
+        },
+        {
+            "name": "topic d",
+            "config": {
+                "method": {
+                    "ui": true,
+                    "sms": false,
+                    "email": false
+                }
+            }
+        }
+    ]
+}
+`
+	mockMongoResponses := []primitive.D{
+		// Signify no user exists...
+		mtest.CreateCursorResponse(
+			1,
+			"userdatabase.users",
+			mtest.FirstBatch,
+		),
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase.users",
+			mtest.NextBatch,
+		),
+		// User saved
+		mtest.CreateSuccessResponse(),
+		// User overwritten (with topic set)
+		mtest.CreateSuccessResponse(),
+	}
+
+	runOneURLCallTest(t, "POST", "/notification/subscriptions", requestPayload, 200, expectedResponse, mockMongoResponses)
+}
+
+func Test_alerts_get(t *testing.T) {
+	expectedResponse := `[
+    {
+        "topic": "test-data-source",
+        "message": "New Data Source Available",
+        "timestamp": "2021-02-01T01:01:01Z",
+        "userid": "600f2a0806b6c70071d3d174"
+    },
+    {
+        "topic": "test-data-source",
+        "message": "Another Source Available",
+        "timestamp": "2021-02-04T01:01:01Z",
+        "userid": "600f2a0806b6c70071d3d174"
+    }
+]
+`
+	mockMongoResponses := []primitive.D{
+		// Get user request
+		mtest.CreateCursorResponse(
+			1,
+			"userdatabase.notifications",
+			mtest.FirstBatch,
+			bson.D{
+				{"Topic", "test-data-source"},
+				{"Message", "New Data Source Available"},
+				{"Timestamp", "2021-02-01T01:01:01.000Z"},
+				{"Userid", "600f2a0806b6c70071d3d174"},
+			},
+		),
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase.notifications",
+			mtest.NextBatch,
+			bson.D{
+				{"Topic", "test-data-source"},
+				{"Message", "Another Source Available"},
+				{"Timestamp", "2021-02-04T01:01:01.000Z"},
+				{"Userid", "600f2a0806b6c70071d3d174"},
+			},
+		),
+		// Deleted alerts
+		mtest.CreateSuccessResponse(),
+	}
+
+	runOneURLCallTest(t, "GET", "/notification/alerts", nil, 200, expectedResponse, mockMongoResponses)
+}
+
+func Test_alerts_no_user(t *testing.T) {
+	runOneURLCallTest(t, "GET", "/notification/alerts", nil, 200, `[]
+`, makeNotFoundMongoResponse())
+}
+
+func Test_hints_no_user(t *testing.T) {
+	runOneURLCallTest(t, "GET", "/notification/hints", nil, 200, `{
+    "hints": []
+}
+`, makeNotFoundMongoResponse())
+}
+
+func Test_hints_post(t *testing.T) {
+	requestPayload := bytes.NewReader([]byte(`{
+    "hints": [
+        "hint c",
+        "hint d"
+    ]
+}
+`))
+	expectedResponse := `{
+    "hints": [
+        "hint c",
+        "hint d"
+    ]
+}
+`
+	mockMongoResponses := []primitive.D{
+		// Get user
+		mtest.CreateCursorResponse(
+			1,
+			"userdatabase.users",
+			mtest.FirstBatch,
+			bson.D{
+				{"Userid", "600f2a0806b6c70071d3d174"},
+				{"Notifications", bson.D{
+					{"Topics", bson.A{}},
+				}},
+				{"Config", bson.D{
+					{"Name", "Niko Bellic"},
+					{"Email", "niko@spicule.co.uk"},
+					{"Cell", ""},
+					{"DataCollection", "unknown"},
+				}},
+			},
+		),
+		mtest.CreateSuccessResponse(), // Not sure what gobbles this up
+		// Saved hints in mongo
+		mtest.CreateSuccessResponse(),
+	}
+
+	runOneURLCallTest(t, "POST", "/notification/hints", requestPayload, 200, expectedResponse, mockMongoResponses)
+}
+
+func Test_hints_post_no_user(t *testing.T) {
+	requestPayload := bytes.NewReader([]byte(`{
+    "hints": [
+        "hint c",
+        "hint d"
+    ]
+}
+`))
+	expectedResponse := `{
+    "hints": [
+        "hint c",
+        "hint d"
+    ]
+}
+`
+	mockMongoResponses := []primitive.D{
+		// Get user (none)
+		mtest.CreateCursorResponse(
+			1,
+			"userdatabase.users",
+			mtest.FirstBatch,
+		),
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase.users",
+			mtest.NextBatch,
+		),
+		// Write user
+		mtest.CreateSuccessResponse(),
+		// Saved hints in mongo
+		mtest.CreateSuccessResponse(),
+	}
+
+	runOneURLCallTest(t, "POST", "/notification/hints", requestPayload, 200, expectedResponse, mockMongoResponses)
+}
+
+func makeNotFoundMongoResponse() []primitive.D {
+	return []primitive.D{
+		mtest.CreateCursorResponse(
+			1,
+			"userdatabase.notifications",
+			mtest.FirstBatch,
+		),
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase.notifications",
+			mtest.NextBatch,
+		),
+	}
+}
+
+func runOneURLCallTest(t *testing.T, method string, url string, requestPayload io.Reader, expectedStatusCode int, expectedResult string, mongoMockedResponses []primitive.D) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mt.Close()
 
 	mt.Run("success", func(mt *mtest.T) {
-		//userCollection := mt.Coll
-		expectedUser := notifications.UserStruct{
-			Userid:        "600f2a0806b6c70071d3d174",
-			Notifications: notifications.Notifications{},
-			Config: notifications.Config{
-				Name:           "Niko Bellic",
-				Email:          "niko@spicule.co.uk",
-				Cell:           "",
-				DataCollection: "unknown",
-			},
-		}
-
-		mt.AddMockResponses(mtest.CreateCursorResponse(1, "userdatabase.users", mtest.FirstBatch, bson.D{
-			{"Userid", expectedUser.Userid},
-		}))
+		mt.AddMockResponses(mongoMockedResponses...)
 
 		var mockS3 awsutil.MockS3Client
 		defer mockS3.FinishTest()
@@ -79,370 +439,22 @@ func Test_subscriptions_empty(t *testing.T) {
 
 		apiRouter := MakeRouter(svcs)
 
-		req, _ := http.NewRequest("GET", "/notification/subscriptions", nil)
+		req, _ := http.NewRequest(method, url, requestPayload)
 		resp := executeRequest(req, apiRouter.Router)
 
-		if resp.Code != 200 {
-			t.Errorf("Bad resp code: %v", resp.Code)
-		}
-
-		expRespBody := `{
-    "topics": []
-}`
-		if string(resp.Body.Bytes()) != expRespBody {
-			t.Errorf("Bad resp body: %v", resp.Body)
-		}
+		// NOTE: Time stamp ms gets cut off
+		checkResult(t, resp, expectedStatusCode, expectedResult)
 	})
 }
 
-func Example_subscriptions() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(userJSON))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(userJSON))),
-		},
+func checkResult(t *testing.T, resp *httptest.ResponseRecorder, expectedStatus int, expectedBody string) {
+	if resp.Code != expectedStatus {
+		t.Errorf("Bad resp code: %v", resp.Code)
 	}
 
-	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
-		{
-
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"), Body: bytes.NewReader([]byte(userJSON)),
-		},
+	gotRespBody := resp.Body.String()
+	if gotRespBody != expectedBody {
+		t.Errorf("Bad resp body:\n%v", gotRespBody)
+		t.Errorf("vs expected body:\n%v", expectedBody)
 	}
-
-	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
-		{},
-	}
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	setTestAuth0Config(&svcs)
-
-	apiRouter := MakeRouter(svcs)
-
-	jsonstr := `{"topics": [{
-			"name": "topic c",
-			"config": {
-				"method": {
-					"ui": true,
-					"sms": false,
-					"email": false
-				}
-			}
-		}, {
-			"name": "topic d",
-			"config": {
-				"method": {
-					"ui": true,
-					"sms": false,
-					"email": false
-				}
-			}
-		}]}`
-	req, _ := http.NewRequest("POST", "/notification/subscriptions", bytes.NewReader([]byte(jsonstr)))
-	resp := executeRequest(req, apiRouter.Router)
-
-	fmt.Printf("ensure-valid: %v\n", resp.Code)
-	fmt.Printf("%v", resp.Body)
-
-	req, _ = http.NewRequest("GET", "/notification/subscriptions", nil)
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Printf("ensure-valid: %v\n", resp.Code)
-	fmt.Printf("%v", resp.Body)
-
-	// Output:
-	// ensure-valid: 200
-	// {
-	//     "topics": [
-	//         {
-	//             "name": "topic c",
-	//             "config": {
-	//                 "method": {
-	//                     "ui": true,
-	//                     "sms": false,
-	//                     "email": false
-	//                 }
-	//             }
-	//         },
-	//         {
-	//             "name": "topic d",
-	//             "config": {
-	//                 "method": {
-	//                     "ui": true,
-	//                     "sms": false,
-	//                     "email": false
-	//                 }
-	//             }
-	//         }
-	//     ]
-	// }
-	// ensure-valid: 200
-	// {
-	//     "topics": [
-	//         {
-	//             "name": "topic c",
-	//             "config": {
-	//                 "method": {
-	//                     "ui": true,
-	//                     "sms": false,
-	//                     "email": false
-	//                 }
-	//             }
-	//         },
-	//         {
-	//             "name": "topic d",
-	//             "config": {
-	//                 "method": {
-	//                     "ui": true,
-	//                     "sms": false,
-	//                     "email": false
-	//                 }
-	//             }
-	//         }
-	//     ]
-	// }
-}
-
-func Example_alerts_empty() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-
-	// Expecting 1 get for users file
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/notifications/600f2a0806b6c70071d3d174.json"),
-		},
-	}
-
-	// No file!
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil,
-	}
-
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-
-	/*obj := notifications.UINotificationItem{
-		Topic:     "test-data-source",
-		Message:   "New Data Source Available",
-		Timestamp: time.Time{},
-		UserID:    "600f2a0806b6c70071d3d174",
-	}
-	svcs.Notifications.AddNotification(obj)*/
-
-	setTestAuth0Config(&svcs)
-	apiRouter := MakeRouter(svcs)
-
-	req, _ := http.NewRequest("GET", "/notification/alerts", nil)
-	resp := executeRequest(req, apiRouter.Router)
-
-	fmt.Printf("ensure-valid: %v\n", resp.Code)
-	fmt.Printf("%v", resp.Body)
-
-	// Output:
-	// ensure-valid: 200
-	// []
-}
-
-func Example_alerts() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-
-	const userClearedNotification = `{"userid":"600f2a0806b6c70071d3d174","notifications":{"topics":[{"name":"topic c","config":{"method":{"ui":true,"sms":true,"email":true}}},{"name":"topic d","config":{"method":{"ui":true,"sms":true,"email":true}}}],"hints":[],"uinotifications":[]},"userconfig":{"name":"Niko Bellic","email":"niko@spicule.co.uk","cell":"","data_collection":"unknown"}}`
-
-	// Expecting 2 gets for users file
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/notifications/600f2a0806b6c70071d3d174.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/notifications/600f2a0806b6c70071d3d174.json"),
-		},
-	}
-
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		// Simulate returning the user file with notifications in it
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(userJSONNotification))),
-		},
-		// Second get receives the notification-cleared file
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(userClearedNotification))),
-		},
-	}
-
-	// Expecting a put for the cleared user file
-	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/notifications/600f2a0806b6c70071d3d174.json"), Body: bytes.NewReader([]byte(userClearedNotification)),
-		},
-	}
-
-	// Simulate returning ok for put
-	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
-		{},
-	}
-
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-
-	/*obj := notifications.UINotificationItem{
-		Topic:     "test-data-source",
-		Message:   "New Data Source Available",
-		Timestamp: time.Time{},
-		UserID:    "600f2a0806b6c70071d3d174",
-	}
-	svcs.Notifications.AddNotification(obj)*/
-
-	setTestAuth0Config(&svcs)
-	apiRouter := MakeRouter(svcs)
-
-	req, _ := http.NewRequest("GET", "/notification/alerts", nil)
-	resp := executeRequest(req, apiRouter.Router)
-
-	fmt.Printf("ensure-valid: %v\n", resp.Code)
-	fmt.Printf("%v", resp.Body)
-
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Printf("ensure-valid: %v\n", resp.Code)
-	fmt.Printf("%v", resp.Body)
-
-	// Output:
-	// ensure-valid: 200
-	// [
-	//     {
-	//         "topic": "test-data-source",
-	//         "message": "New Data Source Available",
-	//         "timestamp": "2021-02-01T01:01:01Z",
-	//         "userid": "600f2a0806b6c70071d3d174"
-	//     }
-	// ]
-	// ensure-valid: 200
-	// []
-}
-
-func Example_hints_empty() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-
-	// User requesting their hints
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"),
-		},
-	}
-
-	// We're saying there's no hint file in S3
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil,
-	}
-
-	// Expect API to upload a hints file
-	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"), Body: bytes.NewReader([]byte(emptyUserJSON)),
-		},
-	}
-
-	// Mocking empty OK response from put call
-	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
-		{},
-	}
-
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	setTestAuth0Config(&svcs)
-
-	apiRouter := MakeRouter(svcs)
-
-	req, _ := http.NewRequest("GET", "/notification/hints", nil)
-	resp := executeRequest(req, apiRouter.Router)
-
-	fmt.Printf("ensure-valid: %v\n", resp.Code)
-	fmt.Printf("%v", resp.Body)
-
-	// Output:
-	// ensure-valid: 200
-	// {
-	//     "hints": []
-	// }
-}
-
-func Example_hints() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(hintJSON))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(hintJSON))),
-		},
-	}
-
-	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"), Body: bytes.NewReader([]byte(hintJSON)),
-		},
-	}
-
-	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
-		{},
-	}
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	setTestAuth0Config(&svcs)
-
-	apiRouter := MakeRouter(svcs)
-
-	jsonstr := `{
-				"hints": [      
-					"hint c",
-					"hint d"
-				]}`
-	req, _ := http.NewRequest("POST", "/notification/hints", bytes.NewReader([]byte(jsonstr)))
-	resp := executeRequest(req, apiRouter.Router)
-
-	fmt.Printf("ensure-valid: %v\n", resp.Code)
-	fmt.Printf("%v", resp.Body)
-
-	req, _ = http.NewRequest("GET", "/notification/hints", nil)
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Printf("ensure-valid: %v\n", resp.Code)
-	fmt.Printf("%v", resp.Body)
-
-	// Output:
-	// ensure-valid: 200
-	// {
-	//     "hints": [
-	//         "hint c",
-	//         "hint d"
-	//     ]
-	// }
-	// ensure-valid: 200
-	// {
-	//     "hints": [
-	//         "hint c",
-	//         "hint d"
-	//     ]
-	// }
 }
