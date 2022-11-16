@@ -19,13 +19,18 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/logger"
+	apiNotifications "github.com/pixlise/core/v2/core/notifications"
 	"github.com/pixlise/core/v2/data-import/importer"
+	"github.com/pixlise/core/v2/data-import/importtime"
 )
 
 func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
@@ -67,16 +72,33 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		// and it'll be useful for initial debugging
 		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
 
-		workingDir, err := importer.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, nil, remoteFS)
+		result, err := importer.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, nil, remoteFS)
+		defer result.Logger.Close()
+
+		if len(result.WhatChanged) > 0 {
+			err := triggerNotifications(
+				configBucket,
+				result.DatasetTitle,
+				remoteFS,
+				result.IsUpdate,
+				result.WhatChanged,
+				nil,
+				result.Logger,
+			)
+
+			if err != nil {
+				result.Logger.Errorf("ImportForTrigger triggerNotifications had an error: \"%v\"\n", err)
+			}
+		}
 
 		// Delete the working directory here, there's no point leaving it on a lambda machine, we can't debug it
 		// but if this code ran elsewhere we wouldn't delete it, to have something to look at
-		if len(workingDir) > 0 {
-			removeErr := os.RemoveAll(workingDir)
+		if len(result.WorkingDir) > 0 {
+			removeErr := os.RemoveAll(result.WorkingDir)
 			if removeErr != nil {
-				fmt.Printf("Failed to remove working dir: \"%v\". Error: %v\n", workingDir, removeErr)
+				fmt.Printf("Failed to remove working dir: \"%v\". Error: %v\n", result.WorkingDir, removeErr)
 			} else {
-				fmt.Printf("Removed working dir: \"%v\"\n", workingDir)
+				fmt.Printf("Removed working dir: \"%v\"\n", result.WorkingDir)
 			}
 		}
 
@@ -93,4 +115,59 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 func main() {
 	os.Mkdir("/tmp/profile", 0750)
 	lambda.Start(HandleRequest)
+}
+
+func triggerNotifications(
+	configBucket string,
+	datasetName string,
+	fs fileaccess.FileAccess,
+	update bool,
+	updatetype string,
+	notificationStack apiNotifications.NotificationManager,
+	jobLog logger.ILogger) error {
+	/*var pinusers = []string{"tom.barber@jpl.nasa.gov", "scott.davidoff@jpl.nasa.gov",
+	"adrian.e.galvin@jpl.nasa.gov", "peter.nemere@qut.edu.au"}*/
+	if notificationStack == nil {
+		return errors.New("Notification Stack is empty, this is a success notification")
+	}
+	var err error
+
+	template := make(map[string]interface{})
+	template["datasourcename"] = datasetName
+
+	lastImportUnixSec, err := importtime.GetDatasetImportUnixTimeSec(fs, configBucket, datasetName)
+
+	// Print an error if we got one, but this can always continue...
+	if err != nil {
+		jobLog.Errorf("%v", err)
+	}
+
+	lastImportTime := time.Unix(int64(lastImportUnixSec), 0)
+	if time.Since(lastImportTime).Minutes() < 60 {
+		jobLog.Infof("Skipping notification send - one was sent recently")
+	} else {
+		if update {
+			jobLog.Infof("Dispatching notification for updated datasource")
+
+			template["subject"] = fmt.Sprintf("Datasource %v Processing Complete", template["datasourcename"])
+			err = notificationStack.SendAllDataSource(fmt.Sprintf("dataset-%v-updated", updatetype), template, nil, true, "dataset-updated")
+		} else {
+			jobLog.Infof("Dispatching notification for new datasource")
+
+			template["subject"] = fmt.Sprintf("Datasource %v Processing Complete", "")
+			err = notificationStack.SendAllDataSource("new-dataset-available", template, nil, true, "")
+		}
+	}
+
+	tsSaveErr := importtime.SaveDatasetImportUnixTimeSec(fs, jobLog, configBucket, datasetName, int(time.Now().Unix()))
+
+	if tsSaveErr != nil {
+		jobLog.Errorf(tsSaveErr.Error())
+	}
+
+	// Also write out
+	if err != nil {
+		jobLog.Errorf(err.Error())
+	}
+	return err
 }

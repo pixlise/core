@@ -78,7 +78,7 @@ func Example_quantHandler_Comparison_FailReqBody() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/comparison-for-roi/dataset-123/roi-567", bytes.NewReader([]byte(`{quantIDs":["quant-345", "quant-789"]}`)))
@@ -106,7 +106,7 @@ func Example_quantHandler_Comparison_FailRemainingPointsCheck() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/comparison-for-roi/dataset-123/roi-567", bytes.NewReader([]byte(`{"quantIDs":["quant-345", "quant-789"], "remainingPointsPMCs": [4,6,88]}`)))
@@ -311,7 +311,7 @@ func Example_quantHandler_Comparison_Fail_ROI() {
 	mockS3.QueuedGetObjectOutput = getResponses
 
 	mockS3.AllowGetInAnyOrder = true
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/comparison-for-roi/dataset-123/roi-567", bytes.NewReader([]byte(`{"quantIDs":["quant-345", "quant-789"]}`)))
@@ -341,7 +341,7 @@ func Example_quantHandler_Comparison_Fail_Dataset() {
 	mockS3.QueuedGetObjectOutput = getResponses
 
 	mockS3.AllowGetInAnyOrder = true
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/comparison-for-roi/dataset-123/roi-567", bytes.NewReader([]byte(`{"quantIDs":["quant-345", "quant-789"]}`)))
@@ -371,7 +371,7 @@ func Example_quantHandler_Fail_QuantFile() {
 	mockS3.QueuedGetObjectOutput = getResponses
 
 	mockS3.AllowGetInAnyOrder = true
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/comparison-for-roi/dataset-123/roi-567", bytes.NewReader([]byte(`{"quantIDs":["quant-345", "quant-789"]}`)))
@@ -401,7 +401,7 @@ func Example_quantHandler_Fail_QuantSummary() {
 	mockS3.QueuedGetObjectOutput = getResponses
 
 	mockS3.AllowGetInAnyOrder = true
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/comparison-for-roi/dataset-123/roi-567", bytes.NewReader([]byte(`{"quantIDs":["quant-345", "quant-789"]}`)))
@@ -428,7 +428,7 @@ func Example_quantHandler_Comparison_OK() {
 	mockS3.QueuedGetObjectOutput = getResponses
 
 	mockS3.AllowGetInAnyOrder = true
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/quantification/comparison-for-roi/dataset-123/roi-567", bytes.NewReader([]byte(`{"quantIDs":["quant-345", "quant-789"]}`)))

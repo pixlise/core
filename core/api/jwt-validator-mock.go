@@ -22,7 +22,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"gopkg.in/square/go-jose.v2/jwt"
@@ -37,11 +36,10 @@ func (v *MockJWTValidator) ValidateRequest(r *http.Request) (*jwt.JSONWebToken, 
 	return nil, nil
 }
 func (v *MockJWTValidator) Claims(r *http.Request, token *jwt.JSONWebToken, values ...interface{}) error {
-	m := (values[0]).(*map[string]interface{}) //map[string]interface{}{}
-
+	//m := (values[0]).(*map[string]interface{}) //map[string]interface{}{}
 	//m["https://pixlise.org/username"] = "12345"
+	//fmt.Printf("MockJWTValidator first value: %v", m)
 
-	fmt.Printf("%v", m)
 	//values= append(values, m)
 	b := []byte(`{"https://pixlise.org/username":"12345", "sub": "myuserid"}`)
 	for _, d := range values {

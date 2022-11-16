@@ -80,7 +80,7 @@ func printTestResult(err error, name string) {
 	fmt.Println("")
 }
 
-func getAlerts(JWT string, environment string) ([]apiNotifications.UINotificationObj, error) {
+func getAlerts(JWT string, environment string) ([]apiNotifications.UINotificationItem, error) {
 	getReq, err := http.NewRequest("GET", generateURL(environment)+"/notification/alerts", nil)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func getAlerts(JWT string, environment string) ([]apiNotifications.UINotificatio
 		return nil, fmt.Errorf("Alerts status fail: %v, response: %v", getResp.Status, string(body))
 	}
 
-	var alerts []apiNotifications.UINotificationObj
+	var alerts []apiNotifications.UINotificationItem
 	err = json.Unmarshal(body, &alerts)
 	if err != nil {
 		return nil, err

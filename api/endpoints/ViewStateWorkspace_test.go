@@ -218,7 +218,7 @@ func Example_viewStateHandler_ListSaved() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// None
@@ -392,7 +392,7 @@ func Example_viewStateHandler_GetSaved() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Doesn't exist, should fail
@@ -522,7 +522,7 @@ func Example_viewStateHandler_GetSaved_ROIQuantFallbackCheck() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Doesn't exist, should fail
@@ -650,7 +650,7 @@ func Example_viewStateHandler_GetSavedShared() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Doesn't exist, should fail
@@ -805,7 +805,7 @@ func Example_viewStateHandler_PutSaved_Force() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("PUT", "/view-state/saved/TheDataSetID/viewstate123?force=true", bytes.NewReader([]byte(`{
@@ -918,7 +918,7 @@ func Example_viewStateHandler_PutSaved_OverwriteFail() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("PUT", "/view-state/saved/TheDataSetID/viewstate123", bytes.NewReader([]byte(`{
@@ -1070,7 +1070,7 @@ func Example_viewStateHandler_DeleteSaved() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Doesn't exist, should fail
@@ -1165,7 +1165,7 @@ func Example_viewStateHandler_DeleteSavedShared() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Not owned by user, should fail
@@ -1399,7 +1399,7 @@ func Example_viewStateHandler_GetReferencedIDs() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// User file not there, should say not found
@@ -1643,7 +1643,7 @@ func Example_viewStateHandler_ShareViewState() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// User file not there, should say not found
@@ -2095,7 +2095,7 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"roi2(sh)", "expr1(sh)", "123roi"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// User file not there, should say not found

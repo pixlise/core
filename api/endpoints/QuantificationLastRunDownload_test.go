@@ -89,7 +89,7 @@ func Example_quant_LastRun_Stream_OK() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	mockUser := pixlUser.UserInfo{
 		Name:   "Niko Bellic",
 		UserID: "600f2a0806b6c70071d3d174",

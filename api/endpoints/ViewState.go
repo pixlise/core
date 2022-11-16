@@ -119,8 +119,8 @@ func clearLastViewStateFiles(params handlers.ApiHandlerParams) error {
 	// Delete them all (ensure they don't contain workspace/collection files, check within the path)
 	fails := []string{}
 	for _, item := range listing {
-		if strings.Index(item, "/"+filepaths.ViewStateSavedSubpath+"/") == -1 &&
-			strings.Index(item, "/"+filepaths.ViewStateCollectionsSubpath+"/") == -1 {
+		if !strings.Contains(item, "/"+filepaths.ViewStateSavedSubpath+"/") &&
+			!strings.Contains(item, "/"+filepaths.ViewStateCollectionsSubpath+"/") {
 			err = params.Svcs.FS.DeleteObject(params.Svcs.Config.UsersBucket, item)
 			if err != nil {
 				fails = append(fails, item)

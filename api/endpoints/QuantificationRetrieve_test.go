@@ -193,7 +193,7 @@ func Example_quantHandler_AdminList() {
 	}
 	// NOTE: job2 and job7 was missing elements, because we introduced this later, checking that API still puts in empty list always
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/quantification", nil)
@@ -580,7 +580,7 @@ func Example_quantHandler_List() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/quantification/rtt-456", nil)
@@ -890,7 +890,7 @@ func Example_quantHandler_Get() {
 
 	//signer := awsutil.MockSigner{[]string{"http://url1.com", "http://url2.com"}}
 	//svcs := MakeMockSvcs(&mockS3, nil, &signer)
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	mockUser := pixlUser.UserInfo{
 		Name:   "Niko Bellic",
 		UserID: "600f2a0806b6c70071d3d174",
@@ -1114,7 +1114,7 @@ func Example_quant_Stream_OK() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	mockUser := pixlUser.UserInfo{
 		Name:   "Niko Bellic",
 		UserID: "600f2a0806b6c70071d3d174",
@@ -1155,7 +1155,7 @@ func Example_quantHandler_Stream_404() {
 		nil,
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	mockUser := pixlUser.UserInfo{
 		Name:   "Niko Bellic",
 		UserID: "600f2a0806b6c70071d3d174",
@@ -1191,7 +1191,7 @@ func Example_quantHandler_Stream_BadSummary() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	mockUser := pixlUser.UserInfo{
 		Name:   "Niko Bellic",
 		UserID: "600f2a0806b6c70071d3d174",

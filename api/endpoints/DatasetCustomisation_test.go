@@ -51,7 +51,7 @@ func Example_datasetCustomMetaGet() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -92,7 +92,7 @@ func Example_datasetCustomMetaPut() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -110,7 +110,7 @@ func Example_datasetCustomImagesList_missingtype() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -144,7 +144,7 @@ func Example_datasetCustomImagesList_rgbu() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -191,7 +191,7 @@ func Example_datasetCustomImagesList_unaligned() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -243,7 +243,7 @@ func Example_datasetCustomImagesList_matched() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -274,7 +274,7 @@ func Example_datasetCustomImagesGet_rgbu() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -295,7 +295,7 @@ func Example_datasetCustomImagesGet_unaligned() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -342,7 +342,7 @@ func Example_datasetCustomImagesGet_matched() {
 		nil,
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -379,7 +379,7 @@ func Example_datasetCustomImagesPost_badtype() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -399,7 +399,7 @@ func Example_datasetCustomImagesPost_badfilename() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -429,7 +429,7 @@ func Example_datasetCustomImagesPost_rgbu() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -478,7 +478,7 @@ func Example_datasetCustomImagesPost_unaligned() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -538,7 +538,7 @@ func Example_datasetCustomImagesPost_matched() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -657,7 +657,7 @@ func Example_datasetCustomImagesPut() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
@@ -770,7 +770,7 @@ func Example_datasetCustomImagesDelete() {
 		{},  // matched image
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 

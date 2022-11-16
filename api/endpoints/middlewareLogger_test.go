@@ -2,149 +2,107 @@ package endpoints
 
 import (
 	"bytes"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v2/api/config"
-	"github.com/pixlise/core/v2/api/esutil"
 	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/timestamper"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
-func Example_testLoggingDebug() {
-	testServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	defer testServer.Close()
-	//"Component":"http://example.com/foo","Message":"{\"alive\": true}","Version":"","Params":{"method":"GET"},"Environment":"unit-test","User":"myuserid"}
-	var ExpIndexObject = []string{
-		`{"Instance":"","Time":"0000-00-00T00:00:00-00:00","Component":"http://example.com/foo","Message":"{\"alive\": true}","Version":"","Params":{"method":"GET"},"Environment":"unit-test","User":"myuserid"}`,
-	}
-	var ExpRespObject = []string{
-		`{"_index":"metrics","_type":"trigger","_id":"B0tzT3wBosV6bFs8gJvY","_version":1,"result":"created","_shards":{"total":2,"successful":2,"failed":0},"_seq_no":8468,"_primary_term":1}`,
-		`{"_index":"metrics","_type":"trigger","_id":"B0tzT3wBosV6bFs8gJvY","_version":1,"result":"created","_shards":{"total":2,"successful":2,"failed":0},"_seq_no":8468,"_primary_term":1}`,
-	}
-
-	var adjtime = "0000-00-00T00:00:00-00:00"
-	d := esutil.DummyElasticClient{}
-	foo, err := d.DummyElasticSearchClient(testServer.URL, ExpRespObject, ExpIndexObject, ExpRespObject, &adjtime)
-
-	apiConfig := config.APIConfig{EnvironmentName: "Test"}
-	if err != nil {
-		fmt.Printf("%v\n", err)
-	}
-	connection, err := esutil.Connect(foo, apiConfig)
-
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/myuserid.json"),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		{Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"userid":"myuserid","notifications":{"topics":[],"hints":["point-select-alt","point-select-z-for-zoom","point-select-shift-for-pan","lasso-z-for-zoom","lasso-shift-for-pan","dwell-exists-test-fm-5x5-full","dwell-exists-069927431"],"uinotifications":[]},"userconfig":{"name":"peternemere","email":"peternemere@gmail.com","cell":"","data_collection":"1.0"}}`)))},
-	}
-
-	s := MakeMockSvcs(&mockS3, nil, nil, &connection, nil)
-
-	mockvalidator := api.MockJWTValidator{}
-	l := LoggerMiddleware{
-		APIServices:  &s,
-		JwtValidator: &mockvalidator,
-	}
-
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
-
-		// In the future we could report back on the status of our DB, or our cache
-		// (e.g. Redis) by performing a simple PING, and include them in the response.
-		io.WriteString(w, `{"alive": true}`)
-	}
-
-	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
-	w := httptest.NewRecorder()
-	handler(w, req)
-
-	fmt.Printf("%d - %s", w.Code, w.Body.String())
-
-	h := http.HandlerFunc(handler)
-	handlerToTest := l.Middleware(h)
-
-	handlerToTest.ServeHTTP(httptest.NewRecorder(), req)
-
-	// Output:
-	// 200 - {"alive": true}&map[]
+func Test_testLoggingDebug(t *testing.T) {
+	runMiddlewareLoggingTest(t, nil)
 }
 
-func Example_testLoggingInfo() {
-	testServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	defer testServer.Close()
-	//"Component":"http://example.com/foo","Message":"{\"alive\": true}","Version":"","Params":{"method":"GET"},"Environment":"unit-test","User":"myuserid"}
-	var ExpIndexObject = []string{
-		`{"Instance":"","Time":"0000-00-00T00:00:00-00:00","Component":"http://example.com/foo","Message":"{\"alive\": true}","Version":"","Params":{"method":"GET"},"Environment":"unit-test","User":"myuserid"}`,
-	}
-	var ExpRespObject = []string{
-		`{"_index":"metrics","_type":"trigger","_id":"B0tzT3wBosV6bFs8gJvY","_version":1,"result":"created","_shards":{"total":2,"successful":2,"failed":0},"_seq_no":8468,"_primary_term":1}`,
-		`{"_index":"metrics","_type":"trigger","_id":"B0tzT3wBosV6bFs8gJvY","_version":1,"result":"created","_shards":{"total":2,"successful":2,"failed":0},"_seq_no":8468,"_primary_term":1}`,
-	}
-
-	var adjtime = "0000-00-00T00:00:00-00:00"
-	d := esutil.DummyElasticClient{}
-	foo, err := d.DummyElasticSearchClient(testServer.URL, ExpRespObject, ExpIndexObject, ExpRespObject, &adjtime)
-
-	apiConfig := config.APIConfig{EnvironmentName: "Test"}
-	if err != nil {
-		fmt.Printf("%v\n", err)
-	}
-	connection, err := esutil.Connect(foo, apiConfig)
-
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/myuserid.json"),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		{Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"userid":"myuserid","notifications":{"topics":[],"hints":["point-select-alt","point-select-z-for-zoom","point-select-shift-for-pan","lasso-z-for-zoom","lasso-shift-for-pan","dwell-exists-test-fm-5x5-full","dwell-exists-069927431"],"uinotifications":[]},"userconfig":{"name":"peternemere","email":"peternemere@gmail.com","cell":"","data_collection":"1.0"}}`)))},
-	}
-
+func Test_testLoggingInfo(t *testing.T) {
 	var ll = logger.LogInfo
+	runMiddlewareLoggingTest(t, &ll)
+}
 
-	s := MakeMockSvcs(&mockS3, nil, nil, &connection, &ll)
+func runMiddlewareLoggingTest(t *testing.T, logLevel *logger.LogLevel) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	mockvalidator := api.MockJWTValidator{}
-	l := LoggerMiddleware{
-		APIServices:  &s,
-		JwtValidator: &mockvalidator,
-	}
+	mt.Run("success", func(mt *mtest.T) {
+		//mt.AddMockResponses()
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
 
-		// In the future we could report back on the status of our DB, or our cache
-		// (e.g. Redis) by performing a simple PING, and include them in the response.
-		io.WriteString(w, `{"alive": true}`)
-	}
+		mockS3.ExpPutObjectInput = []s3.PutObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("Activity/2022-11-11/id-123.json"), Body: bytes.NewReader([]byte(`{
+    "Instance": "",
+    "Time": "2022-11-11T04:56:19Z",
+    "Component": "/foo",
+    "Message": "the bodyyy",
+    "Response": "{\"alive\": true}",
+    "Version": "",
+    "Params": {
+        "method": "GET"
+    },
+    "Environment": "unit-test",
+    "User": "myuserid"
+}`)),
+			},
+		}
+		mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
+			{},
+		}
 
-	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
-	w := httptest.NewRecorder()
-	handler(w, req)
+		var idGen MockIDGenerator
+		idGen.ids = []string{"id-123"}
 
-	fmt.Printf("%d - %s", w.Code, w.Body.String())
+		s := MakeMockSvcs(&mockS3, &idGen, nil, logLevel)
+		s.TimeStamper = &timestamper.MockTimeNowStamper{
+			QueuedTimeStamps: []int64{1668142579},
+		}
 
-	h := http.HandlerFunc(handler)
-	handlerToTest := l.Middleware(h)
+		notifications, err := notifications.MakeNotificationStack(mt.Client, nil, &logger.StdOutLoggerForTest{}, []string{})
+		if err != nil {
+			t.Error(err)
+		}
 
-	handlerToTest.ServeHTTP(httptest.NewRecorder(), req)
+		s.Notifications = notifications
 
-	// Output:
-	// 200 - {"alive": true}&map[]
+		// Add requestor as a tracked user, so we should see activity saved
+		s.Notifications.SetTrack("myuserid", true)
+
+		mockvalidator := api.MockJWTValidator{}
+		l := LoggerMiddleware{
+			APIServices:  &s,
+			JwtValidator: &mockvalidator,
+		}
+
+		handler := func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+
+			// In the future we could report back on the status of our DB, or our cache
+			// (e.g. Redis) by performing a simple PING, and include them in the response.
+			io.WriteString(w, `{"alive": true}`)
+		}
+
+		req := httptest.NewRequest("GET", "http://example.com/foo", bytes.NewReader([]byte("the bodyyy")))
+		w := httptest.NewRecorder()
+		handler(w, req)
+
+		h := http.HandlerFunc(handler)
+		handlerToTest := l.Middleware(h)
+
+		handlerToTest.ServeHTTP(httptest.NewRecorder(), req)
+
+		// Wait a bit for any threads to finish
+		time.Sleep(2 * time.Second)
+
+		checkResult(t, w, 200, "{\"alive\": true}")
+	})
 }

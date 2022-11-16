@@ -84,9 +84,9 @@ func Example_ImportForTrigger_OCS_Archive_BadData() {
 	]
 }`
 
-	_, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
 
-	fmt.Printf("Errors: %v\n", err)
+	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
 	// Ensure these log msgs appeared...
 	requiredLogs := []string{
@@ -102,7 +102,7 @@ func Example_ImportForTrigger_OCS_Archive_BadData() {
 	}
 
 	// Output:
-	// Errors: Failed to determine dataset type to import.
+	// Errors: Failed to determine dataset type to import., changes: , isUpdate: false
 	// Logged "Downloading archived zip files...": true
 	// Logged "Downloaded 2 zip files, unzipped 6 files": true
 	// Logged "Downloading pseudo-intensity ranges...": true
@@ -152,9 +152,9 @@ func Example_ImportForTrigger_OCS_Archive_Exists() {
 	]
 }`
 
-	_, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
 
-	fmt.Printf("Errors: %v\n", err)
+	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
 	msg := "Archiving source file: \"s3://./test-data/Archive_Exists/raw-data-bucket/70000_069-02-09-2021-06-25-13.zip\""
 	fmt.Printf("Logged \"%v\": %v\n", msg, log.LogContains(msg))
@@ -162,7 +162,7 @@ func Example_ImportForTrigger_OCS_Archive_Exists() {
 	fmt.Printf("Log shows exists in archive: %v\n", strings.Contains(log.LastLogLine(), "File already exists in archive, processing stopped. File was: \"70000_069-02-09-2021-06-25-13.zip\""))
 
 	// Output:
-	// Errors: <nil>
+	// Errors: <nil>, changes: , isUpdate: false
 	// Logged "Archiving source file: "s3://./test-data/Archive_Exists/raw-data-bucket/70000_069-02-09-2021-06-25-13.zip"": true
 	// Log shows exists in archive: true
 }
@@ -241,14 +241,14 @@ func Example_ImportForTrigger_OCS_Archive_OK() {
 	]
 }`
 
-	_, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
 
-	fmt.Printf("Errors: %v\n", err)
+	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
 	printArchiveOKLogOutput(log, datasetBucket, remoteFS)
 
 	// Output:
-	// Errors: <nil>
+	// Errors: <nil>, changes: unknown, isUpdate: false
 	// Logged "Downloading archived zip files...": true
 	// Logged "Downloaded 20 zip files, unzipped 364 files": true
 	// Logged "Downloading pseudo-intensity ranges...": true
@@ -294,14 +294,14 @@ func Example_ImportForTrigger_OCS_DatasetEdit() {
 	"logID": "dataimport-unittest123"
 }`
 
-	_, err = ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
 
-	fmt.Printf("Errors: %v\n", err)
+	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
 	printArchiveOKLogOutput(log, datasetBucket, remoteFS)
 
 	// Output:
-	// Errors: <nil>
+	// Errors: <nil>, changes: unknown, isUpdate: true
 	// Logged "Downloading archived zip files...": true
 	// Logged "Downloaded 20 zip files, unzipped 364 files": true
 	// Logged "Downloading pseudo-intensity ranges...": true
@@ -355,14 +355,14 @@ func Example_ImportForTrigger_Manual() {
 	"logID": "dataimport-unittest123"
 }`
 
-	_, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
 
-	fmt.Printf("Errors: %v\n", err)
+	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
 	printManualOKLogOutput(log, datasetBucket, remoteFS)
 
 	// Output:
-	// Errors: <nil>
+	// Errors: <nil>, changes: unknown, isUpdate: false
 	// Logged "Downloading archived zip files...": true
 	// Logged "Downloaded 0 zip files, unzipped 0 files": true
 	// Logged "No zip files found in archive, dataset may have been manually uploaded. Trying to download...": true

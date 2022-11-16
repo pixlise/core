@@ -144,7 +144,7 @@ func Example_RGBMixHandler_List() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/rgb-mix", nil)
@@ -253,7 +253,7 @@ func Example_RGBMixHandler_Get() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// POST not implemented! Should return 405
@@ -434,7 +434,7 @@ func Example_RGBMixHandler_Post() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"id16", "id17", "id18"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -603,7 +603,7 @@ func Example_RGBMixHandler_Put() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -782,7 +782,7 @@ func Example_RGBMixHandler_Delete() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Delete finds file missing, ERROR
@@ -968,7 +968,7 @@ func Example_RGBMixHandler_Share() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"ddd222"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = ""
@@ -1054,7 +1054,7 @@ func Example_RGBMixHandler_Share_Fail() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = ""

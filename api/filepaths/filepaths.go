@@ -226,8 +226,10 @@ func GetSharedQuantPath(datasetID string, fileName string) string {
 	return GetUserQuantPath(pixlUser.ShareUserID, datasetID, fileName)
 }
 
-// ----notifications/
-// --------<user-id>.json - Notification settings, dismissed hints, user email, data collection version agreed to
+// - Activity/
+const RootUserActivity = "Activity"
+
+// -----------<datestamp>/<GUID>.json - User activity files (things captured by middleware logger)
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Job Bucket
