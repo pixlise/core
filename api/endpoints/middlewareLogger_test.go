@@ -66,7 +66,7 @@ func runMiddlewareLoggingTest(t *testing.T, logLevel *logger.LogLevel) {
 			QueuedTimeStamps: []int64{1668142579},
 		}
 
-		notifications, err := notifications.MakeNotificationStack(mt.Client, nil, &logger.StdOutLoggerForTest{}, []string{})
+		notifications, err := notifications.MakeNotificationStack(mt.Client, "unit_test", nil, &logger.StdOutLoggerForTest{}, []string{})
 		if err != nil {
 			t.Error(err)
 		}

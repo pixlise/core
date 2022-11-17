@@ -125,7 +125,7 @@ func main() {
 	svcs.Log.Infof(cfgStr)
 
 	// Reinitialised because of dependency on S3
-	notificationStack, err := notifications.MakeNotificationStack(svcs.Mongo, svcs.TimeStamper, svcs.Log, cfg.AdminEmails)
+	notificationStack, err := notifications.MakeNotificationStack(svcs.Mongo, cfg.EnvironmentName, svcs.TimeStamper, svcs.Log, cfg.AdminEmails)
 
 	if err != nil {
 		err2 := fmt.Errorf("Failed to create notification stack: %v", err)
