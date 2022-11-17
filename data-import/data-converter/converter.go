@@ -36,7 +36,6 @@ import (
 	"github.com/pixlise/core/v2/data-import/internal/data-converters/jplbreadboard"
 	"github.com/pixlise/core/v2/data-import/internal/data-converters/pixlfm"
 	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
-	importerNotification "github.com/pixlise/core/v2/data-import/internal/notification"
 	"github.com/pixlise/core/v2/data-import/output"
 	diffractionDetection "github.com/pixlise/core/v2/diffraction-detector"
 )
@@ -46,7 +45,10 @@ import (
 
 // ImportFromArchive - Importing from dataset archive area. Calls ImportFromLocalFileSystem
 // Returns:
-// Dataset ID imported
+// WorkingDir
+// Saved dataset summary structure
+// What changed (as a string), so caller can know what kind of notification to send (if any)
+// IsUpdate flag
 // Error (if any)
 func ImportDataset(
 	localFS fileaccess.FileAccess,
@@ -57,18 +59,29 @@ func ImportDataset(
 	datasetID string,
 	log logger.ILogger,
 	justArchived bool, // Set to true if a file was just saved to the archive prior to calling this. Affects notifications sent out
-) (string, string, error) {
+) (string, datasetModel.SummaryFileData, string, bool, error) {
+
+	savedSummary := datasetModel.SummaryFileData{}
 
 	workingDir, err := ioutil.TempDir("", "archive")
 	if err != nil {
-		return workingDir, "", err
+		return workingDir, savedSummary, "", false, err
+	}
+
+	// Read previously saved dataset summary file, so we have something to compare against to see what changes
+	// we will need to notify on
+	oldSummary, errOldSummary := datasetModel.ReadDataSetSummary(remoteFS, datasetBucket, datasetID)
+	if err != nil {
+		// NOTE: we don't die here, we may be importing for the first time! Just log and continue
+		//return workingDir, savedSummary, "", false, err
+		log.Infof("Failed to import previous dataset summary file - assuming we're a new dataset...")
 	}
 
 	// Firstly, we download from the archive
 	archive := datasetArchive.NewDatasetArchiveDownloader(remoteFS, localFS, log, datasetBucket, manualUploadBucket)
 	localDownloadPath, localUnzippedPath, zipCount, err := archive.DownloadFromDatasetArchive(datasetID, workingDir)
 	if err != nil {
-		return workingDir, "", err
+		return workingDir, savedSummary, "", false, err
 	}
 
 	// If no zip files were loaded, maybe this dataset is a manually uploaded one, try to import from there instead
@@ -76,24 +89,24 @@ func ImportDataset(
 		log.Infof("No zip files found in archive, dataset may have been manually uploaded. Trying to download...")
 		localDownloadPath, localUnzippedPath, err = archive.DownloadFromDatasetUploads(datasetID, workingDir)
 		if err != nil {
-			return workingDir, "", err
+			return workingDir, savedSummary, "", false, err
 		}
 	}
 
 	localRangesPath, err := archive.DownloadPseudoIntensityRangesFile(configBucket, localDownloadPath)
 	if err != nil {
-		return workingDir, "", err
+		return workingDir, savedSummary, "", false, err
 	}
 
 	log.Infof("Downloading user customisation files...")
 
 	err = archive.DownloadUserCustomisationsForDataset(datasetID, localUnzippedPath)
 	if err != nil {
-		return workingDir, "", err
+		return workingDir, savedSummary, "", false, err
 	}
 
 	// Now that we have data down, we can run the importer from local file system
-	datasetIDImported, err := ImportFromLocalFileSystem(
+	_, err = ImportFromLocalFileSystem(
 		localFS,
 		remoteFS,
 		workingDir,
@@ -104,16 +117,25 @@ func ImportDataset(
 		log,
 	)
 	if err != nil {
-		return workingDir, "", err
+		return workingDir, savedSummary, "", false, err
 	}
 
 	// Decide what notifications (if any) to send
-	err = sendNotificationsIfRequired(remoteFS, log, configBucket, datasetBucket, datasetIDImported, !justArchived && zipCount > 1)
-	if err != nil {
-		log.Errorf("Failed to send notification: %v", err)
+	updatenotificationtype := "unknown"
+
+	if errOldSummary == nil { // don't do this if the old summary couldn't be read!
+		savedSummary, err = datasetModel.ReadDataSetSummary(remoteFS, datasetBucket, datasetID)
+		if err != nil {
+			return workingDir, savedSummary, "", false, err
+		}
+
+		updatenotificationtype, err = getUpdateType(savedSummary, oldSummary)
+		if err != nil {
+			return workingDir, savedSummary, "", false, err
+		}
 	}
 
-	return workingDir, datasetIDImported, nil
+	return workingDir, savedSummary, updatenotificationtype, !justArchived && zipCount > 1, err
 }
 
 // ImportFromLocalFileSystem - As the name says, imports from directory on local file system
@@ -149,19 +171,6 @@ func ImportFromLocalFileSystem(
 	if err != nil {
 		return "", fmt.Errorf("Import failed: %v", err)
 	}
-	/*
-		// Apply any customisations/overrides:
-		if len(config.Name) > 1 { // 1 for spaces?
-			data.DatasetID = config.Name
-		}
-
-		overrideDetector := getOverrideDetectorForSol(data.Meta.SOL)
-		if len(overrideDetector) > 0 {
-			data.DetectorConfig = overrideDetector
-		}
-
-		data.Group = getDatasetGroup(data.DetectorConfig)
-	*/
 
 	// Apply any overrides we may have
 	customMetaFields, err := readLocalCustomMeta(log, localImportPath)
@@ -311,21 +320,17 @@ func copyToBucket(remoteFS fileaccess.FileAccess, datasetID string, sourcePath s
 	return uploadError
 }
 
-// Sends dataset import related notifications as required
-func sendNotificationsIfRequired(remoteFS fileaccess.FileAccess, log logger.ILogger, configBucket string, datasetBucket string, datasetID string, isUpdate bool) error {
-	// It worked! Trigger notifications
-	log.Infof("Triggering Notifications...")
-	/*if updateType != "trivial"*/ {
-		updatenotificationtype, err := importerNotification.GetUpdateNotificationType(datasetID, datasetBucket, remoteFS)
-		if err != nil {
-			return err
-		}
-
-		ns := importerNotification.MakeNotificationStack(remoteFS, log)
-		err = importerNotification.TriggerNotifications(configBucket, datasetID, remoteFS, isUpdate, updatenotificationtype, ns, log)
-		if err != nil {
-			return err
-		}
+func getUpdateType(newSummary datasetModel.SummaryFileData, oldSummary datasetModel.SummaryFileData) (string, error) {
+	diff, err := output.SummaryDiff(newSummary, oldSummary)
+	if err != nil {
+		return "unknown", err
 	}
-	return nil
+	if diff.MaxSpectra > 0 || diff.BulkSpectra > 0 || diff.DwellSpectra > 0 || diff.NormalSpectra > 0 {
+		return "spectra", nil
+	} else if diff.ContextImages > 0 {
+		return "image", nil
+	} else if diff.DriveID > 0 || diff.Site != "" || diff.Target != "" || diff.Title != "" {
+		return "housekeeping", nil
+	}
+	return "unknown", nil
 }

@@ -43,7 +43,7 @@ func Example_quantHandler_DeleteUserJobNotExist() {
 		nil,
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Non-existant job, ERROR
@@ -164,7 +164,7 @@ func Example_quantHandler_DeleteUserJob() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Existant job, OK
@@ -191,7 +191,7 @@ func Example_quantHandler_DeleteSharedJobNotExists() {
 		nil,
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Non-existant shared job, ERROR
@@ -298,7 +298,7 @@ func Example_quantHandler_DeleteSharedJob() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Existant shared job, OK

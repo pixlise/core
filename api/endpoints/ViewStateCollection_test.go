@@ -59,7 +59,7 @@ func Example_viewStateHandler_ListCollections() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Exists, success
@@ -173,7 +173,7 @@ func Example_viewStateHandler_GetCollection() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Doesn't exist, should fail
@@ -544,7 +544,7 @@ func Example_viewStateHandler_GetCollectionShared() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Doesn't exist, should fail
@@ -702,7 +702,7 @@ func Example_viewStateHandler_PutCollection() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("PUT", "/view-state/collections/TheDataSetID/The best collection 23_09_2021", bytes.NewReader([]byte(`{
@@ -753,7 +753,7 @@ func Example_viewStateHandler_DeleteCollection() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Doesn't exist, should fail
@@ -827,7 +827,7 @@ func Example_viewStateHandler_DeleteCollectionShared() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Not created by user, should fail
@@ -1027,7 +1027,7 @@ func Example_viewStateHandler_ShareCollection() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// User file not there, should say not found

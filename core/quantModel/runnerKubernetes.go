@@ -111,7 +111,7 @@ func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jo
 	// Piquant Fit commands will run in the same namespace and share a service account
 	// Piquant Map commands (jobs) will run in the piquant-map namespace with a more limited service account
 	san := "pixlise-api"
-	cpu := "500m"
+	cpu := "250m"
 	if params.Command == "map" {
 		san = "piquant-map"
 		// PiQuant Map Commands will need much more CPU (and can safely request it since they are running on Fargate nodes)

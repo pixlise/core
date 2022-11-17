@@ -27,7 +27,7 @@ import (
 )
 
 func startQuantNotification(params PiquantParams, notificationStack notifications.NotificationManager, creator pixlUser.UserInfo) error {
-	note := notifications.UINotificationObj{
+	note := notifications.UINotificationItem{
 		Topic: "Quantification Processing Start",
 		//                                    let msg = 'Started Quantification: "'+result.quantName+'" (id: '+jobId+'). Click on Quant Logs tab to follow progress.';
 		Message:   fmt.Sprintf("Started Quantification: %v (id: %v). Click on Quant Tracker tab to follow progress.", params.QuantName, params.JobID),
@@ -45,7 +45,7 @@ func endQuantNotification(quantname string, notificationStack notifications.Noti
 
 	fmt.Println("Wait over, dispatching notification for: " + creator.UserID)
 	err := notificationStack.SendAll("user-quant-complete", template, users, false)
-	note := notifications.UINotificationObj{
+	note := notifications.UINotificationItem{
 		Topic:     "Quantification Processing Complete",
 		Message:   fmt.Sprintf("Quantification %v Processing Complete", quantname),
 		Timestamp: time.Time{},
@@ -63,7 +63,7 @@ func quantFailedNotification(quantname string, notificationStack notifications.N
 
 	fmt.Println("Wait over, dispatching notification for: " + userid)
 	err := notificationStack.SendAll("quant-processing-failed", template, users, true)
-	note := notifications.UINotificationObj{
+	note := notifications.UINotificationItem{
 		Topic:     "Quantification Processing Complete",
 		Message:   fmt.Sprintf("Quantification %v Processing Failed", quantname),
 		Timestamp: time.Time{},

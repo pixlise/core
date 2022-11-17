@@ -9,7 +9,6 @@
     "DockerLoginString": "{\"auths\":{\"registry.github.com\":{\"username\":\"magicaltrout\",\"password\":\"eAyL1x6fz4xteegm4o8r\",\"email\":\"tom@spicule.co.uk\",\"auth\": \"bWFnaWNhbHRyb3V0OmVBeUwxeDZmejR4dGVlZ200bzhy\"}}}",
     "QuantNamespace": "api-dev",
     "QuantExecutor": "docker",
-    "ElasticURL": "https://search-pixl-ecmif26glhlvzzdm4tje6yfxwe.us-east-1.es.amazonaws.com",
     "SentryEndpoint": "",
     "Auth0Domain": "pixlise.au.auth0.com",
     "Auth0ManagementClientID": "nu01QrTWlM4PaFtjrV44DqPlpAWi6imU",

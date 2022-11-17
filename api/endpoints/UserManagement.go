@@ -125,12 +125,16 @@ func userListByRole(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func userGetDataCollection(params handlers.ApiHandlerParams) (interface{}, error) {
-	user, err := params.Svcs.Notifications.FetchUserObject(params.UserInfo.UserID, true, params.UserInfo.Name, params.UserInfo.Email)
+	user, err := params.Svcs.Notifications.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	return dataCollection{Collect: user.Config.DataCollection}, nil
+	result := dataCollection{
+		Collect: user.Config.DataCollection,
+	}
+
+	return result, nil
 }
 
 func userPostDataCollection(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -144,20 +148,24 @@ func userPostDataCollection(params handlers.ApiHandlerParams) (interface{}, erro
 	if err != nil {
 		return nil, err
 	}
-	user, err := params.Svcs.Notifications.FetchUserObject(params.UserInfo.UserID, true, params.UserInfo.Name, params.UserInfo.Email)
-	user.Config.DataCollection = req.Collect
-	err = params.Svcs.Notifications.UpdateUserConfigFile(params.UserInfo.UserID, user)
+
+	user, err := params.Svcs.Notifications.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	if req.Collect == "true" {
-		params.Svcs.Notifications.SetTrack(params.UserInfo.UserID, true)
-	} else {
-		params.Svcs.Notifications.SetTrack(params.UserInfo.UserID, false)
+	// Overwrite data collection flag
+	user.Config.DataCollection = req.Collect
+
+	// Save user
+	err = params.Svcs.Notifications.WriteUser(user)
+	if err != nil {
+		return nil, err
 	}
 
-	return "Success", nil
+	// Also remember in our run-time cache wether this user is allowing tracking or not
+	params.Svcs.Notifications.SetTrack(params.UserInfo.UserID, req.Collect == "true")
+	return nil, nil
 }
 
 func userGet(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -280,7 +288,7 @@ func userListQuery(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func userGetConfig(params handlers.ApiHandlerParams) (interface{}, error) {
-	user, err := params.Svcs.Notifications.FetchUserObject(params.UserInfo.UserID, true, params.UserInfo.Name, params.UserInfo.Email)
+	user, err := params.Svcs.Notifications.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +296,7 @@ func userGetConfig(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func userPostConfig(params handlers.ApiHandlerParams) (interface{}, error) {
-	user, err := params.Svcs.Notifications.FetchUserObject(params.UserInfo.UserID, true, params.UserInfo.Name, params.UserInfo.Email)
+	user, err := params.Svcs.Notifications.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +309,7 @@ func userPostConfig(params handlers.ApiHandlerParams) (interface{}, error) {
 	err = json.Unmarshal(body, &req)
 
 	user.Config = req
-	err = params.Svcs.Notifications.UpdateUserConfigFile(params.UserInfo.UserID, user)
+	err = params.Svcs.Notifications.WriteUser(user)
 
 	return req, err
 }

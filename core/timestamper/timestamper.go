@@ -15,30 +15,29 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// api - package for containing "core" API things, which are reusable
-// in building any API for our platform. These should not contain
-// specific PIXLISE API business logic
-package api
+package timestamper
 
-import (
-	"encoding/json"
-	"net/http"
+import "time"
 
-	"github.com/pixlise/core/v2/core/utils"
-)
+type ITimeStamper interface {
+	GetTimeNowSec() int64
+}
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// JSON Helper
+type UnixTimeNowStamper struct {
+}
 
-// See:
-// https://stackoverflow.com/questions/19038598/how-can-i-pretty-print-json-using-go
+// GetTimeNowSec - Returns unix time now in seconds
+func (ts *UnixTimeNowStamper) GetTimeNowSec() int64 {
+	return time.Now().Unix()
+}
 
-func ToJSON(w http.ResponseWriter, v interface{}) {
-	w.Header().Add("Content-Type", "application/json")
+type MockTimeNowStamper struct {
+	QueuedTimeStamps []int64
+}
 
-	if v != nil {
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", utils.PrettyPrintIndentForJSON)
-		enc.Encode(v)
-	}
+// GetTimeNowSec - Returns unix time now in seconds
+func (ts *MockTimeNowStamper) GetTimeNowSec() int64 {
+	val := ts.QueuedTimeStamps[0]
+	ts.QueuedTimeStamps = ts.QueuedTimeStamps[1:]
+	return val
 }

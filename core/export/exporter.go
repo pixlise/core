@@ -42,6 +42,7 @@ import (
 	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/quantModel"
 	"github.com/pixlise/core/v2/core/roiModel"
+	"github.com/pixlise/core/v2/core/timestamper"
 	"github.com/pixlise/core/v2/core/utils"
 	protos "github.com/pixlise/core/v2/generated-protos"
 	"google.golang.org/protobuf/proto"
@@ -753,7 +754,7 @@ type spectrumData struct {
 	countsB []int32
 }
 
-func writeSpectraCSVs(timeStamper services.ITimeStamper, outDir string, fileNamePrefix string, readType string, dataset *protos.Experiment, roi roiModel.ROIMembers) error {
+func writeSpectraCSVs(timeStamper timestamper.ITimeStamper, outDir string, fileNamePrefix string, readType string, dataset *protos.Experiment, roi roiModel.ROIMembers) error {
 	// Write out a CSV in the format we receive them from iSDS (pixlise-data-converter FM format CSV for RFS product type subdirectory)
 	// First we read the spectra we're interested in...
 	toWrite := []spectrumData{}
@@ -1024,7 +1025,7 @@ func writeSpectraCSV(path string, spectra []spectrumData, csv io.StringWriter) e
 	return nil
 }
 
-func writeSpectraMSA(path string, timeStamper services.ITimeStamper, spectra spectrumData, msa io.StringWriter) error {
+func writeSpectraMSA(path string, timeStamper timestamper.ITimeStamper, spectra spectrumData, msa io.StringWriter) error {
 	if len(spectra.countsA) <= 0 && len(spectra.countsA) <= 0 {
 		return fmt.Errorf("Unexpected spectrum data counts for writeSpectraMSA when writing %v", path)
 	}

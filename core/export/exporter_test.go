@@ -26,11 +26,11 @@ import (
 	"path"
 	"testing"
 
-	"github.com/pixlise/core/v2/api/services"
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
 	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/quantModel"
 	"github.com/pixlise/core/v2/core/roiModel"
+	"github.com/pixlise/core/v2/core/timestamper"
 	"github.com/pixlise/core/v2/core/utils"
 )
 
@@ -354,7 +354,7 @@ func Example_writeSpectraMSA_AB() {
 
 	var content = ""
 	msa := stringMemWriter{Content: &content}
-	mockTime := &services.MockTimeNowStamper{
+	mockTime := &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1734567890},
 	}
 	err := writeSpectraMSA("the/path.msa", mockTime, spectrum, msa)
@@ -410,7 +410,7 @@ func Example_writeSpectraMSA_A() {
 
 	var content = ""
 	msa := stringMemWriter{Content: &content}
-	mockTime := &services.MockTimeNowStamper{
+	mockTime := &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1734567890},
 	}
 	err := writeSpectraMSA("the/path.msa", mockTime, spectrum, msa)

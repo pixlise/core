@@ -337,7 +337,9 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 	}
 
 	// Ensure it matches what we're expecting
-	if meta.RTT != datasetIDExpected {
+	// We allow for missing 0's at the start because for a while we imported RTTs as ints, so older dataset RTTs
+	// were coming in as eg 76481028, while we now read them as 076481028
+	if meta.RTT != datasetIDExpected && meta.RTT != "0"+datasetIDExpected {
 		return nil, "", fmt.Errorf("Expected dataset ID %v, read %v", datasetIDExpected, meta.RTT)
 	}
 

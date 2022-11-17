@@ -22,13 +22,10 @@ import (
 	"net/http/httptest"
 
 	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/notifications"
 
-	"github.com/pixlise/core/v2/api/esutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
 
 	"github.com/gorilla/mux"
-	cmap "github.com/orcaman/concurrent-map"
 	"github.com/pixlise/core/v2/api/config"
 	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
@@ -88,29 +85,12 @@ func (m *MockExporter) MakeExportFilesZip(svcs *services.APIServices, fileNamePr
 	return m.downloadReturn, nil
 }
 
-func mockElasticSearch() *esutil.Connection {
-	testServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	defer testServer.Close()
-	var ExpIndexObject = []string{}
-	var ExpRespObject = []string{}
-
-	d := esutil.DummyElasticClient{}
-	foo, _ := d.DummyElasticSearchClient(testServer.URL, ExpRespObject, ExpIndexObject, ExpRespObject, nil)
-
-	apiConfig := config.APIConfig{EnvironmentName: "Test"}
-
-	connection, _ := esutil.Connect(foo, apiConfig)
-	return &connection
-}
-
-func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, signer services.URLSigner, esconnection *esutil.Connection, logLevel *logger.LogLevel) services.APIServices {
+func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, signer services.URLSigner, logLevel *logger.LogLevel) services.APIServices {
 	logging := logger.LogDebug
 	if logLevel != nil {
 		logging = *logLevel
 	}
-	if esconnection == nil {
-		esconnection = mockElasticSearch()
-	}
+
 	cfg := config.APIConfig{
 		DatasetsBucket:      DatasetsBucketForUnitTest,
 		ConfigBucket:        ConfigBucketForUnitTest,
@@ -128,27 +108,26 @@ func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, sign
 
 	fs := fileaccess.MakeS3Access(mockS3)
 
-	var notes []notifications.UINotificationObj
-
-	notificationStack := notifications.NotificationStack{
-		Notifications: notes,
-		FS:            fs,
-		Bucket:        UsersBucketForUnitTest,
-		Track:         cmap.New(), //make(map[string]bool),
-	}
+	// Most tests don't involve mongo DB and notifications...
+	/*
+		notificationStack := notifications.NotificationStack{
+			Notifications: notes,
+			FS:            fs,
+			Bucket:        UsersBucketForUnitTest,
+			Track:         cmap.New(), //make(map[string]bool),
+		}*/
 
 	return services.APIServices{
-		Config:        cfg,
-		Log:           &logger.NullLogger{},
-		AWSSessionCW:  nil,
-		S3:            mockS3,
-		SNS:           &awsutil.MockSNS{},
-		JWTReader:     MockJWTReader{},
-		IDGen:         idGen,
-		Signer:        signer,
-		Notifications: &notificationStack,
-		ES:            *esconnection,
-		FS:            fs,
+		Config:       cfg,
+		Log:          &logger.NullLogger{},
+		AWSSessionCW: nil,
+		S3:           mockS3,
+		SNS:          &awsutil.MockSNS{},
+		JWTReader:    MockJWTReader{},
+		IDGen:        idGen,
+		Signer:       signer,
+		//Notifications: &notificationStack,
+		FS: fs,
 	}
 }
 
