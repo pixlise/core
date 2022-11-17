@@ -21,6 +21,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
+	"github.com/pixlise/core/v2/core/timestamper"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"log"
 	"os"
 	"time"
 
@@ -68,6 +73,25 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 	// Normally we'd only expect event.Records to be of length 1...
 	worked := 0
 	for _, record := range event.Records {
+		mongoclient := connectMongo(&logger.StdOutLogger{})
+
+		if record.SNS.Subject == "TestNotifications" {
+			err := mongoclient.Ping(context.Background(), readpref.Primary())
+			if err != nil {
+				return "", err
+			}
+			notificationStack, err := apiNotifications.MakeNotificationStack(mongoclient, envName, &timestamper.UnixTimeNowStamper{}, &logger.StdOutLogger{}, []string{})
+			if err != nil {
+				return "", err
+			}
+			template := make(map[string]interface{})
+			template["datasourcename"] = "Test dataset name"
+			template["subject"] = fmt.Sprintf("Datasource %v Processing Complete", "")
+			err = notificationStack.SendAll("Test Datasource Email", template, []string{record.SNS.Message}, false)
+			if err != nil {
+				return "", err
+			}
+		}
 		// Print this to stdout - not that useful, won't be in the log file, but lambda cloudwatch log should have it
 		// and it'll be useful for initial debugging
 		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
@@ -170,4 +194,37 @@ func triggerNotifications(
 		jobLog.Errorf(err.Error())
 	}
 	return err
+}
+
+func connectMongo(ourLogger logger.ILogger) *mongo.Client {
+	var mongoClient *mongo.Client
+	var err error
+	// Connect to mongo
+	if len("pixlise-db.cluster-clcm0b2sosn0.us-east-1.docdb.amazonaws.com:27017") > 0 && len("pixlise") > 0 && len("pixlise/docdb/masteruser") > 0 {
+		// Remote is configured, connect to it
+		mongoPassword, err := mongoDBConnection.GetMongoPasswordFromSecretCache("pixlise/docdb/masteruser")
+		if err != nil {
+			err2 := fmt.Errorf("Failed to read mongo DB password from secrets cache: %v", err)
+			ourLogger.Errorf("%v", err2)
+			log.Fatalf("%v", err)
+		}
+
+		mongoClient, err = mongoDBConnection.ConnectToRemoteMongoDB("pixlise-db.cluster-clcm0b2sosn0.us-east-1.docdb.amazonaws.com:27017", "pixlise", mongoPassword, ourLogger)
+		if err != nil {
+			err2 := fmt.Errorf("Failed connect to remote mongo: %v", err)
+			ourLogger.Errorf("%v", err2)
+			log.Fatalf("%v", err)
+		}
+
+	} else {
+		// Connect to local mongo
+		mongoClient, err = mongoDBConnection.ConnectToLocalMongoDB(ourLogger)
+		if err != nil {
+			err2 := fmt.Errorf("Failed connect to local mongo: %v", err)
+			ourLogger.Errorf("%v", err2)
+			log.Fatalf("%v", err)
+		}
+	}
+	return mongoClient
+
 }
