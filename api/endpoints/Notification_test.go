@@ -51,7 +51,7 @@ func Test_subscription_get(t *testing.T) {
 	mockMongoResponses := []primitive.D{
 		mtest.CreateCursorResponse(
 			0,
-			"userdatabase.users",
+			"userdatabase-unit_test.users",
 			mtest.FirstBatch,
 			bson.D{
 				{"Userid", "600f2a0806b6c70071d3d174"},
@@ -89,7 +89,7 @@ func Test_subscriptions_get_empty_topics(t *testing.T) {
 	mockMongoResponses := []primitive.D{
 		mtest.CreateCursorResponse(
 			0,
-			"userdatabase.users",
+			"userdatabase-unit_test.users",
 			mtest.FirstBatch,
 			bson.D{
 				{"Userid", "600f2a0806b6c70071d3d174"},
@@ -115,12 +115,12 @@ func Test_subscriptions_get_no_user(t *testing.T) {
 	mockMongoResponses := []primitive.D{
 		mtest.CreateCursorResponse(
 			1,
-			"userdatabase.users",
+			"userdatabase-unit_test.users",
 			mtest.FirstBatch,
 		),
 		mtest.CreateCursorResponse(
 			0,
-			"userdatabase.users",
+			"userdatabase-unit_test.users",
 			mtest.NextBatch,
 		),
 	}
@@ -177,7 +177,7 @@ func Test_subscription_post(t *testing.T) {
 	mockMongoResponses := []primitive.D{
 		mtest.CreateCursorResponse(
 			1,
-			"userdatabase.users",
+			"userdatabase-unit_test.users",
 			mtest.FirstBatch,
 			bson.D{
 				{"Userid", "600f2a0806b6c70071d3d174"},
@@ -249,12 +249,12 @@ func Test_subscription_post_no_user(t *testing.T) {
 		// Signify no user exists...
 		mtest.CreateCursorResponse(
 			1,
-			"userdatabase.users",
+			"userdatabase-unit_test.users",
 			mtest.FirstBatch,
 		),
 		mtest.CreateCursorResponse(
 			0,
-			"userdatabase.users",
+			"userdatabase-unit_test.users",
 			mtest.NextBatch,
 		),
 		// User saved
@@ -286,7 +286,7 @@ func Test_alerts_get(t *testing.T) {
 		// Get user request
 		mtest.CreateCursorResponse(
 			1,
-			"userdatabase.notifications",
+			"userdatabase-unit_test.notifications",
 			mtest.FirstBatch,
 			bson.D{
 				{"Topic", "test-data-source"},
@@ -297,7 +297,7 @@ func Test_alerts_get(t *testing.T) {
 		),
 		mtest.CreateCursorResponse(
 			0,
-			"userdatabase.notifications",
+			"userdatabase-unit_test.notifications",
 			mtest.NextBatch,
 			bson.D{
 				{"Topic", "test-data-source"},
@@ -344,7 +344,7 @@ func Test_hints_post(t *testing.T) {
 		// Get user
 		mtest.CreateCursorResponse(
 			1,
-			"userdatabase.users",
+			"userdatabase-unit_test.users",
 			mtest.FirstBatch,
 			bson.D{
 				{"Userid", "600f2a0806b6c70071d3d174"},
@@ -386,12 +386,12 @@ func Test_hints_post_no_user(t *testing.T) {
 		// Get user (none)
 		mtest.CreateCursorResponse(
 			1,
-			"userdatabase.users",
+			"userdatabase-unit_test.users",
 			mtest.FirstBatch,
 		),
 		mtest.CreateCursorResponse(
 			0,
-			"userdatabase.users",
+			"userdatabase-unit_test.users",
 			mtest.NextBatch,
 		),
 		// Write user
@@ -407,12 +407,12 @@ func makeNotFoundMongoResponse() []primitive.D {
 	return []primitive.D{
 		mtest.CreateCursorResponse(
 			1,
-			"userdatabase.notifications",
+			"userdatabase-unit_test.notifications",
 			mtest.FirstBatch,
 		),
 		mtest.CreateCursorResponse(
 			0,
-			"userdatabase.notifications",
+			"userdatabase-unit_test.notifications",
 			mtest.NextBatch,
 		),
 	}
@@ -430,7 +430,7 @@ func runOneURLCallTest(t *testing.T, method string, url string, requestPayload i
 
 		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 		setTestAuth0Config(&svcs)
-		notifications, err := notifications.MakeNotificationStack(mt.Client, nil, &logger.StdOutLoggerForTest{}, []string{})
+		notifications, err := notifications.MakeNotificationStack(mt.Client, "unit_test", nil, &logger.StdOutLoggerForTest{}, []string{})
 		if err != nil {
 			t.Error(err)
 		}

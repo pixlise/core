@@ -795,7 +795,7 @@ func Test_viewStateHandler_Put_spectrum_topright_AND_middleware_activity_logging
 
 		setTestAuth0Config(&svcs)
 
-		notifications, err := notifications.MakeNotificationStack(mt.Client, nil, &logger.StdOutLoggerForTest{}, []string{})
+		notifications, err := notifications.MakeNotificationStack(mt.Client, "unit_test", nil, &logger.StdOutLoggerForTest{}, []string{})
 		if err != nil {
 			t.Error(err)
 		}

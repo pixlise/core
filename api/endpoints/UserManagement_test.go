@@ -230,7 +230,7 @@ func Test_user_config_get(t *testing.T) {
 	mockMongoResponses := []primitive.D{
 		mtest.CreateCursorResponse(
 			0,
-			"userdatabase.users",
+			"userdatabase-unit_test.users",
 			mtest.FirstBatch,
 			bson.D{
 				{"Userid", "600f2a0806b6c70071d3d174"},
@@ -274,7 +274,7 @@ func Test_user_config_post(t *testing.T) {
 		// User read
 		mtest.CreateCursorResponse(
 			0,
-			"userdatabase.users",
+			"userdatabase-unit_test.users",
 			mtest.FirstBatch,
 			bson.D{
 				{"Userid", "600f2a0806b6c70071d3d174"},

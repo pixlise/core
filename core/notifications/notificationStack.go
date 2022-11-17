@@ -47,8 +47,13 @@ type NotificationStack struct {
 	log logger.ILogger
 }
 
-func MakeNotificationStack(mongoClient *mongo.Client, timestamper timestamper.ITimeStamper, log logger.ILogger, adminEmails []string) (*NotificationStack, error) {
-	userDatabase := mongoClient.Database("userdatabase")
+func MakeNotificationStack(mongoClient *mongo.Client, envName string, timestamper timestamper.ITimeStamper, log logger.ILogger, adminEmails []string) (*NotificationStack, error) {
+	userDatabaseName := "userdatabase"
+	if envName != "prod" {
+		userDatabaseName += "-" + envName
+	}
+
+	userDatabase := mongoClient.Database(userDatabaseName)
 	userCollection := userDatabase.Collection("users")
 	notificationCollection := userDatabase.Collection("notifications")
 
