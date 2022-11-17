@@ -61,9 +61,11 @@ func ReadMatchedImages(matchedPath string, beamLookup dataConvertModels.BeamLoca
 			return result, err
 		}
 
-		// Verify the images exist
-		if _, ok := beamLookup[meta.AlignedBeamPMC]; !ok {
-			return result, fmt.Errorf("Matched image %v references beam locations for PMC which cannot be found: %v", jsonPath, meta.AlignedBeamPMC)
+		// Verify the beams exist (though if we have NO beams, we're a "disco" dataset, so skip this)
+		if len(beamLookup) > 0 {
+			if _, ok := beamLookup[meta.AlignedBeamPMC]; !ok {
+				return result, fmt.Errorf("Matched image %v references beam locations for PMC which cannot be found: %v", jsonPath, meta.AlignedBeamPMC)
+			}
 		}
 
 		// Work out the full path, will be needed when copying to output dir
