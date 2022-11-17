@@ -75,65 +75,56 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 	for _, record := range event.Records {
 		mongoclient := connectMongo(&logger.StdOutLogger{})
 
-		if record.SNS.Subject == "TestNotifications" {
-			err := mongoclient.Ping(context.Background(), readpref.Primary())
-			if err != nil {
-				return "", err
-			}
-			notificationStack, err := apiNotifications.MakeNotificationStack(mongoclient, envName, &timestamper.UnixTimeNowStamper{}, &logger.StdOutLogger{}, []string{})
-			if err != nil {
-				return "", err
-			}
-			template := make(map[string]interface{})
-			template["datasourcename"] = "Test dataset name"
-			template["subject"] = fmt.Sprintf("Datasource %v Processing Complete", "")
-			err = notificationStack.SendAll("Test Datasource Email", template, []string{record.SNS.Message}, false)
-			if err != nil {
-				return "", err
-			}
-		}
-		// Print this to stdout - not that useful, won't be in the log file, but lambda cloudwatch log should have it
-		// and it'll be useful for initial debugging
-		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
-
-		result, err := importer.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, nil, remoteFS)
-		defer result.Logger.Close()
-
-		if len(result.WhatChanged) > 0 {
-			err := triggerNotifications(
-				configBucket,
-				result.DatasetTitle,
-				remoteFS,
-				result.IsUpdate,
-				result.WhatChanged,
-				nil,
-				result.Logger,
-			)
-
-			if err != nil {
-				result.Logger.Errorf("ImportForTrigger triggerNotifications had an error: \"%v\"\n", err)
-			}
-		}
-
-		// Delete the working directory here, there's no point leaving it on a lambda machine, we can't debug it
-		// but if this code ran elsewhere we wouldn't delete it, to have something to look at
-		if len(result.WorkingDir) > 0 {
-			removeErr := os.RemoveAll(result.WorkingDir)
-			if removeErr != nil {
-				fmt.Printf("Failed to remove working dir: \"%v\". Error: %v\n", result.WorkingDir, removeErr)
-			} else {
-				fmt.Printf("Removed working dir: \"%v\"\n", result.WorkingDir)
-			}
-		}
-
+		notificationStack, err := apiNotifications.MakeNotificationStack(mongoclient, envName, &timestamper.UnixTimeNowStamper{}, &logger.StdOutLogger{}, []string{})
 		if err != nil {
 			return "", err
+		}
+		if record.SNS.Subject == "TestNotifications" {
+			runTest(mongoclient, notificationStack, record)
 		} else {
-			worked++
+			// Print this to stdout - not that useful, won't be in the log file, but lambda cloudwatch log should have it
+			// and it'll be useful for initial debugging
+			fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
+
+			result, err := importer.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, nil, remoteFS)
+			defer result.Logger.Close()
+
+			if len(result.WhatChanged) > 0 {
+				err := triggerNotifications(
+					configBucket,
+					result.DatasetTitle,
+					remoteFS,
+					result.IsUpdate,
+					result.WhatChanged,
+					nil,
+					result.Logger,
+				)
+
+				if err != nil {
+					result.Logger.Errorf("ImportForTrigger triggerNotifications had an error: \"%v\"\n", err)
+				}
+			}
+
+			// Delete the working directory here, there's no point leaving it on a lambda machine, we can't debug it
+			// but if this code ran elsewhere we wouldn't delete it, to have something to look at
+			if len(result.WorkingDir) > 0 {
+				removeErr := os.RemoveAll(result.WorkingDir)
+				if removeErr != nil {
+					fmt.Printf("Failed to remove working dir: \"%v\". Error: %v\n", result.WorkingDir, removeErr)
+				} else {
+					fmt.Printf("Removed working dir: \"%v\"\n", result.WorkingDir)
+				}
+			}
+
+			if err != nil {
+				return "", err
+			} else {
+				worked++
+			}
 		}
 	}
-
 	return fmt.Sprintf("Imported %v records", worked), nil
+
 }
 
 func main() {
@@ -227,4 +218,20 @@ func connectMongo(ourLogger logger.ILogger) *mongo.Client {
 	}
 	return mongoClient
 
+}
+
+func runTest(mongoclient *mongo.Client, notificationStack *apiNotifications.NotificationStack, record awsutil.Record) (string, error) {
+	err := mongoclient.Ping(context.Background(), readpref.Primary())
+	if err != nil {
+		return "", err
+	}
+
+	template := make(map[string]interface{})
+	template["datasourcename"] = "Test dataset name"
+	template["subject"] = fmt.Sprintf("Datasource %v Processing Complete", "")
+	err = notificationStack.SendAll("Test Datasource Email", template, []string{record.SNS.Message}, false)
+	if err != nil {
+		return "", err
+	}
+	return "", nil
 }
