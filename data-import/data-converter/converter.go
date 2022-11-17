@@ -171,19 +171,6 @@ func ImportFromLocalFileSystem(
 	if err != nil {
 		return "", fmt.Errorf("Import failed: %v", err)
 	}
-	/*
-		// Apply any customisations/overrides:
-		if len(config.Name) > 1 { // 1 for spaces?
-			data.DatasetID = config.Name
-		}
-
-		overrideDetector := getOverrideDetectorForSol(data.Meta.SOL)
-		if len(overrideDetector) > 0 {
-			data.DetectorConfig = overrideDetector
-		}
-
-		data.Group = getDatasetGroup(data.DetectorConfig)
-	*/
 
 	// Apply any overrides we may have
 	customMetaFields, err := readLocalCustomMeta(log, localImportPath)
