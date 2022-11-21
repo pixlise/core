@@ -1546,7 +1546,11 @@ func Example_viewStateHandler_Put_rgbuPlots() {
     "yChannelB": "U",
     "xChannelA": "R",
     "xChannelB": "G",
-    "drawMonochrome": true
+    "drawMonochrome": true,
+    "selectedMinXValue": 0,
+    "selectedMaxXValue": 0,
+    "selectedMinYValue": 0,
+    "selectedMaxYValue": 0
 }`)),
 		},
 	}
@@ -1563,6 +1567,10 @@ func Example_viewStateHandler_Put_rgbuPlots() {
 	"yChannelA": "B",
 	"yChannelB": "U",
 	"drawMonochrome": true,
+	"selectedMinXValue": 0,
+	"selectedMaxXValue": 0,
+	"selectedMinYValue": 0,
+	"selectedMaxYValue": 0,
     "minerals": [
         "Plagioclase",
         "Olivine"
@@ -1869,7 +1877,11 @@ func Example_viewStateHandler_Put_all() {
     "yChannelB": "U",
     "xChannelA": "R",
     "xChannelB": "B",
-    "drawMonochrome": false
+    "drawMonochrome": false,
+    "selectedMinXValue": 0,
+    "selectedMaxXValue": 0,
+    "selectedMinYValue": 0,
+    "selectedMaxYValue": 0
 }`)),
 		},
 		{
