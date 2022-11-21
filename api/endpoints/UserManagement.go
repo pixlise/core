@@ -77,6 +77,9 @@ func registerUserManagementHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/data-collection"), apiRouter.MakeMethodPermission("POST", permission.PermReadUserRoles), userPostDataCollection)
 	// Simply retrieves roles
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/all-roles"), apiRouter.MakeMethodPermission("GET", permission.PermReadUserRoles), roleList)
+	// Setting user name - auth0 only asks for user email, eventually we notice we don't have their name and prompt for it
+	// and this is the endpoint that's supposed to fix it!
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/name"), apiRouter.MakeMethodPermission("POST", permission.PermReadUserRoles), userPostName)
 }
 
 func roleList(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -307,11 +310,49 @@ func userPostConfig(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 	var req apiNotifications.Config
 	err = json.Unmarshal(body, &req)
+	if err != nil {
+		return nil, err
+	}
 
 	user.Config = req
 	err = params.Svcs.Notifications.WriteUser(user)
 
 	return req, err
+}
+
+func userPostName(params handlers.ApiHandlerParams) (interface{}, error) {
+	user, err := params.Svcs.Notifications.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := ioutil.ReadAll(params.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	name := ""
+	err = json.Unmarshal(body, &name)
+	if err != nil {
+		return nil, err
+	}
+
+	user.Config.Name = name
+	err = params.Svcs.Notifications.WriteUser(user)
+	if err != nil {
+		return nil, err
+	}
+
+	api, err := InitAuth0ManagementAPI(params.Svcs.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	auth0User := management.User{}
+	auth0User.Name = &name
+
+	err = api.User.Update("auth0|"+params.UserInfo.UserID, &auth0User)
+	return nil, err
 }
 
 func makeUserList(from *management.UserList) []auth0UserInfo {
