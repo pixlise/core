@@ -506,7 +506,11 @@ func Example_viewStateHandler_List() {
 	//             "yChannelB": "",
 	//             "xChannelA": "",
 	//             "xChannelB": "",
-	//             "drawMonochrome": false
+	//             "drawMonochrome": false,
+	//             "selectedMinXValue": 0,
+	//             "selectedMaxXValue": 0,
+	//             "selectedMinYValue": 0,
+	//             "selectedMaxYValue": 0
 	//         }
 	//     },
 	//     "singleAxisRGBU": {},
@@ -1542,7 +1546,11 @@ func Example_viewStateHandler_Put_rgbuPlots() {
     "yChannelB": "U",
     "xChannelA": "R",
     "xChannelB": "G",
-    "drawMonochrome": true
+    "drawMonochrome": true,
+    "selectedMinXValue": 0,
+    "selectedMaxXValue": 0,
+    "selectedMinYValue": 0,
+    "selectedMaxYValue": 0
 }`)),
 		},
 	}
@@ -1559,6 +1567,10 @@ func Example_viewStateHandler_Put_rgbuPlots() {
 	"yChannelA": "B",
 	"yChannelB": "U",
 	"drawMonochrome": true,
+	"selectedMinXValue": 0,
+	"selectedMaxXValue": 0,
+	"selectedMinYValue": 0,
+	"selectedMaxYValue": 0,
     "minerals": [
         "Plagioclase",
         "Olivine"
@@ -1865,7 +1877,11 @@ func Example_viewStateHandler_Put_all() {
     "yChannelB": "U",
     "xChannelA": "R",
     "xChannelB": "B",
-    "drawMonochrome": false
+    "drawMonochrome": false,
+    "selectedMinXValue": 0,
+    "selectedMaxXValue": 0,
+    "selectedMinYValue": 0,
+    "selectedMaxYValue": 0
 }`)),
 		},
 		{
@@ -2194,7 +2210,11 @@ func Example_viewStateHandler_Put_all() {
 			"yChannelB": "R",
 			"xChannelA": "B",
 			"xChannelB": "R",
-			"drawMonochrome": false
+			"drawMonochrome": false,
+			"selectedMinXValue": 0,
+			"selectedMaxXValue": 0,
+			"selectedMinYValue": 0,
+			"selectedMaxYValue": 0
 		},
 		"underspectrum1": {
 			"minerals": [],
@@ -2202,7 +2222,11 @@ func Example_viewStateHandler_Put_all() {
 			"yChannelB": "U",
 			"xChannelA": "R",
 			"xChannelB": "B",
-			"drawMonochrome": false
+			"drawMonochrome": false,
+			"selectedMinXValue": 0,
+			"selectedMaxXValue": 0,
+			"selectedMinYValue": 0,
+			"selectedMaxYValue": 0
 		},
 		"underspectrum2": {
 			"minerals": [],
@@ -2210,7 +2234,11 @@ func Example_viewStateHandler_Put_all() {
 			"yChannelB": "R",
 			"xChannelA": "U",
 			"xChannelB": "B",
-			"drawMonochrome": false
+			"drawMonochrome": false,
+			"selectedMinXValue": 0,
+			"selectedMaxXValue": 0,
+			"selectedMinYValue": 0,
+			"selectedMaxYValue": 0
 		}
 	},
 	"singleAxisRGBU": {},
