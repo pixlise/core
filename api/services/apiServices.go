@@ -113,6 +113,9 @@ type APIServices struct {
 
 	// Our mongo db connection
 	Mongo *mongo.Client
+
+	// "User DB"
+	Users pixlUser.UserDetailsLookup
 }
 
 // InitAPIServices sets up a new APIServices instance

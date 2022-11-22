@@ -17,24 +17,19 @@
 
 package notifications
 
-type NotificationManager interface {
-	// User specific
-	GetUser(userid string) (UserStruct, error)
-	GetUserEnsureExists(userid string, name string, email string) (UserStruct, error)
-	WriteUser(data UserStruct) error
+import "github.com/pixlise/core/v2/core/pixlUser"
 
+type NotificationManager interface {
 	// Sending notifications
 	SendGlobalEmail(content string, subject string) error
 	SendAll(topic string, templateInput map[string]interface{}, userOverride []string, includeadmin bool) error
 	SendAllDataSource(topic string, templateInput map[string]interface{}, userOverride []string, includeadmin bool, topicoverride string) error
 
 	// UI-specific notifications
-	SendUINotification(newNotification UINotificationItem) error
-	GetUINotifications(userid string) ([]UINotificationItem, error)
+	SendUINotification(newNotification pixlUser.UINotificationItem) error
+	GetUINotifications(userid string) ([]pixlUser.UINotificationItem, error)
 
 	// Run-time cached list of users who are tracked
 	GetTrack(userid string) (bool, bool)
 	SetTrack(userid string, track bool)
-
-	//AddNotification(UINotificationItem)
 }

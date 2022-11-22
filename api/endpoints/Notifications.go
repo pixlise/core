@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 
 	"github.com/pixlise/core/v2/core/api"
-	apiNotifications "github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/pixlUser"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/pixlise/core/v2/api/handlers"
@@ -46,7 +46,7 @@ type Config struct {
 
 // UserSubscriptions - App data type for JSON conversion
 type UserSubscriptions struct {
-	Topics []apiNotifications.Topics `json:"topics"`
+	Topics []pixlUser.Topics `json:"topics"`
 }
 
 // HintsData - Hints Object
@@ -138,7 +138,7 @@ func listAlerts(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func listHints(params handlers.ApiHandlerParams) (interface{}, error) {
-	user, err := params.Svcs.Notifications.GetUser(params.UserInfo.UserID)
+	user, err := params.Svcs.Users.GetUser(params.UserInfo.UserID)
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -171,7 +171,7 @@ func postHints(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Read the user first
-	user, err := params.Svcs.Notifications.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
+	user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
 		params.Svcs.Log.Errorf("Error Creating/Reading User \"%v\" for saving hints: %v", params.UserInfo.UserID, err)
 		return nil, err
@@ -181,13 +181,13 @@ func postHints(params handlers.ApiHandlerParams) (interface{}, error) {
 	user.Notifications.Hints = req.Hints
 
 	// Write user back
-	err = params.Svcs.Notifications.WriteUser(user)
+	err = params.Svcs.Users.WriteUser(user)
 
 	return HintsData{user.Notifications.Hints}, err
 }
 
 func listSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) {
-	user, err := params.Svcs.Notifications.GetUser(params.UserInfo.UserID)
+	user, err := params.Svcs.Users.GetUser(params.UserInfo.UserID)
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -215,7 +215,7 @@ func postSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Read the user first
-	user, err := params.Svcs.Notifications.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
+	user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
 		params.Svcs.Log.Errorf("Error Creating/Reading User \"%v\" for saving subscriptions: %v", params.UserInfo.UserID, err)
 		return nil, err
@@ -225,7 +225,7 @@ func postSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) {
 	user.Notifications.Topics = req.Topics
 
 	// Write user back
-	err = params.Svcs.Notifications.WriteUser(user)
+	err = params.Svcs.Users.WriteUser(user)
 
 	return UserSubscriptions{user.Notifications.Topics}, err
 }

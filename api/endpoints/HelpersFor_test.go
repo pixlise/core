@@ -108,15 +108,6 @@ func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, sign
 
 	fs := fileaccess.MakeS3Access(mockS3)
 
-	// Most tests don't involve mongo DB and notifications...
-	/*
-		notificationStack := notifications.NotificationStack{
-			Notifications: notes,
-			FS:            fs,
-			Bucket:        UsersBucketForUnitTest,
-			Track:         cmap.New(), //make(map[string]bool),
-		}*/
-
 	return services.APIServices{
 		Config:       cfg,
 		Log:          &logger.NullLogger{},
@@ -126,8 +117,7 @@ func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, sign
 		JWTReader:    MockJWTReader{},
 		IDGen:        idGen,
 		Signer:       signer,
-		//Notifications: &notificationStack,
-		FS: fs,
+		FS:           fs,
 	}
 }
 

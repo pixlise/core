@@ -26,12 +26,13 @@ import (
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/logger"
+	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
+	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/timestamper"
 )
 
 // NotificationStack - Thing that manages user notifications on UI and email including preferences
 type NotificationStack struct {
-	//Notifications []UINotificationItem
 	Track       cmap.ConcurrentMap //map[string]bool
 	adminEmails []string
 	//Environment   string
@@ -39,8 +40,8 @@ type NotificationStack struct {
 	mongoClient *mongo.Client
 
 	userDatabase           *mongo.Database
-	userCollection         *mongo.Collection
 	notificationCollection *mongo.Collection
+	userCollection         *mongo.Collection
 
 	timestamper timestamper.ITimeStamper // So we can mock time.Now()
 
@@ -48,11 +49,7 @@ type NotificationStack struct {
 }
 
 func MakeNotificationStack(mongoClient *mongo.Client, envName string, timestamper timestamper.ITimeStamper, log logger.ILogger, adminEmails []string) (*NotificationStack, error) {
-	userDatabaseName := "userdatabase"
-	if envName != "prod" {
-		userDatabaseName += "-" + envName
-	}
-
+	userDatabaseName := mongoDBConnection.GetUserDatabaseName(envName)
 	userDatabase := mongoClient.Database(userDatabaseName)
 	userCollection := userDatabase.Collection("users")
 	notificationCollection := userDatabase.Collection("notifications")
@@ -61,8 +58,8 @@ func MakeNotificationStack(mongoClient *mongo.Client, envName string, timestampe
 		Track:                  cmap.New(),
 		mongoClient:            mongoClient,
 		userDatabase:           userDatabase,
-		userCollection:         userCollection,
 		notificationCollection: notificationCollection,
+		userCollection:         userCollection,
 		timestamper:            timestamper,
 		log:                    log,
 		adminEmails:            adminEmails,
@@ -81,12 +78,6 @@ func (n *NotificationStack) GetTrack(userid string) (bool, bool) {
 	}
 	return false, false
 }
-
-/*
-func (n *NotificationStack) AddNotification(obj UINotificationItem) {
-	n.Notifications = append(n.Notifications, obj)
-}
-*/
 
 // SendGlobalEmail - Send an email to all users.
 func (n *NotificationStack) SendGlobalEmail(content string, subject string) error {
@@ -108,7 +99,7 @@ func (n *NotificationStack) SendGlobalEmail(content string, subject string) erro
 
 // SendEmail - Send an email for a topic type
 func (n *NotificationStack) sendEmail(topic string, templateInput map[string]interface{}, userOverride []string, userOverrideEmails []string, topiclookupoverride string, includeadmin bool) error {
-	var subscribers []UserStruct
+	var subscribers []pixlUser.UserStruct
 	var err error
 	var searchtopic = topic
 	if topiclookupoverride != "" {
@@ -159,7 +150,7 @@ func (n *NotificationStack) sendEmail(topic string, templateInput map[string]int
 
 // SendUI - Send a notification to the UI specifically
 func (n *NotificationStack) sendUI(topic string, templateInput map[string]interface{}, userOverride []string, topiclookupoverride string) error {
-	var subscribers []UserStruct
+	var subscribers []pixlUser.UserStruct
 	var err error
 	var searchtopic = topic
 	if topiclookupoverride != "" {
@@ -183,7 +174,7 @@ func (n *NotificationStack) sendUI(topic string, templateInput map[string]interf
 			if err != nil {
 				return err
 			}
-			notification := UINotificationItem{
+			notification := pixlUser.UINotificationItem{
 				Topic:     topic,
 				Message:   text,
 				Timestamp: time.Time{},
