@@ -77,7 +77,7 @@ func GetListing(svcs *services.APIServices, userID string, outMap *DataExpressio
 	}
 
 	for id, item := range items {
-		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's
+		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's shared
 		saveID := id
 		if sharedFile {
 			saveID = utils.SharedItemIDPrefix + id

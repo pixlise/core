@@ -66,6 +66,15 @@ func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
+	for _, item := range items {
+		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
+		if creatorErr != nil {
+			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Expressions listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
+		} else {
+			item.Creator = updatedCreator
+		}
+	}
+
 	// Return the combined set
 	return &items, nil
 }

@@ -100,6 +100,13 @@ func getViewStateListing(svcs *services.APIServices, datasetID string, userID st
 			return nil, api.MakeNotFoundError(filePath)
 		}
 
+		updatedCreator, creatorErr := svcs.Users.GetCurrentCreatorDetails(state.Creator.UserID)
+		if creatorErr != nil {
+			svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Workspace listing). Error: %v", state.Creator.UserID, state.Creator.Name, creatorErr)
+		} else {
+			state.Creator = updatedCreator
+		}
+
 		listing = append(listing, workspaceSummary{ID: state.Name, Name: state.Name, APIObjectItem: state.APIObjectItem})
 	}
 
@@ -131,6 +138,14 @@ func savedViewStateGet(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	// Remove any view state items which are not shown by analysis layout
 	filterUnusedWidgetStates(&state.ViewState)
+
+	// Update creator name/email
+	updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(state.Creator.UserID)
+	if creatorErr != nil {
+		params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Workspace GET). Error: %v", state.Creator.UserID, state.Creator.Name, creatorErr)
+	} else {
+		state.Creator = updatedCreator
+	}
 
 	return &state, nil
 }

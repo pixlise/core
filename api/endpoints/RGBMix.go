@@ -131,12 +131,20 @@ func getRGBMixListing(svcs *services.APIServices, s3PathFrom string, sharedFile 
 	}
 
 	for id, item := range items {
-		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's
+		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's shared
 		saveID := id
 		if sharedFile {
 			saveID = utils.SharedItemIDPrefix + id
 		}
 		item.Shared = sharedFile
+
+		updatedCreator, creatorErr := svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
+		if creatorErr != nil {
+			svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (RGB mix listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
+		} else {
+			item.Creator = updatedCreator
+		}
+
 		(*outMap)[saveID] = item
 	}
 

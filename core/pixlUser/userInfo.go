@@ -130,16 +130,29 @@ func (u *UserDetailsLookup) GetUserEnsureExists(userid string, name string, emai
 
 // Getting JUST UserDetails (so it goes through our in-memory cache). This is useful for the many places in the code that only
 // require user name+email to ensure we're sending out up-to-date "creator" aka "APIObjectItem" structures
-func (u *UserDetailsLookup) GetUserDetails(userID string) (UserDetails, error) {
+func (u *UserDetailsLookup) GetCurrentCreatorDetails(userID string) (UserInfo, error) {
 	details, ok := u.cache[userID]
-	if ok {
-		// Return this and we're done
-		return details, nil
+
+	if !ok {
+		// We don't have it! Read from user DB & return that
+		readUser, err := u.GetUser(userID)
+
+		if err != nil {
+			return UserInfo{}, err
+		}
+
+		details = readUser.Config
 	}
 
-	// We don't have it! Read from user DB & return that
-	readUser, err := u.GetUser(userID)
-	return readUser.Config, err
+	// Return as a UserInfo
+	result := UserInfo{
+		UserID:      userID,
+		Name:        details.Name,
+		Email:       details.Email,
+		Permissions: map[string]bool{},
+	}
+
+	return result, nil
 }
 
 func (u *UserDetailsLookup) WriteUser(user UserStruct) error {
