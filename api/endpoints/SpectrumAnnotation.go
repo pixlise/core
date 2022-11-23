@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 
 	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/api/handlers"
@@ -122,8 +123,16 @@ func annotationList(params handlers.ApiHandlerParams) (interface{}, error) {
 		annotations[utils.SharedItemIDPrefix+id] = item
 	}
 
+	// Read keys in alphabetical order, else we randomly fail unit test
+	keys := []string{}
+	for k := range annotations {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
 	// Update all creator infos
-	for _, item := range annotations {
+	for _, k := range keys {
+		item := annotations[k]
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
 		if creatorErr != nil {
 			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Spectrum annotation listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)

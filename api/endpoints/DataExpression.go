@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 
 	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/api/handlers"
@@ -66,7 +67,16 @@ func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	for _, item := range items {
+	// Read keys in alphabetical order, else we randomly fail unit test
+	keys := []string{}
+	for k := range items {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Update all creator infos
+	for _, k := range keys {
+		item := items[k]
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
 		if creatorErr != nil {
 			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Expressions listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)

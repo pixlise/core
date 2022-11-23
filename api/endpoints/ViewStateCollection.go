@@ -134,11 +134,13 @@ func getCollection(params handlers.ApiHandlerParams, collectionID string, s3Path
 		return collectionContents, api.MakeNotFoundError(collectionID)
 	}
 
-	updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(collectionContents.Creator.UserID)
-	if creatorErr != nil {
-		params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (collection GET). Error: %v", collectionContents.Creator.UserID, collectionContents.Creator.Name, creatorErr)
-	} else {
-		collectionContents.Creator = updatedCreator
+	if collectionContents.APIObjectItem != nil {
+		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(collectionContents.Creator.UserID)
+		if creatorErr != nil {
+			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (collection GET). Error: %v", collectionContents.Creator.UserID, collectionContents.Creator.Name, creatorErr)
+		} else {
+			collectionContents.Creator = updatedCreator
+		}
 	}
 
 	// If caller wants, we can load the child view states

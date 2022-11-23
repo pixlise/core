@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 
 	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/api/handlers"
@@ -75,8 +76,16 @@ func roiList(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
+	// Read keys in alphabetical order, else we randomly fail unit test
+	keys := []string{}
+	for k := range rois {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
 	// Update ROI creator names/emails
-	for _, roi := range rois {
+	for _, k := range keys {
+		roi := rois[k]
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(roi.Creator.UserID)
 		if creatorErr != nil {
 			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (ROI listing). Error: %v", roi.Creator.UserID, roi.Creator.Name, creatorErr)

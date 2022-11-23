@@ -140,11 +140,13 @@ func savedViewStateGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	filterUnusedWidgetStates(&state.ViewState)
 
 	// Update creator name/email
-	updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(state.Creator.UserID)
-	if creatorErr != nil {
-		params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Workspace GET). Error: %v", state.Creator.UserID, state.Creator.Name, creatorErr)
-	} else {
-		state.Creator = updatedCreator
+	if state.APIObjectItem != nil {
+		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(state.Creator.UserID)
+		if creatorErr != nil {
+			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Workspace GET). Error: %v", state.Creator.UserID, state.Creator.Name, creatorErr)
+		} else {
+			state.Creator = updatedCreator
+		}
 	}
 
 	return &state, nil
