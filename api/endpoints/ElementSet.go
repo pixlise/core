@@ -153,7 +153,16 @@ func elementSetList(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	for _, item := range summaryLookup {
+	// Read keys in alphabetical order, else we randomly fail unit test
+	keys := []string{}
+	for k := range summaryLookup {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Update all creator infos
+	for _, k := range keys {
+		item := summaryLookup[k]
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
 		if creatorErr != nil {
 			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (element set listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
