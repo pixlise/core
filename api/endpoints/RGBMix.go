@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/pixlise/core/v2/api/filepaths"
@@ -131,12 +132,13 @@ func getRGBMixListing(svcs *services.APIServices, s3PathFrom string, sharedFile 
 	}
 
 	for id, item := range items {
-		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's
+		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's shared
 		saveID := id
 		if sharedFile {
 			saveID = utils.SharedItemIDPrefix + id
 		}
 		item.Shared = sharedFile
+
 		(*outMap)[saveID] = item
 	}
 
@@ -156,6 +158,23 @@ func rgbMixList(params handlers.ApiHandlerParams) (interface{}, error) {
 	err = getRGBMixListing(params.Svcs, filepaths.GetRGBMixPath(pixlUser.ShareUserID), true, &items)
 	if err != nil {
 		return nil, err
+	}
+
+	// Read keys in alphabetical order, else we randomly fail unit test
+	keys := []string{}
+	for k := range items {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		item := items[k]
+		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
+		if creatorErr != nil {
+			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (RGB mix listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
+		} else {
+			item.Creator = updatedCreator
+		}
 	}
 
 	// Return the combined set

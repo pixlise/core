@@ -22,10 +22,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
 const annotationS3Path = "UserContent/600f2a0806b6c70071d3d174/rtt-123/SpectrumAnnotation.json"
@@ -47,229 +52,273 @@ const annotations2x = `{
 	}
 }`
 
-func Example_spectrumAnnotationHandler_List() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationSharedS3Path),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil,
-		nil,
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(annotations2x))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-	"93": {
-		"eV": 20000,
-		"name": "right of spectrum",
-		"roiID": "roi111",
-		"shared": true,
-		"creator": { "name": "Tom", "user_id": "u124", "email": "" }
-	}
-}`))),
-		},
-	}
+func Test_spectrumAnnotationHandler_List(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
+	mt.Run("success", func(mt *mtest.T) {
+		// User name lookup
+		mongoMockedResponses := []primitive.D{
+			// User u124 (first one)
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+				bson.D{
+					{"Userid", "u124"},
+					{"Notifications", bson.D{
+						{"Topics", bson.A{}},
+					}},
+					{"Config", bson.D{
+						{"Name", "Tom Barber"},
+						{"Email", "tom@spicule.co.uk"},
+						{"Cell", ""},
+						{"DataCollection", "unknown"},
+					}},
+				},
+			),
+			// u123 - not found
+			mtest.CreateCursorResponse(
+				1,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+			),
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.NextBatch,
+			),
+		}
 
-	req, _ := http.NewRequest("GET", "/annotation/rtt-123", nil)
-	resp := executeRequest(req, apiRouter.Router)
+		mt.AddMockResponses(mongoMockedResponses...)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationSharedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationSharedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationSharedS3Path),
+			},
+		}
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			nil,
+			nil,
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(annotations2x))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"93": {
+			"eV": 20000,
+			"name": "right of spectrum",
+			"roiID": "roi111",
+			"shared": true,
+			"creator": { "name": "Tom", "user_id": "u124", "email": "" }
+		}
+	}`))),
+			},
+		}
 
-	req, _ = http.NewRequest("GET", "/annotation/rtt-123", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		apiRouter := MakeRouter(svcs)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		req, _ := http.NewRequest("GET", "/annotation/rtt-123", nil)
+		resp := executeRequest(req, apiRouter.Router)
 
-	req, _ = http.NewRequest("GET", "/annotation/rtt-123", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 200, `{}
+`)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		req, _ = http.NewRequest("GET", "/annotation/rtt-123", nil)
+		resp = executeRequest(req, apiRouter.Router)
 
-	// Output:
-	// 200
-	// {}
-	//
-	// 200
-	// {}
-	//
-	// 200
-	// {
-	//     "5": {
-	//         "name": "Weird part of spectrum",
-	//         "roiID": "roi123",
-	//         "eV": 12345,
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Tom",
-	//             "user_id": "u124",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     },
-	//     "8": {
-	//         "name": "Left of spectrum",
-	//         "roiID": "roi123",
-	//         "eV": 555,
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Peter",
-	//             "user_id": "u123",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     },
-	//     "shared-93": {
-	//         "name": "right of spectrum",
-	//         "roiID": "roi111",
-	//         "eV": 20000,
-	//         "shared": true,
-	//         "creator": {
-	//             "name": "Tom",
-	//             "user_id": "u124",
-	//             "email": ""
-	//         }
-	//     }
-	// }
+		checkResult(t, resp, 200, `{}
+`)
+
+		req, _ = http.NewRequest("GET", "/annotation/rtt-123", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "5": {
+        "name": "Weird part of spectrum",
+        "roiID": "roi123",
+        "eV": 12345,
+        "shared": false,
+        "creator": {
+            "name": "Tom Barber",
+            "user_id": "u124",
+            "email": "tom@spicule.co.uk"
+        }
+    },
+    "8": {
+        "name": "Left of spectrum",
+        "roiID": "roi123",
+        "eV": 555,
+        "shared": false,
+        "creator": {
+            "name": "Peter",
+            "user_id": "u123",
+            "email": "niko@spicule.co.uk"
+        }
+    },
+    "shared-93": {
+        "name": "right of spectrum",
+        "roiID": "roi111",
+        "eV": 20000,
+        "shared": true,
+        "creator": {
+            "name": "Tom Barber",
+            "user_id": "u124",
+            "email": "tom@spicule.co.uk"
+        }
+    }
+}
+`)
+	})
 }
 
-func Example_spectrumAnnotationHandler_Get() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationSharedS3Path),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil,
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(annotations2x))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(annotations2x))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(annotations2x))),
-		},
-	}
+func Test_spectrumAnnotationHandler_Get(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
+	mt.Run("success", func(mt *mtest.T) {
+		// User name lookup
+		mongoMockedResponses := []primitive.D{
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+				bson.D{
+					{"Userid", "u123"},
+					{"Notifications", bson.D{
+						{"Topics", bson.A{}},
+					}},
+					{"Config", bson.D{
+						{"Name", "Tom Barber"},
+						{"Email", "tom@spicule.co.uk"},
+						{"Cell", ""},
+						{"DataCollection", "unknown"},
+					}},
+				},
+			),
+		}
 
-	// File not in S3, should return 404
-	req, _ := http.NewRequest("GET", "/annotation/rtt-123/8", nil)
-	resp := executeRequest(req, apiRouter.Router)
+		mt.AddMockResponses(mongoMockedResponses...)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(annotationSharedS3Path),
+			},
+		}
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			nil,
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(annotations2x))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(annotations2x))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(annotations2x))),
+			},
+		}
 
-	// File in S3 empty, should return 404
-	req, _ = http.NewRequest("GET", "/annotation/rtt-123/8", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		apiRouter := MakeRouter(svcs)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		// File not in S3, should return 404
+		req, _ := http.NewRequest("GET", "/annotation/rtt-123/8", nil)
+		resp := executeRequest(req, apiRouter.Router)
 
-	// File contains stuff, using ID thats not in there, should return 404
-	req, _ = http.NewRequest("GET", "/annotation/rtt-123/6", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 404, `8 not found
+`)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		// File in S3 empty, should return 404
+		req, _ = http.NewRequest("GET", "/annotation/rtt-123/8", nil)
+		resp = executeRequest(req, apiRouter.Router)
 
-	// File contains stuff, using ID that exists
-	req, _ = http.NewRequest("GET", "/annotation/rtt-123/8", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 404, `8 not found
+`)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		// File contains stuff, using ID thats not in there, should return 404
+		req, _ = http.NewRequest("GET", "/annotation/rtt-123/6", nil)
+		resp = executeRequest(req, apiRouter.Router)
 
-	// Check that shared file was loaded if shared ID sent in
-	req, _ = http.NewRequest("GET", "/annotation/rtt-123/shared-8", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 404, `6 not found
+`)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		// File contains stuff, using ID that exists
+		req, _ = http.NewRequest("GET", "/annotation/rtt-123/8", nil)
+		resp = executeRequest(req, apiRouter.Router)
 
-	// Output:
-	// 404
-	// 8 not found
-	//
-	// 404
-	// 8 not found
-	//
-	// 404
-	// 6 not found
-	//
-	// 200
-	// {
-	//     "name": "Left of spectrum",
-	//     "roiID": "roi123",
-	//     "eV": 555,
-	//     "shared": false,
-	//     "creator": {
-	//         "name": "Peter",
-	//         "user_id": "u123",
-	//         "email": "niko@spicule.co.uk"
-	//     }
-	// }
-	//
-	// 200
-	// {
-	//     "name": "Left of spectrum",
-	//     "roiID": "roi123",
-	//     "eV": 555,
-	//     "shared": true,
-	//     "creator": {
-	//         "name": "Peter",
-	//         "user_id": "u123",
-	//         "email": "niko@spicule.co.uk"
-	//     }
-	// }
+		checkResult(t, resp, 200, `{
+    "name": "Left of spectrum",
+    "roiID": "roi123",
+    "eV": 555,
+    "shared": false,
+    "creator": {
+        "name": "Tom Barber",
+        "user_id": "u123",
+        "email": "tom@spicule.co.uk"
+    }
+}
+`)
+
+		// Check that shared file was loaded if shared ID sent in
+		req, _ = http.NewRequest("GET", "/annotation/rtt-123/shared-8", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "name": "Left of spectrum",
+    "roiID": "roi123",
+    "eV": 555,
+    "shared": true,
+    "creator": {
+        "name": "Tom Barber",
+        "user_id": "u123",
+        "email": "tom@spicule.co.uk"
+    }
+}
+`)
+	})
 }
 
 func Example_spectrumAnnotationHandler_Post() {

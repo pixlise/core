@@ -22,11 +22,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
 func Example_viewStateHandler_ListCollections() {
@@ -91,333 +94,330 @@ func Example_viewStateHandler_ListCollections() {
 	// ]
 }
 
-func Example_viewStateHandler_GetCollection() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
+func Test_viewStateHandler_GetCollection(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "WorkspaceCollections/The 1st one.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "WorkspaceCollections/Another_collection-01-01-2022.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/State one.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/The end.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "WorkspaceCollections/Collection with creator.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/State one.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/The end.json"),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil,
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-    "name": "Another_collection-01-01-2022",
+	mt.Run("success", func(mt *mtest.T) {
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "WorkspaceCollections/The 1st one.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "WorkspaceCollections/Another_collection-01-01-2022.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/State one.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/The end.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "WorkspaceCollections/Collection with creator.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/State one.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/The end.json"),
+			},
+		}
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			nil,
+			{
+				// NOTE: no creator info!
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"name": "Another_collection-01-01-2022",
+		"viewStateIDs": [
+			"State one",
+			"The end"
+		],
+		"description": "some description",
+		"viewStates": null
+	}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"viewState": {"quantification": {"appliedQuantID": "quant for state one"}}}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"viewState": {"quantification": {"appliedQuantID": "quant for the end"}}}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"name": "Another_collection-01-01-2022",
+		"viewStateIDs": [
+			"State one",
+			"The end"
+		],
+		"description": "some description",
+		"viewStates": null,
+		"shared": false,
+		"creator": {
+			"name": "Roman Bellic",
+			"user_id": "another-user-123",
+			"email": "roman@spicule.co.uk"
+		}
+	}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"viewState": {
+			"quantification": {
+				"appliedQuantID": "quant for state one"
+			},
+			"selection": {
+				"locIdxs": [1, 2],
+				"pixelSelectionImageName": "file.tif",
+				"pixelIdxs": [3,4]
+			}
+		}
+	}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"viewState": {"quantification": {"appliedQuantID": "quant for the end"}}}`))),
+			},
+		}
+
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		apiRouter := MakeRouter(svcs)
+
+		// Doesn't exist, should fail
+		req, _ := http.NewRequest("GET", "/view-state/collections/TheDataSetID/The 1st one", bytes.NewReader([]byte("")))
+		resp := executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 404, `The 1st one not found
+`)
+
+		// Exists (no creator info saved), success
+		req, _ = http.NewRequest("GET", "/view-state/collections/TheDataSetID/Another_collection-01-01-2022", bytes.NewReader([]byte("")))
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
     "viewStateIDs": [
         "State one",
         "The end"
     ],
-	"description": "some description",
-    "viewStates": null
-}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"viewState": {"quantification": {"appliedQuantID": "quant for state one"}}}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"viewState": {"quantification": {"appliedQuantID": "quant for the end"}}}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
     "name": "Another_collection-01-01-2022",
-    "viewStateIDs": [
-        "State one",
-        "The end"
-    ],
     "description": "some description",
-    "viewStates": null,
+    "viewStates": {
+        "State one": {
+            "analysisLayout": {
+                "topWidgetSelectors": [],
+                "bottomWidgetSelectors": []
+            },
+            "spectrum": {
+                "panX": 0,
+                "panY": 0,
+                "zoomX": 1,
+                "zoomY": 1,
+                "spectrumLines": [],
+                "logScale": true,
+                "xrflines": [],
+                "showXAsEnergy": false,
+                "energyCalibration": []
+            },
+            "contextImages": {},
+            "histograms": {},
+            "chordDiagrams": {},
+            "ternaryPlots": {},
+            "binaryPlots": {},
+            "tables": {},
+            "roiQuantTables": {},
+            "variograms": {},
+            "spectrums": {},
+            "rgbuPlots": {},
+            "singleAxisRGBU": {},
+            "rgbuImages": {},
+            "parallelograms": {},
+            "annotations": {
+                "savedAnnotations": []
+            },
+            "rois": {
+                "roiColours": {},
+                "roiShapes": {}
+            },
+            "quantification": {
+                "appliedQuantID": "quant for state one"
+            },
+            "selection": {
+                "roiID": "",
+                "roiName": "",
+                "locIdxs": []
+            }
+        },
+        "The end": {
+            "analysisLayout": {
+                "topWidgetSelectors": [],
+                "bottomWidgetSelectors": []
+            },
+            "spectrum": {
+                "panX": 0,
+                "panY": 0,
+                "zoomX": 1,
+                "zoomY": 1,
+                "spectrumLines": [],
+                "logScale": true,
+                "xrflines": [],
+                "showXAsEnergy": false,
+                "energyCalibration": []
+            },
+            "contextImages": {},
+            "histograms": {},
+            "chordDiagrams": {},
+            "ternaryPlots": {},
+            "binaryPlots": {},
+            "tables": {},
+            "roiQuantTables": {},
+            "variograms": {},
+            "spectrums": {},
+            "rgbuPlots": {},
+            "singleAxisRGBU": {},
+            "rgbuImages": {},
+            "parallelograms": {},
+            "annotations": {
+                "savedAnnotations": []
+            },
+            "rois": {
+                "roiColours": {},
+                "roiShapes": {}
+            },
+            "quantification": {
+                "appliedQuantID": "quant for the end"
+            },
+            "selection": {
+                "roiID": "",
+                "roiName": "",
+                "locIdxs": []
+            }
+        }
+    }
+}
+`)
+
+		// Exists (with creator info), success
+		req, _ = http.NewRequest("GET", "/view-state/collections/TheDataSetID/Collection with creator", bytes.NewReader([]byte("")))
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "viewStateIDs": [
+        "State one",
+        "The end"
+    ],
+    "name": "Another_collection-01-01-2022",
+    "description": "some description",
+    "viewStates": {
+        "State one": {
+            "analysisLayout": {
+                "topWidgetSelectors": [],
+                "bottomWidgetSelectors": []
+            },
+            "spectrum": {
+                "panX": 0,
+                "panY": 0,
+                "zoomX": 1,
+                "zoomY": 1,
+                "spectrumLines": [],
+                "logScale": true,
+                "xrflines": [],
+                "showXAsEnergy": false,
+                "energyCalibration": []
+            },
+            "contextImages": {},
+            "histograms": {},
+            "chordDiagrams": {},
+            "ternaryPlots": {},
+            "binaryPlots": {},
+            "tables": {},
+            "roiQuantTables": {},
+            "variograms": {},
+            "spectrums": {},
+            "rgbuPlots": {},
+            "singleAxisRGBU": {},
+            "rgbuImages": {},
+            "parallelograms": {},
+            "annotations": {
+                "savedAnnotations": []
+            },
+            "rois": {
+                "roiColours": {},
+                "roiShapes": {}
+            },
+            "quantification": {
+                "appliedQuantID": "quant for state one"
+            },
+            "selection": {
+                "roiID": "",
+                "roiName": "",
+                "locIdxs": [
+                    1,
+                    2
+                ],
+                "pixelSelectionImageName": "file.tif",
+                "pixelIdxs": [
+                    3,
+                    4
+                ]
+            }
+        },
+        "The end": {
+            "analysisLayout": {
+                "topWidgetSelectors": [],
+                "bottomWidgetSelectors": []
+            },
+            "spectrum": {
+                "panX": 0,
+                "panY": 0,
+                "zoomX": 1,
+                "zoomY": 1,
+                "spectrumLines": [],
+                "logScale": true,
+                "xrflines": [],
+                "showXAsEnergy": false,
+                "energyCalibration": []
+            },
+            "contextImages": {},
+            "histograms": {},
+            "chordDiagrams": {},
+            "ternaryPlots": {},
+            "binaryPlots": {},
+            "tables": {},
+            "roiQuantTables": {},
+            "variograms": {},
+            "spectrums": {},
+            "rgbuPlots": {},
+            "singleAxisRGBU": {},
+            "rgbuImages": {},
+            "parallelograms": {},
+            "annotations": {
+                "savedAnnotations": []
+            },
+            "rois": {
+                "roiColours": {},
+                "roiShapes": {}
+            },
+            "quantification": {
+                "appliedQuantID": "quant for the end"
+            },
+            "selection": {
+                "roiID": "",
+                "roiName": "",
+                "locIdxs": []
+            }
+        }
+    },
     "shared": false,
     "creator": {
         "name": "Roman Bellic",
         "user_id": "another-user-123",
         "email": "roman@spicule.co.uk"
     }
-}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-	"viewState": {
-		"quantification": {
-			"appliedQuantID": "quant for state one"
-		},
-		"selection": {
-			"locIdxs": [1, 2],
-			"pixelSelectionImageName": "file.tif",
-			"pixelIdxs": [3,4]
-		}
-	}
-}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"viewState": {"quantification": {"appliedQuantID": "quant for the end"}}}`))),
-		},
-	}
-
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
-
-	// Doesn't exist, should fail
-	req, _ := http.NewRequest("GET", "/view-state/collections/TheDataSetID/The 1st one", bytes.NewReader([]byte("")))
-	resp := executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Exists (no creator info saved), success
-	req, _ = http.NewRequest("GET", "/view-state/collections/TheDataSetID/Another_collection-01-01-2022", bytes.NewReader([]byte("")))
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Exists (with creator info), success
-	req, _ = http.NewRequest("GET", "/view-state/collections/TheDataSetID/Collection with creator", bytes.NewReader([]byte("")))
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Output:
-	// 404
-	// The 1st one not found
-	//
-	// 200
-	// {
-	//     "viewStateIDs": [
-	//         "State one",
-	//         "The end"
-	//     ],
-	//     "name": "Another_collection-01-01-2022",
-	//     "description": "some description",
-	//     "viewStates": {
-	//         "State one": {
-	//             "analysisLayout": {
-	//                 "topWidgetSelectors": [],
-	//                 "bottomWidgetSelectors": []
-	//             },
-	//             "spectrum": {
-	//                 "panX": 0,
-	//                 "panY": 0,
-	//                 "zoomX": 1,
-	//                 "zoomY": 1,
-	//                 "spectrumLines": [],
-	//                 "logScale": true,
-	//                 "xrflines": [],
-	//                 "showXAsEnergy": false,
-	//                 "energyCalibration": []
-	//             },
-	//             "contextImages": {},
-	//             "histograms": {},
-	//             "chordDiagrams": {},
-	//             "ternaryPlots": {},
-	//             "binaryPlots": {},
-	//             "tables": {},
-	//             "roiQuantTables": {},
-	//             "variograms": {},
-	//             "spectrums": {},
-	//             "rgbuPlots": {},
-	//             "singleAxisRGBU": {},
-	//             "rgbuImages": {},
-	//             "parallelograms": {},
-	//             "annotations": {
-	//                 "savedAnnotations": []
-	//             },
-	//             "rois": {
-	//                 "roiColours": {},
-	//                 "roiShapes": {}
-	//             },
-	//             "quantification": {
-	//                 "appliedQuantID": "quant for state one"
-	//             },
-	//             "selection": {
-	//                 "roiID": "",
-	//                 "roiName": "",
-	//                 "locIdxs": []
-	//             }
-	//         },
-	//         "The end": {
-	//             "analysisLayout": {
-	//                 "topWidgetSelectors": [],
-	//                 "bottomWidgetSelectors": []
-	//             },
-	//             "spectrum": {
-	//                 "panX": 0,
-	//                 "panY": 0,
-	//                 "zoomX": 1,
-	//                 "zoomY": 1,
-	//                 "spectrumLines": [],
-	//                 "logScale": true,
-	//                 "xrflines": [],
-	//                 "showXAsEnergy": false,
-	//                 "energyCalibration": []
-	//             },
-	//             "contextImages": {},
-	//             "histograms": {},
-	//             "chordDiagrams": {},
-	//             "ternaryPlots": {},
-	//             "binaryPlots": {},
-	//             "tables": {},
-	//             "roiQuantTables": {},
-	//             "variograms": {},
-	//             "spectrums": {},
-	//             "rgbuPlots": {},
-	//             "singleAxisRGBU": {},
-	//             "rgbuImages": {},
-	//             "parallelograms": {},
-	//             "annotations": {
-	//                 "savedAnnotations": []
-	//             },
-	//             "rois": {
-	//                 "roiColours": {},
-	//                 "roiShapes": {}
-	//             },
-	//             "quantification": {
-	//                 "appliedQuantID": "quant for the end"
-	//             },
-	//             "selection": {
-	//                 "roiID": "",
-	//                 "roiName": "",
-	//                 "locIdxs": []
-	//             }
-	//         }
-	//     }
-	// }
-	//
-	// 200
-	// {
-	//     "viewStateIDs": [
-	//         "State one",
-	//         "The end"
-	//     ],
-	//     "name": "Another_collection-01-01-2022",
-	//     "description": "some description",
-	//     "viewStates": {
-	//         "State one": {
-	//             "analysisLayout": {
-	//                 "topWidgetSelectors": [],
-	//                 "bottomWidgetSelectors": []
-	//             },
-	//             "spectrum": {
-	//                 "panX": 0,
-	//                 "panY": 0,
-	//                 "zoomX": 1,
-	//                 "zoomY": 1,
-	//                 "spectrumLines": [],
-	//                 "logScale": true,
-	//                 "xrflines": [],
-	//                 "showXAsEnergy": false,
-	//                 "energyCalibration": []
-	//             },
-	//             "contextImages": {},
-	//             "histograms": {},
-	//             "chordDiagrams": {},
-	//             "ternaryPlots": {},
-	//             "binaryPlots": {},
-	//             "tables": {},
-	//             "roiQuantTables": {},
-	//             "variograms": {},
-	//             "spectrums": {},
-	//             "rgbuPlots": {},
-	//             "singleAxisRGBU": {},
-	//             "rgbuImages": {},
-	//             "parallelograms": {},
-	//             "annotations": {
-	//                 "savedAnnotations": []
-	//             },
-	//             "rois": {
-	//                 "roiColours": {},
-	//                 "roiShapes": {}
-	//             },
-	//             "quantification": {
-	//                 "appliedQuantID": "quant for state one"
-	//             },
-	//             "selection": {
-	//                 "roiID": "",
-	//                 "roiName": "",
-	//                 "locIdxs": [
-	//                     1,
-	//                     2
-	//                 ],
-	//                 "pixelSelectionImageName": "file.tif",
-	//                 "pixelIdxs": [
-	//                     3,
-	//                     4
-	//                 ]
-	//             }
-	//         },
-	//         "The end": {
-	//             "analysisLayout": {
-	//                 "topWidgetSelectors": [],
-	//                 "bottomWidgetSelectors": []
-	//             },
-	//             "spectrum": {
-	//                 "panX": 0,
-	//                 "panY": 0,
-	//                 "zoomX": 1,
-	//                 "zoomY": 1,
-	//                 "spectrumLines": [],
-	//                 "logScale": true,
-	//                 "xrflines": [],
-	//                 "showXAsEnergy": false,
-	//                 "energyCalibration": []
-	//             },
-	//             "contextImages": {},
-	//             "histograms": {},
-	//             "chordDiagrams": {},
-	//             "ternaryPlots": {},
-	//             "binaryPlots": {},
-	//             "tables": {},
-	//             "roiQuantTables": {},
-	//             "variograms": {},
-	//             "spectrums": {},
-	//             "rgbuPlots": {},
-	//             "singleAxisRGBU": {},
-	//             "rgbuImages": {},
-	//             "parallelograms": {},
-	//             "annotations": {
-	//                 "savedAnnotations": []
-	//             },
-	//             "rois": {
-	//                 "roiColours": {},
-	//                 "roiShapes": {}
-	//             },
-	//             "quantification": {
-	//                 "appliedQuantID": "quant for the end"
-	//             },
-	//             "selection": {
-	//                 "roiID": "",
-	//                 "roiName": "",
-	//                 "locIdxs": []
-	//             }
-	//         }
-	//     },
-	//     "shared": false,
-	//     "creator": {
-	//         "name": "Roman Bellic",
-	//         "user_id": "another-user-123",
-	//         "email": "roman@spicule.co.uk"
-	//     }
-	// }
+}
+`)
+	})
 }
 
 func Example_viewStateHandler_GetCollectionShared() {

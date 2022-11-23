@@ -153,3 +153,11 @@ func makeMongoCommandMonitor(log logger.ILogger) *event.CommandMonitor {
 		},
 	}
 }
+
+func GetUserDatabaseName(envName string) string {
+	userDatabaseName := "userdatabase"
+	if envName != "prod" {
+		userDatabaseName += "-" + envName
+	}
+	return userDatabaseName
+}

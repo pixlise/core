@@ -194,12 +194,16 @@ type roiDisplayState struct {
 }
 
 type rgbuPlotWidgetState struct {
-	Minerals       []string `json:"minerals"`
-	YChannelA      string   `json:"yChannelA"`
-	YChannelB      string   `json:"yChannelB"`
-	XChannelA      string   `json:"xChannelA"`
-	XChannelB      string   `json:"xChannelB"`
-	DrawMonochrome bool     `json:"drawMonochrome"`
+	Minerals          []string `json:"minerals"`
+	YChannelA         string   `json:"yChannelA"`
+	YChannelB         string   `json:"yChannelB"`
+	XChannelA         string   `json:"xChannelA"`
+	XChannelB         string   `json:"xChannelB"`
+	DrawMonochrome    bool     `json:"drawMonochrome"`
+	SelectedMinXValue float32  `json:"selectedMinXValue"`
+	SelectedMaxXValue float32  `json:"selectedMaxXValue"`
+	SelectedMinYValue float32  `json:"selectedMinYValue"`
+	SelectedMaxYValue float32  `json:"selectedMaxYValue"`
 }
 
 type singleAxisRGBUWidgetState struct {

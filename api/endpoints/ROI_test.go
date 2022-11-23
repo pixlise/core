@@ -22,10 +22,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
 const roiS3Path = "UserContent/600f2a0806b6c70071d3d174/TheDataSetID/ROI.json"
@@ -58,150 +63,181 @@ const roi2XItems = `{
     }
 }`
 
-func Example_roiHandler_List() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/NewDataSet/ROI.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/NewDataSet/ROI.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/AnotherDataSetID/ROI.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/AnotherDataSetID/ROI.json"),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil, // No file in S3
-		nil, // No file in S3
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-				"331": {
-					"name": "dark patch",
-					"locationIndexes": [4, 55, 394],
-					"shared": false,
-					"creator": { "name": "Peter", "user_id": "u77", "email": "" },
-					"imageName": "dtu_context_rgbu.tif",
-					"mistROIItem": {
-                        "species": "",
-                        "mineralGroupID": "",
-                        "ID_Depth": 0,
-                        "ClassificationTrail": "",
-                        "formula": ""
-                    }
-				}
-			}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-				"007": {
-					"description": "james bonds shared ROI",
-					"name": "james bond",
-					"locationIndexes": [99],
-					"shared": false,
-					"creator": { "name": "Tom", "user_id": "u85", "email": ""},
-					"mistROIItem": {
-                        "species": "",
-                        "mineralGroupID": "",
-                        "ID_Depth": 0,
-                        "ClassificationTrail": "",
-                        "formula": ""
-                    }
-				}
-			}`))),
-		},
-	}
+func Test_roiHandler_List(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
+	mt.Run("success", func(mt *mtest.T) {
+		// User name lookup
+		mongoMockedResponses := []primitive.D{
+			// u77 - not found
+			mtest.CreateCursorResponse(
+				1,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+			),
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.NextBatch,
+			),
+			// User u85
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+				bson.D{
+					{"Userid", "u85"},
+					{"Notifications", bson.D{
+						{"Topics", bson.A{}},
+					}},
+					{"Config", bson.D{
+						{"Name", "Tom Barber"},
+						{"Email", "tom@spicule.co.uk"},
+						{"Cell", ""},
+						{"DataCollection", "unknown"},
+					}},
+				},
+			),
+		}
 
-	req, _ := http.NewRequest("GET", "/roi/NewDataSet", nil)
-	resp := executeRequest(req, apiRouter.Router)
+		mt.AddMockResponses(mongoMockedResponses...)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/NewDataSet/ROI.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/NewDataSet/ROI.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiSharedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/AnotherDataSetID/ROI.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/AnotherDataSetID/ROI.json"),
+			},
+		}
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			nil, // No file in S3
+			nil, // No file in S3
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"331": {
+						"name": "dark patch",
+						"locationIndexes": [4, 55, 394],
+						"shared": false,
+						"creator": { "name": "Peter", "user_id": "u77", "email": "" },
+						"imageName": "dtu_context_rgbu.tif",
+						"mistROIItem": {
+							"species": "",
+							"mineralGroupID": "",
+							"ID_Depth": 0,
+							"ClassificationTrail": "",
+							"formula": ""
+						}
+					}
+				}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"007": {
+						"description": "james bonds shared ROI",
+						"name": "james bond",
+						"locationIndexes": [99],
+						"shared": false,
+						"creator": { "name": "Tom", "user_id": "u85", "email": ""},
+						"mistROIItem": {
+							"species": "",
+							"mineralGroupID": "",
+							"ID_Depth": 0,
+							"ClassificationTrail": "",
+							"formula": ""
+						}
+					}
+				}`))),
+			},
+		}
 
-	req, _ = http.NewRequest("GET", "/roi/TheDataSetID", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		apiRouter := MakeRouter(svcs)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		req, _ := http.NewRequest("GET", "/roi/NewDataSet", nil)
+		resp := executeRequest(req, apiRouter.Router)
 
-	req, _ = http.NewRequest("GET", "/roi/AnotherDataSetID", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 200, `{}
+`)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		req, _ = http.NewRequest("GET", "/roi/TheDataSetID", nil)
+		resp = executeRequest(req, apiRouter.Router)
 
-	// Output:
-	// 200
-	// {}
-	//
-	// 200
-	// {}
-	//
-	// 200
-	// {
-	//     "331": {
-	//         "name": "dark patch",
-	//         "locationIndexes": [
-	//             4,
-	//             55,
-	//             394
-	//         ],
-	//         "description": "",
-	//         "imageName": "dtu_context_rgbu.tif",
-	//         "mistROIItem": {
-	//             "species": "",
-	//             "mineralGroupID": "",
-	//             "ID_Depth": 0,
-	//             "ClassificationTrail": "",
-	//             "formula": ""
-	//         },
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Peter",
-	//             "user_id": "u77",
-	//             "email": ""
-	//         }
-	//     },
-	//     "shared-007": {
-	//         "name": "james bond",
-	//         "locationIndexes": [
-	//             99
-	//         ],
-	//         "description": "james bonds shared ROI",
-	//         "mistROIItem": {
-	//             "species": "",
-	//             "mineralGroupID": "",
-	//             "ID_Depth": 0,
-	//             "ClassificationTrail": "",
-	//             "formula": ""
-	//         },
-	//         "shared": true,
-	//         "creator": {
-	//             "name": "Tom",
-	//             "user_id": "u85",
-	//             "email": ""
-	//         }
-	//     }
-	// }
+		checkResult(t, resp, 200, `{}
+`)
+
+		req, _ = http.NewRequest("GET", "/roi/AnotherDataSetID", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "331": {
+        "name": "dark patch",
+        "locationIndexes": [
+            4,
+            55,
+            394
+        ],
+        "description": "",
+        "imageName": "dtu_context_rgbu.tif",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
+        "shared": false,
+        "creator": {
+            "name": "Peter",
+            "user_id": "u77",
+            "email": ""
+        }
+    },
+    "shared-007": {
+        "name": "james bond",
+        "locationIndexes": [
+            99
+        ],
+        "description": "james bonds shared ROI",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
+        "shared": true,
+        "creator": {
+            "name": "Tom Barber",
+            "user_id": "u85",
+            "email": "tom@spicule.co.uk"
+        }
+    }
+}
+`)
+	})
 }
 
 func Example_roiHandler_Post() {
