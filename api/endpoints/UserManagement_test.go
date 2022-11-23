@@ -305,3 +305,44 @@ func Test_user_config_post(t *testing.T) {
 
 	runOneURLCallTest(t, "POST", "/user/config", requestPayload, 200, expectedResponse, mockMongoResponses)
 }
+
+func Test_user_name_post(t *testing.T) {
+	requestPayload := bytes.NewReader([]byte(`"TEST USER"`))
+
+	expectedResponse := ""
+
+	mockMongoResponses := []primitive.D{
+		// User read
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase-unit_test.users",
+			mtest.FirstBatch,
+			bson.D{
+				{"Userid", "600f2a0806b6c70071d3d174"},
+				{"Notifications", bson.D{
+					{"Topics", bson.A{
+						bson.D{
+							{"Name", "topic z"},
+							{"Config", bson.D{
+								{"Method", bson.D{
+									{"ui", true},
+									{"sms", false},
+									{"email", true},
+								}},
+							}},
+						}}},
+				}},
+				{"Config", bson.D{
+					{"Name", "Niko Bellic"},
+					{"Email", "niko@spicule.co.uk"},
+					{"Cell", "+123456789"},
+					{"DataCollection", "true"},
+				}},
+			},
+		),
+		// User saved
+		mtest.CreateSuccessResponse(),
+	}
+
+	runOneURLCallTest(t, "POST", "/user/name", requestPayload, 200, expectedResponse, mockMongoResponses)
+}
