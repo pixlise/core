@@ -320,7 +320,7 @@ func userPostConfig(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func userPostName(params handlers.ApiHandlerParams) (interface{}, error) {
-	user, err := params.Svcs.Notifications.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
+	user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -337,7 +337,7 @@ func userPostName(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	user.Config.Name = name
-	err = params.Svcs.Notifications.WriteUser(user)
+	err = params.Svcs.Users.WriteUser(user)
 	if err != nil {
 		return nil, err
 	}
