@@ -22,12 +22,11 @@ import (
 	"io/ioutil"
 	"time"
 
-	apiNotifications "github.com/pixlise/core/v2/core/notifications"
-
 	"github.com/pixlise/core/v2/api/config"
 	"github.com/pixlise/core/v2/api/handlers"
 	"github.com/pixlise/core/v2/api/permission"
 	apiRouter "github.com/pixlise/core/v2/api/router"
+	"github.com/pixlise/core/v2/core/pixlUser"
 	"gopkg.in/auth0.v4/management"
 )
 
@@ -125,7 +124,7 @@ func userListByRole(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func userGetDataCollection(params handlers.ApiHandlerParams) (interface{}, error) {
-	user, err := params.Svcs.Notifications.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
+	user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +148,7 @@ func userPostDataCollection(params handlers.ApiHandlerParams) (interface{}, erro
 		return nil, err
 	}
 
-	user, err := params.Svcs.Notifications.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
+	user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +157,7 @@ func userPostDataCollection(params handlers.ApiHandlerParams) (interface{}, erro
 	user.Config.DataCollection = req.Collect
 
 	// Save user
-	err = params.Svcs.Notifications.WriteUser(user)
+	err = params.Svcs.Users.WriteUser(user)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +287,7 @@ func userListQuery(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func userGetConfig(params handlers.ApiHandlerParams) (interface{}, error) {
-	user, err := params.Svcs.Notifications.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
+	user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +295,7 @@ func userGetConfig(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func userPostConfig(params handlers.ApiHandlerParams) (interface{}, error) {
-	user, err := params.Svcs.Notifications.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
+	user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -305,11 +304,11 @@ func userPostConfig(params handlers.ApiHandlerParams) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	var req apiNotifications.Config
+	var req pixlUser.UserDetails
 	err = json.Unmarshal(body, &req)
 
 	user.Config = req
-	err = params.Svcs.Notifications.WriteUser(user)
+	err = params.Svcs.Users.WriteUser(user)
 
 	return req, err
 }

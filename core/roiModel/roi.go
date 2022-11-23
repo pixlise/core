@@ -186,7 +186,6 @@ func GetROIs(svcs *services.APIServices, userID string, datasetID string, outMap
 
 	// Run through and just return summary info
 	for id, item := range items {
-		// Loop through all elements and make an element set summary
 		toSave := ROISavedItem{
 			ROIItem: item.ROIItem,
 			APIObjectItem: &pixlUser.APIObjectItem{

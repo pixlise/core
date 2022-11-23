@@ -23,20 +23,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pixlise/core/v2/core/pixlUser"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// UINotificationItem - A single UI Notification
-type UINotificationItem struct {
-	Topic     string    `json:"topic"`
-	Message   string    `json:"message"`
-	Timestamp time.Time `json:"timestamp"`
-	UserID    string    `json:"userid"`
-}
-
-func readUINotifications(notificationCollection *mongo.Collection, filter interface{}) ([]UINotificationItem, error) {
+func readUINotifications(notificationCollection *mongo.Collection, filter interface{}) ([]pixlUser.UINotificationItem, error) {
 	sort := bson.D{{"timestamp", -1}}
 	//projection := bson.D{{"type", 1}, {"rating", 1}, {"_id", 0}}
 	opts := options.Find().SetSort(sort) //.SetProjection(projection)
@@ -45,10 +38,10 @@ func readUINotifications(notificationCollection *mongo.Collection, filter interf
 		return nil, err
 	}
 
-	notifications := []UINotificationItem{}
+	notifications := []pixlUser.UINotificationItem{}
 
 	for cursor.Next(context.Background()) {
-		l := UINotificationItem{}
+		l := pixlUser.UINotificationItem{}
 		err := cursor.Decode(&l)
 		if err != nil {
 			return nil, err
@@ -60,7 +53,7 @@ func readUINotifications(notificationCollection *mongo.Collection, filter interf
 }
 
 // SendUINotification - Dispatch notification to the stack
-func (n *NotificationStack) SendUINotification(newNotification UINotificationItem) error {
+func (n *NotificationStack) SendUINotification(newNotification pixlUser.UINotificationItem) error {
 	if n.notificationCollection == nil {
 		return errors.New("SendUINotification: Mongo not connected")
 	}
@@ -79,7 +72,7 @@ func (n *NotificationStack) SendUINotification(newNotification UINotificationIte
 }
 
 // GetUINotifications - Return Notifications for user and remove from stack
-func (n *NotificationStack) GetUINotifications(userid string) ([]UINotificationItem, error) {
+func (n *NotificationStack) GetUINotifications(userid string) ([]pixlUser.UINotificationItem, error) {
 	if n.notificationCollection == nil {
 		return nil, errors.New("GetUINotifications: Mongo not connected")
 	}

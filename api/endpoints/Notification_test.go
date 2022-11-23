@@ -27,6 +27,7 @@ import (
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/logger"
 	"github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/pixlUser"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
@@ -436,6 +437,8 @@ func runOneURLCallTest(t *testing.T, method string, url string, requestPayload i
 		}
 
 		svcs.Notifications = notifications
+
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
 
 		apiRouter := MakeRouter(svcs)
 

@@ -126,11 +126,12 @@ func getElementSetSummary(svcs *services.APIServices, s3PathFrom string, sharedF
 			summary.AtomicNumbers = append(summary.AtomicNumbers, lineinfo.AtomicNumber)
 		}
 
-		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's
+		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's shared
 		saveID := id
 		if sharedFile {
 			saveID = utils.SharedItemIDPrefix + id
 		}
+
 		(*outMap)[saveID] = summary
 	}
 
@@ -152,6 +153,24 @@ func elementSetList(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
+	// Read keys in alphabetical order, else we randomly fail unit test
+	keys := []string{}
+	for k := range summaryLookup {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Update all creator infos
+	for _, k := range keys {
+		item := summaryLookup[k]
+		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
+		if creatorErr != nil {
+			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (element set listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
+		} else {
+			item.Creator = updatedCreator
+		}
+	}
+
 	// Return the combined set
 	return &summaryLookup, nil
 }
@@ -169,7 +188,18 @@ func elementSetGet(params handlers.ApiHandlerParams) (interface{}, error) {
 		itemID = strippedID
 	}
 
-	return getElementSetByID(params.Svcs, itemID, s3Path, isSharedReq)
+	elemSet, err := getElementSetByID(params.Svcs, itemID, s3Path, isSharedReq)
+
+	if err == nil {
+		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(elemSet.Creator.UserID)
+		if creatorErr != nil {
+			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (element set GET). Error: %v", elemSet.Creator.UserID, elemSet.Creator.Name, creatorErr)
+		} else {
+			elemSet.Creator = updatedCreator
+		}
+	}
+
+	return elemSet, err
 }
 
 func setupElementSetForSave(svcs *services.APIServices, body []byte, s3Path string) (*elementSetLookup, *elementSetInput, error) {

@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gorilla/handlers"
@@ -124,7 +125,6 @@ func main() {
 
 	svcs.Log.Infof(cfgStr)
 
-	// Reinitialised because of dependency on S3
 	notificationStack, err := notifications.MakeNotificationStack(svcs.Mongo, cfg.EnvironmentName, svcs.TimeStamper, svcs.Log, cfg.AdminEmails)
 
 	if err != nil {
@@ -134,6 +134,8 @@ func main() {
 	}
 
 	svcs.Notifications = notificationStack
+
+	svcs.Users = pixlUser.MakeUserDetailsLookup(svcs.Mongo, cfg.EnvironmentName)
 
 	jwtReader := api.RealJWTReader{Validator: initJWTValidator(cfg.Auth0Domain, svcs.FS, cfg, svcs.Log)}
 	svcs.JWTReader = jwtReader
