@@ -875,7 +875,7 @@ func Test_viewStateHandler_Put_spectrum_topright_AND_middleware_activity_logging
 	})
 }
 
-func Example_viewStateHandler_Put_spectrum_oldway_FAIL() {
+func Example_viewStateHandler_Put_spectrum_oldway_ShouldBeRejected() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 

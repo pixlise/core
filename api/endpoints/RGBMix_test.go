@@ -1062,7 +1062,7 @@ func Example_RGBMixHandler_Share() {
 	// "rgbmix-ddd222"
 }
 
-func Example_RGBMixHandler_Share_Fail() {
+func Example_RGBMixHandler_Share_UnsharedExprs() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{

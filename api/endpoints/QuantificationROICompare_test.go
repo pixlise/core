@@ -34,7 +34,7 @@ import (
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Multi-quant comparison endpoint
 
-func Example_calculateTotals_Fail_AB() {
+func Example_calculateTotals_AB_NeedsCombined() {
 	q, err := quantModel.ReadQuantificationFile("./test-data/AB.bin")
 	fmt.Printf("%v\n", err)
 
@@ -47,7 +47,7 @@ func Example_calculateTotals_Fail_AB() {
 	// map[]|Quantification must be for Combined detectors
 }
 
-func Example_calculateTotals_Fail_NoPMC() {
+func Example_calculateTotals_NoPMC() {
 	q, err := quantModel.ReadQuantificationFile("./test-data/combined.bin")
 	fmt.Printf("%v\n", err)
 
@@ -73,7 +73,7 @@ func Example_calculateTotals_Success() {
 	// map[CaO_%:7.5057006 FeO-T_%:10.621034 SiO2_%:41.48377 TiO2_%:0.7424]|<nil>
 }
 
-func Example_quantHandler_Comparison_FailReqBody() {
+func Example_quantHandler_Comparison_BadReqBody() {
 	rand.Seed(time.Now().UnixNano())
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
@@ -101,7 +101,7 @@ func Example_quantHandler_Comparison_FailReqBody() {
 	// Requested with 0 quant IDs
 }
 
-func Example_quantHandler_Comparison_FailRemainingPointsCheck() {
+func Example_quantHandler_Comparison_RemainingPointsCheckIssue() {
 	rand.Seed(time.Now().UnixNano())
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
@@ -297,7 +297,7 @@ func prepROICompareGetCalls() ([]s3.GetObjectInput, []*s3.GetObjectOutput) {
 	return s3GetRequests, s3GetResponses
 }
 
-func Example_quantHandler_Comparison_Fail_ROI() {
+func Example_quantHandler_Comparison_ROINotFound() {
 	rand.Seed(time.Now().UnixNano())
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
@@ -327,7 +327,7 @@ func Example_quantHandler_Comparison_Fail_ROI() {
 	// ROI ID roi-567 not found
 }
 
-func Example_quantHandler_Comparison_Fail_Dataset() {
+func Example_quantHandler_Comparison_DatasetNotFound() {
 	rand.Seed(time.Now().UnixNano())
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
@@ -357,7 +357,7 @@ func Example_quantHandler_Comparison_Fail_Dataset() {
 	// Failed to download dataset: NoSuchKey: Returning error from GetObject
 }
 
-func Example_quantHandler_Fail_QuantFile() {
+func Example_quantHandler_QuantFileNotFound() {
 	rand.Seed(time.Now().UnixNano())
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
@@ -387,7 +387,7 @@ func Example_quantHandler_Fail_QuantFile() {
 	// Failed to download quant quant-345: NoSuchKey: Returning error from GetObject
 }
 
-func Example_quantHandler_Fail_QuantSummary() {
+func Example_quantHandler_QuantSummaryNotFound() {
 	rand.Seed(time.Now().UnixNano())
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()

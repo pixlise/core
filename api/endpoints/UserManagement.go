@@ -89,13 +89,13 @@ func registerUserManagementHandler(router *apiRouter.ApiObjectRouter) {
 }
 
 func roleList(params handlers.ApiHandlerParams) (interface{}, error) {
-	api, err := InitAuth0ManagementAPI(params.Svcs.Config)
+	auth0API, err := InitAuth0ManagementAPI(params.Svcs.Config)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get roles for each
-	gotRoles, err := api.Role.List()
+	gotRoles, err := auth0API.Role.List()
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func roleList(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func userListByRole(params handlers.ApiHandlerParams) (interface{}, error) {
-	api, err := InitAuth0ManagementAPI(params.Svcs.Config)
+	auth0API, err := InitAuth0ManagementAPI(params.Svcs.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func userListByRole(params handlers.ApiHandlerParams) (interface{}, error) {
 	// TODO: if we have speed issues, paginate our own API
 	var page int
 	for {
-		users, err := api.Role.Users(id, management.Page(page))
+		users, err := auth0API.Role.Users(id, management.Page(page))
 		if err != nil {
 			return nil, err
 		}
@@ -178,13 +178,13 @@ func userPostDataCollection(params handlers.ApiHandlerParams) (interface{}, erro
 }
 
 func userGet(params handlers.ApiHandlerParams) (interface{}, error) {
-	api, err := InitAuth0ManagementAPI(params.Svcs.Config)
+	auth0API, err := InitAuth0ManagementAPI(params.Svcs.Config)
 	if err != nil {
 		return nil, err
 	}
 
 	id := params.PathParams[idIdentifier]
-	user, err := api.User.Read(id)
+	user, err := auth0API.User.Read(id)
 	if err != nil {
 		return nil, err
 	}
@@ -193,13 +193,13 @@ func userGet(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func userGetRoles(params handlers.ApiHandlerParams) (interface{}, error) {
-	api, err := InitAuth0ManagementAPI(params.Svcs.Config)
+	auth0API, err := InitAuth0ManagementAPI(params.Svcs.Config)
 	if err != nil {
 		return nil, err
 	}
 
 	userID := params.PathParams[userIDIdentifier]
-	gotRoles, err := api.User.Roles(userID)
+	gotRoles, err := auth0API.User.Roles(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func userGetRoles(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func userPostRoles(params handlers.ApiHandlerParams) (interface{}, error) {
-	api, err := InitAuth0ManagementAPI(params.Svcs.Config)
+	auth0API, err := InitAuth0ManagementAPI(params.Svcs.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +222,7 @@ func userPostRoles(params handlers.ApiHandlerParams) (interface{}, error) {
 	if roleID != unassignedNewUserRoleID {
 		// If the user has the role "Unassigned New User" and is being assigned another role, we clear
 		// Unassigned New User because an admin user may not know to remove it and it would confuse other things
-		roleResp, err := api.User.Roles(userID)
+		roleResp, err := auth0API.User.Roles(userID)
 		if err != nil {
 			params.Svcs.Log.Errorf("Failed to query user roles when new role being assigned: %v", err)
 		} else {
@@ -242,7 +242,7 @@ func userPostRoles(params handlers.ApiHandlerParams) (interface{}, error) {
 		params.Svcs.Log.Infof("User %v is being assigned role %v. The existing \"Unassigned New User\" role is being automatically removed", userID, roleID)
 
 		roleToUnassign := unassignedNewUserRoleID
-		err = api.User.RemoveRoles(userID, &management.Role{ID: &roleToUnassign})
+		err = auth0API.User.RemoveRoles(userID, &management.Role{ID: &roleToUnassign})
 		if err != nil {
 			params.Svcs.Log.Errorf("Failed to remove \"Unassigned New User\" role when user role is changing: %v", err)
 		}
@@ -251,24 +251,24 @@ func userPostRoles(params handlers.ApiHandlerParams) (interface{}, error) {
 		time.Sleep(1200 * time.Millisecond)
 	}
 
-	err = api.User.AssignRoles(userID, &management.Role{ID: &roleID})
+	err = auth0API.User.AssignRoles(userID, &management.Role{ID: &roleID})
 	return nil, err
 }
 
 func userDeleteRoles(params handlers.ApiHandlerParams) (interface{}, error) {
-	api, err := InitAuth0ManagementAPI(params.Svcs.Config)
+	auth0API, err := InitAuth0ManagementAPI(params.Svcs.Config)
 	if err != nil {
 		return nil, err
 	}
 
 	roleID := params.PathParams[idIdentifier]
 	userID := params.PathParams[userIDIdentifier]
-	err = api.User.RemoveRoles(userID, &management.Role{ID: &roleID})
+	err = auth0API.User.RemoveRoles(userID, &management.Role{ID: &roleID})
 	return nil, err
 }
 
 func userListQuery(params handlers.ApiHandlerParams) (interface{}, error) {
-	api, err := InitAuth0ManagementAPI(params.Svcs.Config)
+	auth0API, err := InitAuth0ManagementAPI(params.Svcs.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +277,7 @@ func userListQuery(params handlers.ApiHandlerParams) (interface{}, error) {
 	result := []auth0UserInfo{}
 
 	for {
-		l, err := api.User.List(
+		l, err := auth0API.User.List(
 			management.Query(""), //`logins_count:{100 TO *]`),
 			management.Page(page),
 		)
@@ -360,7 +360,7 @@ func userPutField(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	api, err := InitAuth0ManagementAPI(params.Svcs.Config)
+	auth0API, err := InitAuth0ManagementAPI(params.Svcs.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +372,7 @@ func userPutField(params handlers.ApiHandlerParams) (interface{}, error) {
 		auth0User.Email = &value
 	}
 
-	err = api.User.Update("auth0|"+params.UserInfo.UserID, &auth0User)
+	err = auth0API.User.Update("auth0|"+params.UserInfo.UserID, &auth0User)
 	return nil, err
 }
 
