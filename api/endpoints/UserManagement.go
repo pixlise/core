@@ -74,8 +74,11 @@ func registerUserManagementHandler(router *apiRouter.ApiObjectRouter) {
 
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/config"), apiRouter.MakeMethodPermission("POST", permission.PermReadUserRoles), userPostConfig)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/config"), apiRouter.MakeMethodPermission("GET", permission.PermReadUserRoles), userGetConfig)
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/data-collection"), apiRouter.MakeMethodPermission("GET", permission.PermReadUserRoles), userGetDataCollection)
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/data-collection"), apiRouter.MakeMethodPermission("POST", permission.PermReadUserRoles), userPostDataCollection)
+
+	// Removed because these were not used in client and didn't have unit tests!
+	//router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/data-collection"), apiRouter.MakeMethodPermission("GET", permission.PermReadUserRoles), userGetDataCollection)
+	//router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/data-collection"), apiRouter.MakeMethodPermission("POST", permission.PermReadUserRoles), userPostDataCollection)
+
 	// Simply retrieves roles
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/all-roles"), apiRouter.MakeMethodPermission("GET", permission.PermReadUserRoles), roleList)
 	// Setting fields in user config (name, email for now... could use this to set data-collection too).
@@ -133,49 +136,53 @@ func userListByRole(params handlers.ApiHandlerParams) (interface{}, error) {
 	return result, err
 }
 
-func userGetDataCollection(params handlers.ApiHandlerParams) (interface{}, error) {
-	user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
-	if err != nil {
-		return nil, err
+/*
+Removed because these were not used in client and didn't have unit tests!
+
+	func userGetDataCollection(params handlers.ApiHandlerParams) (interface{}, error) {
+		user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
+		if err != nil {
+			return nil, err
+		}
+
+		result := dataCollection{
+			Collect: user.Config.DataCollection,
+		}
+
+		return result, nil
 	}
 
-	result := dataCollection{
-		Collect: user.Config.DataCollection,
+	func userPostDataCollection(params handlers.ApiHandlerParams) (interface{}, error) {
+		body, err := ioutil.ReadAll(params.Request.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		var req dataCollection
+		err = json.Unmarshal(body, &req)
+		if err != nil {
+			return nil, err
+		}
+
+		user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
+		if err != nil {
+			return nil, err
+		}
+
+		// Overwrite data collection flag
+		user.Config.DataCollection = req.Collect
+
+		// Save user
+		err = params.Svcs.Users.WriteUser(user)
+		if err != nil {
+			return nil, err
+		}
+
+		// Also remember in our run-time cache wether this user is allowing tracking or not
+		params.Svcs.Notifications.SetTrack(params.UserInfo.UserID, req.Collect == "true")
+		return nil, nil
 	}
-
-	return result, nil
-}
-
-func userPostDataCollection(params handlers.ApiHandlerParams) (interface{}, error) {
-	body, err := ioutil.ReadAll(params.Request.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var req dataCollection
-	err = json.Unmarshal(body, &req)
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
-	if err != nil {
-		return nil, err
-	}
-
-	// Overwrite data collection flag
-	user.Config.DataCollection = req.Collect
-
-	// Save user
-	err = params.Svcs.Users.WriteUser(user)
-	if err != nil {
-		return nil, err
-	}
-
-	// Also remember in our run-time cache wether this user is allowing tracking or not
-	params.Svcs.Notifications.SetTrack(params.UserInfo.UserID, req.Collect == "true")
-	return nil, nil
-}
+*/
 
 func userGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	auth0API, err := InitAuth0ManagementAPI(params.Svcs.Config)
