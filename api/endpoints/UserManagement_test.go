@@ -416,7 +416,7 @@ func Test_user_edit_field_email(t *testing.T) {
 	}
 
 	auth0User := management.User{}
-	preTestEmail := "test_user_commenced@pixlise.org"
+	preTestEmail := "admin_test@pixlise.org"
 	auth0User.Email = &preTestEmail
 
 	err = auth0API.User.Update("auth0|600f2a0806b6c70071d3d174", &auth0User)
@@ -424,7 +424,7 @@ func Test_user_edit_field_email(t *testing.T) {
 		t.Errorf("Failed to set initial user email: %v", err)
 	}
 
-	requestPayload := bytes.NewReader([]byte(`"test_user@pixlise.org"`))
+	requestPayload := bytes.NewReader([]byte(`"admin@pixlise.org"`))
 
 	expectedResponse := ""
 
@@ -474,8 +474,8 @@ func Test_user_edit_field_email(t *testing.T) {
 			t.Errorf("Failed to query user after test: %v", err)
 		}
 
-		if *user.Email != "test_user@pixlise.org" {
-			t.Errorf("Expected auth0 user to have email test_user@pixlise.org not: %v", *user.Email)
+		if *user.Email != "admin@pixlise.org" {
+			t.Errorf("Expected auth0 user to have email admin@pixlise.org not: %v", *user.Email)
 		}
 	})
 }
