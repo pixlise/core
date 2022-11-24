@@ -19,6 +19,7 @@ package endpoints
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"time"
 
@@ -56,6 +57,7 @@ type roleInfo struct {
 }
 
 const userIDIdentifier = "user_id"
+const fieldIDIdentifier = "field_id"
 const unassignedNewUserRoleID = "rol_BDm6RvOwIGqxSbYt" // "Unassigned New User" role
 
 func registerUserManagementHandler(router *apiRouter.ApiObjectRouter) {
@@ -76,9 +78,14 @@ func registerUserManagementHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/data-collection"), apiRouter.MakeMethodPermission("POST", permission.PermReadUserRoles), userPostDataCollection)
 	// Simply retrieves roles
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/all-roles"), apiRouter.MakeMethodPermission("GET", permission.PermReadUserRoles), roleList)
-	// Setting user name - auth0 only asks for user email, eventually we notice we don't have their name and prompt for it
-	// and this is the endpoint that's supposed to fix it!
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/name"), apiRouter.MakeMethodPermission("POST", permission.PermReadUserRoles), userPostName)
+	// Setting fields in user config (name, email for now... could use this to set data-collection too).
+	// This is required because auth0 only asks for user email, eventually we notice we don't have their name and prompt for it
+	// and this is the endpoint that's supposed to fix it! They may also change their emails over time.
+	// NOTE: permission is read, but this is because users who edit their own accounts are different from users who have write roles permissions (admins)!
+	// TODO: Maybe this needs to be broken out under its own permission
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/field", fieldIDIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermReadUserRoles), userPutField)
+	// Admins can edit user names and emails in bulk by uploading a CSV
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/bulk-user-details"), apiRouter.MakeMethodPermission("POST", permission.PermWriteUserRoles), userEditInBulk)
 }
 
 func roleList(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -319,7 +326,14 @@ func userPostConfig(params handlers.ApiHandlerParams) (interface{}, error) {
 	return req, err
 }
 
-func userPostName(params handlers.ApiHandlerParams) (interface{}, error) {
+func userPutField(params handlers.ApiHandlerParams) (interface{}, error) {
+	fieldName := params.PathParams[fieldIDIdentifier]
+
+	if fieldName != "name" && fieldName != "email" {
+		return nil, errors.New("Unrecognised field: " + fieldName)
+	}
+
+	// Ensure user is stored already for this
 	user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
 		return nil, err
@@ -330,13 +344,17 @@ func userPostName(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	name := ""
-	err = json.Unmarshal(body, &name)
+	value := ""
+	err = json.Unmarshal(body, &value)
 	if err != nil {
 		return nil, err
 	}
 
-	user.Config.Name = name
+	if fieldName == "name" {
+		user.Config.Name = value
+	} else {
+		user.Config.Email = value
+	}
 	err = params.Svcs.Users.WriteUser(user)
 	if err != nil {
 		return nil, err
@@ -348,10 +366,67 @@ func userPostName(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	auth0User := management.User{}
-	auth0User.Name = &name
+	if fieldName == "name" {
+		auth0User.Name = &value
+	} else {
+		auth0User.Email = &value
+	}
 
 	err = api.User.Update("auth0|"+params.UserInfo.UserID, &auth0User)
 	return nil, err
+}
+
+type UserEditRequest struct {
+	UserID string
+	Name   string
+	Email  string
+}
+
+func userEditInBulk(params handlers.ApiHandlerParams) (interface{}, error) {
+	// Here the body is expected to be a JSON of user id, and optional name & email that need to be set
+	// This only sets it in Mongo! This does NOT edit Auth0
+	// Only exists because we had correct names in auth0 but our mongo was not in sync with it
+	body, err := ioutil.ReadAll(params.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	editItems := []UserEditRequest{}
+	err = json.Unmarshal(body, &editItems)
+	if err != nil {
+		return nil, err
+	}
+
+	params.Svcs.Log.Infof("Editing users in bulk...")
+
+	// Run through each item & edit in mongo
+	for c, item := range editItems {
+		params.Svcs.Log.Infof(" %v: %v (name: %v, email: %v)", c+1, item.UserID, item.Name, item.Email)
+
+		user, err := params.Svcs.Users.GetUser(item.UserID)
+		if err != nil {
+			params.Svcs.Log.Errorf(" User does not exist: %v", item.UserID)
+			continue
+			//return nil, err
+		}
+
+		// Set the fields
+		if len(item.Name) > 0 {
+			user.Config.Name = item.Name
+		}
+		if len(item.Email) > 0 {
+			user.Config.Email = item.Email
+		}
+
+		err = params.Svcs.Users.WriteUser(user)
+		if err != nil {
+			params.Svcs.Log.Errorf(" Failed to write user: %v", item.UserID)
+			//return nil, err
+		}
+	}
+
+	params.Svcs.Log.Infof("User editing complete")
+	return nil, nil
 }
 
 func makeUserList(from *management.UserList) []auth0UserInfo {
