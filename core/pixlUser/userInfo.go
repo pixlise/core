@@ -20,6 +20,7 @@ package pixlUser
 import (
 	"context"
 	"errors"
+	"sync"
 
 	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
 	"go.mongodb.org/mongo-driver/bson"
@@ -33,7 +34,8 @@ type UserDetailsLookup struct {
 	userDatabase   *mongo.Database
 	userCollection *mongo.Collection
 
-	cache map[string]UserDetails
+	cache      map[string]UserDetails
+	cacheMutex sync.Mutex
 }
 
 func MakeUserDetailsLookup( /*timeStamper timestamper.ITimeStamper,*/ mongoClient *mongo.Client, envName string) UserDetailsLookup {
@@ -81,6 +83,9 @@ func (u *UserDetailsLookup) createUser(userid string, name string, email string)
 
 	if err == nil {
 		// Add entry into cache
+		u.cacheMutex.Lock()
+		defer u.cacheMutex.Unlock()
+
 		u.cache[userid] = us.Config
 	}
 
@@ -109,6 +114,9 @@ func (u *UserDetailsLookup) GetUser(userid string) (UserStruct, error) {
 
 	// Update cache if it worked
 	if err == nil {
+		u.cacheMutex.Lock()
+		defer u.cacheMutex.Unlock()
+
 		u.cache[userid] = user.Config
 	}
 
@@ -131,7 +139,15 @@ func (u *UserDetailsLookup) GetUserEnsureExists(userid string, name string, emai
 // Getting JUST UserDetails (so it goes through our in-memory cache). This is useful for the many places in the code that only
 // require user name+email to ensure we're sending out up-to-date "creator" aka "APIObjectItem" structures
 func (u *UserDetailsLookup) GetCurrentCreatorDetails(userID string) (UserInfo, error) {
-	details, ok := u.cache[userID]
+	var details UserDetails
+	var ok bool
+
+	{
+		u.cacheMutex.Lock()
+		defer u.cacheMutex.Unlock()
+
+		details, ok = u.cache[userID]
+	}
 
 	if !ok {
 		// We don't have it! Read from user DB & return that
@@ -171,6 +187,9 @@ func (u *UserDetailsLookup) WriteUser(user UserStruct) error {
 
 	if err == nil {
 		// Update entry in cache
+		u.cacheMutex.Lock()
+		defer u.cacheMutex.Unlock()
+
 		u.cache[user.Userid] = user.Config
 	}
 
