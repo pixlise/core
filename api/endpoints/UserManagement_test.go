@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -86,6 +87,9 @@ func Example_userManagementUserQuery_And_UserGet() {
 
 	fmt.Printf("%v|%v\n", err, len(users) > 0 && seemsValid(users[0]))
 
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
+
 	req, _ = http.NewRequest("GET", "/user/by-id/"+knownTestUserID, nil)
 	resp = executeRequest(req, apiRouter.Router)
 
@@ -95,6 +99,9 @@ func Example_userManagementUserQuery_And_UserGet() {
 	err = json.Unmarshal(resp.Body.Bytes(), &user)
 
 	fmt.Printf("%v|%v\n", err, seemsValid(user))
+
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
 
 	// Output:
 	// query: 200
@@ -120,6 +127,9 @@ func Example_userManagement_AddDeleteRole() {
 	fmt.Printf("ensure-del: %v\n", resp.Code)
 	fmt.Println(resp.Body)
 
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
+
 	req, _ = http.NewRequest("GET", "/user/roles/"+knownTestUserID, nil)
 	resp = executeRequest(req, apiRouter.Router)
 
@@ -132,6 +142,9 @@ func Example_userManagement_AddDeleteRole() {
 
 	fmt.Printf("add: %v\n", resp.Code)
 	fmt.Println(resp.Body)
+
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
 
 	req, _ = http.NewRequest("GET", "/user/roles/"+knownTestUserID, nil)
 	resp = executeRequest(req, apiRouter.Router)
@@ -146,6 +159,9 @@ func Example_userManagement_AddDeleteRole() {
 	fmt.Printf("delete: %v\n", resp.Code)
 	fmt.Println(resp.Body)
 
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
+
 	req, _ = http.NewRequest("GET", "/user/roles/"+knownTestUserID, nil)
 	resp = executeRequest(req, apiRouter.Router)
 
@@ -157,6 +173,9 @@ func Example_userManagement_AddDeleteRole() {
 
 	fmt.Printf("add-back: %v\n", resp.Code)
 	fmt.Println(resp.Body)
+
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
 
 	// Output:
 	// ensure-del: 200
@@ -201,6 +220,9 @@ func Example_userManagement_Roles_And_UserByRole() {
 	fmt.Println(resp.Code)
 	fmt.Printf("%v|%v\n", err, len(roles) > 0 && len(roles[0].ID) > 0 && len(roles[0].Name) > 0 && len(roles[0].Description) > 0)
 
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
+
 	// request users for first role, hopefully we have some assigned, else test will fail!
 	if len(roles) > 0 {
 		req, _ = http.NewRequest("GET", "/user/by-role/"+roles[0].ID, nil)
@@ -212,6 +234,9 @@ func Example_userManagement_Roles_And_UserByRole() {
 		fmt.Println(resp.Code)
 		fmt.Printf("%v|%v\n", err, len(users) > 0 && seemsValid(users[0]))
 	}
+
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
 
 	// Output:
 	// 200
@@ -311,7 +336,7 @@ func Test_user_edit_field_name(t *testing.T) {
 	// Get auth0 api config
 	svcs := MakeMockSvcs(nil, nil, nil, nil)
 	setTestAuth0Config(&svcs)
-	api, err := InitAuth0ManagementAPI(svcs.Config)
+	auth0API, err := InitAuth0ManagementAPI(svcs.Config)
 	if err != nil {
 		t.Errorf("Failed to init auth0 API: %v", err)
 	}
@@ -320,7 +345,7 @@ func Test_user_edit_field_name(t *testing.T) {
 	preTestName := "TEST USER - test commenced"
 	auth0User.Name = &preTestName
 
-	err = api.User.Update("auth0|600f2a0806b6c70071d3d174", &auth0User)
+	err = auth0API.User.Update("auth0|600f2a0806b6c70071d3d174", &auth0User)
 	if err != nil {
 		t.Errorf("Failed to set initial user name: %v", err)
 	}
@@ -362,9 +387,15 @@ func Test_user_edit_field_name(t *testing.T) {
 		mtest.CreateSuccessResponse(),
 	}
 
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
+
 	// TODO: This isn't a good test, we have no way of verifying what was written into mongo! But we can verify what was written to auth0
 	runOneURLCallTest(t, "PUT", "/user/field/name", requestPayload, 200, expectedResponse, mockMongoResponses, func() {
-		user, err := api.User.Read("auth0|600f2a0806b6c70071d3d174")
+		// Stop for a sec so we don't hit auth0 API rate limit
+		time.Sleep(1 * time.Second)
+
+		user, err := auth0API.User.Read("auth0|600f2a0806b6c70071d3d174")
 		if err != nil {
 			t.Errorf("Failed to query user after test: %v", err)
 		}
@@ -379,7 +410,7 @@ func Test_user_edit_field_email(t *testing.T) {
 	// Get auth0 api config
 	svcs := MakeMockSvcs(nil, nil, nil, nil)
 	setTestAuth0Config(&svcs)
-	api, err := InitAuth0ManagementAPI(svcs.Config)
+	auth0API, err := InitAuth0ManagementAPI(svcs.Config)
 	if err != nil {
 		t.Errorf("Failed to init auth0 API: %v", err)
 	}
@@ -388,7 +419,7 @@ func Test_user_edit_field_email(t *testing.T) {
 	preTestEmail := "test_user_commenced@pixlise.org"
 	auth0User.Email = &preTestEmail
 
-	err = api.User.Update("auth0|600f2a0806b6c70071d3d174", &auth0User)
+	err = auth0API.User.Update("auth0|600f2a0806b6c70071d3d174", &auth0User)
 	if err != nil {
 		t.Errorf("Failed to set initial user email: %v", err)
 	}
@@ -430,9 +461,15 @@ func Test_user_edit_field_email(t *testing.T) {
 		mtest.CreateSuccessResponse(),
 	}
 
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
+
 	// TODO: This isn't a good test, we have no way of verifying what was written into mongo! But we can verify what was written to auth0
 	runOneURLCallTest(t, "PUT", "/user/field/email", requestPayload, 200, expectedResponse, mockMongoResponses, func() {
-		user, err := api.User.Read("auth0|600f2a0806b6c70071d3d174")
+		// Stop for a sec so we don't hit auth0 API rate limit
+		time.Sleep(1 * time.Second)
+
+		user, err := auth0API.User.Read("auth0|600f2a0806b6c70071d3d174")
 		if err != nil {
 			t.Errorf("Failed to query user after test: %v", err)
 		}
