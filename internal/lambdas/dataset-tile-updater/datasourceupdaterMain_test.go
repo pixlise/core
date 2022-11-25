@@ -32,7 +32,7 @@ import (
 const datasetBucket = "dev-pixlise-data"
 const configBucket = "dev-pixlise-config"
 
-func Example_updateDatasetsBucketFail() {
+func Example_updateDatasetsBucketListingError() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 	l := &logger.NullLogger{}

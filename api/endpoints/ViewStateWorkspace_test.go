@@ -999,7 +999,7 @@ func Example_viewStateHandler_PutSaved_Force() {
 	//
 }
 
-func Example_viewStateHandler_PutSaved_OverwriteFail() {
+func Example_viewStateHandler_PutSaved_OverwriteAlreadyExists() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
