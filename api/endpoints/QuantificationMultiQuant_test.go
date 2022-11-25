@@ -42,7 +42,7 @@ func printMultiLineBody(body string) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Multi-quant creation
 
-func Example_quantHandler_MultiQuantCombine_SimpleFails() {
+func Example_quantHandler_MultiQuantCombine_SimpleErrors() {
 	rand.Seed(time.Now().UnixNano())
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
@@ -289,7 +289,7 @@ func Example_quantHandler_MultiQuantCombine_DuplicateNameWithInProgressQuant() {
 	// Name already used: in progress
 }
 
-func Example_quantHandler_MultiQuantCombine_DatasetFailsToLoad() {
+func Example_quantHandler_MultiQuantCombine_DatasetLoadError() {
 	rand.Seed(time.Now().UnixNano())
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
@@ -426,7 +426,7 @@ func Example_quantHandler_MultiQuantCombine_CombineIncompatible() {
 	// Detectors don't match other quantifications: quant-456
 }
 
-func Example_quantHandler_MultiQuantCombine_UserROIFailsToLoad() {
+func Example_quantHandler_MultiQuantCombine_UserROILoadError() {
 	rand.Seed(time.Now().UnixNano())
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
@@ -495,7 +495,7 @@ func Example_quantHandler_MultiQuantCombine_UserROIFailsToLoad() {
 	// Failed to get all ROIs: Failed to find ROI ID: roi-first
 }
 
-func Example_quantHandler_MultiQuantCombine_QuantFailsToLoad() {
+func Example_quantHandler_MultiQuantCombine_QuantLoadError() {
 	rand.Seed(time.Now().UnixNano())
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()

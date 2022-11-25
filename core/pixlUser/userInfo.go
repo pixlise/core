@@ -139,15 +139,9 @@ func (u *UserDetailsLookup) GetUserEnsureExists(userid string, name string, emai
 // Getting JUST UserDetails (so it goes through our in-memory cache). This is useful for the many places in the code that only
 // require user name+email to ensure we're sending out up-to-date "creator" aka "APIObjectItem" structures
 func (u *UserDetailsLookup) GetCurrentCreatorDetails(userID string) (UserInfo, error) {
-	var details UserDetails
-	var ok bool
-
-	{
-		u.cacheMutex.Lock()
-		defer u.cacheMutex.Unlock()
-
-		details, ok = u.cache[userID]
-	}
+	u.cacheMutex.Lock()
+	details, ok := u.cache[userID]
+	u.cacheMutex.Unlock()
 
 	if !ok {
 		// We don't have it! Read from user DB & return that
