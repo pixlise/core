@@ -31,7 +31,7 @@ import (
 )
 
 // Quantification manual uploads, this has many failure scenarios...
-func Example_quantHandler_UploadFails() {
+func Example_quantHandler_UploadErrors() {
 	rand.Seed(time.Now().UnixNano())
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()

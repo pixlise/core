@@ -22,10 +22,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
 const exprS3Path = "UserContent/600f2a0806b6c70071d3d174/DataExpressions.json"
@@ -55,125 +60,144 @@ const exprFile = `{
 	}
 }`
 
-func Example_dataExpressionHandler_List() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil, // No file in S3
-		nil, // No file in S3
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(exprFile))),
-		},
-		{
-			// Note: No comments!
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-	"ghi789": {
-		"name": "Iron %",
-		"expression": "element(\"Fe\", \"%\")",
-		"type": "TernaryPlot",
-		"creator": {
-			"user_id": "999",
-			"name": "Peter N",
-			"email": "niko@spicule.co.uk"
+func Test_dataExpressionHandler_List(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("success", func(mt *mtest.T) {
+		// User name lookup
+		mongoMockedResponses := []primitive.D{
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+				bson.D{
+					{"Userid", "999"},
+					{"Notifications", bson.D{
+						{"Topics", bson.A{}},
+					}},
+					{"Config", bson.D{
+						{"Name", "Peter N"},
+						{"Email", "peter@spicule.co.uk"},
+						{"Cell", ""},
+						{"DataCollection", "unknown"},
+					}},
+				},
+			),
 		}
-	}
-}`))),
-		},
-	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
+		mt.AddMockResponses(mongoMockedResponses...)
 
-	req, _ := http.NewRequest("GET", "/data-expression", nil)
-	resp := executeRequest(req, apiRouter.Router)
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
+			},
+		}
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			nil, // No file in S3
+			nil, // No file in S3
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(exprFile))),
+			},
+			{
+				// Note: No comments!
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"ghi789": {
+			"name": "Iron %",
+			"expression": "element(\"Fe\", \"%\")",
+			"type": "TernaryPlot",
+			"creator": {
+				"user_id": "999",
+				"name": "Peter N",
+				"email": "niko@spicule.co.uk"
+			}
+		}
+	}`))),
+			},
+		}
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		apiRouter := MakeRouter(svcs)
 
-	req, _ = http.NewRequest("GET", "/data-expression", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		req, _ := http.NewRequest("GET", "/data-expression", nil)
+		resp := executeRequest(req, apiRouter.Router)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		checkResult(t, resp, 200, `{}
+`)
 
-	req, _ = http.NewRequest("GET", "/data-expression", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		req, _ = http.NewRequest("GET", "/data-expression", nil)
+		resp = executeRequest(req, apiRouter.Router)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		checkResult(t, resp, 200, `{}
+`)
 
-	// Output:
-	// 200
-	// {}
-	//
-	// 200
-	// {}
-	//
-	// 200
-	// {
-	//     "abc123": {
-	//         "name": "Calcium weight%",
-	//         "expression": "element(\"Ca\", \"%\")",
-	//         "type": "ContextImage",
-	//         "comments": "comments for abc123 expression",
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Peter N",
-	//             "user_id": "999",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     },
-	//     "def456": {
-	//         "name": "Iron Error",
-	//         "expression": "element(\"Fe\", \"err\")",
-	//         "type": "BinaryPlot",
-	//         "comments": "comments for def456 expression",
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Peter N",
-	//             "user_id": "999",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     },
-	//     "shared-ghi789": {
-	//         "name": "Iron %",
-	//         "expression": "element(\"Fe\", \"%\")",
-	//         "type": "TernaryPlot",
-	//         "comments": "",
-	//         "shared": true,
-	//         "creator": {
-	//             "name": "Peter N",
-	//             "user_id": "999",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     }
-	// }
+		req, _ = http.NewRequest("GET", "/data-expression", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "abc123": {
+        "name": "Calcium weight%",
+        "expression": "element(\"Ca\", \"%\")",
+        "type": "ContextImage",
+        "comments": "comments for abc123 expression",
+        "shared": false,
+        "creator": {
+            "name": "Peter N",
+            "user_id": "999",
+            "email": "peter@spicule.co.uk"
+        }
+    },
+    "def456": {
+        "name": "Iron Error",
+        "expression": "element(\"Fe\", \"err\")",
+        "type": "BinaryPlot",
+        "comments": "comments for def456 expression",
+        "shared": false,
+        "creator": {
+            "name": "Peter N",
+            "user_id": "999",
+            "email": "peter@spicule.co.uk"
+        }
+    },
+    "shared-ghi789": {
+        "name": "Iron %",
+        "expression": "element(\"Fe\", \"%\")",
+        "type": "TernaryPlot",
+        "comments": "",
+        "shared": true,
+        "creator": {
+            "name": "Peter N",
+            "user_id": "999",
+            "email": "peter@spicule.co.uk"
+        }
+    }
+}
+`)
+	})
 }
 
 func Example_dataExpressionHandler_Get() {

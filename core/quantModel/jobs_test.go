@@ -411,7 +411,7 @@ PMC, CaO_%, CaO_int, RTT
 	// 40, 8.1, 455, 7870
 }
 
-func Example_combineQuantOutputs_DownloadFails() {
+func Example_combineQuantOutputs_DownloadError() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
@@ -687,7 +687,7 @@ PMC, CaO_%, CaO_int, RTT
 	// Map csv: JobData/abc123/output/node001.pmcs_result.csv, does not contain a filename column (used to match up ROIs)
 }
 
-func Example_processQuantROIsToPMCs_Combined_DownloadFails() {
+func Example_processQuantROIsToPMCs_Combined_DownloadError() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 

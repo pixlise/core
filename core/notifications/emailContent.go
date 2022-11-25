@@ -24,6 +24,7 @@ import (
 
 	"github.com/pixlise/core/v2/core/logger"
 	textTemplates "github.com/pixlise/core/v2/core/notifications/templates"
+	"github.com/pixlise/core/v2/core/pixlUser"
 )
 
 const (
@@ -32,11 +33,11 @@ const (
 
 // TemplateContents - Structure for template injection
 type TemplateContents struct {
-	ContentMap  UserStruct
+	ContentMap  pixlUser.UserStruct
 	TemplateMap map[string]interface{}
 }
 
-func generateEmailContent(log logger.ILogger, subscriber UserStruct, templateName string, templateInput map[string]interface{}, format string) (string, error) {
+func generateEmailContent(log logger.ILogger, subscriber pixlUser.UserStruct, templateName string, templateInput map[string]interface{}, format string) (string, error) {
 	t := textTemplates.GetTemplates()
 	var templates = template.Must(template.New(templateName).Parse(t[templateName+"-"+format]))
 
