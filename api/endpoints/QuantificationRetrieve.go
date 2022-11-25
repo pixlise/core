@@ -83,6 +83,8 @@ func quantificationJobAdminList(params handlers.ApiHandlerParams) (interface{}, 
 		}
 	}
 
+	sort.Sort(ByJobID(summaries))
+
 	// Update quant summary creator names/emails
 	for _, summary := range summaries {
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(summary.Params.Creator.UserID)
@@ -92,8 +94,6 @@ func quantificationJobAdminList(params handlers.ApiHandlerParams) (interface{}, 
 			summary.Params.Creator = updatedCreator
 		}
 	}
-
-	sort.Sort(ByJobID(summaries))
 
 	return summaries, nil
 }
