@@ -63,7 +63,7 @@ func Example_decodeJobStatusPath() {
 	// ||'Unexpected start to monitoring path: Jobs, full path path: /Jobs/rtt-123/job1-status.json'
 }
 
-func Example_regenJobSummaryListBucketFail() {
+func Example_regenJobSummaryListBucketListingError() {
 	const jobBucket = "dev-pixlise-piquant-jobs"
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
@@ -327,7 +327,7 @@ func Example_regenJobSummaryOneJobItem() {
 	// <nil>
 }
 
-func Example_regenJobSummaryOneJobItemParamFail() {
+func Example_regenJobSummaryOneJobItemParamErrors() {
 	const jobBucket = "dev-pixlise-piquant-jobs"
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
