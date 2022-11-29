@@ -121,7 +121,16 @@ func getElementSetSummary(svcs *services.APIServices, s3PathFrom string, sharedF
 	// Run through and just return summary info
 	for id, item := range elemSets {
 		// Loop through all elements and make an element set summary
-		summary := elementSetSummary{Name: item.Name, AtomicNumbers: []int8{}, APIObjectItem: &pixlUser.APIObjectItem{Shared: sharedFile, Creator: item.Creator}}
+		summary := elementSetSummary{
+			Name:          item.Name,
+			AtomicNumbers: []int8{},
+			APIObjectItem: &pixlUser.APIObjectItem{
+				Shared:              sharedFile,
+				Creator:             item.Creator,
+				CreatedUnixTimeSec:  item.CreatedUnixTimeSec,
+				ModifiedUnixTimeSec: item.ModifiedUnixTimeSec,
+			},
+		}
 		for _, lineinfo := range item.Lines {
 			summary.AtomicNumbers = append(summary.AtomicNumbers, lineinfo.AtomicNumber)
 		}
@@ -257,7 +266,17 @@ func elementSetPost(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Save it & upload
-	(*elemSets)[itemID] = elementSet{req.Name, req.Lines, &pixlUser.APIObjectItem{Shared: false, Creator: params.UserInfo}}
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
+	(*elemSets)[itemID] = elementSet{
+		req.Name,
+		req.Lines,
+		&pixlUser.APIObjectItem{
+			Shared:              false,
+			Creator:             params.UserInfo,
+			CreatedUnixTimeSec:  timeNow,
+			ModifiedUnixTimeSec: timeNow,
+		},
+	}
 	return nil, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *elemSets)
 }
 
@@ -284,7 +303,16 @@ func elementSetPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Save it & upload
-	(*elemSets)[itemID] = elementSet{req.Name, req.Lines, &pixlUser.APIObjectItem{Shared: false, Creator: existing.Creator}}
+	(*elemSets)[itemID] = elementSet{
+		req.Name,
+		req.Lines,
+		&pixlUser.APIObjectItem{
+			Shared:              false,
+			Creator:             existing.Creator,
+			CreatedUnixTimeSec:  existing.CreatedUnixTimeSec,
+			ModifiedUnixTimeSec: params.Svcs.TimeStamper.GetTimeNowSec(),
+		},
+	}
 	return nil, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *elemSets)
 }
 

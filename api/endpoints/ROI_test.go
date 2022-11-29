@@ -28,6 +28,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/timestamper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
@@ -41,6 +42,8 @@ const roi2XItems = `{
         "description": "The second dark patch",
         "locationIndexes": [4, 55, 394],
         "creator": { "name": "Peter", "user_id": "u123" },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000,
         "mistROIItem": {
             "species": "",
             "mineralGroupID": "",
@@ -53,6 +56,8 @@ const roi2XItems = `{
         "name": "White spot",
         "locationIndexes": [14, 5, 94],
         "creator": { "name": "Tom", "user_id": "u124" },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001,
         "mistROIItem": {
             "species": "",
             "mineralGroupID": "",
@@ -148,7 +153,9 @@ func Test_roiHandler_List(t *testing.T) {
 							"ID_Depth": 0,
 							"ClassificationTrail": "",
 							"formula": ""
-						}
+						},
+						"create_unix_time_sec": 1668100000,
+						"mod_unix_time_sec": 1668100000
 					}
 				}`))),
 			},
@@ -160,6 +167,8 @@ func Test_roiHandler_List(t *testing.T) {
 						"locationIndexes": [99],
 						"shared": false,
 						"creator": { "name": "Tom", "user_id": "u85", "email": ""},
+						"create_unix_time_sec": 1668100003,
+						"mod_unix_time_sec": 1668100003,
 						"mistROIItem": {
 							"species": "",
 							"mineralGroupID": "",
@@ -213,7 +222,9 @@ func Test_roiHandler_List(t *testing.T) {
             "name": "Peter",
             "user_id": "u77",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "shared-007": {
         "name": "james bond",
@@ -233,7 +244,9 @@ func Test_roiHandler_List(t *testing.T) {
             "name": "Tom Barber",
             "user_id": "u85",
             "email": "tom@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100003,
+        "mod_unix_time_sec": 1668100003
     }
 }
 `)
@@ -290,7 +303,9 @@ func Example_roiHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100007,
+        "mod_unix_time_sec": 1668100007
     }
 }`))),
 		},
@@ -322,7 +337,9 @@ func Example_roiHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142579,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -348,7 +365,9 @@ func Example_roiHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142580,
+        "mod_unix_time_sec": 1668142580
     }
 }`)),
 		},
@@ -374,7 +393,9 @@ func Example_roiHandler_Post() {
             "name": "Peter",
             "user_id": "u123",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "772": {
         "name": "White spot",
@@ -396,7 +417,9 @@ func Example_roiHandler_Post() {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     },
     "id5": {
         "name": "White spot",
@@ -418,7 +441,9 @@ func Example_roiHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142581,
+        "mod_unix_time_sec": 1668142581
     }
 }`)),
 		},
@@ -445,7 +470,9 @@ func Example_roiHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142583,
+        "mod_unix_time_sec": 1668142583
     }
 }`)),
 		},
@@ -460,6 +487,9 @@ func Example_roiHandler_Post() {
 	var idGen MockIDGenerator
 	idGen.ids = []string{"id3", "id4", "id5", "id6"}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579, 1668142580, 1668142581, 1668142582, 1668142583},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const postItem = `{
@@ -590,7 +620,9 @@ func Example_roiHandler_Put() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668142579
     },
     "772": {
         "name": "White spot",
@@ -612,7 +644,9 @@ func Example_roiHandler_Put() {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     }
 }`)),
 		},
@@ -622,6 +656,9 @@ func Example_roiHandler_Put() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 
 	apiRouter := MakeRouter(svcs)
 
@@ -729,6 +766,8 @@ func Example_roiHandler_Delete() {
             394
         ],
         "creator": { "name": "Peter", "user_id": "600f2a0806b6c70071d3d174" },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000,
         "mistROIItem": {
             "species": "",
             "mineralGroupID": "",
@@ -745,6 +784,8 @@ func Example_roiHandler_Delete() {
             94
         ],
         "creator": { "name": "Tom", "user_id": "u124" },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001,
         "mistROIItem": {
             "species": "",
             "mineralGroupID": "",
@@ -790,7 +831,9 @@ func Example_roiHandler_Delete() {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     }
 }`)),
 		},
@@ -870,7 +913,9 @@ func Example_roiHandler_Share() {
         "creator": {
             "name": "The user who shared",
             "user_id": "600f2a0806b6c70071d3d174"
-        }
+        },
+        "create_unix_time_sec": 1668100008,
+        "mod_unix_time_sec": 1668100008
     }
 }`
 
@@ -954,7 +999,9 @@ func Example_roiHandler_Share() {
             "name": "Peter",
             "user_id": "u123",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668142579
     },
     "99": {
         "name": "Shared already",
@@ -974,7 +1021,9 @@ func Example_roiHandler_Share() {
             "name": "The user who shared",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100008,
+        "mod_unix_time_sec": 1668100008
     }
 }`)),
 		},
@@ -986,6 +1035,9 @@ func Example_roiHandler_Share() {
 	var idGen MockIDGenerator
 	idGen.ids = []string{"16"}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = ""

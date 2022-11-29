@@ -124,6 +124,7 @@ func createROIs(params handlers.ApiHandlerParams, rois []roiModel.ROIItem, overw
 		}
 	}
 
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
 	for i := range rois {
 		// Validate
 		if !fileaccess.IsValidObjectName(rois[i].Name) {
@@ -161,8 +162,10 @@ func createROIs(params handlers.ApiHandlerParams, rois []roiModel.ROIItem, overw
 		allROIs[saveID] = roiModel.ROISavedItem{
 			ROIItem: &rois[i],
 			APIObjectItem: &pixlUser.APIObjectItem{
-				Shared:  false,
-				Creator: params.UserInfo,
+				Shared:              false,
+				Creator:             params.UserInfo,
+				CreatedUnixTimeSec:  timeNow,
+				ModifiedUnixTimeSec: timeNow,
 			},
 		}
 	}
@@ -257,7 +260,7 @@ func roiPut(params handlers.ApiHandlerParams) (interface{}, error) {
 		}
 
 		// Check that it exists
-		_, exists := allROIs[rois[i].ID]
+		existing, exists := allROIs[rois[i].ID]
 		if !exists {
 			return nil, api.MakeStatusError(http.StatusNotFound, fmt.Errorf("roi %v not found", rois[i].ID))
 		}
@@ -265,8 +268,10 @@ func roiPut(params handlers.ApiHandlerParams) (interface{}, error) {
 		allROIs[rois[i].ID] = roiModel.ROISavedItem{
 			ROIItem: &rois[i].ROI,
 			APIObjectItem: &pixlUser.APIObjectItem{
-				Shared:  false,
-				Creator: params.UserInfo,
+				Shared:              false,
+				Creator:             params.UserInfo,
+				CreatedUnixTimeSec:  existing.CreatedUnixTimeSec,
+				ModifiedUnixTimeSec: params.Svcs.TimeStamper.GetTimeNowSec(),
 			},
 		}
 	}

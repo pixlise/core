@@ -28,6 +28,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/timestamper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
@@ -57,7 +58,9 @@ const rgbMixFileData = `{
 			"user_id": "999",
 			"name": "Peter N",
             "email": "niko@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
 	},
 	"def456": {
 		"name": "Ca-Fe-Al ratios",
@@ -80,7 +83,9 @@ const rgbMixFileData = `{
 			"user_id": "999",
 			"name": "Peter N",
             "email": "niko@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
 	}
 }`
 
@@ -193,7 +198,9 @@ func Test_RGBMixHandler_List(t *testing.T) {
 				"user_id": "88",
 				"name": "88",
 				"email": "mr88@spicule.co.uk"
-			}
+			},
+			"create_unix_time_sec": 1668100002,
+			"mod_unix_time_sec": 1668100002
 		}
 	}`))),
 			},
@@ -241,7 +248,9 @@ func Test_RGBMixHandler_List(t *testing.T) {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "def456": {
         "name": "Ca-Fe-Al ratios",
@@ -265,7 +274,9 @@ func Test_RGBMixHandler_List(t *testing.T) {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     },
     "shared-ghi789": {
         "name": "Na-Fe-Al ratios",
@@ -289,7 +300,9 @@ func Test_RGBMixHandler_List(t *testing.T) {
             "name": "Agent 88",
             "user_id": "88",
             "email": "agent_88@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100002,
+        "mod_unix_time_sec": 1668100002
     }
 }
 `)
@@ -364,7 +377,9 @@ func Example_RGBMixHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142579,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -392,7 +407,9 @@ func Example_RGBMixHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142580,
+        "mod_unix_time_sec": 1668142580
     }
 }`)),
 		},
@@ -420,7 +437,9 @@ func Example_RGBMixHandler_Post() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "def456": {
         "name": "Ca-Fe-Al ratios",
@@ -444,7 +463,9 @@ func Example_RGBMixHandler_Post() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     },
     "rgbmix-id18": {
         "name": "Sodium and stuff",
@@ -468,7 +489,9 @@ func Example_RGBMixHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142581,
+        "mod_unix_time_sec": 1668142581
     }
 }`)),
 		},
@@ -482,6 +505,9 @@ func Example_RGBMixHandler_Post() {
 	var idGen MockIDGenerator
 	idGen.ids = []string{"id16", "id17", "id18"}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579, 1668142580, 1668142581},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -617,7 +643,9 @@ func Example_RGBMixHandler_Put() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "def456": {
         "name": "Sodium and stuff",
@@ -641,7 +669,9 @@ func Example_RGBMixHandler_Put() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -651,6 +681,9 @@ func Example_RGBMixHandler_Put() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -785,7 +818,9 @@ func Example_RGBMixHandler_Delete() {
             "name": "The sharer",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     }
 }`))),
 		},
@@ -816,7 +851,9 @@ func Example_RGBMixHandler_Delete() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     }
 }`)),
 		},
@@ -949,7 +986,9 @@ func Example_RGBMixHandler_Share() {
             "name": "The sharer",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100006,
+        "mod_unix_time_sec": 1668100006
     }
 }`))),
 		},
@@ -980,7 +1019,9 @@ func Example_RGBMixHandler_Share() {
             "name": "The sharer",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100006,
+        "mod_unix_time_sec": 1668100006
     },
     "rgbmix-ddd222": {
         "name": "Ca-Fe-Al ratios",
@@ -1004,7 +1045,9 @@ func Example_RGBMixHandler_Share() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -1016,6 +1059,9 @@ func Example_RGBMixHandler_Share() {
 	var idGen MockIDGenerator
 	idGen.ids = []string{"ddd222"}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = ""

@@ -209,9 +209,12 @@ func viewStateCollectionPut(params handlers.ApiHandlerParams) (interface{}, erro
 	}
 
 	// Include creator info
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
 	collectionToSave.APIObjectItem = &pixlUser.APIObjectItem{
-		Shared:  false,
-		Creator: params.UserInfo,
+		Shared:              false,
+		Creator:             params.UserInfo,
+		CreatedUnixTimeSec:  timeNow,
+		ModifiedUnixTimeSec: timeNow,
 	}
 
 	// Save it
@@ -276,9 +279,12 @@ func viewStateCollectionShare(params handlers.ApiHandlerParams) (interface{}, er
 
 	// Set shared flag
 	if collectionContents.APIObjectItem == nil {
+		timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
 		collectionContents.APIObjectItem = &pixlUser.APIObjectItem{
-			Shared:  true,
-			Creator: params.UserInfo,
+			Shared:              true,
+			Creator:             params.UserInfo,
+			CreatedUnixTimeSec:  timeNow,
+			ModifiedUnixTimeSec: timeNow,
 		}
 	} else {
 		collectionContents.Shared = true

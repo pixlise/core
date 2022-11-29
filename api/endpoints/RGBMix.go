@@ -229,7 +229,16 @@ func rgbMixPost(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, errors.New("Failed to generate unique ID")
 	}
 
-	(*rgbMixes)[saveID] = rgbMix{RGBMixInput: req, APIObjectItem: &pixlUser.APIObjectItem{Shared: false, Creator: params.UserInfo}}
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
+	(*rgbMixes)[saveID] = rgbMix{
+		RGBMixInput: req,
+		APIObjectItem: &pixlUser.APIObjectItem{
+			Shared:              false,
+			Creator:             params.UserInfo,
+			CreatedUnixTimeSec:  timeNow,
+			ModifiedUnixTimeSec: timeNow,
+		},
+	}
 
 	return nil, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *rgbMixes)
 }
@@ -252,7 +261,15 @@ func rgbMixPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Save it & upload
-	(*rgbMixes)[itemID] = rgbMix{RGBMixInput: req, APIObjectItem: &pixlUser.APIObjectItem{Shared: false, Creator: existing.Creator}}
+	(*rgbMixes)[itemID] = rgbMix{
+		RGBMixInput: req,
+		APIObjectItem: &pixlUser.APIObjectItem{
+			Shared:              false,
+			Creator:             existing.Creator,
+			CreatedUnixTimeSec:  existing.CreatedUnixTimeSec,
+			ModifiedUnixTimeSec: params.Svcs.TimeStamper.GetTimeNowSec(),
+		},
+	}
 	return nil, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *rgbMixes)
 }
 
@@ -353,6 +370,9 @@ func shareRGBMixes(svcs *services.APIServices, userID string, idsToShare []strin
 		}
 
 		item.Shared = true
+
+		// Set modified time, as we just shared it now
+		item.ModifiedUnixTimeSec = svcs.TimeStamper.GetTimeNowSec()
 		sharedItems[id] = item
 	}
 

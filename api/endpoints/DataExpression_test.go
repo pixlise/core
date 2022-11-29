@@ -28,6 +28,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/timestamper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
@@ -45,7 +46,9 @@ const exprFile = `{
 			"user_id": "999",
 			"name": "Peter N",
             "email": "niko@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
 	},
 	"def456": {
 		"name": "Iron Error",
@@ -56,7 +59,9 @@ const exprFile = `{
 			"user_id": "999",
 			"name": "Peter N",
             "email": "niko@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
 	}
 }`
 
@@ -169,7 +174,9 @@ func Test_dataExpressionHandler_List(t *testing.T) {
             "name": "Peter N",
             "user_id": "999",
             "email": "peter@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "def456": {
         "name": "Iron Error",
@@ -181,7 +188,9 @@ func Test_dataExpressionHandler_List(t *testing.T) {
             "name": "Peter N",
             "user_id": "999",
             "email": "peter@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     },
     "shared-ghi789": {
         "name": "Iron %",
@@ -256,7 +265,9 @@ func Example_dataExpressionHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142579,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -272,7 +283,9 @@ func Example_dataExpressionHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142580,
+        "mod_unix_time_sec": 1668142580
     }
 }`)),
 		},
@@ -288,7 +301,9 @@ func Example_dataExpressionHandler_Post() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "def456": {
         "name": "Iron Error",
@@ -300,7 +315,9 @@ func Example_dataExpressionHandler_Post() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     },
     "id18": {
         "name": "Sodium weight%",
@@ -312,7 +329,9 @@ func Example_dataExpressionHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142581,
+        "mod_unix_time_sec": 1668142581
     }
 }`)),
 		},
@@ -326,6 +345,9 @@ func Example_dataExpressionHandler_Post() {
 	var idGen MockIDGenerator
 	idGen.ids = []string{"id16", "id17", "id18"}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579, 1668142580, 1668142581},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -369,7 +391,9 @@ func Example_dataExpressionHandler_Post() {
 	//             "name": "Niko Bellic",
 	//             "user_id": "600f2a0806b6c70071d3d174",
 	//             "email": "niko@spicule.co.uk"
-	//         }
+	//         },
+	//         "create_unix_time_sec": 1668142579,
+	//         "mod_unix_time_sec": 1668142579
 	//     }
 	// }
 	//
@@ -385,7 +409,9 @@ func Example_dataExpressionHandler_Post() {
 	//             "name": "Niko Bellic",
 	//             "user_id": "600f2a0806b6c70071d3d174",
 	//             "email": "niko@spicule.co.uk"
-	//         }
+	//         },
+	//         "create_unix_time_sec": 1668142580,
+	//         "mod_unix_time_sec": 1668142580
 	//     }
 	// }
 	//
@@ -401,7 +427,9 @@ func Example_dataExpressionHandler_Post() {
 	//             "name": "Peter N",
 	//             "user_id": "999",
 	//             "email": "niko@spicule.co.uk"
-	//         }
+	//         },
+	//         "create_unix_time_sec": 1668100000,
+	//         "mod_unix_time_sec": 1668100000
 	//     },
 	//     "def456": {
 	//         "name": "Iron Error",
@@ -413,7 +441,9 @@ func Example_dataExpressionHandler_Post() {
 	//             "name": "Peter N",
 	//             "user_id": "999",
 	//             "email": "niko@spicule.co.uk"
-	//         }
+	//         },
+	//         "create_unix_time_sec": 1668100001,
+	//         "mod_unix_time_sec": 1668100001
 	//     },
 	//     "id18": {
 	//         "name": "Sodium weight%",
@@ -425,7 +455,9 @@ func Example_dataExpressionHandler_Post() {
 	//             "name": "Niko Bellic",
 	//             "user_id": "600f2a0806b6c70071d3d174",
 	//             "email": "niko@spicule.co.uk"
-	//         }
+	//         },
+	//         "create_unix_time_sec": 1668142581,
+	//         "mod_unix_time_sec": 1668142581
 	//     }
 	// }
 }
@@ -475,7 +507,9 @@ func Example_dataExpressionHandler_Put() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "def456": {
         "name": "Iron Int",
@@ -487,7 +521,9 @@ func Example_dataExpressionHandler_Put() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -497,6 +533,9 @@ func Example_dataExpressionHandler_Put() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -560,7 +599,9 @@ func Example_dataExpressionHandler_Put() {
 	//             "name": "Peter N",
 	//             "user_id": "999",
 	//             "email": "niko@spicule.co.uk"
-	//         }
+	//         },
+	//         "create_unix_time_sec": 1668100000,
+	//         "mod_unix_time_sec": 1668100000
 	//     },
 	//     "def456": {
 	//         "name": "Iron Int",
@@ -572,7 +613,9 @@ func Example_dataExpressionHandler_Put() {
 	//             "name": "Peter N",
 	//             "user_id": "999",
 	//             "email": "niko@spicule.co.uk"
-	//         }
+	//         },
+	//         "create_unix_time_sec": 1668100001,
+	//         "mod_unix_time_sec": 1668142579
 	//     }
 	// }
 	//
@@ -652,7 +695,9 @@ func Example_dataExpressionHandler_Delete() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     }
 }`)),
 		},
@@ -732,7 +777,9 @@ func Example_dataExpressionHandler_Delete() {
 	//             "name": "Peter N",
 	//             "user_id": "999",
 	//             "email": "niko@spicule.co.uk"
-	//         }
+	//         },
+	//         "create_unix_time_sec": 1668100001,
+	//         "mod_unix_time_sec": 1668100001
 	//     }
 	// }
 	//
@@ -755,7 +802,9 @@ func Example_dataExpressionHandler_Share() {
 				"name": "The sharer",
 				"user_id": "600f2a0806b6c70071d3d174",
 				"email": "niko@spicule.co.uk"
-			}
+			},
+			"create_unix_time_sec": 1668150001,
+			"mod_unix_time_sec": 1668150001
 		}
 	}`
 	var mockS3 awsutil.MockS3Client
@@ -829,7 +878,9 @@ func Example_dataExpressionHandler_Share() {
             "name": "The sharer",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668150001,
+        "mod_unix_time_sec": 1668150001
     },
     "ddd222": {
         "name": "Iron Error",
@@ -841,7 +892,9 @@ func Example_dataExpressionHandler_Share() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -853,6 +906,9 @@ func Example_dataExpressionHandler_Share() {
 	var idGen MockIDGenerator
 	idGen.ids = []string{"ddd222"}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = ""

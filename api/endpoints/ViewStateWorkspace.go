@@ -170,11 +170,15 @@ func savedViewStatePut(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Set up a default view state
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
+
 	stateToSave := workspace{
 		ViewState: defaultWholeViewState(),
 		APIObjectItem: &pixlUser.APIObjectItem{
-			Shared:  false,
-			Creator: params.UserInfo,
+			Shared:              false,
+			Creator:             params.UserInfo,
+			CreatedUnixTimeSec:  timeNow,
+			ModifiedUnixTimeSec: timeNow,
 		},
 	}
 	err = json.Unmarshal(body, &stateToSave)
@@ -442,16 +446,21 @@ func viewStateShare(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	applyQuantByROIFallback(&state.ViewState.Quantification)
 
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
+
 	// Set shared owner info
 	if state.APIObjectItem == nil {
 		// Initially didn't have this field, so if anyone shares one where it didn't exist, they are set
 		// as the creator. This works well because you can only see your own view states
 		state.APIObjectItem = &pixlUser.APIObjectItem{
-			Shared:  true,
-			Creator: params.UserInfo,
+			Shared:              true,
+			Creator:             params.UserInfo,
+			CreatedUnixTimeSec:  timeNow,
+			ModifiedUnixTimeSec: timeNow,
 		}
 	} else {
 		state.Shared = true
+		state.ModifiedUnixTimeSec = timeNow
 	}
 
 	// Write it to shared space
@@ -511,6 +520,9 @@ func autoShareNonSharedItems(svcs *services.APIServices, ids viewStateReferenced
 	}
 
 	newIDs, err = shareRGBMixes(svcs, userID, unsharedRGBMixIDs)
+	if err != nil {
+		return idRemap, err
+	}
 
 	for idx, id := range newIDs {
 		idRemap[unsharedRGBMixIDs[idx]] = utils.SharedItemIDPrefix + id

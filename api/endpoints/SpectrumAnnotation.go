@@ -216,7 +216,18 @@ func annotationPost(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Save it & upload
-	saveItem := spectrumAnnotationLine{req.Name, req.RoiID, req.EV, &pixlUser.APIObjectItem{Shared: false, Creator: params.UserInfo}}
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
+	saveItem := spectrumAnnotationLine{
+		req.Name,
+		req.RoiID,
+		req.EV,
+		&pixlUser.APIObjectItem{
+			Shared:              false,
+			Creator:             params.UserInfo,
+			CreatedUnixTimeSec:  timeNow,
+			ModifiedUnixTimeSec: timeNow,
+		},
+	}
 	(*annotationFile)[itemID] = saveItem
 	return *annotationFile, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *annotationFile)
 }
@@ -242,7 +253,18 @@ func annotationPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Save it & upload
-	saveItem := spectrumAnnotationLine{req.Name, req.RoiID, req.EV, &pixlUser.APIObjectItem{Shared: false, Creator: existing.Creator}}
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
+	saveItem := spectrumAnnotationLine{
+		req.Name,
+		req.RoiID,
+		req.EV,
+		&pixlUser.APIObjectItem{
+			Shared:              false,
+			Creator:             existing.Creator,
+			CreatedUnixTimeSec:  existing.CreatedUnixTimeSec,
+			ModifiedUnixTimeSec: timeNow,
+		},
+	}
 	(*annotationFile)[itemID] = saveItem
 
 	return *annotationFile, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *annotationFile)
