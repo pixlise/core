@@ -78,12 +78,15 @@ func (m FileNameMeta) PMC() (int32, error) {
 }
 
 func (m FileNameMeta) RTT() (string, error) {
+	/* The spec actually says this can be a sequence ID and it's instrument-specific and alpha-numeric
+	   so we have to do away with the integer conversion check here
 	// Seems RTT is usually stored, but this can be a seq ID
 	// NOTE: we expect it to be a number, but we save it as a string
 	rttNum, err := strconv.Atoi(m.seqRTT)
 	if err != nil || rttNum <= 0 {
 		return "", errors.New("Failed to get RTT from: " + m.seqRTT)
 	}
+	*/
 	return m.seqRTT, nil
 }
 
