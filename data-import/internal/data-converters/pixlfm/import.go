@@ -205,7 +205,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		case "spectraDir":
 			file := ""
 			for file /*, spectraFileNameMeta*/ = range latestVersionFoundPaths {
-				locSpectraLookup, err = readSpectraCSV(path.Join(pathToSubdir, file), log)
+				locSpectraLookup, err = importerutils.ReadSpectraCSV(path.Join(pathToSubdir, file), log)
 				if err != nil {
 					return nil, "", err
 				}
@@ -220,7 +220,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 			}
 
 			if len(filesOnly) > 0 {
-				bulkMaxSpectraLookup, err = readBulkMaxSpectra(pathToSubdir, filesOnly, log)
+				bulkMaxSpectraLookup, err = importerutils.ReadBulkMaxSpectra(pathToSubdir, filesOnly, log)
 				if err != nil {
 					return nil, "", err
 				}
@@ -452,63 +452,5 @@ func makeDatasetFileMeta(fMeta gdsfilename.FileNameMeta, jobLog logger.ILogger) 
 	result.DriveID = drive
 	result.TargetID = "?"
 	result.Title = rtt
-	return result, nil
-}
-
-func readBulkMaxSpectra(inPath string, files []string, jobLog logger.ILogger) (dataConvertModels.DetectorSampleByPMC, error) {
-	result := dataConvertModels.DetectorSampleByPMC{}
-
-	for _, file := range files {
-		// Parse metadata for file
-		csvMeta, err := gdsfilename.ParseFileName(file)
-		if err != nil {
-			return nil, err
-		}
-
-		// Make sure it's one of the products we're expecting
-		readType := ""
-		if csvMeta.ProdType == "RBS" {
-			readType = "BulkSum"
-		} else if csvMeta.ProdType == "RMS" {
-			readType = "MaxValue"
-		} else {
-			return nil, fmt.Errorf("Unexpected bulk/max MSA product type: %v", csvMeta.ProdType)
-		}
-
-		pmc, err := csvMeta.PMC()
-		if err != nil {
-			return nil, err
-		}
-
-		csvPath := path.Join(inPath, file)
-		jobLog.Infof("  Reading %v MSA: %v", readType, csvPath)
-		lines, err := importerutils.ReadFileLines(csvPath, jobLog)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to load %v: %v", csvPath, err)
-		}
-
-		// Parse the MSA data
-		spectrumList, err := importerutils.ReadMSAFileLines(lines, false, false, false)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to parse %v: %v", csvPath, err)
-		}
-
-		// Set the read type, detector & PMC
-		for c := range spectrumList {
-			detector := "A"
-			if c > 0 {
-				detector = "B"
-			}
-			spectrumList[c].Meta["READTYPE"] = dataConvertModels.StringMetaValue(readType)
-			spectrumList[c].Meta["DETECTOR_ID"] = dataConvertModels.StringMetaValue(detector)
-			spectrumList[c].Meta["PMC"] = dataConvertModels.IntMetaValue(pmc)
-		}
-
-		if _, ok := result[pmc]; !ok {
-			result[pmc] = []dataConvertModels.DetectorSample{}
-		}
-		result[pmc] = append(result[pmc], spectrumList...)
-	}
-
 	return result, nil
 }
