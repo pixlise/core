@@ -160,23 +160,29 @@ func dataExpressionPost(params handlers.ApiHandlerParams) (interface{}, error) {
 
 func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	itemID := params.PathParams[idIdentifier]
-	if _, isSharedReq := utils.StripSharedItemIDPrefix(itemID); isSharedReq {
-		return nil, api.MakeBadRequestError(errors.New("Cannot edit shared expressions"))
-	}
 
 	s3Path := filepaths.GetExpressionPath(params.UserInfo.UserID)
+	id, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
+	if isSharedReq {
+		s3Path = filepaths.GetExpressionPath(pixlUser.ShareUserID)
+	}
+
 	expressions, req, err := setupForSave(params, s3Path)
 	if err != nil {
 		return nil, err
 	}
 
-	existing, ok := (*expressions)[itemID]
+	existing, ok := (*expressions)[id]
 	if !ok {
-		return nil, api.MakeNotFoundError(itemID)
+		return nil, api.MakeNotFoundError(id)
+	}
+
+	if isSharedReq && params.UserInfo.UserID != existing.Creator.UserID {
+		return nil, api.MakeBadRequestError(errors.New("cannot edit shared expression not owned by user"))
 	}
 
 	// Save it & upload
-	(*expressions)[itemID] = dataExpression.DataExpression{
+	(*expressions)[id] = dataExpression.DataExpression{
 		DataExpressionInput: req,
 		APIObjectItem: &pixlUser.APIObjectItem{
 			Shared:              false,
