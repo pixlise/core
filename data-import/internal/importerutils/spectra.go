@@ -318,12 +318,17 @@ func parseSpectraCSVData(data [][]string, readType string, jobLog logger.ILogger
 	return result, nil
 }
 
-func ReadBulkMaxSpectra(inPath string, files []string, jobLog logger.ILogger) (dataConvertModels.DetectorSampleByPMC, error) {
+// Expects the bulk file path and max file path in an array as inputs. Order does not matter because the file name
+// can be used to determine which is being read
+func ReadBulkMaxSpectra(filePaths []string, jobLog logger.ILogger) (dataConvertModels.DetectorSampleByPMC, error) {
 	result := dataConvertModels.DetectorSampleByPMC{}
 
-	for _, file := range files {
+	for _, filePath := range filePaths {
 		// Parse metadata for file
-		csvMeta, err := gdsfilename.ParseFileName(file)
+		fileOnly := path.Base(filePath)
+		// Make sure it's upper-case. SOFF can deliver lowercased ones
+		fileOnly = strings.ToUpper(fileOnly)
+		csvMeta, err := gdsfilename.ParseFileName(fileOnly)
 		if err != nil {
 			return nil, err
 		}
@@ -343,17 +348,16 @@ func ReadBulkMaxSpectra(inPath string, files []string, jobLog logger.ILogger) (d
 			return nil, err
 		}
 
-		csvPath := path.Join(inPath, file)
-		jobLog.Infof("  Reading %v MSA: %v", readType, csvPath)
-		lines, err := ReadFileLines(csvPath, jobLog)
+		jobLog.Infof("  Reading %v MSA: %v", readType, filePath)
+		lines, err := ReadFileLines(filePath, jobLog)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to load %v: %v", csvPath, err)
+			return nil, fmt.Errorf("Failed to load %v: %v", filePath, err)
 		}
 
 		// Parse the MSA data
 		spectrumList, err := ReadMSAFileLines(lines, false, false, false)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to parse %v: %v", csvPath, err)
+			return nil, fmt.Errorf("Failed to parse %v: %v", filePath, err)
 		}
 
 		// Set the read type, detector & PMC

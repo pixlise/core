@@ -35,6 +35,7 @@ import (
 	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
 	"github.com/pixlise/core/v2/data-import/internal/data-converters/jplbreadboard"
 	"github.com/pixlise/core/v2/data-import/internal/data-converters/pixlfm"
+	"github.com/pixlise/core/v2/data-import/internal/data-converters/soff"
 	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
 	"github.com/pixlise/core/v2/data-import/output"
 	diffractionDetection "github.com/pixlise/core/v2/diffraction-detector"
@@ -229,11 +230,21 @@ type DataConverter interface {
 
 // selectImporter - Looks in specified path and determines what importer to use
 func selectImporter(localFS fileaccess.FileAccess, importPath string) (DataConverter, error) {
-	// If we find a "config.json", assume it's a FM dataset from the pipeline
+	// Check if it's a PIXL FM style dataset
 	pathType, err := pixlfm.DetectPIXLFMStructure(importPath)
 	if len(pathType) > 0 && err == nil {
 		// We know it's a PIXL FM type dataset... it'll later be determined which one
 		return pixlfm.PIXLFM{}, nil
+	}
+
+	// Check if it's SOFF
+	soffFile, err := soff.GetSOFFDescriptionFile(importPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(soffFile) > 0 {
+		return &soff.SOFFImport{}, nil
 	}
 
 	// Try to read a detector.json - manually uploaded datasets will contain this to direct our operation...

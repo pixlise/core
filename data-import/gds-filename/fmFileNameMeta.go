@@ -26,6 +26,7 @@ import (
 	"unicode"
 
 	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
 )
 
 // FileNameMeta See docs/PIXL_filename.docx
@@ -373,4 +374,44 @@ func stringToDriveID(drive string) (int32, error) {
 		}
 	}
 	return 0, fmt.Errorf("Failed to convert: %v to drive ID", drive)
+}
+
+func MakeDatasetFileMeta(fMeta FileNameMeta, jobLog logger.ILogger) (dataConvertModels.FileMetaData, error) {
+	result := dataConvertModels.FileMetaData{}
+
+	sol, err := fMeta.SOL()
+	if err != nil {
+		//return result, nil
+		jobLog.Infof("Dataset Metadata did not contain SOL: %v", err)
+	}
+
+	rtt, err := fMeta.RTT()
+	if err != nil {
+		return result, nil
+	}
+
+	sclk, err := fMeta.SCLK()
+	if err != nil {
+		//return result, nil
+		jobLog.Infof("Dataset Metadata did not contain SCLK: %v", err)
+	}
+
+	site, err := fMeta.Site()
+	if err != nil {
+		return result, nil
+	}
+
+	drive, err := fMeta.Drive()
+	if err != nil {
+		return result, nil
+	}
+
+	result.SOL = sol
+	result.RTT = rtt
+	result.SCLK = sclk
+	result.SiteID = site
+	result.DriveID = drive
+	result.TargetID = "?"
+	result.Title = rtt
+	return result, nil
 }

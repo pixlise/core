@@ -19,7 +19,6 @@ package pixlfm
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"path"
 	"strings"
@@ -213,14 +212,14 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 				break
 			}
 		case "bulkSpectraDir":
-			filesOnly := []string{}
+			filePaths := []string{}
 
 			for file := range latestVersionFoundPaths {
-				filesOnly = append(filesOnly, file)
+				filePaths = append(filePaths, path.Join(pathToSubdir, file))
 			}
 
-			if len(filesOnly) > 0 {
-				bulkMaxSpectraLookup, err = importerutils.ReadBulkMaxSpectra(pathToSubdir, filesOnly, log)
+			if len(filePaths) > 0 {
+				bulkMaxSpectraLookup, err = importerutils.ReadBulkMaxSpectra(filePaths, log)
 				if err != nil {
 					return nil, "", err
 				}
@@ -309,77 +308,27 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		}
 	}
 
-	// Now that all have been read, combine the bulk/max spectra into our lookup
-	for pmc := range bulkMaxSpectraLookup {
-		locSpectraLookup[pmc] = append(locSpectraLookup[pmc], bulkMaxSpectraLookup[pmc]...)
-	}
-
-	importerutils.LogIfMoreFoundMSA(locSpectraLookup, "MSA/spectrum", 2, jobLog)
-	// Not really relevant, what would we show? It's a list of meta, how many is too many?
-	//importer.LogIfMoreFoundHousekeeping(hkData, "Housekeeping", 1)
-
 	matchedAlignedImages, err := importerutils.ReadMatchedImages(path.Join(importPath, "MATCHED"), beamLookup, log, localFS)
-
 	if err != nil {
 		return nil, "", err
 	}
 
-	// Build internal representation of the data that we can pass to the output code
-	// We now read the metadata from the housekeeping file name, as it's the only file we expect to always exist!
-	meta, err := makeDatasetFileMeta(housekeepingFileNameMeta, log)
-	if err != nil {
-		return nil, "", fmt.Errorf("Failed to parse file metadata: %v", err)
-	}
-
-	// Expecting RTT to be read
-	if len(meta.RTT) <= 0 {
-		return nil, "", errors.New("Failed to determine dataset RTT")
-	}
-
-	// Ensure it matches what we're expecting
-	// We allow for missing 0's at the start because for a while we imported RTTs as ints, so older dataset RTTs
-	// were coming in as eg 76481028, while we now read them as 076481028
-	if meta.RTT != datasetIDExpected && meta.RTT != "0"+datasetIDExpected {
-		return nil, "", fmt.Errorf("Expected dataset ID %v, read %v", datasetIDExpected, meta.RTT)
-	}
-
-	detectorConfig := "PIXL"
-	group := "PIXL-FM"
-
-	// Depending on the SOL we may override the group and detector, as we have some test datasets that came
-	// from the EM and have special characters as first part of SOL
-	if len(meta.SOL) > 0 && (meta.SOL[0] == 'D' || meta.SOL[0] == 'C') {
-		detectorConfig = "PIXL-EM-E2E"
-		group = "PIXL-EM"
-	}
-
-	data := &dataConvertModels.OutputData{
-		DatasetID:      meta.RTT,
-		Group:          group,
-		Meta:           meta,
-		DetectorConfig: detectorConfig,
-		//BulkQuantFile: "", <-- no bulk quant for tactical... TODO: what do we do here, does a scientist do it and we publish it back through PDS?
-		PseudoRanges:         pseudoIntensityRanges,
-		PerPMCData:           map[int32]*dataConvertModels.PMCData{},
-		RGBUImages:           rgbuImages,
-		DISCOImages:          discoImages,
-		MatchedAlignedImages: matchedAlignedImages,
-	}
-
-	data.SetPMCData(beamLookup, hkData, locSpectraLookup, contextImgsPerPMC, pseudoIntensityData)
-	if data.DefaultContextImage != "" {
-		log.Infof("Setting context image to: " + data.DefaultContextImage)
-	}
-	// If we have no default context image at this point, see if we can use one of the DISCO images
-	if len(data.DefaultContextImage) <= 0 && len(discoImages) > 0 {
-		if len(whiteDiscoImage) > 0 {
-			data.DefaultContextImage = whiteDiscoImage
-			log.Infof("White Disco Image Found. Setting Context Image: " + whiteDiscoImage)
-		} else {
-			log.Infof("Setting Context to first Disco Image: " + discoImages[0].FileName)
-			data.DefaultContextImage = discoImages[0].FileName
-		}
-	}
+	data, err := importerutils.MakeFMDatasetOutput(
+		beamLookup,
+		hkData,
+		locSpectraLookup,
+		bulkMaxSpectraLookup,
+		contextImgsPerPMC,
+		pseudoIntensityData,
+		pseudoIntensityRanges,
+		matchedAlignedImages,
+		rgbuImages,
+		discoImages,
+		whiteDiscoImage,
+		housekeepingFileNameMeta,
+		datasetIDExpected,
+		jobLog,
+	)
 
 	return data, importPath, nil
 }
@@ -396,8 +345,10 @@ func DetectPIXLFMStructure(importPath string) (string, error) {
 			return "DataDrive", nil
 		}
 	}
+
 	return "", errors.New("unknown data source type")
 }
+
 func validatePaths(importPath string, validpaths []string) error {
 	validated := []string{}
 	c, _ := ioutil.ReadDir(importPath)
@@ -413,44 +364,4 @@ func validatePaths(importPath string, validpaths []string) error {
 		return errors.New("not all directories located")
 	}
 	return nil
-}
-
-func makeDatasetFileMeta(fMeta gdsfilename.FileNameMeta, jobLog logger.ILogger) (dataConvertModels.FileMetaData, error) {
-	result := dataConvertModels.FileMetaData{}
-
-	sol, err := fMeta.SOL()
-	if err != nil {
-		//return result, nil
-		jobLog.Infof("Dataset Metadata did not contain SOL: %v", err)
-	}
-
-	rtt, err := fMeta.RTT()
-	if err != nil {
-		return result, nil
-	}
-
-	sclk, err := fMeta.SCLK()
-	if err != nil {
-		//return result, nil
-		jobLog.Infof("Dataset Metadata did not contain SCLK: %v", err)
-	}
-
-	site, err := fMeta.Site()
-	if err != nil {
-		return result, nil
-	}
-
-	drive, err := fMeta.Drive()
-	if err != nil {
-		return result, nil
-	}
-
-	result.SOL = sol
-	result.RTT = rtt
-	result.SCLK = sclk
-	result.SiteID = site
-	result.DriveID = drive
-	result.TargetID = "?"
-	result.Title = rtt
-	return result, nil
 }
