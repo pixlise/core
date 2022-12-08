@@ -26,6 +26,7 @@ import (
 
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/core/utils"
 	gdsfilename "github.com/pixlise/core/v2/data-import/gds-filename"
 	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
 	"github.com/pixlise/core/v2/data-import/internal/importerutils"
@@ -482,7 +483,7 @@ func readBulkMaxSpectra(inPath string, files []string, jobLog logger.ILogger) (d
 
 		csvPath := path.Join(inPath, file)
 		jobLog.Infof("  Reading %v MSA: %v", readType, csvPath)
-		lines, err := importerutils.ReadFileLines(csvPath, jobLog)
+		lines, err := utils.ReadFileLines(csvPath)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to load %v: %v", csvPath, err)
 		}

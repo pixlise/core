@@ -28,8 +28,10 @@ type UserInfo struct {
 // APIObjectItem API endpoints send around versions of this struct (with extra fields depending on the data type)
 // TODO: maybe need to move this to its own API structures place? It's currently used in more places than just API handlers though.
 type APIObjectItem struct {
-	Shared  bool     `json:"shared"`
-	Creator UserInfo `json:"creator"`
+	Shared              bool     `json:"shared"`
+	Creator             UserInfo `json:"creator"`
+	CreatedUnixTimeSec  int64    `json:"create_unix_time_sec,omitempty"`
+	ModifiedUnixTimeSec int64    `json:"mod_unix_time_sec,omitempty"`
 }
 
 // A special shared user ID so code knows if it's referring to this...

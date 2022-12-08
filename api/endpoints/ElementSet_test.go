@@ -28,6 +28,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/timestamper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
@@ -54,7 +55,9 @@ const elemFile = `{
 				"Esc": false
 			}
 		],
-		"creator": { "name": "Peter", "user_id": "u123" }
+		"creator": { "name": "Peter", "user_id": "u123" },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
 	},
 	"44": {
 		"name": "My Tuesday Elements",
@@ -74,7 +77,9 @@ const elemFile = `{
 				"Esc": false
 			}
 		],
-		"creator": { "name": "Tom", "user_id": "u124" }
+		"creator": { "name": "Tom", "user_id": "u124" },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
 	}
 }`
 
@@ -176,7 +181,9 @@ func Test_elementSetHandler_List(t *testing.T) {
 					"Esc": false
 				}
 			],
-			"creator": { "name": "Peter", "user_id": "u123" }
+			"creator": { "name": "Peter", "user_id": "u123" },
+			"create_unix_time_sec": 1668100002,
+			"mod_unix_time_sec": 1668100002
 		}
 	}`))),
 			},
@@ -193,7 +200,9 @@ func Test_elementSetHandler_List(t *testing.T) {
 					"Esc": false
 				}
 			],
-			"creator": { "name": "Mike", "user_id": "u125" }
+			"creator": { "name": "Mike", "user_id": "u125" },
+			"create_unix_time_sec": 1668100003,
+			"mod_unix_time_sec": 1668100003
 		}
 	}`))),
 			},
@@ -230,7 +239,9 @@ func Test_elementSetHandler_List(t *testing.T) {
             "name": "Peter",
             "user_id": "u123",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100002,
+        "mod_unix_time_sec": 1668100002
     },
     "shared-88": {
         "name": "Shared Elements",
@@ -242,7 +253,9 @@ func Test_elementSetHandler_List(t *testing.T) {
             "name": "Mike T",
             "user_id": "u125",
             "email": "mike@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100003,
+        "mod_unix_time_sec": 1668100003
     }
 }
 `)
@@ -365,7 +378,9 @@ func Test_elementSetHandler_Get(t *testing.T) {
         "name": "Peter N",
         "user_id": "u123",
         "email": ""
-    }
+    },
+    "create_unix_time_sec": 1668100000,
+    "mod_unix_time_sec": 1668100000
 }
 `)
 
@@ -396,7 +411,9 @@ func Test_elementSetHandler_Get(t *testing.T) {
         "name": "Peter N",
         "user_id": "u123",
         "email": ""
-    }
+    },
+    "create_unix_time_sec": 1668100000,
+    "mod_unix_time_sec": 1668100000
 }
 `)
 	})
@@ -445,7 +462,9 @@ func Example_elementSetHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142579,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -467,7 +486,9 @@ func Example_elementSetHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142580,
+        "mod_unix_time_sec": 1668142580
     }
 }`)),
 		},
@@ -496,7 +517,9 @@ func Example_elementSetHandler_Post() {
             "name": "Peter",
             "user_id": "u123",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "44": {
         "name": "My Tuesday Elements",
@@ -521,7 +544,9 @@ func Example_elementSetHandler_Post() {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     },
     "57": {
         "name": "Latest set",
@@ -539,7 +564,9 @@ func Example_elementSetHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142581,
+        "mod_unix_time_sec": 1668142581
     }
 }`)),
 		},
@@ -553,6 +580,9 @@ func Example_elementSetHandler_Post() {
 	var idGen MockIDGenerator
 	idGen.ids = []string{"55", "56", "57"}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579, 1668142580, 1668142581},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const postItem = `{
@@ -653,7 +683,9 @@ func Example_elementSetHandler_Put() {
             "name": "Peter",
             "user_id": "u123",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "44": {
         "name": "Latest set",
@@ -671,7 +703,9 @@ func Example_elementSetHandler_Put() {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -681,6 +715,9 @@ func Example_elementSetHandler_Put() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -833,7 +870,9 @@ func Example_elementSetHandler_Delete() {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     }
 }`)),
 		},
@@ -1008,7 +1047,9 @@ func Example_elementSetHandler_Share() {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     }
 }`)),
 		},

@@ -18,8 +18,10 @@
 package utils
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
+	"os"
 )
 
 // Simple Go helper functions
@@ -137,3 +139,23 @@ func MakeSaveableFileName(name string) string {
 
 // PrettyPrintIndentForJSON Pretty-print indenting of JSON
 const PrettyPrintIndentForJSON = "    "
+
+// ReadFileLines - Reads all lines in a file into a string array
+func ReadFileLines(filePath string) ([]string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(file)
+	lines := []string{}
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return lines, nil
+}

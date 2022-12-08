@@ -29,6 +29,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/timestamper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
@@ -946,7 +947,9 @@ func Example_viewStateHandler_PutSaved_Force() {
         "name": "Niko Bellic",
         "user_id": "600f2a0806b6c70071d3d174",
         "email": "niko@spicule.co.uk"
-    }
+    },
+    "create_unix_time_sec": 1668142579,
+    "mod_unix_time_sec": 1668142579
 }`)),
 		},
 	}
@@ -956,6 +959,9 @@ func Example_viewStateHandler_PutSaved_Force() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("PUT", "/view-state/saved/TheDataSetID/viewstate123?force=true", bytes.NewReader([]byte(`{
@@ -1069,6 +1075,9 @@ func Example_viewStateHandler_PutSaved_OverwriteAlreadyExists() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("PUT", "/view-state/saved/TheDataSetID/viewstate123", bytes.NewReader([]byte(`{
@@ -1785,7 +1794,9 @@ func Example_viewStateHandler_ShareViewState() {
         "name": "Niko Bellic",
         "user_id": "600f2a0806b6c70071d3d174",
         "email": "niko@spicule.co.uk"
-    }
+    },
+    "create_unix_time_sec": 1668142579,
+    "mod_unix_time_sec": 1668142579
 }`)),
 		},
 	}
@@ -1794,6 +1805,9 @@ func Example_viewStateHandler_ShareViewState() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	// User file not there, should say not found
@@ -1893,7 +1907,10 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 					"ternaryPlots": { "66": { "expressionIDs": ["shared-expr2"], "visibleROIs": ["roi2"] } }
 				 },
 				 "name": "222",
-				"description": "the description of 222"
+				"description": "the description of 222",
+				"creator": { "name": "Kyle", "user_id": "u124" },
+				"create_unix_time_sec": 1668100010,
+				"mod_unix_time_sec": 1668100011
 			}`))),
 		},
 
@@ -1904,7 +1921,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 		"name": "Dark patch 2",
 		"description": "The second dark patch",
 		"locationIndexes": [4, 55, 394],
-		"creator": { "name": "Peter", "user_id": "u123" }
+		"creator": { "name": "Peter", "user_id": "u123" },
+        "create_unix_time_sec": 1668100012,
+        "mod_unix_time_sec": 1668100013
 	}
 }`))),
 		},
@@ -1915,7 +1934,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 		"shared": true,
 		"description": "The shared patch",
 		"locationIndexes": [4, 55, 394],
-		"creator": { "name": "PeterN", "user_id": "u123" }
+		"creator": { "name": "PeterN", "user_id": "u123" },
+        "create_unix_time_sec": 1668100014,
+        "mod_unix_time_sec": 1668100015
 	}
 }`))),
 		},
@@ -1931,7 +1952,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 			"user_id": "444",
 			"name": "Niko",
 			"email": "niko@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100016,
+        "mod_unix_time_sec": 1668100017
 	},
 	"expr1": {
 		"name": "Calcium weight%",
@@ -1942,7 +1965,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 			"user_id": "999",
 			"name": "Peter N",
 			"email": "peter@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100018,
+        "mod_unix_time_sec": 1668100019
 	}
 }`))),
 		},
@@ -1971,7 +1996,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 			"user_id": "999",
 			"name": "Peter N",
 			"email": "niko@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100020,
+        "mod_unix_time_sec": 1668100021
 	}
 }`))),
 		},
@@ -2000,7 +2027,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 			"user_id": "999",
 			"name": "Peter N",
 			"email": "niko@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100022,
+        "mod_unix_time_sec": 1668100023
 	}
 }`))),
 		},
@@ -2030,7 +2059,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             "name": "PeterN",
             "user_id": "u123",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100014,
+        "mod_unix_time_sec": 1668100015
     },
     "roi2(sh)": {
         "name": "Dark patch 2",
@@ -2052,7 +2083,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             "name": "Peter",
             "user_id": "u123",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100012,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -2068,7 +2101,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             "name": "Peter N",
             "user_id": "999",
             "email": "peter@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100018,
+        "mod_unix_time_sec": 16681425780
     }
 }`)),
 		},
@@ -2096,7 +2131,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100022,
+        "mod_unix_time_sec": 1668100023
     },
     "rgbmix-123roi": {
         "name": "Ca-Ti-Al ratios",
@@ -2120,7 +2157,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100020,
+        "mod_unix_time_sec": 1668142581
     }
 }`)),
 		},
@@ -2229,10 +2268,12 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
     "description": "the description of 222",
     "shared": true,
     "creator": {
-        "name": "Niko Bellic",
-        "user_id": "600f2a0806b6c70071d3d174",
-        "email": "niko@spicule.co.uk"
-    }
+        "name": "Kyle",
+        "user_id": "u124",
+        "email": ""
+    },
+    "create_unix_time_sec": 1668100010,
+    "mod_unix_time_sec": 1668142582
 }`)),
 		},
 	}
@@ -2246,6 +2287,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 	var idGen MockIDGenerator
 	idGen.ids = []string{"roi2(sh)", "expr1(sh)", "123roi"}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579, 16681425780, 1668142581, 1668142582},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	// User file not there, should say not found
