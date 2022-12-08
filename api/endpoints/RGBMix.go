@@ -53,11 +53,11 @@ type ChannelConfig struct {
 }
 
 type RGBMixInput struct {
-	Name string `json:"name"`
-
+	Name  string        `json:"name"`
 	Red   ChannelConfig `json:"red"`
 	Green ChannelConfig `json:"green"`
 	Blue  ChannelConfig `json:"blue"`
+	Tags  []string      `json:"tags"`
 }
 
 type rgbMix struct {
@@ -245,26 +245,32 @@ func rgbMixPost(params handlers.ApiHandlerParams) (interface{}, error) {
 
 func rgbMixPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	itemID := params.PathParams[idIdentifier]
-	if _, isSharedReq := utils.StripSharedItemIDPrefix(itemID); isSharedReq {
-		return nil, api.MakeBadRequestError(errors.New("Cannot edit shared RGB mixes"))
-	}
+	id, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
 
 	s3Path := filepaths.GetRGBMixPath(params.UserInfo.UserID)
+	if isSharedReq {
+		s3Path = filepaths.GetRGBMixPath(pixlUser.ShareUserID)
+	}
+
 	rgbMixes, req, err := setupRGBMixForSave(params, s3Path)
 	if err != nil {
 		return nil, err
 	}
 
-	existing, ok := (*rgbMixes)[itemID]
+	existing, ok := (*rgbMixes)[id]
 	if !ok {
-		return nil, api.MakeNotFoundError(itemID)
+		return nil, api.MakeNotFoundError(id)
+	}
+
+	if isSharedReq && params.UserInfo.UserID != existing.Creator.UserID {
+		return nil, api.MakeBadRequestError(errors.New("cannot edit shared RGB mixes created by others"))
 	}
 
 	// Save it & upload
-	(*rgbMixes)[itemID] = rgbMix{
+	(*rgbMixes)[id] = rgbMix{
 		RGBMixInput: req,
 		APIObjectItem: &pixlUser.APIObjectItem{
-			Shared:              false,
+			Shared:              isSharedReq,
 			Creator:             existing.Creator,
 			CreatedUnixTimeSec:  existing.CreatedUnixTimeSec,
 			ModifiedUnixTimeSec: params.Svcs.TimeStamper.GetTimeNowSec(),
