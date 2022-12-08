@@ -28,6 +28,7 @@ type JobSummaryItem struct {
 	Params   JobStartingParametersWithPMCCount `json:"params"`
 	Elements []string                          `json:"elements"`
 	*JobStatus
+	// TODO: Make this also contain *APIObjectItem and remove its own Shared field...
 }
 
 // SetMissingSummaryFields - ensure the fields all exist over time.

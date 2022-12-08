@@ -138,7 +138,17 @@ func dataExpressionPost(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, fmt.Errorf("Failed to generate unique ID")
 	}
 
-	(*expressions)[saveID] = dataExpression.DataExpression{DataExpressionInput: req, APIObjectItem: &pixlUser.APIObjectItem{Shared: false, Creator: params.UserInfo}}
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
+
+	(*expressions)[saveID] = dataExpression.DataExpression{
+		DataExpressionInput: req,
+		APIObjectItem: &pixlUser.APIObjectItem{
+			Shared:              false,
+			Creator:             params.UserInfo,
+			CreatedUnixTimeSec:  timeNow,
+			ModifiedUnixTimeSec: timeNow,
+		},
+	}
 
 	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *expressions)
 	if err != nil {
@@ -166,7 +176,15 @@ func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Save it & upload
-	(*expressions)[itemID] = dataExpression.DataExpression{DataExpressionInput: req, APIObjectItem: &pixlUser.APIObjectItem{Shared: false, Creator: existing.Creator}}
+	(*expressions)[itemID] = dataExpression.DataExpression{
+		DataExpressionInput: req,
+		APIObjectItem: &pixlUser.APIObjectItem{
+			Shared:              false,
+			Creator:             existing.Creator,
+			CreatedUnixTimeSec:  existing.CreatedUnixTimeSec,
+			ModifiedUnixTimeSec: params.Svcs.TimeStamper.GetTimeNowSec(),
+		},
+	}
 	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *expressions)
 	if err != nil {
 		return nil, err
@@ -264,6 +282,7 @@ func shareExpressions(svcs *services.APIServices, userID string, expressionIDs [
 		}
 
 		// Add it to the shared file and we're done
+		timeNow := svcs.TimeStamper.GetTimeNowSec()
 		sharedCopy := dataExpression.DataExpression{
 			DataExpressionInput: &dataExpression.DataExpressionInput{
 				Name:       exprItem.Name,
@@ -272,8 +291,10 @@ func shareExpressions(svcs *services.APIServices, userID string, expressionIDs [
 				Comments:   exprItem.Comments,
 			},
 			APIObjectItem: &pixlUser.APIObjectItem{
-				Shared:  true,
-				Creator: exprItem.Creator,
+				Shared:              true,
+				Creator:             exprItem.Creator,
+				CreatedUnixTimeSec:  exprItem.CreatedUnixTimeSec,
+				ModifiedUnixTimeSec: timeNow,
 			},
 		}
 

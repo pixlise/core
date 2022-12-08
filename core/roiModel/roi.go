@@ -73,6 +73,15 @@ type ROISavedItem struct {
 	*pixlUser.APIObjectItem
 }
 
+func (a ROISavedItem) SetTimes(userID string, t int64) {
+	if a.CreatedUnixTimeSec == 0 {
+		a.CreatedUnixTimeSec = t
+	}
+	if a.ModifiedUnixTimeSec == 0 {
+		a.ModifiedUnixTimeSec = t
+	}
+}
+
 type ROILookup map[string]ROISavedItem
 
 type ROIMembers struct {
@@ -189,8 +198,10 @@ func GetROIs(svcs *services.APIServices, userID string, datasetID string, outMap
 		toSave := ROISavedItem{
 			ROIItem: item.ROIItem,
 			APIObjectItem: &pixlUser.APIObjectItem{
-				Shared:  sharedFile,
-				Creator: item.Creator,
+				Shared:              sharedFile,
+				Creator:             item.Creator,
+				CreatedUnixTimeSec:  item.CreatedUnixTimeSec,
+				ModifiedUnixTimeSec: item.ModifiedUnixTimeSec,
 			},
 		}
 
@@ -252,8 +263,10 @@ func ShareROIs(svcs *services.APIServices, userID string, datasetID string, roiI
 				MistROIItem:     roiItem.MistROIItem,
 			},
 			APIObjectItem: &pixlUser.APIObjectItem{
-				Shared:  true,
-				Creator: roiItem.Creator,
+				Shared:              true,
+				Creator:             roiItem.Creator,
+				CreatedUnixTimeSec:  roiItem.CreatedUnixTimeSec,
+				ModifiedUnixTimeSec: svcs.TimeStamper.GetTimeNowSec(),
 			},
 		}
 
