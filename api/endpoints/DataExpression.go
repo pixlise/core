@@ -155,7 +155,11 @@ func dataExpressionPost(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	return *expressions, nil
+	// Only return new item
+	response := dataExpression.DataExpressionLookup{}
+	response[saveID] = (*expressions)[saveID]
+
+	return response, nil
 }
 
 func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -163,6 +167,7 @@ func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	s3Path := filepaths.GetExpressionPath(params.UserInfo.UserID)
 	id, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
+
 	if isSharedReq {
 		s3Path = filepaths.GetExpressionPath(pixlUser.ShareUserID)
 	}
@@ -185,7 +190,7 @@ func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	(*expressions)[id] = dataExpression.DataExpression{
 		DataExpressionInput: req,
 		APIObjectItem: &pixlUser.APIObjectItem{
-			Shared:              false,
+			Shared:              isSharedReq,
 			Creator:             existing.Creator,
 			CreatedUnixTimeSec:  existing.CreatedUnixTimeSec,
 			ModifiedUnixTimeSec: params.Svcs.TimeStamper.GetTimeNowSec(),
@@ -196,7 +201,11 @@ func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	return *expressions, nil
+	// Use non-stripped ID for response
+	response := dataExpression.DataExpressionLookup{}
+	response[itemID] = (*expressions)[id]
+
+	return response, nil
 }
 
 func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -204,10 +213,9 @@ func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error)
 	itemID := params.PathParams[idIdentifier]
 	s3Path := filepaths.GetExpressionPath(params.UserInfo.UserID)
 
-	strippedID, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
+	id, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
 	if isSharedReq {
 		s3Path = filepaths.GetExpressionPath(pixlUser.ShareUserID)
-		itemID = strippedID
 	}
 
 	// Using path params, work out path
@@ -216,24 +224,28 @@ func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error)
 		return nil, err
 	}
 
-	sharedItem, ok := items[itemID]
+	sharedItem, ok := items[id]
 	if !ok {
-		return nil, api.MakeNotFoundError(itemID)
+		return nil, api.MakeNotFoundError(id)
 	}
 
 	if isSharedReq && sharedItem.Creator.UserID != params.UserInfo.UserID {
-		return nil, api.MakeStatusError(http.StatusUnauthorized, fmt.Errorf("%v not owned by %v", itemID, params.UserInfo.UserID))
+		return nil, api.MakeStatusError(http.StatusUnauthorized, fmt.Errorf("%v not owned by %v", id, params.UserInfo.UserID))
 	}
 
 	// Found it, delete & we're done
-	delete(items, itemID)
+	delete(items, id)
 
 	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, items)
 	if err != nil {
 		return nil, err
 	}
 
-	return items, nil
+	// Return just the one deleted id
+	response := map[string]string{}
+	response[itemID] = itemID
+
+	return response, nil
 }
 
 func dataExpressionShare(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -294,6 +306,7 @@ func shareExpressions(svcs *services.APIServices, userID string, expressionIDs [
 				Name:       exprItem.Name,
 				Expression: exprItem.Expression,
 				Type:       exprItem.Type,
+				Tags:       exprItem.Tags,
 				Comments:   exprItem.Comments,
 			},
 			APIObjectItem: &pixlUser.APIObjectItem{
