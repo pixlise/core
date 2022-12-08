@@ -354,13 +354,13 @@ func writeEdited(remoteFS fileaccess.FileAccess, userBucket string, filePath str
 
 	err = fs.WriteJSON(filePath, "", itemPtr)
 	if err != nil {
-		log.Fatal("Failed to write: %v. Error: %v", filePath, err)
+		log.Fatalf("Failed to write: %v. Error: %v", filePath, err)
 	}
 
 	// Now write to AWS too
 	err = remoteFS.WriteJSON(userBucket, filePath, itemPtr)
 	if err != nil {
-		log.Fatal("Failed to write to S3: %v. Error: %v", filePath, err)
+		log.Fatalf("Failed to write to S3: %v. Error: %v", filePath, err)
 	}
 }
 
