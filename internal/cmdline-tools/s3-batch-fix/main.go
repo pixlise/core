@@ -350,11 +350,11 @@ func writeEdited(remoteFS fileaccess.FileAccess, userBucket string, filePath str
 	}
 
 	fs := &fileaccess.FSAccess{}
-	filePath = "./output/edited/" + filePath
+	filePathLocal := "./output/edited/" + filePath
 
-	err = fs.WriteJSON(filePath, "", itemPtr)
+	err = fs.WriteJSON(filePathLocal, "", itemPtr)
 	if err != nil {
-		log.Fatalf("Failed to write: %v. Error: %v", filePath, err)
+		log.Fatalf("Failed to write: %v. Error: %v", filePathLocal, err)
 	}
 
 	// Now write to AWS too
