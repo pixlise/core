@@ -81,25 +81,6 @@ func ReadCSV(filePath string, headerIdx int, sep rune, jobLog logger.ILogger) ([
 	return rows, nil
 }
 
-func ReadFileLines(filePath string, jobLog logger.ILogger) ([]string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	scanner := bufio.NewScanner(file)
-	lines := []string{}
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return lines, nil
-}
-
 // Given the stuff read from disk, this takes all the data and assembles it in the output structure
 // This was hard-coded into the FM importer in past, but now that we have SOFF files they need to
 // work the same way, so it's been pulled into here

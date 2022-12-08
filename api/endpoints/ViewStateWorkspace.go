@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -37,11 +38,28 @@ import (
 	"github.com/pixlise/core/v2/core/utils"
 )
 
-type workspace struct {
+type Workspace struct {
 	ViewState   wholeViewState `json:"viewState"`
 	Name        string         `json:"name"`
 	Description string         `json:"description"`
 	*pixlUser.APIObjectItem
+}
+
+func (a Workspace) SetTimes(userID string, t int64) {
+	if a.APIObjectItem == nil {
+		log.Printf("Workspace: %v has no APIObjectItem\n", a.Name)
+		a.APIObjectItem = &pixlUser.APIObjectItem{
+			Creator: pixlUser.UserInfo{
+				UserID: userID,
+			},
+		}
+	}
+	if a.CreatedUnixTimeSec == 0 {
+		a.CreatedUnixTimeSec = t
+	}
+	if a.ModifiedUnixTimeSec == 0 {
+		a.ModifiedUnixTimeSec = t
+	}
 }
 
 type workspaceSummary struct {
@@ -91,7 +109,7 @@ func getViewStateListing(svcs *services.APIServices, datasetID string, userID st
 		// Name aka workspace ID returned: fileName[0 : len(fileName)-len(fileExt)]
 
 		// Get creator info
-		state := workspace{
+		state := Workspace{
 			ViewState: defaultWholeViewState(),
 		}
 
@@ -125,7 +143,7 @@ func savedViewStateGet(params handlers.ApiHandlerParams) (interface{}, error) {
 		viewStateID = strippedID
 	}
 
-	state := workspace{
+	state := Workspace{
 		ViewState: defaultWholeViewState(),
 	}
 
@@ -170,11 +188,15 @@ func savedViewStatePut(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Set up a default view state
-	stateToSave := workspace{
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
+
+	stateToSave := Workspace{
 		ViewState: defaultWholeViewState(),
 		APIObjectItem: &pixlUser.APIObjectItem{
-			Shared:  false,
-			Creator: params.UserInfo,
+			Shared:              false,
+			Creator:             params.UserInfo,
+			CreatedUnixTimeSec:  timeNow,
+			ModifiedUnixTimeSec: timeNow,
 		},
 	}
 	err = json.Unmarshal(body, &stateToSave)
@@ -184,7 +206,7 @@ func savedViewStatePut(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	// At this point, if the force flag is not true, we check if it already exists and send back an error if it does
 	if forceFlag != "true" {
-		existingSaved := workspace{
+		existingSaved := Workspace{
 			ViewState: defaultWholeViewState(),
 		}
 
@@ -232,7 +254,7 @@ func savedViewStateDelete(params handlers.ApiHandlerParams) (interface{}, error)
 	}
 
 	// Check that it exists
-	state := workspace{}
+	state := Workspace{}
 	err := params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, s3Path, &state, false)
 	if err != nil {
 		return nil, api.MakeNotFoundError(viewStateID)
@@ -254,7 +276,7 @@ func savedViewStateDelete(params handlers.ApiHandlerParams) (interface{}, error)
 		for _, listingItem := range listing {
 			collectionS3Path := filepaths.GetCollectionPath(params.UserInfo.UserID, datasetID, listingItem.Name)
 
-			collectionContents := workspaceCollection{ViewStateIDs: []string{}}
+			collectionContents := WorkspaceCollection{ViewStateIDs: []string{}}
 
 			err := params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, collectionS3Path, &collectionContents, false)
 			if err != nil {
@@ -288,7 +310,7 @@ func savedViewStateGetReferencedIDs(params handlers.ApiHandlerParams) (interface
 	s3Path := filepaths.GetWorkspacePath(params.UserInfo.UserID, datasetID, viewStateID)
 
 	// Read the file in
-	state := workspace{
+	state := Workspace{
 		ViewState: defaultWholeViewState(),
 	}
 
@@ -412,7 +434,7 @@ func viewStateShare(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Read the file in
-	state := workspace{
+	state := Workspace{
 		ViewState: defaultWholeViewState(),
 	}
 
@@ -442,16 +464,21 @@ func viewStateShare(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	applyQuantByROIFallback(&state.ViewState.Quantification)
 
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
+
 	// Set shared owner info
 	if state.APIObjectItem == nil {
 		// Initially didn't have this field, so if anyone shares one where it didn't exist, they are set
 		// as the creator. This works well because you can only see your own view states
 		state.APIObjectItem = &pixlUser.APIObjectItem{
-			Shared:  true,
-			Creator: params.UserInfo,
+			Shared:              true,
+			Creator:             params.UserInfo,
+			CreatedUnixTimeSec:  timeNow,
+			ModifiedUnixTimeSec: timeNow,
 		}
 	} else {
 		state.Shared = true
+		state.ModifiedUnixTimeSec = timeNow
 	}
 
 	// Write it to shared space
@@ -511,6 +538,9 @@ func autoShareNonSharedItems(svcs *services.APIServices, ids viewStateReferenced
 	}
 
 	newIDs, err = shareRGBMixes(svcs, userID, unsharedRGBMixIDs)
+	if err != nil {
+		return idRemap, err
+	}
 
 	for idx, id := range newIDs {
 		idRemap[unsharedRGBMixIDs[idx]] = utils.SharedItemIDPrefix + id

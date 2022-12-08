@@ -29,6 +29,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/timestamper"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
@@ -693,7 +694,9 @@ func Example_viewStateHandler_PutCollection() {
         "name": "Niko Bellic",
         "user_id": "600f2a0806b6c70071d3d174",
         "email": "niko@spicule.co.uk"
-    }
+    },
+    "create_unix_time_sec": 1668142579,
+    "mod_unix_time_sec": 1668142579
 }`)),
 		},
 	}
@@ -703,6 +706,9 @@ func Example_viewStateHandler_PutCollection() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("PUT", "/view-state/collections/TheDataSetID/The best collection 23_09_2021", bytes.NewReader([]byte(`{
@@ -1019,7 +1025,9 @@ func Example_viewStateHandler_ShareCollection() {
         "name": "Niko Bellic",
         "user_id": "600f2a0806b6c70071d3d174",
         "email": "niko@spicule.co.uk"
-    }
+    },
+    "create_unix_time_sec": 1668142579,
+    "mod_unix_time_sec": 1668142579
 }`)),
 		},
 	}
@@ -1028,6 +1036,9 @@ func Example_viewStateHandler_ShareCollection() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	// User file not there, should say not found

@@ -26,8 +26,6 @@ import (
 	"github.com/pixlise/core/v2/core/utils"
 )
 
-const expressionFile = "DataExpressions.json"
-
 type expressionType string
 
 const (
@@ -59,6 +57,15 @@ type DataExpression struct {
 	*pixlUser.APIObjectItem
 }
 
+func (a DataExpression) SetTimes(userID string, t int64) {
+	if a.CreatedUnixTimeSec == 0 {
+		a.CreatedUnixTimeSec = t
+	}
+	if a.ModifiedUnixTimeSec == 0 {
+		a.ModifiedUnixTimeSec = t
+	}
+}
+
 type DataExpressionLookup map[string]DataExpression
 
 func ReadExpressionData(svcs *services.APIServices, s3Path string) (DataExpressionLookup, error) {
@@ -68,7 +75,7 @@ func ReadExpressionData(svcs *services.APIServices, s3Path string) (DataExpressi
 }
 
 func GetListing(svcs *services.APIServices, userID string, outMap *DataExpressionLookup) error {
-	s3PathFrom := filepaths.GetUserContentPath(userID, expressionFile)
+	s3PathFrom := filepaths.GetExpressionPath(userID)
 	sharedFile := userID == pixlUser.ShareUserID
 
 	items, err := ReadExpressionData(svcs, s3PathFrom)
