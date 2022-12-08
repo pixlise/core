@@ -59,13 +59,22 @@ type elementSetInput struct {
 	Lines []elementLines `json:"lines"`
 }
 
-type elementSet struct {
+type ElementSet struct {
 	Name  string         `json:"name"`
 	Lines []elementLines `json:"lines"`
 	*pixlUser.APIObjectItem
 }
 
-type elementSetLookup map[string]elementSet
+func (a ElementSet) SetTimes(userID string, t int64) {
+	if a.CreatedUnixTimeSec == 0 {
+		a.CreatedUnixTimeSec = t
+	}
+	if a.ModifiedUnixTimeSec == 0 {
+		a.ModifiedUnixTimeSec = t
+	}
+}
+
+type ElementSetLookup map[string]ElementSet
 
 type elementSetSummary struct {
 	Name          string `json:"name"`
@@ -87,14 +96,14 @@ func registerElementSetHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedElementSet), elementSetShare)
 }
 
-func readElementSetData(svcs *services.APIServices, s3Path string) (elementSetLookup, error) {
-	itemLookup := elementSetLookup{}
+func readElementSetData(svcs *services.APIServices, s3Path string) (ElementSetLookup, error) {
+	itemLookup := ElementSetLookup{}
 	err := svcs.FS.ReadJSON(svcs.Config.UsersBucket, s3Path, &itemLookup, true)
 	return itemLookup, err
 }
 
-func getElementSetByID(svcs *services.APIServices, ID string, s3PathFrom string, markShared bool) (elementSet, error) {
-	result := elementSet{}
+func getElementSetByID(svcs *services.APIServices, ID string, s3PathFrom string, markShared bool) (ElementSet, error) {
+	result := ElementSet{}
 
 	elemSets, err := readElementSetData(svcs, s3PathFrom)
 	if err != nil {
@@ -211,7 +220,7 @@ func elementSetGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	return elemSet, err
 }
 
-func setupElementSetForSave(svcs *services.APIServices, body []byte, s3Path string) (*elementSetLookup, *elementSetInput, error) {
+func setupElementSetForSave(svcs *services.APIServices, body []byte, s3Path string) (*ElementSetLookup, *elementSetInput, error) {
 	// Read in body
 	var req elementSetInput
 	err := json.Unmarshal(body, &req)
@@ -267,7 +276,7 @@ func elementSetPost(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	// Save it & upload
 	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
-	(*elemSets)[itemID] = elementSet{
+	(*elemSets)[itemID] = ElementSet{
 		req.Name,
 		req.Lines,
 		&pixlUser.APIObjectItem{
@@ -303,7 +312,7 @@ func elementSetPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Save it & upload
-	(*elemSets)[itemID] = elementSet{
+	(*elemSets)[itemID] = ElementSet{
 		req.Name,
 		req.Lines,
 		&pixlUser.APIObjectItem{
