@@ -178,6 +178,11 @@ func rgbMixList(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	for _, k := range keys {
 		item := items[k]
+
+		if item.Tags == nil {
+			item.Tags = []string{}
+		}
+
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
 		if creatorErr != nil {
 			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (RGB mix listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
@@ -212,6 +217,10 @@ func setupRGBMixForSave(params handlers.ApiHandlerParams, s3Path string) (*RGBMi
 	}
 	if len(req.Red.ExpressionID) <= 0 || len(req.Green.ExpressionID) <= 0 || len(req.Blue.ExpressionID) <= 0 {
 		return nil, nil, api.MakeBadRequestError(errors.New("RGB Mix must have all expressions defined"))
+	}
+
+	if req.Tags == nil {
+		req.Tags = []string{}
 	}
 
 	// Download the file
