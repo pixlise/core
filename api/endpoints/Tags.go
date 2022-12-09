@@ -158,7 +158,7 @@ func tagDelete(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, api.MakeNotFoundError(tagID)
 	}
 
-	// Only allow shared item to be deleted if same user requested it
+	// Only allow shared tags to be deleted if same user requested it
 	if item.Creator.UserID != params.UserInfo.UserID {
 		return nil, api.MakeStatusError(http.StatusUnauthorized, fmt.Errorf("%v not owned by %v", tagID, params.UserInfo.UserID))
 	}
