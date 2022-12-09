@@ -36,6 +36,22 @@ import (
 
 const exprS3Path = "UserContent/600f2a0806b6c70071d3d174/DataExpressions.json"
 const exprSharedS3Path = "UserContent/shared/DataExpressions.json"
+const singleExprFile = `{
+	"abc123": {
+		"name": "Calcium weight%",
+		"expression": "element(\"Ca\", \"%\")",
+		"type": "ContextImage",
+		"comments": "comments for abc123 expression",
+		"tags": [],
+		"creator": {
+			"user_id": "999",
+			"name": "Peter N",
+            "email": "niko@spicule.co.uk"
+		},
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
+	}
+}`
 const exprFile = `{
 	"abc123": {
 		"name": "Calcium weight%",
@@ -64,6 +80,22 @@ const exprFile = `{
 		},
         "create_unix_time_sec": 1668100001,
         "mod_unix_time_sec": 1668100001
+	}
+}`
+const sharedExprFile = `{
+	"expression-1": {
+		"name": "Calcium weight%",
+		"expression": "element(\"Ca\", \"%\")",
+		"type": "ContextImage",
+		"comments": "comments for shared-expression-1 expression",
+		"tags": [],
+		"creator": {
+			"user_id": "999",
+			"name": "Peter N",
+            "email": "niko@spicule.co.uk"
+		},
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
 	}
 }`
 
@@ -435,6 +467,9 @@ func Example_dataExpressionHandler_Put() {
 		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
 		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
+		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		nil,
@@ -442,10 +477,13 @@ func Example_dataExpressionHandler_Put() {
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
 		},
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(exprFile))),
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(singleExprFile))),
 		},
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(singleExprFile))),
+		},
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(sharedExprFile))),
 		},
 	}
 
@@ -477,7 +515,7 @@ func Example_dataExpressionHandler_Put() {
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
-		QueuedTimeStamps: []int64{1668142579},
+		QueuedTimeStamps: []int64{1668100000},
 	}
 	apiRouter := MakeRouter(svcs)
 
@@ -518,7 +556,7 @@ func Example_dataExpressionHandler_Put() {
 	fmt.Println(resp.Body)
 
 	// Can't edit shared ids
-	req, _ = http.NewRequest("PUT", "/data-expression/shared-111", bytes.NewReader([]byte(putItem)))
+	req, _ = http.NewRequest("PUT", "/data-expression/shared-expression-1", bytes.NewReader([]byte(putItem)))
 	resp = executeRequest(req, apiRouter.Router)
 
 	fmt.Println(resp.Code)
@@ -602,6 +640,7 @@ func Example_dataExpressionHandler_Delete() {
         "expression": "element(\"Fe\", \"err\")",
         "type": "BinaryPlot",
         "comments": "comments for def456 expression",
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "The sharer",
@@ -621,6 +660,7 @@ func Example_dataExpressionHandler_Delete() {
         "expression": "element(\"Fe\", \"err\")",
         "type": "BinaryPlot",
         "comments": "comments for def456 expression",
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
@@ -698,27 +738,16 @@ func Example_dataExpressionHandler_Delete() {
 	//
 	// 200
 	// {
-	//     "def456": {
-	//         "name": "Iron Error",
-	//         "expression": "element(\"Fe\", \"err\")",
-	//         "type": "BinaryPlot",
-	//         "comments": "comments for def456 expression",
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Peter N",
-	//             "user_id": "999",
-	//             "email": "niko@spicule.co.uk"
-	//         },
-	//         "create_unix_time_sec": 1668100001,
-	//         "mod_unix_time_sec": 1668100001
-	//     }
+	//     "abc123": "abc123"
 	// }
 	//
 	// 401
 	// def456 not owned by 600f2a0806b6c70071d3d174
 	//
 	// 200
-	// {}
+	// {
+	//     "shared-def456": "shared-def456"
+	// }
 }
 
 func Example_dataExpressionHandler_Share() {
@@ -728,6 +757,7 @@ func Example_dataExpressionHandler_Share() {
 			"expression": "element(\"Ca\", \"err\")",
 			"type": "TernaryPlot",
 			"comments": "calcium comments",
+			"tags": [],
 			"shared": false,
 			"creator": {
 				"name": "The sharer",
@@ -804,6 +834,7 @@ func Example_dataExpressionHandler_Share() {
         "expression": "element(\"Ca\", \"err\")",
         "type": "TernaryPlot",
         "comments": "calcium comments",
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "The sharer",
@@ -818,6 +849,7 @@ func Example_dataExpressionHandler_Share() {
         "expression": "element(\"Fe\", \"err\")",
         "type": "BinaryPlot",
         "comments": "comments for def456 expression",
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter N",
