@@ -131,7 +131,7 @@ func makeSpectraLookup(inputpath string, spectraFiles []string, singleDetectorMS
 	c := 1
 	for idx, f := range spectraFiles {
 		path := path.Join(inputpath, f)
-		lines, err := importerutils.ReadFileLines(path, jobLog)
+		lines, err := utils.ReadFileLines(path)
 		if err != nil {
 			return spectraLookup, fmt.Errorf("Error in %v: %v", path, err)
 		}

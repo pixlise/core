@@ -50,14 +50,23 @@ type spectrumAnnotationLineInput struct {
 	EV    float32 `json:"eV"`
 }
 
-type spectrumAnnotationLine struct {
+type SpectrumAnnotationLine struct {
 	Name  string  `json:"name"`
 	RoiID string  `json:"roiID"`
 	EV    float32 `json:"eV"`
 	*pixlUser.APIObjectItem
 }
 
-type annotationLookup map[string]spectrumAnnotationLine
+func (a SpectrumAnnotationLine) SetTimes(userID string, t int64) {
+	if a.CreatedUnixTimeSec == 0 {
+		a.CreatedUnixTimeSec = t
+	}
+	if a.ModifiedUnixTimeSec == 0 {
+		a.ModifiedUnixTimeSec = t
+	}
+}
+
+type AnnotationLookup map[string]SpectrumAnnotationLine
 
 func registerAnnotationHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "annotation"
@@ -75,14 +84,14 @@ func registerAnnotationHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedAnnotation), annotationShare)
 }
 
-func readAnnotationData(svcs *services.APIServices, s3Path string) (annotationLookup, error) {
-	itemLookup := annotationLookup{}
+func readAnnotationData(svcs *services.APIServices, s3Path string) (AnnotationLookup, error) {
+	itemLookup := AnnotationLookup{}
 	err := svcs.FS.ReadJSON(svcs.Config.UsersBucket, s3Path, &itemLookup, true)
 	return itemLookup, err
 }
 
-func getAnnotationByID(svcs *services.APIServices, ID string, s3PathFrom string, markShared bool) (spectrumAnnotationLine, error) {
-	result := spectrumAnnotationLine{}
+func getAnnotationByID(svcs *services.APIServices, ID string, s3PathFrom string, markShared bool) (SpectrumAnnotationLine, error) {
+	result := SpectrumAnnotationLine{}
 
 	items, err := readAnnotationData(svcs, s3PathFrom)
 	if err != nil {
@@ -172,7 +181,7 @@ func annotationGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	return line, err
 }
 
-func setupAnnotationForSave(svcs *services.APIServices, body []byte, s3Path string) (*annotationLookup, *spectrumAnnotationLineInput, error) {
+func setupAnnotationForSave(svcs *services.APIServices, body []byte, s3Path string) (*AnnotationLookup, *spectrumAnnotationLineInput, error) {
 	// Read in body
 	var req spectrumAnnotationLineInput
 	err := json.Unmarshal(body, &req)
@@ -217,7 +226,7 @@ func annotationPost(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	// Save it & upload
 	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
-	saveItem := spectrumAnnotationLine{
+	saveItem := SpectrumAnnotationLine{
 		req.Name,
 		req.RoiID,
 		req.EV,
@@ -254,7 +263,7 @@ func annotationPut(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	// Save it & upload
 	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
-	saveItem := spectrumAnnotationLine{
+	saveItem := SpectrumAnnotationLine{
 		req.Name,
 		req.RoiID,
 		req.EV,

@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"path"
 
@@ -35,7 +36,7 @@ import (
 	"github.com/pixlise/core/v2/core/utils"
 )
 
-type workspaceCollection struct {
+type WorkspaceCollection struct {
 	ViewStateIDs []string `json:"viewStateIDs"`
 	Name         string   `json:"name"`
 	Description  string   `json:"description"`
@@ -45,6 +46,23 @@ type workspaceCollection struct {
 	// required (sharing)
 	ViewStates map[string]wholeViewState `json:"viewStates"`
 	*pixlUser.APIObjectItem
+}
+
+func (a WorkspaceCollection) SetTimes(userID string, t int64) {
+	if a.APIObjectItem == nil {
+		log.Printf("WorkspaceCollection: %v has no APIObjectItem\n", a.Name)
+		a.APIObjectItem = &pixlUser.APIObjectItem{
+			Creator: pixlUser.UserInfo{
+				UserID: userID,
+			},
+		}
+	}
+	if a.CreatedUnixTimeSec == 0 {
+		a.CreatedUnixTimeSec = t
+	}
+	if a.ModifiedUnixTimeSec == 0 {
+		a.ModifiedUnixTimeSec = t
+	}
 }
 
 type workspaceCollectionListItem struct {
@@ -125,10 +143,10 @@ func viewStateCollectionGet(params handlers.ApiHandlerParams) (interface{}, erro
 	return &collectionContents, nil
 }
 
-func getCollection(params handlers.ApiHandlerParams, collectionID string, s3Path string, loadChildViewStates bool) (workspaceCollection, error) {
+func getCollection(params handlers.ApiHandlerParams, collectionID string, s3Path string, loadChildViewStates bool) (WorkspaceCollection, error) {
 	// Read the collection file itself - it may or may not contain the view states saved in it too (we want to be
 	// saving that into shared collection files only)
-	collectionContents := workspaceCollection{ViewStateIDs: []string{}}
+	collectionContents := WorkspaceCollection{ViewStateIDs: []string{}}
 	err := params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, s3Path, &collectionContents, false)
 	if err != nil {
 		return collectionContents, api.MakeNotFoundError(collectionID)
@@ -164,7 +182,7 @@ func loadViewStates(params handlers.ApiHandlerParams, viewStateIDs []string) (ma
 		s3Path := filepaths.GetWorkspacePath(params.UserInfo.UserID, datasetID, viewStateID)
 
 		// Set up a default view state to read into
-		loadedWorkspace := workspace{
+		loadedWorkspace := Workspace{
 			ViewState: defaultWholeViewState(),
 		}
 		err := params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, s3Path, &loadedWorkspace, false)
@@ -197,7 +215,7 @@ func viewStateCollectionPut(params handlers.ApiHandlerParams) (interface{}, erro
 		return nil, err
 	}
 
-	collectionToSave := workspaceCollection{ViewStateIDs: []string{}, ViewStates: nil}
+	collectionToSave := WorkspaceCollection{ViewStateIDs: []string{}, ViewStates: nil}
 	err = json.Unmarshal(body, &collectionToSave)
 	if err != nil {
 		return nil, err
@@ -239,7 +257,7 @@ func viewStateCollectionDelete(params handlers.ApiHandlerParams) (interface{}, e
 		collectionID = strippedID
 	}
 
-	collection := workspaceCollection{}
+	collection := WorkspaceCollection{}
 	err := params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, s3Path, &collection, false)
 	if err != nil {
 		return nil, api.MakeNotFoundError("View state collection")

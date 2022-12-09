@@ -73,6 +73,15 @@ type ROISavedItem struct {
 	*pixlUser.APIObjectItem
 }
 
+func (a ROISavedItem) SetTimes(userID string, t int64) {
+	if a.CreatedUnixTimeSec == 0 {
+		a.CreatedUnixTimeSec = t
+	}
+	if a.ModifiedUnixTimeSec == 0 {
+		a.ModifiedUnixTimeSec = t
+	}
+}
+
 type ROILookup map[string]ROISavedItem
 
 type ROIMembers struct {
