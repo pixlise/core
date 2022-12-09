@@ -50,8 +50,7 @@ func registerTagHandler(router *apiRouter.ApiObjectRouter) {
 }
 
 func tagList(params handlers.ApiHandlerParams) (interface{}, error) {
-	datasetID := params.PathParams[datasetIdentifier]
-	s3Path := filepaths.GetTagPath(pixlUser.ShareUserID, datasetID)
+	s3Path := filepaths.GetTagPath(pixlUser.ShareUserID)
 
 	tags := tagModel.TagLookup{}
 	err := tagModel.GetTags(params.Svcs, s3Path, &tags)
@@ -82,8 +81,11 @@ func tagList(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func createTag(params handlers.ApiHandlerParams, tag tagModel.Tag) (string, error) {
-	datasetID := params.PathParams[datasetIdentifier]
-	s3Path := filepaths.GetTagPath(pixlUser.ShareUserID, datasetID)
+	if tag.DatasetID == "" {
+		tag.DatasetID = params.PathParams[datasetIdentifier]
+	}
+
+	s3Path := filepaths.GetTagPath(pixlUser.ShareUserID)
 
 	tags := tagModel.TagLookup{}
 	err := tagModel.GetTags(params.Svcs, s3Path, &tags)
@@ -144,8 +146,7 @@ func tagPost(params handlers.ApiHandlerParams) (interface{}, error) {
 
 func tagDelete(params handlers.ApiHandlerParams) (interface{}, error) {
 	tagID := params.PathParams[idIdentifier]
-	datasetID := params.PathParams[datasetIdentifier]
-	s3Path := filepaths.GetTagPath(pixlUser.ShareUserID, datasetID)
+	s3Path := filepaths.GetTagPath(pixlUser.ShareUserID)
 
 	tags := tagModel.TagLookup{}
 	err := tagModel.GetTags(params.Svcs, s3Path, &tags)

@@ -363,8 +363,8 @@ func GetROIPath(userID string, datasetID string) string {
 	return GetUserContentDatasetPath(userID, datasetID, roiFile)
 }
 
-func GetTagPath(userID string, datasetID string) string {
-	return GetUserContentDatasetPath(userID, datasetID, tagFile)
+func GetTagPath(userID string) string {
+	return GetUserContentPath(userID, tagFile)
 }
 
 func GetMultiQuantZStackPath(userID string, datasetID string) string {

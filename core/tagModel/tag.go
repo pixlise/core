@@ -32,6 +32,7 @@ type Tag struct {
 	Creator     pixlUser.UserInfo `json:"creator"`
 	DateCreated int64             `json:"dateCreated"`
 	Type        string            `json:"type"`
+	DatasetID   string            `json:"datasetID"`
 }
 
 type Tags []Tag
