@@ -77,6 +77,12 @@ func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 	// Update all creator infos
 	for _, k := range keys {
 		item := items[k]
+
+		// Ensure tags is not nil as this is a new field
+		if item.Tags == nil {
+			item.Tags = []string{}
+		}
+
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
 		if creatorErr != nil {
 			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Expressions listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
@@ -112,6 +118,10 @@ func setupForSave(params handlers.ApiHandlerParams, s3Path string) (*dataExpress
 	}
 	if len(req.Expression) <= 0 {
 		return nil, nil, api.MakeBadRequestError(errors.New("Expression cannot be empty"))
+	}
+
+	if req.Tags == nil {
+		req.Tags = []string{}
 	}
 
 	// Download the file
@@ -299,6 +309,11 @@ func shareExpressions(svcs *services.APIServices, userID string, expressionIDs [
 			return generatedIDs, fmt.Errorf("Failed to generate unique share ID for " + id)
 		}
 
+		tags := exprItem.Tags
+		if tags == nil {
+			tags = []string{}
+		}
+
 		// Add it to the shared file and we're done
 		timeNow := svcs.TimeStamper.GetTimeNowSec()
 		sharedCopy := dataExpression.DataExpression{
@@ -306,7 +321,7 @@ func shareExpressions(svcs *services.APIServices, userID string, expressionIDs [
 				Name:       exprItem.Name,
 				Expression: exprItem.Expression,
 				Type:       exprItem.Type,
-				Tags:       exprItem.Tags,
+				Tags:       tags,
 				Comments:   exprItem.Comments,
 			},
 			APIObjectItem: &pixlUser.APIObjectItem{

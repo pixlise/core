@@ -42,6 +42,7 @@ const exprFile = `{
 		"expression": "element(\"Ca\", \"%\")",
 		"type": "ContextImage",
 		"comments": "comments for abc123 expression",
+		"tags": [],
 		"creator": {
 			"user_id": "999",
 			"name": "Peter N",
@@ -55,6 +56,7 @@ const exprFile = `{
 		"expression": "element(\"Fe\", \"err\")",
 		"type": "BinaryPlot",
 		"comments": "comments for def456 expression",
+		"tags": [],
 		"creator": {
 			"user_id": "999",
 			"name": "Peter N",
@@ -169,6 +171,7 @@ func Test_dataExpressionHandler_List(t *testing.T) {
         "expression": "element(\"Ca\", \"%\")",
         "type": "ContextImage",
         "comments": "comments for abc123 expression",
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
@@ -183,6 +186,7 @@ func Test_dataExpressionHandler_List(t *testing.T) {
         "expression": "element(\"Fe\", \"err\")",
         "type": "BinaryPlot",
         "comments": "comments for def456 expression",
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
@@ -197,6 +201,7 @@ func Test_dataExpressionHandler_List(t *testing.T) {
         "expression": "element(\"Fe\", \"%\")",
         "type": "TernaryPlot",
         "comments": "",
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter N",
@@ -248,7 +253,7 @@ func Example_dataExpressionHandler_Post() {
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
 		},
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(exprFile))),
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
 		},
 	}
 	// NOTE: PUT expected JSON needs to have spaces not tabs
@@ -260,6 +265,7 @@ func Example_dataExpressionHandler_Post() {
         "expression": "element(\"Na\", \"%\")",
         "type": "ContextImage",
         "comments": "sodium comment here",
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -278,6 +284,7 @@ func Example_dataExpressionHandler_Post() {
         "expression": "element(\"Na\", \"%\")",
         "type": "ContextImage",
         "comments": "sodium comment here",
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -291,39 +298,12 @@ func Example_dataExpressionHandler_Post() {
 		},
 		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path), Body: bytes.NewReader([]byte(`{
-    "abc123": {
-        "name": "Calcium weight%",
-        "expression": "element(\"Ca\", \"%\")",
-        "type": "ContextImage",
-        "comments": "comments for abc123 expression",
-        "shared": false,
-        "creator": {
-            "name": "Peter N",
-            "user_id": "999",
-            "email": "niko@spicule.co.uk"
-        },
-        "create_unix_time_sec": 1668100000,
-        "mod_unix_time_sec": 1668100000
-    },
-    "def456": {
-        "name": "Iron Error",
-        "expression": "element(\"Fe\", \"err\")",
-        "type": "BinaryPlot",
-        "comments": "comments for def456 expression",
-        "shared": false,
-        "creator": {
-            "name": "Peter N",
-            "user_id": "999",
-            "email": "niko@spicule.co.uk"
-        },
-        "create_unix_time_sec": 1668100001,
-        "mod_unix_time_sec": 1668100001
-    },
     "id18": {
         "name": "Sodium weight%",
         "expression": "element(\"Na\", \"%\")",
         "type": "ContextImage",
         "comments": "sodium comment here",
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -354,7 +334,8 @@ func Example_dataExpressionHandler_Post() {
 	"name": "Sodium weight%",
 	"expression": "element(\"Na\", \"%\")",
 	"type": "ContextImage",
-	"comments": "sodium comment here"
+	"comments": "sodium comment here",
+	"tags": []
 }`
 
 	// File not in S3, should work
@@ -386,6 +367,7 @@ func Example_dataExpressionHandler_Post() {
 	//         "expression": "element(\"Na\", \"%\")",
 	//         "type": "ContextImage",
 	//         "comments": "sodium comment here",
+	//         "tags": [],
 	//         "shared": false,
 	//         "creator": {
 	//             "name": "Niko Bellic",
@@ -404,6 +386,7 @@ func Example_dataExpressionHandler_Post() {
 	//         "expression": "element(\"Na\", \"%\")",
 	//         "type": "ContextImage",
 	//         "comments": "sodium comment here",
+	//         "tags": [],
 	//         "shared": false,
 	//         "creator": {
 	//             "name": "Niko Bellic",
@@ -417,39 +400,12 @@ func Example_dataExpressionHandler_Post() {
 	//
 	// 200
 	// {
-	//     "abc123": {
-	//         "name": "Calcium weight%",
-	//         "expression": "element(\"Ca\", \"%\")",
-	//         "type": "ContextImage",
-	//         "comments": "comments for abc123 expression",
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Peter N",
-	//             "user_id": "999",
-	//             "email": "niko@spicule.co.uk"
-	//         },
-	//         "create_unix_time_sec": 1668100000,
-	//         "mod_unix_time_sec": 1668100000
-	//     },
-	//     "def456": {
-	//         "name": "Iron Error",
-	//         "expression": "element(\"Fe\", \"err\")",
-	//         "type": "BinaryPlot",
-	//         "comments": "comments for def456 expression",
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Peter N",
-	//             "user_id": "999",
-	//             "email": "niko@spicule.co.uk"
-	//         },
-	//         "create_unix_time_sec": 1668100001,
-	//         "mod_unix_time_sec": 1668100001
-	//     },
 	//     "id18": {
 	//         "name": "Sodium weight%",
 	//         "expression": "element(\"Na\", \"%\")",
 	//         "type": "ContextImage",
 	//         "comments": "sodium comment here",
+	//         "tags": [],
 	//         "shared": false,
 	//         "creator": {
 	//             "name": "Niko Bellic",
@@ -489,7 +445,7 @@ func Example_dataExpressionHandler_Put() {
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(exprFile))),
 		},
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(exprFile))),
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
 		},
 	}
 
@@ -502,6 +458,7 @@ func Example_dataExpressionHandler_Put() {
         "expression": "element(\"Ca\", \"%\")",
         "type": "ContextImage",
         "comments": "comments for abc123 expression",
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
@@ -510,20 +467,6 @@ func Example_dataExpressionHandler_Put() {
         },
         "create_unix_time_sec": 1668100000,
         "mod_unix_time_sec": 1668100000
-    },
-    "def456": {
-        "name": "Iron Int",
-        "expression": "element(\"Fe\", \"int\")",
-        "type": "TernaryPlot",
-        "comments": "Iron comment",
-        "shared": false,
-        "creator": {
-            "name": "Peter N",
-            "user_id": "999",
-            "email": "niko@spicule.co.uk"
-        },
-        "create_unix_time_sec": 1668100001,
-        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -539,10 +482,11 @@ func Example_dataExpressionHandler_Put() {
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
-		"name": "Iron Int",
-        "expression": "element(\"Fe\", \"int\")",
-        "type": "TernaryPlot",
-        "comments": "Iron comment"
+		"name": "Calcium weight%",
+        "expression": "element(\"Ca\", \"%\")",
+        "type": "ContextImage",
+        "comments": "comments for abc123 expression",
+        "tags": []
 	}`
 
 	// File not in S3, not found
@@ -560,7 +504,7 @@ func Example_dataExpressionHandler_Put() {
 	fmt.Println(resp.Body)
 
 	// File already this id, should overwrite
-	req, _ = http.NewRequest("PUT", "/data-expression/def456", bytes.NewReader([]byte(putItem)))
+	req, _ = http.NewRequest("PUT", "/data-expression/abc123", bytes.NewReader([]byte(putItem)))
 	resp = executeRequest(req, apiRouter.Router)
 
 	fmt.Println(resp.Code)
@@ -594,6 +538,7 @@ func Example_dataExpressionHandler_Put() {
 	//         "expression": "element(\"Ca\", \"%\")",
 	//         "type": "ContextImage",
 	//         "comments": "comments for abc123 expression",
+	//         "tags": [],
 	//         "shared": false,
 	//         "creator": {
 	//             "name": "Peter N",
@@ -602,20 +547,6 @@ func Example_dataExpressionHandler_Put() {
 	//         },
 	//         "create_unix_time_sec": 1668100000,
 	//         "mod_unix_time_sec": 1668100000
-	//     },
-	//     "def456": {
-	//         "name": "Iron Int",
-	//         "expression": "element(\"Fe\", \"int\")",
-	//         "type": "TernaryPlot",
-	//         "comments": "Iron comment",
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Peter N",
-	//             "user_id": "999",
-	//             "email": "niko@spicule.co.uk"
-	//         },
-	//         "create_unix_time_sec": 1668100001,
-	//         "mod_unix_time_sec": 1668142579
 	//     }
 	// }
 	//
@@ -623,7 +554,7 @@ func Example_dataExpressionHandler_Put() {
 	// aaa111 not found
 	//
 	// 400
-	// Cannot edit shared expressions
+	// cannot edit shared expression not owned by user
 }
 
 func Example_dataExpressionHandler_Delete() {
