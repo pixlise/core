@@ -349,7 +349,7 @@ func ReadBulkMaxSpectra(filePaths []string, jobLog logger.ILogger) (dataConvertM
 		}
 
 		jobLog.Infof("  Reading %v MSA: %v", readType, filePath)
-		lines, err := ReadFileLines(filePath, jobLog)
+		lines, err := utils.ReadFileLines(filePath)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to load %v: %v", filePath, err)
 		}

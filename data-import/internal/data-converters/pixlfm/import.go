@@ -64,10 +64,7 @@ type fileStructure struct {
 	expectedFileCount int
 }
 
-var log logger.ILogger
-
-func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, datasetIDExpected string, jobLog logger.ILogger) (*dataConvertModels.OutputData, string, error) {
-	log = jobLog
+func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, datasetIDExpected string, log logger.ILogger) (*dataConvertModels.OutputData, string, error) {
 	localFS := &fileaccess.FSAccess{}
 
 	beamDir := fileStructure{}
