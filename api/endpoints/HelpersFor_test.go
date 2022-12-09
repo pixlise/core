@@ -18,6 +18,8 @@
 package endpoints
 
 import (
+	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -193,4 +195,21 @@ func checkResult(t *testing.T, resp *httptest.ResponseRecorder, expectedStatus i
 		t.Errorf("Bad resp body:\n%v", gotRespBody)
 		t.Errorf("vs expected body:\n%v", expectedBody)
 	}
+}
+
+func minifyJSON(jsonStr string) string {
+	minifiedStr := &bytes.Buffer{}
+	if err := json.Compact(minifiedStr, []byte(jsonStr)); err != nil {
+		panic(err)
+	}
+	return minifiedStr.String()
+}
+
+func standardizeJSON(jsonStr string) string {
+	standardizedStr := &bytes.Buffer{}
+	if err := json.Indent(standardizedStr, []byte(jsonStr), "", "    "); err != nil {
+		panic(err)
+	}
+
+	return standardizedStr.String()
 }
