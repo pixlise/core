@@ -124,12 +124,22 @@ func Test_makeROICSV(t *testing.T) {
 
 	rois := roiModel.GetROIsWithPMCs(userROIs, sharedROIs, ds)
 
-	err = writeROICSV("/tmp/", "test-name", rois)
+	err = writeROICSV("/tmp/", rois)
 	if err != nil {
 		t.Errorf("Failed to write ROI CSV: %v", err)
 	}
 
-	err = utils.FilesEqual("/tmp/test-name-roi-pmcs.csv", "./test-data/expected-rois.csv")
+	err = utils.FilesEqual("/tmp/something-roi-pmcs.csv", "./test-data/expected-something-rois.csv")
+	if err != nil {
+		t.Errorf("Incorrect ROI CSV: %v", err)
+	}
+
+	err = utils.FilesEqual("/tmp/second-roi-pmcs.csv", "./test-data/expected-second-rois.csv")
+	if err != nil {
+		t.Errorf("Incorrect ROI CSV: %v", err)
+	}
+
+	err = utils.FilesEqual("/tmp/le_shared-roi-pmcs.csv", "./test-data/expected-le_shared-rois.csv")
 	if err != nil {
 		t.Errorf("Incorrect ROI CSV: %v", err)
 	}

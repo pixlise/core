@@ -53,11 +53,11 @@ type ChannelConfig struct {
 }
 
 type RGBMixInput struct {
-	Name string `json:"name"`
-
+	Name  string        `json:"name"`
 	Red   ChannelConfig `json:"red"`
 	Green ChannelConfig `json:"green"`
 	Blue  ChannelConfig `json:"blue"`
+	Tags  []string      `json:"tags"`
 }
 
 type RGBMix struct {
@@ -178,6 +178,11 @@ func rgbMixList(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	for _, k := range keys {
 		item := items[k]
+
+		if item.Tags == nil {
+			item.Tags = []string{}
+		}
+
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
 		if creatorErr != nil {
 			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (RGB mix listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
@@ -212,6 +217,10 @@ func setupRGBMixForSave(params handlers.ApiHandlerParams, s3Path string) (*RGBMi
 	}
 	if len(req.Red.ExpressionID) <= 0 || len(req.Green.ExpressionID) <= 0 || len(req.Blue.ExpressionID) <= 0 {
 		return nil, nil, api.MakeBadRequestError(errors.New("RGB Mix must have all expressions defined"))
+	}
+
+	if req.Tags == nil {
+		req.Tags = []string{}
 	}
 
 	// Download the file
@@ -254,26 +263,32 @@ func rgbMixPost(params handlers.ApiHandlerParams) (interface{}, error) {
 
 func rgbMixPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	itemID := params.PathParams[idIdentifier]
-	if _, isSharedReq := utils.StripSharedItemIDPrefix(itemID); isSharedReq {
-		return nil, api.MakeBadRequestError(errors.New("Cannot edit shared RGB mixes"))
-	}
+	id, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
 
 	s3Path := filepaths.GetRGBMixPath(params.UserInfo.UserID)
+	if isSharedReq {
+		s3Path = filepaths.GetRGBMixPath(pixlUser.ShareUserID)
+	}
+
 	rgbMixes, req, err := setupRGBMixForSave(params, s3Path)
 	if err != nil {
 		return nil, err
 	}
 
-	existing, ok := (*rgbMixes)[itemID]
+	existing, ok := (*rgbMixes)[id]
 	if !ok {
-		return nil, api.MakeNotFoundError(itemID)
+		return nil, api.MakeNotFoundError(id)
+	}
+
+	if isSharedReq && params.UserInfo.UserID != existing.Creator.UserID {
+		return nil, api.MakeBadRequestError(errors.New("cannot edit shared RGB mixes created by others"))
 	}
 
 	// Save it & upload
-	(*rgbMixes)[itemID] = RGBMix{
+	(*rgbMixes)[id] = RGBMix{
 		RGBMixInput: req,
 		APIObjectItem: &pixlUser.APIObjectItem{
-			Shared:              false,
+			Shared:              isSharedReq,
 			Creator:             existing.Creator,
 			CreatedUnixTimeSec:  existing.CreatedUnixTimeSec,
 			ModifiedUnixTimeSec: params.Svcs.TimeStamper.GetTimeNowSec(),
