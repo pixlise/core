@@ -1948,6 +1948,7 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 		"expression": "housekeeping(\"something\")",
 		"type": "All",
 		"comments": "comments for abc123 expression",
+		"tags": [],
 		"creator": {
 			"user_id": "444",
 			"name": "Niko",
@@ -1961,6 +1962,7 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 		"expression": "element(\"Ca\", \"%\")",
 		"type": "All",
 		"comments": "comments for expr1",
+		"tags": [],
 		"creator": {
 			"user_id": "999",
 			"name": "Peter N",
@@ -1992,6 +1994,7 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 			"rangeMin": 3.5,
 			"rangeMax": 6.3
 		},
+		"tags": [],
 		"creator": {
 			"user_id": "999",
 			"name": "Peter N",
@@ -2022,6 +2025,7 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 			"rangeMin": 3.5,
 			"rangeMax": 6.3
 		},
+		"tags": [],
 		"shared": true,
 		"creator": {
 			"user_id": "999",
@@ -2096,6 +2100,7 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
         "expression": "element(\"Ca\", \"%\")",
         "type": "All",
         "comments": "comments for expr1",
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter N",
@@ -2126,6 +2131,7 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             "rangeMin": 3.5,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter N",
@@ -2152,6 +2158,7 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             "rangeMin": 3.5,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter N",
