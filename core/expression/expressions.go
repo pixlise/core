@@ -50,6 +50,7 @@ type DataExpressionInput struct {
 	Expression string         `json:"expression"`
 	Type       expressionType `json:"type"`
 	Comments   string         `json:"comments"`
+	Tags       []string       `json:"tags"`
 }
 
 type DataExpression struct {

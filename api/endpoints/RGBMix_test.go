@@ -54,6 +54,7 @@ const rgbMixFileData = `{
 			"rangeMin": 3.5,
 			"rangeMax": 6.3
 		},
+		"tags": [],
 		"creator": {
 			"user_id": "999",
 			"name": "Peter N",
@@ -79,6 +80,7 @@ const rgbMixFileData = `{
 			"rangeMin": 3.4,
 			"rangeMax": 6.3
 		},
+		"tags": [],
 		"creator": {
 			"user_id": "999",
 			"name": "Peter N",
@@ -86,6 +88,34 @@ const rgbMixFileData = `{
 		},
         "create_unix_time_sec": 1668100001,
         "mod_unix_time_sec": 1668100001
+	}
+}`
+const rgbMixSharedFileData = `{
+	"111": {
+		"name": "Ca-Ti-Al ratios",
+		"red": {
+			"expressionID": "expr-for-Ca",
+			"rangeMin": 1.5,
+			"rangeMax": 4.3
+		},
+		"green": {
+			"expressionID": "expr-for-Al",
+			"rangeMin": 2.5,
+			"rangeMax": 5.3
+		},
+		"blue": {
+			"expressionID": "expr-for-Ti",
+			"rangeMin": 3.5,
+			"rangeMax": 6.3
+		},
+		"tags": [],
+		"creator": {
+			"user_id": "999",
+			"name": "Peter N",
+            "email": "niko@spicule.co.uk"
+		},
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
 	}
 }`
 
@@ -243,6 +273,7 @@ func Test_RGBMixHandler_List(t *testing.T) {
             "rangeMin": 3.5,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
@@ -269,6 +300,7 @@ func Test_RGBMixHandler_List(t *testing.T) {
             "rangeMin": 3.4,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
@@ -295,6 +327,7 @@ func Test_RGBMixHandler_List(t *testing.T) {
             "rangeMin": 3,
             "rangeMax": 6
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Agent 88",
@@ -372,6 +405,7 @@ func Example_RGBMixHandler_Post() {
             "rangeMin": 3,
             "rangeMax": 6
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -402,6 +436,7 @@ func Example_RGBMixHandler_Post() {
             "rangeMin": 3,
             "rangeMax": 6
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -432,6 +467,7 @@ func Example_RGBMixHandler_Post() {
             "rangeMin": 3.5,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
@@ -458,6 +494,7 @@ func Example_RGBMixHandler_Post() {
             "rangeMin": 3.4,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
@@ -484,6 +521,7 @@ func Example_RGBMixHandler_Post() {
             "rangeMin": 3,
             "rangeMax": 6
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -526,7 +564,8 @@ func Example_RGBMixHandler_Post() {
 		"expressionID": "expr-for-Ti",
 		"rangeMin": 3,
 		"rangeMax": 6
-	}
+	},
+	"tags": []
 }`
 	const putItemWithElement = `{
 	"name": "Sodium and stuff",
@@ -544,7 +583,8 @@ func Example_RGBMixHandler_Post() {
 		"expressionID": "expr-for-Ti",
 		"rangeMin": 3,
 		"rangeMax": 6
-	}
+	},
+	"tags": []
 }`
 
 	// File not in S3, should work
@@ -603,6 +643,9 @@ func Example_RGBMixHandler_Put() {
 		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixUserS3Path),
 		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixSharedS3Path),
+		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		nil,
@@ -614,6 +657,9 @@ func Example_RGBMixHandler_Put() {
 		},
 		{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(rgbMixFileData))),
+		},
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(rgbMixSharedFileData))),
 		},
 	}
 
@@ -638,6 +684,7 @@ func Example_RGBMixHandler_Put() {
             "rangeMin": 3.5,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
@@ -664,6 +711,7 @@ func Example_RGBMixHandler_Put() {
             "rangeMin": 3,
             "rangeMax": 6
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
@@ -702,7 +750,8 @@ func Example_RGBMixHandler_Put() {
 			"expressionID": "expr-for-Ti",
 			"rangeMin": 3,
 			"rangeMax": 6
-		}
+		},
+		"tags": []
 	}`
 
 	// File not in S3, not found
@@ -753,7 +802,7 @@ func Example_RGBMixHandler_Put() {
 	// aaa111 not found
 	//
 	// 400
-	// Cannot edit shared RGB mixes
+	// cannot edit shared RGB mixes created by others
 }
 
 func Example_RGBMixHandler_Delete() {
@@ -813,6 +862,7 @@ func Example_RGBMixHandler_Delete() {
             "rangeMin": 3.4,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "The sharer",
@@ -846,6 +896,7 @@ func Example_RGBMixHandler_Delete() {
             "rangeMin": 3.4,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
@@ -981,6 +1032,7 @@ func Example_RGBMixHandler_Share() {
             "rangeMin": 3.4,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "The sharer",
@@ -1014,6 +1066,7 @@ func Example_RGBMixHandler_Share() {
             "rangeMin": 3.4,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "The sharer",
@@ -1040,6 +1093,7 @@ func Example_RGBMixHandler_Share() {
             "rangeMin": 3.4,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter N",
