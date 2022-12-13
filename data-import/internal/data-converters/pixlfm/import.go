@@ -324,7 +324,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		whiteDiscoImage,
 		housekeepingFileNameMeta,
 		datasetIDExpected,
-		jobLog,
+		log,
 	)
 
 	return data, importPath, nil
