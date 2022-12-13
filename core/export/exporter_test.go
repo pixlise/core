@@ -124,7 +124,9 @@ func Test_makeROICSV(t *testing.T) {
 
 	rois := roiModel.GetROIsWithPMCs(userROIs, sharedROIs, ds)
 
-	err = writeROICSV("/tmp/", rois)
+	roiIDs := []string{"roi123", "roi456", "shared111"}
+
+	err = writeROICSV("/tmp/", rois, roiIDs)
 	if err != nil {
 		t.Errorf("Failed to write ROI CSV: %v", err)
 	}
