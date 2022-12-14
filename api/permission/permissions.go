@@ -83,6 +83,10 @@ const PermReadPiquantJobs = "read:piquant-jobs"
 const PermReadUserRoles = "read:user-roles"
 const PermWriteUserRoles = "write:user-roles"
 
+// Users own settings/name/data collection agreement
+const PermReadUserSettings = "read:user-settings"
+const PermWriteUserSettings = "write:user-settings"
+
 // Sharing
 const PermWriteSharedROI = "write:shared-roi"
 const PermWriteSharedElementSet = "write:shared-element-set"

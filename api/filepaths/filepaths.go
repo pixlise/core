@@ -150,6 +150,10 @@ const rgbMixFile = "RGBMixes.json"
 // ------------ROI.json - User created ROIs
 const roiFile = "ROI.json"
 
+// --------<dataset-id>/
+// ------------Tags.json - Dataset tags
+const tagFile = "Tags.json"
+
 // multi-quant-z-stack.json - The current z-stack on multi-quant panel
 const MultiQuantZStackFile = "multi-quant-z-stack.json"
 
@@ -357,6 +361,10 @@ func GetRGBMixPath(userID string) string {
 
 func GetROIPath(userID string, datasetID string) string {
 	return GetUserContentDatasetPath(userID, datasetID, roiFile)
+}
+
+func GetTagPath(userID string) string {
+	return GetUserContentPath(userID, tagFile)
 }
 
 func GetMultiQuantZStackPath(userID string, datasetID string) string {

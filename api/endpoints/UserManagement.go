@@ -72,21 +72,23 @@ func registerUserManagementHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/roles", userIDIdentifier, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteUserRoles), userPostRoles)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/roles", userIDIdentifier, idIdentifier), apiRouter.MakeMethodPermission("DELETE", permission.PermWriteUserRoles), userDeleteRoles)
 
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/config"), apiRouter.MakeMethodPermission("POST", permission.PermReadUserRoles), userPostConfig)
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/config"), apiRouter.MakeMethodPermission("GET", permission.PermReadUserRoles), userGetConfig)
-
 	// Removed because these were not used in client and didn't have unit tests!
-	//router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/data-collection"), apiRouter.MakeMethodPermission("GET", permission.PermReadUserRoles), userGetDataCollection)
-	//router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/data-collection"), apiRouter.MakeMethodPermission("POST", permission.PermReadUserRoles), userPostDataCollection)
+	//router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/data-collection"), apiRouter.MakeMethodPermission("GET", permission.PermReadUserSettings), userGetDataCollection)
+	//router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/data-collection"), apiRouter.MakeMethodPermission("POST", permission.PermWriteUserSettings), userPostDataCollection)
 
 	// Simply retrieves roles
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/all-roles"), apiRouter.MakeMethodPermission("GET", permission.PermReadUserRoles), roleList)
+
 	// Setting fields in user config (name, email for now... could use this to set data-collection too).
 	// This is required because auth0 only asks for user email, eventually we notice we don't have their name and prompt for it
 	// and this is the endpoint that's supposed to fix it! They may also change their emails over time.
 	// NOTE: permission is read, but this is because users who edit their own accounts are different from users who have write roles permissions (admins)!
 	// TODO: Maybe this needs to be broken out under its own permission
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/field", fieldIDIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermReadUserRoles), userPutField)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/field", fieldIDIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWriteUserSettings), userPutField)
+
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/config"), apiRouter.MakeMethodPermission("POST", permission.PermWriteUserSettings), userPostConfig)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/config"), apiRouter.MakeMethodPermission("GET", permission.PermReadUserSettings), userGetConfig)
+
 	// Admins can edit user names and emails in bulk by uploading a CSV
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/bulk-user-details"), apiRouter.MakeMethodPermission("POST", permission.PermWriteUserRoles), userEditInBulk)
 }
