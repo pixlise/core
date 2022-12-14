@@ -18,10 +18,17 @@
 package endpoints
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"testing"
 
 	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v2/core/notifications"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 
 	"github.com/pixlise/core/v2/core/pixlUser"
 
@@ -108,15 +115,6 @@ func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, sign
 
 	fs := fileaccess.MakeS3Access(mockS3)
 
-	// Most tests don't involve mongo DB and notifications...
-	/*
-		notificationStack := notifications.NotificationStack{
-			Notifications: notes,
-			FS:            fs,
-			Bucket:        UsersBucketForUnitTest,
-			Track:         cmap.New(), //make(map[string]bool),
-		}*/
-
 	return services.APIServices{
 		Config:       cfg,
 		Log:          &logger.NullLogger{},
@@ -126,8 +124,7 @@ func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, sign
 		JWTReader:    MockJWTReader{},
 		IDGen:        idGen,
 		Signer:       signer,
-		//Notifications: &notificationStack,
-		FS: fs,
+		FS:           fs,
 	}
 }
 
@@ -136,4 +133,83 @@ func executeRequest(req *http.Request, router *mux.Router) *httptest.ResponseRec
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 	return rr
+}
+
+func makeNotFoundMongoResponse() []primitive.D {
+	return []primitive.D{
+		mtest.CreateCursorResponse(
+			1,
+			"userdatabase-unit_test.notifications",
+			mtest.FirstBatch,
+		),
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase-unit_test.notifications",
+			mtest.NextBatch,
+		),
+	}
+}
+
+func runOneURLCallTest(t *testing.T, method string, url string, requestPayload io.Reader, expectedStatusCode int, expectedResult string, mongoMockedResponses []primitive.D, endCallback func()) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("success", func(mt *mtest.T) {
+		mt.AddMockResponses(mongoMockedResponses...)
+
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		setTestAuth0Config(&svcs)
+		notifications, err := notifications.MakeNotificationStack(mt.Client, "unit_test", nil, &logger.StdOutLoggerForTest{}, []string{})
+		if err != nil {
+			t.Error(err)
+		}
+
+		svcs.Notifications = notifications
+
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+
+		apiRouter := MakeRouter(svcs)
+
+		req, _ := http.NewRequest(method, url, requestPayload)
+		resp := executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, expectedStatusCode, expectedResult)
+
+		// When we're done, call end callback in case caller has anything else to verify
+		if endCallback != nil {
+			endCallback()
+		}
+	})
+}
+
+func checkResult(t *testing.T, resp *httptest.ResponseRecorder, expectedStatus int, expectedBody string) {
+	if resp.Code != expectedStatus {
+		t.Errorf("Bad resp code: %v", resp.Code)
+	}
+
+	gotRespBody := resp.Body.String()
+	if gotRespBody != expectedBody {
+		t.Errorf("Bad resp body:\n%v", gotRespBody)
+		t.Errorf("vs expected body:\n%v", expectedBody)
+	}
+}
+
+func minifyJSON(jsonStr string) string {
+	minifiedStr := &bytes.Buffer{}
+	if err := json.Compact(minifiedStr, []byte(jsonStr)); err != nil {
+		panic(err)
+	}
+	return minifiedStr.String()
+}
+
+func standardizeJSON(jsonStr string) string {
+	standardizedStr := &bytes.Buffer{}
+	if err := json.Indent(standardizedStr, []byte(jsonStr), "", "    "); err != nil {
+		panic(err)
+	}
+
+	return standardizedStr.String()
 }

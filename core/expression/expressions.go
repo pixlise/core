@@ -26,8 +26,6 @@ import (
 	"github.com/pixlise/core/v2/core/utils"
 )
 
-const expressionFile = "DataExpressions.json"
-
 type expressionType string
 
 const (
@@ -52,11 +50,21 @@ type DataExpressionInput struct {
 	Expression string         `json:"expression"`
 	Type       expressionType `json:"type"`
 	Comments   string         `json:"comments"`
+	Tags       []string       `json:"tags"`
 }
 
 type DataExpression struct {
 	*DataExpressionInput
 	*pixlUser.APIObjectItem
+}
+
+func (a DataExpression) SetTimes(userID string, t int64) {
+	if a.CreatedUnixTimeSec == 0 {
+		a.CreatedUnixTimeSec = t
+	}
+	if a.ModifiedUnixTimeSec == 0 {
+		a.ModifiedUnixTimeSec = t
+	}
 }
 
 type DataExpressionLookup map[string]DataExpression
@@ -68,7 +76,7 @@ func ReadExpressionData(svcs *services.APIServices, s3Path string) (DataExpressi
 }
 
 func GetListing(svcs *services.APIServices, userID string, outMap *DataExpressionLookup) error {
-	s3PathFrom := filepaths.GetUserContentPath(userID, expressionFile)
+	s3PathFrom := filepaths.GetExpressionPath(userID)
 	sharedFile := userID == pixlUser.ShareUserID
 
 	items, err := ReadExpressionData(svcs, s3PathFrom)
@@ -77,7 +85,7 @@ func GetListing(svcs *services.APIServices, userID string, outMap *DataExpressio
 	}
 
 	for id, item := range items {
-		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's
+		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's shared
 		saveID := id
 		if sharedFile {
 			saveID = utils.SharedItemIDPrefix + id

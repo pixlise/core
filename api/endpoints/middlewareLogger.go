@@ -181,7 +181,7 @@ func (h *LoggerMiddleware) Middleware(next http.Handler) http.Handler {
 			if val, ok := h.Notifications.GetTrack(requestingUser.UserID); ok {
 				track = val
 			} else {
-				user, err := h.APIServices.Notifications.GetUser(requestingUser.UserID)
+				user, err := h.APIServices.Users.GetUser(requestingUser.UserID)
 				if err != nil {
 					h.Notifications.SetTrack(requestingUser.UserID, false)
 					return

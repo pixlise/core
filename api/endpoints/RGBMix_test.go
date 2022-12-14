@@ -22,10 +22,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/timestamper"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
 const rgbMixUserS3Path = "UserContent/600f2a0806b6c70071d3d174/RGBMixes.json"
@@ -48,11 +54,14 @@ const rgbMixFileData = `{
 			"rangeMin": 3.5,
 			"rangeMax": 6.3
 		},
+		"tags": [],
 		"creator": {
 			"user_id": "999",
 			"name": "Peter N",
             "email": "niko@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
 	},
 	"def456": {
 		"name": "Ca-Fe-Al ratios",
@@ -71,182 +80,266 @@ const rgbMixFileData = `{
 			"rangeMin": 3.4,
 			"rangeMax": 6.3
 		},
+		"tags": [],
 		"creator": {
 			"user_id": "999",
 			"name": "Peter N",
             "email": "niko@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
 	}
 }`
-
-func Example_RGBMixHandler_List() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixUserS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixUserS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixUserS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixSharedS3Path),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil, // No file in S3
-		nil, // No file in S3
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(rgbMixFileData))),
-		},
-		// Shared items, NOTE this returns an old-style "element" for checking backwards compatibility!
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-	"ghi789": {
-		"name": "Na-Fe-Al ratios",
+const rgbMixSharedFileData = `{
+	"111": {
+		"name": "Ca-Ti-Al ratios",
 		"red": {
-			"expressionID": "expr-for-Na",
-			"rangeMin": 1,
-			"rangeMax": 2
+			"expressionID": "expr-for-Ca",
+			"rangeMin": 1.5,
+			"rangeMax": 4.3
 		},
 		"green": {
 			"expressionID": "expr-for-Al",
-			"rangeMin": 2,
-			"rangeMax": 5
+			"rangeMin": 2.5,
+			"rangeMax": 5.3
 		},
 		"blue": {
-			"element": "Fe",
-			"rangeMin": 3,
-			"rangeMax": 6
+			"expressionID": "expr-for-Ti",
+			"rangeMin": 3.5,
+			"rangeMax": 6.3
 		},
+		"tags": [],
 		"creator": {
 			"user_id": "999",
 			"name": "Peter N",
-			"email": "niko@spicule.co.uk"
-		}
-	}
-}`))),
+            "email": "niko@spicule.co.uk"
 		},
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
 	}
+}`
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
+func Test_RGBMixHandler_List(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	req, _ := http.NewRequest("GET", "/rgb-mix", nil)
-	resp := executeRequest(req, apiRouter.Router)
+	mt.Run("success", func(mt *mtest.T) {
+		// User name lookup
+		mongoMockedResponses := []primitive.D{
+			// 999 - not found
+			mtest.CreateCursorResponse(
+				1,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+			),
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.NextBatch,
+			),
+			// 999 - not found (again)
+			mtest.CreateCursorResponse(
+				1,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+			),
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.NextBatch,
+			),
+			// User 88
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+				bson.D{
+					{"Userid", "88"},
+					{"Notifications", bson.D{
+						{"Topics", bson.A{}},
+					}},
+					{"Config", bson.D{
+						{"Name", "Agent 88"},
+						{"Email", "agent_88@spicule.co.uk"},
+						{"Cell", ""},
+						{"DataCollection", "unknown"},
+					}},
+				},
+			),
+		}
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		mt.AddMockResponses(mongoMockedResponses...)
 
-	req, _ = http.NewRequest("GET", "/rgb-mix", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixUserS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixSharedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixUserS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixSharedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixUserS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixSharedS3Path),
+			},
+		}
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			nil, // No file in S3
+			nil, // No file in S3
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(rgbMixFileData))),
+			},
+			// Shared items, NOTE this returns an old-style "element" for checking backwards compatibility!
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"ghi789": {
+			"name": "Na-Fe-Al ratios",
+			"red": {
+				"expressionID": "expr-for-Na",
+				"rangeMin": 1,
+				"rangeMax": 2
+			},
+			"green": {
+				"expressionID": "expr-for-Al",
+				"rangeMin": 2,
+				"rangeMax": 5
+			},
+			"blue": {
+				"element": "Fe",
+				"rangeMin": 3,
+				"rangeMax": 6
+			},
+			"creator": {
+				"user_id": "88",
+				"name": "88",
+				"email": "mr88@spicule.co.uk"
+			},
+			"create_unix_time_sec": 1668100002,
+			"mod_unix_time_sec": 1668100002
+		}
+	}`))),
+			},
+		}
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		apiRouter := MakeRouter(svcs)
 
-	req, _ = http.NewRequest("GET", "/rgb-mix", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		req, _ := http.NewRequest("GET", "/rgb-mix", nil)
+		resp := executeRequest(req, apiRouter.Router)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		checkResult(t, resp, 200, `{}
+`)
 
-	// Output:
-	// 200
-	// {}
-	//
-	// 200
-	// {}
-	//
-	// 200
-	// {
-	//     "abc123": {
-	//         "name": "Ca-Ti-Al ratios",
-	//         "red": {
-	//             "expressionID": "expr-for-Ca",
-	//             "rangeMin": 1.5,
-	//             "rangeMax": 4.3
-	//         },
-	//         "green": {
-	//             "expressionID": "expr-for-Al",
-	//             "rangeMin": 2.5,
-	//             "rangeMax": 5.3
-	//         },
-	//         "blue": {
-	//             "expressionID": "expr-for-Ti",
-	//             "rangeMin": 3.5,
-	//             "rangeMax": 6.3
-	//         },
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Peter N",
-	//             "user_id": "999",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     },
-	//     "def456": {
-	//         "name": "Ca-Fe-Al ratios",
-	//         "red": {
-	//             "expressionID": "expr-for-Ca",
-	//             "rangeMin": 1.4,
-	//             "rangeMax": 4.3
-	//         },
-	//         "green": {
-	//             "expressionID": "expr-for-Al",
-	//             "rangeMin": 2.4,
-	//             "rangeMax": 5.3
-	//         },
-	//         "blue": {
-	//             "expressionID": "expr-for-Fe",
-	//             "rangeMin": 3.4,
-	//             "rangeMax": 6.3
-	//         },
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Peter N",
-	//             "user_id": "999",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     },
-	//     "shared-ghi789": {
-	//         "name": "Na-Fe-Al ratios",
-	//         "red": {
-	//             "expressionID": "expr-for-Na",
-	//             "rangeMin": 1,
-	//             "rangeMax": 2
-	//         },
-	//         "green": {
-	//             "expressionID": "expr-for-Al",
-	//             "rangeMin": 2,
-	//             "rangeMax": 5
-	//         },
-	//         "blue": {
-	//             "expressionID": "expr-elem-Fe-%",
-	//             "rangeMin": 3,
-	//             "rangeMax": 6
-	//         },
-	//         "shared": true,
-	//         "creator": {
-	//             "name": "Peter N",
-	//             "user_id": "999",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     }
-	// }
+		req, _ = http.NewRequest("GET", "/rgb-mix", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{}
+`)
+
+		req, _ = http.NewRequest("GET", "/rgb-mix", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "abc123": {
+        "name": "Ca-Ti-Al ratios",
+        "red": {
+            "expressionID": "expr-for-Ca",
+            "rangeMin": 1.5,
+            "rangeMax": 4.3
+        },
+        "green": {
+            "expressionID": "expr-for-Al",
+            "rangeMin": 2.5,
+            "rangeMax": 5.3
+        },
+        "blue": {
+            "expressionID": "expr-for-Ti",
+            "rangeMin": 3.5,
+            "rangeMax": 6.3
+        },
+        "tags": [],
+        "shared": false,
+        "creator": {
+            "name": "Peter N",
+            "user_id": "999",
+            "email": "niko@spicule.co.uk"
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
+    },
+    "def456": {
+        "name": "Ca-Fe-Al ratios",
+        "red": {
+            "expressionID": "expr-for-Ca",
+            "rangeMin": 1.4,
+            "rangeMax": 4.3
+        },
+        "green": {
+            "expressionID": "expr-for-Al",
+            "rangeMin": 2.4,
+            "rangeMax": 5.3
+        },
+        "blue": {
+            "expressionID": "expr-for-Fe",
+            "rangeMin": 3.4,
+            "rangeMax": 6.3
+        },
+        "tags": [],
+        "shared": false,
+        "creator": {
+            "name": "Peter N",
+            "user_id": "999",
+            "email": "niko@spicule.co.uk"
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
+    },
+    "shared-ghi789": {
+        "name": "Na-Fe-Al ratios",
+        "red": {
+            "expressionID": "expr-for-Na",
+            "rangeMin": 1,
+            "rangeMax": 2
+        },
+        "green": {
+            "expressionID": "expr-for-Al",
+            "rangeMin": 2,
+            "rangeMax": 5
+        },
+        "blue": {
+            "expressionID": "expr-elem-Fe-%",
+            "rangeMin": 3,
+            "rangeMax": 6
+        },
+        "tags": [],
+        "shared": true,
+        "creator": {
+            "name": "Agent 88",
+            "user_id": "88",
+            "email": "agent_88@spicule.co.uk"
+        },
+        "create_unix_time_sec": 1668100002,
+        "mod_unix_time_sec": 1668100002
+    }
+}
+`)
+	})
 }
 
 func Example_RGBMixHandler_Get() {
@@ -312,12 +405,15 @@ func Example_RGBMixHandler_Post() {
             "rangeMin": 3,
             "rangeMax": 6
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142579,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -340,12 +436,15 @@ func Example_RGBMixHandler_Post() {
             "rangeMin": 3,
             "rangeMax": 6
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142580,
+        "mod_unix_time_sec": 1668142580
     }
 }`)),
 		},
@@ -368,12 +467,15 @@ func Example_RGBMixHandler_Post() {
             "rangeMin": 3.5,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "def456": {
         "name": "Ca-Fe-Al ratios",
@@ -392,12 +494,15 @@ func Example_RGBMixHandler_Post() {
             "rangeMin": 3.4,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     },
     "rgbmix-id18": {
         "name": "Sodium and stuff",
@@ -416,12 +521,15 @@ func Example_RGBMixHandler_Post() {
             "rangeMin": 3,
             "rangeMax": 6
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142581,
+        "mod_unix_time_sec": 1668142581
     }
 }`)),
 		},
@@ -435,6 +543,9 @@ func Example_RGBMixHandler_Post() {
 	var idGen MockIDGenerator
 	idGen.ids = []string{"id16", "id17", "id18"}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579, 1668142580, 1668142581},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -453,7 +564,8 @@ func Example_RGBMixHandler_Post() {
 		"expressionID": "expr-for-Ti",
 		"rangeMin": 3,
 		"rangeMax": 6
-	}
+	},
+	"tags": []
 }`
 	const putItemWithElement = `{
 	"name": "Sodium and stuff",
@@ -471,7 +583,8 @@ func Example_RGBMixHandler_Post() {
 		"expressionID": "expr-for-Ti",
 		"rangeMin": 3,
 		"rangeMax": 6
-	}
+	},
+	"tags": []
 }`
 
 	// File not in S3, should work
@@ -530,6 +643,9 @@ func Example_RGBMixHandler_Put() {
 		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixUserS3Path),
 		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(rgbMixSharedS3Path),
+		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		nil,
@@ -541,6 +657,9 @@ func Example_RGBMixHandler_Put() {
 		},
 		{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(rgbMixFileData))),
+		},
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(rgbMixSharedFileData))),
 		},
 	}
 
@@ -565,12 +684,15 @@ func Example_RGBMixHandler_Put() {
             "rangeMin": 3.5,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "def456": {
         "name": "Sodium and stuff",
@@ -589,12 +711,15 @@ func Example_RGBMixHandler_Put() {
             "rangeMin": 3,
             "rangeMax": 6
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -604,6 +729,9 @@ func Example_RGBMixHandler_Put() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -622,7 +750,8 @@ func Example_RGBMixHandler_Put() {
 			"expressionID": "expr-for-Ti",
 			"rangeMin": 3,
 			"rangeMax": 6
-		}
+		},
+		"tags": []
 	}`
 
 	// File not in S3, not found
@@ -673,7 +802,7 @@ func Example_RGBMixHandler_Put() {
 	// aaa111 not found
 	//
 	// 400
-	// Cannot edit shared RGB mixes
+	// cannot edit shared RGB mixes created by others
 }
 
 func Example_RGBMixHandler_Delete() {
@@ -733,12 +862,15 @@ func Example_RGBMixHandler_Delete() {
             "rangeMin": 3.4,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "The sharer",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     }
 }`))),
 		},
@@ -764,12 +896,15 @@ func Example_RGBMixHandler_Delete() {
             "rangeMin": 3.4,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     }
 }`)),
 		},
@@ -897,12 +1032,15 @@ func Example_RGBMixHandler_Share() {
             "rangeMin": 3.4,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "The sharer",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100006,
+        "mod_unix_time_sec": 1668100006
     }
 }`))),
 		},
@@ -928,12 +1066,15 @@ func Example_RGBMixHandler_Share() {
             "rangeMin": 3.4,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "The sharer",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100006,
+        "mod_unix_time_sec": 1668100006
     },
     "rgbmix-ddd222": {
         "name": "Ca-Fe-Al ratios",
@@ -952,12 +1093,15 @@ func Example_RGBMixHandler_Share() {
             "rangeMin": 3.4,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -969,6 +1113,9 @@ func Example_RGBMixHandler_Share() {
 	var idGen MockIDGenerator
 	idGen.ids = []string{"ddd222"}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = ""
@@ -1015,7 +1162,7 @@ func Example_RGBMixHandler_Share() {
 	// "rgbmix-ddd222"
 }
 
-func Example_RGBMixHandler_Share_Fail() {
+func Example_RGBMixHandler_Share_UnsharedExprs() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{

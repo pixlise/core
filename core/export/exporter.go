@@ -246,7 +246,7 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 
 	if wantROIs {
 		svcs.Log.Debugf("  Saving ROI CSV...")
-		err = writeROICSV(outDir, fileNamePrefix, rois)
+		err = writeROICSV(outDir, rois, roiIDs)
 		if err != nil {
 			return nil, err
 		}
@@ -707,20 +707,34 @@ func writeBeamCSV(dir string, fileNamePrefix string, pmcBeamLocLookup map[int32]
 // Writes a CSV which contains the PMCs for each ROI that the user has access to
 // NOTE:  This writes multiple tables into the same CSV file, first specifying the ROI name and id, then the PMCs for that ROI
 // NOTE2: Writes user and shared ROIs into the same table
-func writeROICSV(dir string, fileNamePrefix string, rois []roiModel.ROIMembers) error {
-	csv, err := os.Create(path.Join(dir, fileNamePrefix+"-roi-pmcs.csv"))
-	if err != nil {
-		return err
+func writeROICSV(dir string, rois []roiModel.ROIMembers, roiIDs []string) error {
+	sharedStrippedIDs := []string{}
+	for _, id := range roiIDs {
+		strippedID, _ := utils.StripSharedItemIDPrefix(id)
+		sharedStrippedIDs = append(sharedStrippedIDs, strippedID)
 	}
-	defer csv.Close()
 
 	for _, roi := range rois {
+		roiID, _ := utils.StripSharedItemIDPrefix(roi.ID)
+		if !utils.StringInSlice(roiID, sharedStrippedIDs) {
+			continue
+		}
+
 		name := roi.Name
+
+		pathSafeName := strings.Replace(strings.Replace(name, " ", "_", -1), "/", "_", -1)
+		csv, err := os.Create(path.Join(dir, pathSafeName+"-roi-pmcs.csv"))
+		if err != nil {
+			return err
+		}
+		defer csv.Close()
+
 		if len(roi.SharedByName) > 0 {
 			name = name + "(shared by " + roi.SharedByName + ")"
 		}
 
-		_, err = csv.WriteString(name + "\n")
+		csvSafeName := strings.Replace(name, ",", "", -1)
+		_, err = csv.WriteString(csvSafeName + "\n")
 		if err != nil {
 			return err
 		}

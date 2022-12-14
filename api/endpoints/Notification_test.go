@@ -19,14 +19,8 @@ package endpoints
 
 import (
 	"bytes"
-	"io"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/logger"
-	"github.com/pixlise/core/v2/core/notifications"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
@@ -78,7 +72,7 @@ func Test_subscription_get(t *testing.T) {
 		),
 	}
 
-	runOneURLCallTest(t, "GET", "/notification/subscriptions", nil, 200, expectedResponse, mockMongoResponses)
+	runOneURLCallTest(t, "GET", "/notification/subscriptions", nil, 200, expectedResponse, mockMongoResponses, nil)
 }
 
 func Test_subscriptions_get_empty_topics(t *testing.T) {
@@ -106,7 +100,7 @@ func Test_subscriptions_get_empty_topics(t *testing.T) {
 		),
 	}
 
-	runOneURLCallTest(t, "GET", "/notification/subscriptions", nil, 200, expectedResponse, mockMongoResponses)
+	runOneURLCallTest(t, "GET", "/notification/subscriptions", nil, 200, expectedResponse, mockMongoResponses, nil)
 }
 
 func Test_subscriptions_get_no_user(t *testing.T) {
@@ -125,7 +119,7 @@ func Test_subscriptions_get_no_user(t *testing.T) {
 		),
 	}
 
-	runOneURLCallTest(t, "GET", "/notification/subscriptions", nil, 404, expectedResponse, mockMongoResponses)
+	runOneURLCallTest(t, "GET", "/notification/subscriptions", nil, 404, expectedResponse, mockMongoResponses, nil)
 }
 
 func Test_subscription_post(t *testing.T) {
@@ -196,7 +190,7 @@ func Test_subscription_post(t *testing.T) {
 		mtest.CreateSuccessResponse(),
 	}
 
-	runOneURLCallTest(t, "POST", "/notification/subscriptions", requestPayload, 200, expectedResponse, mockMongoResponses)
+	runOneURLCallTest(t, "POST", "/notification/subscriptions", requestPayload, 200, expectedResponse, mockMongoResponses, nil)
 }
 
 func Test_subscription_post_no_user(t *testing.T) {
@@ -263,7 +257,7 @@ func Test_subscription_post_no_user(t *testing.T) {
 		mtest.CreateSuccessResponse(),
 	}
 
-	runOneURLCallTest(t, "POST", "/notification/subscriptions", requestPayload, 200, expectedResponse, mockMongoResponses)
+	runOneURLCallTest(t, "POST", "/notification/subscriptions", requestPayload, 200, expectedResponse, mockMongoResponses, nil)
 }
 
 func Test_alerts_get(t *testing.T) {
@@ -310,19 +304,19 @@ func Test_alerts_get(t *testing.T) {
 		mtest.CreateSuccessResponse(),
 	}
 
-	runOneURLCallTest(t, "GET", "/notification/alerts", nil, 200, expectedResponse, mockMongoResponses)
+	runOneURLCallTest(t, "GET", "/notification/alerts", nil, 200, expectedResponse, mockMongoResponses, nil)
 }
 
 func Test_alerts_no_user(t *testing.T) {
 	runOneURLCallTest(t, "GET", "/notification/alerts", nil, 200, `[]
-`, makeNotFoundMongoResponse())
+`, makeNotFoundMongoResponse(), nil)
 }
 
 func Test_hints_no_user(t *testing.T) {
 	runOneURLCallTest(t, "GET", "/notification/hints", nil, 200, `{
     "hints": []
 }
-`, makeNotFoundMongoResponse())
+`, makeNotFoundMongoResponse(), nil)
 }
 
 func Test_hints_post(t *testing.T) {
@@ -364,7 +358,7 @@ func Test_hints_post(t *testing.T) {
 		mtest.CreateSuccessResponse(),
 	}
 
-	runOneURLCallTest(t, "POST", "/notification/hints", requestPayload, 200, expectedResponse, mockMongoResponses)
+	runOneURLCallTest(t, "POST", "/notification/hints", requestPayload, 200, expectedResponse, mockMongoResponses, nil)
 }
 
 func Test_hints_post_no_user(t *testing.T) {
@@ -400,61 +394,5 @@ func Test_hints_post_no_user(t *testing.T) {
 		mtest.CreateSuccessResponse(),
 	}
 
-	runOneURLCallTest(t, "POST", "/notification/hints", requestPayload, 200, expectedResponse, mockMongoResponses)
-}
-
-func makeNotFoundMongoResponse() []primitive.D {
-	return []primitive.D{
-		mtest.CreateCursorResponse(
-			1,
-			"userdatabase-unit_test.notifications",
-			mtest.FirstBatch,
-		),
-		mtest.CreateCursorResponse(
-			0,
-			"userdatabase-unit_test.notifications",
-			mtest.NextBatch,
-		),
-	}
-}
-
-func runOneURLCallTest(t *testing.T, method string, url string, requestPayload io.Reader, expectedStatusCode int, expectedResult string, mongoMockedResponses []primitive.D) {
-	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mt.Close()
-
-	mt.Run("success", func(mt *mtest.T) {
-		mt.AddMockResponses(mongoMockedResponses...)
-
-		var mockS3 awsutil.MockS3Client
-		defer mockS3.FinishTest()
-
-		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-		setTestAuth0Config(&svcs)
-		notifications, err := notifications.MakeNotificationStack(mt.Client, "unit_test", nil, &logger.StdOutLoggerForTest{}, []string{})
-		if err != nil {
-			t.Error(err)
-		}
-
-		svcs.Notifications = notifications
-
-		apiRouter := MakeRouter(svcs)
-
-		req, _ := http.NewRequest(method, url, requestPayload)
-		resp := executeRequest(req, apiRouter.Router)
-
-		// NOTE: Time stamp ms gets cut off
-		checkResult(t, resp, expectedStatusCode, expectedResult)
-	})
-}
-
-func checkResult(t *testing.T, resp *httptest.ResponseRecorder, expectedStatus int, expectedBody string) {
-	if resp.Code != expectedStatus {
-		t.Errorf("Bad resp code: %v", resp.Code)
-	}
-
-	gotRespBody := resp.Body.String()
-	if gotRespBody != expectedBody {
-		t.Errorf("Bad resp body:\n%v", gotRespBody)
-		t.Errorf("vs expected body:\n%v", expectedBody)
-	}
+	runOneURLCallTest(t, "POST", "/notification/hints", requestPayload, 200, expectedResponse, mockMongoResponses, nil)
 }
