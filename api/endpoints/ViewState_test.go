@@ -279,7 +279,7 @@ func Example_viewStateHandler_List() {
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{ "yChannelA": "B" }`))),
 		},
 		{ // parallelogram
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{ "colourChannels": ["R", "G"] }`))),
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{ "regions": ["A", "B"], "channels": ["R", "G"] }`))),
 		},
 		{ // roiQuantTable
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{ "quantIDs": ["quant1", "quant2"], "roi": "the-roi" }`))),
@@ -1458,10 +1458,16 @@ func Example_viewStateHandler_Put_parallelogram() {
 	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
 		{
 			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "parallelogram-5.json"), Body: bytes.NewReader([]byte(`{
-    "colourChannels": [
+    "regions": [
+        "regionA",
+        "regionB",
+        "regionC"
+    ],
+    "channels": [
         "R",
         "G",
-        "B"
+        "B",
+        "U"
     ]
 }`)),
 		},
@@ -1474,10 +1480,16 @@ func Example_viewStateHandler_Put_parallelogram() {
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
-    "colourChannels": [
+    "regions": [
+        "regionA",
+        "regionB",
+        "regionC"
+    ],
+    "channels": [
         "R",
         "G",
-        "B"
+        "B",
+        "U"
     ]
 }`
 
