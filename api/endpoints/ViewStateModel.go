@@ -219,7 +219,8 @@ type rgbuImagesWidgetState struct {
 }
 
 type parallelogramWidgetState struct {
-	ColourChannels []string `json:"colourChannels"`
+	Regions  []string `json:"regions"`
+	Channels []string `json:"channels"`
 }
 
 // Any state saved for the overall analysis tab
@@ -358,7 +359,8 @@ func defaultRGBUImages() rgbuImagesWidgetState {
 
 func defaultParallelogram() parallelogramWidgetState {
 	parallelogram := parallelogramWidgetState{}
-	parallelogram.ColourChannels = []string{}
+	parallelogram.Regions = []string{}
+	parallelogram.Channels = []string{}
 	return parallelogram
 }
 
