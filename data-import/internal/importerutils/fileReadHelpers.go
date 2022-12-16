@@ -152,7 +152,7 @@ func MakeFMDatasetOutput(
 		MatchedAlignedImages: matchedAlignedImages,
 	}
 
-	data.SetPMCData(beamLookup, hkData, locSpectraLookup, contextImgsPerPMC, pseudoIntensityData)
+	data.SetPMCData(beamLookup, hkData, locSpectraLookup, contextImgsPerPMC, pseudoIntensityData, map[int32]string{})
 	if data.DefaultContextImage != "" {
 		log.Infof("Setting context image to: " + data.DefaultContextImage)
 	}

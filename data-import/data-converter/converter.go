@@ -228,7 +228,7 @@ func ImportFromLocalFileSystem(
 // SelectImporter - Looks in specified path and determines what importer to use
 func SelectImporter(localFS fileaccess.FileAccess, importPath string, log logger.ILogger) (converter.DataConverter, error) {
 	// Check if it's a combined dataset
-	combinedFiles, _ /*combinedFile1Meta*/, _ /*combinedFile2Meta*/, err := combined.GetCombinedBeamFiles(importPath, log)
+	combinedFiles, _ /*imageFileNames*/, _ /*combinedFile1Meta*/, _ /*combinedFile2Meta*/, err := combined.GetCombinedBeamFiles(importPath, log)
 	if len(combinedFiles) > 0 && err == nil {
 		// It's a combined dataset, interpret it as such
 		return combined.MakeCombinedDatasetImporter(SelectImporter), nil
