@@ -27,7 +27,8 @@ import (
 )
 
 type DatasetCustomMeta struct {
-	Title string `json:"title"`
+	Title               string `json:"title"`
+	DefaultContextImage string `json:"defaultContextImage"`
 }
 
 func readLocalCustomMeta(jobLog logger.ILogger, importPath string) (DatasetCustomMeta, error) {
