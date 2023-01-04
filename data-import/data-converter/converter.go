@@ -176,9 +176,16 @@ func ImportFromLocalFileSystem(
 	customMetaFields, err := readLocalCustomMeta(log, localImportPath)
 	if err != nil {
 		return "", err
-	} else if len(customMetaFields.Title) > 0 && customMetaFields.Title != " " {
+	}
+
+	if len(customMetaFields.Title) > 0 && customMetaFields.Title != " " {
 		log.Infof("Applying custom title: %v", customMetaFields.Title)
 		data.Meta.Title = customMetaFields.Title
+	}
+
+	if len(customMetaFields.DefaultContextImage) > 0 {
+		log.Infof("Applying custom default context image: %v", customMetaFields.DefaultContextImage)
+		data.DefaultContextImage = customMetaFields.DefaultContextImage
 	}
 
 	// Form the output path
