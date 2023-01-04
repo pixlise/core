@@ -32,7 +32,7 @@ const artifactManualUploadBucket = "Manual-Uploads"
 
 func Example_datasetCustomMetaGet() {
 	const customMetaJSON = `{
-"title": "Alien Fossil"
+"title": "Alien Fossil", "defaultContextImage": "File1.jpg"
 }`
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
@@ -73,7 +73,8 @@ func Example_datasetCustomMetaGet() {
 	//
 	// 200
 	// {
-	//     "title": "Alien Fossil"
+	//     "title": "Alien Fossil",
+	//     "defaultContextImage": "File1.jpg"
 	// }
 }
 
@@ -84,7 +85,8 @@ func Example_datasetCustomMetaPut() {
 	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
 		{
 			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("dataset-addons/abc-123/custom-meta.json"), Body: bytes.NewReader([]byte(`{
-    "title": "Crater Rim"
+    "title": "Crater Rim",
+    "defaultContextImage": "File1.jpg"
 }`)),
 		},
 	}
@@ -96,7 +98,7 @@ func Example_datasetCustomMetaPut() {
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
-	req, _ := http.NewRequest("PUT", "/dataset/meta/abc-123", bytes.NewReader([]byte("{\"title\": \"Crater Rim\"}"))) // Should return empty list, datasets.json fails to download
+	req, _ := http.NewRequest("PUT", "/dataset/meta/abc-123", bytes.NewReader([]byte("{\"title\": \"Crater Rim\", \"defaultContextImage\": \"File1.jpg\"}"))) // Should return empty list, datasets.json fails to download
 	resp := executeRequest(req, apiRouter.Router)
 
 	fmt.Println(resp.Code)
