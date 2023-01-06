@@ -242,6 +242,8 @@ func combineDatasets(datasets map[string]*dataConvertModels.OutputData, log logg
 		resultDatasetID += datasetID
 		resultTitle += dataset.Meta.Title
 
+		// Store the PMC offset for this dataset
+		dataset.Meta.PMCOffset = offset
 		sourceMetas = append(sourceMetas, dataset.Meta)
 
 		for pmc, pmcData := range dataset.PerPMCData {

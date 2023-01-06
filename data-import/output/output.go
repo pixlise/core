@@ -113,6 +113,7 @@ func (s *PIXLISEDataSaver) Save(
 			Sclk:             src.SCLK,
 			BulkSumQuantFile: "",
 			DetectorConfig:   data.DetectorConfig, // FIXME combine
+			IdOffset:         src.PMCOffset,
 		})
 	}
 

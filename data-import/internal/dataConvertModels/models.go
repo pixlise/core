@@ -105,10 +105,11 @@ func (d DetectorSample) ToString() string {
 	return "meta " + d.Meta.ToString() + " spectrum " + fmt.Sprintf("%+v", d.Spectrum)
 }
 
+/*
 func (d DetectorSample) detectorID() string {
 	return d.Meta["DETECTOR_ID"].SValue // we know it's a string...
 }
-
+*/
 // DetectorSampleByPMC - Detector data in a lookup by PMC
 type DetectorSampleByPMC map[int32][]DetectorSample
 
@@ -172,6 +173,7 @@ type FileMetaData struct {
 	Target     string
 	Title      string
 	Instrument string
+	PMCOffset  int32 // The offset we added to PMCs from this dataset in case of combined dataset
 }
 
 // ImageMeta - metadata for the "disco" image
@@ -261,7 +263,7 @@ func (o *OutputData) SetPMCData(
 	spectra DetectorSampleByPMC,
 	contextImgsPerPMC map[int32]string,
 	pseudoIntensityData PseudoIntensities,
-	pmcSourceRTTs map[int32]string /* Optional, can be empty */) {
+	pmcSourceRTTs map[int32]string /* Optional, can be empty, contains PMC offset and corresponding RTT */) {
 
 	for pmc, sourceRTT := range pmcSourceRTTs {
 		o.EnsurePMC(pmc)
