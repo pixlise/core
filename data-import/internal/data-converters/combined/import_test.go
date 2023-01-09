@@ -224,7 +224,7 @@ func Example_combineDatasets() {
 				},
 			},
 		},
-	}, &logger.StdOutLoggerForTest{})
+	}, "the-combined-one", &logger.StdOutLoggerForTest{})
 
 	// Print out things we care about
 	fmt.Printf("error %v\nids: %v\noffsets: %v\nmeta %+v\nsources %+v\nhousekeeping %v\n", err, datasetIDs, offsets, out.Meta, out.Sources, out.HousekeepingHeaders)
@@ -248,7 +248,7 @@ func Example_combineDatasets() {
 	// error <nil>
 	// ids: [123 456]
 	// offsets: [0 10000]
-	// meta {RTT:123_456 SCLK:1234 SOL:500 SiteID:0 Site: DriveID:0 TargetID: Target: Title:Combined Dataset 123+Dataset 456 Instrument: PMCOffset:0}
+	// meta {RTT:the-combined-one SCLK:1234 SOL:500 SiteID:0 Site: DriveID:0 TargetID: Target: Title:Combined Dataset 123+Dataset 456 Instrument: PMCOffset:0}
 	// sources [{RTT:123 SCLK:1234 SOL:500 SiteID:0 Site: DriveID:0 TargetID: Target: Title:Dataset 123 Instrument: PMCOffset:0} {RTT:456 SCLK:4567 SOL:600 SiteID:0 Site: DriveID:0 TargetID: Target: Title:Dataset 456 Instrument: PMCOffset:10000}]
 	// housekeeping [One Two Three Four]
 	// 32: src=123

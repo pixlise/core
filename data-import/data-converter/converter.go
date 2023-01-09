@@ -155,7 +155,7 @@ func ImportFromLocalFileSystem(
 	log logger.ILogger) (string, error) {
 
 	// Pick an importer by inspecting the directory we're about to import from
-	importer, err := SelectImporter(localFS, localImportPath, log)
+	importer, err := SelectImporter(localFS, remoteFS, datasetBucket, localImportPath, log)
 
 	if err != nil {
 		return "", err
@@ -232,13 +232,14 @@ func ImportFromLocalFileSystem(
 	return data.DatasetID, nil
 }
 
-// SelectImporter - Looks in specified path and determines what importer to use
-func SelectImporter(localFS fileaccess.FileAccess, importPath string, log logger.ILogger) (converter.DataConverter, error) {
+// SelectImporter - Looks in specified path and determines what importer to use. Requires remoteFS for new case of importing combined
+// datasets where it may need to download other files to complete the job
+func SelectImporter(localFS fileaccess.FileAccess, remoteFS fileaccess.FileAccess, datasetBucket string, importPath string, log logger.ILogger) (converter.DataConverter, error) {
 	// Check if it's a combined dataset
 	combinedFiles, _ /*imageFileNames*/, _ /*combinedFile1Meta*/, _ /*combinedFile2Meta*/, err := combined.GetCombinedBeamFiles(importPath, log)
 	if len(combinedFiles) > 0 && err == nil {
 		// It's a combined dataset, interpret it as such
-		return combined.MakeCombinedDatasetImporter(SelectImporter), nil
+		return combined.MakeCombinedDatasetImporter(SelectImporter, remoteFS, datasetBucket), nil
 	}
 
 	// Check if it's a PIXL FM style dataset
