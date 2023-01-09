@@ -75,11 +75,28 @@ func Example_makeDatasetPMCOffsets() {
 	}
 
 	ids, offsets := makeDatasetPMCOffsets(datasets)
-	fmt.Printf("ids: %v\noffsets: %v\n", ids, offsets)
+
+	sortedIds := []string{}
+	for _, id := range ids {
+		sortedIds = append(sortedIds, id)
+	}
+	sort.Strings(sortedIds)
+
+	for _, sortedId := range sortedIds {
+		offset := int32(0)
+		for c, id := range ids {
+			if id == sortedId {
+				offset = offsets[c]
+			}
+		}
+		fmt.Printf("id: %v, offset: %v\n", sortedId, offset)
+	}
 
 	// Output:
-	// ids: [345 678 567 123]
-	// offsets: [0 10000 20000 70000]
+	// id: 123, offset: 70000
+	// id: 345, offset: 0
+	// id: 567, offset: 20000
+	// id: 678, offset: 10000
 }
 
 func Example_combineDatasets() {
