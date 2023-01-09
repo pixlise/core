@@ -27,4 +27,4 @@ type DataConverter interface {
 	Import(importJSONPath string, pseudoIntensityRangesPath string, datasetID string, jobLog logger.ILogger) (*dataConvertModels.OutputData, string, error)
 }
 
-type SelectImporterFunc func(fileaccess.FileAccess, string, logger.ILogger) (DataConverter, error)
+type SelectImporterFunc func(fileaccess.FileAccess, fileaccess.FileAccess, string, string, logger.ILogger) (DataConverter, error)

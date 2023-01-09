@@ -27,6 +27,7 @@ import (
 
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
+	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
 	gdsfilename "github.com/pixlise/core/v2/data-import/gds-filename"
 	converter "github.com/pixlise/core/v2/data-import/internal/data-converters/interface"
 	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
@@ -35,11 +36,15 @@ import (
 
 type CombinedDatasetImport struct {
 	selectImporter converter.SelectImporterFunc
+	remoteFS       fileaccess.FileAccess
+	datasetBucket  string
 }
 
-func MakeCombinedDatasetImporter(selectImporter converter.SelectImporterFunc) CombinedDatasetImport {
+func MakeCombinedDatasetImporter(selectImporter converter.SelectImporterFunc, remoteFS fileaccess.FileAccess, datasetBucket string) CombinedDatasetImport {
 	return CombinedDatasetImport{
 		selectImporter: selectImporter,
+		remoteFS:       remoteFS,
+		datasetBucket:  datasetBucket,
 	}
 }
 
@@ -68,6 +73,7 @@ func (cmb CombinedDatasetImport) Import(importPath string, pseudoIntensityRanges
 	}
 
 	subDatasets := map[string]*dataConvertModels.OutputData{}
+	archive := datasetArchive.NewDatasetArchiveDownloader(cmb.remoteFS, localFS, log, cmb.datasetBucket, "" /*We don't download from this bucket*/)
 
 	for c, meta := range secondFileMeta {
 		datasetID, err := meta.RTT()
@@ -78,18 +84,47 @@ func (cmb CombinedDatasetImport) Import(importPath string, pseudoIntensityRanges
 		log.Infof("Checking directory for dataset: %v", datasetID)
 
 		importSubdirPath := path.Join(importPath, datasetID)
-		_, err = os.Stat(importSubdirPath)
-		if err != nil {
-			return nil, "", fmt.Errorf("Missing subdirectory for dataset RTT/ID: %v", datasetID)
-		}
-
+		needsDownload := false
 		if strings.HasPrefix(datasetID, "SRLC") {
 			log.Infof("SKIPPING dataset read for: %v", datasetID)
+		} else {
+			_, err = os.Stat(importSubdirPath)
+			if err != nil {
+				// Don't have it, download it!
+				needsDownload = true
+			} else {
+				// While it DOES exist, but if we downloaded it, the actual files we're reading are in /unzipped, so if we get stuck, check
+				// if that exists.
+				_, err := cmb.selectImporter(localFS, cmb.remoteFS, cmb.datasetBucket, importSubdirPath, log)
+				if err != nil {
+					// Check if there's an /unzipped dir in there, if we downloaded it, there would be...
+					unzippedImportSubdirPath := path.Join(importSubdirPath, "unzipped")
+
+					_, err = os.Stat(importSubdirPath)
+					if err == nil {
+						importSubdirPath = unzippedImportSubdirPath
+					} else {
+						// unzipped subdir doesn't exist, we may still need to download
+						needsDownload = true
+					}
+				}
+			}
+		}
+
+		if needsDownload {
+			// We're missing this sub-directory, try to download it instead
+			_ /*localDownloadPath*/, localUnzippedPath, _ /*zipCount*/, err := archive.DownloadFromDatasetArchive(datasetID, importSubdirPath)
+			if err != nil {
+				return nil, "", fmt.Errorf("Failed to download dataset RTT/ID: %v. Error: %v", datasetID, err)
+			}
+
+			// We are reading from this downloaded subdir now...
+			importSubdirPath = localUnzippedPath
 		}
 
 		// Read in the dataset
 		log.Infof("Checking dataset type: %v", datasetID)
-		importer, err := cmb.selectImporter(localFS, importSubdirPath, log)
+		importer, err := cmb.selectImporter(localFS, cmb.remoteFS, cmb.datasetBucket, importSubdirPath, log)
 		if err != nil {
 			return nil, "", err
 		}
@@ -132,7 +167,9 @@ func GetCombinedBeamFiles(importPath string, log logger.ILogger) ([]string, []st
 
 	// Expecting at least 1 CSV starting with CW-, which contains 2 valid file names embedded into it, - separated
 	for _, item := range items {
-		if strings.HasPrefix(strings.ToUpper(item), "CW-") && strings.HasSuffix(strings.ToLower(item), ".csv") {
+		// Examples provided so far either started with CW- or CIDSO_SOL<number>_CW-...
+		if (strings.HasPrefix(strings.ToUpper(item), "CW-") || strings.HasPrefix(strings.ToUpper(item), "CIDSO_SOL")) &&
+			strings.HasSuffix(strings.ToLower(item), ".csv") {
 			// Split it at - and verify the 2 parts parse
 			parts := strings.Split(item, "-")
 			if len(parts) != 3 {
@@ -148,6 +185,13 @@ func GetCombinedBeamFiles(importPath string, log logger.ILogger) ([]string, []st
 			secondFile, err := gdsfilename.ParseFileName(parts[2])
 			if err != nil {
 				log.Infof("Failed to parse second part of file name: %v", item)
+				continue
+			}
+
+			// Make sure the second part of the file name is a product we're interested in
+			// Currently this is limited to RFS (PIXL spectra), but in time we want to include SHERLOC files here
+			if secondFile.ProdType != "RFS" {
+				log.Infof("Skipping file: %v as it does not reference products we can import", item)
 				continue
 			}
 
