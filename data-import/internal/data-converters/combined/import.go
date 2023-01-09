@@ -140,7 +140,7 @@ func (cmb CombinedDatasetImport) Import(importPath string, pseudoIntensityRanges
 	}
 
 	// Now we combine the datasets
-	data, datasetIDs, offsets, err := combineDatasets(subDatasets, log)
+	data, datasetIDs, offsets, err := combineDatasets(subDatasets, datasetIDExpected, log)
 	if err != nil {
 		return nil, "", err
 	}
@@ -205,8 +205,7 @@ func GetCombinedBeamFiles(importPath string, log logger.ILogger) ([]string, []st
 	return fileNames, imageFileNames, firstFileMeta, secondFileMeta, nil
 }
 
-func combineDatasets(datasets map[string]*dataConvertModels.OutputData, log logger.ILogger) (*dataConvertModels.OutputData, []string, []int32, error) {
-	resultDatasetID := ""
+func combineDatasets(datasets map[string]*dataConvertModels.OutputData, resultDatasetID string, log logger.ILogger) (*dataConvertModels.OutputData, []string, []int32, error) {
 	resultTitle := ""
 	detectorConfig := "PIXL"
 	group := "PIXL-FM"
@@ -273,7 +272,7 @@ func combineDatasets(datasets map[string]*dataConvertModels.OutputData, log logg
 				minDriveID = dataset.Meta.DriveID
 			}
 
-			resultDatasetID += "_"
+			//resultDatasetID += "_"
 			resultTitle += "+"
 		} else {
 			minSiteID = dataset.Meta.SiteID
@@ -283,7 +282,7 @@ func combineDatasets(datasets map[string]*dataConvertModels.OutputData, log logg
 			pseudoIntensityRanges = dataset.PseudoRanges
 		}
 
-		resultDatasetID += datasetID
+		//resultDatasetID += datasetID
 		resultTitle += dataset.Meta.Title
 
 		// Store the PMC offset for this dataset
