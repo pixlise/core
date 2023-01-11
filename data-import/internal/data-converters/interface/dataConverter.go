@@ -15,39 +15,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dataConverter
+package converter
 
 import (
-	"os"
-	"path"
-
-	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
 )
 
-type DatasetCustomMeta struct {
-	Title               string `json:"title"`
-	DefaultContextImage string `json:"defaultContextImage"`
+type DataConverter interface {
+	Import(importJSONPath string, pseudoIntensityRangesPath string, datasetID string, jobLog logger.ILogger) (*dataConvertModels.OutputData, string, error)
 }
 
-func readLocalCustomMeta(jobLog logger.ILogger, importPath string) (DatasetCustomMeta, error) {
-	result := DatasetCustomMeta{}
-
-	metapath := path.Join(importPath, filepaths.DatasetCustomMetaFileName)
-	jobLog.Infof("Checking for custom meta: %v", metapath)
-
-	if _, err := os.Stat(metapath); os.IsNotExist(err) {
-		jobLog.Infof("Custom meta not found, ignoring...")
-		return result, nil
-	}
-
-	localFS := fileaccess.FSAccess{}
-	err := localFS.ReadJSON("", metapath, &result, false)
-	if err != nil {
-		jobLog.Errorf("Failed to read custom meta file: %v", err)
-	}
-
-	jobLog.Infof("Successfully read custom-meta")
-	return result, err
-}
+type SelectImporterFunc func(fileaccess.FileAccess, fileaccess.FileAccess, string, string, logger.ILogger) (DataConverter, error)

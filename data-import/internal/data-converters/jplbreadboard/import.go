@@ -246,7 +246,7 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 		MatchedAlignedImages: matchedAlignedImages,
 	}
 
-	data.SetPMCData(beamLookup, hkData, spectraLookup, contextImgsPerPMC, pseudoIntensityData)
+	data.SetPMCData(beamLookup, hkData, spectraLookup, contextImgsPerPMC, pseudoIntensityData, map[int32]string{})
 	return data, contextImageSrcDir, nil
 }
 

@@ -329,6 +329,11 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 		}
 	}
 
+	err = writePMCSourceCSV(outDir, fileNamePrefix, files.dataset)
+	if err != nil {
+		return nil, err
+	}
+
 	svcs.Log.Debugf("  Making zip")
 
 	// Zip it all up!
@@ -1221,4 +1226,44 @@ func writeQuantCSVForROI(quantCSVFileLines []string, roi roiModel.ROIMembers, ou
 	}
 
 	return csvFileName, nil
+}
+
+func writePMCSourceCSV(dir string, fileNamePrefix string, dataset *protos.Experiment) error {
+	// Only write this if the dataset contains more than 1 source
+	if len(dataset.ScanSources) < 2 {
+		return nil
+	}
+
+	csv, err := os.Create(path.Join(dir, fileNamePrefix+"-pmc-sources.csv"))
+	if err != nil {
+		return err
+	}
+	defer csv.Close()
+
+	// headers
+	_, err = csv.WriteString("PMC,SourceRTT,SourcePMC")
+	if err != nil {
+		return err
+	}
+
+	// Assume the PMCs are coming in in sorted order (that's how we output them to PIXLISE bin files)
+	for c, loc := range dataset.Locations {
+		pmcI, err := strconv.Atoi(loc.Id)
+		if err != nil {
+			return fmt.Errorf("Failed to read PMC: %v as integer for location %v", loc.Id, c)
+		}
+
+		pmc := int32(pmcI)
+		if loc.ScanSource < 0 || int(loc.ScanSource) >= len(dataset.ScanSources) {
+			return fmt.Errorf("Failed to find scan source %v for location %v", loc.ScanSource, c)
+		}
+
+		line := fmt.Sprintf("%v,%v,%v\n", pmc, dataset.ScanSources[loc.ScanSource].Rtt, pmc-dataset.ScanSources[loc.ScanSource].IdOffset)
+		_, err = csv.WriteString(line + "\n")
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
