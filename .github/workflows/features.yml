@@ -130,7 +130,7 @@ jobs:
         zip -q importtest-linux-${{ steps.version.outputs.version }}.zip importtest-linux test-data/000000001-21-10-2022-15-37-00.zip && \
         rm importtest-linux && \
         aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
-      needs: test
+    needs: test
 
   docker:
     needs: test
