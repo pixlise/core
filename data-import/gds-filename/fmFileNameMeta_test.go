@@ -35,84 +35,135 @@ func printFNValues(m FileNameMeta) {
 	fmt.Printf("SCLK=%v|%v\n", x, e)
 
 	s, e = m.SOL()
-	fmt.Printf("SOL=%v|%v\n", s, e)
+	fmt.Printf("SOL=%v|%v\n\n", s, e)
 }
 
 func Example_parseFileName() {
+	fmt.Println("Field test:")
 	m, e := ParseFileName("INCSPRIMVSECONDARYT_TERPROGTSITDRIVSEQNUMRTTCAMSDCOPVE.EXT")
 	fmt.Printf("%v|%v\n", e, m)
 	printFNValues(m)
 
+	fmt.Println("Invalid file name:")
 	m, e = ParseFileName("hello.txt")
-	fmt.Printf("%v\n", e)
+	fmt.Printf("%v\n\n", e)
 
 	// pseudointensity file name example
+	fmt.Println("Pseudo-intensity file:")
 	m, e = ParseFileName("PS__D077T0637741109_000RPM_N001003600098356100640__J01.CSV")
 	fmt.Printf("%v|%v\n", e, m)
 	printFNValues(m)
 
 	// context image
+	fmt.Println("Context image file:")
 	m, e = ParseFileName("PCR_D077T0637741562_000EDR_N00100360009835610066000J01.PNG")
 	fmt.Printf("%v|%v\n", e, m)
 	printFNValues(m)
 
 	// bulk MSA
+	fmt.Println("MSA (bulk) file:")
 	m, e = ParseFileName("PS__D077T0637746318_000RBS_N001003600098356103760__J01.MSA")
 	fmt.Printf("%v|%v\n", e, m)
 	printFNValues(m)
 
 	// spatial inputs (housekeeping)
+	fmt.Println("Housekeeping (RSI) file:")
 	m, e = ParseFileName("PE__D077T0637741109_000RSI_N001003600098356100660__J01.CSV")
 	fmt.Printf("%v|%v\n", e, m)
 	printFNValues(m)
 
 	// spectra
+	fmt.Println("All spectra CSV file:")
 	m, e = ParseFileName("PS__D077T0637741109_000RFS_N001003600098356100640__J01.CSV")
 	fmt.Printf("%v|%v\n", e, m)
 	printFNValues(m)
 
 	// Something with SCLK and SOL
+	fmt.Println("Testing SCLK and SOL fields:")
 	m, e = ParseFileName("PS__1033_0012345678_000RFS_N001003600098356100640__J01.CSV")
 	fmt.Printf("%v|%v\n", e, m)
 	printFNValues(m)
 
+	// Watson image file
+	// We see them as: CW-SIF_0614_0721455441_734RAS_N0301172SRLC00643_0000LMJ01
+	// But originally they are:
+	fmt.Println("Watson file:")
+	m, e = ParseFileName("SIF_0614_0721455441_734RAS_N0301172SRLC00643_0000LMJ01.PNG")
+	fmt.Printf("%v|%v\n", e, m)
+	printFNValues(m)
+
+	// Sherloc file
+	fmt.Println("Sherloc file:")
+	m, e = ParseFileName("SS__0614_0721475157_600RRS__0301172SRLC11360W208CGNJ01.CSV")
+	fmt.Printf("%v|%v\n", e, m)
+	printFNValues(m)
+
 	// Output:
+	// Field test:
 	// <nil>|{IN C S PRIM V SECONDARYT TER PRO G T SIT DRIV SEQNUMRTT CAMS D CO P VE}
 	// PMC=0|PMC only stored for PIXL files
-	// RTT=|Failed to get RTT from: SEQNUMRTT
+	// RTT=SEQNUMRTT|<nil>
 	// SCLK=0|Failed to get SCLK from: SECONDARYT
 	// SOL=PRIM|<nil>
+	//
+	// Invalid file name:
 	// Failed to parse meta from file name
+	//
+	// Pseudo-intensity file:
 	// <nil>|{PS _ _ D077 T 0637741109 000 RPM _ N 001 0036 000983561 0064 0 __ J 01}
 	// PMC=64|<nil>
 	// RTT=000983561|<nil>
 	// SCLK=637741109|<nil>
 	// SOL=D077|<nil>
+	//
+	// Context image file:
 	// <nil>|{PC R _ D077 T 0637741562 000 EDR _ N 001 0036 000983561 0066 0 00 J 01}
 	// PMC=66|<nil>
 	// RTT=000983561|<nil>
 	// SCLK=637741562|<nil>
 	// SOL=D077|<nil>
+	//
+	// MSA (bulk) file:
 	// <nil>|{PS _ _ D077 T 0637746318 000 RBS _ N 001 0036 000983561 0376 0 __ J 01}
 	// PMC=376|<nil>
 	// RTT=000983561|<nil>
 	// SCLK=637746318|<nil>
 	// SOL=D077|<nil>
+	//
+	// Housekeeping (RSI) file:
 	// <nil>|{PE _ _ D077 T 0637741109 000 RSI _ N 001 0036 000983561 0066 0 __ J 01}
 	// PMC=66|<nil>
 	// RTT=000983561|<nil>
 	// SCLK=637741109|<nil>
 	// SOL=D077|<nil>
+	//
+	// All spectra CSV file:
 	// <nil>|{PS _ _ D077 T 0637741109 000 RFS _ N 001 0036 000983561 0064 0 __ J 01}
 	// PMC=64|<nil>
 	// RTT=000983561|<nil>
 	// SCLK=637741109|<nil>
 	// SOL=D077|<nil>
+	//
+	// Testing SCLK and SOL fields:
 	// <nil>|{PS _ _ 1033 _ 0012345678 000 RFS _ N 001 0036 000983561 0064 0 __ J 01}
 	// PMC=64|<nil>
 	// RTT=000983561|<nil>
 	// SCLK=12345678|<nil>
 	// SOL=1033|<nil>
+	//
+	// Watson file:
+	// <nil>|{SI F _ 0614 _ 0721455441 734 RAS _ N 030 1172 SRLC00643 _000 0 LM J 01}
+	// PMC=0|PMC only stored for PIXL files
+	// RTT=SRLC00643|<nil>
+	// SCLK=721455441|<nil>
+	// SOL=0614|<nil>
+	//
+	// Sherloc file:
+	// <nil>|{SS _ _ 0614 _ 0721475157 600 RRS _ _ 030 1172 SRLC11360 W208 C GN J 01}
+	// PMC=0|PMC only stored for PIXL files
+	// RTT=SRLC11360|<nil>
+	// SCLK=721475157|<nil>
+	// SOL=0614|<nil>
 }
 
 func Example_stringFileName() {

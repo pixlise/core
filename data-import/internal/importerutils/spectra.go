@@ -15,21 +15,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package pixlfm
+package importerutils
 
 import (
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 
 	"github.com/pixlise/core/v2/core/logger"
 	"github.com/pixlise/core/v2/core/utils"
+	gdsfilename "github.com/pixlise/core/v2/data-import/gds-filename"
 	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
-	"github.com/pixlise/core/v2/data-import/internal/importerutils"
 )
 
-func readSpectraCSV(path string, jobLog logger.ILogger) (dataConvertModels.DetectorSampleByPMC, error) {
-	data, err := importerutils.ReadCSV(path, 0, ',', jobLog)
+func ReadSpectraCSV(path string, jobLog logger.ILogger) (dataConvertModels.DetectorSampleByPMC, error) {
+	data, err := ReadCSV(path, 0, ',', jobLog)
 	if err != nil {
 		return nil, err
 	}
@@ -314,5 +315,67 @@ func parseSpectraCSVData(data [][]string, readType string, jobLog logger.ILogger
 	if ATableRowsRead == 0 || ATableRowsRead != BTableRowsRead {
 		return nil, fmt.Errorf("A table had %v rows, B had %v", ATableRowsRead, BTableRowsRead)
 	}
+	return result, nil
+}
+
+// Expects the bulk file path and max file path in an array as inputs. Order does not matter because the file name
+// can be used to determine which is being read
+func ReadBulkMaxSpectra(filePaths []string, jobLog logger.ILogger) (dataConvertModels.DetectorSampleByPMC, error) {
+	result := dataConvertModels.DetectorSampleByPMC{}
+
+	for _, filePath := range filePaths {
+		// Parse metadata for file
+		fileOnly := path.Base(filePath)
+		// Make sure it's upper-case. SOFF can deliver lowercased ones
+		fileOnly = strings.ToUpper(fileOnly)
+		csvMeta, err := gdsfilename.ParseFileName(fileOnly)
+		if err != nil {
+			return nil, err
+		}
+
+		// Make sure it's one of the products we're expecting
+		readType := ""
+		if csvMeta.ProdType == "RBS" {
+			readType = "BulkSum"
+		} else if csvMeta.ProdType == "RMS" {
+			readType = "MaxValue"
+		} else {
+			return nil, fmt.Errorf("Unexpected bulk/max MSA product type: %v", csvMeta.ProdType)
+		}
+
+		pmc, err := csvMeta.PMC()
+		if err != nil {
+			return nil, err
+		}
+
+		jobLog.Infof("  Reading %v MSA: %v", readType, filePath)
+		lines, err := utils.ReadFileLines(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to load %v: %v", filePath, err)
+		}
+
+		// Parse the MSA data
+		spectrumList, err := ReadMSAFileLines(lines, false, false, false)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse %v: %v", filePath, err)
+		}
+
+		// Set the read type, detector & PMC
+		for c := range spectrumList {
+			detector := "A"
+			if c > 0 {
+				detector = "B"
+			}
+			spectrumList[c].Meta["READTYPE"] = dataConvertModels.StringMetaValue(readType)
+			spectrumList[c].Meta["DETECTOR_ID"] = dataConvertModels.StringMetaValue(detector)
+			spectrumList[c].Meta["PMC"] = dataConvertModels.IntMetaValue(pmc)
+		}
+
+		if _, ok := result[pmc]; !ok {
+			result[pmc] = []dataConvertModels.DetectorSample{}
+		}
+		result[pmc] = append(result[pmc], spectrumList...)
+	}
+
 	return result, nil
 }

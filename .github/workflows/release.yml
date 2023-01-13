@@ -73,15 +73,16 @@ jobs:
     - name: Copy to S3 Archive
       run: |
         cd _out && \
+        wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
         mkdir test-data && \
         cp ../internal/cmdline-tools/import-integration-test/test-data/000000001-21-10-2022-15-37-00.zip ./test-data && \
         zip -q jobupdater-linux-${{ steps.version.outputs.version }}.zip jobupdater-linux && \
         rm jobupdater-linux && \
-        zip -q datasourceupdater-linux-${{ steps.version.outputs.version }}.zip datasourceupdater-linux && \
+        zip -q datasourceupdater-linux-${{ steps.version.outputs.version }}.zip rds-combined-ca-bundle.pem datasourceupdater-linux && \
         rm datasourceupdater-linux && \
-        zip -q integrationtest-linux-${{ steps.version.outputs.version }}.zip integrationtest-linux && \
+        zip -q integrationtest-linux-${{ steps.version.outputs.version }}.zip rds-combined-ca-bundle.pem integrationtest-linux && \
         rm integrationtest-linux && \
-        zip -q dataimport-linux-${{ steps.version.outputs.version }}.zip dataimport-linux && \
+        zip -q dataimport-linux-${{ steps.version.outputs.version }}.zip rds-combined-ca-bundle.pem dataimport-linux && \
         rm dataimport-linux && \
         zip -q importtest-linux-${{ steps.version.outputs.version }}.zip importtest-linux test-data/000000001-21-10-2022-15-37-00.zip && \
         rm importtest-linux && \

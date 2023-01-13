@@ -98,6 +98,25 @@ func (s *PIXLISEDataSaver) Save(
 		exp.BulkSumQuantFile = data.BulkQuantFile
 	}
 
+	// If we're combining from multiple sources, save metadata for each source
+	for _, src := range data.Sources {
+		exp.ScanSources = append(exp.ScanSources, &protos.Experiment_ScanSource{
+			Instrument:       "PIXL", // FIXME combine
+			TargetId:         src.TargetID,
+			DriveId:          src.DriveID,
+			SiteId:           src.SiteID,
+			Target:           src.Target,
+			Site:             src.Site,
+			Title:            src.Title,
+			Sol:              src.SOL,
+			Rtt:              src.RTT,
+			Sclk:             src.SCLK,
+			BulkSumQuantFile: "",
+			DetectorConfig:   data.DetectorConfig, // FIXME combine
+			IdOffset:         src.PMCOffset,
+		})
+	}
+
 	// Get a sorted list of PMCs, so we save them in order
 	// It's not mandatory, but nicer!
 	pmcs := []int{}
@@ -203,7 +222,18 @@ func (s *PIXLISEDataSaver) Save(
 	for _, pmcI := range pmcs {
 		pmc := int32(pmcI)
 		dataForPMC := data.PerPMCData[pmc]
-		err := s.saveExperimentLocationItem(&exp, pmc, *dataForPMC, data.HousekeepingHeaders, pmcsWithBeamIJs, jobLog)
+		// If there is a source RTT, we need to look up the index of which saved source item this corresponds to
+		srcIdx := int32(0)
+		if len(dataForPMC.SourceRTT) > 0 {
+			for c, src := range exp.ScanSources {
+				if src.Rtt == dataForPMC.SourceRTT {
+					srcIdx = int32(c)
+					break
+				}
+			}
+		}
+
+		err := s.saveExperimentLocationItem(&exp, pmc, srcIdx, *dataForPMC, data.HousekeepingHeaders, pmcsWithBeamIJs, jobLog)
 		if err != nil {
 			return fmt.Errorf("Error saving pmc %v: %v", pmc, err)
 		}
@@ -521,9 +551,10 @@ func (s *PIXLISEDataSaver) convertToOutputMeta(meta dataConvertModels.MetaValue,
 	}
 }
 
-func (s *PIXLISEDataSaver) saveExperimentLocationItem(saveToExperiment *protos.Experiment, pmc int32, data dataConvertModels.PMCData, hkHeaders []string, beamIJPMCAscending []int, jobLog logger.ILogger) error {
+func (s *PIXLISEDataSaver) saveExperimentLocationItem(saveToExperiment *protos.Experiment, pmc int32, srcIdx int32, data dataConvertModels.PMCData, hkHeaders []string, beamIJPMCAscending []int, jobLog logger.ILogger) error {
 	location := &protos.Experiment_Location{}
 	location.Id = strconv.Itoa(int(pmc))
+	location.ScanSource = srcIdx
 
 	if len(data.ContextImageDst) > 0 {
 		location.ContextImage = data.ContextImageDst
