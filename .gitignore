@@ -1,4 +1,5 @@
 __debug_bin
+__debug_bin.exe
 .idea/
 
 # Build output from make for exes, coverage reports, etc
