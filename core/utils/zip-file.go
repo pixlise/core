@@ -146,7 +146,7 @@ func ZipDirectory(dirPath string) ([]byte, error) {
 	}
 
 	for _, file := range files {
-		filePath := path.Join(dirPath, file.Name())
+		filePath := filepath.Join(dirPath, file.Name())
 
 		// Create file in zip
 		header := &zip.FileHeader{

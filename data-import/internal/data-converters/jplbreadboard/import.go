@@ -20,7 +20,7 @@ package jplbreadboard
 import (
 	"errors"
 	"fmt"
-	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -113,7 +113,7 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 	contextImgsPerPMC := map[int32]string{}
 	contextImageSrcDir := ""
 	if len(params.ContextImgDir) > 0 {
-		contextImageSrcDir = path.Join(importPath, params.ContextImgDir)
+		contextImageSrcDir = filepath.Join(importPath, params.ContextImgDir)
 		contextImgsPerPMC, err = processContextImages(contextImageSrcDir, jobLog, localFS)
 		if err != nil {
 			return nil, "", err
@@ -127,7 +127,7 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 
 	if params.MsaBeamParams == "" && params.BeamFile != "" {
 		jobLog.Infof("  Reading Beam Locations: \"%v\", using minimum context image PMC detected: %v\n", params.BeamFile, minContextPMC)
-		beamLookup, err = importerutils.ReadBeamLocationsFile(path.Join(importPath, params.BeamFile), false, minContextPMC, jobLog)
+		beamLookup, err = importerutils.ReadBeamLocationsFile(filepath.Join(importPath, params.BeamFile), false, minContextPMC, jobLog)
 		if err != nil {
 			return nil, "", err
 		}
@@ -138,7 +138,7 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 	// Housekeeping file
 	if params.HousekeepingFile != "" {
 		jobLog.Infof("  Reading Housekeeping: %v\n", params.HousekeepingFile)
-		hkData, err = importerutils.ReadHousekeepingFile(path.Join(importPath, params.HousekeepingFile), 0, jobLog)
+		hkData, err = importerutils.ReadHousekeepingFile(filepath.Join(importPath, params.HousekeepingFile), 0, jobLog)
 		if err != nil {
 			return nil, "", err
 		}
@@ -159,13 +159,13 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 		if err != nil {
 			return nil, "", err
 		}
-		pseudoIntensityData, err = importerutils.ReadPseudoIntensityFile(path.Join(importPath, params.PseudoIntensityCSVPath), false, jobLog)
+		pseudoIntensityData, err = importerutils.ReadPseudoIntensityFile(filepath.Join(importPath, params.PseudoIntensityCSVPath), false, jobLog)
 		if err != nil {
 			return nil, "", err
 		}
 	}
 
-	spectraPath := path.Join(importPath, params.MsaDir)
+	spectraPath := filepath.Join(importPath, params.MsaDir)
 	allMSAFiles, err := localFS.ListObjects(spectraPath, "")
 	if err != nil {
 		return nil, "", err
@@ -180,7 +180,7 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 	spectrafiles, _ := getSpectraFiles(allMSAFiles, verifyreadtype, jobLog)
 
 	jobLog.Infof("  Found %v usable spectrum files...", len(allMSAFiles))
-	spectraLookup, err := makeSpectraLookup(path.Join(importPath, params.MsaDir), spectrafiles, params.SingleDetectorMSAs, params.GenPMCs, params.ReadTypeOverride, params.DetectorADuplicate, jobLog)
+	spectraLookup, err := makeSpectraLookup(filepath.Join(importPath, params.MsaDir), spectrafiles, params.SingleDetectorMSAs, params.GenPMCs, params.ReadTypeOverride, params.DetectorADuplicate, jobLog)
 	if err != nil {
 		return nil, "", err
 	}
@@ -219,7 +219,7 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 	// Not really relevant, what would we show? It's a list of meta, how many is too many?
 	//importer.LogIfMoreFoundHousekeeping(hkData, "Housekeeping", 1)
 
-	matchedAlignedImages, err := importerutils.ReadMatchedImages(path.Join(importPath, "MATCHED"), beamLookup, jobLog, localFS)
+	matchedAlignedImages, err := importerutils.ReadMatchedImages(filepath.Join(importPath, "MATCHED"), beamLookup, jobLog, localFS)
 
 	if err != nil {
 		return nil, "", err

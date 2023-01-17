@@ -21,7 +21,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/pixlise/core/v2/core/fileaccess"
@@ -146,7 +146,7 @@ func (s *SOFFImport) Import(importPath string, pseudoIntensityRangesPath string,
 	}
 
 	// Read each one
-	beamLookup, err := importerutils.ReadBeamLocationsFile(path.Join(importPath, importPathAndOffsets["Xray_beam_positions"].fileName), true, 1, s.log)
+	beamLookup, err := importerutils.ReadBeamLocationsFile(filepath.Join(importPath, importPathAndOffsets["Xray_beam_positions"].fileName), true, 1, s.log)
 	if err != nil {
 		return nil, "", err
 	}
@@ -168,14 +168,14 @@ func (s *SOFFImport) Import(importPath string, pseudoIntensityRangesPath string,
 		return nil, "", errors.New("This parser expects the tables in the histogram file to be in order: housekeeping, position, A, B")
 	}
 
-	locSpectraLookup, err := importerutils.ReadSpectraCSV(path.Join(importPath, importPathAndOffsets["histogram_housekeeping"].fileName), s.log)
+	locSpectraLookup, err := importerutils.ReadSpectraCSV(filepath.Join(importPath, importPathAndOffsets["histogram_housekeeping"].fileName), s.log)
 	if err != nil {
 		return nil, "", err
 	}
 
 	specialHistogramFilePaths := []string{
-		path.Join(importPath, importPathAndOffsets["bulk_sum_histogram"].fileName),
-		path.Join(importPath, importPathAndOffsets["max_value_histogram"].fileName),
+		filepath.Join(importPath, importPathAndOffsets["bulk_sum_histogram"].fileName),
+		filepath.Join(importPath, importPathAndOffsets["max_value_histogram"].fileName),
 	}
 
 	bulkMaxSpectraLookup, err := importerutils.ReadBulkMaxSpectra(specialHistogramFilePaths, s.log)
@@ -183,7 +183,7 @@ func (s *SOFFImport) Import(importPath string, pseudoIntensityRangesPath string,
 		return nil, "", err
 	}
 
-	hkData, err := importerutils.ReadHousekeepingFile(path.Join(importPath, importPathAndOffsets["housekeeping_frame"].fileName), 1, s.log)
+	hkData, err := importerutils.ReadHousekeepingFile(filepath.Join(importPath, importPathAndOffsets["housekeeping_frame"].fileName), 1, s.log)
 	if err != nil {
 		return nil, "", err
 	}
@@ -194,7 +194,7 @@ func (s *SOFFImport) Import(importPath string, pseudoIntensityRangesPath string,
 	}
 
 	// "pseudointensity_map_metadata"
-	pseudoIntensityData, err := importerutils.ReadPseudoIntensityFile(path.Join(importPath, importPathAndOffsets["pseudointensity_map"].fileName), false, s.log)
+	pseudoIntensityData, err := importerutils.ReadPseudoIntensityFile(filepath.Join(importPath, importPathAndOffsets["pseudointensity_map"].fileName), false, s.log)
 	if err != nil {
 		return nil, "", err
 	}
@@ -223,7 +223,7 @@ func (s *SOFFImport) Import(importPath string, pseudoIntensityRangesPath string,
 	matchedAlignedImages := []dataConvertModels.MatchedAlignedImageMeta{}
 	/*
 		localFS := &fileaccess.FSAccess{}
-		matchedAlignedImages, err := importerutils.ReadMatchedImages(path.Join(importPath, "MATCHED"), beamLookup, s.log, localFS)
+		matchedAlignedImages, err := importerutils.ReadMatchedImages(filepath.Join(importPath, "MATCHED"), beamLookup, s.log, localFS)
 		if err != nil {
 			return nil, "", err
 		}
@@ -266,7 +266,7 @@ func GetSOFFDescriptionFile(importPath string) (string, error) {
 		if strings.HasSuffix(strings.ToLower(item), ".xml") {
 			// We found an XML file, currently this is enough for us to assume SOFF.
 			// NOTE: In future we may need to open it and verify, but for now none of our other importers see XML files!
-			return path.Join(importPath, item), nil
+			return filepath.Join(importPath, item), nil
 		}
 	}
 

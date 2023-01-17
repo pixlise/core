@@ -81,7 +81,7 @@ func main() {
 		// Build a destination path
 		fileName := filepath.Base(thisPath)
 		id := fileName[:len(fileName)-len(summarySuffix)]
-		dstPath := path.Join(filepath.Dir(thisPath), "summary-"+id+".json")
+		dstPath := filepath.Join(filepath.Dir(thisPath), "summary-"+id+".json")
 		//fmt.Printf("%v -> %v\n", thisPath, dstPath)
 
 		err := fs.CopyObject(bucket, thisPath, bucket, dstPath)
