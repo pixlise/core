@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -37,7 +38,7 @@ type FSAccess struct {
 func (fs *FSAccess) ListObjects(rootPath string, prefix string) ([]string, error) {
 	result := []string{}
 
-	rootOnly := filepath.Join(rootPath) // Using filepath.Join to make it match the fullPath cleans off ./ for example
+	rootOnly := path.Join(rootPath) // Using path.Join to make it match the fullPath cleans off ./ for example
 	fullPath := fs.filePath(rootPath, prefix)
 
 	// To have common behaviour on S3 vs local file system, here we check if the path exists
@@ -51,8 +52,8 @@ func (fs *FSAccess) ListObjects(rootPath string, prefix string) ([]string, error
 
 	if !fullPathExists {
 		// Try go up a directory
-		filePrefix = filepath.Base(fullPath)
-		fullPath = filepath.Dir(fullPath)
+		filePrefix = path.Base(fullPath)
+		fullPath = path.Dir(fullPath)
 
 		// Check this directory exists...
 		fullPathExists, err = fs.ObjectExists(fullPath, "")
@@ -75,7 +76,7 @@ func (fs *FSAccess) ListObjects(rootPath string, prefix string) ([]string, error
 			// If we are dealing with a file prefix check, do the check here, where we have
 			// the entire path to look at
 			if len(filePrefix) > 0 {
-				prefixToCheck := filepath.Join(fullPath, filePrefix)
+				prefixToCheck := path.Join(fullPath, filePrefix)
 				if !strings.HasPrefix(pathFound, prefixToCheck) {
 					// Doesn't have the prefix, so we're not saving this one!
 					return nil
@@ -88,11 +89,6 @@ func (fs *FSAccess) ListObjects(rootPath string, prefix string) ([]string, error
 			toSave := pathFound
 			if strings.HasPrefix(toSave, rootOnly) {
 				toSave = toSave[len(rootOnly)+1:]
-			}
-
-			// Force paths to be / on Windows, mainly so Example style unit tests pass
-			if os.PathSeparator == '\\' {
-				toSave = strings.ReplaceAll(toSave, "\\", "/")
 			}
 
 			result = append(result, toSave)
@@ -226,9 +222,7 @@ func (fs *FSAccess) IsNotFoundError(err error) bool {
 	// See https://stackoverflow.com/questions/24043781/idiomatic-way-to-get-os-err-after-call
 	if perr, ok := err.(*os.PathError); ok {
 		switch perr.Err.(syscall.Errno) {
-		case syscall.ENOENT: // Linux/Mac
-			return true
-		case syscall.ERROR_PATH_NOT_FOUND: // Windows
+		case syscall.ENOENT:
 			return true
 		}
 	}
@@ -238,17 +232,16 @@ func (fs *FSAccess) IsNotFoundError(err error) bool {
 
 func (fs *FSAccess) filePath(rootPath string, filePath string) string {
 	// Return them joined, but obey ./ at the start as this will be required for running local tests for example
-	result := filepath.Join(rootPath, filePath)
+	result := path.Join(rootPath, filePath)
 	if strings.HasPrefix(rootPath, "./") {
 		result = "./" + result
 	}
-
 	return result
 }
 
 // Creates a directory under the specified root, ensures it's empty (eg if it already existed)
 func MakeEmptyLocalDirectory(root string, subdir string) (string, error) {
-	emptyDirPath := filepath.Join(root, subdir)
+	emptyDirPath := path.Join(root, subdir)
 
 	// Create and make sure it's empty
 	err := os.MkdirAll(emptyDirPath, os.ModePerm)
