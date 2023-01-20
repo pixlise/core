@@ -1931,6 +1931,7 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
 	"roi": {
 		"name": "Shared patch 2",
+		"tags": [],
 		"shared": true,
 		"description": "The shared patch",
 		"locationIndexes": [4, 55, 394],
@@ -2058,6 +2059,7 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "PeterN",
@@ -2082,6 +2084,7 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter",

@@ -253,6 +253,11 @@ func ShareROIs(svcs *services.APIServices, userID string, datasetID string, roiI
 			return generatedIDs, fmt.Errorf("Failed to generate unique share ID for " + id)
 		}
 
+		// Tags are new, so this may be nil
+		if roiItem.Tags == nil {
+			roiItem.Tags = []string{}
+		}
+
 		// Add it to the shared file and we're done
 		sharedCopy := ROISavedItem{
 			ROIItem: &ROIItem{
