@@ -17,4 +17,4 @@ spec:
   owner: default/developers
   lifecycle: production
   dependsOn:
-    - component:pixlise-core-servicesv
+    - component:pixlise-core-services
