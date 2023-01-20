@@ -21,6 +21,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/pixlise/core/v2/core/fileaccess"
@@ -134,11 +135,11 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 
 		var allFoundPaths []string
 		for _, d := range subdir.directories {
-			paths, err := localFS.ListObjects(path.Join(pathToSubdir, d), "")
+			paths, err := localFS.ListObjects(filepath.Join(pathToSubdir, d), "")
 
 			for _, p := range paths {
 				if strings.HasSuffix(strings.ToUpper(path.Ext(p)), extUpper) {
-					allFoundPaths = append(allFoundPaths, path.Join(d, p))
+					allFoundPaths = append(allFoundPaths, filepath.Join(d, p))
 				}
 			}
 
@@ -184,7 +185,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 			for file, beamCsvMeta := range latestVersionFoundPaths {
 				if beamCsvMeta.ProdType == "RXL" {
 					// If files don't conform, don't read...
-					beamLookup, err = importerutils.ReadBeamLocationsFile(path.Join(pathToSubdir, file), true, 1, log)
+					beamLookup, err = importerutils.ReadBeamLocationsFile(filepath.Join(pathToSubdir, file), true, 1, log)
 					if err != nil {
 						return nil, "", err
 					} else {
@@ -201,7 +202,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		case "spectraDir":
 			file := ""
 			for file /*, spectraFileNameMeta*/ = range latestVersionFoundPaths {
-				locSpectraLookup, err = importerutils.ReadSpectraCSV(path.Join(pathToSubdir, file), log)
+				locSpectraLookup, err = importerutils.ReadSpectraCSV(filepath.Join(pathToSubdir, file), log)
 				if err != nil {
 					return nil, "", err
 				}
@@ -212,7 +213,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 			filePaths := []string{}
 
 			for file := range latestVersionFoundPaths {
-				filePaths = append(filePaths, path.Join(pathToSubdir, file))
+				filePaths = append(filePaths, filepath.Join(pathToSubdir, file))
 			}
 
 			if len(filePaths) > 0 {
@@ -237,7 +238,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		case "housekeepingDir":
 			file := ""
 			for file, housekeepingFileNameMeta = range latestVersionFoundPaths {
-				hkData, err = importerutils.ReadHousekeepingFile(path.Join(pathToSubdir, file), 1, log)
+				hkData, err = importerutils.ReadHousekeepingFile(filepath.Join(pathToSubdir, file), 1, log)
 				if err != nil {
 					return nil, "", err
 				}
@@ -256,7 +257,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 					return nil, "", err
 				}
 
-				pseudoIntensityData, err = importerutils.ReadPseudoIntensityFile(path.Join(pathToSubdir, file), false, log)
+				pseudoIntensityData, err = importerutils.ReadPseudoIntensityFile(filepath.Join(pathToSubdir, file), false, log)
 				if err != nil {
 					return nil, "", err
 				}
@@ -305,7 +306,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		}
 	}
 
-	matchedAlignedImages, err := importerutils.ReadMatchedImages(path.Join(importPath, "MATCHED"), beamLookup, log, localFS)
+	matchedAlignedImages, err := importerutils.ReadMatchedImages(filepath.Join(importPath, "MATCHED"), beamLookup, log, localFS)
 	if err != nil {
 		return nil, "", err
 	}

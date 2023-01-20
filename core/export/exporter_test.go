@@ -23,7 +23,9 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"math"
+	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
@@ -51,12 +53,12 @@ func Test_makeMarkupImage(t *testing.T) {
 	}
 
 	// Save it so we can compare
-	err = utils.WritePNGImageFile("/tmp/markup", outImg)
+	err = utils.WritePNGImageFile(filepath.Join(os.TempDir(), "markup"), outImg)
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	err = utils.ImagesEqual("./test-data/expected-markup-MCC-67.png", "/tmp/markup.png")
+	err = utils.ImagesEqual("./test-data/expected-markup-MCC-67.png", filepath.Join(os.TempDir(), "markup.png"))
 	if err != nil {
 		t.Errorf("Output markup image does not match expected: %v", err)
 	}
@@ -70,12 +72,12 @@ func Test_makeBeamLocationCSV(t *testing.T) {
 
 	beams := datasetModel.MakePMCBeamLookup(ds)
 
-	err = writeBeamCSV("/tmp/", "test-name", beams, ds)
+	err = writeBeamCSV(os.TempDir(), "test-name", beams, ds)
 	if err != nil {
 		t.Errorf("Failed to write beam CSV: %v", err)
 	}
 
-	err = utils.FilesEqual("/tmp/test-name-beam-locations.csv", "./test-data/expected-beams.csv")
+	err = utils.FilesEqual(filepath.Join(os.TempDir(), "test-name-beam-locations.csv"), "./test-data/expected-beams.csv")
 	if err != nil {
 		t.Errorf("Incorrect beam CSV: %v", err)
 	}
@@ -126,22 +128,22 @@ func Test_makeROICSV(t *testing.T) {
 
 	roiIDs := []string{"roi123", "roi456", "shared111"}
 
-	err = writeROICSV("/tmp/", rois, roiIDs)
+	err = writeROICSV(os.TempDir(), rois, roiIDs)
 	if err != nil {
 		t.Errorf("Failed to write ROI CSV: %v", err)
 	}
 
-	err = utils.FilesEqual("/tmp/something-roi-pmcs.csv", "./test-data/expected-something-rois.csv")
+	err = utils.FilesEqual(filepath.Join(os.TempDir(), "something-roi-pmcs.csv"), "./test-data/expected-something-rois.csv")
 	if err != nil {
 		t.Errorf("Incorrect ROI CSV: %v", err)
 	}
 
-	err = utils.FilesEqual("/tmp/second-roi-pmcs.csv", "./test-data/expected-second-rois.csv")
+	err = utils.FilesEqual(filepath.Join(os.TempDir(), "second-roi-pmcs.csv"), "./test-data/expected-second-rois.csv")
 	if err != nil {
 		t.Errorf("Incorrect ROI CSV: %v", err)
 	}
 
-	err = utils.FilesEqual("/tmp/le_shared-roi-pmcs.csv", "./test-data/expected-le_shared-rois.csv")
+	err = utils.FilesEqual(filepath.Join(os.TempDir(), "le_shared-roi-pmcs.csv"), "./test-data/expected-le_shared-rois.csv")
 	if err != nil {
 		t.Errorf("Incorrect ROI CSV: %v", err)
 	}
@@ -225,12 +227,12 @@ func Test_unquantifiedMap(t *testing.T) {
 		}
 	}
 
-	err = writeUnquantifiedWeightPctCSV("/tmp/", "testname", unquantWeightPctDetector, unquantWeightPct)
+	err = writeUnquantifiedWeightPctCSV(os.TempDir(), "testname", unquantWeightPctDetector, unquantWeightPct)
 	if err != nil {
 		t.Errorf("Failed to write unquantified CSV: %v", err)
 	}
 
-	err = utils.FilesEqual("/tmp/testname-unquantified-weight-pct.csv", "./test-data/expected-unquantified.csv")
+	err = utils.FilesEqual(filepath.Join(os.TempDir(), "testname-unquantified-weight-pct.csv"), "./test-data/expected-unquantified.csv")
 	if err != nil {
 		t.Errorf("Incorrect unquantified CSV: %v", err)
 	}
