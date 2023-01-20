@@ -168,17 +168,17 @@ func Test_makeROICSV(t *testing.T) {
 		t.Errorf("Failed to write ROI CSV: %v", err)
 	}
 
-	err = utils.FilesEqual(filepath.Join(os.TempDir(), "something-roi-pmcs.csv"), "./test-data/expected-something-rois.csv")
+	err = utils.FilesEqual(filepath.Join(os.TempDir(), "something-roi-pmcs for dataset dataset123.csv"), "./test-data/expected-something-rois.csv")
 	if err != nil {
 		t.Errorf("Incorrect ROI CSV: %v", err)
 	}
 
-	err = utils.FilesEqual(filepath.Join(os.TempDir(), "second-roi-pmcs.csv"), "./test-data/expected-second-rois.csv")
+	err = utils.FilesEqual(filepath.Join(os.TempDir(), "second-roi-pmcs for dataset dataset123.csv"), "./test-data/expected-second-rois.csv")
 	if err != nil {
 		t.Errorf("Incorrect ROI CSV: %v", err)
 	}
 
-	err = utils.FilesEqual(filepath.Join(os.TempDir(), "le_shared-roi-pmcs.csv"), "./test-data/expected-le_shared-rois.csv")
+	err = utils.FilesEqual(filepath.Join(os.TempDir(), "le_shared-roi-pmcs for dataset dataset123.csv"), "./test-data/expected-le_shared-rois.csv")
 	if err != nil {
 		t.Errorf("Incorrect ROI CSV: %v", err)
 	}
