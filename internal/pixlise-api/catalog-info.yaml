@@ -19,4 +19,4 @@ spec:
   owner: default/developers
   lifecycle: production
   dependsOn::
-    - component:pixlise-api-services
+    - component:pixlise-api-packages
