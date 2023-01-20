@@ -1,7 +1,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: pixlise-api
+  name: pixlise-api-services
   description: |
     The api service repo for the pixlise application.
   links:
@@ -12,9 +12,6 @@ metadata:
   annotations:
     github.com/project-slug: pixlise/core/api
     backstage.io/techdocs-ref: dir:.
-    lighthouse.com/website-url: https://pixlise.org
-    sentry.io/project-slug: pixl-api
-    argocd/app-name: backstage
 spec:
   type: service
   owner: default/developers
@@ -24,4 +21,4 @@ spec:
   dependencyOf:
     - pixlise-ui
   dependsOn:
-    - pixlise-core-services
+    - pixlise-core-packages
