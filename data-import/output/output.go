@@ -272,7 +272,7 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	outfileName := outPrefix + filepaths.DatasetFileName
-	outFilePath := filepath.Join(outPath, outfileName)
+	outFilePath := path.Join(outPath, outfileName)
 
 	jobLog.Infof("Writing binary file: %v", outFilePath)
 	out, err := proto.Marshal(&exp)
@@ -290,7 +290,7 @@ func (s *PIXLISEDataSaver) Save(
 
 	summaryData := makeSummaryFileContent(&exp, data.DatasetID, data.Group, data.Meta, int(fi.Size()), creationUnixTimeSec)
 
-	summaryFile := filepath.Join(outPath, outPrefix+filepaths.DatasetSummaryFileName)
+	summaryFile := path.Join(outPath, outPrefix+filepaths.DatasetSummaryFileName)
 	file, err := json.MarshalIndent(summaryData, "", " ")
 	if err != nil {
 		return err
@@ -375,8 +375,8 @@ func copyImagesToOutput(contextImgDir string, outPath string, data dataConvertMo
 
 	for pmc, item := range data.PerPMCData {
 		if len(item.ContextImageSrc) > 0 {
-			fromImgFile := filepath.Join(contextImgDir, item.ContextImageSrc)
-			outImgFile := filepath.Join(outPath, item.ContextImageDst)
+			fromImgFile := path.Join(contextImgDir, item.ContextImageSrc)
+			outImgFile := path.Join(outPath, item.ContextImageDst)
 
 			// Make sure output format is PNG
 			if strings.ToUpper(filepath.Ext(fromImgFile)) == ".TIF" {
@@ -405,12 +405,12 @@ func copyImagesToOutput(contextImgDir string, outPath string, data dataConvertMo
 
 	// Copying RGBU images untouched
 	for _, img := range data.RGBUImages {
-		fromImgFile := filepath.Join(contextImgDir, img.FileName)
+		fromImgFile := path.Join(contextImgDir, img.FileName)
 
 		// These paths come in with their product type prefix, eg DTU/something.tif
 		// Here we want an output path that doesn't include the extra product type
 		// NOTE: THIS MUST MATCH WHAT WAS WRITTEN INTO UnalignedContextImages!!!
-		outImgFile := filepath.Join(outPath, makeRGBUFileName(img)) //path.Base(rgbuPath))
+		outImgFile := path.Join(outPath, makeRGBUFileName(img)) //path.Base(rgbuPath))
 
 		jobLog.Infof("  Copy RGBU img %v -> %v", fromImgFile, outImgFile)
 
@@ -422,13 +422,13 @@ func copyImagesToOutput(contextImgDir string, outPath string, data dataConvertMo
 
 	// Also copy DISCO images
 	for _, meta := range data.DISCOImages {
-		fromImgFile := filepath.Join(contextImgDir, meta.FileName)
+		fromImgFile := path.Join(contextImgDir, meta.FileName)
 
 		// These paths come in with their product type prefix, eg DTU/something.tif
 		// Here we want an output path that doesn't include the extra product type
 		// NOTE: THIS MUST MATCH WHAT WAS WRITTEN INTO UnalignedContextImages!!!
 		outFileName := makeDiscoFileName(meta)
-		outImgFile := filepath.Join(outPath, outFileName)
+		outImgFile := path.Join(outPath, outFileName)
 
 		jobLog.Infof("  Copy MCC multispectral img %v -> %v", fromImgFile, outImgFile)
 
@@ -450,7 +450,7 @@ func copyImagesToOutput(contextImgDir string, outPath string, data dataConvertMo
 		fromImgFile := matchedMeta.MatchedImageFullPath
 		matchedFileName := path.Base(matchedMeta.MatchedImageName)
 
-		outImgFile := filepath.Join(outPath, matchedFileName)
+		outImgFile := path.Join(outPath, matchedFileName)
 
 		jobLog.Infof("  Copy matched aligned img %v -> %v", fromImgFile, outImgFile)
 

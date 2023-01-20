@@ -26,7 +26,6 @@ import (
 	"image/draw"
 	_ "image/jpeg"
 	"io"
-	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -34,6 +33,7 @@ import (
 
 	"io/ioutil"
 	"os"
+	"path"
 	"strconv"
 
 	"github.com/pixlise/core/v2/api/filepaths"
@@ -128,13 +128,13 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 	// Work out the paths of quant files if we want to load them
 	quantBINPath := ""
 	quantCSVPath := ""
-	//quantSummaryPath := filepath.Join(quantPath, quant.filepaths.MakeQuantSummaryFileName(quantID))
+	//quantSummaryPath := path.Join(quantPath, quant.filepaths.MakeQuantSummaryFileName(quantID))
 
 	if wantUnquantifiedPct || wantQuantTIF {
-		quantBINPath = filepath.Join(quantPath, filepaths.MakeQuantDataFileName(quantID))
+		quantBINPath = path.Join(quantPath, filepaths.MakeQuantDataFileName(quantID))
 	}
 	if wantQuantCSV {
-		quantCSVPath = filepath.Join(quantPath, quantID+".csv")
+		quantCSVPath = path.Join(quantPath, quantID+".csv")
 	}
 
 	// We download ROI files if we're looking at spectra too, because we want to export spectra files for each ROI
@@ -170,7 +170,7 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 					return nil, err
 				}
 
-				err = utils.WritePNGImageFile(filepath.Join(outDir, imgName), img)
+				err = utils.WritePNGImageFile(path.Join(outDir, imgName), img)
 				if err != nil {
 					return nil, err
 				}
@@ -189,13 +189,13 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 					return nil, err
 				}
 
-				err = utils.WritePNGImageFile(filepath.Join(outDir, "marked-"+imgName), markedContext)
+				err = utils.WritePNGImageFile(path.Join(outDir, "marked-"+imgName), markedContext)
 				if err != nil {
 					return nil, err
 				}
 			} else {
 				// TIF images are exported as-is
-				f, err := os.Create(filepath.Join(outDir, imgName))
+				f, err := os.Create(path.Join(outDir, imgName))
 				if err != nil {
 					return nil, err
 				}
@@ -253,7 +253,7 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 	}
 	if wantDiffractionPeak {
 		svcs.Log.Debugf("  Diffraction: %v - Found %v locations with peaks", files.diffraction.Title, len(files.diffraction.Locations))
-		csv, err := os.Create(filepath.Join(outDir, fileNamePrefix+"-diffraction-peaks.csv"))
+		csv, err := os.Create(path.Join(outDir, fileNamePrefix+"-diffraction-peaks.csv"))
 		if err != nil {
 			return nil, err
 		}
@@ -291,7 +291,7 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 
 	if wantQuantCSV {
 		// Save the whole original CSV
-		csvPath := filepath.Join(outDir, fileNamePrefix+"-map-by-PIQUANT.csv")
+		csvPath := path.Join(outDir, fileNamePrefix+"-map-by-PIQUANT.csv")
 		ioutil.WriteFile(csvPath, files.quantCSVFile, 0644)
 
 		// Also save one per ROI as a convenience feature
@@ -668,7 +668,7 @@ func makeUnquantifiedMapValues(
 
 // Writes i/j coordinates for each PMC to a CSV file
 func writeBeamCSV(dir string, fileNamePrefix string, pmcBeamLocLookup map[int32]protos.Experiment_Location_BeamLocation, dataset *protos.Experiment) error {
-	csv, err := os.Create(filepath.Join(dir, fileNamePrefix+"-beam-locations.csv"))
+	csv, err := os.Create(path.Join(dir, fileNamePrefix+"-beam-locations.csv"))
 	if err != nil {
 		return err
 	}
@@ -728,7 +728,7 @@ func writeROICSV(dir string, rois []roiModel.ROIMembers, roiIDs []string) error 
 		name := roi.Name
 
 		pathSafeName := strings.Replace(strings.Replace(name, " ", "_", -1), "/", "_", -1)
-		csv, err := os.Create(filepath.Join(dir, pathSafeName+"-roi-pmcs.csv"))
+		csv, err := os.Create(path.Join(dir, pathSafeName+"-roi-pmcs.csv"))
 		if err != nil {
 			return err
 		}
@@ -836,7 +836,7 @@ func writeSpectraCSVs(timeStamper timestamper.ITimeStamper, outDir string, fileN
 		return nil
 	}
 
-	writePath := filepath.Join(outDir, makeFileNameWithROI(fileNamePrefix, readType, roi.Name, roi.SharedByName, "csv"))
+	writePath := path.Join(outDir, makeFileNameWithROI(fileNamePrefix, readType, roi.Name, roi.SharedByName, "csv"))
 	{
 		csv, err := os.Create(writePath)
 		if err != nil {
@@ -880,7 +880,7 @@ func writeSpectraCSVs(timeStamper timestamper.ITimeStamper, outDir string, fileN
 	bulkSum.metaA.XPerChan /= float32(len(toWrite))
 	bulkSum.metaB.XPerChan /= float32(len(toWrite))
 
-	writePath = filepath.Join(outDir, makeFileNameWithROI(fileNamePrefix, readType+"-BulkSum", roi.Name, roi.SharedByName, "csv"))
+	writePath = path.Join(outDir, makeFileNameWithROI(fileNamePrefix, readType+"-BulkSum", roi.Name, roi.SharedByName, "csv"))
 	{
 		csv, err := os.Create(writePath)
 		if err != nil {
@@ -895,7 +895,7 @@ func writeSpectraCSVs(timeStamper timestamper.ITimeStamper, outDir string, fileN
 	}
 
 	// We also write these in MSA format as requested by several users, this way they can run PIQUANT on it locally
-	writePath = filepath.Join(outDir, makeFileNameWithROI(fileNamePrefix, readType+"-BulkSum", roi.Name, roi.SharedByName, "msa"))
+	writePath = path.Join(outDir, makeFileNameWithROI(fileNamePrefix, readType+"-BulkSum", roi.Name, roi.SharedByName, "msa"))
 	{
 		msa, err := os.Create(writePath)
 		if err != nil {
@@ -1127,7 +1127,7 @@ func writeSpectraMSA(path string, timeStamper timestamper.ITimeStamper, spectra 
 }
 
 func writeUnquantifiedWeightPctCSV(dir string, fileNamePrefix string, detectors []string, values []map[int32]float32) error {
-	csv, err := os.Create(filepath.Join(dir, fileNamePrefix+"-unquantified-weight-pct.csv"))
+	csv, err := os.Create(path.Join(dir, fileNamePrefix+"-unquantified-weight-pct.csv"))
 	if err != nil {
 		return err
 	}
@@ -1191,7 +1191,7 @@ func writeQuantCSVForROI(quantCSVFileLines []string, roi roiModel.ROIMembers, ou
 
 	// Start writing file
 	csvFileName := makeFileNameWithROI(fileNamePrefix, "map", roi.Name, roi.SharedByName, "csv")
-	csv, err := os.Create(filepath.Join(outDir, csvFileName))
+	csv, err := os.Create(path.Join(outDir, csvFileName))
 	if err != nil {
 		return "", err
 	}
@@ -1234,7 +1234,7 @@ func writePMCSourceCSV(dir string, fileNamePrefix string, dataset *protos.Experi
 		return nil
 	}
 
-	csv, err := os.Create(filepath.Join(dir, fileNamePrefix+"-pmc-sources.csv"))
+	csv, err := os.Create(path.Join(dir, fileNamePrefix+"-pmc-sources.csv"))
 	if err != nil {
 		return err
 	}

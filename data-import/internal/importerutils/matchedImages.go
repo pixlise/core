@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/pixlise/core/v2/core/fileaccess"
@@ -49,7 +48,7 @@ func ReadMatchedImages(matchedPath string, beamLookup dataConvertModels.BeamLoca
 			continue
 		}
 
-		jsonPath := filepath.Join(matchedPath, jsonFile)
+		jsonPath := path.Join(matchedPath, jsonFile)
 		// Read JSON file
 		jsonBytes, err := ioutil.ReadFile(jsonPath)
 		if err != nil {
@@ -70,7 +69,7 @@ func ReadMatchedImages(matchedPath string, beamLookup dataConvertModels.BeamLoca
 		}
 
 		// Work out the full path, will be needed when copying to output dir
-		meta.MatchedImageFullPath = filepath.Join(matchedPath, meta.MatchedImageName)
+		meta.MatchedImageFullPath = path.Join(matchedPath, meta.MatchedImageName)
 
 		_, err = os.Stat(meta.MatchedImageFullPath)
 		if err != nil {

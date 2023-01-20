@@ -191,7 +191,7 @@ func ImportFromLocalFileSystem(
 	}
 
 	// Form the output path
-	outPath := filepath.Join(outputPath, data.DatasetID)
+	outPath := path.Join(outputPath, data.DatasetID)
 
 	log.Infof("Writing dataset file...")
 	saver := output.PIXLISEDataSaver{}
@@ -201,7 +201,7 @@ func ImportFromLocalFileSystem(
 	}
 
 	log.Infof("Running diffraction DB generator...")
-	err = createPeakDiffractionDB(filepath.Join(outPath, filepaths.DatasetFileName), filepath.Join(outPath, filepaths.DiffractionDBFileName), log)
+	err = createPeakDiffractionDB(path.Join(outPath, filepaths.DatasetFileName), path.Join(outPath, filepaths.DiffractionDBFileName), log)
 
 	if err != nil {
 		return "", fmt.Errorf("Failed to run diffraction DB generator. Error: %v", err)
@@ -216,7 +216,7 @@ func ImportFromLocalFileSystem(
 
 	// NOTE: we also copy out the summary file to another location for it to be indexed by the dataset list generator
 	summary := dataset.SummaryFileData{}
-	localSummaryPath := filepath.Join(outPath, filepaths.DatasetSummaryFileName)
+	localSummaryPath := path.Join(outPath, filepaths.DatasetSummaryFileName)
 	err = localFS.ReadJSON(localSummaryPath, "", &summary, false)
 	if err != nil {
 		log.Errorf("Failed to find dataset summary file. Error: %v", err)
@@ -260,7 +260,7 @@ func SelectImporter(localFS fileaccess.FileAccess, remoteFS fileaccess.FileAcces
 	}
 
 	// Try to read a detector.json - manually uploaded datasets will contain this to direct our operation...
-	detPath := filepath.Join(importPath, "detector.json")
+	detPath := path.Join(importPath, "detector.json")
 	var detectorFile datasetArchive.DetectorChoice
 	err = localFS.ReadJSON(detPath, "", &detectorFile, false)
 	if err == nil {
@@ -321,8 +321,7 @@ func copyToBucket(remoteFS fileaccess.FileAccess, datasetID string, sourcePath s
 				log.Errorf("Failed to read file for upload: %v", sourcePath)
 				uploadError = err
 			} else {
-				sourceFile := filepath.Base(sourcePath)
-				uploadPath := path.Join(destPath, datasetID, sourceFile)
+				uploadPath := path.Join(destPath, datasetID, path.Base(sourcePath))
 
 				log.Infof("-Uploading: %v", sourcePath)
 				log.Infof("---->to s3://%v/%v", destBucket, uploadPath)
