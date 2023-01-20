@@ -20,4 +20,4 @@ spec:
     - component:data-import
     - component:pixlise-api-services
   subComponentOf:
-    - component:pixlise-api-services
+    - pixlise-api-services
