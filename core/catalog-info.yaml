@@ -1,0 +1,21 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: pixlise-core
+  description: |
+    The core packages repo for the pixlise application.
+  links:
+    - title: Website
+      url: https://pixlise.org
+    - title: Documentation
+      url: https://pixlise.gitbook.io/
+  annotations:
+    github.com/project-slug: pixlise/core
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: service
+  owner: default/developers
+  lifecycle: production
+  dependencyOf:
+    - data-import
+    - pixlise-api
