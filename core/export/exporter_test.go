@@ -23,7 +23,10 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"math"
+	"os"
 	"path"
+	"path/filepath"
+	"strconv"
 	"testing"
 
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
@@ -32,6 +35,7 @@ import (
 	"github.com/pixlise/core/v2/core/roiModel"
 	"github.com/pixlise/core/v2/core/timestamper"
 	"github.com/pixlise/core/v2/core/utils"
+	protos "github.com/pixlise/core/v2/generated-protos"
 )
 
 func Test_makeMarkupImage(t *testing.T) {
@@ -51,15 +55,39 @@ func Test_makeMarkupImage(t *testing.T) {
 	}
 
 	// Save it so we can compare
-	err = utils.WritePNGImageFile("/tmp/markup", outImg)
+	err = utils.WritePNGImageFile(filepath.Join(os.TempDir(), "markup"), outImg)
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	err = utils.ImagesEqual("./test-data/expected-markup-MCC-67.png", "/tmp/markup.png")
+	err = utils.ImagesEqual("./test-data/expected-markup-MCC-67.png", filepath.Join(os.TempDir(), "markup.png"))
 	if err != nil {
 		t.Errorf("Output markup image does not match expected: %v", err)
 	}
+}
+
+func makePmcToDatasetLookup(dataset *protos.Experiment) map[int32]int32 {
+	pmcToDatasetLookup := map[int32]int32{}
+	for _, loc := range dataset.Locations {
+		pmcI, err := strconv.Atoi(loc.Id)
+		if err != nil {
+			panic(err)
+		}
+
+		pmc := int32(pmcI)
+
+		if pmc == 82 {
+			// skip this one
+		} else if pmc == 83 {
+			// modify this one, in reality the opposite is supposed to happen, 100083 becomes
+			// 83, but this will do for our test purpose!
+			pmcToDatasetLookup[pmc] = pmc + 10000
+		} else {
+			pmcToDatasetLookup[pmc] = pmc
+		}
+	}
+
+	return pmcToDatasetLookup
 }
 
 func Test_makeBeamLocationCSV(t *testing.T) {
@@ -70,12 +98,17 @@ func Test_makeBeamLocationCSV(t *testing.T) {
 
 	beams := datasetModel.MakePMCBeamLookup(ds)
 
-	err = writeBeamCSV("/tmp/", "test-name", beams, ds)
+	// Pass in a list of PMCs that includes one exclusion, and one that modifies PMC (due to combined dataset)
+	pmcToDatasetLookup := makePmcToDatasetLookup(ds)
+
+	err = writeBeamCSV("dataset123", pmcToDatasetLookup, os.TempDir(), "test-name", beams, ds)
+
 	if err != nil {
 		t.Errorf("Failed to write beam CSV: %v", err)
 	}
 
-	err = utils.FilesEqual("/tmp/test-name-beam-locations.csv", "./test-data/expected-beams.csv")
+	err = utils.FilesEqual(filepath.Join(os.TempDir(), "test-name-beam-locations for dataset dataset123.csv"), "./test-data/expected-beams.csv")
+
 	if err != nil {
 		t.Errorf("Incorrect beam CSV: %v", err)
 	}
@@ -126,22 +159,26 @@ func Test_makeROICSV(t *testing.T) {
 
 	roiIDs := []string{"roi123", "roi456", "shared111"}
 
-	err = writeROICSV("/tmp/", rois, roiIDs)
+	// Pass in a list of PMCs that includes one exclusion, and one that modifies PMC (due to combined dataset)
+	pmcToDatasetLookup := makePmcToDatasetLookup(ds)
+
+	err = writeROICSV("dataset123", pmcToDatasetLookup, os.TempDir(), rois, roiIDs)
+
 	if err != nil {
 		t.Errorf("Failed to write ROI CSV: %v", err)
 	}
 
-	err = utils.FilesEqual("/tmp/something-roi-pmcs.csv", "./test-data/expected-something-rois.csv")
+	err = utils.FilesEqual(filepath.Join(os.TempDir(), "something-roi-pmcs.csv"), "./test-data/expected-something-rois.csv")
 	if err != nil {
 		t.Errorf("Incorrect ROI CSV: %v", err)
 	}
 
-	err = utils.FilesEqual("/tmp/second-roi-pmcs.csv", "./test-data/expected-second-rois.csv")
+	err = utils.FilesEqual(filepath.Join(os.TempDir(), "second-roi-pmcs.csv"), "./test-data/expected-second-rois.csv")
 	if err != nil {
 		t.Errorf("Incorrect ROI CSV: %v", err)
 	}
 
-	err = utils.FilesEqual("/tmp/le_shared-roi-pmcs.csv", "./test-data/expected-le_shared-rois.csv")
+	err = utils.FilesEqual(filepath.Join(os.TempDir(), "le_shared-roi-pmcs.csv"), "./test-data/expected-le_shared-rois.csv")
 	if err != nil {
 		t.Errorf("Incorrect ROI CSV: %v", err)
 	}
@@ -160,11 +197,14 @@ func Test_unquantifiedMap(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
+	// Pass in a list of PMCs that includes one exclusion, and one that modifies PMC (due to combined dataset)
+	pmcToDatasetLookup := makePmcToDatasetLookup(ds)
+
 	elemCols := []string{"Ti_%", "Cr_%", "Ni_%", "Si_%"}
 	unquantWeightPct := []map[int32]float32{}
 	unquantWeightPctDetector := []string{}
 	for detectorIdx, locSet := range q.LocationSet {
-		unquant, err := makeUnquantifiedMapValues(beams, q, detectorIdx, elemCols)
+		unquant, err := makeUnquantifiedMapValues(beams, pmcToDatasetLookup, q, detectorIdx, elemCols)
 		if err != nil {
 			t.Errorf("%v", err)
 		}
@@ -208,6 +248,10 @@ func Test_unquantifiedMap(t *testing.T) {
 			loc := q.LocationSet[detIdx].Location[c]
 			pmc := loc.Pmc
 
+			if pmc == 82 || pmc == 83 {
+				continue
+			}
+
 			expVal := 100 -
 				loc.Values[0].Fvalue -
 				loc.Values[2].Fvalue -
@@ -225,31 +269,37 @@ func Test_unquantifiedMap(t *testing.T) {
 		}
 	}
 
-	err = writeUnquantifiedWeightPctCSV("/tmp/", "testname", unquantWeightPctDetector, unquantWeightPct)
+	err = writeUnquantifiedWeightPctCSV("dataset123", os.TempDir(), "testname", unquantWeightPctDetector, unquantWeightPct)
+
 	if err != nil {
 		t.Errorf("Failed to write unquantified CSV: %v", err)
 	}
 
-	err = utils.FilesEqual("/tmp/testname-unquantified-weight-pct.csv", "./test-data/expected-unquantified.csv")
+	err = utils.FilesEqual(filepath.Join(os.TempDir(), "testname-unquantified-weight-pct for dataset dataset123.csv"), "./test-data/expected-unquantified.csv")
+
 	if err != nil {
 		t.Errorf("Incorrect unquantified CSV: %v", err)
 	}
 }
 
 func Example_writeQuantCSVForROI() {
-	quantCSVLines := []string{"header", "PMC, Ca_%, Fe_%, livetime", "12, 5.5, 6.6, 9.8", "14, 7.7, 8.8, 9.7", "15, 2.7, 2.8, 9.6"}
+	quantCSVLines := []string{"header", "PMC, Ca_%, Fe_%, livetime", "12, 5.5, 6.6, 9.8", "14, 7.7, 8.8, 9.7", "15, 2.7, 2.8, 9.6", "16, 2.8, 2.9, 9.7"}
 	roi := roiModel.ROIMembers{
 		Name:         "roi name",
 		ID:           "roi123",
 		SharedByName: "",
 		LocationIdxs: []int32{4, 5, 6},
-		PMCs:         []int32{11, 12, 13, 14},
+		PMCs:         []int32{11, 12, 13, 14, 15},
 	}
+
+	// Pass in a list of PMCs that includes one exclusion, and one that modifies PMC (due to combined dataset)
+	pmcToDatasetLookup := map[int32]int32{12: 12, 14: 10014}
+
 	outDir, err := ioutil.TempDir("", "csv-test")
 	if err != nil {
 		fmt.Printf("Failed to make temp dir: %v\n", err)
 	}
-	csvName, err := writeQuantCSVForROI(quantCSVLines, roi, outDir, "prefix")
+	csvName, err := writeQuantCSVForROI("dataset123", pmcToDatasetLookup, quantCSVLines, roi, outDir, "prefix")
 	fmt.Printf("%v|%v\n", err, csvName)
 
 	// Write the file to stdout so we can test its contents
@@ -260,11 +310,11 @@ func Example_writeQuantCSVForROI() {
 	fmt.Println(string(data))
 
 	// Output:
-	// <nil>|prefix-map ROI roi name.csv
+	// <nil>|prefix-map ROI roi name for dataset dataset123.csv
 	// header
 	// PMC, Ca_%, Fe_%, livetime
 	// 12, 5.5, 6.6, 9.8
-	// 14, 7.7, 8.8, 9.7
+	// 10014, 7.7, 8.8, 9.7
 }
 
 type stringMemWriter struct {

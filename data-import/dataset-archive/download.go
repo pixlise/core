@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/pixlise/core/v2/api/filepaths"
@@ -93,8 +94,8 @@ func (dl *DatasetArchiveDownloader) DownloadPseudoIntensityRangesFile(configBuck
 	// Download the ranges file
 	dl.log.Debugf("Downloading pseudo-intensity ranges...")
 
-	localRangesPath := path.Join(downloadPath, "StandardPseudoIntensities.csv")
-	err := dl.fetchFile(configBucket, path.Join(filepaths.RootDatasetConfig, "StandardPseudoIntensities.csv"), localRangesPath)
+	localRangesPath := filepath.Join(downloadPath, "StandardPseudoIntensities.csv")
+	err := dl.fetchFile(configBucket, filepath.Join(filepaths.RootDatasetConfig, "StandardPseudoIntensities.csv"), localRangesPath)
 	if err != nil {
 		dl.log.Errorf("%v", err)
 		return "", err
@@ -145,7 +146,7 @@ func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID str
 			return 0, errors.New("Expected zip file, got: " + fileName)
 		}
 
-		savePath := path.Join(downloadPath, fileName)
+		savePath := filepath.Join(downloadPath, fileName)
 		err = dl.fetchFile(dl.datasetBucket, filePath, savePath)
 
 		if err != nil {
@@ -196,7 +197,7 @@ func (dl *DatasetArchiveDownloader) DownloadUserCustomisationsForDataset(dataset
 		// Here it forms something like <downloadPath>/file.png OR <downloadPath>/MATCHED/file.png
 		parts := append([]string{downloadPath}, middleDirs...)
 		parts = append(parts, fileName)
-		savePath := path.Join(parts...)
+		savePath := filepath.Join(parts...)
 
 		err = dl.fetchFile(dl.manualUploadBucket, uploadedPath, savePath)
 		if err != nil {
@@ -249,11 +250,11 @@ func (dl *DatasetArchiveDownloader) DownloadFromDatasetUploads(datasetID string,
 		savePath := path.Base(filePath)
 		zipName := ""
 		if strings.HasSuffix(filePath, ".zip") {
-			savePath = path.Join(downloadPath, savePath)
+			savePath = filepath.Join(downloadPath, savePath)
 			zipName = path.Base(filePath)
 			zipName = zipName[0 : len(zipName)-4] // Snip off the .zip
 		} else {
-			savePath = path.Join(unzippedPath, savePath)
+			savePath = filepath.Join(unzippedPath, savePath)
 		}
 
 		err = dl.fetchFile(dl.manualUploadBucket, filePath, savePath)
@@ -265,7 +266,7 @@ func (dl *DatasetArchiveDownloader) DownloadFromDatasetUploads(datasetID string,
 
 		if len(zipName) > 0 {
 			// Unzip it!
-			zipDest := path.Join(unzippedPath, zipName)
+			zipDest := filepath.Join(unzippedPath, zipName)
 			_, err := utils.UnzipDirectory(savePath, zipDest, true)
 			if err != nil {
 				err = fmt.Errorf("Failed to unzip %v: %v", savePath, err)

@@ -19,7 +19,7 @@ package dataConverter
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/core/fileaccess"
@@ -34,7 +34,7 @@ type DatasetCustomMeta struct {
 func readLocalCustomMeta(jobLog logger.ILogger, importPath string) (DatasetCustomMeta, error) {
 	result := DatasetCustomMeta{}
 
-	metapath := path.Join(importPath, filepaths.DatasetCustomMetaFileName)
+	metapath := filepath.Join(importPath, filepaths.DatasetCustomMetaFileName)
 	jobLog.Infof("Checking for custom meta: %v", metapath)
 
 	if _, err := os.Stat(metapath); os.IsNotExist(err) {
