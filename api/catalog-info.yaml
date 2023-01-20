@@ -21,4 +21,4 @@ spec:
   dependencyOf:
     - pixlise-ui
   dependsOn:
-    - pixlise-core-packages
+    - component:pixlise-core-packages
