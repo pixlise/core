@@ -92,6 +92,10 @@ func roiList(params handlers.ApiHandlerParams) (interface{}, error) {
 		} else {
 			roi.Creator = updatedCreator
 		}
+
+		if roi.Tags == nil {
+			roi.Tags = []string{}
+		}
 	}
 
 	// Return the combined set
@@ -157,6 +161,11 @@ func createROIs(params handlers.ApiHandlerParams, rois []roiModel.ROIItem, overw
 		_, exists := allROIs[saveID]
 		if exists {
 			return fmt.Errorf("failed to generate unique ID")
+		}
+
+		// Tags is a new field, so if it's not set, we set it to empty
+		if rois[i].Tags == nil {
+			rois[i].Tags = []string{}
 		}
 
 		allROIs[saveID] = roiModel.ROISavedItem{
@@ -263,6 +272,11 @@ func roiPut(params handlers.ApiHandlerParams) (interface{}, error) {
 		existing, exists := allROIs[rois[i].ID]
 		if !exists {
 			return nil, api.MakeStatusError(http.StatusNotFound, fmt.Errorf("roi %v not found", rois[i].ID))
+		}
+
+		// Tags are a new field, so if it doesnt exist, add it in
+		if rois[i].ROI.Tags == nil {
+			rois[i].ROI.Tags = []string{}
 		}
 
 		allROIs[rois[i].ID] = roiModel.ROISavedItem{
