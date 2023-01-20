@@ -24,13 +24,13 @@ import (
 	protos "github.com/pixlise/core/v2/generated-protos"
 )
 
-func MakePMCBeamLookup(dataset *protos.Experiment) map[int32]protos.Experiment_Location_BeamLocation {
+func MakePMCBeamLookup(dataset *protos.Experiment) map[int32]*protos.Experiment_Location_BeamLocation {
 	// We use the dataset to look up PMC locations
-	pmcBeamLocLookup := map[int32]protos.Experiment_Location_BeamLocation{}
+	pmcBeamLocLookup := map[int32]*protos.Experiment_Location_BeamLocation{}
 	for _, loc := range dataset.Locations {
 		pmc, err := strconv.Atoi(loc.Id)
 		if err == nil && loc.Beam != nil {
-			pmcBeamLocLookup[int32(pmc)] = *loc.Beam
+			pmcBeamLocLookup[int32(pmc)] = loc.Beam
 		}
 	}
 	return pmcBeamLocLookup
