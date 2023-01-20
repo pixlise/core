@@ -14,6 +14,7 @@ metadata:
     backstage.io/techdocs-ref: dir:.
     lighthouse.com/website-url: https://pixlise.org
     sentry.io/project-slug: pixl-api
+    argocd/app-name: backstage
 spec:
   type: service
   owner: guests
