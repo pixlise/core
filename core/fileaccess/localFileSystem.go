@@ -26,7 +26,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/pixlise/core/v2/core/utils"
 )
@@ -216,18 +215,6 @@ func (fs *FSAccess) EmptyObjects(rootPath string) error {
 			return err
 		}
 		return os.Mkdir(rootPath, 777)*/
-}
-
-func (fs *FSAccess) IsNotFoundError(err error) bool {
-	// See https://stackoverflow.com/questions/24043781/idiomatic-way-to-get-os-err-after-call
-	if perr, ok := err.(*os.PathError); ok {
-		switch perr.Err.(syscall.Errno) {
-		case syscall.ENOENT:
-			return true
-		}
-	}
-
-	return false
 }
 
 func (fs *FSAccess) filePath(rootPath string, filePath string) string {
