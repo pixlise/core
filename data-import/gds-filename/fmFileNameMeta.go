@@ -158,10 +158,9 @@ func (m FileNameMeta) Timestamp() (int32, error) {
 }
 */
 func ParseFileName(fileName string) (FileNameMeta, error) {
-	fileNames := strings.Split(fileName, "/")
-	if len(fileNames) > 1 {
-		fileName = fileNames[1]
-	}
+	// We often get passed paths so here we ensure we're just dealing with the file name at the end
+	fileName = filepath.Base(fileName)
+
 	result := FileNameMeta{}
 
 	if len(fileName) != 58 {

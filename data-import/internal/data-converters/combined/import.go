@@ -20,7 +20,7 @@ package combined
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -83,7 +83,7 @@ func (cmb CombinedDatasetImport) Import(importPath string, pseudoIntensityRanges
 
 		log.Infof("Checking directory for dataset: %v", datasetID)
 
-		importSubdirPath := path.Join(importPath, datasetID)
+		importSubdirPath := filepath.Join(importPath, datasetID)
 		needsDownload := false
 		if strings.HasPrefix(datasetID, "SRLC") {
 			log.Infof("SKIPPING dataset read for: %v", datasetID)
@@ -98,7 +98,7 @@ func (cmb CombinedDatasetImport) Import(importPath string, pseudoIntensityRanges
 				_, err := cmb.selectImporter(localFS, cmb.remoteFS, cmb.datasetBucket, importSubdirPath, log)
 				if err != nil {
 					// Check if there's an /unzipped dir in there, if we downloaded it, there would be...
-					unzippedImportSubdirPath := path.Join(importSubdirPath, "unzipped")
+					unzippedImportSubdirPath := filepath.Join(importSubdirPath, "unzipped")
 
 					_, err = os.Stat(importSubdirPath)
 					if err == nil {
@@ -441,7 +441,7 @@ func makeDatasetPMCOffsets(datasets map[string]*dataConvertModels.OutputData) ([
 func injectCombinedImagery(importPath string, combinedBeamFiles []string, imageFileNames []string, beamMeta []gdsfilename.FileNameMeta, datasetIDs []string, pmcOffsets []int32, combinedData *dataConvertModels.OutputData, log logger.ILogger) error {
 	// Verify each image exists and read all coordinates for that image into our PMCs
 	for c, imageFile := range imageFileNames {
-		_, err := os.Stat(path.Join(importPath, imageFile))
+		_, err := os.Stat(filepath.Join(importPath, imageFile))
 		if err != nil {
 			return fmt.Errorf("File not found: %v. Error: %v", imageFile, err)
 		}
@@ -466,7 +466,7 @@ func injectCombinedImagery(importPath string, combinedBeamFiles []string, imageF
 			return fmt.Errorf("Failed to find PMC offset for dataset: %v", datasetID)
 		}
 
-		err = readBeamCoordinates(path.Join(importPath, combinedBeamFiles[c]), datasetID, pmcOffset, combinedData, log)
+		err = readBeamCoordinates(filepath.Join(importPath, combinedBeamFiles[c]), datasetID, pmcOffset, combinedData, log)
 		if err != nil {
 			return err
 		}
