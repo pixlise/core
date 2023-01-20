@@ -10,7 +10,7 @@ metadata:
     - title: Documentation
       url: https://pixlise.gitbook.io/
   annotations:
-    github.com/project-slug: pixlise/core
+    github.com/project-slug: pixlise/core/api
     backstage.io/techdocs-ref: dir:.
     lighthouse.com/website-url: https://pixlise.org
     sentry.io/project-slug: pixl-api
@@ -23,3 +23,5 @@ spec:
     - core-api
   dependencyOf:
     - pixlise-ui
+  dependsOn:
+    - pixlise-core-services
