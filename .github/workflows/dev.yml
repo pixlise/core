@@ -85,7 +85,7 @@ jobs:
         wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
         mkdir test-data && \
         cp ../internal/cmdline-tools/import-integration-test/test-data/000000001-21-10-2022-15-37-00.zip ./test-data && \
-        zip -q jobupdater-linux-${{ steps.version.outputs.version }}.zip jobupdater-linux && \
+        zip -q jobupdater-linux-${{ steps.version.outputs.version }}.zip rds-combined-ca-bundle.pem jobupdater-linux && \
         rm jobupdater-linux && \
         zip -q datasourceupdater-linux-${{ steps.version.outputs.version }}.zip rds-combined-ca-bundle.pem datasourceupdater-linux && \
         rm datasourceupdater-linux && \
