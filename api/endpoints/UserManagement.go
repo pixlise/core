@@ -48,6 +48,9 @@ type auth0UserInfo struct {
 	LastLoginUnixSec int64    `json:"last_login"`
 	Picture          string   `json:"picture"`
 	Roles            []string `json:"roles,omitempty"`
+
+	// This data isn't from Auth0, but we're joining it in
+	UserDetails *pixlUser.UserStruct `json:"user_details,omitempty"`
 }
 
 type roleInfo struct {
@@ -127,7 +130,7 @@ func userListByRole(params handlers.ApiHandlerParams) (interface{}, error) {
 			return nil, err
 		}
 
-		result = append(result, makeUserList(users)...)
+		result = append(result, makeUserList(users, &params.Svcs.Users)...)
 
 		if !users.HasNext() {
 			break
@@ -198,7 +201,7 @@ func userGet(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	return makeUser(user), nil
+	return makeUser(user, &params.Svcs.Users), nil
 }
 
 func userGetRoles(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -286,7 +289,7 @@ func userListQuery(params handlers.ApiHandlerParams) (interface{}, error) {
 	result := []auth0UserInfo{}
 
 	for {
-		l, err := auth0API.User.List(
+		userList, err := auth0API.User.List(
 			management.Query(""), //`logins_count:{100 TO *]`),
 			management.Page(page),
 		)
@@ -294,9 +297,9 @@ func userListQuery(params handlers.ApiHandlerParams) (interface{}, error) {
 			return nil, err
 		}
 
-		result = append(result, makeUserList(l)...)
+		result = append(result, makeUserList(userList, &params.Svcs.Users)...)
 
-		if !l.HasNext() {
+		if !userList.HasNext() {
 			break
 		}
 		page++
@@ -438,24 +441,33 @@ func userEditInBulk(params handlers.ApiHandlerParams) (interface{}, error) {
 	return nil, nil
 }
 
-func makeUserList(from *management.UserList) []auth0UserInfo {
+func makeUserList(from *management.UserList, pixlUsers *pixlUser.UserDetailsLookup) []auth0UserInfo {
 	users := []auth0UserInfo{}
 
 	for _, u := range from.Users {
-		user := makeUser(u)
+		user := makeUser(u, pixlUsers)
 		users = append(users, user)
 	}
 
 	return users
 }
 
-func makeUser(from *management.User) auth0UserInfo {
+func makeUser(from *management.User, pixlUsers *pixlUser.UserDetailsLookup) auth0UserInfo {
+	userID := from.GetID()
+	userName := from.GetName()
+	userEmail := from.GetEmail()
+	pixlUserInfo, err := pixlUsers.GetUserEnsureExists(userID, userName, userEmail)
+	if err != nil {
+		panic(err)
+	}
+
 	user := auth0UserInfo{
-		UserID:  from.GetID(),
-		Name:    from.GetName(),
-		Email:   from.GetEmail(),
+		UserID:  userID,
+		Name:    userName,
+		Email:   userEmail,
 		Picture: from.GetPicture(),
 		//Roles - not returned here
+		UserDetails: &pixlUserInfo,
 	}
 
 	// These may not be there...
