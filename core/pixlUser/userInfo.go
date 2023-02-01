@@ -123,13 +123,24 @@ func (u *UserDetailsLookup) GetUser(userid string) (UserStruct, error) {
 	return user, err
 }
 
-func (u *UserDetailsLookup) GetUserEnsureExists(userid string, name string, email string) (UserStruct, error) {
-	// Try to read it, if it doesn't exist, create it
-	user, err := u.GetUser(userid)
+func StripAuth0UserID(userid string) string {
+	// Strip off the auth0| prefix
+	if len(userid) > 6 && userid[0:6] == "auth0|" {
+		return userid[6:]
+	}
 
+	return userid
+}
+
+func (u *UserDetailsLookup) GetUserEnsureExists(userid string, name string, email string) (UserStruct, error) {
+
+	strippedUserID := StripAuth0UserID(userid)
+
+	// Try to read it, if it doesn't exist, create it
+	user, err := u.GetUser(strippedUserID)
 	// If user doesn't exist, we create it
 	if err == mongo.ErrNoDocuments {
-		return u.createUser(userid, name, email)
+		return u.createUser(strippedUserID, name, email)
 	}
 
 	// Otherwise return whatever we got
