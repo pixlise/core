@@ -24,6 +24,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -438,7 +439,7 @@ func makeLookups(savedTimesPath string) (map[string]bool, map[string]bool, map[s
 			datasetIDs[datasetID] = true
 		}
 
-		fullPath := path.Join(filePath, fileName)
+		fullPath := filepath.Join(filePath, fileName)
 		fileCreateLookup[fullPath] = createTime
 		workspaceKey := userID + "_" + datasetID
 

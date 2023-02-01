@@ -50,7 +50,8 @@ const roi2XItems = `{
             "ID_Depth": 0,
             "ClassificationTrail": "",
             "formula": ""
-        }
+        },
+        "tags": []
     },
     "772": {
         "name": "White spot",
@@ -64,7 +65,8 @@ const roi2XItems = `{
             "ID_Depth": 0,
             "ClassificationTrail": "",
             "formula": ""
-        }
+        },
+        "tags": []
     }
 }`
 
@@ -154,6 +156,7 @@ func Test_roiHandler_List(t *testing.T) {
 							"ClassificationTrail": "",
 							"formula": ""
 						},
+						"tags": [],
 						"create_unix_time_sec": 1668100000,
 						"mod_unix_time_sec": 1668100000
 					}
@@ -175,7 +178,8 @@ func Test_roiHandler_List(t *testing.T) {
 							"ID_Depth": 0,
 							"ClassificationTrail": "",
 							"formula": ""
-						}
+						},
+						"tags": []
 					}
 				}`))),
 			},
@@ -217,6 +221,7 @@ func Test_roiHandler_List(t *testing.T) {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter",
@@ -239,6 +244,7 @@ func Test_roiHandler_List(t *testing.T) {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Tom Barber",
@@ -298,6 +304,7 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -332,6 +339,7 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -360,6 +368,7 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -388,6 +397,7 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter",
@@ -412,6 +422,7 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Tom",
@@ -436,6 +447,7 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -465,6 +477,7 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -615,6 +628,7 @@ func Example_roiHandler_Put() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
@@ -639,6 +653,7 @@ func Example_roiHandler_Put() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Tom",
@@ -774,7 +789,8 @@ func Example_roiHandler_Delete() {
             "ID_Depth": 0,
             "ClassificationTrail": "",
             "formula": ""
-        }
+        },
+        "tags": []
     },
     "772": {
         "name": "White spot",
@@ -792,7 +808,8 @@ func Example_roiHandler_Delete() {
             "ID_Depth": 0,
             "ClassificationTrail": "",
             "formula": ""
-        }
+        },
+        "tags": []
     }
 }`))),
 		},
@@ -826,6 +843,7 @@ func Example_roiHandler_Delete() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Tom",
@@ -909,6 +927,7 @@ func Example_roiHandler_Share() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "The user who shared",
@@ -994,6 +1013,7 @@ func Example_roiHandler_Share() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter",
@@ -1016,6 +1036,7 @@ func Example_roiHandler_Share() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "The user who shared",

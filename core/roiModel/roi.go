@@ -48,6 +48,7 @@ type ROIItem struct {
 	// If no imageName, it's a traditional ROI consisting of PMCs
 	PixelIndexes []int32     `json:"pixelIndexes,omitempty"`
 	MistROIItem  MistROIItem `json:"mistROIItem"`
+	Tags         []string    `json:"tags"`
 }
 
 type ROIItemOptions struct {
@@ -252,6 +253,11 @@ func ShareROIs(svcs *services.APIServices, userID string, datasetID string, roiI
 			return generatedIDs, fmt.Errorf("Failed to generate unique share ID for " + id)
 		}
 
+		// Tags are new, so this may be nil
+		if roiItem.Tags == nil {
+			roiItem.Tags = []string{}
+		}
+
 		// Add it to the shared file and we're done
 		sharedCopy := ROISavedItem{
 			ROIItem: &ROIItem{
@@ -261,6 +267,7 @@ func ShareROIs(svcs *services.APIServices, userID string, datasetID string, roiI
 				ImageName:       roiItem.ImageName,
 				PixelIndexes:    roiItem.PixelIndexes,
 				MistROIItem:     roiItem.MistROIItem,
+				Tags:            roiItem.Tags,
 			},
 			APIObjectItem: &pixlUser.APIObjectItem{
 				Shared:              true,
