@@ -1,24 +1,22 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: pixlise-api-services
+  name: pixlise-core-data-import
   description: |
-    The api service repo for the pixlise application.
+    The data import core packages repo for the pixlise application.
   links:
     - title: Website
       url: https://pixlise.org
     - title: Documentation
       url: https://pixlise.gitbook.io/
   annotations:
-    github.com/project-slug: pixlise/core/api
+    github.com/project-slug: pixlise/core/data-import
     backstage.io/techdocs-ref: dir:.
 spec:
-  type: service
+  type: library
   owner: default/developers
   lifecycle: production
-  providesApis:
-    - core-api
   dependencyOf:
-    - pixlise-ui
-  dependsOn:
-    - component:pixlise-core-packages
+    - component:data-import
+  dependsOn::
+    - component:pixlise-core-packagess
