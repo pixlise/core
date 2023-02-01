@@ -385,7 +385,15 @@ type datasetPMCRange struct {
 func makeDatasetPMCOffsets(datasets map[string]*dataConvertModels.OutputData) ([]string, []int32) {
 	pmcRanges := []datasetPMCRange{}
 
-	for datasetID, dataset := range datasets {
+	// Ensure we read the datasets in increasing order, to make this deterministic and unit-testable
+	datasetIDs := []string{}
+	for datasetID := range datasets {
+		datasetIDs = append(datasetIDs, datasetID)
+	}
+	sort.Strings(datasetIDs)
+
+	for _, datasetID := range datasetIDs {
+		dataset := datasets[datasetID]
 		saveRange := datasetPMCRange{
 			minPMC:    int32(0x7fffffff),
 			maxPMC:    int32(0),
