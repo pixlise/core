@@ -382,26 +382,7 @@ func triggerOCSPoster(config PublisherConfig, log logger.ILogger, creator pixlUs
 	//env["venue"] = "sstage"
 	//env["credss_username"] = "m20-sstage-pixlise"
 	//env["credss_appaccount"] = "true"
-	//env["AWS_PROFILE"] = "default"
 	//
-	//volumes := []apiv1.Volume{
-	//	{
-	//		Name: "aws-volume",
-	//		VolumeSource: apiv1.VolumeSource{
-	//			ConfigMap: &apiv1.ConfigMapVolumeSource{
-	//				LocalObjectReference: apiv1.LocalObjectReference{Name: "aws-pixlise-config"},
-	//			},
-	//		},
-	//	},
-	//}
-	//
-	//volumemounts := []apiv1.VolumeMount{
-	//	{
-	//		Name:      "aws-volume",
-	//		MountPath: "/root/.aws/credentialstmp",
-	//		SubPath:   "credentials",
-	//	},
-	//}
 	//_, err := k.RunPod(nil, ocs.GeneratePosterPodCmd(filenames, products.SourceBucket, products.OcsPath, config.QuantDestinationPackage, config.QuantObjectType), env, volumes, volumemounts, config.PosterImage,
 	//	"api", generatePodNamePrefix(products.JobID), generatePodLabels(products.JobID, products.DatasetID, kenv), creator, log, false)
 	//if err != nil {

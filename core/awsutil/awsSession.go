@@ -34,8 +34,15 @@ import (
 
 // GetSession - returns an AWS session
 func GetSession() (*session.Session, error) {
-	region := os.Getenv("AWS_DEFAULT_REGION")
-	return GetSessionWithRegion(region)
+	region, regionPresent := os.LookupEnv("AWS_REGION")
+	if regionPresent {
+		return GetSessionWithRegion(region)
+	}
+	region, defaultRegionPresent := os.LookupEnv("AWS_DEFAULT_REGION")
+	if defaultRegionPresent {
+		return GetSessionWithRegion(region)
+	}
+	return session.NewSession()
 }
 
 // GetSessionWithRegion - Can specify am S3 region, returns an AWS session
