@@ -208,5 +208,6 @@ spec:
           openid: ' Grants write access'
         tokenUrl: https://pixlise.au.auth0.com/oauth/token
         type: oauth2
-        x-tokenname: '"id_token"'
+        x-tokenname: id_token
     swagger: "2.0"
+
