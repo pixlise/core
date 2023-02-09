@@ -15,6 +15,30 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Package classification Data Expression API
+//
+// Documentation for the Data Expression Endpoints, used for storing/retrieving/sharing expressions for data, for context images and widgets
+//
+//  Schemes: http
+//  BasePath: /
+//  Version: 1.0.0
+//
+//  Consumes:
+//  - application/json
+//
+//  Produces:
+//  - application/json
+//
+//     SecurityDefinitions:
+//     oauth:
+//         type: oauth2
+//         flow: accessCode
+//         authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth'
+//         tokenUrl: 'https://www.googleapis.com/oauth2/v4/token'
+//         scopes:
+//           write: Admin scope
+//           read: User scope
+// swagger:meta
 package endpoints
 
 import (
@@ -37,6 +61,18 @@ import (
 	"github.com/pixlise/core/v2/core/utils"
 )
 
+// swagger:response genericError
+//in: body
+type _ string
+
+// swagger:response deleteResponse
+//in: body
+type deleteResponse map[string]string
+
+// swagger:response shareResponse
+//in: body
+type shareResponse string
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DataExpressions - storing/retrieving/sharing expressions for data, for context images and widgets
 
@@ -53,6 +89,30 @@ func registerDataExpressionHandler(router *apiRouter.ApiObjectRouter) {
 }
 
 func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
+
+	// swagger:route GET /data-expression data-expression dataExpressionList
+	//
+	// Lists available data expressions.
+	//
+	// This will list the data expressions available to the user.
+	//
+	//     Consumes:
+	//     - application/json
+	//
+	//     Produces:
+	//     - application/json
+	//     - text/plain
+	//
+	//     Schemes: http, https
+	//
+	//     Deprecated: false
+	//
+	//     Security:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: dataExpressionLookup
 	items := dataExpression.DataExpressionLookup{}
 
 	// Get user expressions
@@ -135,6 +195,29 @@ func setupForSave(params handlers.ApiHandlerParams, s3Path string) (*dataExpress
 }
 
 func dataExpressionPost(params handlers.ApiHandlerParams) (interface{}, error) {
+	// swagger:route POST /data-expression data-expression dataExpressionPost
+	//
+	// Post a new data expression.
+	//
+	// Creates a new data expression for a user.
+	//
+	//     Consumes:
+	//     - application/json
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Deprecated: false
+	//
+	//     Security:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: dataExpressionLookup
+
 	s3Path := filepaths.GetExpressionPath(params.UserInfo.UserID)
 	expressions, req, err := setupForSave(params, s3Path)
 	if err != nil {
@@ -173,6 +256,36 @@ func dataExpressionPost(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
+	// swagger:route PUT /data-expression/{id} data-expression dataExpressionPut
+	//
+	// Update an existing data expression.
+	//
+	// Updates and existing expression for a user.
+	//
+	//     Consumes:
+	//     - application/json
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Parameters:
+	//       + name: id
+	//         in: path
+	//         description: the id of the expression to delete
+	//         required: true
+	//         type: string
+	//
+	//     Deprecated: false
+	//
+	//     Security:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: dataExpressionLookup
+
 	itemID := params.PathParams[idIdentifier]
 
 	s3Path := filepaths.GetExpressionPath(params.UserInfo.UserID)
@@ -219,6 +332,36 @@ func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error) {
+	// swagger:route DELETE /data-expression/{id} data-expression dataExpressionDelete
+	//
+	// Deletes a data expression.
+	//
+	// This endpoint deletes an existing data expression.
+	//
+	//     Consumes:
+	//     - application/json
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Deprecated: false
+	//
+	//     Parameters:
+	//       + name: id
+	//         in: path
+	//         description: the id of the expression to delete
+	//         required: true
+	//         type: string
+	//
+	//     Security:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: deleteResponse
+
 	// If deleting a shared item, we need to strip the prefix from the ID and also ensure that only the creator can delete
 	itemID := params.PathParams[idIdentifier]
 	s3Path := filepaths.GetExpressionPath(params.UserInfo.UserID)
@@ -252,13 +395,43 @@ func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error)
 	}
 
 	// Return just the one deleted id
-	response := map[string]string{}
+	response := deleteResponse{}
 	response[itemID] = itemID
 
 	return response, nil
 }
 
 func dataExpressionShare(params handlers.ApiHandlerParams) (interface{}, error) {
+	// swagger:route POST /share/data-expression/{id} data-expression dataExpressionShare
+	//
+	// Shares a data expression.
+	//
+	// This endpoint shares an existing data expression with other users.
+	//
+	//     Consumes:
+	//     - application/json
+	//
+	//     Produces:
+	//     - application/json
+	//
+	//     Schemes: http, https
+	//
+	//     Deprecated: false
+	//
+	//     Parameters:
+	//       + name: id
+	//         in: path
+	//         description: the id of the expression to delete
+	//         required: true
+	//         type: string
+	//
+	//     Security:
+	//       oauth: read, write
+	//
+	//     Responses:
+	//       default: genericError
+	//       200: shareResponse
+
 	// User is supplying an ID of an object to share. We should be able to find it in the users own data file
 	// and put it in the shared file with a new ID, thereby implementing "share a copy"
 	idToFind := params.PathParams[idIdentifier]

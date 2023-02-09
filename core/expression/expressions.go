@@ -45,6 +45,7 @@ func (et expressionType) IsValid() error {
 }
 
 // DataExpressionInput - only public so we can use it embedded in dataExpression
+// swagger:response
 type DataExpressionInput struct {
 	Name       string         `json:"name"`
 	Expression string         `json:"expression"`
@@ -53,8 +54,13 @@ type DataExpressionInput struct {
 	Tags       []string       `json:"tags"`
 }
 
+// swagger:response dataExpressionModel
 type DataExpression struct {
+	// The main data expression information
+	//
+	// Required: true
 	*DataExpressionInput
+	// Additional metadata
 	*pixlUser.APIObjectItem
 }
 
@@ -67,6 +73,7 @@ func (a DataExpression) SetTimes(userID string, t int64) {
 	}
 }
 
+// swagger:response dataExpressionLookup
 type DataExpressionLookup map[string]DataExpression
 
 func ReadExpressionData(svcs *services.APIServices, s3Path string) (DataExpressionLookup, error) {
