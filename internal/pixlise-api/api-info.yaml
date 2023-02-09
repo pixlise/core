@@ -201,10 +201,10 @@ spec:
           - data-expression
     securityDefinitions:
       OAuth2Application:
-        flow: application
+        authorizationUrl: https://pixlise.au.auth0.com/authorize
+        flow: implicit
         scopes:
           admin: ' Grants admin access'
           write: ' Grants write access'
-        tokenUrl: https://pixlise.au.auth0.com/oauth/token
         type: oauth2
     swagger: "2.0"
