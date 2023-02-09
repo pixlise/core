@@ -205,6 +205,6 @@ spec:
         scopes:
           admin: ' Grants admin access'
           write: ' Grants write access'
-        tokenUrl: https://www-api.pixlise.org/token
+        tokenUrl: https://pixlise.au.auth0.com/oauth/token
         type: oauth2
     swagger: "2.0"
