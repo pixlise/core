@@ -52,17 +52,15 @@ func registerDataExpressionHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedExpression), dataExpressionShare)
 }
 
-// dataExpressionList godoc
-// @Summary      List data expressions
-// @Description  get data expressions as a list
+// @Summary      Lists available data expressions.
+// @Description  This will list the data expressions available to the user.
 // @Tags         data-expression
 // @Accept       json
 // @Produce      json
+// @Security     OAuth2Application[openid, email]
 // @Success      200  {object}  dataExpression.DataExpressionLookup
-// @Failure      400  {object}  error
 // @Failure      404  {object}  error
-// @Failure      500  {object}  error
-// @Router       /accounts/{id} [get]
+// @Router       /data-expression [get]
 func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 	items := dataExpression.DataExpressionLookup{}
 
@@ -145,6 +143,15 @@ func setupForSave(params handlers.ApiHandlerParams, s3Path string) (*dataExpress
 	return &items, &req, nil
 }
 
+// @Summary      Post a new data expression.
+// @Description  Creates a new data expression for a user.
+// @Tags         data-expression
+// @Accept       json
+// @Produce      json
+// @Param        id   body      dataExpression.DataExpressionInput  true  "Data Expression Input Object"
+// @Success      200  {object}  dataExpression.DataExpressionLookup
+// @Failure      404  {object}  error
+// @Router       /data-expression [post]
 func dataExpressionPost(params handlers.ApiHandlerParams) (interface{}, error) {
 	s3Path := filepaths.GetExpressionPath(params.UserInfo.UserID)
 	expressions, req, err := setupForSave(params, s3Path)
@@ -183,6 +190,15 @@ func dataExpressionPost(params handlers.ApiHandlerParams) (interface{}, error) {
 	return response, nil
 }
 
+// @Summary      Update an existing data expression.
+// @Description  Updates and existing expression for a user.
+// @Tags         data-expression
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Data Expression ID"
+// @Success      200  {object}  dataExpression.DataExpressionLookup
+// @Failure      404  {object}  error
+// @Router       /data-expression/{id} [post]
 func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	itemID := params.PathParams[idIdentifier]
 
@@ -229,6 +245,15 @@ func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	return response, nil
 }
 
+// @Summary      Deletes a data expression.
+// @Description  This endpoint deletes an existing data expression.
+// @Tags         data-expression
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Data Expression ID"
+// @Success      200  {object}  map[string]string
+// @Failure      404  {object}  error
+// @Router       /data-expression/{id} [delete]
 func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error) {
 	// If deleting a shared item, we need to strip the prefix from the ID and also ensure that only the creator can delete
 	itemID := params.PathParams[idIdentifier]
@@ -269,6 +294,15 @@ func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error)
 	return response, nil
 }
 
+// @Summary      Shares a data expression.
+// @Description  This endpoint shares an existing data expression with other users.
+// @Tags         data-expression
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Data Expression ID"
+// @Success      200  {object}  string
+// @Failure      404  {object}  error
+// @Router       /share/data-expression/{id} [post]
 func dataExpressionShare(params handlers.ApiHandlerParams) (interface{}, error) {
 	// User is supplying an ID of an object to share. We should be able to find it in the users own data file
 	// and put it in the shared file with a new ID, thereby implementing "share a copy"

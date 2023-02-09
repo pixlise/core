@@ -9,11 +9,10 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "termsOfService": "http://swagger.io/terms/",
         "contact": {
-            "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
+            "name": "Pixlise Support",
+            "url": "https://github.com/pixlise/core/issues",
+            "email": "info@pixlise.org"
         },
         "license": {
             "name": "Apache 2.0",
@@ -24,9 +23,17 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/accounts/{id}": {
+        "/data-expression": {
             "get": {
-                "description": "get data expressions as a list",
+                "security": [
+                    {
+                        "OAuth2Application": [
+                            "openid",
+                            "email"
+                        ]
+                    }
+                ],
+                "description": "This will list the data expressions available to the user.",
                 "consumes": [
                     "application/json"
                 ],
@@ -36,7 +43,7 @@ const docTemplate = `{
                 "tags": [
                     "data-expression"
                 ],
-                "summary": "List data expressions",
+                "summary": "Lists available data expressions.",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -44,16 +51,153 @@ const docTemplate = `{
                             "$ref": "#/definitions/dataExpression.DataExpressionLookup"
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {}
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new data expression for a user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "data-expression"
+                ],
+                "summary": "Post a new data expression.",
+                "parameters": [
+                    {
+                        "description": "Data Expression Input Object",
+                        "name": "id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dataExpression.DataExpressionInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dataExpression.DataExpressionLookup"
+                        }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {}
+                    }
+                }
+            }
+        },
+        "/data-expression/{id}": {
+            "post": {
+                "description": "Updates and existing expression for a user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "data-expression"
+                ],
+                "summary": "Update an existing data expression.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Data Expression ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dataExpression.DataExpressionLookup"
+                        }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    }
+                }
+            },
+            "delete": {
+                "description": "This endpoint deletes an existing data expression.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "data-expression"
+                ],
+                "summary": "Deletes a data expression.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Data Expression ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    }
+                }
+            }
+        },
+        "/share/data-expression/{id}": {
+            "post": {
+                "description": "This endpoint shares an existing data expression with other users.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "data-expression"
+                ],
+                "summary": "Shares a data expression.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Data Expression ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {}
                     }
                 }
@@ -84,6 +228,29 @@ const docTemplate = `{
                 },
                 "shared": {
                     "type": "boolean"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "type": {
+                    "$ref": "#/definitions/dataExpression.expressionType"
+                }
+            }
+        },
+        "dataExpression.DataExpressionInput": {
+            "type": "object",
+            "properties": {
+                "comments": {
+                    "type": "string"
+                },
+                "expression": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
                 },
                 "tags": {
                     "type": "array",
@@ -127,8 +294,17 @@ const docTemplate = `{
         }
     },
     "securityDefinitions": {
-        "BasicAuth": {
-            "type": "basic"
+        "OAuth2Application": {
+            "description": "swagger",
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://pixlise.au.auth0.com/authorize",
+            "tokenUrl": "https://pixlise.au.auth0.com/oauth/token",
+            "scopes": {
+                "email": " Grants admin access",
+                "openid": " Grants write access"
+            },
+            "x-tokenname": "id_token"
         }
     }
 }`
@@ -136,11 +312,11 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
-	BasePath:         "/api/v1",
+	Host:             "www-api.pixlise.org",
+	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "Swagger Example API",
-	Description:      "This is a sample server celler server.",
+	Title:            "Pixlise API",
+	Description:      "This API drives the Pixlise UI and associated services.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }

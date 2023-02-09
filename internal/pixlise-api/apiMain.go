@@ -15,22 +15,27 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// @title           Swagger Example API
+// @title           Pixlise API
 // @version         1.0
-// @description     This is a sample server celler server.
-// @termsOfService  http://swagger.io/terms/
+// @description     This API drives the Pixlise UI and associated services.
 
-// @contact.name   API Support
-// @contact.url    http://www.swagger.io/support
-// @contact.email  support@swagger.io
+// @contact.name   Pixlise Support
+// @contact.url    https://github.com/pixlise/core/issues
+// @contact.email  info@pixlise.org
 
 // @license.name  Apache 2.0
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host      localhost:8080
-// @BasePath  /api/v1
+// @host      www-api.pixlise.org
+// @BasePath  /
 
-// @securityDefinitions.basic  BasicAuth
+// @securitydefinitions.oauth2.accessCode OAuth2Application
+// @tokenUrl https://pixlise.au.auth0.com/oauth/token
+// @authorizationurl https://pixlise.au.auth0.com/authorize
+// @x-tokenname id_token
+// @description swagger
+// @scope.openid Grants write access
+// @scope.email Grants admin access
 package main
 
 import (
