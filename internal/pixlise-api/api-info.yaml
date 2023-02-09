@@ -73,7 +73,7 @@ spec:
         email: info@pixlise.org
         name: Pixlise Support
         url: https://github.com/pixlise/core/issues
-      description: This API drives the Pixlise UI and associated services.
+      description: swagger
       license:
         name: Apache 2.0
         url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -199,13 +199,4 @@ spec:
           summary: Shares a data expression.
           tags:
           - data-expression
-    securityDefinitions:
-      OAuth2Application:
-        description: swagger
-        flow: password
-        scopes:
-          admin: ' Grants admin access'
-          write: ' Grants write access'
-        tokenUrl: https://pixlise.au.auth0.com/oauth/token
-        type: oauth2
     swagger: "2.0"
