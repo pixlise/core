@@ -52,6 +52,17 @@ func registerDataExpressionHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedExpression), dataExpressionShare)
 }
 
+// dataExpressionList godoc
+// @Summary      List data expressions
+// @Description  get data expressions as a list
+// @Tags         data-expression
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  dataExpression.DataExpressionLookup
+// @Failure      400  {object}  error
+// @Failure      404  {object}  error
+// @Failure      500  {object}  error
+// @Router       /accounts/{id} [get]
 func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 	items := dataExpression.DataExpressionLookup{}
 
