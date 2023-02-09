@@ -97,8 +97,8 @@ spec:
               schema: {}
           security:
           - OAuth2Application:
-            - write
-            - admin
+            - openid
+            - email
           summary: Lists available data expressions.
           tags:
           - data-expression
@@ -202,10 +202,10 @@ spec:
     securityDefinitions:
       OAuth2Application:
         description: swagger
-        flow: application
+        flow: password
         scopes:
-          admin: ' Grants admin access'
-          write: ' Grants write access'
+          email: ' Grants admin access'
+          openid: ' Grants write access'
         tokenUrl: https://pixlise.au.auth0.com/oauth/token
         type: oauth2
     swagger: "2.0"
