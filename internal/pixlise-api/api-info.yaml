@@ -8,7 +8,7 @@ spec:
   lifecycle: production
   owner: 'user:guest'
   definition: |
-    basePath: /api/v1
+    basePath: /
     definitions:
       dataExpression.DataExpression:
         properties:
@@ -26,6 +26,21 @@ spec:
             type: string
           shared:
             type: boolean
+          tags:
+            items:
+              type: string
+            type: array
+          type:
+            $ref: '#/definitions/dataExpression.expressionType'
+        type: object
+      dataExpression.DataExpressionInput:
+        properties:
+          comments:
+            type: string
+          expression:
+            type: string
+          name:
+            type: string
           tags:
             items:
               type: string
@@ -52,25 +67,24 @@ spec:
           user_id:
             type: string
         type: object
-    host: localhost:8080
+    host: www-api.pixlise.org
     info:
       contact:
-        email: support@swagger.io
-        name: API Support
-        url: http://www.swagger.io/support
-      description: This is a sample server celler server.
+        email: info@pixlise.org
+        name: Pixlise Support
+        url: https://github.com/pixlise/core/issues
+      description: This API drives the Pixlise UI and associated services.
       license:
         name: Apache 2.0
         url: http://www.apache.org/licenses/LICENSE-2.0.html
-      termsOfService: http://swagger.io/terms/
-      title: Swagger Example API
+      title: Pixlise API
       version: "1.0"
     paths:
-      /accounts/{id}:
+      /data-expression:
         get:
           consumes:
           - application/json
-          description: get data expressions as a list
+          description: This will list the data expressions available to the user.
           produces:
           - application/json
           responses:
@@ -78,19 +92,119 @@ spec:
               description: OK
               schema:
                 $ref: '#/definitions/dataExpression.DataExpressionLookup'
-            "400":
-              description: Bad Request
-              schema: {}
             "404":
               description: Not Found
               schema: {}
-            "500":
-              description: Internal Server Error
+          security:
+          - OAuth2Application:
+            - write
+            - admin
+          summary: Lists available data expressions.
+          tags:
+          - data-expression
+        post:
+          consumes:
+          - application/json
+          description: Creates a new data expression for a user.
+          parameters:
+          - description: Data Expression Input Object
+            in: body
+            name: id
+            required: true
+            schema:
+              $ref: '#/definitions/dataExpression.DataExpressionInput'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                $ref: '#/definitions/dataExpression.DataExpressionLookup'
+            "404":
+              description: Not Found
               schema: {}
-          summary: List data expressions
+          summary: Post a new data expression.
+          tags:
+          - data-expression
+      /data-expression/{id}:
+        delete:
+          consumes:
+          - application/json
+          description: This endpoint deletes an existing data expression.
+          parameters:
+          - description: Data Expression ID
+            in: path
+            name: id
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+            "404":
+              description: Not Found
+              schema: {}
+          summary: Deletes a data expression.
+          tags:
+          - data-expression
+        post:
+          consumes:
+          - application/json
+          description: Updates and existing expression for a user.
+          parameters:
+          - description: Data Expression ID
+            in: path
+            name: id
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                $ref: '#/definitions/dataExpression.DataExpressionLookup'
+            "404":
+              description: Not Found
+              schema: {}
+          summary: Update an existing data expression.
+          tags:
+          - data-expression
+      /share/data-expression/{id}:
+        post:
+          consumes:
+          - application/json
+          description: This endpoint shares an existing data expression with other users.
+          parameters:
+          - description: Data Expression ID
+            in: path
+            name: id
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                type: string
+            "404":
+              description: Not Found
+              schema: {}
+          summary: Shares a data expression.
           tags:
           - data-expression
     securityDefinitions:
-      BasicAuth:
-        type: basic
+      OAuth2Application:
+        flow: application
+        scopes:
+          admin: ' Grants admin access'
+          write: ' Grants write access'
+        tokenUrl: https://www-api.pixlise.org/token
+        type: oauth2
     swagger: "2.0"
