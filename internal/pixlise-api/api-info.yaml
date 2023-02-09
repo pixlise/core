@@ -201,8 +201,9 @@ spec:
           - data-expression
     securityDefinitions:
       OAuth2Application:
+        authorizationUrl: https://pixlise.au.auth0.com/authorize
         description: swagger
-        flow: password
+        flow: accessCode
         scopes:
           email: ' Grants admin access'
           openid: ' Grants write access'
@@ -210,4 +211,3 @@ spec:
         type: oauth2
         x-tokenname: id_token
     swagger: "2.0"
-
