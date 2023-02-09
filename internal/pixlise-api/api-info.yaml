@@ -8,4 +8,4 @@ spec:
   lifecycle: production
   owner: user:guest
   definition:
-    $openapi: https://github.com/pixlise/core/blob/feature/swag/docs/swagger.yaml
+    $openapi: https://github.com/pixlise/core/swag/docs/swagger.yaml
