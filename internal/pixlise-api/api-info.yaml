@@ -6,6 +6,91 @@ metadata:
 spec:
   type: openapi
   lifecycle: production
-  owner: user:guest
-  definition:
-    $openapi: https://raw.githubusercontent.com/pixlise/core/feature/swag/docs/swagger.yaml
+  owner: 'user:guest'
+  definition: |
+    basePath: /api/v1
+    definitions:
+      dataExpression.DataExpression:
+        properties:
+          comments:
+            type: string
+          create_unix_time_sec:
+            type: integer
+          creator:
+            $ref: '#/definitions/pixlUser.UserInfo'
+          expression:
+            type: string
+          mod_unix_time_sec:
+            type: integer
+          name:
+            type: string
+          shared:
+            type: boolean
+          tags:
+            items:
+              type: string
+            type: array
+          type:
+            $ref: '#/definitions/dataExpression.expressionType'
+        type: object
+      dataExpression.DataExpressionLookup:
+        additionalProperties:
+          $ref: '#/definitions/dataExpression.DataExpression'
+        type: object
+      dataExpression.expressionType:
+        enum:
+        - ContextImage
+        type: string
+        x-enum-varnames:
+        - contextImage
+      pixlUser.UserInfo:
+        properties:
+          email:
+            type: string
+          name:
+            type: string
+          user_id:
+            type: string
+        type: object
+    host: localhost:8080
+    info:
+      contact:
+        email: support@swagger.io
+        name: API Support
+        url: http://www.swagger.io/support
+      description: This is a sample server celler server.
+      license:
+        name: Apache 2.0
+        url: http://www.apache.org/licenses/LICENSE-2.0.html
+      termsOfService: http://swagger.io/terms/
+      title: Swagger Example API
+      version: "1.0"
+    paths:
+      /accounts/{id}:
+        get:
+          consumes:
+          - application/json
+          description: get data expressions as a list
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                $ref: '#/definitions/dataExpression.DataExpressionLookup'
+            "400":
+              description: Bad Request
+              schema: {}
+            "404":
+              description: Not Found
+              schema: {}
+            "500":
+              description: Internal Server Error
+              schema: {}
+          summary: List data expressions
+          tags:
+          - data-expression
+    securityDefinitions:
+      BasicAuth:
+        type: basic
+    swagger: "2.0"
