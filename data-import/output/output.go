@@ -98,6 +98,25 @@ func (s *PIXLISEDataSaver) Save(
 		exp.BulkSumQuantFile = data.BulkQuantFile
 	}
 
+	// If we're combining from multiple sources, save metadata for each source
+	for _, src := range data.Sources {
+		exp.ScanSources = append(exp.ScanSources, &protos.Experiment_ScanSource{
+			Instrument:       "PIXL", // FIXME combine
+			TargetId:         src.TargetID,
+			DriveId:          src.DriveID,
+			SiteId:           src.SiteID,
+			Target:           src.Target,
+			Site:             src.Site,
+			Title:            src.Title,
+			Sol:              src.SOL,
+			Rtt:              src.RTT,
+			Sclk:             src.SCLK,
+			BulkSumQuantFile: "",
+			DetectorConfig:   data.DetectorConfig, // FIXME combine
+			IdOffset:         src.PMCOffset,
+		})
+	}
+
 	// Get a sorted list of PMCs, so we save them in order
 	// It's not mandatory, but nicer!
 	pmcs := []int{}
@@ -203,7 +222,18 @@ func (s *PIXLISEDataSaver) Save(
 	for _, pmcI := range pmcs {
 		pmc := int32(pmcI)
 		dataForPMC := data.PerPMCData[pmc]
-		err := s.saveExperimentLocationItem(&exp, pmc, *dataForPMC, data.HousekeepingHeaders, pmcsWithBeamIJs, jobLog)
+		// If there is a source RTT, we need to look up the index of which saved source item this corresponds to
+		srcIdx := int32(0)
+		if len(dataForPMC.SourceRTT) > 0 {
+			for c, src := range exp.ScanSources {
+				if src.Rtt == dataForPMC.SourceRTT {
+					srcIdx = int32(c)
+					break
+				}
+			}
+		}
+
+		err := s.saveExperimentLocationItem(&exp, pmc, srcIdx, *dataForPMC, data.HousekeepingHeaders, pmcsWithBeamIJs, jobLog)
 		if err != nil {
 			return fmt.Errorf("Error saving pmc %v: %v", pmc, err)
 		}
@@ -242,7 +272,7 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	outfileName := outPrefix + filepaths.DatasetFileName
-	outFilePath := path.Join(outPath, outfileName)
+	outFilePath := filepath.Join(outPath, outfileName)
 
 	jobLog.Infof("Writing binary file: %v", outFilePath)
 	out, err := proto.Marshal(&exp)
@@ -260,7 +290,7 @@ func (s *PIXLISEDataSaver) Save(
 
 	summaryData := makeSummaryFileContent(&exp, data.DatasetID, data.Group, data.Meta, int(fi.Size()), creationUnixTimeSec)
 
-	summaryFile := path.Join(outPath, outPrefix+filepaths.DatasetSummaryFileName)
+	summaryFile := filepath.Join(outPath, outPrefix+filepaths.DatasetSummaryFileName)
 	file, err := json.MarshalIndent(summaryData, "", " ")
 	if err != nil {
 		return err
@@ -345,8 +375,8 @@ func copyImagesToOutput(contextImgDir string, outPath string, data dataConvertMo
 
 	for pmc, item := range data.PerPMCData {
 		if len(item.ContextImageSrc) > 0 {
-			fromImgFile := path.Join(contextImgDir, item.ContextImageSrc)
-			outImgFile := path.Join(outPath, item.ContextImageDst)
+			fromImgFile := filepath.Join(contextImgDir, item.ContextImageSrc)
+			outImgFile := filepath.Join(outPath, item.ContextImageDst)
 
 			// Make sure output format is PNG
 			if strings.ToUpper(filepath.Ext(fromImgFile)) == ".TIF" {
@@ -375,12 +405,12 @@ func copyImagesToOutput(contextImgDir string, outPath string, data dataConvertMo
 
 	// Copying RGBU images untouched
 	for _, img := range data.RGBUImages {
-		fromImgFile := path.Join(contextImgDir, img.FileName)
+		fromImgFile := filepath.Join(contextImgDir, img.FileName)
 
 		// These paths come in with their product type prefix, eg DTU/something.tif
 		// Here we want an output path that doesn't include the extra product type
 		// NOTE: THIS MUST MATCH WHAT WAS WRITTEN INTO UnalignedContextImages!!!
-		outImgFile := path.Join(outPath, makeRGBUFileName(img)) //path.Base(rgbuPath))
+		outImgFile := filepath.Join(outPath, makeRGBUFileName(img)) //path.Base(rgbuPath))
 
 		jobLog.Infof("  Copy RGBU img %v -> %v", fromImgFile, outImgFile)
 
@@ -392,13 +422,13 @@ func copyImagesToOutput(contextImgDir string, outPath string, data dataConvertMo
 
 	// Also copy DISCO images
 	for _, meta := range data.DISCOImages {
-		fromImgFile := path.Join(contextImgDir, meta.FileName)
+		fromImgFile := filepath.Join(contextImgDir, meta.FileName)
 
 		// These paths come in with their product type prefix, eg DTU/something.tif
 		// Here we want an output path that doesn't include the extra product type
 		// NOTE: THIS MUST MATCH WHAT WAS WRITTEN INTO UnalignedContextImages!!!
 		outFileName := makeDiscoFileName(meta)
-		outImgFile := path.Join(outPath, outFileName)
+		outImgFile := filepath.Join(outPath, outFileName)
 
 		jobLog.Infof("  Copy MCC multispectral img %v -> %v", fromImgFile, outImgFile)
 
@@ -420,7 +450,7 @@ func copyImagesToOutput(contextImgDir string, outPath string, data dataConvertMo
 		fromImgFile := matchedMeta.MatchedImageFullPath
 		matchedFileName := path.Base(matchedMeta.MatchedImageName)
 
-		outImgFile := path.Join(outPath, matchedFileName)
+		outImgFile := filepath.Join(outPath, matchedFileName)
 
 		jobLog.Infof("  Copy matched aligned img %v -> %v", fromImgFile, outImgFile)
 
@@ -521,9 +551,10 @@ func (s *PIXLISEDataSaver) convertToOutputMeta(meta dataConvertModels.MetaValue,
 	}
 }
 
-func (s *PIXLISEDataSaver) saveExperimentLocationItem(saveToExperiment *protos.Experiment, pmc int32, data dataConvertModels.PMCData, hkHeaders []string, beamIJPMCAscending []int, jobLog logger.ILogger) error {
+func (s *PIXLISEDataSaver) saveExperimentLocationItem(saveToExperiment *protos.Experiment, pmc int32, srcIdx int32, data dataConvertModels.PMCData, hkHeaders []string, beamIJPMCAscending []int, jobLog logger.ILogger) error {
 	location := &protos.Experiment_Location{}
 	location.Id = strconv.Itoa(int(pmc))
+	location.ScanSource = srcIdx
 
 	if len(data.ContextImageDst) > 0 {
 		location.ContextImage = data.ContextImageDst

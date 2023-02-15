@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 
 	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/api/handlers"
@@ -66,6 +67,30 @@ func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
+	// Read keys in alphabetical order, else we randomly fail unit test
+	keys := []string{}
+	for k := range items {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Update all creator infos
+	for _, k := range keys {
+		item := items[k]
+
+		// Ensure tags is not nil as this is a new field
+		if item.Tags == nil {
+			item.Tags = []string{}
+		}
+
+		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
+		if creatorErr != nil {
+			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Expressions listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
+		} else {
+			item.Creator = updatedCreator
+		}
+	}
+
 	// Return the combined set
 	return &items, nil
 }
@@ -95,6 +120,10 @@ func setupForSave(params handlers.ApiHandlerParams, s3Path string) (*dataExpress
 		return nil, nil, api.MakeBadRequestError(errors.New("Expression cannot be empty"))
 	}
 
+	if req.Tags == nil {
+		req.Tags = []string{}
+	}
+
 	// Download the file
 	items, err := dataExpression.ReadExpressionData(params.Svcs, s3Path)
 	if err != nil && !params.Svcs.FS.IsNotFoundError(err) {
@@ -119,41 +148,74 @@ func dataExpressionPost(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, fmt.Errorf("Failed to generate unique ID")
 	}
 
-	(*expressions)[saveID] = dataExpression.DataExpression{DataExpressionInput: req, APIObjectItem: &pixlUser.APIObjectItem{Shared: false, Creator: params.UserInfo}}
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
+
+	(*expressions)[saveID] = dataExpression.DataExpression{
+		DataExpressionInput: req,
+		APIObjectItem: &pixlUser.APIObjectItem{
+			Shared:              false,
+			Creator:             params.UserInfo,
+			CreatedUnixTimeSec:  timeNow,
+			ModifiedUnixTimeSec: timeNow,
+		},
+	}
 
 	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *expressions)
 	if err != nil {
 		return nil, err
 	}
 
-	return *expressions, nil
+	// Only return new item
+	response := dataExpression.DataExpressionLookup{}
+	response[saveID] = (*expressions)[saveID]
+
+	return response, nil
 }
 
 func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	itemID := params.PathParams[idIdentifier]
-	if _, isSharedReq := utils.StripSharedItemIDPrefix(itemID); isSharedReq {
-		return nil, api.MakeBadRequestError(errors.New("Cannot edit shared expressions"))
-	}
 
 	s3Path := filepaths.GetExpressionPath(params.UserInfo.UserID)
+	id, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
+
+	if isSharedReq {
+		s3Path = filepaths.GetExpressionPath(pixlUser.ShareUserID)
+	}
+
 	expressions, req, err := setupForSave(params, s3Path)
 	if err != nil {
 		return nil, err
 	}
 
-	existing, ok := (*expressions)[itemID]
+	existing, ok := (*expressions)[id]
 	if !ok {
-		return nil, api.MakeNotFoundError(itemID)
+		return nil, api.MakeNotFoundError(id)
+	}
+
+	if isSharedReq && params.UserInfo.UserID != existing.Creator.UserID {
+		return nil, api.MakeBadRequestError(errors.New("cannot edit shared expression not owned by user"))
 	}
 
 	// Save it & upload
-	(*expressions)[itemID] = dataExpression.DataExpression{DataExpressionInput: req, APIObjectItem: &pixlUser.APIObjectItem{Shared: false, Creator: existing.Creator}}
+	(*expressions)[id] = dataExpression.DataExpression{
+		DataExpressionInput: req,
+		APIObjectItem: &pixlUser.APIObjectItem{
+			Shared:              isSharedReq,
+			Creator:             existing.Creator,
+			CreatedUnixTimeSec:  existing.CreatedUnixTimeSec,
+			ModifiedUnixTimeSec: params.Svcs.TimeStamper.GetTimeNowSec(),
+		},
+	}
 	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *expressions)
 	if err != nil {
 		return nil, err
 	}
 
-	return *expressions, nil
+	// Use non-stripped ID for response
+	response := dataExpression.DataExpressionLookup{}
+	response[itemID] = (*expressions)[id]
+
+	return response, nil
 }
 
 func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -161,10 +223,9 @@ func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error)
 	itemID := params.PathParams[idIdentifier]
 	s3Path := filepaths.GetExpressionPath(params.UserInfo.UserID)
 
-	strippedID, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
+	id, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
 	if isSharedReq {
 		s3Path = filepaths.GetExpressionPath(pixlUser.ShareUserID)
-		itemID = strippedID
 	}
 
 	// Using path params, work out path
@@ -173,24 +234,28 @@ func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error)
 		return nil, err
 	}
 
-	sharedItem, ok := items[itemID]
+	sharedItem, ok := items[id]
 	if !ok {
-		return nil, api.MakeNotFoundError(itemID)
+		return nil, api.MakeNotFoundError(id)
 	}
 
 	if isSharedReq && sharedItem.Creator.UserID != params.UserInfo.UserID {
-		return nil, api.MakeStatusError(http.StatusUnauthorized, fmt.Errorf("%v not owned by %v", itemID, params.UserInfo.UserID))
+		return nil, api.MakeStatusError(http.StatusUnauthorized, fmt.Errorf("%v not owned by %v", id, params.UserInfo.UserID))
 	}
 
 	// Found it, delete & we're done
-	delete(items, itemID)
+	delete(items, id)
 
 	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, items)
 	if err != nil {
 		return nil, err
 	}
 
-	return items, nil
+	// Return just the one deleted id
+	response := map[string]string{}
+	response[itemID] = itemID
+
+	return response, nil
 }
 
 func dataExpressionShare(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -244,17 +309,26 @@ func shareExpressions(svcs *services.APIServices, userID string, expressionIDs [
 			return generatedIDs, fmt.Errorf("Failed to generate unique share ID for " + id)
 		}
 
+		tags := exprItem.Tags
+		if tags == nil {
+			tags = []string{}
+		}
+
 		// Add it to the shared file and we're done
+		timeNow := svcs.TimeStamper.GetTimeNowSec()
 		sharedCopy := dataExpression.DataExpression{
 			DataExpressionInput: &dataExpression.DataExpressionInput{
 				Name:       exprItem.Name,
 				Expression: exprItem.Expression,
 				Type:       exprItem.Type,
+				Tags:       tags,
 				Comments:   exprItem.Comments,
 			},
 			APIObjectItem: &pixlUser.APIObjectItem{
-				Shared:  true,
-				Creator: exprItem.Creator,
+				Shared:              true,
+				Creator:             exprItem.Creator,
+				CreatedUnixTimeSec:  exprItem.CreatedUnixTimeSec,
+				ModifiedUnixTimeSec: timeNow,
 			},
 		}
 

@@ -26,6 +26,7 @@ import (
 	"image/draw"
 	_ "image/jpeg"
 	"io"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -33,7 +34,6 @@ import (
 
 	"io/ioutil"
 	"os"
-	"path"
 	"strconv"
 
 	"github.com/pixlise/core/v2/api/filepaths"
@@ -42,6 +42,7 @@ import (
 	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/quantModel"
 	"github.com/pixlise/core/v2/core/roiModel"
+	"github.com/pixlise/core/v2/core/timestamper"
 	"github.com/pixlise/core/v2/core/utils"
 	protos "github.com/pixlise/core/v2/generated-protos"
 	"google.golang.org/protobuf/proto"
@@ -127,13 +128,12 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 	// Work out the paths of quant files if we want to load them
 	quantBINPath := ""
 	quantCSVPath := ""
-	//quantSummaryPath := path.Join(quantPath, quant.filepaths.MakeQuantSummaryFileName(quantID))
 
 	if wantUnquantifiedPct || wantQuantTIF {
-		quantBINPath = path.Join(quantPath, filepaths.MakeQuantDataFileName(quantID))
+		quantBINPath = filepath.Join(quantPath, filepaths.MakeQuantDataFileName(quantID))
 	}
 	if wantQuantCSV {
-		quantCSVPath = path.Join(quantPath, quantID+".csv")
+		quantCSVPath = filepath.Join(quantPath, quantID+".csv")
 	}
 
 	// We download ROI files if we're looking at spectra too, because we want to export spectra files for each ROI
@@ -169,7 +169,7 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 					return nil, err
 				}
 
-				err = utils.WritePNGImageFile(path.Join(outDir, imgName), img)
+				err = utils.WritePNGImageFile(filepath.Join(outDir, imgName), img)
 				if err != nil {
 					return nil, err
 				}
@@ -188,13 +188,13 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 					return nil, err
 				}
 
-				err = utils.WritePNGImageFile(path.Join(outDir, "marked-"+imgName), markedContext)
+				err = utils.WritePNGImageFile(filepath.Join(outDir, "marked-"+imgName), markedContext)
 				if err != nil {
 					return nil, err
 				}
 			} else {
 				// TIF images are exported as-is
-				f, err := os.Create(path.Join(outDir, imgName))
+				f, err := os.Create(filepath.Join(outDir, imgName))
 				if err != nil {
 					return nil, err
 				}
@@ -205,126 +205,111 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 		}
 	}
 
-	if wantSpectra {
-		for _, roi := range rois {
-			if utils.StringInSlice(roi.ID, roiIDs) {
-				svcs.Log.Debugf("  Saving spectra for %v...", roi.Name)
+	// If we're dealing with a combined dataset, we want to loop through and export separate files per source-dataset
+	// otherwise we'll just have a single empty dataset ID so we still enter the loop once, and each function
+	// we call knows not to worry about dataset ID
+	datasetIDs := []string{""}
 
-				err = writeSpectraCSVs(svcs.TimeStamper, outDir, fileNamePrefix, "Normal", files.dataset, roi)
-				if err != nil {
-					return nil, err
-				}
-
-				err = writeSpectraCSVs(svcs.TimeStamper, outDir, fileNamePrefix, "Dwell", files.dataset, roi)
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
-
-		// Write out the "whole dataset" one. For this we create a special ROI
-		all := roiModel.GetAllPointsROI(files.dataset)
-		err = writeSpectraCSVs(svcs.TimeStamper, outDir, fileNamePrefix, "Normal", files.dataset, all)
+	for _, datasetID := range datasetIDs {
+		// Make a lookup of PMC (in this dataset) to PMC in the source dataset. Note that if this is not a combined dataset
+		// we simply form a lookup of PMC->PMC
+		pmcToDatasetLookup, err := makePMCLookup(datasetID, files.dataset)
 		if err != nil {
 			return nil, err
 		}
 
-		err = writeSpectraCSVs(svcs.TimeStamper, outDir, fileNamePrefix, "Dwell", files.dataset, all)
-		if err != nil {
-			return nil, err
-		}
-	}
+		if wantSpectra {
+			for _, roi := range rois {
+				if utils.StringInSlice(roi.ID, roiIDs) {
+					svcs.Log.Debugf("  Saving spectra for %v...", roi.Name)
 
-	if wantBeamLocations {
-		svcs.Log.Debugf("  Saving IJ CSV...")
-		err = writeBeamCSV(outDir, fileNamePrefix, pmcBeamLocLookup, files.dataset)
-		if err != nil {
-			return nil, err
-		}
-	}
+					err = writeSpectraCSVs(datasetID, pmcToDatasetLookup, svcs.TimeStamper, outDir, fileNamePrefix, "Normal", files.dataset, roi)
+					if err != nil {
+						return nil, err
+					}
 
-	if wantROIs {
-		svcs.Log.Debugf("  Saving ROI CSV...")
-		err = writeROICSV(outDir, fileNamePrefix, rois)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if wantDiffractionPeak {
-		svcs.Log.Debugf("  Diffraction: %v - Found %v locations with peaks", files.diffraction.Title, len(files.diffraction.Locations))
-		csv, err := os.Create(path.Join(outDir, fileNamePrefix+"-diffraction-peaks.csv"))
-		if err != nil {
-			return nil, err
-		}
-
-		defer csv.Close()
-
-		locations := files.diffraction.Locations
-		sort.Slice(locations, func(i, j int) bool {
-			firstLocID, err := strconv.Atoi(locations[i].Id)
-			if err != nil {
-				firstLocID = 0
-			}
-			secondLocID, err := strconv.Atoi(locations[j].Id)
-			if err != nil {
-				secondLocID = 0
-			}
-			return firstLocID < secondLocID
-		})
-
-		_, err = csv.WriteString("PMC, Peak Channel, Peak Height, Effect Size, Baseline Variation, Difference Sigma, Global Difference\n")
-		if err != nil {
-			return nil, err
-		}
-
-		for _, loc := range locations {
-			for _, p := range loc.Peaks {
-				line := fmt.Sprintf("%s, %v, %v, %v, %v, %v, %v\n", loc.Id, p.PeakChannel, p.PeakHeight, p.EffectSize, p.BaselineVariation, p.DifferenceSigma, p.GlobalDifference)
-				_, err = csv.WriteString(line)
-				if err != nil {
-					return nil, err
+					err = writeSpectraCSVs(datasetID, pmcToDatasetLookup, svcs.TimeStamper, outDir, fileNamePrefix, "Dwell", files.dataset, roi)
+					if err != nil {
+						return nil, err
+					}
 				}
 			}
-		}
-	}
 
-	if wantQuantCSV {
-		// Save the whole original CSV
-		csvPath := path.Join(outDir, fileNamePrefix+"-map-by-PIQUANT.csv")
-		ioutil.WriteFile(csvPath, files.quantCSVFile, 0644)
-
-		// Also save one per ROI as a convenience feature
-		csvLines := strings.Split(string(files.quantCSVFile), "\n")
-
-		for _, roi := range rois {
-			if utils.StringInSlice(roi.ID, roiIDs) {
-				_, err = writeQuantCSVForROI(csvLines, roi, outDir, fileNamePrefix)
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
-	}
-
-	if wantUnquantifiedPct {
-		weightPctCols := quantModel.GetWeightPercentColumnsInQuant(files.quantBin)
-
-		unquantWeightPct := []map[int32]float32{}
-		unquantWeightPctDetector := []string{}
-		for detectorIdx, locSet := range files.quantBin.LocationSet {
-			unquant, err := makeUnquantifiedMapValues(pmcBeamLocLookup, files.quantBin, detectorIdx, weightPctCols)
+			// Write out the "whole dataset" one. For this we create a special ROI
+			all := roiModel.GetAllPointsROI(files.dataset)
+			err = writeSpectraCSVs(datasetID, pmcToDatasetLookup, svcs.TimeStamper, outDir, fileNamePrefix, "Normal", files.dataset, all)
 			if err != nil {
 				return nil, err
 			}
-			unquantWeightPct = append(unquantWeightPct, unquant)
-			unquantWeightPctDetector = append(unquantWeightPctDetector, locSet.Detector)
-		}
-		svcs.Log.Debugf("  Unquantified map(s) generated")
 
-		svcs.Log.Debugf("  Saving Unquantified weight %% CSV...")
-		err = writeUnquantifiedWeightPctCSV(outDir, fileNamePrefix, unquantWeightPctDetector, unquantWeightPct)
-		if err != nil {
-			return nil, err
+			err = writeSpectraCSVs(datasetID, pmcToDatasetLookup, svcs.TimeStamper, outDir, fileNamePrefix, "Dwell", files.dataset, all)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if wantBeamLocations {
+			svcs.Log.Debugf("  Saving IJ CSV...")
+			err = writeBeamCSV(datasetID, pmcToDatasetLookup, outDir, fileNamePrefix, pmcBeamLocLookup, files.dataset)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if wantROIs {
+			svcs.Log.Debugf("  Saving ROI CSV...")
+			err = writeROICSV(datasetID, pmcToDatasetLookup, outDir, rois, roiIDs)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if wantDiffractionPeak {
+			svcs.Log.Debugf("  Diffraction: %v - Found %v locations with peaks", files.diffraction.Title, len(files.diffraction.Locations))
+			err = writeDiffractionCSV(datasetID, pmcToDatasetLookup, outDir, fileNamePrefix, files.diffraction)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if wantQuantCSV {
+			// Save the whole original CSV
+			csvPath := filepath.Join(outDir, fileNamePrefix+"-map-by-PIQUANT.csv")
+			ioutil.WriteFile(csvPath, files.quantCSVFile, 0644)
+
+			// Also save one per ROI as a convenience feature
+			csvLines := strings.Split(string(files.quantCSVFile), "\n")
+
+			for _, roi := range rois {
+				if utils.StringInSlice(roi.ID, roiIDs) {
+					_, err = writeQuantCSVForROI(datasetID, pmcToDatasetLookup, csvLines, roi, outDir, fileNamePrefix)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
+
+		if wantUnquantifiedPct {
+			weightPctCols := quantModel.GetWeightPercentColumnsInQuant(files.quantBin)
+
+			unquantWeightPct := []map[int32]float32{}
+			unquantWeightPctDetector := []string{}
+			for detectorIdx, locSet := range files.quantBin.LocationSet {
+				unquant, err := makeUnquantifiedMapValues(pmcBeamLocLookup, pmcToDatasetLookup, files.quantBin, detectorIdx, weightPctCols)
+				if err != nil {
+					return nil, err
+				}
+				unquantWeightPct = append(unquantWeightPct, unquant)
+				unquantWeightPctDetector = append(unquantWeightPctDetector, locSet.Detector)
+			}
+			svcs.Log.Debugf("  Unquantified map(s) generated")
+
+			svcs.Log.Debugf("  Saving Unquantified weight %% CSV...")
+			err = writeUnquantifiedWeightPctCSV(datasetID, outDir, fileNamePrefix, unquantWeightPctDetector, unquantWeightPct)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -534,48 +519,6 @@ func loadContextImages(svcs *services.APIServices, datasetID string, result inpu
 	return errs
 }
 
-/*
-	func makeReadme(svcs *services.APIServices, s3Path string, outPath string) error {
-		var summary quantModel.JobSummaryItem
-		err := svcs.FS.ReadJSON(svcs.Config.UsersBucket, s3Path, &summary, false)
-		if err != nil {
-			return err
-		}
-
-		// Save the readme
-		readme, err := os.Create(outPath)
-		if err != nil {
-			return err
-		}
-		defer readme.Close()
-
-		readme.WriteString("=============================\n")
-		readme.WriteString("= Quantification Map Export =\n")
-		readme.WriteString("=============================\n\n")
-		readme.WriteString(fmt.Sprintf("Name: %v\nQuantification ID: %v\nElements: %v\nDataset ID: %v\n", summary.Params.Name, summary.JobID, strings.Join(summary.Params.Elements, ","), summary.Params.DatasetID))
-		readme.WriteString(fmt.Sprintf("Processing time: %v sec on %v cores\n", summary.EndUnixTime-summary.Params.StartUnixTime, summary.Params.CoresPerNode*int32(len(summary.PiquantLogList)/2)))
-		_, err = readme.WriteString(fmt.Sprintf("Creator: %v\nPiquant detector config: %v\nPiquant custom params: \"%v\"\n", summary.Params.Creator.Name, summary.Params.DetectorConfig, summary.Params.Parameters))
-
-		return err
-	}
-*/
-func expandRect(r image.Rectangle, x, y int) image.Rectangle {
-	if x > r.Max.X {
-		r.Max.X = x
-	}
-	if y > r.Max.Y {
-		r.Max.Y = y
-	}
-	if x < r.Min.X {
-		r.Min.X = x
-	}
-	if y < r.Min.Y {
-		r.Min.Y = y
-	}
-
-	return r
-}
-
 func makeMarkupImage(contextImage image.Image, beamIJBankIdx int32, dataset *protos.Experiment, matchMeta *protos.Experiment_MatchedContextImageInfo) (image.Image, error) {
 	// Copy the image data to output image (in greyscale)
 	bounds := contextImage.Bounds()
@@ -620,7 +563,8 @@ func makeMarkupImage(contextImage image.Image, beamIJBankIdx int32, dataset *pro
 }
 
 func makeUnquantifiedMapValues(
-	pmcBeamLocLookup map[int32]protos.Experiment_Location_BeamLocation,
+	pmcBeamLocLookup map[int32]*protos.Experiment_Location_BeamLocation,
+	pmcToDatasetLookup map[int32]int32,
 	quant *protos.Quantification,
 	detectorIdx int,
 	weightPctCols []string) (map[int32]float32, error) {
@@ -641,19 +585,22 @@ func makeUnquantifiedMapValues(
 	for _, loc := range locSet.Location {
 		pmc := int32(loc.Pmc)
 
-		// Find its beam
-		_, ok := pmcBeamLocLookup[pmc]
-		if !ok {
-			return result, fmt.Errorf("makeUnquantifiedMapValues: Failed to find beam location for PMC: %v", pmc)
-		}
+		// Only add it if it's a member of the dataset we're interested in
+		if dstPMC, ok := pmcToDatasetLookup[int32(pmc)]; ok {
+			// Find its beam
+			_, ok := pmcBeamLocLookup[pmc]
+			if !ok {
+				return result, fmt.Errorf("makeUnquantifiedMapValues: Failed to find beam location for PMC: %v", pmc)
+			}
 
-		// Calculate the value
-		quantVal := float32(100.0)
-		for _, idx := range weightPctColIdxs {
-			quantVal -= loc.Values[idx].Fvalue
-		}
+			// Calculate the value
+			quantVal := float32(100.0)
+			for _, idx := range weightPctColIdxs {
+				quantVal -= loc.Values[idx].Fvalue
+			}
 
-		result[pmc] = quantVal
+			result[dstPMC] = quantVal
+		}
 	}
 
 	// We use the quant data to work out the colour of the pixel we're setting
@@ -661,8 +608,8 @@ func makeUnquantifiedMapValues(
 }
 
 // Writes i/j coordinates for each PMC to a CSV file
-func writeBeamCSV(dir string, fileNamePrefix string, pmcBeamLocLookup map[int32]protos.Experiment_Location_BeamLocation, dataset *protos.Experiment) error {
-	csv, err := os.Create(path.Join(dir, fileNamePrefix+"-beam-locations.csv"))
+func writeBeamCSV(datasetID string, pmcToDatasetLookup map[int32]int32, dir string, fileNamePrefix string, pmcBeamLocLookup map[int32]*protos.Experiment_Location_BeamLocation, dataset *protos.Experiment) error {
+	csv, err := os.Create(filepath.Join(dir, fileNamePrefix+"-beam-locations"+addDatasetToFileName(datasetID)+".csv"))
 	if err != nil {
 		return err
 	}
@@ -687,17 +634,21 @@ func writeBeamCSV(dir string, fileNamePrefix string, pmcBeamLocLookup map[int32]
 	sort.Ints(pmcs)
 
 	for _, pmc := range pmcs {
-		beam := pmcBeamLocLookup[int32(pmc)]
-		line := fmt.Sprintf("%v,%v,%v,%v,%v,%v", pmc, beam.X, beam.Y, beam.Z, beam.ImageI, beam.ImageJ)
+		// Only add if it's a member of this dataset (and add the right PMC too!)
+		if dstPMC, ok := pmcToDatasetLookup[int32(pmc)]; ok {
+			beam := pmcBeamLocLookup[int32(pmc)]
 
-		// Add any other beam locations that are stored
-		for _, loc := range beam.ContextLocations {
-			line += fmt.Sprintf(",%v,%v", loc.I, loc.J)
-		}
+			line := fmt.Sprintf("%v,%v,%v,%v,%v,%v", dstPMC, beam.X, beam.Y, beam.Z, beam.ImageI, beam.ImageJ)
 
-		_, err = csv.WriteString(line + "\n")
-		if err != nil {
-			return err
+			// Add any other beam locations that are stored
+			for _, loc := range beam.ContextLocations {
+				line += fmt.Sprintf(",%v,%v", loc.I, loc.J)
+			}
+
+			_, err = csv.WriteString(line + "\n")
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -706,28 +657,44 @@ func writeBeamCSV(dir string, fileNamePrefix string, pmcBeamLocLookup map[int32]
 // Writes a CSV which contains the PMCs for each ROI that the user has access to
 // NOTE:  This writes multiple tables into the same CSV file, first specifying the ROI name and id, then the PMCs for that ROI
 // NOTE2: Writes user and shared ROIs into the same table
-func writeROICSV(dir string, fileNamePrefix string, rois []roiModel.ROIMembers) error {
-	csv, err := os.Create(path.Join(dir, fileNamePrefix+"-roi-pmcs.csv"))
-	if err != nil {
-		return err
+func writeROICSV(datasetID string, pmcToDatasetLookup map[int32]int32, dir string, rois []roiModel.ROIMembers, roiIDs []string) error {
+	sharedStrippedIDs := []string{}
+	for _, id := range roiIDs {
+		strippedID, _ := utils.StripSharedItemIDPrefix(id)
+		sharedStrippedIDs = append(sharedStrippedIDs, strippedID)
 	}
-	defer csv.Close()
 
 	for _, roi := range rois {
+		roiID, _ := utils.StripSharedItemIDPrefix(roi.ID)
+		if !utils.StringInSlice(roiID, sharedStrippedIDs) {
+			continue
+		}
+
 		name := roi.Name
+
+		pathSafeName := strings.Replace(strings.Replace(name, " ", "_", -1), "/", "_", -1)
+		csv, err := os.Create(filepath.Join(dir, pathSafeName+"-roi-pmcs"+addDatasetToFileName(datasetID)+".csv"))
+		if err != nil {
+			return err
+		}
+		defer csv.Close()
+
 		if len(roi.SharedByName) > 0 {
 			name = name + "(shared by " + roi.SharedByName + ")"
 		}
 
-		_, err = csv.WriteString(name + "\n")
+		csvSafeName := strings.Replace(name, ",", "", -1)
+		_, err = csv.WriteString(csvSafeName + "\n")
 		if err != nil {
 			return err
 		}
 
 		for _, pmc := range roi.PMCs {
-			_, err = csv.WriteString(fmt.Sprintf("%v\n", pmc))
-			if err != nil {
-				return err
+			if dstPMC, ok := pmcToDatasetLookup[pmc]; ok {
+				_, err = csv.WriteString(fmt.Sprintf("%v\n", dstPMC))
+				if err != nil {
+					return err
+				}
 			}
 		}
 
@@ -753,7 +720,7 @@ type spectrumData struct {
 	countsB []int32
 }
 
-func writeSpectraCSVs(timeStamper services.ITimeStamper, outDir string, fileNamePrefix string, readType string, dataset *protos.Experiment, roi roiModel.ROIMembers) error {
+func writeSpectraCSVs(datasetID string, pmcToDatasetLookup map[int32]int32, timeStamper timestamper.ITimeStamper, outDir string, fileNamePrefix string, readType string, dataset *protos.Experiment, roi roiModel.ROIMembers) error {
 	// Write out a CSV in the format we receive them from iSDS (pixlise-data-converter FM format CSV for RFS product type subdirectory)
 	// First we read the spectra we're interested in...
 	toWrite := []spectrumData{}
@@ -771,8 +738,14 @@ func writeSpectraCSVs(timeStamper services.ITimeStamper, outDir string, fileName
 			return fmt.Errorf("Unexpected PMC: %v", loc.GetId())
 		}
 
+		// Check if it's one of the ones we're writing
+		dstPMC, okToWrite := pmcToDatasetLookup[int32(pmc)]
+		if !okToWrite {
+			continue // This is not one of the PMCs we intend to write
+		}
+
 		spectrumItem := spectrumData{
-			PMC: int32(pmc),
+			PMC: dstPMC,
 		}
 
 		if loc.Beam != nil {
@@ -816,7 +789,7 @@ func writeSpectraCSVs(timeStamper services.ITimeStamper, outDir string, fileName
 		return nil
 	}
 
-	writePath := path.Join(outDir, makeFileNameWithROI(fileNamePrefix, readType, roi.Name, roi.SharedByName, "csv"))
+	writePath := filepath.Join(outDir, makeFileNameWithROI(fileNamePrefix, readType, roi.Name, roi.SharedByName, datasetID, "csv"))
 	{
 		csv, err := os.Create(writePath)
 		if err != nil {
@@ -860,7 +833,7 @@ func writeSpectraCSVs(timeStamper services.ITimeStamper, outDir string, fileName
 	bulkSum.metaA.XPerChan /= float32(len(toWrite))
 	bulkSum.metaB.XPerChan /= float32(len(toWrite))
 
-	writePath = path.Join(outDir, makeFileNameWithROI(fileNamePrefix, readType+"-BulkSum", roi.Name, roi.SharedByName, "csv"))
+	writePath = filepath.Join(outDir, makeFileNameWithROI(fileNamePrefix, readType+"-BulkSum", roi.Name, roi.SharedByName, datasetID, "csv"))
 	{
 		csv, err := os.Create(writePath)
 		if err != nil {
@@ -875,7 +848,7 @@ func writeSpectraCSVs(timeStamper services.ITimeStamper, outDir string, fileName
 	}
 
 	// We also write these in MSA format as requested by several users, this way they can run PIQUANT on it locally
-	writePath = path.Join(outDir, makeFileNameWithROI(fileNamePrefix, readType+"-BulkSum", roi.Name, roi.SharedByName, "msa"))
+	writePath = filepath.Join(outDir, makeFileNameWithROI(fileNamePrefix, readType+"-BulkSum", roi.Name, roi.SharedByName, datasetID, "msa"))
 	{
 		msa, err := os.Create(writePath)
 		if err != nil {
@@ -892,16 +865,23 @@ func writeSpectraCSVs(timeStamper services.ITimeStamper, outDir string, fileName
 	return nil
 }
 
-func makeFileNameWithROI(prefix string, mainName string, roiName string, roiSharer string, ext string) string {
+func makeFileNameWithROI(prefix string, mainName string, roiName string, roiSharer string, datasetID string, ext string) string {
 	result := prefix + "-" + mainName + " ROI " + roiName
 	if len(roiSharer) > 0 {
 		result += " (shared by " + roiSharer + ")"
 	}
 
-	result += "." + ext
+	result += addDatasetToFileName(datasetID) + "." + ext
 
 	result = utils.MakeSaveableFileName(result)
 	return result
+}
+
+func addDatasetToFileName(datasetId string) string {
+	if len(datasetId) > 0 {
+		return " for dataset " + datasetId
+	}
+	return ""
 }
 
 func writeSpectraCSV(path string, spectra []spectrumData, csv io.StringWriter) error {
@@ -1024,7 +1004,7 @@ func writeSpectraCSV(path string, spectra []spectrumData, csv io.StringWriter) e
 	return nil
 }
 
-func writeSpectraMSA(path string, timeStamper services.ITimeStamper, spectra spectrumData, msa io.StringWriter) error {
+func writeSpectraMSA(path string, timeStamper timestamper.ITimeStamper, spectra spectrumData, msa io.StringWriter) error {
 	if len(spectra.countsA) <= 0 && len(spectra.countsA) <= 0 {
 		return fmt.Errorf("Unexpected spectrum data counts for writeSpectraMSA when writing %v", path)
 	}
@@ -1106,8 +1086,8 @@ func writeSpectraMSA(path string, timeStamper services.ITimeStamper, spectra spe
 	return nil
 }
 
-func writeUnquantifiedWeightPctCSV(dir string, fileNamePrefix string, detectors []string, values []map[int32]float32) error {
-	csv, err := os.Create(path.Join(dir, fileNamePrefix+"-unquantified-weight-pct.csv"))
+func writeUnquantifiedWeightPctCSV(datasetID string, dir string, fileNamePrefix string, detectors []string, values []map[int32]float32) error {
+	csv, err := os.Create(filepath.Join(dir, fileNamePrefix+"-unquantified-weight-pct"+addDatasetToFileName(datasetID)+".csv"))
 	if err != nil {
 		return err
 	}
@@ -1149,7 +1129,7 @@ func writeUnquantifiedWeightPctCSV(dir string, fileNamePrefix string, detectors 
 	return nil
 }
 
-func writeQuantCSVForROI(quantCSVFileLines []string, roi roiModel.ROIMembers, outDir string, fileNamePrefix string) (string, error) {
+func writeQuantCSVForROI(datasetID string, pmcToDatasetLookup map[int32]int32, quantCSVFileLines []string, roi roiModel.ROIMembers, outDir string, fileNamePrefix string) (string, error) {
 	if len(quantCSVFileLines) < 3 {
 		return "", errors.New("Not enough lines in CSV")
 	}
@@ -1170,8 +1150,8 @@ func writeQuantCSVForROI(quantCSVFileLines []string, roi roiModel.ROIMembers, ou
 	}
 
 	// Start writing file
-	csvFileName := makeFileNameWithROI(fileNamePrefix, "map", roi.Name, roi.SharedByName, "csv")
-	csv, err := os.Create(path.Join(outDir, csvFileName))
+	csvFileName := makeFileNameWithROI(fileNamePrefix, "map", roi.Name, roi.SharedByName, datasetID, "csv")
+	csv, err := os.Create(filepath.Join(outDir, csvFileName))
 	if err != nil {
 		return "", err
 	}
@@ -1188,7 +1168,7 @@ func writeQuantCSVForROI(quantCSVFileLines []string, roi roiModel.ROIMembers, ou
 	}
 
 	// Assumption: The PMCs are in increasing order!
-	// Loop through each line and if the PMC is in this ROI, write line to file
+	// Loop through each line and if the PMC is in this ROI (AND the list of PMCs supplied), write line to file
 	for lineNumber, line := range quantCSVFileLines[2:] {
 		commaPos := strings.Index(line, ",")
 		if commaPos > 0 {
@@ -1199,11 +1179,94 @@ func writeQuantCSVForROI(quantCSVFileLines []string, roi roiModel.ROIMembers, ou
 			}
 
 			if _, ok := pmcLookup[pmc]; ok {
-				// Exists in the lookup, write to file!
-				_, err = csv.WriteString(line + "\n")
+				// Exists in the lookup, check if it's in the dataset we're writing for too
+				if dstPMC, inDataset := pmcToDatasetLookup[int32(pmc)]; inDataset {
+					// It is, write to file!
+					_, err = csv.WriteString(strconv.Itoa(int(dstPMC)) + line[commaPos:] + "\n")
+					if err != nil {
+						return "", err
+					}
+				}
 			}
 		}
 	}
 
 	return csvFileName, nil
+}
+
+func writeDiffractionCSV(datasetID string, pmcToDatasetLookup map[int32]int32, outDir string, fileNamePrefix string, diffractionFile *protos.Diffraction) error {
+	csv, err := os.Create(filepath.Join(outDir, fileNamePrefix+"-diffraction-peaks"+addDatasetToFileName(datasetID)+".csv"))
+	if err != nil {
+		return err
+	}
+
+	defer csv.Close()
+
+	locations := diffractionFile.Locations
+	sort.Slice(locations, func(i, j int) bool {
+		firstLocID, err := strconv.Atoi(locations[i].Id)
+		if err != nil {
+			firstLocID = 0
+		}
+		secondLocID, err := strconv.Atoi(locations[j].Id)
+		if err != nil {
+			secondLocID = 0
+		}
+		return firstLocID < secondLocID
+	})
+
+	_, err = csv.WriteString("PMC, Peak Channel, Peak Height, Effect Size, Baseline Variation, Difference Sigma, Global Difference\n")
+	if err != nil {
+		return err
+	}
+
+	for _, loc := range locations {
+		for _, p := range loc.Peaks {
+			// Only write PMCs for the dataset we're given
+			locPMC, err := strconv.Atoi(loc.Id)
+			if err != nil {
+				return fmt.Errorf("Encountered location with non-numeric ID: %v", loc.Id)
+			}
+
+			if dstPMC, ok := pmcToDatasetLookup[int32(locPMC)]; ok {
+				line := fmt.Sprintf("%v, %v, %v, %v, %v, %v, %v\n", dstPMC, p.PeakChannel, p.PeakHeight, p.EffectSize, p.BaselineVariation, p.DifferenceSigma, p.GlobalDifference)
+				_, err = csv.WriteString(line)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func makePMCLookup(datasetID string, dataset *protos.Experiment) (map[int32]int32, error) {
+	result := map[int32]int32{}
+
+	// Run through ALL PMCs
+	for c, loc := range dataset.Locations {
+		pmcI, err := strconv.Atoi(loc.Id)
+		if err != nil {
+			return result, fmt.Errorf("Failed to read PMC: %v as integer for location %v", loc.Id, c)
+		}
+
+		pmc := int32(pmcI)
+
+		// Check if this is for the dataset ID we're interested in
+		if len(datasetID) <= 0 {
+			result[pmc] = pmc
+		} else {
+			if loc.ScanSource < 0 || int(loc.ScanSource) >= len(dataset.ScanSources) {
+				return result, fmt.Errorf("Failed to find scan source %v for location %v", loc.ScanSource, c)
+			}
+
+			if dataset.ScanSources[c].Rtt == datasetID {
+				// We're including it, need to subtract the offset though
+				result[pmc] = pmc - dataset.ScanSources[loc.ScanSource].IdOffset
+			}
+		}
+	}
+
+	return result, nil
 }

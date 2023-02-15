@@ -1,0 +1,20 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: quant-job-updater
+  description: |
+    A lambda that updates quantjobs upon completion to stick all the results together
+  links:
+    - title: Website
+      url: https://pixlise.org
+    - title: Documentation
+      url: https://pixlise.gitbook.io/
+  annotations:
+    github.com/project-slug: pixlise/core/internal/lambdas/quant-job-updater
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: service
+  owner: default/developers
+  lifecycle: production
+  dependsOn:
+    - component:pixlise-core-packages

@@ -105,10 +105,11 @@ func (d DetectorSample) ToString() string {
 	return "meta " + d.Meta.ToString() + " spectrum " + fmt.Sprintf("%+v", d.Spectrum)
 }
 
+/*
 func (d DetectorSample) detectorID() string {
 	return d.Meta["DETECTOR_ID"].SValue // we know it's a string...
 }
-
+*/
 // DetectorSampleByPMC - Detector data in a lookup by PMC
 type DetectorSampleByPMC map[int32][]DetectorSample
 
@@ -143,31 +144,36 @@ type BeamLocationByPMC map[int32]BeamLocation
 
 // HousekeepingData - stores column names & data
 type HousekeepingData struct {
-	Header []string
-	Data   map[int32][]MetaValue
+	Header           []string
+	Data             map[int32][]MetaValue
+	PerPMCHeaderIdxs map[int32][]int32 // Per-PMC order of meta string names. NOTE: This is OPTIONAL! If not specified, assumed order is order of []MetaValues
 }
 
 // PMCData - Used to pass everything we've read to the output saver package...
 type PMCData struct {
-	Housekeeping      []MetaValue
-	Beam              *BeamLocation
-	DetectorSpectra   []DetectorSample
-	ContextImageSrc   string
-	ContextImageDst   string
-	PseudoIntensities []float32
+	SourceRTT              string // Can be left empty if only from one data source
+	Housekeeping           []MetaValue
+	HousekeepingHeaderIdxs []int32 // Index of value name in list of Headers
+	Beam                   *BeamLocation
+	DetectorSpectra        []DetectorSample
+	ContextImageSrc        string
+	ContextImageDst        string
+	PseudoIntensities      []float32
 }
 
 // FileMetaData - dataset metadata
 type FileMetaData struct {
-	RTT      string
-	SCLK     int32
-	SOL      string
-	SiteID   int32
-	Site     string
-	DriveID  int32
-	TargetID string
-	Target   string
-	Title    string
+	RTT        string
+	SCLK       int32
+	SOL        string
+	SiteID     int32
+	Site       string
+	DriveID    int32
+	TargetID   string
+	Target     string
+	Title      string
+	Instrument string
+	PMCOffset  int32 // The offset we added to PMCs from this dataset in case of combined dataset
 }
 
 // ImageMeta - metadata for the "disco" image
@@ -213,6 +219,9 @@ type OutputData struct {
 	BulkQuantFile       string
 	DefaultContextImage string
 
+	// If file is composed from multiple sources, this stores all sources
+	Sources []FileMetaData
+
 	// Pseudo-intensity ranges defined for this experiment (they may not change, and this may be redundant!)
 	PseudoRanges []PseudoIntensityRange
 
@@ -253,7 +262,13 @@ func (o *OutputData) SetPMCData(
 	hk HousekeepingData,
 	spectra DetectorSampleByPMC,
 	contextImgsPerPMC map[int32]string,
-	pseudoIntensityData PseudoIntensities) {
+	pseudoIntensityData PseudoIntensities,
+	pmcSourceRTTs map[int32]string /* Optional, can be empty, contains PMC offset and corresponding RTT */) {
+
+	for pmc, sourceRTT := range pmcSourceRTTs {
+		o.EnsurePMC(pmc)
+		o.PerPMCData[pmc].SourceRTT = sourceRTT
+	}
 
 	for pmc, beam := range beams {
 		o.EnsurePMC(pmc)
@@ -276,7 +291,19 @@ func (o *OutputData) SetPMCData(
 	o.HousekeepingHeaders = hk.Header
 	for pmc, hkMetaValues := range hk.Data {
 		o.EnsurePMC(pmc)
+
+		// Store the metadata values themselves
 		o.PerPMCData[pmc].Housekeeping = hkMetaValues
+
+		// Get header indexes for this PMC but if they don't exist, make a list...
+		idxs, ok := hk.PerPMCHeaderIdxs[pmc]
+		if ok {
+			o.PerPMCData[pmc].HousekeepingHeaderIdxs = idxs
+		} else {
+			for c := range hkMetaValues {
+				o.PerPMCData[pmc].HousekeepingHeaderIdxs = append(o.PerPMCData[pmc].HousekeepingHeaderIdxs, int32(c))
+			}
+		}
 	}
 
 	for pmc, detSpectra := range spectra {

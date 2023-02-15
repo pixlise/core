@@ -103,7 +103,11 @@ func pickDataType(value string) protos.Experiment_MetaDataType {
 
 // Conversion of data to our variant types, given data type for each column done in a previous scan
 func convertHousekeepingData(header []string, pmcColIdx int, data [][]string, colTypes []protos.Experiment_MetaDataType) (dataConvertModels.HousekeepingData, error) {
-	result := dataConvertModels.HousekeepingData{header, map[int32][]dataConvertModels.MetaValue{}}
+	result := dataConvertModels.HousekeepingData{
+		Header:           header,
+		Data:             map[int32][]dataConvertModels.MetaValue{},
+		PerPMCHeaderIdxs: map[int32][]int32{},
+	}
 
 	// If the PMC col index isn't set, we've got something wrong
 	if pmcColIdx < 0 || pmcColIdx > (len(header)+1) {

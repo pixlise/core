@@ -22,10 +22,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/timestamper"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
 const roiS3Path = "UserContent/600f2a0806b6c70071d3d174/TheDataSetID/ROI.json"
@@ -36,172 +42,221 @@ const roi2XItems = `{
         "description": "The second dark patch",
         "locationIndexes": [4, 55, 394],
         "creator": { "name": "Peter", "user_id": "u123" },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000,
         "mistROIItem": {
             "species": "",
             "mineralGroupID": "",
             "ID_Depth": 0,
             "ClassificationTrail": "",
             "formula": ""
-        }
+        },
+        "tags": []
     },
     "772": {
         "name": "White spot",
         "locationIndexes": [14, 5, 94],
         "creator": { "name": "Tom", "user_id": "u124" },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001,
         "mistROIItem": {
             "species": "",
             "mineralGroupID": "",
             "ID_Depth": 0,
             "ClassificationTrail": "",
             "formula": ""
-        }
+        },
+        "tags": []
     }
 }`
 
-func Example_roiHandler_List() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/NewDataSet/ROI.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/NewDataSet/ROI.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/AnotherDataSetID/ROI.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/AnotherDataSetID/ROI.json"),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil, // No file in S3
-		nil, // No file in S3
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-				"331": {
-					"name": "dark patch",
-					"locationIndexes": [4, 55, 394],
-					"shared": false,
-					"creator": { "name": "Peter", "user_id": "u77", "email": "" },
-					"imageName": "dtu_context_rgbu.tif",
-					"mistROIItem": {
-                        "species": "",
-                        "mineralGroupID": "",
-                        "ID_Depth": 0,
-                        "ClassificationTrail": "",
-                        "formula": ""
-                    }
-				}
-			}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-				"007": {
-					"description": "james bonds shared ROI",
-					"name": "james bond",
-					"locationIndexes": [99],
-					"shared": false,
-					"creator": { "name": "Tom", "user_id": "u85", "email": ""},
-					"mistROIItem": {
-                        "species": "",
-                        "mineralGroupID": "",
-                        "ID_Depth": 0,
-                        "ClassificationTrail": "",
-                        "formula": ""
-                    }
-				}
-			}`))),
-		},
-	}
+func Test_roiHandler_List(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
+	mt.Run("success", func(mt *mtest.T) {
+		// User name lookup
+		mongoMockedResponses := []primitive.D{
+			// u77 - not found
+			mtest.CreateCursorResponse(
+				1,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+			),
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.NextBatch,
+			),
+			// User u85
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+				bson.D{
+					{"Userid", "u85"},
+					{"Notifications", bson.D{
+						{"Topics", bson.A{}},
+					}},
+					{"Config", bson.D{
+						{"Name", "Tom Barber"},
+						{"Email", "tom@spicule.co.uk"},
+						{"Cell", ""},
+						{"DataCollection", "unknown"},
+					}},
+				},
+			),
+		}
 
-	req, _ := http.NewRequest("GET", "/roi/NewDataSet", nil)
-	resp := executeRequest(req, apiRouter.Router)
+		mt.AddMockResponses(mongoMockedResponses...)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/NewDataSet/ROI.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/NewDataSet/ROI.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(roiSharedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/AnotherDataSetID/ROI.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/AnotherDataSetID/ROI.json"),
+			},
+		}
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			nil, // No file in S3
+			nil, // No file in S3
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"331": {
+						"name": "dark patch",
+						"locationIndexes": [4, 55, 394],
+						"shared": false,
+						"creator": { "name": "Peter", "user_id": "u77", "email": "" },
+						"imageName": "dtu_context_rgbu.tif",
+						"mistROIItem": {
+							"species": "",
+							"mineralGroupID": "",
+							"ID_Depth": 0,
+							"ClassificationTrail": "",
+							"formula": ""
+						},
+						"tags": [],
+						"create_unix_time_sec": 1668100000,
+						"mod_unix_time_sec": 1668100000
+					}
+				}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"007": {
+						"description": "james bonds shared ROI",
+						"name": "james bond",
+						"locationIndexes": [99],
+						"shared": false,
+						"creator": { "name": "Tom", "user_id": "u85", "email": ""},
+						"create_unix_time_sec": 1668100003,
+						"mod_unix_time_sec": 1668100003,
+						"mistROIItem": {
+							"species": "",
+							"mineralGroupID": "",
+							"ID_Depth": 0,
+							"ClassificationTrail": "",
+							"formula": ""
+						},
+						"tags": []
+					}
+				}`))),
+			},
+		}
 
-	req, _ = http.NewRequest("GET", "/roi/TheDataSetID", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		apiRouter := MakeRouter(svcs)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		req, _ := http.NewRequest("GET", "/roi/NewDataSet", nil)
+		resp := executeRequest(req, apiRouter.Router)
 
-	req, _ = http.NewRequest("GET", "/roi/AnotherDataSetID", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 200, `{}
+`)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		req, _ = http.NewRequest("GET", "/roi/TheDataSetID", nil)
+		resp = executeRequest(req, apiRouter.Router)
 
-	// Output:
-	// 200
-	// {}
-	//
-	// 200
-	// {}
-	//
-	// 200
-	// {
-	//     "331": {
-	//         "name": "dark patch",
-	//         "locationIndexes": [
-	//             4,
-	//             55,
-	//             394
-	//         ],
-	//         "description": "",
-	//         "imageName": "dtu_context_rgbu.tif",
-	//         "mistROIItem": {
-	//             "species": "",
-	//             "mineralGroupID": "",
-	//             "ID_Depth": 0,
-	//             "ClassificationTrail": "",
-	//             "formula": ""
-	//         },
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Peter",
-	//             "user_id": "u77",
-	//             "email": ""
-	//         }
-	//     },
-	//     "shared-007": {
-	//         "name": "james bond",
-	//         "locationIndexes": [
-	//             99
-	//         ],
-	//         "description": "james bonds shared ROI",
-	//         "mistROIItem": {
-	//             "species": "",
-	//             "mineralGroupID": "",
-	//             "ID_Depth": 0,
-	//             "ClassificationTrail": "",
-	//             "formula": ""
-	//         },
-	//         "shared": true,
-	//         "creator": {
-	//             "name": "Tom",
-	//             "user_id": "u85",
-	//             "email": ""
-	//         }
-	//     }
-	// }
+		checkResult(t, resp, 200, `{}
+`)
+
+		req, _ = http.NewRequest("GET", "/roi/AnotherDataSetID", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "331": {
+        "name": "dark patch",
+        "locationIndexes": [
+            4,
+            55,
+            394
+        ],
+        "description": "",
+        "imageName": "dtu_context_rgbu.tif",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
+        "tags": [],
+        "shared": false,
+        "creator": {
+            "name": "Peter",
+            "user_id": "u77",
+            "email": ""
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
+    },
+    "shared-007": {
+        "name": "james bond",
+        "locationIndexes": [
+            99
+        ],
+        "description": "james bonds shared ROI",
+        "mistROIItem": {
+            "species": "",
+            "mineralGroupID": "",
+            "ID_Depth": 0,
+            "ClassificationTrail": "",
+            "formula": ""
+        },
+        "tags": [],
+        "shared": true,
+        "creator": {
+            "name": "Tom Barber",
+            "user_id": "u85",
+            "email": "tom@spicule.co.uk"
+        },
+        "create_unix_time_sec": 1668100003,
+        "mod_unix_time_sec": 1668100003
+    }
+}
+`)
+	})
 }
 
 func Example_roiHandler_Post() {
@@ -249,12 +304,15 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100007,
+        "mod_unix_time_sec": 1668100007
     }
 }`))),
 		},
@@ -281,12 +339,15 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142579,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -307,12 +368,15 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142580,
+        "mod_unix_time_sec": 1668142580
     }
 }`)),
 		},
@@ -333,12 +397,15 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Peter",
             "user_id": "u123",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "772": {
         "name": "White spot",
@@ -355,12 +422,15 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     },
     "id5": {
         "name": "White spot",
@@ -377,12 +447,15 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142581,
+        "mod_unix_time_sec": 1668142581
     }
 }`)),
 		},
@@ -404,12 +477,15 @@ func Example_roiHandler_Post() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142583,
+        "mod_unix_time_sec": 1668142583
     }
 }`)),
 		},
@@ -423,7 +499,10 @@ func Example_roiHandler_Post() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"id3", "id4", "id5", "id6"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579, 1668142580, 1668142581, 1668142582, 1668142583},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const postItem = `{
@@ -549,12 +628,15 @@ func Example_roiHandler_Put() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668142579
     },
     "772": {
         "name": "White spot",
@@ -571,12 +653,15 @@ func Example_roiHandler_Put() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     }
 }`)),
 		},
@@ -585,7 +670,10 @@ func Example_roiHandler_Put() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 
 	apiRouter := MakeRouter(svcs)
 
@@ -693,13 +781,16 @@ func Example_roiHandler_Delete() {
             394
         ],
         "creator": { "name": "Peter", "user_id": "600f2a0806b6c70071d3d174" },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000,
         "mistROIItem": {
             "species": "",
             "mineralGroupID": "",
             "ID_Depth": 0,
             "ClassificationTrail": "",
             "formula": ""
-        }
+        },
+        "tags": []
     },
     "772": {
         "name": "White spot",
@@ -709,13 +800,16 @@ func Example_roiHandler_Delete() {
             94
         ],
         "creator": { "name": "Tom", "user_id": "u124" },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001,
         "mistROIItem": {
             "species": "",
             "mineralGroupID": "",
             "ID_Depth": 0,
             "ClassificationTrail": "",
             "formula": ""
-        }
+        },
+        "tags": []
     }
 }`))),
 		},
@@ -749,12 +843,15 @@ func Example_roiHandler_Delete() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": false,
         "creator": {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     }
 }`)),
 		},
@@ -763,7 +860,7 @@ func Example_roiHandler_Delete() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Delete shared item, OK
@@ -830,11 +927,14 @@ func Example_roiHandler_Share() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "The user who shared",
             "user_id": "600f2a0806b6c70071d3d174"
-        }
+        },
+        "create_unix_time_sec": 1668100008,
+        "mod_unix_time_sec": 1668100008
     }
 }`
 
@@ -913,12 +1013,15 @@ func Example_roiHandler_Share() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter",
             "user_id": "u123",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668142579
     },
     "99": {
         "name": "Shared already",
@@ -933,12 +1036,15 @@ func Example_roiHandler_Share() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "The user who shared",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100008,
+        "mod_unix_time_sec": 1668100008
     }
 }`)),
 		},
@@ -949,7 +1055,10 @@ func Example_roiHandler_Share() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"16"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = ""

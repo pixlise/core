@@ -48,6 +48,7 @@ type ROIItem struct {
 	// If no imageName, it's a traditional ROI consisting of PMCs
 	PixelIndexes []int32     `json:"pixelIndexes,omitempty"`
 	MistROIItem  MistROIItem `json:"mistROIItem"`
+	Tags         []string    `json:"tags"`
 }
 
 type ROIItemOptions struct {
@@ -71,6 +72,15 @@ type ROIReference struct {
 type ROISavedItem struct {
 	*ROIItem
 	*pixlUser.APIObjectItem
+}
+
+func (a ROISavedItem) SetTimes(userID string, t int64) {
+	if a.CreatedUnixTimeSec == 0 {
+		a.CreatedUnixTimeSec = t
+	}
+	if a.ModifiedUnixTimeSec == 0 {
+		a.ModifiedUnixTimeSec = t
+	}
 }
 
 type ROILookup map[string]ROISavedItem
@@ -186,12 +196,13 @@ func GetROIs(svcs *services.APIServices, userID string, datasetID string, outMap
 
 	// Run through and just return summary info
 	for id, item := range items {
-		// Loop through all elements and make an element set summary
 		toSave := ROISavedItem{
 			ROIItem: item.ROIItem,
 			APIObjectItem: &pixlUser.APIObjectItem{
-				Shared:  sharedFile,
-				Creator: item.Creator,
+				Shared:              sharedFile,
+				Creator:             item.Creator,
+				CreatedUnixTimeSec:  item.CreatedUnixTimeSec,
+				ModifiedUnixTimeSec: item.ModifiedUnixTimeSec,
 			},
 		}
 
@@ -242,6 +253,11 @@ func ShareROIs(svcs *services.APIServices, userID string, datasetID string, roiI
 			return generatedIDs, fmt.Errorf("Failed to generate unique share ID for " + id)
 		}
 
+		// Tags are new, so this may be nil
+		if roiItem.Tags == nil {
+			roiItem.Tags = []string{}
+		}
+
 		// Add it to the shared file and we're done
 		sharedCopy := ROISavedItem{
 			ROIItem: &ROIItem{
@@ -251,10 +267,13 @@ func ShareROIs(svcs *services.APIServices, userID string, datasetID string, roiI
 				ImageName:       roiItem.ImageName,
 				PixelIndexes:    roiItem.PixelIndexes,
 				MistROIItem:     roiItem.MistROIItem,
+				Tags:            roiItem.Tags,
 			},
 			APIObjectItem: &pixlUser.APIObjectItem{
-				Shared:  true,
-				Creator: roiItem.Creator,
+				Shared:              true,
+				Creator:             roiItem.Creator,
+				CreatedUnixTimeSec:  roiItem.CreatedUnixTimeSec,
+				ModifiedUnixTimeSec: svcs.TimeStamper.GetTimeNowSec(),
 			},
 		}
 

@@ -21,7 +21,9 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	apiNotifications "github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/pixlise/core/v2/api/handlers"
 	"github.com/pixlise/core/v2/api/permission"
@@ -42,9 +44,9 @@ type Config struct {
 	Methods Method `json:"method"`
 }
 
-// AppData - App data type for JSON conversion
-type AppData struct {
-	Topics []apiNotifications.Topics `json:"topics"`
+// UserSubscriptions - App data type for JSON conversion
+type UserSubscriptions struct {
+	Topics []pixlUser.Topics `json:"topics"`
 }
 
 // HintsData - Hints Object
@@ -66,6 +68,7 @@ type GlobalData struct {
 
 // Notification management
 const alertsPrefix = "notification/alerts"
+const userIdIdentifier = "userid"
 
 func registerNotificationHandler(router *apiRouter.ApiObjectRouter) {
 	const subscriptionPrefix = "notification/subscriptions"
@@ -73,14 +76,12 @@ func registerNotificationHandler(router *apiRouter.ApiObjectRouter) {
 	const testPrefix = "notification/test"
 	const globalPrefix = "notification/global"
 
-	router.AddJSONHandler(handlers.MakeEndpointPath(subscriptionPrefix, "userid"), apiRouter.MakeMethodPermission("GET", permission.PermReadUserRoles), listSubscriptions)
 	router.AddJSONHandler(handlers.MakeEndpointPath(subscriptionPrefix), apiRouter.MakeMethodPermission("GET", permission.PermPublic), listSubscriptions)
 
-	router.AddJSONHandler(handlers.MakeEndpointPath(subscriptionPrefix, "userid"), apiRouter.MakeMethodPermission("POST", permission.PermWriteUserRoles), updateSubscriptions)
-	router.AddJSONHandler(handlers.MakeEndpointPath(subscriptionPrefix), apiRouter.MakeMethodPermission("POST", permission.PermPublic), updateSubscriptions)
+	router.AddJSONHandler(handlers.MakeEndpointPath(subscriptionPrefix), apiRouter.MakeMethodPermission("POST", permission.PermPublic), postSubscriptions)
 
 	router.AddJSONHandler(handlers.MakeEndpointPath(hintsPrefix), apiRouter.MakeMethodPermission("GET", permission.PermPublic), listHints)
-	router.AddJSONHandler(handlers.MakeEndpointPath(hintsPrefix), apiRouter.MakeMethodPermission("POST", permission.PermPublic), updateHints)
+	router.AddJSONHandler(handlers.MakeEndpointPath(hintsPrefix), apiRouter.MakeMethodPermission("POST", permission.PermPublic), postHints)
 
 	router.AddJSONHandler(handlers.MakeEndpointPath(alertsPrefix), apiRouter.MakeMethodPermission("GET", permission.PermPublic), listAlerts)
 
@@ -129,33 +130,35 @@ func executeTest(params handlers.ApiHandlerParams) (interface{}, error) {
 func listAlerts(params handlers.ApiHandlerParams) (interface{}, error) {
 	notification, err := params.Svcs.Notifications.GetUINotifications(params.UserInfo.UserID)
 
-	if err != nil {
-		if params.Svcs.FS.IsNotFoundError(err) {
-			return []apiNotifications.UINotificationObj{}, nil
-		}
+	/*if err != nil {
 		return nil, err
-	}
-	if notification == nil {
-		s := []string{}
-		return s, nil
-	}
-	return notification, nil
+	}*/
+
+	return notification, err
 }
 
 func listHints(params handlers.ApiHandlerParams) (interface{}, error) {
-	user, err := params.Svcs.Notifications.FetchUserObject(params.UserInfo.UserID, true, params.UserInfo.Name, params.UserInfo.Email)
+	user, err := params.Svcs.Users.GetUser(params.UserInfo.UserID)
 
 	if err != nil {
-		if params.Svcs.FS.IsNotFoundError(err) {
-			return []string{}, nil
+		if err == mongo.ErrNoDocuments {
+			// If no documents we don't complain, just send back no hints
+			result := HintsData{
+				Hints: []string{},
+			}
+			return result, nil
 		}
 		return nil, err
 	}
 
-	return HintsData{user.Hints}, err
+	result := HintsData{
+		Hints: user.Notifications.Hints,
+	}
+
+	return result, nil
 }
 
-func updateHints(params handlers.ApiHandlerParams) (interface{}, error) {
+func postHints(params handlers.ApiHandlerParams) (interface{}, error) {
 	body, err := ioutil.ReadAll(params.Request.Body)
 	if err != nil {
 		return nil, err
@@ -166,122 +169,63 @@ func updateHints(params handlers.ApiHandlerParams) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	user, err := params.Svcs.Notifications.FetchUserObject(params.UserInfo.UserID, true, params.UserInfo.Name, params.UserInfo.Email)
 
+	// Read the user first
+	user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
-		if params.Svcs.Config.MongoEndpoint == "" && params.Svcs.FS.IsNotFoundError(err) {
-			user, err = params.Svcs.Notifications.CreateUserObject(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
-		} else if params.Svcs.Config.MongoEndpoint != "" {
-			user, err = params.Svcs.Notifications.CreateUserObject(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
-		}
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	user.Hints = req.Hints
-	err = params.Svcs.Notifications.UpdateUserConfigFile(params.UserInfo.UserID, user)
-
-	if err != nil {
+		params.Svcs.Log.Errorf("Error Creating/Reading User \"%v\" for saving hints: %v", params.UserInfo.UserID, err)
 		return nil, err
 	}
 
-	return HintsData{user.Hints}, nil
+	// Set the hints
+	user.Notifications.Hints = req.Hints
+
+	// Write user back
+	err = params.Svcs.Users.WriteUser(user)
+
+	return HintsData{user.Notifications.Hints}, err
 }
 
 func listSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) {
-	if val, ok := params.PathParams["userid"]; ok {
-		if perm, ok := params.UserInfo.Permissions["read:user-roles"]; ok {
-			if perm == true {
-				user, err := params.Svcs.Notifications.FetchUserObject(val, true, params.UserInfo.Name, params.UserInfo.Email)
-				if err != nil {
-					if params.Svcs.FS.IsNotFoundError(err) {
-						return AppData{}, nil
-					}
-					return nil, err
-				}
-				return user.Topics, nil
-			}
+	user, err := params.Svcs.Users.GetUser(params.UserInfo.UserID)
 
-			return "Unable to lookup userid by user, check your permissions", nil
-		}
-
-		return "Unable to lookup userid by user, check your permissions", nil
-	}
-	user, err := params.Svcs.Notifications.FetchUserObject(params.UserInfo.UserID, true, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
-		if params.Svcs.FS.IsNotFoundError(err) {
-			return AppData{}, nil
+		if err == mongo.ErrNoDocuments {
+			return nil, api.MakeNotFoundError(params.UserInfo.UserID)
 		}
 		return nil, err
 	}
-	return AppData{user.Topics}, nil
+
+	result := UserSubscriptions{
+		Topics: user.Notifications.Topics,
+	}
+
+	return result, nil
 }
 
-func updateSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) {
+func postSubscriptions(params handlers.ApiHandlerParams) (interface{}, error) {
 	body, err := ioutil.ReadAll(params.Request.Body)
 	if err != nil {
 		return nil, err
 	}
-	var req AppData
+	var req UserSubscriptions
 	err = json.Unmarshal(body, &req)
 	if err != nil {
 		return nil, err
 	}
 
-	if val, ok := params.PathParams["userid"]; ok {
-		if perm, ok := params.UserInfo.Permissions[permission.PermWriteUserRoles]; ok {
-			if perm {
-				user, err := params.Svcs.Notifications.FetchUserObject(val, true, params.UserInfo.Name, params.UserInfo.Email)
-				if err != nil {
-					if params.Svcs.Config.MongoEndpoint == "" && params.Svcs.FS.IsNotFoundError(err) {
-						user, err = params.Svcs.Notifications.CreateUserObject(val, params.UserInfo.Name, params.UserInfo.Email)
-					} else if params.Svcs.Config.MongoEndpoint != "" {
-						user, err = params.Svcs.Notifications.CreateUserObject(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
-					}
-
-					if err != nil {
-						return nil, err
-					}
-				}
-				user.Topics = req.Topics
-
-				err = params.Svcs.Notifications.UpdateUserConfigFile(params.UserInfo.UserID, user)
-				return user.Topics, err
-			}
-
-			return "Unable to lookup userid by user, check your permissions", nil
-		}
-
-		return "Unable to lookup userid by user, check your permissions", nil
-	}
-
-	user, err := params.Svcs.Notifications.FetchUserObject(params.UserInfo.UserID, true, params.UserInfo.Name, params.UserInfo.Email)
+	// Read the user first
+	user, err := params.Svcs.Users.GetUserEnsureExists(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
 	if err != nil {
-		params.Svcs.Log.Errorf("Error Fetching User Object: %v", err)
-		err = nil
-		if params.Svcs.Config.MongoEndpoint == "" && params.Svcs.FS.IsNotFoundError(err) {
-			user, err = params.Svcs.Notifications.CreateUserObject(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
-		} else if params.Svcs.Config.MongoEndpoint != "" {
-			user, err = params.Svcs.Notifications.CreateUserObject(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
-		}
-
-		if err != nil {
-			//return nil, err
-			params.Svcs.Log.Errorf("Error Fetching User Object: %v", err)
-		}
-	} else if user.Userid == "" {
-		user, err = params.Svcs.Notifications.CreateUserObject(params.UserInfo.UserID, params.UserInfo.Name, params.UserInfo.Email)
-		if err != nil {
-			return nil, err
-		}
-	}
-	user.Topics = req.Topics
-	err = params.Svcs.Notifications.UpdateUserConfigFile(params.UserInfo.UserID, user)
-	if err != nil {
+		params.Svcs.Log.Errorf("Error Creating/Reading User \"%v\" for saving subscriptions: %v", params.UserInfo.UserID, err)
 		return nil, err
 	}
 
-	return AppData{user.Topics}, nil
+	// Overwrite the topics
+	user.Notifications.Topics = req.Topics
+
+	// Write user back
+	err = params.Svcs.Users.WriteUser(user)
+
+	return UserSubscriptions{user.Notifications.Topics}, err
 }

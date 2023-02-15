@@ -26,6 +26,7 @@ import (
 	"unicode"
 
 	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
 )
 
 // FileNameMeta See docs/PIXL_filename.docx
@@ -78,12 +79,15 @@ func (m FileNameMeta) PMC() (int32, error) {
 }
 
 func (m FileNameMeta) RTT() (string, error) {
+	/* The spec actually says this can be a sequence ID and it's instrument-specific and alpha-numeric
+	   so we have to do away with the integer conversion check here
 	// Seems RTT is usually stored, but this can be a seq ID
 	// NOTE: we expect it to be a number, but we save it as a string
 	rttNum, err := strconv.Atoi(m.seqRTT)
 	if err != nil || rttNum <= 0 {
 		return "", errors.New("Failed to get RTT from: " + m.seqRTT)
 	}
+	*/
 	return m.seqRTT, nil
 }
 
@@ -154,10 +158,9 @@ func (m FileNameMeta) Timestamp() (int32, error) {
 }
 */
 func ParseFileName(fileName string) (FileNameMeta, error) {
-	fileNames := strings.Split(fileName, "/")
-	if len(fileNames) > 1 {
-		fileName = fileNames[1]
-	}
+	// We often get passed paths so here we ensure we're just dealing with the file name at the end
+	fileName = filepath.Base(fileName)
+
 	result := FileNameMeta{}
 
 	if len(fileName) != 58 {
@@ -370,4 +373,44 @@ func stringToDriveID(drive string) (int32, error) {
 		}
 	}
 	return 0, fmt.Errorf("Failed to convert: %v to drive ID", drive)
+}
+
+func MakeDatasetFileMeta(fMeta FileNameMeta, jobLog logger.ILogger) (dataConvertModels.FileMetaData, error) {
+	result := dataConvertModels.FileMetaData{}
+
+	sol, err := fMeta.SOL()
+	if err != nil {
+		//return result, nil
+		jobLog.Infof("Dataset Metadata did not contain SOL: %v", err)
+	}
+
+	rtt, err := fMeta.RTT()
+	if err != nil {
+		return result, nil
+	}
+
+	sclk, err := fMeta.SCLK()
+	if err != nil {
+		//return result, nil
+		jobLog.Infof("Dataset Metadata did not contain SCLK: %v", err)
+	}
+
+	site, err := fMeta.Site()
+	if err != nil {
+		return result, nil
+	}
+
+	drive, err := fMeta.Drive()
+	if err != nil {
+		return result, nil
+	}
+
+	result.SOL = sol
+	result.RTT = rtt
+	result.SCLK = sclk
+	result.SiteID = site
+	result.DriveID = drive
+	result.TargetID = "?"
+	result.Title = rtt
+	return result, nil
 }

@@ -59,13 +59,22 @@ type elementSetInput struct {
 	Lines []elementLines `json:"lines"`
 }
 
-type elementSet struct {
+type ElementSet struct {
 	Name  string         `json:"name"`
 	Lines []elementLines `json:"lines"`
 	*pixlUser.APIObjectItem
 }
 
-type elementSetLookup map[string]elementSet
+func (a ElementSet) SetTimes(userID string, t int64) {
+	if a.CreatedUnixTimeSec == 0 {
+		a.CreatedUnixTimeSec = t
+	}
+	if a.ModifiedUnixTimeSec == 0 {
+		a.ModifiedUnixTimeSec = t
+	}
+}
+
+type ElementSetLookup map[string]ElementSet
 
 type elementSetSummary struct {
 	Name          string `json:"name"`
@@ -87,14 +96,14 @@ func registerElementSetHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedElementSet), elementSetShare)
 }
 
-func readElementSetData(svcs *services.APIServices, s3Path string) (elementSetLookup, error) {
-	itemLookup := elementSetLookup{}
+func readElementSetData(svcs *services.APIServices, s3Path string) (ElementSetLookup, error) {
+	itemLookup := ElementSetLookup{}
 	err := svcs.FS.ReadJSON(svcs.Config.UsersBucket, s3Path, &itemLookup, true)
 	return itemLookup, err
 }
 
-func getElementSetByID(svcs *services.APIServices, ID string, s3PathFrom string, markShared bool) (elementSet, error) {
-	result := elementSet{}
+func getElementSetByID(svcs *services.APIServices, ID string, s3PathFrom string, markShared bool) (ElementSet, error) {
+	result := ElementSet{}
 
 	elemSets, err := readElementSetData(svcs, s3PathFrom)
 	if err != nil {
@@ -121,16 +130,26 @@ func getElementSetSummary(svcs *services.APIServices, s3PathFrom string, sharedF
 	// Run through and just return summary info
 	for id, item := range elemSets {
 		// Loop through all elements and make an element set summary
-		summary := elementSetSummary{Name: item.Name, AtomicNumbers: []int8{}, APIObjectItem: &pixlUser.APIObjectItem{Shared: sharedFile, Creator: item.Creator}}
+		summary := elementSetSummary{
+			Name:          item.Name,
+			AtomicNumbers: []int8{},
+			APIObjectItem: &pixlUser.APIObjectItem{
+				Shared:              sharedFile,
+				Creator:             item.Creator,
+				CreatedUnixTimeSec:  item.CreatedUnixTimeSec,
+				ModifiedUnixTimeSec: item.ModifiedUnixTimeSec,
+			},
+		}
 		for _, lineinfo := range item.Lines {
 			summary.AtomicNumbers = append(summary.AtomicNumbers, lineinfo.AtomicNumber)
 		}
 
-		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's
+		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's shared
 		saveID := id
 		if sharedFile {
 			saveID = utils.SharedItemIDPrefix + id
 		}
+
 		(*outMap)[saveID] = summary
 	}
 
@@ -152,6 +171,24 @@ func elementSetList(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
+	// Read keys in alphabetical order, else we randomly fail unit test
+	keys := []string{}
+	for k := range summaryLookup {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Update all creator infos
+	for _, k := range keys {
+		item := summaryLookup[k]
+		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
+		if creatorErr != nil {
+			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (element set listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
+		} else {
+			item.Creator = updatedCreator
+		}
+	}
+
 	// Return the combined set
 	return &summaryLookup, nil
 }
@@ -169,10 +206,21 @@ func elementSetGet(params handlers.ApiHandlerParams) (interface{}, error) {
 		itemID = strippedID
 	}
 
-	return getElementSetByID(params.Svcs, itemID, s3Path, isSharedReq)
+	elemSet, err := getElementSetByID(params.Svcs, itemID, s3Path, isSharedReq)
+
+	if err == nil {
+		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(elemSet.Creator.UserID)
+		if creatorErr != nil {
+			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (element set GET). Error: %v", elemSet.Creator.UserID, elemSet.Creator.Name, creatorErr)
+		} else {
+			elemSet.Creator = updatedCreator
+		}
+	}
+
+	return elemSet, err
 }
 
-func setupElementSetForSave(svcs *services.APIServices, body []byte, s3Path string) (*elementSetLookup, *elementSetInput, error) {
+func setupElementSetForSave(svcs *services.APIServices, body []byte, s3Path string) (*ElementSetLookup, *elementSetInput, error) {
 	// Read in body
 	var req elementSetInput
 	err := json.Unmarshal(body, &req)
@@ -227,7 +275,17 @@ func elementSetPost(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Save it & upload
-	(*elemSets)[itemID] = elementSet{req.Name, req.Lines, &pixlUser.APIObjectItem{Shared: false, Creator: params.UserInfo}}
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
+	(*elemSets)[itemID] = ElementSet{
+		req.Name,
+		req.Lines,
+		&pixlUser.APIObjectItem{
+			Shared:              false,
+			Creator:             params.UserInfo,
+			CreatedUnixTimeSec:  timeNow,
+			ModifiedUnixTimeSec: timeNow,
+		},
+	}
 	return nil, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *elemSets)
 }
 
@@ -254,7 +312,16 @@ func elementSetPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Save it & upload
-	(*elemSets)[itemID] = elementSet{req.Name, req.Lines, &pixlUser.APIObjectItem{Shared: false, Creator: existing.Creator}}
+	(*elemSets)[itemID] = ElementSet{
+		req.Name,
+		req.Lines,
+		&pixlUser.APIObjectItem{
+			Shared:              false,
+			Creator:             existing.Creator,
+			CreatedUnixTimeSec:  existing.CreatedUnixTimeSec,
+			ModifiedUnixTimeSec: params.Svcs.TimeStamper.GetTimeNowSec(),
+		},
+	}
 	return nil, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *elemSets)
 }
 

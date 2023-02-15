@@ -81,9 +81,9 @@ func verifyExport(JWT string, jobID string, environment string, datasetID string
 		fileNamePrefix + "-map-by-PIQUANT.csv":                true,
 		fileNamePrefix + "-beam-locations.csv":                true,
 		fileNamePrefix + "-unquantified-weight-pct.csv":       true,
-		fileNamePrefix + "-roi-pmcs.csv":                      true,
 		fileNamePrefix + "-Normal-BulkSum ROI All Points.csv": true,
 		fileNamePrefix + "-Normal ROI All Points.csv":         true,
+		//fileNamePrefix + "-roi-pmcs.csv":                      true, // not including this check as files are generated per ROI now
 		//fileNamePrefix + "-Dwell-BulkSum ROI All Points.csv":  true,
 		//fileNamePrefix + "-Dwell ROI All Points.csv":          true,
 	}

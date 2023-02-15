@@ -36,7 +36,9 @@ import (
 func ToJSON(w http.ResponseWriter, v interface{}) {
 	w.Header().Add("Content-Type", "application/json")
 
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", utils.PrettyPrintIndentForJSON)
-	enc.Encode(v)
+	if v != nil {
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", utils.PrettyPrintIndentForJSON)
+		enc.Encode(v)
+	}
 }

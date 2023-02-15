@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/pixlise/core/v2/api/filepaths"
@@ -52,19 +53,28 @@ type ChannelConfig struct {
 }
 
 type RGBMixInput struct {
-	Name string `json:"name"`
-
+	Name  string        `json:"name"`
 	Red   ChannelConfig `json:"red"`
 	Green ChannelConfig `json:"green"`
 	Blue  ChannelConfig `json:"blue"`
+	Tags  []string      `json:"tags"`
 }
 
-type rgbMix struct {
+type RGBMix struct {
 	*RGBMixInput
 	*pixlUser.APIObjectItem
 }
 
-type rgbMixLookup map[string]rgbMix
+func (a RGBMix) SetTimes(userID string, t int64) {
+	if a.CreatedUnixTimeSec == 0 {
+		a.CreatedUnixTimeSec = t
+	}
+	if a.ModifiedUnixTimeSec == 0 {
+		a.ModifiedUnixTimeSec = t
+	}
+}
+
+type RGBMixLookup map[string]RGBMix
 
 func registerRGBMixHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "rgb-mix"
@@ -78,8 +88,8 @@ func registerRGBMixHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedExpression), rgbMixShare)
 }
 
-func readRGBMixData(svcs *services.APIServices, s3Path string) (rgbMixLookup, error) {
-	itemLookup := rgbMixLookup{}
+func readRGBMixData(svcs *services.APIServices, s3Path string) (RGBMixLookup, error) {
+	itemLookup := RGBMixLookup{}
 	err := svcs.FS.ReadJSON(svcs.Config.UsersBucket, s3Path, &itemLookup, true)
 
 	if err != nil {
@@ -106,8 +116,8 @@ func readRGBMixData(svcs *services.APIServices, s3Path string) (rgbMixLookup, er
 	return itemLookup, nil
 }
 
-func getRGBMixByID(svcs *services.APIServices, ID string, s3PathFrom string, markShared bool) (rgbMix, error) {
-	result := rgbMix{}
+func getRGBMixByID(svcs *services.APIServices, ID string, s3PathFrom string, markShared bool) (RGBMix, error) {
+	result := RGBMix{}
 
 	items, err := readRGBMixData(svcs, s3PathFrom)
 	if err != nil {
@@ -124,19 +134,20 @@ func getRGBMixByID(svcs *services.APIServices, ID string, s3PathFrom string, mar
 	return result, nil
 }
 
-func getRGBMixListing(svcs *services.APIServices, s3PathFrom string, sharedFile bool, outMap *rgbMixLookup) error {
+func getRGBMixListing(svcs *services.APIServices, s3PathFrom string, sharedFile bool, outMap *RGBMixLookup) error {
 	items, err := readRGBMixData(svcs, s3PathFrom)
 	if err != nil {
 		return err
 	}
 
 	for id, item := range items {
-		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's
+		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's shared
 		saveID := id
 		if sharedFile {
 			saveID = utils.SharedItemIDPrefix + id
 		}
 		item.Shared = sharedFile
+
 		(*outMap)[saveID] = item
 	}
 
@@ -144,7 +155,7 @@ func getRGBMixListing(svcs *services.APIServices, s3PathFrom string, sharedFile 
 }
 
 func rgbMixList(params handlers.ApiHandlerParams) (interface{}, error) {
-	items := rgbMixLookup{}
+	items := RGBMixLookup{}
 
 	// Get user item summaries
 	err := getRGBMixListing(params.Svcs, filepaths.GetRGBMixPath(params.UserInfo.UserID), false, &items)
@@ -158,11 +169,33 @@ func rgbMixList(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
+	// Read keys in alphabetical order, else we randomly fail unit test
+	keys := []string{}
+	for k := range items {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		item := items[k]
+
+		if item.Tags == nil {
+			item.Tags = []string{}
+		}
+
+		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
+		if creatorErr != nil {
+			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (RGB mix listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
+		} else {
+			item.Creator = updatedCreator
+		}
+	}
+
 	// Return the combined set
 	return &items, nil
 }
 
-func setupRGBMixForSave(params handlers.ApiHandlerParams, s3Path string) (*rgbMixLookup, *RGBMixInput, error) {
+func setupRGBMixForSave(params handlers.ApiHandlerParams, s3Path string) (*RGBMixLookup, *RGBMixInput, error) {
 	// Read in body
 	body, err := ioutil.ReadAll(params.Request.Body)
 	if err != nil {
@@ -184,6 +217,10 @@ func setupRGBMixForSave(params handlers.ApiHandlerParams, s3Path string) (*rgbMi
 	}
 	if len(req.Red.ExpressionID) <= 0 || len(req.Green.ExpressionID) <= 0 || len(req.Blue.ExpressionID) <= 0 {
 		return nil, nil, api.MakeBadRequestError(errors.New("RGB Mix must have all expressions defined"))
+	}
+
+	if req.Tags == nil {
+		req.Tags = []string{}
 	}
 
 	// Download the file
@@ -210,30 +247,53 @@ func rgbMixPost(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, errors.New("Failed to generate unique ID")
 	}
 
-	(*rgbMixes)[saveID] = rgbMix{RGBMixInput: req, APIObjectItem: &pixlUser.APIObjectItem{Shared: false, Creator: params.UserInfo}}
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
+	(*rgbMixes)[saveID] = RGBMix{
+		RGBMixInput: req,
+		APIObjectItem: &pixlUser.APIObjectItem{
+			Shared:              false,
+			Creator:             params.UserInfo,
+			CreatedUnixTimeSec:  timeNow,
+			ModifiedUnixTimeSec: timeNow,
+		},
+	}
 
 	return nil, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *rgbMixes)
 }
 
 func rgbMixPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	itemID := params.PathParams[idIdentifier]
-	if _, isSharedReq := utils.StripSharedItemIDPrefix(itemID); isSharedReq {
-		return nil, api.MakeBadRequestError(errors.New("Cannot edit shared RGB mixes"))
-	}
+	id, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
 
 	s3Path := filepaths.GetRGBMixPath(params.UserInfo.UserID)
+	if isSharedReq {
+		s3Path = filepaths.GetRGBMixPath(pixlUser.ShareUserID)
+	}
+
 	rgbMixes, req, err := setupRGBMixForSave(params, s3Path)
 	if err != nil {
 		return nil, err
 	}
 
-	existing, ok := (*rgbMixes)[itemID]
+	existing, ok := (*rgbMixes)[id]
 	if !ok {
-		return nil, api.MakeNotFoundError(itemID)
+		return nil, api.MakeNotFoundError(id)
+	}
+
+	if isSharedReq && params.UserInfo.UserID != existing.Creator.UserID {
+		return nil, api.MakeBadRequestError(errors.New("cannot edit shared RGB mixes created by others"))
 	}
 
 	// Save it & upload
-	(*rgbMixes)[itemID] = rgbMix{RGBMixInput: req, APIObjectItem: &pixlUser.APIObjectItem{Shared: false, Creator: existing.Creator}}
+	(*rgbMixes)[id] = RGBMix{
+		RGBMixInput: req,
+		APIObjectItem: &pixlUser.APIObjectItem{
+			Shared:              isSharedReq,
+			Creator:             existing.Creator,
+			CreatedUnixTimeSec:  existing.CreatedUnixTimeSec,
+			ModifiedUnixTimeSec: params.Svcs.TimeStamper.GetTimeNowSec(),
+		},
+	}
 	return nil, params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *rgbMixes)
 }
 
@@ -290,7 +350,7 @@ func shareRGBMixes(svcs *services.APIServices, userID string, idsToShare []strin
 	// that get read in
 
 	sharedIDs := []string{} // The shared IDs we will generate
-	newlySharedItems := rgbMixLookup{}
+	newlySharedItems := RGBMixLookup{}
 
 	for _, idToFind := range idsToShare {
 		itemToShare, ok := userItems[idToFind]
@@ -334,6 +394,9 @@ func shareRGBMixes(svcs *services.APIServices, userID string, idsToShare []strin
 		}
 
 		item.Shared = true
+
+		// Set modified time, as we just shared it now
+		item.ModifiedUnixTimeSec = svcs.TimeStamper.GetTimeNowSec()
 		sharedItems[id] = item
 	}
 

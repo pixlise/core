@@ -22,356 +22,518 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/timestamper"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
-func Example_viewStateHandler_ListSaved() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
+func Test_viewStateHandler_ListSaved(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	viewStateSavedS3Path := viewStateS3Path + "Workspaces"
-	sharedViewStateSavedS3Path := sharedViewStateS3Path + "Workspaces"
+	mt.Run("success", func(mt *mtest.T) {
+		// User name lookup
+		mongoMockedResponses := []primitive.D{
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+				bson.D{
+					{"Userid", "600f2a0806b6c70071d3d174"},
+					{"Notifications", bson.D{
+						{"Topics", bson.A{}},
+					}},
+					{"Config", bson.D{
+						{"Name", "Mr. Niko Bellic"},
+						{"Email", "niko_bellic@spicule.co.uk"},
+						{"Cell", ""},
+						{"DataCollection", "unknown"},
+					}},
+				},
+			),
+		}
 
-	mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(viewStateSavedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(sharedViewStateSavedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(viewStateSavedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(sharedViewStateSavedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(viewStateSavedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(sharedViewStateSavedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(viewStateSavedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(sharedViewStateSavedS3Path),
-		},
-	}
-	mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
-		nil,
-		nil,
-		{
-			Contents: []*s3.Object{
-				{Key: aws.String(viewStateSavedS3Path + "/viewstate111.json")},
-				{Key: aws.String(viewStateSavedS3Path + "/viewstate222.json")},
-				{Key: aws.String(viewStateSavedS3Path + "/viewstate333.json")},
+		mt.AddMockResponses(mongoMockedResponses...)
+
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+
+		viewStateSavedS3Path := viewStateS3Path + "Workspaces"
+		sharedViewStateSavedS3Path := sharedViewStateS3Path + "Workspaces"
+
+		mockS3.ExpListObjectsV2Input = []s3.ListObjectsV2Input{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(viewStateSavedS3Path),
 			},
-		},
-		nil,
-		nil,
-		{
-			Contents: []*s3.Object{
-				{Key: aws.String(sharedViewStateSavedS3Path + "/forall.json")},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(sharedViewStateSavedS3Path),
 			},
-		},
-		{
-			Contents: []*s3.Object{
-				{Key: aws.String(viewStateSavedS3Path + "/viewstate111.json")},
-				{Key: aws.String(viewStateSavedS3Path + "/viewstate222.json")},
-				{Key: aws.String(viewStateSavedS3Path + "/viewstate333.json")},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(viewStateSavedS3Path),
 			},
-		},
-		{
-			Contents: []*s3.Object{
-				{Key: aws.String(sharedViewStateSavedS3Path + "/forall.json")},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(sharedViewStateSavedS3Path),
 			},
-		},
-	}
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(viewStateSavedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(sharedViewStateSavedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(viewStateSavedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Prefix: aws.String(sharedViewStateSavedS3Path),
+			},
+		}
+		mockS3.QueuedListObjectsV2Output = []*s3.ListObjectsV2Output{
+			nil,
+			nil,
+			{
+				Contents: []*s3.Object{
+					{Key: aws.String(viewStateSavedS3Path + "/viewstate111.json")},
+					{Key: aws.String(viewStateSavedS3Path + "/viewstate222.json")},
+					{Key: aws.String(viewStateSavedS3Path + "/viewstate333.json")},
+				},
+			},
+			nil,
+			nil,
+			{
+				Contents: []*s3.Object{
+					{Key: aws.String(sharedViewStateSavedS3Path + "/forall.json")},
+				},
+			},
+			{
+				Contents: []*s3.Object{
+					{Key: aws.String(viewStateSavedS3Path + "/viewstate111.json")},
+					{Key: aws.String(viewStateSavedS3Path + "/viewstate222.json")},
+					{Key: aws.String(viewStateSavedS3Path + "/viewstate333.json")},
+				},
+			},
+			{
+				Contents: []*s3.Object{
+					{Key: aws.String(sharedViewStateSavedS3Path + "/forall.json")},
+				},
+			},
+		}
 
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateSavedS3Path + "/viewstate111.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateSavedS3Path + "/viewstate222.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateSavedS3Path + "/viewstate333.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(sharedViewStateSavedS3Path + "/forall.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateSavedS3Path + "/viewstate111.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateSavedS3Path + "/viewstate222.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateSavedS3Path + "/viewstate333.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(sharedViewStateSavedS3Path + "/forall.json"),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-    "name": "viewstate111",
-    "description": "viewstate111",
-    "shared": false,
-    "creator": {
-        "name": "Niko Bellic",
-        "user_id": "600f2a0806b6c70071d3d174",
-        "email": "niko@spicule.co.uk"
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateSavedS3Path + "/viewstate111.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateSavedS3Path + "/viewstate222.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateSavedS3Path + "/viewstate333.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(sharedViewStateSavedS3Path + "/forall.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateSavedS3Path + "/viewstate111.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateSavedS3Path + "/viewstate222.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateSavedS3Path + "/viewstate333.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(sharedViewStateSavedS3Path + "/forall.json"),
+			},
+		}
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"name": "viewstate111",
+		"description": "viewstate111",
+		"shared": false,
+		"creator": {
+			"name": "Niko Bellic",
+			"user_id": "600f2a0806b6c70071d3d174",
+			"email": "niko@spicule.co.uk"
+		}
+	}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"name": "viewstate222",
+		"description": "viewstate222",
+		"shared": false,
+		"creator": {
+			"name": "Niko Bellic",
+			"user_id": "600f2a0806b6c70071d3d174",
+			"email": "niko@spicule.co.uk"
+		}
+	}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"name": "viewstate333",
+		"description": "viewstate333",
+		"shared": false,
+		"creator": {
+			"name": "Niko Bellic",
+			"user_id": "600f2a0806b6c70071d3d174",
+			"email": "niko@spicule.co.uk"
+		}
+	}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"name": "forall",
+		"description": "forall",
+		"shared": true,
+		"creator": {
+			"name": "Niko Bellic",
+			"user_id": "600f2a0806b6c70071d3d174",
+			"email": "niko@spicule.co.uk"
+		}
+	}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"name": "viewstate111",
+		"description": "viewstate111",
+		"shared": false,
+		"creator": {
+			"name": "Niko Bellic",
+			"user_id": "600f2a0806b6c70071d3d174",
+			"email": "niko@spicule.co.uk"
+		}
+	}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"name": "viewstate222",
+		"description": "viewstate222",
+		"shared": false,
+		"creator": {
+			"name": "Niko Bellic",
+			"user_id": "600f2a0806b6c70071d3d174",
+			"email": "niko@spicule.co.uk"
+		}
+	}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"name": "viewstate333",
+		"description": "viewstate333",
+		"shared": false,
+		"creator": {
+			"name": "Niko Bellic",
+			"user_id": "600f2a0806b6c70071d3d174",
+			"email": "niko@spicule.co.uk"
+		}
+	}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"name": "forall",
+		"description": "forall",
+		"shared": true,
+		"creator": {
+			"name": "Niko Bellic",
+			"user_id": "600f2a0806b6c70071d3d174",
+			"email": "niko@spicule.co.uk"
+		}
+	}`))),
+			},
+		}
+
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		apiRouter := MakeRouter(svcs)
+
+		// None
+		req, _ := http.NewRequest("GET", "/view-state/saved/TheDataSetID", bytes.NewReader([]byte("")))
+		resp := executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `[]
+`)
+
+		// Only user
+		req, _ = http.NewRequest("GET", "/view-state/saved/TheDataSetID", bytes.NewReader([]byte("")))
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `[
+    {
+        "id": "viewstate111",
+        "name": "viewstate111",
+        "shared": false,
+        "creator": {
+            "name": "Mr. Niko Bellic",
+            "user_id": "600f2a0806b6c70071d3d174",
+            "email": "niko_bellic@spicule.co.uk"
+        }
+    },
+    {
+        "id": "viewstate222",
+        "name": "viewstate222",
+        "shared": false,
+        "creator": {
+            "name": "Mr. Niko Bellic",
+            "user_id": "600f2a0806b6c70071d3d174",
+            "email": "niko_bellic@spicule.co.uk"
+        }
+    },
+    {
+        "id": "viewstate333",
+        "name": "viewstate333",
+        "shared": false,
+        "creator": {
+            "name": "Mr. Niko Bellic",
+            "user_id": "600f2a0806b6c70071d3d174",
+            "email": "niko_bellic@spicule.co.uk"
+        }
     }
-}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-    "name": "viewstate222",
-    "description": "viewstate222",
-    "shared": false,
-    "creator": {
-        "name": "Niko Bellic",
-        "user_id": "600f2a0806b6c70071d3d174",
-        "email": "niko@spicule.co.uk"
+]
+`)
+
+		// Only shared
+		req, _ = http.NewRequest("GET", "/view-state/saved/TheDataSetID", bytes.NewReader([]byte("")))
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `[
+    {
+        "id": "shared-forall",
+        "name": "forall",
+        "shared": true,
+        "creator": {
+            "name": "Mr. Niko Bellic",
+            "user_id": "600f2a0806b6c70071d3d174",
+            "email": "niko_bellic@spicule.co.uk"
+        }
     }
-}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-    "name": "viewstate333",
-    "description": "viewstate333",
-    "shared": false,
-    "creator": {
-        "name": "Niko Bellic",
-        "user_id": "600f2a0806b6c70071d3d174",
-        "email": "niko@spicule.co.uk"
+]
+`)
+		// Both
+		req, _ = http.NewRequest("GET", "/view-state/saved/TheDataSetID", bytes.NewReader([]byte("")))
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `[
+    {
+        "id": "viewstate111",
+        "name": "viewstate111",
+        "shared": false,
+        "creator": {
+            "name": "Mr. Niko Bellic",
+            "user_id": "600f2a0806b6c70071d3d174",
+            "email": "niko_bellic@spicule.co.uk"
+        }
+    },
+    {
+        "id": "viewstate222",
+        "name": "viewstate222",
+        "shared": false,
+        "creator": {
+            "name": "Mr. Niko Bellic",
+            "user_id": "600f2a0806b6c70071d3d174",
+            "email": "niko_bellic@spicule.co.uk"
+        }
+    },
+    {
+        "id": "viewstate333",
+        "name": "viewstate333",
+        "shared": false,
+        "creator": {
+            "name": "Mr. Niko Bellic",
+            "user_id": "600f2a0806b6c70071d3d174",
+            "email": "niko_bellic@spicule.co.uk"
+        }
+    },
+    {
+        "id": "shared-forall",
+        "name": "forall",
+        "shared": true,
+        "creator": {
+            "name": "Mr. Niko Bellic",
+            "user_id": "600f2a0806b6c70071d3d174",
+            "email": "niko_bellic@spicule.co.uk"
+        }
     }
-}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-    "name": "forall",
-    "description": "forall",
-    "shared": true,
-    "creator": {
-        "name": "Niko Bellic",
-        "user_id": "600f2a0806b6c70071d3d174",
-        "email": "niko@spicule.co.uk"
-    }
-}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-    "name": "viewstate111",
-    "description": "viewstate111",
-    "shared": false,
-    "creator": {
-        "name": "Niko Bellic",
-        "user_id": "600f2a0806b6c70071d3d174",
-        "email": "niko@spicule.co.uk"
-    }
-}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-    "name": "viewstate222",
-    "description": "viewstate222",
-    "shared": false,
-    "creator": {
-        "name": "Niko Bellic",
-        "user_id": "600f2a0806b6c70071d3d174",
-        "email": "niko@spicule.co.uk"
-    }
-}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-    "name": "viewstate333",
-    "description": "viewstate333",
-    "shared": false,
-    "creator": {
-        "name": "Niko Bellic",
-        "user_id": "600f2a0806b6c70071d3d174",
-        "email": "niko@spicule.co.uk"
-    }
-}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-    "name": "forall",
-    "description": "forall",
-    "shared": true,
-    "creator": {
-        "name": "Niko Bellic",
-        "user_id": "600f2a0806b6c70071d3d174",
-        "email": "niko@spicule.co.uk"
-    }
-}`))),
-		},
-	}
-
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
-
-	// None
-	req, _ := http.NewRequest("GET", "/view-state/saved/TheDataSetID", bytes.NewReader([]byte("")))
-	resp := executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Only user
-	req, _ = http.NewRequest("GET", "/view-state/saved/TheDataSetID", bytes.NewReader([]byte("")))
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Only shared
-	req, _ = http.NewRequest("GET", "/view-state/saved/TheDataSetID", bytes.NewReader([]byte("")))
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Both
-	req, _ = http.NewRequest("GET", "/view-state/saved/TheDataSetID", bytes.NewReader([]byte("")))
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Output:
-	// 200
-	// []
-	//
-	// 200
-	// [
-	//     {
-	//         "id": "viewstate111",
-	//         "name": "viewstate111",
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Niko Bellic",
-	//             "user_id": "600f2a0806b6c70071d3d174",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     },
-	//     {
-	//         "id": "viewstate222",
-	//         "name": "viewstate222",
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Niko Bellic",
-	//             "user_id": "600f2a0806b6c70071d3d174",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     },
-	//     {
-	//         "id": "viewstate333",
-	//         "name": "viewstate333",
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Niko Bellic",
-	//             "user_id": "600f2a0806b6c70071d3d174",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     }
-	// ]
-	//
-	// 200
-	// [
-	//     {
-	//         "id": "shared-forall",
-	//         "name": "forall",
-	//         "shared": true,
-	//         "creator": {
-	//             "name": "Niko Bellic",
-	//             "user_id": "600f2a0806b6c70071d3d174",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     }
-	// ]
-	//
-	// 200
-	// [
-	//     {
-	//         "id": "viewstate111",
-	//         "name": "viewstate111",
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Niko Bellic",
-	//             "user_id": "600f2a0806b6c70071d3d174",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     },
-	//     {
-	//         "id": "viewstate222",
-	//         "name": "viewstate222",
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Niko Bellic",
-	//             "user_id": "600f2a0806b6c70071d3d174",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     },
-	//     {
-	//         "id": "viewstate333",
-	//         "name": "viewstate333",
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Niko Bellic",
-	//             "user_id": "600f2a0806b6c70071d3d174",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     },
-	//     {
-	//         "id": "shared-forall",
-	//         "name": "forall",
-	//         "shared": true,
-	//         "creator": {
-	//             "name": "Niko Bellic",
-	//             "user_id": "600f2a0806b6c70071d3d174",
-	//             "email": "niko@spicule.co.uk"
-	//         }
-	//     }
-	// ]
+]
+`)
+	})
 }
 
-func Example_viewStateHandler_GetSaved() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
+func Test_viewStateHandler_GetSaved(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/viewstate123.json"),
+	mt.Run("success", func(mt *mtest.T) {
+		// User name lookup
+		mongoMockedResponses := []primitive.D{
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+				bson.D{
+					{"Userid", "999"},
+					{"Notifications", bson.D{
+						{"Topics", bson.A{}},
+					}},
+					{"Config", bson.D{
+						{"Name", "Niko Bellic"},
+						{"Email", "niko_bellic@spicule.co.uk"},
+						{"Cell", ""},
+						{"DataCollection", "unknown"},
+					}},
+				},
+			),
+		}
+
+		mt.AddMockResponses(mongoMockedResponses...)
+
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/viewstate123.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/viewstate555.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/viewstate777.json"),
+			},
+		}
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			nil,
+			{
+				// One without creator info
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+	"viewState": {
+		"analysisLayout": {
+			"bottomWidgetSelectors": []
 		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/viewstate555.json"),
+		"rois": {
+			"roiColours": {
+				"roi22": "rgba(128,0,255,0.5)",
+				"roi99": "rgba(255,255,0,1)"
+			},
+			"roiShapes": {}
 		},
+		"quantification": {
+			"appliedQuantID": "quant111"
+		},
+		"selection": {
+			"roiID": "roi12345",
+			"roiName": "The best region",
+			"locIdxs": [
+				3,
+				5,
+				7
+			]
+		}
+	},
+	"name": "555",
+	"description": "555 desc"
+}`))),
+			},
+			{
+				// One with creator info
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+	"viewState": {
+		"analysisLayout": {
+			"bottomWidgetSelectors": []
+		},
+		"rois": {
+			"roiColours": {
+				"roi22": "rgba(128,0,255,0.5)",
+				"roi99": "rgba(255,255,0,1)"
+			},
+			"roiShapes": {}
+		},
+		"quantification": {
+			"appliedQuantID": "quant111"
+		},
+		"selection": {
+			"roiID": "roi12345",
+			"roiName": "The best region",
+			"locIdxs": [
+				3,
+				5,
+				7
+			]
+		}
+	},
+	"name": "777",
+	"description": "777 desc",
+	"creator": {
+		"user_id": "999",
+		"name": "Peter N",
+		"email": "niko_bellic@spicule.co.uk"
 	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil,
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+}`))),
+			},
+		}
+
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		apiRouter := MakeRouter(svcs)
+
+		// Doesn't exist, should fail
+		req, _ := http.NewRequest("GET", "/view-state/saved/TheDataSetID/viewstate123", bytes.NewReader([]byte("")))
+		resp := executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 404, `viewstate123 not found
+`)
+
+		// Exists, success
+		req, _ = http.NewRequest("GET", "/view-state/saved/TheDataSetID/viewstate555", bytes.NewReader([]byte("")))
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
     "viewState": {
         "analysisLayout": {
+            "topWidgetSelectors": [],
             "bottomWidgetSelectors": []
+        },
+        "spectrum": {
+            "panX": 0,
+            "panY": 0,
+            "zoomX": 1,
+            "zoomY": 1,
+            "spectrumLines": [],
+            "logScale": true,
+            "xrflines": [],
+            "showXAsEnergy": false,
+            "energyCalibration": []
+        },
+        "contextImages": {},
+        "histograms": {},
+        "chordDiagrams": {},
+        "ternaryPlots": {},
+        "binaryPlots": {},
+        "tables": {},
+        "roiQuantTables": {},
+        "variograms": {},
+        "spectrums": {},
+        "rgbuPlots": {},
+        "singleAxisRGBU": {},
+        "rgbuImages": {},
+        "parallelograms": {},
+        "annotations": {
+            "savedAnnotations": []
         },
         "rois": {
             "roiColours": {
                 "roi22": "rgba(128,0,255,0.5)",
                 "roi99": "rgba(255,255,0,1)"
             },
-			"roiShapes": {}
+            "roiShapes": {}
         },
         "quantification": {
             "appliedQuantID": "quant111"
@@ -384,92 +546,81 @@ func Example_viewStateHandler_GetSaved() {
                 5,
                 7
             ]
-        },
-    "name": "",
-    "description": ""
+        }
+    },
+    "name": "555",
+    "description": "555 desc"
 }
-}`))),
-		},
-	}
+`)
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
+		// Exists WITH creator info, success
+		req, _ = http.NewRequest("GET", "/view-state/saved/TheDataSetID/viewstate777", bytes.NewReader([]byte("")))
+		resp = executeRequest(req, apiRouter.Router)
 
-	// Doesn't exist, should fail
-	req, _ := http.NewRequest("GET", "/view-state/saved/TheDataSetID/viewstate123", bytes.NewReader([]byte("")))
-	resp := executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Exists, success
-	req, _ = http.NewRequest("GET", "/view-state/saved/TheDataSetID/viewstate555", bytes.NewReader([]byte("")))
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Output:
-	// 404
-	// viewstate123 not found
-	//
-	// 200
-	// {
-	//     "viewState": {
-	//         "analysisLayout": {
-	//             "topWidgetSelectors": [],
-	//             "bottomWidgetSelectors": []
-	//         },
-	//         "spectrum": {
-	//             "panX": 0,
-	//             "panY": 0,
-	//             "zoomX": 1,
-	//             "zoomY": 1,
-	//             "spectrumLines": [],
-	//             "logScale": true,
-	//             "xrflines": [],
-	//             "showXAsEnergy": false,
-	//             "energyCalibration": []
-	//         },
-	//         "contextImages": {},
-	//         "histograms": {},
-	//         "chordDiagrams": {},
-	//         "ternaryPlots": {},
-	//         "binaryPlots": {},
-	//         "tables": {},
-	//         "roiQuantTables": {},
-	//         "variograms": {},
-	//         "spectrums": {},
-	//         "rgbuPlots": {},
-	//         "singleAxisRGBU": {},
-	//         "rgbuImages": {},
-	//         "parallelograms": {},
-	//         "annotations": {
-	//             "savedAnnotations": []
-	//         },
-	//         "rois": {
-	//             "roiColours": {
-	//                 "roi22": "rgba(128,0,255,0.5)",
-	//                 "roi99": "rgba(255,255,0,1)"
-	//             },
-	//             "roiShapes": {}
-	//         },
-	//         "quantification": {
-	//             "appliedQuantID": "quant111"
-	//         },
-	//         "selection": {
-	//             "roiID": "roi12345",
-	//             "roiName": "The best region",
-	//             "locIdxs": [
-	//                 3,
-	//                 5,
-	//                 7
-	//             ]
-	//         }
-	//     },
-	//     "name": "",
-	//     "description": ""
-	// }
+		checkResult(t, resp, 200, `{
+    "viewState": {
+        "analysisLayout": {
+            "topWidgetSelectors": [],
+            "bottomWidgetSelectors": []
+        },
+        "spectrum": {
+            "panX": 0,
+            "panY": 0,
+            "zoomX": 1,
+            "zoomY": 1,
+            "spectrumLines": [],
+            "logScale": true,
+            "xrflines": [],
+            "showXAsEnergy": false,
+            "energyCalibration": []
+        },
+        "contextImages": {},
+        "histograms": {},
+        "chordDiagrams": {},
+        "ternaryPlots": {},
+        "binaryPlots": {},
+        "tables": {},
+        "roiQuantTables": {},
+        "variograms": {},
+        "spectrums": {},
+        "rgbuPlots": {},
+        "singleAxisRGBU": {},
+        "rgbuImages": {},
+        "parallelograms": {},
+        "annotations": {
+            "savedAnnotations": []
+        },
+        "rois": {
+            "roiColours": {
+                "roi22": "rgba(128,0,255,0.5)",
+                "roi99": "rgba(255,255,0,1)"
+            },
+            "roiShapes": {}
+        },
+        "quantification": {
+            "appliedQuantID": "quant111"
+        },
+        "selection": {
+            "roiID": "roi12345",
+            "roiName": "The best region",
+            "locIdxs": [
+                3,
+                5,
+                7
+            ]
+        }
+    },
+    "name": "777",
+    "description": "777 desc",
+    "shared": false,
+    "creator": {
+        "name": "Niko Bellic",
+        "user_id": "999",
+        "email": "niko_bellic@spicule.co.uk"
+    }
+}
+`)
+	})
 }
 
 func Example_viewStateHandler_GetSaved_ROIQuantFallbackCheck() {
@@ -522,7 +673,7 @@ func Example_viewStateHandler_GetSaved_ROIQuantFallbackCheck() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Doesn't exist, should fail
@@ -650,7 +801,7 @@ func Example_viewStateHandler_GetSavedShared() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Doesn't exist, should fail
@@ -796,7 +947,9 @@ func Example_viewStateHandler_PutSaved_Force() {
         "name": "Niko Bellic",
         "user_id": "600f2a0806b6c70071d3d174",
         "email": "niko@spicule.co.uk"
-    }
+    },
+    "create_unix_time_sec": 1668142579,
+    "mod_unix_time_sec": 1668142579
 }`)),
 		},
 	}
@@ -805,7 +958,10 @@ func Example_viewStateHandler_PutSaved_Force() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("PUT", "/view-state/saved/TheDataSetID/viewstate123?force=true", bytes.NewReader([]byte(`{
@@ -849,7 +1005,7 @@ func Example_viewStateHandler_PutSaved_Force() {
 	//
 }
 
-func Example_viewStateHandler_PutSaved_OverwriteFail() {
+func Example_viewStateHandler_PutSaved_OverwriteAlreadyExists() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
@@ -918,7 +1074,10 @@ func Example_viewStateHandler_PutSaved_OverwriteFail() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("PUT", "/view-state/saved/TheDataSetID/viewstate123", bytes.NewReader([]byte(`{
@@ -1070,7 +1229,7 @@ func Example_viewStateHandler_DeleteSaved() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Doesn't exist, should fail
@@ -1165,7 +1324,7 @@ func Example_viewStateHandler_DeleteSavedShared() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Not owned by user, should fail
@@ -1399,7 +1558,7 @@ func Example_viewStateHandler_GetReferencedIDs() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// User file not there, should say not found
@@ -1635,7 +1794,9 @@ func Example_viewStateHandler_ShareViewState() {
         "name": "Niko Bellic",
         "user_id": "600f2a0806b6c70071d3d174",
         "email": "niko@spicule.co.uk"
-    }
+    },
+    "create_unix_time_sec": 1668142579,
+    "mod_unix_time_sec": 1668142579
 }`)),
 		},
 	}
@@ -1643,7 +1804,10 @@ func Example_viewStateHandler_ShareViewState() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	// User file not there, should say not found
@@ -1743,7 +1907,10 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 					"ternaryPlots": { "66": { "expressionIDs": ["shared-expr2"], "visibleROIs": ["roi2"] } }
 				 },
 				 "name": "222",
-				"description": "the description of 222"
+				"description": "the description of 222",
+				"creator": { "name": "Kyle", "user_id": "u124" },
+				"create_unix_time_sec": 1668100010,
+				"mod_unix_time_sec": 1668100011
 			}`))),
 		},
 
@@ -1754,7 +1921,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 		"name": "Dark patch 2",
 		"description": "The second dark patch",
 		"locationIndexes": [4, 55, 394],
-		"creator": { "name": "Peter", "user_id": "u123" }
+		"creator": { "name": "Peter", "user_id": "u123" },
+        "create_unix_time_sec": 1668100012,
+        "mod_unix_time_sec": 1668100013
 	}
 }`))),
 		},
@@ -1762,10 +1931,13 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
 	"roi": {
 		"name": "Shared patch 2",
+		"tags": [],
 		"shared": true,
 		"description": "The shared patch",
 		"locationIndexes": [4, 55, 394],
-		"creator": { "name": "PeterN", "user_id": "u123" }
+		"creator": { "name": "PeterN", "user_id": "u123" },
+        "create_unix_time_sec": 1668100014,
+        "mod_unix_time_sec": 1668100015
 	}
 }`))),
 		},
@@ -1777,22 +1949,28 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 		"expression": "housekeeping(\"something\")",
 		"type": "All",
 		"comments": "comments for abc123 expression",
+		"tags": [],
 		"creator": {
 			"user_id": "444",
 			"name": "Niko",
 			"email": "niko@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100016,
+        "mod_unix_time_sec": 1668100017
 	},
 	"expr1": {
 		"name": "Calcium weight%",
 		"expression": "element(\"Ca\", \"%\")",
 		"type": "All",
 		"comments": "comments for expr1",
+		"tags": [],
 		"creator": {
 			"user_id": "999",
 			"name": "Peter N",
 			"email": "peter@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100018,
+        "mod_unix_time_sec": 1668100019
 	}
 }`))),
 		},
@@ -1817,11 +1995,14 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 			"rangeMin": 3.5,
 			"rangeMax": 6.3
 		},
+		"tags": [],
 		"creator": {
 			"user_id": "999",
 			"name": "Peter N",
 			"email": "niko@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100020,
+        "mod_unix_time_sec": 1668100021
 	}
 }`))),
 		},
@@ -1845,12 +2026,15 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 			"rangeMin": 3.5,
 			"rangeMax": 6.3
 		},
+		"tags": [],
 		"shared": true,
 		"creator": {
 			"user_id": "999",
 			"name": "Peter N",
 			"email": "niko@spicule.co.uk"
-		}
+		},
+        "create_unix_time_sec": 1668100022,
+        "mod_unix_time_sec": 1668100023
 	}
 }`))),
 		},
@@ -1875,12 +2059,15 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "PeterN",
             "user_id": "u123",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100014,
+        "mod_unix_time_sec": 1668100015
     },
     "roi2(sh)": {
         "name": "Dark patch 2",
@@ -1897,12 +2084,15 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             "ClassificationTrail": "",
             "formula": ""
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter",
             "user_id": "u123",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100012,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -1913,12 +2103,15 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
         "expression": "element(\"Ca\", \"%\")",
         "type": "All",
         "comments": "comments for expr1",
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter N",
             "user_id": "999",
             "email": "peter@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100018,
+        "mod_unix_time_sec": 16681425780
     }
 }`)),
 		},
@@ -1941,12 +2134,15 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             "rangeMin": 3.5,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100022,
+        "mod_unix_time_sec": 1668100023
     },
     "rgbmix-123roi": {
         "name": "Ca-Ti-Al ratios",
@@ -1965,12 +2161,15 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
             "rangeMin": 3.5,
             "rangeMax": 6.3
         },
+        "tags": [],
         "shared": true,
         "creator": {
             "name": "Peter N",
             "user_id": "999",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668100020,
+        "mod_unix_time_sec": 1668142581
     }
 }`)),
 		},
@@ -2079,10 +2278,12 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
     "description": "the description of 222",
     "shared": true,
     "creator": {
-        "name": "Niko Bellic",
-        "user_id": "600f2a0806b6c70071d3d174",
-        "email": "niko@spicule.co.uk"
-    }
+        "name": "Kyle",
+        "user_id": "u124",
+        "email": ""
+    },
+    "create_unix_time_sec": 1668100010,
+    "mod_unix_time_sec": 1668142582
 }`)),
 		},
 	}
@@ -2095,7 +2296,10 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"roi2(sh)", "expr1(sh)", "123roi"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579, 16681425780, 1668142581, 1668142582},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	// User file not there, should say not found

@@ -20,14 +20,14 @@ package endpoints
 import (
 	"bytes"
 	"fmt"
-	"github.com/google/uuid"
 	"io/ioutil"
 	"net/http"
+	"path"
 	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/pixlise/core/v2/api/esutil"
+	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/logger"
@@ -44,6 +44,19 @@ const bodyTextRespLogTailLength = 300
 
 // If req/resp body is longer than the limits, we print this ti show it was cut off
 const logSnipIndicator = "\n    ---- >8 -------- >8 -------- >8 -------- >8 ----\n"
+
+// loggingObject - Object used for logging user activity
+type loggingObject struct {
+	Instance    string
+	Time        time.Time
+	Component   string
+	Message     string
+	Response    string
+	Version     string
+	Params      map[string]interface{}
+	Environment string
+	User        string
+}
 
 type LoggerMiddleware struct {
 	*services.APIServices
@@ -168,38 +181,42 @@ func (h *LoggerMiddleware) Middleware(next http.Handler) http.Handler {
 			if val, ok := h.Notifications.GetTrack(requestingUser.UserID); ok {
 				track = val
 			} else {
-				userObj, err := h.APIServices.Notifications.FetchUserObject(requestingUser.UserID, false, "", "")
+				user, err := h.APIServices.Users.GetUser(requestingUser.UserID)
 				if err != nil {
 					h.Notifications.SetTrack(requestingUser.UserID, false)
 					return
 				}
 
-				if userObj.Config.DataCollection != "unknown" && userObj.Config.DataCollection != "false" {
+				if user.Config.DataCollection != "unknown" && user.Config.DataCollection != "false" {
 					track = true
 					h.Notifications.SetTrack(requestingUser.UserID, true)
 				}
 			}
 			if track && len(contType) > 0 && (contType == "application/json" || strings.HasPrefix(contType, "text")) {
-				o := esutil.LoggingObject{
-					Time:        time.Now(),
-					Component:   r.URL.Path,
-					Message:     fullReqBodyText,
-					Response:    fullRespBodyText,
-					Params:      params,
-					Environment: h.APIServices.Config.EnvironmentName,
-					User:        requestingUser.UserID,
-				}
 				go func() {
-					t := time.Now()
-					datestamp := t.Format("2006-01-02")
-					id := uuid.New()
-					path := fmt.Sprintf("Activity/%v/%v.json", datestamp, id.String())
-					err := h.FS.WriteJSON(h.Config.UsersBucket, path, o)
-					if err != nil{
-					  h.Log.Errorf("Failure to write to activity bucket: %v", err)
+					// Read time & id this way so it's mockable
+					currentTime := time.Unix(h.TimeStamper.GetTimeNowSec(), 0).UTC()
+					datestamp := currentTime.Format("2006-01-02")
+
+					id := h.IDGen.GenObjectID()
+
+					o := loggingObject{
+						Time:        currentTime,
+						Component:   r.URL.Path,
+						Message:     fullReqBodyText,
+						Response:    fullRespBodyText,
+						Params:      params,
+						Environment: h.APIServices.Config.EnvironmentName,
+						User:        requestingUser.UserID,
 					}
 
+					writePath := path.Join(filepaths.RootUserActivity, datestamp, id+".json")
+					err := h.FS.WriteJSON(h.Config.UsersBucket, writePath, o)
+					if err != nil {
+						h.Log.Errorf("Failure to write to activity bucket: %v", err)
+					}
 				}()
+
 				if hadError || h.Config.LogLevel == logger.LogDebug {
 					h.Log.Printf(level, "Request: %v (%v), body: %v\nResponse status: %v, body: %v", r.URL, r.Method, reqBodyText, w2.StatusText(), respBodyTxt)
 				}

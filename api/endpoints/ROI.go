@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 
 	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/api/handlers"
@@ -75,6 +76,28 @@ func roiList(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
+	// Read keys in alphabetical order, else we randomly fail unit test
+	keys := []string{}
+	for k := range rois {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// Update ROI creator names/emails
+	for _, k := range keys {
+		roi := rois[k]
+		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(roi.Creator.UserID)
+		if creatorErr != nil {
+			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (ROI listing). Error: %v", roi.Creator.UserID, roi.Creator.Name, creatorErr)
+		} else {
+			roi.Creator = updatedCreator
+		}
+
+		if roi.Tags == nil {
+			roi.Tags = []string{}
+		}
+	}
+
 	// Return the combined set
 	return &rois, nil
 }
@@ -105,6 +128,7 @@ func createROIs(params handlers.ApiHandlerParams, rois []roiModel.ROIItem, overw
 		}
 	}
 
+	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
 	for i := range rois {
 		// Validate
 		if !fileaccess.IsValidObjectName(rois[i].Name) {
@@ -139,11 +163,18 @@ func createROIs(params handlers.ApiHandlerParams, rois []roiModel.ROIItem, overw
 			return fmt.Errorf("failed to generate unique ID")
 		}
 
+		// Tags is a new field, so if it's not set, we set it to empty
+		if rois[i].Tags == nil {
+			rois[i].Tags = []string{}
+		}
+
 		allROIs[saveID] = roiModel.ROISavedItem{
 			ROIItem: &rois[i],
 			APIObjectItem: &pixlUser.APIObjectItem{
-				Shared:  false,
-				Creator: params.UserInfo,
+				Shared:              false,
+				Creator:             params.UserInfo,
+				CreatedUnixTimeSec:  timeNow,
+				ModifiedUnixTimeSec: timeNow,
 			},
 		}
 	}
@@ -238,16 +269,23 @@ func roiPut(params handlers.ApiHandlerParams) (interface{}, error) {
 		}
 
 		// Check that it exists
-		_, exists := allROIs[rois[i].ID]
+		existing, exists := allROIs[rois[i].ID]
 		if !exists {
 			return nil, api.MakeStatusError(http.StatusNotFound, fmt.Errorf("roi %v not found", rois[i].ID))
+		}
+
+		// Tags are a new field, so if it doesnt exist, add it in
+		if rois[i].ROI.Tags == nil {
+			rois[i].ROI.Tags = []string{}
 		}
 
 		allROIs[rois[i].ID] = roiModel.ROISavedItem{
 			ROIItem: &rois[i].ROI,
 			APIObjectItem: &pixlUser.APIObjectItem{
-				Shared:  false,
-				Creator: params.UserInfo,
+				Shared:              false,
+				Creator:             params.UserInfo,
+				CreatedUnixTimeSec:  existing.CreatedUnixTimeSec,
+				ModifiedUnixTimeSec: params.Svcs.TimeStamper.GetTimeNowSec(),
 			},
 		}
 	}

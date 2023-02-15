@@ -23,14 +23,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/timestamper"
 	"github.com/pixlise/core/v2/core/utils"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/pixlise/core/v2/api/esutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -39,6 +39,7 @@ import (
 	"github.com/pixlise/core/v2/api/config"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/logger"
+	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
 )
 
 // NOTE: these 2 vars are set during compilation in gitlab CI build (see Makefile)
@@ -71,29 +72,6 @@ type URLSigner interface {
 	GetSignedURL(s3iface.S3API, string, string, time.Duration) (string, error)
 }
 
-type ITimeStamper interface {
-	GetTimeNowSec() int64
-}
-
-type UnixTimeNowStamper struct {
-}
-
-// GetTimeNowSec - Returns unix time now in seconds
-func (ts *UnixTimeNowStamper) GetTimeNowSec() int64 {
-	return time.Now().Unix()
-}
-
-type MockTimeNowStamper struct {
-	QueuedTimeStamps []int64
-}
-
-// GetTimeNowSec - Returns unix time now in seconds
-func (ts *MockTimeNowStamper) GetTimeNowSec() int64 {
-	val := ts.QueuedTimeStamps[0]
-	ts.QueuedTimeStamps = ts.QueuedTimeStamps[1:]
-	return val
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // APIServices contains any services that HTTP handlers would want to use, like logging/config reading
@@ -115,9 +93,6 @@ type APIServices struct {
 	// Anything accessing files should use this
 	FS fileaccess.FileAccess
 
-	// For Event Logging
-	ES esutil.Connection
-
 	// Validation of JWT tokens
 	JWTReader IJWTReader
 
@@ -134,13 +109,17 @@ type APIServices struct {
 	Notifications notifications.NotificationManager
 
 	// Timestamp retriever - so can be mocked for unit tests
-	TimeStamper ITimeStamper
+	TimeStamper timestamper.ITimeStamper
 
-	SecretsManager *secretcache.Cache
+	// Our mongo db connection
+	Mongo *mongo.Client
+
+	// "User DB"
+	Users pixlUser.UserDetailsLookup
 }
 
 // InitAPIServices sets up a new APIServices instance
-func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerator, signer URLSigner, exporter ExportZipper, notifications notifications.NotificationManager) APIServices {
+func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerator, signer URLSigner, exporter ExportZipper) APIServices {
 	// Get a session for the bucket region
 	sessBucket, err := awsutil.GetSessionWithRegion(cfg.AWSBucketRegion)
 	if err != nil {
@@ -190,37 +169,53 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 		ourLogger.Errorf("Sentry initialization failed: %v", err)
 	}
 
-	client := esutil.FullFatClient(cfg, ourLogger)
-	es, err := esutil.Connect(client, cfg)
-	if err != nil {
-		ourLogger.Errorf("Failed to connect to Elastic Search: %v", err)
-	}
-
-	secretscache, err := secretcache.New()
-	if err != nil {
-		ourLogger.Errorf("Failed to bootstrap secrets manager")
-	}
-
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
 	snsSvc := sns.New(sess)
 
+	var mongoClient *mongo.Client
+
+	// Connect to mongo
+	if len(cfg.MongoEndpoint) > 0 && len(cfg.MongoUsername) > 0 && len(cfg.MongoSecret) > 0 {
+		// Remote is configured, connect to it
+		mongoPassword, err := mongoDBConnection.GetMongoPasswordFromSecretCache(cfg.MongoSecret)
+		if err != nil {
+			err2 := fmt.Errorf("Failed to read mongo DB password from secrets cache: %v", err)
+			ourLogger.Errorf("%v", err2)
+			log.Fatalf("%v", err)
+		}
+
+		mongoClient, err = mongoDBConnection.ConnectToRemoteMongoDB(cfg.MongoEndpoint, cfg.MongoUsername, mongoPassword, ourLogger)
+		if err != nil {
+			err2 := fmt.Errorf("Failed connect to remote mongo: %v", err)
+			ourLogger.Errorf("%v", err2)
+			log.Fatalf("%v", err)
+		}
+
+	} else {
+		// Connect to local mongo
+		mongoClient, err = mongoDBConnection.ConnectToLocalMongoDB(ourLogger)
+		if err != nil {
+			err2 := fmt.Errorf("Failed connect to local mongo: %v", err)
+			ourLogger.Errorf("%v", err2)
+			log.Fatalf("%v", err)
+		}
+	}
+
 	return APIServices{
-		Config:         cfg,
-		Log:            ourLogger,
-		AWSSessionCW:   sessCW,
-		FS:             fs,
-		S3:             s3svc,
-		SNS:            awsutil.RealSNS{SNS: snsSvc},
-		ES:             es,
-		JWTReader:      jwtReader,
-		IDGen:          idGen,
-		Signer:         signer,
-		Exporter:       exporter,
-		Notifications:  notifications,
-		TimeStamper:    &UnixTimeNowStamper{},
-		SecretsManager: secretscache,
+		Config:       cfg,
+		Log:          ourLogger,
+		AWSSessionCW: sessCW,
+		FS:           fs,
+		S3:           s3svc,
+		SNS:          awsutil.RealSNS{SNS: snsSvc},
+		JWTReader:    jwtReader,
+		IDGen:        idGen,
+		Signer:       signer,
+		Exporter:     exporter,
+		TimeStamper:  &timestamper.UnixTimeNowStamper{},
+		Mongo:        mongoClient,
 	}
 }

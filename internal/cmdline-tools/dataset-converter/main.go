@@ -28,6 +28,7 @@ import (
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
 
+	datasetModel "github.com/pixlise/core/v2/core/dataset"
 	dataConverter "github.com/pixlise/core/v2/data-import/data-converter"
 	"github.com/pixlise/core/v2/data-import/importer"
 )
@@ -103,7 +104,10 @@ func main() {
 		if len(*argDatasetID) <= 0 {
 			log.Fatalf("dataset-id not set")
 		}
-		_, datasetIDImported, err = dataConverter.ImportDataset(localFS, remoteFS, *argConfigBucket, *argManualUploadBucket, *argDatasetBucket, *argDatasetID, ilog, true)
+
+		summary := datasetModel.SummaryFileData{}
+		_, summary, _, _, err = dataConverter.ImportDataset(localFS, remoteFS, *argConfigBucket, *argManualUploadBucket, *argDatasetBucket, *argDatasetID, ilog, true)
+		datasetIDImported = summary.DatasetID
 	case "trigger":
 		/* An example case, where trigger message is set to:
 		{
@@ -122,7 +126,12 @@ func main() {
 		if len(*argTrigger) <= 0 {
 			log.Fatalf("trigger not set")
 		}
-		_, err = importer.ImportForTrigger([]byte(*argTrigger), "cmd-line", *argConfigBucket, *argDatasetBucket, *argManualUploadBucket, ilog, remoteFS)
+
+		var result importer.ImportResult
+		result, err = importer.ImportForTrigger([]byte(*argTrigger), "cmd-line", *argConfigBucket, *argDatasetBucket, *argManualUploadBucket, ilog, remoteFS)
+		result.Logger.Close()
+		fmt.Printf("Importer reported changes: \"%v\", isUpdate: %v\n", result.WhatChanged, result.IsUpdate)
+
 	default:
 		log.Fatalf("Unknown source: %v", *argImportFrom)
 		return

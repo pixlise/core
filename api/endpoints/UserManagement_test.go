@@ -21,12 +21,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
+	"testing"
+	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
+	"gopkg.in/auth0.v4/management"
 
 	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
@@ -62,50 +65,59 @@ const knownTestUserID = "auth0|5f45d7b8b5abff006d4fdb91"
 // Role is: "No Permissions"
 const knownTestRoleID = "rol_KdjHrTCteclbY7om"
 
-func seemsValid(user auth0UserInfo) bool {
-	return len(user.UserID) > 0 && len(user.Name) > 0 && len(user.Email) > 0 //&& user.CreatedUnixSec > 0
-}
+// func seemsValid(user auth0UserInfo) bool {
+// 	return len(user.UserID) > 0 && len(user.Name) > 0 && len(user.Email) > 0 //&& user.CreatedUnixSec > 0
+// }
 
-func Example_userManagementUserQuery_And_UserGet() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
+// NOTE: Commenting this test out for now as each user's Mongo info is associated with their Auth0 info, meaning the expected
+// Mongo response would grow with the number of users, so we'd need a mocked out Auth0 in order for the test to make sense.
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
-	setTestAuth0Config(&svcs)
-	apiRouter := MakeRouter(svcs)
+// func Example_userManagementUserQuery_And_UserGet() {
+// 	var mockS3 awsutil.MockS3Client
+// 	defer mockS3.FinishTest()
 
-	req, _ := http.NewRequest("GET", "/user/query", nil)
-	resp := executeRequest(req, apiRouter.Router)
+// 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+// 	setTestAuth0Config(&svcs)
+// 	apiRouter := MakeRouter(svcs)
 
-	fmt.Printf("query: %v\n", resp.Code)
+// 	req, _ := http.NewRequest("GET", "/user/query", nil)
+// 	resp := executeRequest(req, apiRouter.Router)
 
-	var users []auth0UserInfo
-	err := json.Unmarshal(resp.Body.Bytes(), &users)
+// 	fmt.Printf("query: %v\n", resp.Code)
 
-	fmt.Printf("%v|%v\n", err, len(users) > 0 && seemsValid(users[0]))
+// 	var users []auth0UserInfo
+// 	err := json.Unmarshal(resp.Body.Bytes(), &users)
 
-	req, _ = http.NewRequest("GET", "/user/by-id/"+knownTestUserID, nil)
-	resp = executeRequest(req, apiRouter.Router)
+// 	fmt.Printf("%v|%v\n", err, len(users) > 0 && seemsValid(users[0]))
 
-	fmt.Printf("by-id: %v\n", resp.Code)
+// 	// Stop for a sec so we don't hit auth0 API rate limit
+// 	time.Sleep(1 * time.Second)
 
-	var user auth0UserInfo
-	err = json.Unmarshal(resp.Body.Bytes(), &user)
+// 	req, _ = http.NewRequest("GET", "/user/by-id/"+knownTestUserID, nil)
+// 	resp = executeRequest(req, apiRouter.Router)
 
-	fmt.Printf("%v|%v\n", err, seemsValid(user))
+// 	fmt.Printf("by-id: %v\n", resp.Code)
 
-	// Output:
-	// query: 200
-	// <nil>|true
-	// by-id: 200
-	// <nil>|true
-}
+// 	var user auth0UserInfo
+// 	err = json.Unmarshal(resp.Body.Bytes(), &user)
+
+// 	fmt.Printf("%v|%v\n", err, seemsValid(user))
+
+// 	// Stop for a sec so we don't hit auth0 API rate limit
+// 	time.Sleep(1 * time.Second)
+
+// 	// Output:
+// 	// query: 200
+// 	// <nil>|true
+// 	// by-id: 200
+// 	// <nil>|true
+// }
 
 func Example_userManagement_AddDeleteRole() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	setTestAuth0Config(&svcs)
 	apiRouter := MakeRouter(svcs)
 
@@ -117,6 +129,9 @@ func Example_userManagement_AddDeleteRole() {
 
 	fmt.Printf("ensure-del: %v\n", resp.Code)
 	fmt.Println(resp.Body)
+
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
 
 	req, _ = http.NewRequest("GET", "/user/roles/"+knownTestUserID, nil)
 	resp = executeRequest(req, apiRouter.Router)
@@ -131,6 +146,9 @@ func Example_userManagement_AddDeleteRole() {
 	fmt.Printf("add: %v\n", resp.Code)
 	fmt.Println(resp.Body)
 
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
+
 	req, _ = http.NewRequest("GET", "/user/roles/"+knownTestUserID, nil)
 	resp = executeRequest(req, apiRouter.Router)
 
@@ -144,6 +162,9 @@ func Example_userManagement_AddDeleteRole() {
 	fmt.Printf("delete: %v\n", resp.Code)
 	fmt.Println(resp.Body)
 
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
+
 	req, _ = http.NewRequest("GET", "/user/roles/"+knownTestUserID, nil)
 	resp = executeRequest(req, apiRouter.Router)
 
@@ -155,6 +176,9 @@ func Example_userManagement_AddDeleteRole() {
 
 	fmt.Printf("add-back: %v\n", resp.Code)
 	fmt.Println(resp.Body)
+
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
 
 	// Output:
 	// ensure-del: 200
@@ -181,11 +205,11 @@ func Example_userManagement_AddDeleteRole() {
 	// add-back: 200
 }
 
-func Example_userManagement_Roles_And_UserByRole() {
+func Test_userManagement_Roles_And_UserByRole(t *testing.T) {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	setTestAuth0Config(&svcs)
 	apiRouter := MakeRouter(svcs)
 
@@ -199,17 +223,26 @@ func Example_userManagement_Roles_And_UserByRole() {
 	fmt.Println(resp.Code)
 	fmt.Printf("%v|%v\n", err, len(roles) > 0 && len(roles[0].ID) > 0 && len(roles[0].Name) > 0 && len(roles[0].Description) > 0)
 
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
+
+	// NOTE: Commenting this test out for now as each user's Mongo info is associated with their Auth0 info, meaning the expected
+	// Mongo response would grow with the number of users, so we'd need a mocked out Auth0 in order for the test to make sense.
+
 	// request users for first role, hopefully we have some assigned, else test will fail!
-	if len(roles) > 0 {
-		req, _ = http.NewRequest("GET", "/user/by-role/"+roles[0].ID, nil)
-		resp = executeRequest(req, apiRouter.Router)
+	// if len(roles) > 0 {
+	// 	req, _ = http.NewRequest("GET", "/user/by-role/"+roles[0].ID, nil)
+	// 	resp = executeRequest(req, apiRouter.Router)
 
-		var users []auth0UserInfo
-		err = json.Unmarshal(resp.Body.Bytes(), &users)
+	// 	var users []auth0UserInfo
+	// 	err = json.Unmarshal(resp.Body.Bytes(), &users)
 
-		fmt.Println(resp.Code)
-		fmt.Printf("%v|%v\n", err, len(users) > 0 && seemsValid(users[0]))
-	}
+	// 	fmt.Println(resp.Code)
+	// 	fmt.Printf("%v|%v\n", err, len(users) > 0 && seemsValid(users[0]))
+	// }
+
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
 
 	// Output:
 	// 200
@@ -218,71 +251,311 @@ func Example_userManagement_Roles_And_UserByRole() {
 	// <nil>|true
 }
 
-func Example_user_config() {
+func Test_user_config_get(t *testing.T) {
+	expectedResponse := `{
+    "name": "Niko Bellic",
+    "email": "niko@spicule.co.uk",
+    "cell": "+123456789",
+    "data_collection": "true"
+}
+`
+	mockMongoResponses := []primitive.D{
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase-unit_test.users",
+			mtest.FirstBatch,
+			bson.D{
+				{"Userid", "600f2a0806b6c70071d3d174"},
+				{"Notifications", bson.D{
+					{"Topics", bson.A{
+						bson.D{
+							{"Name", "topic z"},
+							{"Config", bson.D{
+								{"Method", bson.D{
+									{"ui", true},
+									{"sms", false},
+									{"email", true},
+								}},
+							}},
+						}}},
+				}},
+				{"Config", bson.D{
+					{"Name", "Niko Bellic"},
+					{"Email", "niko@spicule.co.uk"},
+					{"Cell", "+123456789"},
+					{"DataCollection", "true"},
+				}},
+			},
+		),
+	}
+
+	runOneURLCallTest(t, "GET", "/user/config", nil, 200, expectedResponse, mockMongoResponses, nil)
+}
+
+func Test_user_config_post(t *testing.T) {
+	requestPayload := bytes.NewReader([]byte(`{"name": "Niko Bellic", "email": "niko@spicule.co.uk","cell": "+1234567890","data_collection": "false"}`))
+
+	expectedResponse := `{
+    "name": "Niko Bellic",
+    "email": "niko@spicule.co.uk",
+    "cell": "+1234567890",
+    "data_collection": "false"
+}
+`
+	mockMongoResponses := []primitive.D{
+		// User read
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase-unit_test.users",
+			mtest.FirstBatch,
+			bson.D{
+				{"Userid", "600f2a0806b6c70071d3d174"},
+				{"Notifications", bson.D{
+					{"Topics", bson.A{
+						bson.D{
+							{"Name", "topic z"},
+							{"Config", bson.D{
+								{"Method", bson.D{
+									{"ui", true},
+									{"sms", false},
+									{"email", true},
+								}},
+							}},
+						}}},
+				}},
+				{"Config", bson.D{
+					{"Name", "Niko Bellic"},
+					{"Email", "niko@spicule.co.uk"},
+					{"Cell", "+123456789"},
+					{"DataCollection", "true"},
+				}},
+			},
+		),
+		// User saved
+		mtest.CreateSuccessResponse(),
+	}
+
+	runOneURLCallTest(t, "POST", "/user/config", requestPayload, 200, expectedResponse, mockMongoResponses, nil)
+}
+
+func Test_user_edit_field_name(t *testing.T) {
+	// Get auth0 api config
+	svcs := MakeMockSvcs(nil, nil, nil, nil)
+	setTestAuth0Config(&svcs)
+	auth0API, err := InitAuth0ManagementAPI(svcs.Config)
+	if err != nil {
+		t.Errorf("Failed to init auth0 API: %v", err)
+	}
+
+	auth0User := management.User{}
+	preTestName := "TEST USER - test commenced"
+	auth0User.Name = &preTestName
+
+	err = auth0API.User.Update("auth0|600f2a0806b6c70071d3d174", &auth0User)
+	if err != nil {
+		t.Errorf("Failed to set initial user name: %v", err)
+	}
+
+	requestPayload := bytes.NewReader([]byte(`"TEST USER"`))
+
+	expectedResponse := ""
+
+	mockMongoResponses := []primitive.D{
+		// User read
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase-unit_test.users",
+			mtest.FirstBatch,
+			bson.D{
+				{"Userid", "600f2a0806b6c70071d3d174"},
+				{"Notifications", bson.D{
+					{"Topics", bson.A{
+						bson.D{
+							{"Name", "topic z"},
+							{"Config", bson.D{
+								{"Method", bson.D{
+									{"ui", true},
+									{"sms", false},
+									{"email", true},
+								}},
+							}},
+						}}},
+				}},
+				{"Config", bson.D{
+					{"Name", "Niko Bellic"},
+					{"Email", "niko@spicule.co.uk"},
+					{"Cell", "+123456789"},
+					{"DataCollection", "true"},
+				}},
+			},
+		),
+		// User saved
+		mtest.CreateSuccessResponse(),
+	}
+
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
+
+	// TODO: This isn't a good test, we have no way of verifying what was written into mongo! But we can verify what was written to auth0
+	runOneURLCallTest(t, "PUT", "/user/field/name", requestPayload, 200, expectedResponse, mockMongoResponses, func() {
+		// Stop for a sec so we don't hit auth0 API rate limit
+		time.Sleep(1 * time.Second)
+
+		user, err := auth0API.User.Read("auth0|600f2a0806b6c70071d3d174")
+		if err != nil {
+			t.Errorf("Failed to query user after test: %v", err)
+		}
+
+		if *user.Name != "TEST USER" {
+			t.Errorf("Expected auth0 user to be named TEST USER not: %v", *user.Name)
+		}
+	})
+}
+
+func Test_user_edit_field_email(t *testing.T) {
+	// Get auth0 api config
+	svcs := MakeMockSvcs(nil, nil, nil, nil)
+	setTestAuth0Config(&svcs)
+	auth0API, err := InitAuth0ManagementAPI(svcs.Config)
+	if err != nil {
+		t.Errorf("Failed to init auth0 API: %v", err)
+	}
+
+	auth0User := management.User{}
+	preTestEmail := "admin_test@pixlise.org"
+	auth0User.Email = &preTestEmail
+
+	err = auth0API.User.Update("auth0|600f2a0806b6c70071d3d174", &auth0User)
+	if err != nil {
+		t.Errorf("Failed to set initial user email: %v", err)
+	}
+
+	requestPayload := bytes.NewReader([]byte(`"admin@pixlise.org"`))
+
+	expectedResponse := ""
+
+	mockMongoResponses := []primitive.D{
+		// User read
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase-unit_test.users",
+			mtest.FirstBatch,
+			bson.D{
+				{"Userid", "600f2a0806b6c70071d3d174"},
+				{"Notifications", bson.D{
+					{"Topics", bson.A{
+						bson.D{
+							{"Name", "topic z"},
+							{"Config", bson.D{
+								{"Method", bson.D{
+									{"ui", true},
+									{"sms", false},
+									{"email", true},
+								}},
+							}},
+						}}},
+				}},
+				{"Config", bson.D{
+					{"Name", "Niko Bellic"},
+					{"Email", "niko@spicule.co.uk"},
+					{"Cell", "+123456789"},
+					{"DataCollection", "true"},
+				}},
+			},
+		),
+		// User saved
+		mtest.CreateSuccessResponse(),
+	}
+
+	// Stop for a sec so we don't hit auth0 API rate limit
+	time.Sleep(1 * time.Second)
+
+	// TODO: This isn't a good test, we have no way of verifying what was written into mongo! But we can verify what was written to auth0
+	runOneURLCallTest(t, "PUT", "/user/field/email", requestPayload, 200, expectedResponse, mockMongoResponses, func() {
+		// Stop for a sec so we don't hit auth0 API rate limit
+		time.Sleep(1 * time.Second)
+
+		user, err := auth0API.User.Read("auth0|600f2a0806b6c70071d3d174")
+		if err != nil {
+			t.Errorf("Failed to query user after test: %v", err)
+		}
+
+		if *user.Email != "admin@pixlise.org" {
+			t.Errorf("Expected auth0 user to have email admin@pixlise.org not: %v", *user.Email)
+		}
+	})
+}
+
+func Example_user_edit_field_error() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	userJSON := `{"userid":"600f2a0806b6c70071d3d174","notifications":{"topics":[{"name":"test-dataset-available","config":{"method":{"ui":true,"sms":true,"email":true}}}],"hints":["hint a","hint b"],"uinotifications":null},"userconfig":{"name":"Niko Bellic","email":"niko@spicule.co.uk","cell":"+123456789","data_collection":"true"}}`
-	userUpdatedJSON := `{"userid":"600f2a0806b6c70071d3d174","notifications":{"topics":[{"name":"test-dataset-available","config":{"method":{"ui":true,"sms":true,"email":true}}}],"hints":["hint a","hint b"],"uinotifications":null},"userconfig":{"name":"Niko Bellic","email":"niko@spicule.co.uk","cell":"+123456789","data_collection":"false"}}`
-
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(userJSON))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(userJSON))),
-		},
-	}
-
-	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
-		s3.PutObjectInput{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("/UserContent/notifications/600f2a0806b6c70071d3d174.json"), Body: bytes.NewReader([]byte(userUpdatedJSON)),
-		},
-	}
-	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
-		&s3.PutObjectOutput{},
-	}
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
-
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	setTestAuth0Config(&svcs)
 	apiRouter := MakeRouter(svcs)
 
-	req, _ := http.NewRequest("GET", "/user/config", nil)
+	req, _ := http.NewRequest("PUT", "/user/field/flux", bytes.NewReader([]byte("Something")))
 	resp := executeRequest(req, apiRouter.Router)
 
-	fmt.Println(fmt.Sprintf("ensure-valid: %v", resp.Code))
-	fmt.Println(resp.Body)
-
-	j := `{"name": "Niko Bellic", "email": "niko@spicule.co.uk","cell": "+123456789","data_collection": "false"}`
-
-	req, _ = http.NewRequest("POST", "/user/config", bytes.NewReader([]byte(j)))
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(fmt.Sprintf("ensure-valid: %v", resp.Code))
+	fmt.Printf("status: %v\n", resp.Code)
 	fmt.Println(resp.Body)
 
 	// Output:
-	// ensure-valid: 200
-	// {
-	//     "name": "Niko Bellic",
-	//     "email": "niko@spicule.co.uk",
-	//     "cell": "+123456789",
-	//     "data_collection": "true"
-	// }
-	//
-	// ensure-valid: 200
-	// {
-	//     "name": "Niko Bellic",
-	//     "email": "niko@spicule.co.uk",
-	//     "cell": "+123456789",
-	//     "data_collection": "false"
-	// }
+	// status: 500
+	// Unrecognised field: flux
+}
+
+func Test_user_bulk_edit(t *testing.T) {
+	requestPayload := bytes.NewReader([]byte(`[
+	{
+		"UserID": "123",
+		"Name": "Michael Collins"
+	},
+	{
+		"UserID": "456",
+		"Name": "Neil Armstrong"
+	}
+]`))
+
+	expectedResponse := ""
+
+	mockMongoResponses := []primitive.D{
+		// User read
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase-unit_test.users",
+			mtest.FirstBatch,
+			bson.D{
+				{"Userid", "123"},
+				{"Config", bson.D{
+					{"Name", "collins"},
+					{"Email", "collins@space.com"},
+					{"Cell", "+123456789"},
+					{"DataCollection", "true"},
+				}},
+			},
+		),
+		// User saved
+		mtest.CreateSuccessResponse(),
+		// User read
+		mtest.CreateCursorResponse(
+			0,
+			"userdatabase-unit_test.users",
+			mtest.FirstBatch,
+			bson.D{
+				{"Userid", "456"},
+				{"Config", bson.D{
+					{"Name", "neil"},
+					{"Email", "neil@space.com"},
+					{"Cell", "+123456789"},
+					{"DataCollection", "true"},
+				}},
+			},
+		),
+		// User saved
+		mtest.CreateSuccessResponse(),
+	}
+
+	// TODO: This isn't a good test, we have no way of verifying what was written into mongo! But we can verify what was written to auth0
+	runOneURLCallTest(t, "POST", "/user/bulk-user-details", requestPayload, 200, expectedResponse, mockMongoResponses, nil)
 }

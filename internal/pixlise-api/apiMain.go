@@ -27,8 +27,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	"github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gorilla/handlers"
@@ -42,7 +42,6 @@ import (
 
 	_ "net/http/pprof"
 
-	cmap "github.com/orcaman/concurrent-map"
 	"github.com/pixlise/core/v2/core/export"
 )
 
@@ -122,35 +121,22 @@ func main() {
 	signer := awsutil.RealURLSigner{}
 	exporter := export.Exporter{}
 
-	var notes []notifications.UINotificationObj
-
-	svcs := services.InitAPIServices(cfg, api.RealJWTReader{}, &idGen, &signer, &exporter, &notifications.NotificationStack{})
+	svcs := services.InitAPIServices(cfg, api.RealJWTReader{}, &idGen, &signer, &exporter)
 
 	svcs.Log.Infof(cfgStr)
 
-	seccache, err := secretcache.New()
-	mongo := notifications.MongoUtils{
-		SecretsCache:     seccache,
-		ConnectionSecret: cfg.MongoSecret,
-		MongoUsername:    cfg.MongoUsername,
-		MongoEndpoint:    cfg.MongoEndpoint,
-		Log:              svcs.Log,
-	}
-	err = mongo.Connect()
+	notificationStack, err := notifications.MakeNotificationStack(svcs.Mongo, cfg.EnvironmentName, svcs.TimeStamper, svcs.Log, cfg.AdminEmails)
 
-	svcs.Log.Errorf("Failed to connect to Mongo: %v", err)
-	// Reinitialised because of dependency on S3
-	notificationStack := notifications.NotificationStack{
-		Notifications: notes,
-		FS:            svcs.FS,
-		Track:         cmap.New(), //make(map[string]bool),
-		Bucket:        cfg.UsersBucket,
-		AdminEmails:   cfg.AdminEmails,
-		Environment:   cfg.EnvironmentName,
-		Logger:        svcs.Log,
-		MongoUtils:    &mongo,
+	if err != nil {
+		err2 := fmt.Errorf("Failed to create notification stack: %v", err)
+		svcs.Log.Errorf("%v", err2)
+		log.Fatalf("%v\n", err2)
 	}
-	svcs.Notifications = &notificationStack
+
+	svcs.Notifications = notificationStack
+
+	svcs.Users = pixlUser.MakeUserDetailsLookup(svcs.Mongo, cfg.EnvironmentName)
+
 	jwtReader := api.RealJWTReader{Validator: initJWTValidator(cfg.Auth0Domain, svcs.FS, cfg, svcs.Log)}
 	svcs.JWTReader = jwtReader
 

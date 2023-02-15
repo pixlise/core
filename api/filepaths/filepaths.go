@@ -150,6 +150,10 @@ const rgbMixFile = "RGBMixes.json"
 // ------------ROI.json - User created ROIs
 const roiFile = "ROI.json"
 
+// --------<dataset-id>/
+// ------------Tags.json - Dataset tags
+const tagFile = "Tags.json"
+
 // multi-quant-z-stack.json - The current z-stack on multi-quant panel
 const MultiQuantZStackFile = "multi-quant-z-stack.json"
 
@@ -226,8 +230,10 @@ func GetSharedQuantPath(datasetID string, fileName string) string {
 	return GetUserQuantPath(pixlUser.ShareUserID, datasetID, fileName)
 }
 
-// ----notifications/
-// --------<user-id>.json - Notification settings, dismissed hints, user email, data collection version agreed to
+// - Activity/
+const RootUserActivity = "Activity"
+
+// -----------<datestamp>/<GUID>.json - User activity files (things captured by middleware logger)
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Job Bucket
@@ -355,6 +361,10 @@ func GetRGBMixPath(userID string) string {
 
 func GetROIPath(userID string, datasetID string) string {
 	return GetUserContentDatasetPath(userID, datasetID, roiFile)
+}
+
+func GetTagPath(userID string) string {
+	return GetUserContentPath(userID, tagFile)
 }
 
 func GetMultiQuantZStackPath(userID string, datasetID string) string {

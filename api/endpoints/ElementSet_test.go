@@ -22,10 +22,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/timestamper"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
 const elemUserS3Path = "UserContent/600f2a0806b6c70071d3d174/ElementSets.json"
@@ -49,7 +55,9 @@ const elemFile = `{
 				"Esc": false
 			}
 		],
-		"creator": { "name": "Peter", "user_id": "u123" }
+		"creator": { "name": "Peter", "user_id": "u123" },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
 	},
 	"44": {
 		"name": "My Tuesday Elements",
@@ -69,280 +77,346 @@ const elemFile = `{
 				"Esc": false
 			}
 		],
-		"creator": { "name": "Tom", "user_id": "u124" }
+		"creator": { "name": "Tom", "user_id": "u124" },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
 	}
 }`
 
-func Example_elementSetHandler_List() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemSharedS3Path),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil, // No file in S3
-		nil, // No file in S3
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-	"13": {
-		"name": "My Monday Elements",
-		"lines": [
+func Test_elementSetHandler_List(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("success", func(mt *mtest.T) {
+		// User name lookup
+		mongoMockedResponses := []primitive.D{
+			// User 123
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+				bson.D{
+					{"Userid", "u123"},
+					{"Notifications", bson.D{
+						{"Topics", bson.A{}},
+					}},
+					{"Config", bson.D{
+						{"Name", "Peter"},
+						{"Email", ""},
+						{"Cell", ""},
+						{"DataCollection", "unknown"},
+					}},
+				},
+			),
+			// User 125
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+				bson.D{
+					{"Userid", "u125"},
+					{"Notifications", bson.D{
+						{"Topics", bson.A{}},
+					}},
+					{"Config", bson.D{
+						{"Name", "Mike T"},
+						{"Email", "mike@spicule.co.uk"},
+						{"Cell", ""},
+						{"DataCollection", "unknown"},
+					}},
+				},
+			),
+		}
+
+		mt.AddMockResponses(mongoMockedResponses...)
+
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 			{
-				"Z": 26,
-				"K": true,
-				"L": true,
-				"M": false,
-				"Esc": false
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
 			},
 			{
-				"Z": 20,
-				"K": true,
-				"L": false,
-				"M": false,
-				"Esc": false
-			}
-		],
-		"creator": { "name": "Peter", "user_id": "u123" }
-	}
-}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-	"88": {
-		"name": "Shared Elements",
-		"lines": [
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemSharedS3Path),
+			},
 			{
-				"Z": 32,
-				"K": true,
-				"L": true,
-				"M": false,
-				"Esc": false
-			}
-		],
-		"creator": { "name": "Mike", "user_id": "u125" }
-	}
-}`))),
-		},
-	}
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemSharedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemSharedS3Path),
+			},
+		}
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			nil, // No file in S3
+			nil, // No file in S3
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"13": {
+			"name": "My Monday Elements",
+			"lines": [
+				{
+					"Z": 26,
+					"K": true,
+					"L": true,
+					"M": false,
+					"Esc": false
+				},
+				{
+					"Z": 20,
+					"K": true,
+					"L": false,
+					"M": false,
+					"Esc": false
+				}
+			],
+			"creator": { "name": "Peter", "user_id": "u123" },
+			"create_unix_time_sec": 1668100002,
+			"mod_unix_time_sec": 1668100002
+		}
+	}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"88": {
+			"name": "Shared Elements",
+			"lines": [
+				{
+					"Z": 32,
+					"K": true,
+					"L": true,
+					"M": false,
+					"Esc": false
+				}
+			],
+			"creator": { "name": "Mike", "user_id": "u125" },
+			"create_unix_time_sec": 1668100003,
+			"mod_unix_time_sec": 1668100003
+		}
+	}`))),
+			},
+		}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		apiRouter := MakeRouter(svcs)
 
-	req, _ := http.NewRequest("GET", "/element-set", nil)
-	resp := executeRequest(req, apiRouter.Router)
+		req, _ := http.NewRequest("GET", "/element-set", nil)
+		resp := executeRequest(req, apiRouter.Router)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		checkResult(t, resp, 200, `{}
+`)
 
-	req, _ = http.NewRequest("GET", "/element-set", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		req, _ = http.NewRequest("GET", "/element-set", nil)
+		resp = executeRequest(req, apiRouter.Router)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		checkResult(t, resp, 200, `{}
+`)
 
-	req, _ = http.NewRequest("GET", "/element-set", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		req, _ = http.NewRequest("GET", "/element-set", nil)
+		resp = executeRequest(req, apiRouter.Router)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Output:
-	// 200
-	// {}
-	//
-	// 200
-	// {}
-	//
-	// 200
-	// {
-	//     "13": {
-	//         "name": "My Monday Elements",
-	//         "atomicNumbers": [
-	//             26,
-	//             20
-	//         ],
-	//         "shared": false,
-	//         "creator": {
-	//             "name": "Peter",
-	//             "user_id": "u123",
-	//             "email": ""
-	//         }
-	//     },
-	//     "shared-88": {
-	//         "name": "Shared Elements",
-	//         "atomicNumbers": [
-	//             32
-	//         ],
-	//         "shared": true,
-	//         "creator": {
-	//             "name": "Mike",
-	//             "user_id": "u125",
-	//             "email": ""
-	//         }
-	//     }
-	// }
+		checkResult(t, resp, 200, `{
+    "13": {
+        "name": "My Monday Elements",
+        "atomicNumbers": [
+            26,
+            20
+        ],
+        "shared": false,
+        "creator": {
+            "name": "Peter",
+            "user_id": "u123",
+            "email": ""
+        },
+        "create_unix_time_sec": 1668100002,
+        "mod_unix_time_sec": 1668100002
+    },
+    "shared-88": {
+        "name": "Shared Elements",
+        "atomicNumbers": [
+            32
+        ],
+        "shared": true,
+        "creator": {
+            "name": "Mike T",
+            "user_id": "u125",
+            "email": "mike@spicule.co.uk"
+        },
+        "create_unix_time_sec": 1668100003,
+        "mod_unix_time_sec": 1668100003
+    }
+}
+`)
+	})
 }
 
-func Example_elementSetHandler_Get() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemSharedS3Path),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil,
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(elemFile))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(elemFile))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(elemFile))),
-		},
-	}
+func Test_elementSetHandler_Get(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
+	mt.Run("success", func(mt *mtest.T) {
+		// User name lookup
+		mongoMockedResponses := []primitive.D{
+			// User 123
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+				bson.D{
+					{"Userid", "u123"},
+					{"Notifications", bson.D{
+						{"Topics", bson.A{}},
+					}},
+					{"Config", bson.D{
+						{"Name", "Peter N"},
+						{"Email", ""},
+						{"Cell", ""},
+						{"DataCollection", "unknown"},
+					}},
+				},
+			),
+		}
 
-	// File not in S3, should return 404
-	req, _ := http.NewRequest("GET", "/element-set/13", nil)
-	resp := executeRequest(req, apiRouter.Router)
+		mt.AddMockResponses(mongoMockedResponses...)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemUserS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(elemSharedS3Path),
+			},
+		}
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			nil,
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(elemFile))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(elemFile))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(elemFile))),
+			},
+		}
 
-	// File in S3 empty, should return 404
-	req, _ = http.NewRequest("GET", "/element-set/13", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		apiRouter := MakeRouter(svcs)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		// File not in S3, should return 404
+		req, _ := http.NewRequest("GET", "/element-set/13", nil)
+		resp := executeRequest(req, apiRouter.Router)
 
-	// File contains stuff, using ID thats not in there, should return 404
-	req, _ = http.NewRequest("GET", "/element-set/15", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 404, `13 not found
+`)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		// File in S3 empty, should return 404
+		req, _ = http.NewRequest("GET", "/element-set/13", nil)
+		resp = executeRequest(req, apiRouter.Router)
 
-	// File contains stuff, using ID that exists
-	req, _ = http.NewRequest("GET", "/element-set/13", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 404, `13 not found
+`)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		// File contains stuff, using ID thats not in there, should return 404
+		req, _ = http.NewRequest("GET", "/element-set/15", nil)
+		resp = executeRequest(req, apiRouter.Router)
 
-	// Check that shared file was loaded if shared ID sent in
-	req, _ = http.NewRequest("GET", "/element-set/shared-13", nil)
-	resp = executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 404, `15 not found
+`)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		// File contains stuff, using ID that exists
+		req, _ = http.NewRequest("GET", "/element-set/13", nil)
+		resp = executeRequest(req, apiRouter.Router)
 
-	// Output:
-	// 404
-	// 13 not found
-	//
-	// 404
-	// 13 not found
-	//
-	// 404
-	// 15 not found
-	//
-	// 200
-	// {
-	//     "name": "My Monday Elements",
-	//     "lines": [
-	//         {
-	//             "Z": 26,
-	//             "K": true,
-	//             "L": true,
-	//             "M": false,
-	//             "Esc": false
-	//         },
-	//         {
-	//             "Z": 20,
-	//             "K": true,
-	//             "L": false,
-	//             "M": false,
-	//             "Esc": false
-	//         }
-	//     ],
-	//     "shared": false,
-	//     "creator": {
-	//         "name": "Peter",
-	//         "user_id": "u123",
-	//         "email": ""
-	//     }
-	// }
-	//
-	// 200
-	// {
-	//     "name": "My Monday Elements",
-	//     "lines": [
-	//         {
-	//             "Z": 26,
-	//             "K": true,
-	//             "L": true,
-	//             "M": false,
-	//             "Esc": false
-	//         },
-	//         {
-	//             "Z": 20,
-	//             "K": true,
-	//             "L": false,
-	//             "M": false,
-	//             "Esc": false
-	//         }
-	//     ],
-	//     "shared": true,
-	//     "creator": {
-	//         "name": "Peter",
-	//         "user_id": "u123",
-	//         "email": ""
-	//     }
-	// }
+		checkResult(t, resp, 200, `{
+    "name": "My Monday Elements",
+    "lines": [
+        {
+            "Z": 26,
+            "K": true,
+            "L": true,
+            "M": false,
+            "Esc": false
+        },
+        {
+            "Z": 20,
+            "K": true,
+            "L": false,
+            "M": false,
+            "Esc": false
+        }
+    ],
+    "shared": false,
+    "creator": {
+        "name": "Peter N",
+        "user_id": "u123",
+        "email": ""
+    },
+    "create_unix_time_sec": 1668100000,
+    "mod_unix_time_sec": 1668100000
+}
+`)
+
+		// Check that shared file was loaded if shared ID sent in
+		req, _ = http.NewRequest("GET", "/element-set/shared-13", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "name": "My Monday Elements",
+    "lines": [
+        {
+            "Z": 26,
+            "K": true,
+            "L": true,
+            "M": false,
+            "Esc": false
+        },
+        {
+            "Z": 20,
+            "K": true,
+            "L": false,
+            "M": false,
+            "Esc": false
+        }
+    ],
+    "shared": true,
+    "creator": {
+        "name": "Peter N",
+        "user_id": "u123",
+        "email": ""
+    },
+    "create_unix_time_sec": 1668100000,
+    "mod_unix_time_sec": 1668100000
+}
+`)
+	})
 }
 
 func Example_elementSetHandler_Post() {
@@ -388,7 +462,9 @@ func Example_elementSetHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142579,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -410,7 +486,9 @@ func Example_elementSetHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142580,
+        "mod_unix_time_sec": 1668142580
     }
 }`)),
 		},
@@ -439,7 +517,9 @@ func Example_elementSetHandler_Post() {
             "name": "Peter",
             "user_id": "u123",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "44": {
         "name": "My Tuesday Elements",
@@ -464,7 +544,9 @@ func Example_elementSetHandler_Post() {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     },
     "57": {
         "name": "Latest set",
@@ -482,7 +564,9 @@ func Example_elementSetHandler_Post() {
             "name": "Niko Bellic",
             "user_id": "600f2a0806b6c70071d3d174",
             "email": "niko@spicule.co.uk"
-        }
+        },
+        "create_unix_time_sec": 1668142581,
+        "mod_unix_time_sec": 1668142581
     }
 }`)),
 		},
@@ -495,7 +579,10 @@ func Example_elementSetHandler_Post() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"55", "56", "57"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579, 1668142580, 1668142581},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const postItem = `{
@@ -596,7 +683,9 @@ func Example_elementSetHandler_Put() {
             "name": "Peter",
             "user_id": "u123",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100000,
+        "mod_unix_time_sec": 1668100000
     },
     "44": {
         "name": "Latest set",
@@ -614,7 +703,9 @@ func Example_elementSetHandler_Put() {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668142579
     }
 }`)),
 		},
@@ -623,7 +714,10 @@ func Example_elementSetHandler_Put() {
 		&s3.PutObjectOutput{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1668142579},
+	}
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = `{
@@ -776,7 +870,9 @@ func Example_elementSetHandler_Delete() {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     }
 }`)),
 		},
@@ -789,7 +885,7 @@ func Example_elementSetHandler_Delete() {
 		&s3.PutObjectOutput{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Delete finds file missing, ERROR
@@ -951,7 +1047,9 @@ func Example_elementSetHandler_Share() {
             "name": "Tom",
             "user_id": "u124",
             "email": ""
-        }
+        },
+        "create_unix_time_sec": 1668100001,
+        "mod_unix_time_sec": 1668100001
     }
 }`)),
 		},
@@ -962,7 +1060,7 @@ func Example_elementSetHandler_Share() {
 
 	var idGen MockIDGenerator
 	idGen.ids = []string{"77"}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	const putItem = ""

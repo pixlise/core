@@ -24,7 +24,7 @@ import (
 	"net/http"
 	"time"
 
-	apiNotifications "github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v2/core/pixlUser"
 )
 
 func generateURL(environment string) string {
@@ -80,7 +80,7 @@ func printTestResult(err error, name string) {
 	fmt.Println("")
 }
 
-func getAlerts(JWT string, environment string) ([]apiNotifications.UINotificationObj, error) {
+func getAlerts(JWT string, environment string) ([]pixlUser.UINotificationItem, error) {
 	getReq, err := http.NewRequest("GET", generateURL(environment)+"/notification/alerts", nil)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func getAlerts(JWT string, environment string) ([]apiNotifications.UINotificatio
 		return nil, fmt.Errorf("Alerts status fail: %v, response: %v", getResp.Status, string(body))
 	}
 
-	var alerts []apiNotifications.UINotificationObj
+	var alerts []pixlUser.UINotificationItem
 	err = json.Unmarshal(body, &alerts)
 	if err != nil {
 		return nil, err

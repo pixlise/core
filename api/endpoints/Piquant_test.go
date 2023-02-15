@@ -27,8 +27,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/timestamper"
 )
 
 func Example_detectorQuantConfigHandler_List() {
@@ -53,7 +53,7 @@ func Example_detectorQuantConfigHandler_List() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/piquant/config", nil)
@@ -93,7 +93,7 @@ func Example_detectorQuantConfigHandler_VersionList() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/piquant/config/PetersSuperDetector/versions", nil)
@@ -122,7 +122,7 @@ func Example_detectorQuantConfigHandler_GetNotFound() {
 		nil,
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/piquant/config/WeirdDetector/version/v1.1", nil)
@@ -174,7 +174,7 @@ func Example_detectorQuantConfigHandler_GetOK() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/piquant/config/PetersSuperDetector/version/ver1.1", nil)
@@ -211,7 +211,7 @@ func Example_detectorQuantConfigHandler_OtherMethods() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/piquant/config/WeirdDetector/version/1", nil)
@@ -263,7 +263,7 @@ func Example_piquantDownloadHandler_List() {
 	var mockSigner awsutil.MockSigner
 	mockSigner.Urls = []string{"http://signed-url.com/file1.zip", "http://signed-url.com/file2.zip"}
 
-	svcs := MakeMockSvcs(&mockS3, nil, &mockSigner, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, &mockSigner, nil)
 	svcs.Config.BuildsBucket = artifactBucket
 
 	apiRouter := MakeRouter(svcs)
@@ -302,7 +302,7 @@ func Example_piquantDownloadHandler_OtherMethods() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/piquant/download", nil)
@@ -367,7 +367,7 @@ func Example_piquantHandler_GetVersion() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.PiquantDockerImage = "registry.github.com/pixlise/piquant/runner:3.0.8-ALPHA"
 	apiRouter := MakeRouter(svcs)
 
@@ -423,7 +423,7 @@ func Example_piquantHandler_GetVersion_NoConfigVar() {
 		nil,
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// Fails, no S3 and no config var
@@ -461,8 +461,8 @@ func Example_piquantHandler_SetVersion() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
-	svcs.TimeStamper = &services.MockTimeNowStamper{
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1234567777},
 	}
 	apiRouter := MakeRouter(svcs)

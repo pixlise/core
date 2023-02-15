@@ -32,7 +32,7 @@ Executing the API requires several environment variables to be set. These includ
 Full Example:
 
 ```
-CUSTOM_CONFIG='{"AWSBucketRegion":"us-east-1","AWSCloudwatchRegion":"us-east-1","AdminEmails":["someemail@myemail.com"],"ArtifactsBucket":"xxx-artifacts-s3-bucket","Auth0Domain":"xxx.auth0.com","Auth0ManagementClientID":"xxx","Auth0ManagementSecret":"xxx","BuildsBucket":"xxx-builds-s3-bucket","ConfigBucket":"xxx-config-s3-bucket","CoresPerNode":4,"DataBucket":"xxx-data-bucket","DataSourceSNSTopic":"xxx-sns-topic","DatasetsBucket":"xxx-datasets-bucket","DockerLoginString":"xxx-docker-login","ElasticPassword":"xxx-es-password","ElasticURL":"xxx-elasticendpoint","ElasticUser":"logger","EnvironmentName":"xxx-envname","HotQuantNamespace":"piquant-fit","JobBucket":"xxx-job-bucket","KubernetesLocation":"internal","LogLevel":1,"ManualUploadBucket":"xxx-manual-upload","PiquantDockerImage":"xxx-piquant-image","PiquantJobsBucket":"xxx-job-bucket","PosterImage":"xxx-poster-image","QuantDestinationPackage":"xxx-destination-package","QuantExecutor":"kubernetes","QuantNamespace":"xxx-namespace","QuantObjectType":"xxx-quant-object-type","SentryEndpoint":"xxx-sentry-endpoint","UserDbSecretName":"xxx-docdb-secret","UsersBucket":"xxx-users-bucket"}'
+CUSTOM_CONFIG='{"AWSBucketRegion":"us-east-1","AWSCloudwatchRegion":"us-east-1","AdminEmails":["someemail@myemail.com"],"ArtifactsBucket":"xxx-artifacts-s3-bucket","Auth0Domain":"xxx.auth0.com","Auth0ManagementClientID":"xxx","Auth0ManagementSecret":"xxx","BuildsBucket":"xxx-builds-s3-bucket","ConfigBucket":"xxx-config-s3-bucket","CoresPerNode":4,"DataBucket":"xxx-data-bucket","DataSourceSNSTopic":"xxx-sns-topic","DatasetsBucket":"xxx-datasets-bucket","DockerLoginString":"xxx-docker-login","MongoSecret":"xxx-mongo-secret","MongoEndpoint":"xxx-mongo-endpoint","MongoUsername":"mongo-user","EnvironmentName":"xxx-envname","HotQuantNamespace":"piquant-fit","JobBucket":"xxx-job-bucket","KubernetesLocation":"internal","LogLevel":1,"ManualUploadBucket":"xxx-manual-upload","PiquantDockerImage":"xxx-piquant-image","PiquantJobsBucket":"xxx-job-bucket","PosterImage":"xxx-poster-image","QuantDestinationPackage":"xxx-destination-package","QuantExecutor":"kubernetes","QuantNamespace":"xxx-namespace","QuantObjectType":"xxx-quant-object-type","SentryEndpoint":"xxx-sentry-endpoint","UserDbSecretName":"xxx-docdb-secret","UsersBucket":"xxx-users-bucket"}'
 ```
 
 Minimal Example:
@@ -69,6 +69,7 @@ If you're wondering what the Gitpod button above is and would like to get a deve
     },
     "args": ["-quantExecutor", "docker"]
 ```
+- Start a local mongo DB in docker: `docker run -d  --name mongo-on-docker  -p 27888:27017 -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=secret mongo`. This container can be stopped, deleted and recreated as needed.
 - Open any file in the main package (`internal/pixlise-api/*.go`)
 - Hit F5 to start debugging
 
@@ -83,4 +84,3 @@ The API takes a few seconds to start up. Watch the Debug Console in VS Code! You
 ### Example CLI flags
 
 `-quantExecutor docker` - this tells the API to use local docker as the quant executor, meaning PIQUANT jobs will start on your local development machine.
-

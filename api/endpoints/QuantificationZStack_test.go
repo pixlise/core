@@ -75,7 +75,7 @@ func Example_quantHandler_ZStackLoad() {
 		},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
 	// File not in S3, should return empty
@@ -209,7 +209,7 @@ func Example_quantHandler_ZStackSave() {
 		{},
 	}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil, nil)
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 
 	mockUser := pixlUser.UserInfo{
 		Name:   "Niko Bellic",
