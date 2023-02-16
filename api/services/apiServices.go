@@ -178,18 +178,23 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 	var mongoClient *mongo.Client
 
 	// Connect to mongo
-	if len(cfg.MongoEndpoint) > 0 && len(cfg.MongoUsername) > 0 && len(cfg.MongoSecret) > 0 {
+	if len(cfg.MongoSecret) > 0 {
 		// Remote is configured, connect to it
-		mongoPassword, err := mongoDBConnection.GetMongoPasswordFromSecretCache(cfg.MongoSecret)
+		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache(cfg.MongoSecret)
 		if err != nil {
-			err2 := fmt.Errorf("Failed to read mongo DB password from secrets cache: %v", err)
+			err2 := fmt.Errorf("failed to read mongo DB connection info from secrets cache: %v", err)
 			ourLogger.Errorf("%v", err2)
 			log.Fatalf("%v", err)
 		}
 
-		mongoClient, err = mongoDBConnection.ConnectToRemoteMongoDB(cfg.MongoEndpoint, cfg.MongoUsername, mongoPassword, ourLogger)
+		mongoClient, err = mongoDBConnection.ConnectToRemoteMongoDB(
+			mongoConnectionInfo.Host,
+			mongoConnectionInfo.Username,
+			mongoConnectionInfo.Password,
+			ourLogger,
+		)
 		if err != nil {
-			err2 := fmt.Errorf("Failed connect to remote mongo: %v", err)
+			err2 := fmt.Errorf("failed connect to remote mongo: %v", err)
 			ourLogger.Errorf("%v", err2)
 			log.Fatalf("%v", err)
 		}
@@ -198,7 +203,7 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 		// Connect to local mongo
 		mongoClient, err = mongoDBConnection.ConnectToLocalMongoDB(ourLogger)
 		if err != nil {
-			err2 := fmt.Errorf("Failed connect to local mongo: %v", err)
+			err2 := fmt.Errorf("failed connect to local mongo: %v", err)
 			ourLogger.Errorf("%v", err2)
 			log.Fatalf("%v", err)
 		}
