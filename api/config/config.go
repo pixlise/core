@@ -37,9 +37,7 @@ import (
 
 // APIConfig combines env vars and config JSON values
 type APIConfig struct {
-	AWSBucketRegion     string
-	AWSCloudwatchRegion string
-	AdminEmails         []string
+	AdminEmails []string
 
 	Auth0Domain             string
 	Auth0ManagementClientID string
@@ -64,7 +62,7 @@ type APIConfig struct {
 	ManualUploadBucket string
 
 	// Mongo Connection
-	MongoSecret   string
+	MongoSecret string
 
 	PiquantDockerImage string // PIQUANT docker image to use to run a job
 	PiquantJobsBucket  string // PIQUANT job scratch drive
