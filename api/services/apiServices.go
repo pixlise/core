@@ -121,21 +121,21 @@ type APIServices struct {
 // InitAPIServices sets up a new APIServices instance
 func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerator, signer URLSigner, exporter ExportZipper) APIServices {
 	// Get a session for the bucket region
-	sessBucket, err := awsutil.GetSessionWithRegion(cfg.AWSBucketRegion)
+	sessBucket, err := awsutil.GetSession()
 	if err != nil {
-		log.Fatalf("Failed to create AWS session for region: %v. Error: %v", cfg.AWSBucketRegion, err)
+		log.Fatalf("Failed to create AWS session for S3. Error: %v", err)
 	}
 
 	s3svc, err := awsutil.GetS3(sessBucket)
 	if err != nil {
-		log.Fatalf("Failed to create AWS S3 access for region: %v. Error: %v", cfg.AWSBucketRegion, err)
+		log.Fatalf("Failed to create AWS S3 service. Error: %v", err)
 	}
 
 	fs := fileaccess.MakeS3Access(s3svc)
 
-	sessCW, err := awsutil.GetSessionWithRegion(cfg.AWSCloudwatchRegion)
+	sessCW, err := awsutil.GetSession()
 	if err != nil {
-		log.Fatalf("Failed to create AWS session for region: %v. Error: %v", cfg.AWSCloudwatchRegion, err)
+		log.Fatalf("Failed to create AWS session for CloudwatchLogs. Error: %v", err)
 	}
 
 	// Init default logger - if we're local, we just output to stdout
