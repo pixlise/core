@@ -17,6 +17,9 @@ jobs:
       version_tag: ${{ steps.version.outputs.version_tag }}
       github_sha_short: ${GITHUB_SHA_SHORT}
     steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: GitHub Slug Action
         uses: rlespinasse/github-slug-action@v4.4.0
       - name: version
