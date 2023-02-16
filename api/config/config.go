@@ -64,8 +64,6 @@ type APIConfig struct {
 	ManualUploadBucket string
 
 	// Mongo Connection
-	MongoEndpoint string
-	MongoUsername string
 	MongoSecret   string
 
 	PiquantDockerImage string // PIQUANT docker image to use to run a job
