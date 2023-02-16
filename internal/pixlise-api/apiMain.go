@@ -96,7 +96,7 @@ func main() {
 
 	cfg, err := config.Init()
 	if err != nil {
-		log.Fatalf("Something went wrong with API config. Check that your AWS region is set the same as the bucket. Error: %v\n", err)
+		log.Fatalf("Something went wrong with API config. Error: %v\n", err)
 	}
 
 	// Show the config
