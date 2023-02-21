@@ -15,16 +15,16 @@ The current list of packages:
 * detector - Configuration utilities for the detectors
 * downloader - Downloading optimisations
 * export - Export functionality and services
-* expression - 
-* fileaccess
-* kubernetes
-* logger
-* mongo
-* notifications
-* piquant
-* pixlUser
-* quantModel
-* roiModel
-* tagModel
-* timestamper
-* utils
+* expression - Expression language parsing helpers
+* fileaccess - File access, both S3 and local storage
+* kubernetes - Kubernetes wrapping functionality
+* logger - Logging helpers
+* mongo - Mongo connectivity 
+* notifications - Notification services
+* piquant - Piquant hooks
+* pixlUser - User services
+* quantModel - Quantification Model parsing
+* roiModel - Region of Interest parser
+* tagModel - Tag model parsing
+* timestamper - Timestamp utilities
+* utils - Other small utilities
