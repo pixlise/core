@@ -48,6 +48,7 @@ func registerDataExpressionHandler(router *apiRouter.ApiObjectRouter) {
 
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWriteDataAnalysis), dataExpressionPut)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("DELETE", permission.PermWriteDataAnalysis), dataExpressionDelete)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), dataExpressionGet)
 
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedExpression), dataExpressionShare)
 }
@@ -83,6 +84,10 @@ func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 			item.Tags = []string{}
 		}
 
+		// Clear expression text so it's not that big to return
+		item.Expression = ""
+
+		// Get latest user details from Mongo
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
 		if creatorErr != nil {
 			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Expressions listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
@@ -93,6 +98,50 @@ func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	// Return the combined set
 	return &items, nil
+}
+
+func dataExpressionGet(params handlers.ApiHandlerParams) (interface{}, error) {
+	itemID := params.PathParams[idIdentifier]
+	var err error
+
+	// Get the right file depending on if this is a shared ID or not
+	items := dataExpression.DataExpressionLookup{}
+	_, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
+
+	if isSharedReq {
+		// Get shared expressions (into same map)
+		err = dataExpression.GetListing(params.Svcs, pixlUser.ShareUserID, &items)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Get user expressions
+		err := dataExpression.GetListing(params.Svcs, params.UserInfo.UserID, &items)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Find the expression in question
+	expr, ok := items[itemID]
+	if !ok {
+		return nil, api.MakeNotFoundError(itemID)
+	}
+
+	// Ensure tags is not nil as this is a new field
+	if expr.Tags == nil {
+		expr.Tags = []string{}
+	}
+
+	// Get latest user details from Mongo
+	updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(expr.Creator.UserID)
+	if creatorErr != nil {
+		params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Expression Get %v). Error: %v", expr.Creator.UserID, expr.Creator.Name, itemID, creatorErr)
+	} else {
+		expr.Creator = updatedCreator
+	}
+
+	return expr, nil
 }
 
 func setupForSave(params handlers.ApiHandlerParams, s3Path string) (*dataExpression.DataExpressionLookup, *dataExpression.DataExpressionInput, error) {

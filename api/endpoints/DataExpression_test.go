@@ -200,7 +200,7 @@ func Test_dataExpressionHandler_List(t *testing.T) {
 		checkResult(t, resp, 200, `{
     "abc123": {
         "name": "Calcium weight%",
-        "expression": "element(\"Ca\", \"%\")",
+        "expression": "",
         "type": "ContextImage",
         "comments": "comments for abc123 expression",
         "tags": [],
@@ -215,7 +215,7 @@ func Test_dataExpressionHandler_List(t *testing.T) {
     },
     "def456": {
         "name": "Iron Error",
-        "expression": "element(\"Fe\", \"err\")",
+        "expression": "",
         "type": "BinaryPlot",
         "comments": "comments for def456 expression",
         "tags": [],
@@ -230,7 +230,7 @@ func Test_dataExpressionHandler_List(t *testing.T) {
     },
     "shared-ghi789": {
         "name": "Iron %",
-        "expression": "element(\"Fe\", \"%\")",
+        "expression": "",
         "type": "TernaryPlot",
         "comments": "",
         "tags": [],
@@ -246,22 +246,151 @@ func Test_dataExpressionHandler_List(t *testing.T) {
 	})
 }
 
-func Example_dataExpressionHandler_Get() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
+func Test_dataExpressionHandler_Get(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
+	mt.Run("success", func(mt *mtest.T) {
+		// User name lookup
+		mongoMockedResponses := []primitive.D{
+			mtest.CreateCursorResponse(
+				0,
+				"userdatabase-unit_test.users",
+				mtest.FirstBatch,
+				bson.D{
+					{"Userid", "999"},
+					{"Notifications", bson.D{
+						{"Topics", bson.A{}},
+					}},
+					{"Config", bson.D{
+						{"Name", "Peter N"},
+						{"Email", "peter@spicule.co.uk"},
+						{"Cell", ""},
+						{"DataCollection", "unknown"},
+					}},
+				},
+			),
+		}
 
-	// POST not implemented! Should return 405
-	req, _ := http.NewRequest("GET", "/data-expression/abc123", bytes.NewReader([]byte("")))
-	resp := executeRequest(req, apiRouter.Router)
+		mt.AddMockResponses(mongoMockedResponses...)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
+			},
+		}
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			nil, // No file in S3
+			nil, // No file in S3
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(exprFile))),
+			},
+			{
+				// Note: No comments!
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"ghi789": {
+			"name": "Iron %",
+			"expression": "element(\"Fe\", \"%\")",
+			"type": "TernaryPlot",
+			"creator": {
+				"user_id": "999",
+				"name": "Peter N",
+				"email": "niko@spicule.co.uk"
+			}
+		}
+	}`))),
+			},
+		}
 
-	// Output:
-	// 405
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		apiRouter := MakeRouter(svcs)
+
+		req, _ := http.NewRequest("GET", "/data-expression/abc123", nil)
+		resp := executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 404, `abc123 not found
+`)
+
+		req, _ = http.NewRequest("GET", "/data-expression/shared-ghi789", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 404, `shared-ghi789 not found
+`)
+
+		req, _ = http.NewRequest("GET", "/data-expression/abc123", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 404, `abc123 not found
+`)
+
+		req, _ = http.NewRequest("GET", "/data-expression/shared-ghi789", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 404, `shared-ghi789 not found
+`)
+
+		req, _ = http.NewRequest("GET", "/data-expression/abc123", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "name": "Calcium weight%",
+    "expression": "element(\"Ca\", \"%\")",
+    "type": "ContextImage",
+    "comments": "comments for abc123 expression",
+    "tags": [],
+    "shared": false,
+    "creator": {
+        "name": "Peter N",
+        "user_id": "999",
+        "email": "peter@spicule.co.uk"
+    },
+    "create_unix_time_sec": 1668100000,
+    "mod_unix_time_sec": 1668100000
+}
+`)
+
+		req, _ = http.NewRequest("GET", "/data-expression/shared-ghi789", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "name": "Iron %",
+    "expression": "element(\"Fe\", \"%\")",
+    "type": "TernaryPlot",
+    "comments": "",
+    "tags": [],
+    "shared": true,
+    "creator": {
+        "name": "Peter N",
+        "user_id": "999",
+        "email": "peter@spicule.co.uk"
+    }
+}
+`)
+	})
 }
 
 func Example_dataExpressionHandler_Post() {
