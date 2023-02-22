@@ -193,14 +193,19 @@ func connectMongo(ourLogger logger.ILogger) *mongo.Client {
 	// Connect to mongo
 	if len("pixlise-db.cluster-clcm0b2sosn0.us-east-1.docdb.amazonaws.com:27017") > 0 && len("pixlise") > 0 && len("pixlise/docdb/masteruser") > 0 {
 		// Remote is configured, connect to it
-		mongoPassword, err := mongoDBConnection.GetMongoPasswordFromSecretCache("pixlise/docdb/masteruser")
+		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache("pixlise/docdb/masteruser")
 		if err != nil {
-			err2 := fmt.Errorf("Failed to read mongo DB password from secrets cache: %v", err)
+			err2 := fmt.Errorf("failed to read mongo DB connection info from secrets cache: %v", err)
 			ourLogger.Errorf("%v", err2)
 			log.Fatalf("%v", err)
 		}
 
-		mongoClient, err = mongoDBConnection.ConnectToRemoteMongoDB("pixlise-db.cluster-clcm0b2sosn0.us-east-1.docdb.amazonaws.com:27017", "pixlise", mongoPassword, ourLogger)
+		mongoClient, err = mongoDBConnection.ConnectToRemoteMongoDB(
+			mongoConnectionInfo.Host,
+			mongoConnectionInfo.Username,
+			mongoConnectionInfo.Password,
+			ourLogger,
+		)
 		if err != nil {
 			err2 := fmt.Errorf("Failed connect to remote mongo: %v", err)
 			ourLogger.Errorf("%v", err2)

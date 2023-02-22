@@ -18,6 +18,7 @@
 package awsutil
 
 import (
+	"log"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -34,8 +35,18 @@ import (
 
 // GetSession - returns an AWS session
 func GetSession() (*session.Session, error) {
-	region := os.Getenv("AWS_DEFAULT_REGION")
-	return GetSessionWithRegion(region)
+	region, regionPresent := os.LookupEnv("AWS_REGION")
+	if regionPresent {
+		log.Printf("Initializing AWS session for AWS_REGION (%s)", region)
+		return GetSessionWithRegion(region)
+	}
+	region, defaultRegionPresent := os.LookupEnv("AWS_DEFAULT_REGION")
+	if defaultRegionPresent {
+		log.Printf("Initializing AWS session for AWS_DEFAULT_REGION (%s)", region)
+		return GetSessionWithRegion(region)
+	}
+	log.Printf("Initializing default AWS session")
+	return session.NewSession()
 }
 
 // GetSessionWithRegion - Can specify am S3 region, returns an AWS session

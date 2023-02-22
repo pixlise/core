@@ -103,8 +103,6 @@ func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, sign
 		ConfigBucket:        ConfigBucketForUnitTest,
 		UsersBucket:         UsersBucketForUnitTest,
 		PiquantJobsBucket:   jobBucketForUnitTest,
-		AWSBucketRegion:     "us-east-1",
-		AWSCloudwatchRegion: "us-east-1",
 		EnvironmentName:     "unit-test",
 		LogLevel:            logging,
 		KubernetesLocation:  "external",

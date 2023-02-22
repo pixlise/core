@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -114,13 +113,6 @@ func CreateJob(svcs *services.APIServices, createParams JobCreateParams, wg *syn
 			jobLog.Errorf("%v", err)
 			return jobID, err
 		}
-	}
-
-	// Make sure AWS env vars are available, because that's what we'll be passing to PIQUANT docker container
-	if len(os.Getenv("AWS_ACCESS_KEY_ID")) <= 0 || len(os.Getenv("AWS_SECRET_ACCESS_KEY")) <= 0 || len(os.Getenv("AWS_DEFAULT_REGION")) <= 0 {
-		txt := "No AWS environment variables defined"
-		jobLog.Errorf(txt)
-		return jobID, errors.New(txt)
 	}
 
 	// Get configured PIQUANT docker container

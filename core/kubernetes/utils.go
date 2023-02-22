@@ -223,11 +223,8 @@ func (k *KubeHelper) getPodObject(cmd []string, args []string, env map[string]st
 	labels["owner"] = creator.UserID
 	optional := true
 	envvar := []apiv1.EnvVar{
-		{Name: "AWS_ACCESS_KEY_ID", Value: os.Getenv("AWS_ACCESS_KEY_ID")},
-		{Name: "AWS_SECRET_ACCESS_KEY", Value: os.Getenv("AWS_SECRET_ACCESS_KEY")},
-		{Name: "AWS_DEFAULT_REGION", Value: os.Getenv("AWS_DEFAULT_REGION")},
 		{Name: "PYTHONUNBUFFERED", Value: "TRUE"},
-		{
+		{  // TODO: Remove this or change how it is injected once we pick the ocs-poster work back up
 			Name: "credss_password",
 			ValueFrom: &apiv1.EnvVarSource{
 				SecretKeyRef: &apiv1.SecretKeySelector{
@@ -237,7 +234,8 @@ func (k *KubeHelper) getPodObject(cmd []string, args []string, env map[string]st
 					Key:      "password",
 					Optional: &optional,
 				},
-			}},
+			},
+		},
 	}
 	for key, element := range env {
 		envvar = append(envvar, apiv1.EnvVar{Name: key, Value: element})

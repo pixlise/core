@@ -121,21 +121,21 @@ type APIServices struct {
 // InitAPIServices sets up a new APIServices instance
 func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerator, signer URLSigner, exporter ExportZipper) APIServices {
 	// Get a session for the bucket region
-	sessBucket, err := awsutil.GetSessionWithRegion(cfg.AWSBucketRegion)
+	sessBucket, err := awsutil.GetSession()
 	if err != nil {
-		log.Fatalf("Failed to create AWS session for region: %v. Error: %v", cfg.AWSBucketRegion, err)
+		log.Fatalf("Failed to create AWS session for S3. Error: %v", err)
 	}
 
 	s3svc, err := awsutil.GetS3(sessBucket)
 	if err != nil {
-		log.Fatalf("Failed to create AWS S3 access for region: %v. Error: %v", cfg.AWSBucketRegion, err)
+		log.Fatalf("Failed to create AWS S3 service. Error: %v", err)
 	}
 
 	fs := fileaccess.MakeS3Access(s3svc)
 
-	sessCW, err := awsutil.GetSessionWithRegion(cfg.AWSCloudwatchRegion)
+	sessCW, err := awsutil.GetSession()
 	if err != nil {
-		log.Fatalf("Failed to create AWS session for region: %v. Error: %v", cfg.AWSCloudwatchRegion, err)
+		log.Fatalf("Failed to create AWS session for CloudwatchLogs. Error: %v", err)
 	}
 
 	// Init default logger - if we're local, we just output to stdout
@@ -178,18 +178,23 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 	var mongoClient *mongo.Client
 
 	// Connect to mongo
-	if len(cfg.MongoEndpoint) > 0 && len(cfg.MongoUsername) > 0 && len(cfg.MongoSecret) > 0 {
+	if len(cfg.MongoSecret) > 0 {
 		// Remote is configured, connect to it
-		mongoPassword, err := mongoDBConnection.GetMongoPasswordFromSecretCache(cfg.MongoSecret)
+		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache(cfg.MongoSecret)
 		if err != nil {
-			err2 := fmt.Errorf("Failed to read mongo DB password from secrets cache: %v", err)
+			err2 := fmt.Errorf("failed to read mongo DB connection info from secrets cache: %v", err)
 			ourLogger.Errorf("%v", err2)
 			log.Fatalf("%v", err)
 		}
 
-		mongoClient, err = mongoDBConnection.ConnectToRemoteMongoDB(cfg.MongoEndpoint, cfg.MongoUsername, mongoPassword, ourLogger)
+		mongoClient, err = mongoDBConnection.ConnectToRemoteMongoDB(
+			mongoConnectionInfo.Host,
+			mongoConnectionInfo.Username,
+			mongoConnectionInfo.Password,
+			ourLogger,
+		)
 		if err != nil {
-			err2 := fmt.Errorf("Failed connect to remote mongo: %v", err)
+			err2 := fmt.Errorf("failed connect to remote mongo: %v", err)
 			ourLogger.Errorf("%v", err2)
 			log.Fatalf("%v", err)
 		}
@@ -198,7 +203,7 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 		// Connect to local mongo
 		mongoClient, err = mongoDBConnection.ConnectToLocalMongoDB(ourLogger)
 		if err != nil {
-			err2 := fmt.Errorf("Failed connect to local mongo: %v", err)
+			err2 := fmt.Errorf("failed connect to local mongo: %v", err)
 			ourLogger.Errorf("%v", err2)
 			log.Fatalf("%v", err)
 		}

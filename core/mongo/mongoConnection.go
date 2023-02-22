@@ -38,6 +38,16 @@ import (
 // Helpers for connecting to Mongo DB
 // NOTE: we support remote, local and "test" connections as per https://medium.com/@victor.neuret/mocking-the-official-mongo-golang-driver-5aad5b226a78
 
+type MongoConnectionInfo struct {
+	DbClusterIdentifier string `json:"dbClusterIdentifier"`
+	Password            string `json:"password"`
+	Engine              string `json:"engine"`
+	Port                string `json:"port"`
+	Host                string `json:"host"`
+	Ssl                 string `json:"ssl"`
+	Username            string `json:"username"`
+}
+
 func ConnectToRemoteMongoDB(
 	MongoEndpoint string,
 	MongoUsername string,
@@ -93,26 +103,25 @@ func getCustomTLSConfig(caFile string) (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
-func GetMongoPasswordFromSecretCache(secretName string) (string, error) {
+func GetMongoConnectionInfoFromSecretCache(secretName string) (MongoConnectionInfo, error) {
+	var info MongoConnectionInfo
 	seccache, err := secretcache.New()
 	if err != nil {
-		return "", err
+		return info, err
 	}
 
-	pw, err := seccache.GetSecretString(secretName)
+	secretValue, err := seccache.GetSecretString(secretName)
 	if err != nil {
-		return "", err
+		return info, err
 	}
 
 	// Secret cache seems to return these types... Unmarshall it
-	var result map[string]interface{}
-	json.Unmarshal([]byte(pw), &result)
+	json.Unmarshal([]byte(secretValue), &info)
 	if err != nil {
-		return "", fmt.Errorf("Failed to parse secret: %v", secretName)
+		return info, fmt.Errorf("failed to parse secret: %v", secretName)
 	}
 
-	password := fmt.Sprintf("%v", result["password"])
-	return password, nil
+	return info, nil
 }
 
 // Assumes local mongo running in docker as per this command:
