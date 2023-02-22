@@ -85,7 +85,7 @@ func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 		}
 
 		// Clear expression text so it's not that big to return
-		item.Expression = ""
+		//item.Expression = ""
 
 		// Get latest user details from Mongo
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
