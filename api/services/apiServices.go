@@ -121,22 +121,17 @@ type APIServices struct {
 // InitAPIServices sets up a new APIServices instance
 func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerator, signer URLSigner, exporter ExportZipper) APIServices {
 	// Get a session for the bucket region
-	sessBucket, err := awsutil.GetSession()
+	sess, err := awsutil.GetSession()
 	if err != nil {
-		log.Fatalf("Failed to create AWS session for S3. Error: %v", err)
+		log.Fatalf("Failed to create AWS session. Error: %v", err)
 	}
 
-	s3svc, err := awsutil.GetS3(sessBucket)
+	s3svc, err := awsutil.GetS3(sess)
 	if err != nil {
 		log.Fatalf("Failed to create AWS S3 service. Error: %v", err)
 	}
 
 	fs := fileaccess.MakeS3Access(s3svc)
-
-	sessCW, err := awsutil.GetSession()
-	if err != nil {
-		log.Fatalf("Failed to create AWS session for CloudwatchLogs. Error: %v", err)
-	}
 
 	// Init default logger - if we're local, we just output to stdout
 	// NOTE: we contain multiple streams for the one application in the one log group. Here we define
@@ -147,7 +142,7 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 		ourLogger = &logger.StdOutLogger{}
 	} else {
 		ourLogger, err = logger.InitCloudWatchLogger(
-			sessCW,
+			sess,
 			"/api/"+cfg.EnvironmentName,
 			// Startup date/time, but with randomness after so it's likely unique
 			fmt.Sprintf("%v (%v)", time.Now().Format("02-Jan-2006 15-04-05"), utils.RandStringBytesMaskImpr(8)),
@@ -168,10 +163,6 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 	}); err != nil {
 		ourLogger.Errorf("Sentry initialization failed: %v", err)
 	}
-
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
 
 	snsSvc := sns.New(sess)
 
@@ -212,7 +203,7 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 	return APIServices{
 		Config:       cfg,
 		Log:          ourLogger,
-		AWSSessionCW: sessCW,
+		AWSSessionCW: sess,
 		FS:           fs,
 		S3:           s3svc,
 		SNS:          awsutil.RealSNS{SNS: snsSvc},
