@@ -200,7 +200,7 @@ func Test_dataExpressionHandler_List(t *testing.T) {
 		checkResult(t, resp, 200, `{
     "abc123": {
         "name": "Calcium weight%",
-        "expression": "element(\"Ca\", \"%\")",
+        "expression": "",
         "type": "ContextImage",
         "comments": "comments for abc123 expression",
         "tags": [],
@@ -215,7 +215,7 @@ func Test_dataExpressionHandler_List(t *testing.T) {
     },
     "def456": {
         "name": "Iron Error",
-        "expression": "element(\"Fe\", \"err\")",
+        "expression": "",
         "type": "BinaryPlot",
         "comments": "comments for def456 expression",
         "tags": [],
@@ -230,7 +230,7 @@ func Test_dataExpressionHandler_List(t *testing.T) {
     },
     "shared-ghi789": {
         "name": "Iron %",
-        "expression": "element(\"Fe\", \"%\")",
+        "expression": "",
         "type": "TernaryPlot",
         "comments": "",
         "tags": [],
