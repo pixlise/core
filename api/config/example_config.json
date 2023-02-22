@@ -1,6 +1,4 @@
 {
-  "AWSBucketRegion": "us-east-1",
-  "AWSCloudwatchRegion": "us-east-1",
   "AdminEmails": ["me@example.com", "you@example.com"],
   "Auth0Domain": "tenant.auth0.com",
   "Auth0ManagementClientID": "clientId",
