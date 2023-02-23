@@ -3,12 +3,15 @@ kind: Component
 metadata:
   name: pixlise-core-packages
   description: |
-    The core packages repo for the pixlise application.
+    The core packages repo for the pixlise application. The core packages are written in Golang and 
+    are the main library functions used in a number of different Pixlise products.
   links:
     - title: Website
       url: https://pixlise.org
-    - title: Documentation
+    - title: User Documentation
       url: https://pixlise.gitbook.io/
+    - title: Slack
+      url: https://pixlise.slack.com/archives/CQUA2FSS0
   annotations:
     github.com/project-slug: pixlise/core/core
     backstage.io/techdocs-ref: dir:.
