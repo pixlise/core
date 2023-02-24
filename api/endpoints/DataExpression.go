@@ -49,6 +49,7 @@ func registerDataExpressionHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWriteDataAnalysis), dataExpressionPut)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("DELETE", permission.PermWriteDataAnalysis), dataExpressionDelete)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), dataExpressionGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/execution-stat", idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWriteDataAnalysis), dataExpressionExecutionStatPut)
 
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedExpression), dataExpressionShare)
 }
@@ -75,6 +76,11 @@ func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 	sort.Strings(keys)
 
+	result := map[string]dataExpression.DataExpressionWire{}
+
+	// TODO: REMOVE THIS! THIS IS TEMPORARY UNTIL WE MIGRATE TO MONGO
+	statCount := 0
+
 	// Update all creator infos
 	for _, k := range keys {
 		item := items[k]
@@ -94,32 +100,54 @@ func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 		} else {
 			item.Creator = updatedCreator
 		}
+
+		resultItem := dataExpression.DataExpressionWire{
+			DataExpression: &item,
+		}
+
+		// TODO: REMOVE THIS! THIS IS TEMPORARY UNTIL WE MIGRATE TO MONGO
+		if statCount < 5 {
+			// Get last execution stats for it (if available)
+			s3Path := filepaths.GetExpressionExecutionStatPath(k)
+
+			var execStats dataExpression.DataExpressionExecStats
+			err = params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, s3Path, &execStats, false)
+
+			if err != nil {
+				// Don't complain all the time if this fails
+				if !params.Svcs.FS.IsNotFoundError(err) {
+					params.Svcs.Log.Errorf("Ignoring failure to read Expression Execution Stats for: %v. Error: %v", k, err)
+				}
+			} else {
+				resultItem.RecentExecStats = &execStats
+			}
+		}
+
+		result[k] = resultItem
+
+		statCount++
 	}
 
 	// Return the combined set
-	return &items, nil
+	return &result, nil
 }
 
 func dataExpressionGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	itemID := params.PathParams[idIdentifier]
-	var err error
 
 	// Get the right file depending on if this is a shared ID or not
 	items := dataExpression.DataExpressionLookup{}
 	_, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
+	listingUserId := params.UserInfo.UserID
 
 	if isSharedReq {
-		// Get shared expressions (into same map)
-		err = dataExpression.GetListing(params.Svcs, pixlUser.ShareUserID, &items)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		// Get user expressions
-		err := dataExpression.GetListing(params.Svcs, params.UserInfo.UserID, &items)
-		if err != nil {
-			return nil, err
-		}
+		listingUserId = pixlUser.ShareUserID
+	}
+
+	// Get expressions
+	err := dataExpression.GetListing(params.Svcs, listingUserId, &items)
+	if err != nil {
+		return nil, err
 	}
 
 	// Find the expression in question
@@ -141,7 +169,26 @@ func dataExpressionGet(params handlers.ApiHandlerParams) (interface{}, error) {
 		expr.Creator = updatedCreator
 	}
 
-	return expr, nil
+	result := dataExpression.DataExpressionWire{
+		DataExpression: &expr,
+	}
+
+	// Get last execution stats for it (if available)
+	s3Path := filepaths.GetExpressionExecutionStatPath(itemID)
+
+	var execStats dataExpression.DataExpressionExecStats
+	err = params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, s3Path, &execStats, false)
+
+	if err != nil {
+		// Don't complain all the time if this fails
+		if !params.Svcs.FS.IsNotFoundError(err) {
+			params.Svcs.Log.Errorf("Ignoring failure to read Expression Execution Stats for: %v. Error: %v", itemID, err)
+		}
+	} else {
+		result.RecentExecStats = &execStats
+	}
+
+	return result, nil
 }
 
 func setupForSave(params handlers.ApiHandlerParams, s3Path string) (*dataExpression.DataExpressionLookup, *dataExpression.DataExpressionInput, error) {
@@ -265,6 +312,36 @@ func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	response[itemID] = (*expressions)[id]
 
 	return response, nil
+}
+
+func dataExpressionExecutionStatPut(params handlers.ApiHandlerParams) (interface{}, error) {
+	itemID := params.PathParams[idIdentifier]
+
+	body, err := ioutil.ReadAll(params.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var req dataExpression.DataExpressionExecStats
+	err = json.Unmarshal(body, &req)
+	if err != nil {
+		return nil, api.MakeBadRequestError(err)
+	}
+
+	// Set the time stamp to now
+	req.TimeStampUnixSec = params.Svcs.TimeStamper.GetTimeNowSec()
+
+	// Decide where to write this data
+	// NOTE: it's "global" so we just overwrite the last entry every time
+	s3Path := filepaths.GetExpressionExecutionStatPath(itemID)
+
+	// Just overwrite it
+	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }
 
 func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error) {

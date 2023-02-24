@@ -403,6 +403,12 @@ func GetCollectionPath(userID string, datasetID string, id string) string {
 	return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateCollectionsSubpath, id+".json")
 }
 
+const ExpressionExecutionStatPath = "ExpressionExecStat"
+
+func GetExpressionExecutionStatPath(exprID string) string {
+	return GetUserContentPath(pixlUser.ShareUserID, ExpressionExecutionStatPath+"/"+exprID+".json")
+}
+
 ////////////////////////////////////////////////////////////////////////////////////
 // Helpers for forming certain file names
 ////////////////////////////////////////////////////////////////////////////////////

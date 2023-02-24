@@ -148,6 +148,16 @@ func Test_dataExpressionHandler_List(t *testing.T) {
 			{
 				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
 			},
+			// Stats for the above
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/ExpressionExecStat/abc123.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/ExpressionExecStat/def456.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/ExpressionExecStat/shared-ghi789.json"),
+			},
 		}
 		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 			nil, // No file in S3
@@ -175,6 +185,28 @@ func Test_dataExpressionHandler_List(t *testing.T) {
 			}
 		}
 	}`))),
+			},
+			// Stats for the above
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"dataRequired": [
+						"Ca",
+						"Fe"
+					],
+					"runtimeMs": 340,
+					"mod_unix_time_sec": 1234568888
+				}`))),
+			},
+			nil,
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"dataRequired": [
+						"Na",
+						"Ti"
+					],
+					"runtimeMs": 20,
+					"mod_unix_time_sec": 1234568999
+				}`))),
 			},
 		}
 
@@ -211,7 +243,15 @@ func Test_dataExpressionHandler_List(t *testing.T) {
             "email": "peter@spicule.co.uk"
         },
         "create_unix_time_sec": 1668100000,
-        "mod_unix_time_sec": 1668100000
+        "mod_unix_time_sec": 1668100000,
+        "recentExecStats": {
+            "dataRequired": [
+                "Ca",
+                "Fe"
+            ],
+            "runtimeMs": 340,
+            "mod_unix_time_sec": 1234568888
+        }
     },
     "def456": {
         "name": "Iron Error",
@@ -239,6 +279,14 @@ func Test_dataExpressionHandler_List(t *testing.T) {
             "name": "Peter N",
             "user_id": "999",
             "email": "peter@spicule.co.uk"
+        },
+        "recentExecStats": {
+            "dataRequired": [
+                "Na",
+                "Ti"
+            ],
+            "runtimeMs": 20,
+            "mod_unix_time_sec": 1234568999
         }
     }
 }
@@ -289,11 +337,21 @@ func Test_dataExpressionHandler_Get(t *testing.T) {
 			{
 				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
 			},
+			// The one that works (user)
 			{
 				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
 			},
+			// Stats for the above
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/ExpressionExecStat/abc123.json"),
+			},
+			// The one that works (shared)
 			{
 				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
+			},
+			// Stats for the above
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/ExpressionExecStat/shared-ghi789.json"),
 			},
 		}
 		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -307,6 +365,17 @@ func Test_dataExpressionHandler_Get(t *testing.T) {
 			},
 			{
 				Body: ioutil.NopCloser(bytes.NewReader([]byte(exprFile))),
+			},
+			// Stats for the above
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+	"dataRequired": [
+		"Ca",
+		"Fe"
+	],
+	"runtimeMs": 340,
+	"mod_unix_time_sec": 1234568888
+}`))),
 			},
 			{
 				// Note: No comments!
@@ -323,6 +392,8 @@ func Test_dataExpressionHandler_Get(t *testing.T) {
 		}
 	}`))),
 			},
+			// Stats for the above (none found)
+			nil, // No file in S3
 		}
 
 		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
@@ -369,7 +440,15 @@ func Test_dataExpressionHandler_Get(t *testing.T) {
         "email": "peter@spicule.co.uk"
     },
     "create_unix_time_sec": 1668100000,
-    "mod_unix_time_sec": 1668100000
+    "mod_unix_time_sec": 1668100000,
+    "recentExecStats": {
+        "dataRequired": [
+            "Ca",
+            "Fe"
+        ],
+        "runtimeMs": 340,
+        "mod_unix_time_sec": 1234568888
+    }
 }
 `)
 
@@ -722,6 +801,92 @@ func Example_dataExpressionHandler_Put() {
 	//
 	// 400
 	// cannot edit shared expression not owned by user
+}
+
+func Example_dataExpressionHandler_ExecStatPut() {
+	var mockS3 awsutil.MockS3Client
+	defer mockS3.FinishTest()
+
+	mockS3.ExpGetObjectInput = []s3.GetObjectInput{}
+	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{}
+
+	// NOTE: PUT expected JSON needs to have spaces not tabs
+	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/ExpressionExecStat/aaa111.json"), Body: bytes.NewReader([]byte(`{
+    "dataRequired": [
+        "Ca",
+        "Fe"
+    ],
+    "runtimeMs": 340,
+    "mod_unix_time_sec": 1234568888
+}`)),
+		},
+		{
+			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/ExpressionExecStat/aaa112.json"), Body: bytes.NewReader([]byte(`{
+    "dataRequired": [
+        "Ca",
+        "Fe"
+    ],
+    "runtimeMs": 340,
+    "mod_unix_time_sec": 1234569999
+}`)),
+		},
+	}
+	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
+		{},
+		{},
+	}
+
+	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1234568888, 1234569999},
+	}
+	apiRouter := MakeRouter(svcs)
+
+	// Bad body
+	putItem := `{
+		"dataRequired": ["Ca",
+        "runtimeMs": 340
+	}`
+	req, _ := http.NewRequest("PUT", "/data-expression/execution-stat/aaa110", bytes.NewReader([]byte(putItem)))
+	resp := executeRequest(req, apiRouter.Router)
+
+	fmt.Println(resp.Code)
+	fmt.Println(resp.Body)
+
+	// No timestamp
+	putItem = `{
+		"dataRequired": ["Ca", "Fe"],
+        "runtimeMs": 340
+	}`
+
+	req, _ = http.NewRequest("PUT", "/data-expression/execution-stat/aaa111", bytes.NewReader([]byte(putItem)))
+	resp = executeRequest(req, apiRouter.Router)
+
+	fmt.Println(resp.Code)
+	fmt.Println(resp.Body)
+
+	// With timestamp
+	putItem = `{
+		"dataRequired": ["Ca", "Fe"],
+        "runtimeMs": 340,
+        "mod_unix_time_sec": 1234567890
+	}`
+
+	req, _ = http.NewRequest("PUT", "/data-expression/execution-stat/aaa112", bytes.NewReader([]byte(putItem)))
+	resp = executeRequest(req, apiRouter.Router)
+
+	fmt.Println(resp.Code)
+	fmt.Println(resp.Body)
+
+	// Output:
+	// 400
+	// invalid character ':' after array element
+	//
+	// 200
+	//
+	// 200
 }
 
 func Example_dataExpressionHandler_Delete() {

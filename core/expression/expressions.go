@@ -53,9 +53,26 @@ type DataExpressionInput struct {
 	Tags       []string       `json:"tags"`
 }
 
+// Stats related to executing an expression. We get these from the UI when it runs
+// an expression, and we (may) supply them when UI queries for expressions. This way the
+// UI can know what expression is compatible with currently loaded quant file, and can
+// "strike-through" ones that aren't. This was previously implemented client-side only
+// by parsing expression text but we no longer supply ALL expression texts to client
+type DataExpressionExecStats struct {
+	DataRequired     []string `json:"dataRequired"`
+	RuntimeMS        int32    `json:"runtimeMs"`
+	TimeStampUnixSec int64    `json:"mod_unix_time_sec,omitempty"`
+}
+
 type DataExpression struct {
 	*DataExpressionInput
 	*pixlUser.APIObjectItem
+}
+
+// When sending out, we include more data than we store each item with
+type DataExpressionWire struct {
+	*DataExpression
+	RecentExecStats *DataExpressionExecStats `json:"recentExecStats,omitempty"`
 }
 
 func (a DataExpression) SetTimes(userID string, t int64) {
