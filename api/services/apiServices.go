@@ -38,6 +38,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/pixlise/core/v2/api/config"
 	"github.com/pixlise/core/v2/core/awsutil"
+	expressionLanguage "github.com/pixlise/core/v2/core/expression-language"
 	"github.com/pixlise/core/v2/core/logger"
 	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
 )
@@ -116,6 +117,9 @@ type APIServices struct {
 
 	// "User DB"
 	Users pixlUser.UserDetailsLookup
+
+	// "Expression DB"
+	Expressions expressionLanguage.ExpressionDB
 }
 
 // InitAPIServices sets up a new APIServices instance

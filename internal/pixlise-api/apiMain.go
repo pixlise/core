@@ -38,6 +38,7 @@ import (
 	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/awsutil"
+	expressionLanguage "github.com/pixlise/core/v2/core/expression-language"
 	"github.com/pixlise/core/v2/core/utils"
 
 	_ "net/http/pprof"
@@ -135,7 +136,9 @@ func main() {
 
 	svcs.Notifications = notificationStack
 
+	// Init all Mongo db interfaces here
 	svcs.Users = pixlUser.MakeUserDetailsLookup(svcs.Mongo, cfg.EnvironmentName)
+	svcs.Expressions = expressionLanguage.MakeExpressionDB(svcs.Mongo, cfg.EnvironmentName)
 
 	jwtReader := api.RealJWTReader{Validator: initJWTValidator(cfg.Auth0Domain, svcs.FS, cfg, svcs.Log)}
 	svcs.JWTReader = jwtReader

@@ -1,0 +1,172 @@
+// Licensed to NASA JPL under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. NASA JPL licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package expressionLanguage
+
+import (
+	"context"
+	"errors"
+
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/timestamper"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+// DataModuleInput - This defines a "module" of code that can be used as part of expressions. At the time
+// of writing (and hopefully indefinitely), Lua is the programming language PIXLISE will support. The text
+// contained in the "module" field is to be a valid Lua module, but the outer "wrapping" around it is added
+// at runtime.
+
+// As an example:
+// --- Added automatically at runtime to a module called MyModule ---
+// MyModule = {}
+// --- End automatically added section ---
+//
+// function MyModule.add(a, b)
+//     return a+b
+// end
+//
+// --- Added automatically at runtime to a module called MyModule ---
+// return MyModule
+// --- End automatically added section ---
+
+// Modules similarities with Expressions:
+// - Both have a unique string ID, an editable name, and comments
+// - Both store text with executable code in it, and listing both returns all data except the text (because it's large)
+// - Both can be queried by ID to get the full object (including text)
+
+// Modules differences from Expressions:
+// - Module names must be valid Lua variable names, because they are imported into Lua and used as a variable
+// - Modules cannot be deleted, only new versions can be created (using PUT)
+// - Modules store all previous versions, and each of these can be queried (GET) to get the module code
+// - When listing Modules, you get the metadata for a module and a list of valid version numbers, along with associated tags
+//   for each version number
+
+// What users send in POST or PUT
+type DataModuleInput struct {
+	Name       string   `json:"name"`       // Editable name
+	SourceCode string   `json:"sourceCode"` // The module executable code
+	Comments   string   `json:"comments"`   // Editable comments
+	Tags       []string `json:"tags"`       // Any tags for this version
+}
+
+// Stored version of a module
+type DataModuleVersion struct {
+	ModuleID         string   `json:"moduleID"` // The ID of the module we belong to
+	SourceCode       string   `json:"sourceCode"`
+	Version          string   `json:"version"`
+	Tags             []string `json:"tags"`
+	Comments         string   `json:"comments"`
+	TimeStampUnixSec int64    `json:"mod_unix_time_sec,omitempty"`
+}
+
+// Stored module object itself
+type DataModule struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Comments string `json:"comments"`
+	*pixlUser.APIObjectItem
+}
+
+// What we send out to users - notice versions only contains version numbers & tags
+type DataModuleVersionWire struct {
+	Version          string   `json:"version"`
+	Tags             []string `json:"tags"`
+	Comments         string   `json:"comments"`
+	TimeStampUnixSec int64    `json:"mod_unix_time_sec,omitempty"`
+}
+
+type DataModuleWire struct {
+	*DataModule
+	Versions []DataModuleVersionWire `json:"versions"`
+}
+
+// And what we send for a specific module version request
+type DataModuleSpecificVersionWire struct {
+	ID string `json:"id,omitempty"`
+	*DataModule
+	*DataModuleVersion
+}
+
+type DataModuleLookup map[string]DataModule
+
+func ListModules(db ExpressionDB) (DataModuleLookup, error) {
+	if db.modules == nil {
+		return DataModuleLookup{}, errors.New("ListModules: Mongo not connected")
+	}
+
+	modules := DataModuleLookup{}
+
+	filter := bson.D{}
+	opts := options.Find()
+	cursor, err := db.modules.Find(context.TODO(), filter, opts)
+
+	if err != nil {
+		return modules, err
+	}
+
+	result := []DataModule{}
+	cursor.All(context.TODO(), result)
+	if err != nil {
+		return modules, err
+	}
+
+	// Loop through modules and put them into a lookup
+	for _, item := range result {
+		modules[item.ID] = item
+	}
+
+	return modules, nil
+}
+
+func GetModule(db ExpressionDB, moduleID string) (DataModuleSpecificVersionWire, error) {
+	if db.modules == nil {
+		return DataModuleSpecificVersionWire{}, errors.New("GetModule: Mongo not connected")
+	}
+
+	filter := bson.D{primitive.E{Key: "moduleID", Value: moduleID}}
+
+	opts := options.FindOne()
+	cursor := db.modules.FindOne(context.TODO(), filter, opts)
+
+	var result DataModuleSpecificVersionWire
+	err := cursor.Decode(&result)
+	return result, err
+}
+
+func CreateModule(db ExpressionDB, input DataModuleInput, timestamper timestamper.ITimeStamper, creator pixlUser.UserInfo) (DataModuleSpecificVersionWire, error) {
+	nowUnix := timestamper.GetTimeNowSec()
+
+	mod := DataModule{
+		Name:     input.Name,
+		Comments: input.Comments,
+		APIObjectItem: &pixlUser.APIObjectItem{
+			Shared:              true,
+			Creator:             creator,
+			CreatedUnixTimeSec:  nowUnix,
+			ModifiedUnixTimeSec: nowUnix,
+		},
+	}
+	_, err := db.modules.InsertOne(context.TODO(), mod)
+	return DataModuleSpecificVersionWire{}, err
+}
+
+func AddModuleVersion(db ExpressionDB, moduleID string, input DataModuleInput) (DataModuleSpecificVersionWire, error) {
+	return DataModuleSpecificVersionWire{}, nil
+}
