@@ -28,4 +28,4 @@ spec:
   lifecycle: production
   system: core-plaform
   dependsOn::
-    - component:pixlise-api-packages
+    - component:pixlise-api-services
