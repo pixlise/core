@@ -27,5 +27,5 @@ spec:
   owner: default/developers
   lifecycle: production
   system: core-plaform
-  dependsOn::
+  dependsOn:
     - component:pixlise-api-services
