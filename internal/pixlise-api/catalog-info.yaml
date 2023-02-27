@@ -3,23 +3,27 @@ kind: Component
 metadata:
   name: pixlise-api
   description: |
-    The executable package for the pixlise API.
+    The executable package for the pixlise API. This is built upon Gorilla Mux and has built in security utilising Auth0.
   links:
     - title: Website
       url: https://pixlise.org
     - title: Documentation
       url: https://pixlise.gitbook.io/
+    - title: Slack
+      url: https://pixlise.slack.com/archives/CQUA2FSS0
+      
   annotations:
     backstage.io/kubernetes-id: pixlise-api
     github.com/project-slug: pixlise/core/internal/pixlise-api
     backstage.io/techdocs-ref: dir:.
     sentry.io/project-slug: pixl-api
-    argocd/app-name: backstage
-    aws.com/lambda-function-name: DevPixlise-DatasourceServiceDatasourceUpdater50255-T1vsEmjiVQ1Z
-    aws.com/lambda-region: us-east-1   
+    oargocd/app-name: backstage
+    oaws.com/lambda-function-name: DevPixlise-DatasourceServiceDatasourceUpdater50255-T1vsEmjiVQ1Z
+    oaws.com/lambda-region: us-east-1   
 spec:
   type: service
   owner: default/developers
   lifecycle: production
+  system: core-plaform
   dependsOn::
     - component:pixlise-api-packages
