@@ -19,7 +19,7 @@ spec:
   providesApis:
     - core-api
   dependencyOf:
-    - pixlise-ui
-    - pixlise-api
+    - component:pixlise-ui
+    - component:pixlise-api
   dependsOn:
     - component:pixlise-core-packages
