@@ -21,5 +21,6 @@ spec:
   type: service
   owner: default/developers
   lifecycle: production
+  system: data-processing
   dependsOn:
     - component:pixlise-core-packages
