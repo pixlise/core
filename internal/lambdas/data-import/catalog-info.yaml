@@ -16,11 +16,7 @@ metadata:
     github.com/project-slug: pixlise/core/internal/lambdas/data-import
     backstage.io/techdocs-ref: dir:.
     aws.com/lambda-function-name: *-DatasourceServiceDatasourceUpdater*
-    aws.com/lambda-region: us-east-1
-    aws.com/lambda-function-name: DevPixlise-DatasourceServiceDatasourceUpdater50255-T1vsEmjiVQ1Z
-    oaws.com/lambda-region: us-east-1   
-    aws.com/lambda-function-name: DevPixlise-DatasourceServiceDatasourceUpdater50255-T1vsEmjiVQ1Z
-    oaws.com/lambda-region: us-east-1   
+    aws.com/lambda-region: us-east-1   
   tags:
     - lambda
 spec:
