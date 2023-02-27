@@ -25,5 +25,5 @@ spec:
   dependencyOf:
     - component:data-import
   system: data-processing
-  dependsOn::
+  dependsOn:
     - component:pixlise-core-packages
