@@ -9,9 +9,14 @@ metadata:
       url: https://pixlise.org
     - title: Documentation
       url: https://pixlise.gitbook.io/
+    - title: Slack
+      url: https://pixlise.slack.com/archives/C01DG0G809G
   annotations:
     github.com/project-slug: pixlise/core/diffraction-detector/
     backstage.io/techdocs-ref: dir:.
+  tags:
+    - ml
+    - diffraction
 spec:
   type: library
   owner: default/developers
