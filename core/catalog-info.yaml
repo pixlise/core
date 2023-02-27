@@ -20,7 +20,7 @@ spec:
   owner: default/developers
   lifecycle: production
   dependencyOf:
-    - component:data-import
+    - component:data-import-lambda
     - component:pixlise-api-services
   subComponentOf:
     - pixlise-api-services
