@@ -20,5 +20,6 @@ spec:
     - core-api
   dependencyOf:
     - pixlise-ui
+    - pixlise-api
   dependsOn:
     - component:pixlise-core-packages
