@@ -25,3 +25,4 @@ spec:
     - component:dataset-tile-updater
   subComponentOf:
     - pixlise-api-services
+  system: core-plaform
