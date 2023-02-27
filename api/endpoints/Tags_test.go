@@ -25,6 +25,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/timestamper"
 )
@@ -114,8 +115,9 @@ func Example_tagHandler_Post() {
 		{},
 	}
 
-	var idGen MockIDGenerator
-	idGen.ids = []string{"test-new-id"}
+	idGen := services.MockIDGenerator{
+		IDs: []string{"test-new-id"},
+	}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1670623334},

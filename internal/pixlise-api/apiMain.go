@@ -38,12 +38,13 @@ import (
 	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/awsutil"
-	expressionLanguage "github.com/pixlise/core/v2/core/expression-language"
 	"github.com/pixlise/core/v2/core/utils"
 
 	_ "net/http/pprof"
 
 	"github.com/pixlise/core/v2/core/export"
+
+	expressionDB "github.com/pixlise/core/v2/core/expressions/database"
 )
 
 func printRoutePermissions(routePermissions map[string]string) {
@@ -138,7 +139,7 @@ func main() {
 
 	// Init all Mongo db interfaces here
 	svcs.Users = pixlUser.MakeUserDetailsLookup(svcs.Mongo, cfg.EnvironmentName)
-	svcs.Expressions = expressionLanguage.MakeExpressionDB(svcs.Mongo, cfg.EnvironmentName)
+	svcs.Expressions = expressionDB.MakeExpressionDB(cfg.EnvironmentName, &svcs)
 
 	jwtReader := api.RealJWTReader{Validator: initJWTValidator(cfg.Auth0Domain, svcs.FS, cfg, svcs.Log)}
 	svcs.JWTReader = jwtReader

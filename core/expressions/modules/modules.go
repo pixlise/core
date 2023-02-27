@@ -15,17 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package expressionLanguage
+package modules
 
 import (
-	"context"
-	"errors"
+	"regexp"
 
 	"github.com/pixlise/core/v2/core/pixlUser"
-	"github.com/pixlise/core/v2/core/timestamper"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // DataModuleInput - This defines a "module" of code that can be used as part of expressions. At the time
@@ -73,15 +68,15 @@ type DataModuleVersion struct {
 	Version          string   `json:"version"`
 	Tags             []string `json:"tags"`
 	Comments         string   `json:"comments"`
-	TimeStampUnixSec int64    `json:"mod_unix_time_sec,omitempty"`
+	TimeStampUnixSec int64    `json:"mod_unix_time_sec"`
 }
 
 // Stored module object itself
 type DataModule struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Comments string `json:"comments"`
-	*pixlUser.APIObjectItem
+	ID       string                 `json:"id"`
+	Name     string                 `json:"name"`
+	Comments string                 `json:"comments"`
+	Origin   pixlUser.APIObjectItem `json:"origin"`
 }
 
 // What we send out to users - notice versions only contains version numbers & tags
@@ -89,7 +84,13 @@ type DataModuleVersionWire struct {
 	Version          string   `json:"version"`
 	Tags             []string `json:"tags"`
 	Comments         string   `json:"comments"`
-	TimeStampUnixSec int64    `json:"mod_unix_time_sec,omitempty"`
+	TimeStampUnixSec int64    `json:"mod_unix_time_sec"`
+}
+
+// As above, but with source field
+type DataModuleVersionSourceWire struct {
+	SourceCode string `json:"sourceCode"`
+	*DataModuleVersionWire
 }
 
 type DataModuleWire struct {
@@ -99,74 +100,18 @@ type DataModuleWire struct {
 
 // And what we send for a specific module version request
 type DataModuleSpecificVersionWire struct {
-	ID string `json:"id,omitempty"`
 	*DataModule
-	*DataModuleVersion
+	Version DataModuleVersionSourceWire `json:"version"`
 }
 
-type DataModuleLookup map[string]DataModule
+type DataModuleWireLookup map[string]DataModuleWire
 
-func ListModules(db ExpressionDB) (DataModuleLookup, error) {
-	if db.modules == nil {
-		return DataModuleLookup{}, errors.New("ListModules: Mongo not connected")
-	}
-
-	modules := DataModuleLookup{}
-
-	filter := bson.D{}
-	opts := options.Find()
-	cursor, err := db.modules.Find(context.TODO(), filter, opts)
-
+// Some validation functions
+func IsValidModuleName(name string) bool {
+	// Names must be valid Lua variable names...
+	match, err := regexp.MatchString("^[A-Za-z]$|^[A-Za-z_]+[A-Za-z0-9_]*[A-Za-z0-9]$", name)
 	if err != nil {
-		return modules, err
+		return false
 	}
-
-	result := []DataModule{}
-	cursor.All(context.TODO(), result)
-	if err != nil {
-		return modules, err
-	}
-
-	// Loop through modules and put them into a lookup
-	for _, item := range result {
-		modules[item.ID] = item
-	}
-
-	return modules, nil
-}
-
-func GetModule(db ExpressionDB, moduleID string) (DataModuleSpecificVersionWire, error) {
-	if db.modules == nil {
-		return DataModuleSpecificVersionWire{}, errors.New("GetModule: Mongo not connected")
-	}
-
-	filter := bson.D{primitive.E{Key: "moduleID", Value: moduleID}}
-
-	opts := options.FindOne()
-	cursor := db.modules.FindOne(context.TODO(), filter, opts)
-
-	var result DataModuleSpecificVersionWire
-	err := cursor.Decode(&result)
-	return result, err
-}
-
-func CreateModule(db ExpressionDB, input DataModuleInput, timestamper timestamper.ITimeStamper, creator pixlUser.UserInfo) (DataModuleSpecificVersionWire, error) {
-	nowUnix := timestamper.GetTimeNowSec()
-
-	mod := DataModule{
-		Name:     input.Name,
-		Comments: input.Comments,
-		APIObjectItem: &pixlUser.APIObjectItem{
-			Shared:              true,
-			Creator:             creator,
-			CreatedUnixTimeSec:  nowUnix,
-			ModifiedUnixTimeSec: nowUnix,
-		},
-	}
-	_, err := db.modules.InsertOne(context.TODO(), mod)
-	return DataModuleSpecificVersionWire{}, err
-}
-
-func AddModuleVersion(db ExpressionDB, moduleID string, input DataModuleInput) (DataModuleSpecificVersionWire, error) {
-	return DataModuleSpecificVersionWire{}, nil
+	return match
 }

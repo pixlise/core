@@ -18,13 +18,22 @@
 package endpoints
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+
 	"github.com/pixlise/core/v2/api/handlers"
 	"github.com/pixlise/core/v2/api/permission"
 	apiRouter "github.com/pixlise/core/v2/api/router"
+	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v2/core/expressions/modules"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DataModules - storing/retrieving modules for expressions to call
+
+const idVersion = "version"
 
 func registerDataModuleHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "data-module"
@@ -32,7 +41,7 @@ func registerDataModuleHandler(router *apiRouter.ApiObjectRouter) {
 	// Listing
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), dataModuleList)
 	// Getting an individual module
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), dataModuleGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier, idVersion), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), dataModuleGet)
 	// Adding a new module
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix), apiRouter.MakeMethodPermission("POST", permission.PermWriteDataAnalysis), dataModulePost)
 	// Adding a new version for a module
@@ -41,17 +50,51 @@ func registerDataModuleHandler(router *apiRouter.ApiObjectRouter) {
 }
 
 func dataModuleList(params handlers.ApiHandlerParams) (interface{}, error) {
-	return nil, nil
+	return params.Svcs.Expressions.ListModules()
 }
 
 func dataModuleGet(params handlers.ApiHandlerParams) (interface{}, error) {
-	return nil, nil
+	modID := params.PathParams[idIdentifier]
+	version := params.PathParams[idVersion]
+	return params.Svcs.Expressions.GetModule(modID, version)
 }
 
 func dataModulePost(params handlers.ApiHandlerParams) (interface{}, error) {
-	return nil, nil
+	body, err := ioutil.ReadAll(params.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var req modules.DataModuleInput
+	err = json.Unmarshal(body, &req)
+	if err != nil {
+		return nil, api.MakeBadRequestError(err)
+	}
+
+	if !modules.IsValidModuleName(req.Name) {
+		return modules.DataModuleSpecificVersionWire{}, api.MakeBadRequestError(fmt.Errorf("Invalid module name: %v", req.Name))
+	}
+
+	if len(req.SourceCode) <= 0 {
+		return modules.DataModuleSpecificVersionWire{}, api.MakeBadRequestError(errors.New("Source code field cannot be empty"))
+	}
+
+	return params.Svcs.Expressions.CreateModule(req, params.UserInfo)
 }
 
 func dataModulePut(params handlers.ApiHandlerParams) (interface{}, error) {
-	return nil, nil
+	modID := params.PathParams[idIdentifier]
+
+	body, err := ioutil.ReadAll(params.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var req modules.DataModuleInput
+	err = json.Unmarshal(body, &req)
+	if err != nil {
+		return nil, api.MakeBadRequestError(err)
+	}
+
+	return params.Svcs.Expressions.AddModuleVersion(modID, req)
 }

@@ -27,6 +27,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/timestamper"
@@ -2294,8 +2295,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
 		{},
 	}
 
-	var idGen MockIDGenerator
-	idGen.ids = []string{"roi2(sh)", "expr1(sh)", "123roi"}
+	idGen := services.MockIDGenerator{
+		IDs: []string{"roi2(sh)", "expr1(sh)", "123roi"},
+	}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1668142579, 16681425780, 1668142581, 1668142582},

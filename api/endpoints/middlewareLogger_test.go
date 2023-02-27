@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/logger"
@@ -58,8 +59,9 @@ func runMiddlewareLoggingTest(t *testing.T, logLevel *logger.LogLevel) {
 			{},
 		}
 
-		var idGen MockIDGenerator
-		idGen.ids = []string{"id-123"}
+		idGen := services.MockIDGenerator{
+			IDs: []string{"id-123"},
+		}
 
 		s := MakeMockSvcs(&mockS3, &idGen, nil, logLevel)
 		s.TimeStamper = &timestamper.MockTimeNowStamper{

@@ -26,6 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
 
 	datasetModel "github.com/pixlise/core/v2/core/dataset"
@@ -1077,9 +1078,9 @@ func Example_datasetCreatePost_Success() {
 		{},
 		{},
 	}
-
-	var idGen MockIDGenerator
-	idGen.ids = []string{"uuu333"}
+	idGen := services.MockIDGenerator{
+		IDs: []string{"uuu333"},
+	}
 
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 

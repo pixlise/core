@@ -25,6 +25,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/pixlise/core/v2/core/expressions"
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/notifications"
 	"github.com/pixlise/core/v2/core/timestamper"
@@ -38,7 +39,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/pixlise/core/v2/api/config"
 	"github.com/pixlise/core/v2/core/awsutil"
-	expressionLanguage "github.com/pixlise/core/v2/core/expression-language"
 	"github.com/pixlise/core/v2/core/logger"
 	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
 )
@@ -119,7 +119,7 @@ type APIServices struct {
 	Users pixlUser.UserDetailsLookup
 
 	// "Expression DB"
-	Expressions expressionLanguage.ExpressionDB
+	Expressions expressions.ExpressionDB
 }
 
 // InitAPIServices sets up a new APIServices instance

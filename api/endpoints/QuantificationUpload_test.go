@@ -26,6 +26,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/timestamper"
 )
@@ -238,8 +239,9 @@ PMC, Ca_%, livetime, RTT, SCLK, filename
 		{},
 	}
 
-	var idGen MockIDGenerator
-	idGen.ids = []string{"quant123"}
+	idGen := services.MockIDGenerator{
+		IDs: []string{"quant123"},
+	}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1234567890},

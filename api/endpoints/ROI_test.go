@@ -26,6 +26,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/timestamper"
@@ -497,8 +498,9 @@ func Example_roiHandler_Post() {
 		{},
 	}
 
-	var idGen MockIDGenerator
-	idGen.ids = []string{"id3", "id4", "id5", "id6"}
+	idGen := services.MockIDGenerator{
+		IDs: []string{"id3", "id4", "id5", "id6"},
+	}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1668142579, 1668142580, 1668142581, 1668142582, 1668142583},
@@ -1053,8 +1055,9 @@ func Example_roiHandler_Share() {
 		{},
 	}
 
-	var idGen MockIDGenerator
-	idGen.ids = []string{"16"}
+	idGen := services.MockIDGenerator{
+		IDs: []string{"16"},
+	}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1668142579},

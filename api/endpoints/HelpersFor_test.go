@@ -61,19 +61,6 @@ func (m MockJWTReader) GetUserInfo(*http.Request) (pixlUser.UserInfo, error) {
 	}, nil
 }
 
-type MockIDGenerator struct {
-	ids []string
-}
-
-func (m *MockIDGenerator) GenObjectID() string {
-	if len(m.ids) > 0 {
-		id := m.ids[0]
-		m.ids = m.ids[1:]
-		return id
-	}
-	return "NO_ID_DEFINED"
-}
-
 type MockExporter struct {
 	downloadReturn []byte
 	datasetID      string
@@ -99,16 +86,16 @@ func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen services.IDGenerator, sign
 	}
 
 	cfg := config.APIConfig{
-		DatasetsBucket:      DatasetsBucketForUnitTest,
-		ConfigBucket:        ConfigBucketForUnitTest,
-		UsersBucket:         UsersBucketForUnitTest,
-		PiquantJobsBucket:   jobBucketForUnitTest,
-		EnvironmentName:     "unit-test",
-		LogLevel:            logging,
-		KubernetesLocation:  "external",
-		QuantExecutor:       "null",
-		NodeCountOverride:   0,
-		DataSourceSNSTopic:  "arn:1:2:3:4:5",
+		DatasetsBucket:     DatasetsBucketForUnitTest,
+		ConfigBucket:       ConfigBucketForUnitTest,
+		UsersBucket:        UsersBucketForUnitTest,
+		PiquantJobsBucket:  jobBucketForUnitTest,
+		EnvironmentName:    "unit-test",
+		LogLevel:           logging,
+		KubernetesLocation: "external",
+		QuantExecutor:      "null",
+		NodeCountOverride:  0,
+		DataSourceSNSTopic: "arn:1:2:3:4:5",
 	}
 
 	fs := fileaccess.MakeS3Access(mockS3)

@@ -27,6 +27,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/logger"
@@ -789,8 +790,9 @@ func Test_viewStateHandler_Put_spectrum_topright_AND_middleware_activity_logging
 		}
 
 		// Set up extra bits for middleware testing
-		var idGen MockIDGenerator
-		idGen.ids = []string{"id-1234"}
+		idGen := services.MockIDGenerator{
+			IDs: []string{"id-1234"},
+		}
 
 		svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 		svcs.TimeStamper = &timestamper.MockTimeNowStamper{

@@ -25,6 +25,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
 )
 
@@ -447,8 +448,9 @@ func Example_diffractionHandler_PostManual() {
 		{},
 	}
 
-	var idGen MockIDGenerator
-	idGen.ids = []string{"new1", "new2", "new3", "new4"}
+	idGen := services.MockIDGenerator{
+		IDs: []string{"new1", "new2", "new3", "new4"},
+	}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 
