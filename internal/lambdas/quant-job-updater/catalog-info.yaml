@@ -3,15 +3,20 @@ kind: Component
 metadata:
   name: quant-job-updater
   description: |
-    A lambda that updates quantjobs upon completion to stick all the results together
+    A lambda that updates quantjobs upon completion to stick all the results together after the distributed run.
   links:
     - title: Website
       url: https://pixlise.org
     - title: Documentation
       url: https://pixlise.gitbook.io/
+    - title: Slack
+      url: https://pixlise.slack.com/archives/CQUA2FSS0
   annotations:
     github.com/project-slug: pixlise/core/internal/lambdas/quant-job-updater
     backstage.io/techdocs-ref: dir:.
+  tags:
+    - lambda
+    - golang
 spec:
   type: service
   owner: default/developers
