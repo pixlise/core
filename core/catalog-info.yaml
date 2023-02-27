@@ -25,7 +25,10 @@ spec:
     - component:data-import-lambda
     - component:pixlise-api-services
     - component:dataset-tile-updater
-    
+    - component:pixlise-core-data-import
+    - component:quant-job-updater
+  dependsOn:
+    - component:pixlise-diffraction-detection
   subComponentOf:
     - component:pixlise-api-services
   system: core-plaform
