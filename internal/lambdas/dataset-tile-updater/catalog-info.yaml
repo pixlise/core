@@ -14,6 +14,8 @@ metadata:
   annotations:
     github.com/project-slug: pixlise/core/internal/lambdas/dataset-tile-updater
     backstage.io/techdocs-ref: dir:.
+    aws.com/lambda-function-name: ProdPixlise-DatasourceServiceDatasourceUpdater5025-8X1cGxc5PcBh
+    aws.com/lambda-region: us-east-1
   tags:
     - lambda
 spec:
