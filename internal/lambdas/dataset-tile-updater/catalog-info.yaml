@@ -3,18 +3,23 @@ kind: Component
 metadata:
   name: dataset-tile-updater
   description: |
-    A lambda that updates datesets summaries and tiles when new datasets arrvive..
+    A lambda that updates datesets summaries and tiles when new datasets arrvive.
   links:
     - title: Website
       url: https://pixlise.org
     - title: Documentation
       url: https://pixlise.gitbook.io/
+    - title: Slack
+      url: https://pixlise.slack.com/archives/CQUA2FSS0
   annotations:
     github.com/project-slug: pixlise/core/internal/lambdas/dataset-tile-updater
     backstage.io/techdocs-ref: dir:.
+  tags:
+    - lambda
 spec:
   type: service
   owner: default/developers
   lifecycle: production
+  system: data-processing
   dependsOn:
     - component:pixlise-core-packages
