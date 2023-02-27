@@ -9,6 +9,8 @@ metadata:
       url: https://pixlise.org
     - title: Documentation
       url: https://pixlise.gitbook.io/
+    - title: Slack
+      url: https://pixlise.slack.com/archives/CQUA2FSS0
   annotations:
     github.com/project-slug: pixlise/core/api
     backstage.io/techdocs-ref: dir:.
@@ -16,6 +18,7 @@ spec:
   type: service
   owner: default/developers
   lifecycle: production
+  system: core-plaform
   providesApis:
     - core-api
   dependencyOf:
