@@ -14,6 +14,9 @@ metadata:
   annotations:
     github.com/project-slug: pixlise/core/api
     backstage.io/techdocs-ref: dir:.
+  tags:
+    - golang
+    - api
 spec:
   type: service
   owner: default/developers
