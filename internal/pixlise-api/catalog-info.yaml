@@ -20,8 +20,6 @@ metadata:
     backstage.io/techdocs-ref: dir:.
     sentry.io/project-slug: pixl-api
     oargocd/app-name: backstage
-    oaws.com/lambda-function-name: DevPixlise-DatasourceServiceDatasourceUpdater50255-T1vsEmjiVQ1Z
-    oaws.com/lambda-region: us-east-1   
 spec:
   type: service
   owner: default/developers
