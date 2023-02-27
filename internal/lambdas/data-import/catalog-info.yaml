@@ -1,7 +1,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: data-import-lambda
+  name: data-import
   description: |
     The data importer lambda for pixlise. This lambda accepts raw data notifications, 
     then downloads the files, along with any existing data for the dataset and then combines it all and turns it into a pixlise dataset, posting the result back to S3.
