@@ -22,5 +22,6 @@ spec:
   dependencyOf:
     - component:data-import-lambda
     - component:pixlise-api-services
+    - component:dataset-tile-updater
   subComponentOf:
     - pixlise-api-services
