@@ -3,6 +3,7 @@
   "Auth0Domain": "tenant.auth0.com",
   "Auth0ManagementClientID": "clientId",
   "Auth0ManagementSecret": "clientSecret",
+  "Auth0NewUserRoleID": "rol_ABC123abc456",
   "BuildsBucket": "buildsBucket",
   "ConfigBucket": "configBucket",
   "CoresPerNode": 1,
