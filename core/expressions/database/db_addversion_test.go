@@ -17,35 +17,27 @@
 
 package expressionDB
 
-/*
+import (
+	"reflect"
+	"testing"
+
+	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/expressions/modules"
+	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/timestamper"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
+)
+
 func Test_Module_DB_AddVersion_NoModule(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mt.Close()
 
 	mt.Run("success", func(mt *mtest.T) {
 		mongoMockedResponses := []primitive.D{
-			// Modules
-			mtest.CreateCursorResponse(
-				0,
-				"modules-unit_test.modules",
-				mtest.FirstBatch,
-				bson.D{
-					{"id", "mod123"},
-					{"name", "Module1"},
-					{"comments", "Module 1"},
-					{"origin", bson.D{
-						{"shared", true},
-						{"creator", bson.D{
-							{"name", "Peter N"},
-							{"userid", "999"},
-							{"email", "peter@pixlise.org"},
-						}},
-						{"CreatedUnixTimeSec", 1234567890},
-						{"ModifiedUnixTimeSec", 1234567891},
-					}},
-				},
-			),
-			// Version is missing
+			// Module is missing
 			mtest.CreateCursorResponse(
 				1,
 				"modules-unit_test.moduleVersions",
@@ -73,13 +65,18 @@ func Test_Module_DB_AddVersion_NoModule(t *testing.T) {
 
 		svcs.Expressions = db
 
-		_, err := db.GetModule("mod123", "1.0")
+		input := modules.DataModuleVersionInput{
+			SourceCode: "element(\"Ca\", \"%\", \"A\")",
+			Comments:   "My comment",
+			Tags:       []string{"The best"},
+		}
+		_, err := db.AddModuleVersion("mod123", input)
 
 		if err == nil {
-			t.Error("Expected error from get")
+			t.Error("Expected error")
 		}
 
-		if err.Error() != "Failed to get version: 1.0 for module: mod123. Error: mongo: no documents in result" {
+		if err.Error() != "Failed to add new version to non-existant module mod123. mongo: no documents in result" {
 			t.Errorf("Unexpected error: %v", err)
 		}
 	})
@@ -118,14 +115,15 @@ func Test_Module_DB_AddVersion_OK(t *testing.T) {
 				"modules-unit_test.moduleVersions",
 				mtest.FirstBatch,
 				bson.D{
-					{"moduleID", "mod123"},
-					{"sourceCode", "element(\"Ca\", \"%\", \"A\")"}, // TODO: this shouldn't be here!
-					{"comments", "Module 1"},
-					{"version", "1.0"},
-					{"tags", []string{"oldest", "A"}},
-					{"TimeStampUnixSec", 1234567891},
+					{"version", bson.D{
+						{"major", 2},
+						{"minor", 1},
+						{"patch", 43},
+					}},
 				},
 			),
+			// Version write success
+			mtest.CreateSuccessResponse(),
 		}
 
 		mt.AddMockResponses(mongoMockedResponses...)
@@ -138,12 +136,20 @@ func Test_Module_DB_AddVersion_OK(t *testing.T) {
 		}
 
 		svcs := makeMockSvcs(&idGen)
+		svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+			QueuedTimeStamps: []int64{1234567777},
+		}
 		svcs.Mongo = mt.Client
 		db := MakeExpressionDB("local", &svcs)
 
 		svcs.Expressions = db
 
-		result, err := db.GetModule("mod123", "1.0")
+		input := modules.DataModuleVersionInput{
+			SourceCode: "element(\"Ca\", \"%\", \"A\")",
+			Comments:   "My comment",
+			Tags:       []string{"The best"},
+		}
+		result, err := db.AddModuleVersion("mod123", input)
 
 		if err != nil {
 			t.Error(err)
@@ -161,13 +167,14 @@ func Test_Module_DB_AddVersion_OK(t *testing.T) {
 					ModifiedUnixTimeSec: 1234567891,
 				},
 			},
-			DataModuleVersion: &modules.DataModuleVersion{
-				ModuleID:         "mod123",
-				SourceCode:       "element(\"Ca\", \"%\", \"A\")", // TODO: this shouldn't be here!
-				Version:          "1.0",
-				Tags:             []string{"oldest", "A"},
-				Comments:         "Module 1",
-				TimeStampUnixSec: 1234567891,
+			Version: modules.DataModuleVersionSourceWire{
+				SourceCode: "element(\"Ca\", \"%\", \"A\")",
+				DataModuleVersionWire: &modules.DataModuleVersionWire{
+					Version:          "2.1.44",
+					Tags:             []string{"The best"},
+					Comments:         "My comment",
+					TimeStampUnixSec: 1234567777,
+				},
 			},
 		}
 
@@ -176,4 +183,3 @@ func Test_Module_DB_AddVersion_OK(t *testing.T) {
 		}
 	})
 }
-*/

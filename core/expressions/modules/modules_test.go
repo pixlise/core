@@ -18,6 +18,7 @@
 package modules
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -56,4 +57,20 @@ func Test_IsValidModuleName(t *testing.T) {
 			t.Errorf("Expected %v to return valid=%v", names[c], expResult[c])
 		}
 	}
+}
+
+func Example_SemVer() {
+	fmt.Println(SemanticVersionToString(SemanticVersion{Major: 10, Minor: 13, Patch: 14}))
+	v, err := SemanticVersionFromString("11.13.15")
+	fmt.Printf("%v|%v\n", v, err)
+	v, err = SemanticVersionFromString("11.13.15.16")
+	fmt.Printf("%v|%v\n", v, err)
+	v, err = SemanticVersionFromString("11.Hello.16")
+	fmt.Printf("%v|%v\n", v, err)
+
+	// Output:
+	// 10.13.14
+	// {11 13 15}|<nil>
+	// {0 0 0}|Invalid semantic version: 11.13.15.16
+	// {0 0 0}|Failed to parse version 11.Hello.16, part Hello is not a number
 }

@@ -142,7 +142,7 @@ func Test_Module_DB_List_MissingVersion(t *testing.T) {
 		mods, err := db.ListModules()
 
 		if err == nil {
-			t.Error("Expected error from listing")
+			t.Error("Expected error")
 		}
 
 		if err.Error() != "No versions for module mod123" {
@@ -209,7 +209,11 @@ func Test_Module_DB_List_ReturnsOK(t *testing.T) {
 					{"moduleID", "mod123"},
 					{"sourceCode", "element(\"Ca\", \"%\", \"A\")"}, // TODO: this shouldn't be here!
 					{"comments", "Module 1"},
-					{"version", "0.1"},
+					{"version", bson.D{
+						{"major", 0},
+						{"minor", 0},
+						{"patch", 1},
+					}},
 					{"tags", []string{"oldest", "A"}},
 					{"TimeStampUnixSec", 1234567891},
 				},
@@ -222,7 +226,11 @@ func Test_Module_DB_List_ReturnsOK(t *testing.T) {
 					{"moduleID", "mod123"},
 					{"sourceCode", "element(\"Ca\", \"%\", \"A\")"}, // TODO: this shouldn't be here!
 					{"comments", "Module 1"},
-					{"version", "0.2"},
+					{"version", bson.D{
+						{"major", 0},
+						{"minor", 0},
+						{"patch", 2},
+					}},
 					{"tags", []string{"latest"}},
 					{"TimeStampUnixSec", 1234567892},
 				},
@@ -236,7 +244,11 @@ func Test_Module_DB_List_ReturnsOK(t *testing.T) {
 					{"moduleID", "mod234"},
 					{"sourceCode", "element(\"Fe\", \"%\", \"A\")"}, // TODO: this shouldn't be here!
 					{"comments", "Module 2"},
-					{"version", "0.1"},
+					{"version", bson.D{
+						{"major", 0},
+						{"minor", 0},
+						{"patch", 1},
+					}},
 					{"tags", []string{"oldest"}},
 					{"TimeStampUnixSec", 1234567894},
 				},
@@ -274,8 +286,8 @@ func Test_Module_DB_List_ReturnsOK(t *testing.T) {
 					},
 				},
 				Versions: []modules.DataModuleVersionWire{
-					{Version: "0.1", Tags: []string{"oldest", "A"}, Comments: "Module 1", TimeStampUnixSec: 1234567891},
-					{Version: "0.2", Tags: []string{"latest"}, Comments: "Module 1", TimeStampUnixSec: 1234567892},
+					{Version: "0.0.1", Tags: []string{"oldest", "A"}, Comments: "Module 1", TimeStampUnixSec: 1234567891},
+					{Version: "0.0.2", Tags: []string{"latest"}, Comments: "Module 1", TimeStampUnixSec: 1234567892},
 				},
 			},
 			"mod234": modules.DataModuleWire{
@@ -291,7 +303,7 @@ func Test_Module_DB_List_ReturnsOK(t *testing.T) {
 					},
 				},
 				Versions: []modules.DataModuleVersionWire{
-					{Version: "0.1", Tags: []string{"oldest"}, Comments: "Module 2", TimeStampUnixSec: 1234567894},
+					{Version: "0.0.1", Tags: []string{"oldest"}, Comments: "Module 2", TimeStampUnixSec: 1234567894},
 				},
 			},
 		}

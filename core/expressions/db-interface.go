@@ -24,7 +24,7 @@ import (
 
 type ExpressionDB interface {
 	ListModules() (modules.DataModuleWireLookup, error)
-	GetModule(moduleID string, version string) (modules.DataModuleSpecificVersionWire, error)
+	GetModule(moduleID string, version modules.SemanticVersion) (modules.DataModuleSpecificVersionWire, error)
 	CreateModule(input modules.DataModuleInput, creator pixlUser.UserInfo) (modules.DataModuleSpecificVersionWire, error)
-	AddModuleVersion(moduleID string, input modules.DataModuleInput) (modules.DataModuleSpecificVersionWire, error)
+	AddModuleVersion(moduleID string, input modules.DataModuleVersionInput) (modules.DataModuleSpecificVersionWire, error)
 }

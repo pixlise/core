@@ -18,7 +18,10 @@
 package modules
 
 import (
+	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/pixlise/core/v2/core/pixlUser"
 )
@@ -53,7 +56,7 @@ import (
 // - When listing Modules, you get the metadata for a module and a list of valid version numbers, along with associated tags
 //   for each version number
 
-// What users send in POST or PUT
+// What users send in POST
 type DataModuleInput struct {
 	Name       string   `json:"name"`       // Editable name
 	SourceCode string   `json:"sourceCode"` // The module executable code
@@ -61,14 +64,54 @@ type DataModuleInput struct {
 	Tags       []string `json:"tags"`       // Any tags for this version
 }
 
+// And what we get in PUT for new versions being uploaded
+type DataModuleVersionInput struct {
+	SourceCode string   `json:"sourceCode"` // The module executable code
+	Comments   string   `json:"comments"`   // Editable comments
+	Tags       []string `json:"tags"`       // Any tags for this version
+}
+
+type SemanticVersion struct {
+	Major int
+	Minor int
+	Patch int
+}
+
+func SemanticVersionToString(v SemanticVersion) string {
+	return fmt.Sprintf("%v.%v.%v", v.Major, v.Minor, v.Patch)
+}
+
+func SemanticVersionFromString(v string) (SemanticVersion, error) {
+	result := SemanticVersion{}
+
+	parts := strings.Split(v, ".")
+	if len(parts) != 3 {
+		return result, fmt.Errorf("Invalid semantic version: %v", v)
+	}
+	nums := []int{}
+	for _, part := range parts {
+		num, err := strconv.Atoi(part)
+		if err != nil {
+			return result, fmt.Errorf("Failed to parse version %v, part %v is not a number", v, part)
+		}
+		nums = append(nums, num)
+	}
+
+	result.Major = nums[0]
+	result.Minor = nums[1]
+	result.Patch = nums[2]
+
+	return result, nil
+}
+
 // Stored version of a module
 type DataModuleVersion struct {
-	ModuleID         string   `json:"moduleID"` // The ID of the module we belong to
-	SourceCode       string   `json:"sourceCode"`
-	Version          string   `json:"version"`
-	Tags             []string `json:"tags"`
-	Comments         string   `json:"comments"`
-	TimeStampUnixSec int64    `json:"mod_unix_time_sec"`
+	ModuleID         string          `json:"moduleID"` // The ID of the module we belong to
+	SourceCode       string          `json:"sourceCode"`
+	Version          SemanticVersion `json:"version"`
+	Tags             []string        `json:"tags"`
+	Comments         string          `json:"comments"`
+	TimeStampUnixSec int64           `json:"mod_unix_time_sec"`
 }
 
 // Stored module object itself

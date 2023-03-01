@@ -118,7 +118,7 @@ func (e *ExpressionDB) ListModules() (modules.DataModuleWireLookup, error) {
 
 		for _, ver := range versions {
 			wireVersions = append(wireVersions, modules.DataModuleVersionWire{
-				Version:          ver.Version,
+				Version:          modules.SemanticVersionToString(ver.Version),
 				Tags:             ver.Tags,
 				Comments:         ver.Comments,
 				TimeStampUnixSec: ver.TimeStampUnixSec,
@@ -137,7 +137,7 @@ func (e *ExpressionDB) ListModules() (modules.DataModuleWireLookup, error) {
 }
 
 func (e *ExpressionDB) getModule(moduleID string) (modules.DataModule, error) {
-	filter := bson.D{primitive.E{Key: "moduleID", Value: moduleID}}
+	filter := bson.D{primitive.E{Key: "id", Value: moduleID}}
 
 	opts := options.FindOne()
 	cursor := e.Modules.FindOne(context.TODO(), filter, opts)
@@ -148,7 +148,7 @@ func (e *ExpressionDB) getModule(moduleID string) (modules.DataModule, error) {
 	return mod, err
 }
 
-func (e *ExpressionDB) getModuleVersion(moduleID string, version string) (modules.DataModuleVersion, error) {
+func (e *ExpressionDB) getModuleVersion(moduleID string, version modules.SemanticVersion) (modules.DataModuleVersion, error) {
 	filter := bson.D{primitive.E{Key: "moduleID", Value: moduleID}, primitive.E{Key: "version", Value: version}}
 
 	opts := options.FindOne()
@@ -160,7 +160,7 @@ func (e *ExpressionDB) getModuleVersion(moduleID string, version string) (module
 	return ver, err
 }
 
-func (e *ExpressionDB) GetModule(moduleID string, version string) (modules.DataModuleSpecificVersionWire, error) {
+func (e *ExpressionDB) GetModule(moduleID string, version modules.SemanticVersion) (modules.DataModuleSpecificVersionWire, error) {
 	if e.Modules == nil {
 		return modules.DataModuleSpecificVersionWire{}, errors.New("GetModule: Mongo not connected")
 	}
@@ -174,7 +174,7 @@ func (e *ExpressionDB) GetModule(moduleID string, version string) (modules.DataM
 	ver, err := e.getModuleVersion(moduleID, version)
 
 	if err != nil {
-		return modules.DataModuleSpecificVersionWire{}, fmt.Errorf("Failed to get version: %v for module: %v. Error: %v", version, moduleID, err)
+		return modules.DataModuleSpecificVersionWire{}, fmt.Errorf("Failed to get version: %v for module: %v. Error: %v", modules.SemanticVersionToString(version), moduleID, err)
 	}
 
 	result := modules.DataModuleSpecificVersionWire{
@@ -182,7 +182,7 @@ func (e *ExpressionDB) GetModule(moduleID string, version string) (modules.DataM
 		Version: modules.DataModuleVersionSourceWire{
 			SourceCode: ver.SourceCode,
 			DataModuleVersionWire: &modules.DataModuleVersionWire{
-				Version:          ver.Version,
+				Version:          modules.SemanticVersionToString(ver.Version),
 				Tags:             ver.Tags,
 				Comments:         ver.Comments,
 				TimeStampUnixSec: ver.TimeStampUnixSec,
@@ -222,7 +222,7 @@ func (e *ExpressionDB) CreateModule(
 	ver := modules.DataModuleVersion{
 		ModuleID:         modId,
 		SourceCode:       input.SourceCode,
-		Version:          "0.1",
+		Version:          modules.SemanticVersion{Major: 0, Minor: 0, Patch: 1},
 		Tags:             input.Tags,
 		Comments:         "Initial version",
 		TimeStampUnixSec: nowUnix,
@@ -237,7 +237,7 @@ func (e *ExpressionDB) CreateModule(
 	verWire := modules.DataModuleVersionSourceWire{
 		SourceCode: input.SourceCode,
 		DataModuleVersionWire: &modules.DataModuleVersionWire{
-			Version:          ver.Version,
+			Version:          modules.SemanticVersionToString(ver.Version),
 			Tags:             ver.Tags,
 			Comments:         ver.Comments,
 			TimeStampUnixSec: ver.TimeStampUnixSec,
@@ -252,38 +252,93 @@ func (e *ExpressionDB) CreateModule(
 	return result, err
 }
 
-func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModuleInput) (modules.DataModuleSpecificVersionWire, error) {
+func (e *ExpressionDB) getLatestVersion(moduleID string) (modules.SemanticVersion, error) {
+	result := modules.SemanticVersion{}
+
+	ctx := context.TODO()
+	cursor, err := e.ModuleVersions.Aggregate(ctx, bson.A{
+		bson.D{{"$match", bson.D{{"moduleid", moduleID}}}},
+		bson.D{
+			{"$sort",
+				bson.D{
+					{"version.major", -1},
+					{"version.minor", -1},
+					{"version.patch", -1},
+				},
+			},
+		},
+		bson.D{{"$limit", 1}},
+		bson.D{{"$project", bson.D{{"version", 1}}}},
+	})
+
+	if err != nil {
+		return result, err
+	}
+
+	defer cursor.Close(ctx)
+	ver := modules.DataModuleVersion{}
+	for cursor.Next(ctx) {
+		err = cursor.Decode(&ver)
+	}
+
+	result = ver.Version
+	//ver := bson.D{}
+	//err = cursor.Decode(&ver)
+
+	return result, err
+}
+
+func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModuleVersionInput) (modules.DataModuleSpecificVersionWire, error) {
 	if e.Modules == nil {
 		return modules.DataModuleSpecificVersionWire{}, errors.New("AddModuleVersion: Mongo not connected")
 	}
 
 	// Check that the module exists
-	_, err := e.getModule(moduleID)
+	mod, err := e.getModule(moduleID)
 
+	if err != nil {
+		return modules.DataModuleSpecificVersionWire{}, fmt.Errorf("Failed to add new version to non-existant module %v. %v", moduleID, err)
+	}
+
+	ver, err := e.getLatestVersion(moduleID)
 	if err != nil {
 		return modules.DataModuleSpecificVersionWire{}, err
 	}
-	/*
-		// Get latest version so we can increment
-		ver, err := e.getModuleVersion(moduleID, version)
 
-		if err == nil {
-			return modules.DataModuleSpecificVersionWire{}, fmt.Errorf("Module %v version %v already exists", moduleID, version)
-		}
+	// Increment the last version
+	ver.Patch++
 
-		filter := bson.D{primitive.E{Key: "moduleID", Value: moduleID}}
+	// Write out the new version
+	nowUnix := e.Svcs.TimeStamper.GetTimeNowSec()
+	verRec := modules.DataModuleVersion{
+		ModuleID:         moduleID,
+		SourceCode:       input.SourceCode,
+		Version:          ver,
+		Tags:             input.Tags,
+		Comments:         input.Comments,
+		TimeStampUnixSec: nowUnix,
+	}
 
-		opts := options.FindOne()
-		cursor := e.Modules.FindOne(context.TODO(), filter, opts)
+	_, err = e.ModuleVersions.InsertOne(context.TODO(), verRec)
+	if err != nil {
+		return modules.DataModuleSpecificVersionWire{}, err
+	}
 
-		mod := modules.DataModule{}
-		err := cursor.Decode(&mod)
+	// We return it differently
+	verWire := modules.DataModuleVersionSourceWire{
+		SourceCode: input.SourceCode,
+		DataModuleVersionWire: &modules.DataModuleVersionWire{
+			Version:          modules.SemanticVersionToString(verRec.Version),
+			Tags:             verRec.Tags,
+			Comments:         verRec.Comments,
+			TimeStampUnixSec: verRec.TimeStampUnixSec,
+		},
+	}
 
-		if err != nil {
-			return modules.DataModuleSpecificVersionWire{}, err
-		}
+	result := modules.DataModuleSpecificVersionWire{
+		DataModule: &mod,
+		Version:    verWire,
+	}
 
-		// It does exist, check that this version doesn't yet exist
-	*/
-	return modules.DataModuleSpecificVersionWire{}, nil
+	return result, nil
 }

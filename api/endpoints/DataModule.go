@@ -56,7 +56,13 @@ func dataModuleList(params handlers.ApiHandlerParams) (interface{}, error) {
 func dataModuleGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	modID := params.PathParams[idIdentifier]
 	version := params.PathParams[idVersion]
-	return params.Svcs.Expressions.GetModule(modID, version)
+
+	ver, err := modules.SemanticVersionFromString(version)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid version specified: %v", err)
+	}
+
+	return params.Svcs.Expressions.GetModule(modID, ver)
 }
 
 func dataModulePost(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -90,7 +96,7 @@ func dataModulePut(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	var req modules.DataModuleInput
+	var req modules.DataModuleVersionInput
 	err = json.Unmarshal(body, &req)
 	if err != nil {
 		return nil, api.MakeBadRequestError(err)

@@ -58,10 +58,10 @@ func Test_Module_DB_Get_DoesntExist(t *testing.T) {
 
 		svcs.Expressions = db
 
-		_, err := db.GetModule("mod123", "1.0")
+		_, err := db.GetModule("mod123", modules.SemanticVersion{Major: 1, Minor: 0, Patch: 1})
 
 		if err == nil {
-			t.Error("Expected error from get")
+			t.Error("Expected error")
 		}
 
 		if err.Error() != "mongo: no documents in result" {
@@ -121,13 +121,13 @@ func Test_Module_DB_Get_MissingVersion(t *testing.T) {
 
 		svcs.Expressions = db
 
-		_, err := db.GetModule("mod123", "1.0")
+		_, err := db.GetModule("mod123", modules.SemanticVersion{Major: 1, Minor: 0, Patch: 0})
 
 		if err == nil {
-			t.Error("Expected error from get")
+			t.Error("Expected error")
 		}
 
-		if err.Error() != "Failed to get version: 1.0 for module: mod123. Error: mongo: no documents in result" {
+		if err.Error() != "Failed to get version: 1.0.0 for module: mod123. Error: mongo: no documents in result" {
 			t.Errorf("Unexpected error: %v", err)
 		}
 	})
@@ -169,7 +169,11 @@ func Test_Module_DB_Get_OK(t *testing.T) {
 					{"moduleID", "mod123"},
 					{"sourceCode", "element(\"Ca\", \"%\", \"A\")"}, // TODO: this shouldn't be here!
 					{"comments", "Module 1"},
-					{"version", "1.0"},
+					{"version", bson.D{
+						{"major", 2},
+						{"minor", 1},
+						{"patch", 43},
+					}},
 					{"tags", []string{"oldest", "A"}},
 					{"TimeStampUnixSec", 1234567891},
 				},
@@ -187,7 +191,7 @@ func Test_Module_DB_Get_OK(t *testing.T) {
 
 		svcs.Expressions = db
 
-		result, err := db.GetModule("mod123", "1.0")
+		result, err := db.GetModule("mod123", modules.SemanticVersion{Major: 2, Minor: 1, Patch: 43})
 
 		if err != nil {
 			t.Error(err)
@@ -208,7 +212,7 @@ func Test_Module_DB_Get_OK(t *testing.T) {
 			Version: modules.DataModuleVersionSourceWire{
 				SourceCode: "element(\"Ca\", \"%\", \"A\")", // TODO: this shouldn't be here!
 				DataModuleVersionWire: &modules.DataModuleVersionWire{
-					Version:          "1.0",
+					Version:          "2.1.43",
 					Tags:             []string{"oldest", "A"},
 					Comments:         "Module 1",
 					TimeStampUnixSec: 1234567891,
