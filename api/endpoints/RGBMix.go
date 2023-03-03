@@ -185,7 +185,7 @@ func rgbMixList(params handlers.ApiHandlerParams) (interface{}, error) {
 
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
 		if creatorErr != nil {
-			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (RGB mix listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
+			params.Svcs.Log.Infof("Failed to lookup user details for ID: %v, creator name in file: %v (RGB mix listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
 		} else {
 			item.Creator = updatedCreator
 		}

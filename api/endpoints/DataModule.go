@@ -50,7 +50,7 @@ func registerDataModuleHandler(router *apiRouter.ApiObjectRouter) {
 }
 
 func dataModuleList(params handlers.ApiHandlerParams) (interface{}, error) {
-	return params.Svcs.Expressions.ListModules()
+	return params.Svcs.Expressions.ListModules(true)
 }
 
 func dataModuleGet(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -62,7 +62,7 @@ func dataModuleGet(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, fmt.Errorf("Invalid version specified: %v", err)
 	}
 
-	return params.Svcs.Expressions.GetModule(modID, ver)
+	return params.Svcs.Expressions.GetModule(modID, ver, true)
 }
 
 func dataModulePost(params handlers.ApiHandlerParams) (interface{}, error) {

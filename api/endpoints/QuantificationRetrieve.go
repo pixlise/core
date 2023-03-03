@@ -89,7 +89,7 @@ func quantificationJobAdminList(params handlers.ApiHandlerParams) (interface{}, 
 	for _, summary := range summaries {
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(summary.Params.Creator.UserID)
 		if creatorErr != nil {
-			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (quant admin listing). Error: %v", summary.Params.Creator.UserID, summary.Params.Creator.Name, creatorErr)
+			params.Svcs.Log.Infof("Failed to lookup user details for ID: %v, creator name in file: %v (quant admin listing). Error: %v", summary.Params.Creator.UserID, summary.Params.Creator.Name, creatorErr)
 		} else {
 			summary.Params.Creator = updatedCreator
 		}
@@ -136,7 +136,7 @@ func quantificationList(params handlers.ApiHandlerParams) (interface{}, error) {
 	for _, summary := range summaries {
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(summary.Params.Creator.UserID)
 		if creatorErr != nil {
-			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (quant user listing). Error: %v", summary.Params.Creator.UserID, summary.Params.Creator.Name, creatorErr)
+			params.Svcs.Log.Infof("Failed to lookup user details for ID: %v, creator name in file: %v (quant user listing). Error: %v", summary.Params.Creator.UserID, summary.Params.Creator.Name, creatorErr)
 		} else {
 			summary.Params.Creator = updatedCreator
 		}
@@ -264,7 +264,7 @@ func quantificationGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	summary = quantModel.SetMissingSummaryFields(summary)
 	updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(summary.Params.Creator.UserID)
 	if creatorErr != nil {
-		params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (quant get). Error: %v", summary.Params.Creator.UserID, summary.Params.Creator.Name, creatorErr)
+		params.Svcs.Log.Infof("Failed to lookup user details for ID: %v, creator name in file: %v (quant get). Error: %v", summary.Params.Creator.UserID, summary.Params.Creator.Name, creatorErr)
 	} else {
 		summary.Params.Creator = updatedCreator
 	}

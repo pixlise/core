@@ -25,7 +25,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/pixlise/core/v2/core/expressions"
+	expressionStorage "github.com/pixlise/core/v2/core/expressions"
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/notifications"
 	"github.com/pixlise/core/v2/core/timestamper"
@@ -119,7 +119,7 @@ type APIServices struct {
 	Users pixlUser.UserDetailsLookup
 
 	// "Expression DB"
-	Expressions expressions.ExpressionDB
+	Expressions expressionStorage.ExpressionDB
 }
 
 // InitAPIServices sets up a new APIServices instance

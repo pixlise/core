@@ -70,7 +70,7 @@ func tagList(params handlers.ApiHandlerParams) (interface{}, error) {
 		tag := tags[tagID]
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(tag.Creator.UserID)
 		if creatorErr != nil {
-			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Tag listing). Error: %v", tag.Creator.UserID, tag.Creator.Name, creatorErr)
+			params.Svcs.Log.Infof("Failed to lookup user details for ID: %v, creator name in file: %v (Tag listing). Error: %v", tag.Creator.UserID, tag.Creator.Name, creatorErr)
 		} else {
 			tag.Creator = updatedCreator
 		}

@@ -106,7 +106,8 @@ func SemanticVersionFromString(v string) (SemanticVersion, error) {
 
 // Stored version of a module
 type DataModuleVersion struct {
-	ModuleID         string          `json:"moduleID"` // The ID of the module we belong to
+	ID               string          `json:"-" bson:"_id"` // Use as Mongo ID
+	ModuleID         string          `json:"moduleID"`     // The ID of the module we belong to
 	SourceCode       string          `json:"sourceCode"`
 	Version          SemanticVersion `json:"version"`
 	Tags             []string        `json:"tags"`
@@ -116,7 +117,7 @@ type DataModuleVersion struct {
 
 // Stored module object itself
 type DataModule struct {
-	ID       string                 `json:"id"`
+	ID       string                 `json:"id" bson:"_id"` // Use as Mongo ID
 	Name     string                 `json:"name"`
 	Comments string                 `json:"comments"`
 	Origin   pixlUser.APIObjectItem `json:"origin"`

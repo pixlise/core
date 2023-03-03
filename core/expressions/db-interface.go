@@ -15,16 +15,29 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package expressions
+package expressionStorage
 
 import (
+	"github.com/pixlise/core/v2/core/expressions/expressions"
 	"github.com/pixlise/core/v2/core/expressions/modules"
 	"github.com/pixlise/core/v2/core/pixlUser"
 )
 
 type ExpressionDB interface {
-	ListModules() (modules.DataModuleWireLookup, error)
-	GetModule(moduleID string, version modules.SemanticVersion) (modules.DataModuleSpecificVersionWire, error)
+	// Expression storage
+	ListExpressions(userID string, includeShared bool, retrieveUpdatedUserInfo bool) (expressions.DataExpressionLookup, error)
+	GetExpression(expressionID string, retrieveUpdatedUserInfo bool) (expressions.DataExpression, error)
+	CreateExpression(input expressions.DataExpressionInput, creator pixlUser.UserInfo, createShared bool) (expressions.DataExpression, error)
+	UpdateExpression(expressionID string, input expressions.DataExpressionInput, creator pixlUser.UserInfo, createdUnixTimeSec int64) (expressions.DataExpression, error)
+	StoreExpressionRecentRunStats(expressionID string, stats expressions.DataExpressionExecStats) error
+	DeleteExpression(expressionID string) error
+
+	// Module storage
+	ListModules(retrieveUpdatedUserInfo bool) (modules.DataModuleWireLookup, error)
+	GetModule(moduleID string, version modules.SemanticVersion, retrieveUpdatedUserInfo bool) (modules.DataModuleSpecificVersionWire, error)
 	CreateModule(input modules.DataModuleInput, creator pixlUser.UserInfo) (modules.DataModuleSpecificVersionWire, error)
 	AddModuleVersion(moduleID string, input modules.DataModuleVersionInput) (modules.DataModuleSpecificVersionWire, error)
+
+	// Helper to decide what kind of error was returned
+	IsNotFoundError(err error) bool
 }
