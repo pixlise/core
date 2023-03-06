@@ -53,7 +53,13 @@ func registerDataExpressionHandler(router *apiRouter.ApiObjectRouter) {
 
 func toWire(expr expressions.DataExpression) expressions.DataExpressionWire {
 	orig := expr.Origin
+	id := expr.ID
+	// If it's shared, we prefix the ID (kept around for legacy reasons)
+	if expr.Origin.Shared {
+		id = utils.SharedItemIDPrefix + id
+	}
 	resultItem := expressions.DataExpressionWire{
+		ID:               id,
 		Name:             expr.Name,
 		SourceCode:       expr.SourceCode,
 		SourceLanguage:   expr.SourceLanguage,
@@ -76,15 +82,9 @@ func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 	result := map[string]expressions.DataExpressionWire{}
 
 	// We're sending them back in a different struct for legacy reasons
-	for id, item := range items {
+	for _, item := range items {
 		resultItem := toWire(item)
-
-		// If it's shared, we save it with a different ID, again for legacy
-		if item.Origin.Shared {
-			id = utils.SharedItemIDPrefix + id
-		}
-
-		result[id] = resultItem
+		result[resultItem.ID] = resultItem
 	}
 
 	// Return the combined set

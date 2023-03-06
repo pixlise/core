@@ -74,6 +74,7 @@ type DataExpressionLookup map[string]DataExpression
 // We used to store origin info in the same struct as expression...
 // TODO: Remove this eventually and modify UI to work the new way too
 type DataExpressionWire struct {
+	ID               string            `json:"id"`
 	Name             string            `json:"name"`
 	SourceCode       string            `json:"sourceCode"`
 	SourceLanguage   string            `json:"sourceLanguage"` // LUA vs PIXLANG

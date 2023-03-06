@@ -220,6 +220,7 @@ func Test_dataExpressionHandler_List_OK(t *testing.T) {
 
 		checkResult(t, resp, 200, `{
     "abc123": {
+        "id": "abc123",
         "name": "Calcium weight%",
         "sourceCode": "",
         "sourceLanguage": "PIXLANG",
@@ -251,6 +252,7 @@ func Test_dataExpressionHandler_List_OK(t *testing.T) {
         }
     },
     "def456": {
+        "id": "def456",
         "name": "Iron Error",
         "sourceCode": "",
         "sourceLanguage": "PIXLANG",
@@ -266,6 +268,7 @@ func Test_dataExpressionHandler_List_OK(t *testing.T) {
         "mod_unix_time_sec": 1668100001
     },
     "shared-ghi789": {
+        "id": "shared-ghi789",
         "name": "Iron %",
         "sourceCode": "",
         "sourceLanguage": "PIXLANG",
@@ -406,6 +409,7 @@ func Test_dataExpressionHandler_Get_OK(t *testing.T) {
 		resp := executeRequest(req, apiRouter.Router)
 
 		checkResult(t, resp, 200, `{
+    "id": "abc123",
     "name": "Calcium weight%",
     "sourceCode": "element(\"Ca\", \"%\")",
     "sourceLanguage": "PIXLANG",
@@ -442,6 +446,7 @@ func Test_dataExpressionHandler_Get_OK(t *testing.T) {
 		resp = executeRequest(req, apiRouter.Router)
 
 		checkResult(t, resp, 200, `{
+    "id": "shared-ghi789",
     "name": "Iron %",
     "sourceCode": "element(\"Fe\", \"%\")",
     "sourceLanguage": "PIXLANG",
@@ -529,6 +534,7 @@ func Test_dataExpressionHandler_Post(t *testing.T) {
 		resp := executeRequest(req, apiRouter.Router)
 
 		checkResult(t, resp, 200, `{
+    "id": "id16",
     "name": "Sodium weight%",
     "sourceCode": "element(\"Na\", \"%\")",
     "sourceLanguage": "LUA",
@@ -635,6 +641,7 @@ func Test_dataExpressionHandler_Put(t *testing.T) {
 		resp := executeRequest(req, apiRouter.Router)
 
 		checkResult(t, resp, 200, `{
+    "id": "abc111",
     "name": "Calcium weight%",
     "sourceCode": "element(\"Ca\", \"%\")",
     "sourceLanguage": "LUA",
