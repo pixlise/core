@@ -238,11 +238,12 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 	expr1A, err := db.UpdateExpression(
 		"exp1",
 		expressions.DataExpressionInput{
-			Name:           "expression 1a",
-			SourceCode:     "expression1a()",
-			SourceLanguage: "LUA", // NOTE: converting to LUA
-			Comments:       "expression one A",
-			Tags:           []string{"v1", "v1.1"},
+			Name:             "expression 1a",
+			SourceCode:       "expression1a()",
+			SourceLanguage:   "LUA", // NOTE: converting to LUA
+			ModuleReferences: []expressions.ModuleReference{{ModuleID: "mod333", Version: "5.22.13"}},
+			Comments:         "expression one A",
+			Tags:             []string{"v1", "v1.1"},
 		},
 		userInfoPeter,
 		1234400000,
@@ -251,7 +252,7 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 	verifyResult(
 		err,
 		expr1A,
-		`{"id":"exp1","name":"expression 1a","sourceCode":"expression1a()","sourceLanguage":"LUA","comments":"expression one A","tags":["v1","v1.1"],"origin":{"shared":false,"creator":{"name":"Peter","user_id":"999","email":"peter@pixlise.org"},"create_unix_time_sec":1234400000,"mod_unix_time_sec":1234500005}}`,
+		`{"id":"exp1","name":"expression 1a","sourceCode":"expression1a()","sourceLanguage":"LUA","comments":"expression one A","tags":["v1","v1.1"],"moduleReferences":[{"moduleID":"mod333","version":"5.22.13"}],"origin":{"shared":false,"creator":{"name":"Peter","user_id":"999","email":"peter@pixlise.org"},"create_unix_time_sec":1234400000,"mod_unix_time_sec":1234500005}}`,
 		"Edit expression 1",
 	)
 
@@ -305,7 +306,7 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 	verifyResult(
 		err,
 		exprList,
-		`{"exp1":{"id":"exp1","name":"expression 1a","sourceCode":"","sourceLanguage":"LUA","comments":"expression one A","tags":["v1","v1.1"],"origin":{"shared":false,"creator":{"name":"Peter","user_id":"999","email":"peter@pixlise.org"},"create_unix_time_sec":1234400000,"mod_unix_time_sec":1234500005}},"exp2":{"id":"exp2","name":"expression 2","sourceCode":"","sourceLanguage":"LUA","comments":"expression two","tags":["v2"],"origin":{"shared":false,"creator":{"name":"Peter","user_id":"999","email":"peter@pixlise.org"},"create_unix_time_sec":1234500002,"mod_unix_time_sec":1234500002},"recentExecStats":{"dataRequired":["elem-Ca","elem-Fe","data-ChiSq","pseudo-Na","spectrum"],"runtimeMs":233,"mod_unix_time_sec":1234500006}},"exp2sh":{"id":"exp2sh","name":"expression 2","sourceCode":"","sourceLanguage":"LUA","comments":"expression two","tags":["v2"],"origin":{"shared":true,"creator":{"name":"Peter","user_id":"999","email":"peter@pixlise.org"},"create_unix_time_sec":1234500007,"mod_unix_time_sec":1234500007}}}`,
+		`{"exp1":{"id":"exp1","name":"expression 1a","sourceCode":"","sourceLanguage":"LUA","comments":"expression one A","tags":["v1","v1.1"],"moduleReferences":[{"moduleID":"mod333","version":"5.22.13"}],"origin":{"shared":false,"creator":{"name":"Peter","user_id":"999","email":"peter@pixlise.org"},"create_unix_time_sec":1234400000,"mod_unix_time_sec":1234500005}},"exp2":{"id":"exp2","name":"expression 2","sourceCode":"","sourceLanguage":"LUA","comments":"expression two","tags":["v2"],"origin":{"shared":false,"creator":{"name":"Peter","user_id":"999","email":"peter@pixlise.org"},"create_unix_time_sec":1234500002,"mod_unix_time_sec":1234500002},"recentExecStats":{"dataRequired":["elem-Ca","elem-Fe","data-ChiSq","pseudo-Na","spectrum"],"runtimeMs":233,"mod_unix_time_sec":1234500006}},"exp2sh":{"id":"exp2sh","name":"expression 2","sourceCode":"","sourceLanguage":"LUA","comments":"expression two","tags":["v2"],"origin":{"shared":true,"creator":{"name":"Peter","user_id":"999","email":"peter@pixlise.org"},"create_unix_time_sec":1234500007,"mod_unix_time_sec":1234500007}}}`,
 		"List expressions",
 	)
 
@@ -377,7 +378,7 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 	verifyResult(
 		err,
 		exprList2,
-		`{"exp1":{"id":"exp1","name":"expression 1a","sourceCode":"","sourceLanguage":"LUA","comments":"expression one A","tags":["v1","v1.1"],"origin":{"shared":false,"creator":{"name":"Peter N","user_id":"999","email":"peter_n@pixlise.org"},"create_unix_time_sec":1234400000,"mod_unix_time_sec":1234500005}},"exp2sh":{"id":"exp2sh","name":"expression 2","sourceCode":"","sourceLanguage":"LUA","comments":"expression two","tags":["v2"],"origin":{"shared":true,"creator":{"name":"Peter N","user_id":"999","email":"peter_n@pixlise.org"},"create_unix_time_sec":1234500007,"mod_unix_time_sec":1234500007}}}`,
+		`{"exp1":{"id":"exp1","name":"expression 1a","sourceCode":"","sourceLanguage":"LUA","comments":"expression one A","tags":["v1","v1.1"],"moduleReferences":[{"moduleID":"mod333","version":"5.22.13"}],"origin":{"shared":false,"creator":{"name":"Peter N","user_id":"999","email":"peter_n@pixlise.org"},"create_unix_time_sec":1234400000,"mod_unix_time_sec":1234500005}},"exp2sh":{"id":"exp2sh","name":"expression 2","sourceCode":"","sourceLanguage":"LUA","comments":"expression two","tags":["v2"],"origin":{"shared":true,"creator":{"name":"Peter N","user_id":"999","email":"peter_n@pixlise.org"},"create_unix_time_sec":1234500007,"mod_unix_time_sec":1234500007}}}`,
 		"List expressions again",
 	)
 
@@ -397,7 +398,7 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 	verifyResult(
 		err,
 		expr2Get,
-		`{"id":"exp1","name":"expression 1a","sourceCode":"expression1a()","sourceLanguage":"LUA","comments":"expression one A","tags":["v1","v1.1"],"origin":{"shared":false,"creator":{"name":"Peter N","user_id":"999","email":"peter_n@pixlise.org"},"create_unix_time_sec":1234400000,"mod_unix_time_sec":1234500005}}`,
+		`{"id":"exp1","name":"expression 1a","sourceCode":"expression1a()","sourceLanguage":"LUA","comments":"expression one A","tags":["v1","v1.1"],"moduleReferences":[{"moduleID":"mod333","version":"5.22.13"}],"origin":{"shared":false,"creator":{"name":"Peter N","user_id":"999","email":"peter_n@pixlise.org"},"create_unix_time_sec":1234400000,"mod_unix_time_sec":1234500005}}`,
 		"Get expression 1",
 	)
 

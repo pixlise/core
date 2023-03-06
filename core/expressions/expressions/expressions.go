@@ -23,11 +23,12 @@ import (
 
 // What users send in POST and PUT
 type DataExpressionInput struct {
-	Name           string   `json:"name"`
-	SourceCode     string   `json:"sourceCode"`
-	SourceLanguage string   `json:"sourceLanguage"` // LUA vs PIXLANG
-	Comments       string   `json:"comments"`
-	Tags           []string `json:"tags"`
+	Name             string            `json:"name"`
+	SourceCode       string            `json:"sourceCode"`
+	SourceLanguage   string            `json:"sourceLanguage"` // LUA vs PIXLANG
+	Comments         string            `json:"comments"`
+	Tags             []string          `json:"tags"`
+	ModuleReferences []ModuleReference `json:"moduleReferences,omitempty" bson:"moduleReferences,omitempty"`
 }
 
 // Stats related to executing an expression. We get these from the UI when it runs
@@ -41,14 +42,20 @@ type DataExpressionExecStats struct {
 	TimeStampUnixSec int64    `json:"mod_unix_time_sec,omitempty"`
 }
 
+type ModuleReference struct {
+	ModuleID string `json:"moduleID"`
+	Version  string `json:"version"`
+}
+
 type DataExpression struct {
-	ID             string                 `json:"id" bson:"_id"` // Use as Mongo ID
-	Name           string                 `json:"name"`
-	SourceCode     string                 `json:"sourceCode"`
-	SourceLanguage string                 `json:"sourceLanguage"` // LUA vs PIXLANG
-	Comments       string                 `json:"comments"`
-	Tags           []string               `json:"tags"`
-	Origin         pixlUser.APIObjectItem `json:"origin"`
+	ID               string                 `json:"id" bson:"_id"` // Use as Mongo ID
+	Name             string                 `json:"name"`
+	SourceCode       string                 `json:"sourceCode"`
+	SourceLanguage   string                 `json:"sourceLanguage"` // LUA vs PIXLANG
+	Comments         string                 `json:"comments"`
+	Tags             []string               `json:"tags"`
+	ModuleReferences []ModuleReference      `json:"moduleReferences,omitempty" bson:"moduleReferences,omitempty"`
+	Origin           pixlUser.APIObjectItem `json:"origin"`
 	// NOTE: if modifying below, ensure it's in sync with ExpressionDB StoreExpressionRecentRunStats()
 	RecentExecStats *DataExpressionExecStats `json:"recentExecStats,omitempty" bson:"recentExecStats,omitempty"`
 }
@@ -67,11 +74,12 @@ type DataExpressionLookup map[string]DataExpression
 // We used to store origin info in the same struct as expression...
 // TODO: Remove this eventually and modify UI to work the new way too
 type DataExpressionWire struct {
-	Name           string   `json:"name"`
-	SourceCode     string   `json:"sourceCode"`
-	SourceLanguage string   `json:"sourceLanguage"` // LUA vs PIXLANG
-	Comments       string   `json:"comments"`
-	Tags           []string `json:"tags"`
+	Name             string            `json:"name"`
+	SourceCode       string            `json:"sourceCode"`
+	SourceLanguage   string            `json:"sourceLanguage"` // LUA vs PIXLANG
+	Comments         string            `json:"comments"`
+	Tags             []string          `json:"tags"`
+	ModuleReferences []ModuleReference `json:"moduleReferences,omitempty" bson:"moduleReferences,omitempty"`
 	*pixlUser.APIObjectItem
 	// NOTE: if modifying below, ensure it's in sync with ExpressionDB StoreExpressionRecentRunStats()
 	RecentExecStats *DataExpressionExecStats `json:"recentExecStats,omitempty" bson:"recentExecStats,omitempty"`

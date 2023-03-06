@@ -1361,12 +1361,12 @@ func makeExprDBItem(idx int, useCallerUserId bool) bson.D {
 	}
 	items := []expressions.DataExpression{
 		{
-			"abc123", "Temp data", "housekeeping(\"something\")", "PIXLANG", "comments for abc123 expression", []string{},
+			"abc123", "Temp data", "housekeeping(\"something\")", "PIXLANG", "comments for abc123 expression", []string{}, []expressions.ModuleReference{},
 			makeOrigin(ownerID, "Niko", "niko@spicule.co.uk", false, 1668100000, 1668100000),
 			nil,
 		},
 		{
-			"expr1", "Calcium weight%", "element(\"Ca\", \"%\")", "PIXLANG", "comments for expr1", []string{},
+			"expr1", "Calcium weight%", "element(\"Ca\", \"%\")", "PIXLANG", "comments for expr1", []string{}, []expressions.ModuleReference{},
 			makeOrigin(ownerID2, "Peter N", "peter@spicule.co.uk", false, 1668100001, 1668100001),
 			nil,
 		},

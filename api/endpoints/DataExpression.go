@@ -54,13 +54,14 @@ func registerDataExpressionHandler(router *apiRouter.ApiObjectRouter) {
 func toWire(expr expressions.DataExpression) expressions.DataExpressionWire {
 	orig := expr.Origin
 	resultItem := expressions.DataExpressionWire{
-		Name:            expr.Name,
-		SourceCode:      expr.SourceCode,
-		SourceLanguage:  expr.SourceLanguage,
-		Comments:        expr.Comments,
-		Tags:            expr.Tags,
-		APIObjectItem:   &orig,
-		RecentExecStats: expr.RecentExecStats,
+		Name:             expr.Name,
+		SourceCode:       expr.SourceCode,
+		SourceLanguage:   expr.SourceLanguage,
+		Comments:         expr.Comments,
+		Tags:             expr.Tags,
+		ModuleReferences: expr.ModuleReferences,
+		APIObjectItem:    &orig,
+		RecentExecStats:  expr.RecentExecStats,
 	}
 	return resultItem
 }
@@ -261,11 +262,12 @@ func shareExpressions(svcs *services.APIServices, userID string, expressionIDs [
 		// Sharing is an act of saving the same expression, with a different ID, and the share flag set
 		sharedExpr, err := svcs.Expressions.CreateExpression(
 			expressions.DataExpressionInput{
-				expr.Name,
-				expr.SourceCode,
-				expr.SourceLanguage,
-				expr.Comments,
-				expr.Tags,
+				Name:             expr.Name,
+				SourceCode:       expr.SourceCode,
+				SourceLanguage:   expr.SourceLanguage,
+				Comments:         expr.Comments,
+				Tags:             expr.Tags,
+				ModuleReferences: expr.ModuleReferences,
 			},
 			expr.Origin.Creator,
 			true,

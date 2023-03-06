@@ -112,12 +112,13 @@ func (e *ExpressionDB) CreateExpression(input expressions.DataExpressionInput, c
 	exprID := e.Svcs.IDGen.GenObjectID()
 
 	expr := expressions.DataExpression{
-		ID:             exprID,
-		Name:           input.Name,
-		SourceCode:     input.SourceCode,
-		SourceLanguage: input.SourceLanguage,
-		Comments:       input.Comments,
-		Tags:           input.Tags,
+		ID:               exprID,
+		Name:             input.Name,
+		SourceCode:       input.SourceCode,
+		SourceLanguage:   input.SourceLanguage,
+		Comments:         input.Comments,
+		Tags:             input.Tags,
+		ModuleReferences: input.ModuleReferences,
 		Origin: pixlUser.APIObjectItem{
 			Shared:              createShared,
 			Creator:             creator,
@@ -168,12 +169,13 @@ func (e *ExpressionDB) UpdateExpression(
 
 	nowUnix := e.Svcs.TimeStamper.GetTimeNowSec()
 	replacement := expressions.DataExpression{
-		ID:             expressionID,
-		Name:           input.Name,
-		SourceCode:     input.SourceCode,
-		SourceLanguage: input.SourceLanguage,
-		Comments:       input.Comments,
-		Tags:           input.Tags,
+		ID:               expressionID,
+		Name:             input.Name,
+		SourceCode:       input.SourceCode,
+		SourceLanguage:   input.SourceLanguage,
+		Comments:         input.Comments,
+		Tags:             input.Tags,
+		ModuleReferences: input.ModuleReferences,
 		Origin: pixlUser.APIObjectItem{
 			Shared:              false,
 			Creator:             creator,

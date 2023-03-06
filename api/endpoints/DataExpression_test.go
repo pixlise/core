@@ -33,55 +33,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
-const exprS3Path = "UserContent/600f2a0806b6c70071d3d174/DataExpressions.json"
-const exprSharedS3Path = "UserContent/shared/DataExpressions.json"
-const singleExprFile = `{
-	"abc123": {
-		"name": "Calcium weight%",
-		"expression": "element(\"Ca\", \"%\")",
-		"type": "ContextImage",
-		"comments": "comments for abc123 expression",
-		"tags": [],
-		"creator": {
-			"user_id": "999",
-			"name": "Peter N",
-            "email": "niko@spicule.co.uk"
-		},
-        "create_unix_time_sec": 1668100000,
-        "mod_unix_time_sec": 1668100000
-	}
-}`
-const exprFile = `{
-	"abc123": {
-		"name": "Calcium weight%",
-		"expression": "element(\"Ca\", \"%\")",
-		"type": "ContextImage",
-		"comments": "comments for abc123 expression",
-		"tags": [],
-		"creator": {
-			"user_id": "999",
-			"name": "Peter N",
-            "email": "niko@spicule.co.uk"
-		},
-        "create_unix_time_sec": 1668100000,
-        "mod_unix_time_sec": 1668100000
-	},
-	"def456": {
-		"name": "Iron Error",
-		"expression": "element(\"Fe\", \"err\")",
-		"type": "BinaryPlot",
-		"comments": "comments for def456 expression",
-		"tags": [],
-		"creator": {
-			"user_id": "999",
-			"name": "Peter N",
-            "email": "niko@spicule.co.uk"
-		},
-        "create_unix_time_sec": 1668100001,
-        "mod_unix_time_sec": 1668100001
-	}
-}`
-
 func makeOrigin(id string, name string, email string, shared bool, crSec int64, modSec int64) pixlUser.APIObjectItem {
 	bsonD := //orig, _ := bson.Marshal(
 		pixlUser.APIObjectItem{
@@ -103,7 +54,10 @@ func makeOrigin(id string, name string, email string, shared bool, crSec int64, 
 func makeExprDBList(idx int, includeSource bool) bson.D {
 	items := []expressions.DataExpression{
 		{
-			"abc123", "Calcium weight%", "element(\"Ca\", \"%\")", "PIXLANG", "comments for abc123 expression", []string{},
+			"abc123", "Calcium weight%", "element(\"Ca\", \"%\")", "PIXLANG", "comments for abc123 expression", []string{"latest"},
+			[]expressions.ModuleReference{
+				{"mod123", "2.3.4"},
+			},
 			makeOrigin("999", "Peter N", "niko@spicule.co.uk", false, 1668100000, 1668100000),
 			&expressions.DataExpressionExecStats{
 				[]string{"Ca", "Fe"},
@@ -112,12 +66,12 @@ func makeExprDBList(idx int, includeSource bool) bson.D {
 			},
 		},
 		{
-			"def456", "Iron Error", "element(\"Fe\", \"err\")", "PIXLANG", "comments for def456 expression", []string{},
+			"def456", "Iron Error", "element(\"Fe\", \"err\")", "PIXLANG", "comments for def456 expression", []string{}, []expressions.ModuleReference{},
 			makeOrigin("999", "Peter N", "niko@spicule.co.uk", false, 1668100001, 1668100001),
 			nil,
 		},
 		{
-			"ghi789", "Iron %", "element(\"Fe\", \"%\")", "PIXLANG", "", []string{},
+			"ghi789", "Iron %", "element(\"Fe\", \"%\")", "PIXLANG", "", []string{}, []expressions.ModuleReference{},
 			makeOrigin("999", "Peter N", "niko@spicule.co.uk", true, 1668100002, 1668100002),
 			&expressions.DataExpressionExecStats{
 				[]string{"Na", "Ti"},
@@ -127,7 +81,7 @@ func makeExprDBList(idx int, includeSource bool) bson.D {
 		},
 		// Same as first item, but with real user id and different ID
 		{
-			"abc111", "Calcium weight%", "element(\"Ca\", \"%\")", "PIXLANG", "comments for abc111 expression", []string{},
+			"abc111", "Calcium weight%", "element(\"Ca\", \"%\")", "PIXLANG", "comments for abc111 expression", []string{}, []expressions.ModuleReference{},
 			makeOrigin("600f2a0806b6c70071d3d174", "Peter N", "niko@spicule.co.uk", false, 1668100000, 1668100000),
 			&expressions.DataExpressionExecStats{
 				[]string{"Ca", "Fe"},
@@ -137,7 +91,7 @@ func makeExprDBList(idx int, includeSource bool) bson.D {
 		},
 		// Same as above item, but shared
 		{
-			"abc111", "Calcium weight%", "element(\"Ca\", \"%\")", "PIXLANG", "comments for abc111 expression", []string{},
+			"abc111", "Calcium weight%", "element(\"Ca\", \"%\")", "PIXLANG", "comments for abc111 expression", []string{}, []expressions.ModuleReference{},
 			makeOrigin("600f2a0806b6c70071d3d174", "Peter N", "niko@spicule.co.uk", true, 1668100000, 1668100000),
 			&expressions.DataExpressionExecStats{
 				[]string{"Ca", "Fe"},
@@ -162,23 +116,6 @@ func makeExprDBList(idx int, includeSource bool) bson.D {
 	}
 	return bsonD
 }
-
-const sharedExprFile = `{
-	"expression-1": {
-		"name": "Calcium weight%",
-		"expression": "element(\"Ca\", \"%\")",
-		"type": "ContextImage",
-		"comments": "comments for shared-expression-1 expression",
-		"tags": [],
-		"creator": {
-			"user_id": "999",
-			"name": "Peter N",
-            "email": "niko@spicule.co.uk"
-		},
-        "create_unix_time_sec": 1668100000,
-        "mod_unix_time_sec": 1668100000
-	}
-}`
 
 func Test_dataExpressionHandler_List_Empty(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
@@ -287,7 +224,15 @@ func Test_dataExpressionHandler_List_OK(t *testing.T) {
         "sourceCode": "",
         "sourceLanguage": "PIXLANG",
         "comments": "comments for abc123 expression",
-        "tags": [],
+        "tags": [
+            "latest"
+        ],
+        "moduleReferences": [
+            {
+                "moduleID": "mod123",
+                "version": "2.3.4"
+            }
+        ],
         "shared": false,
         "creator": {
             "name": "Peter N",
@@ -465,7 +410,15 @@ func Test_dataExpressionHandler_Get_OK(t *testing.T) {
     "sourceCode": "element(\"Ca\", \"%\")",
     "sourceLanguage": "PIXLANG",
     "comments": "comments for abc123 expression",
-    "tags": [],
+    "tags": [
+        "latest"
+    ],
+    "moduleReferences": [
+        {
+            "moduleID": "mod123",
+            "version": "2.3.4"
+        }
+    ],
     "shared": false,
     "creator": {
         "name": "Peter N",
@@ -668,7 +621,13 @@ func Test_dataExpressionHandler_Put(t *testing.T) {
         "sourceCode": "element(\"Ca\", \"%\")",
         "sourceLanguage": "LUA",
         "comments": "comments for abc123 expression",
-        "tags": []
+        "tags": ["newest"],
+		"moduleReferences": [
+			{
+				"moduleID": "mod123",
+				"version": "2.3.4"
+			}
+		]
 	}`
 
 		// OK
@@ -680,7 +639,15 @@ func Test_dataExpressionHandler_Put(t *testing.T) {
     "sourceCode": "element(\"Ca\", \"%\")",
     "sourceLanguage": "LUA",
     "comments": "comments for abc123 expression",
-    "tags": [],
+    "tags": [
+        "newest"
+    ],
+    "moduleReferences": [
+        {
+            "moduleID": "mod123",
+            "version": "2.3.4"
+        }
+    ],
     "shared": false,
     "creator": {
         "name": "Niko Bellic",
