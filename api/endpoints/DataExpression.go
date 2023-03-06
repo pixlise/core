@@ -213,10 +213,7 @@ func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error)
 	}
 
 	// Return just the one deleted id
-	response := map[string]string{}
-	response[itemID] = itemID
-
-	return response, nil
+	return itemID, nil
 }
 
 func dataExpressionShare(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -243,12 +240,22 @@ func shareExpressions(svcs *services.APIServices, userID string, expressionIDs [
 
 	// Loop through & load each one
 	for _, exprId := range expressionIDs {
-		expr, err := svcs.Expressions.GetExpression(exprId, true)
+		expr, err := svcs.Expressions.GetExpression(exprId, false)
 		if err != nil {
 			if svcs.Expressions.IsNotFoundError(err) {
 				return generatedIDs, api.MakeNotFoundError(exprId)
 			}
 			return generatedIDs, err
+		}
+
+		// Make sure it isn't already shared
+		if expr.Origin.Shared != false {
+			return generatedIDs, api.MakeStatusError(http.StatusBadRequest, fmt.Errorf("%v already shared", exprId))
+		}
+
+		// Check that user has rights to do this
+		if expr.Origin.Creator.UserID != userID {
+			return nil, api.MakeStatusError(http.StatusUnauthorized, fmt.Errorf("%v not owned by %v", exprId, userID))
 		}
 
 		// Sharing is an act of saving the same expression, with a different ID, and the share flag set

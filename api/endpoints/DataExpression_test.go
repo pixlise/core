@@ -19,13 +19,9 @@ package endpoints
 
 import (
 	"bytes"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
 	expressionDB "github.com/pixlise/core/v2/core/expressions/database"
@@ -133,6 +129,16 @@ func makeExprDBList(idx int, includeSource bool) bson.D {
 		{
 			"abc111", "Calcium weight%", "element(\"Ca\", \"%\")", "PIXLANG", "comments for abc111 expression", []string{},
 			makeOrigin("600f2a0806b6c70071d3d174", "Peter N", "niko@spicule.co.uk", false, 1668100000, 1668100000),
+			&expressions.DataExpressionExecStats{
+				[]string{"Ca", "Fe"},
+				340,
+				1234568888,
+			},
+		},
+		// Same as above item, but shared
+		{
+			"abc111", "Calcium weight%", "element(\"Ca\", \"%\")", "PIXLANG", "comments for abc111 expression", []string{},
+			makeOrigin("600f2a0806b6c70071d3d174", "Peter N", "niko@spicule.co.uk", true, 1668100000, 1668100000),
 			&expressions.DataExpressionExecStats{
 				[]string{"Ca", "Fe"},
 				340,
@@ -708,7 +714,6 @@ func Test_dataExpressionHandler_ExecStatPut(t *testing.T) {
 	defer mt.Close()
 
 	mt.Run("success", func(mt *mtest.T) {
-		// User name lookup
 		mongoMockedResponses := []primitive.D{
 			// GET item
 			/*mtest.CreateCursorResponse(
@@ -739,7 +744,7 @@ func Test_dataExpressionHandler_ExecStatPut(t *testing.T) {
 
 		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 		svcs.TimeStamper = &timestamper.MockTimeNowStamper{
-			QueuedTimeStamps: []int64{1668100000, 1668100009},
+			QueuedTimeStamps: []int64{1668100001, 1668100002},
 		}
 		envName := "unit_test"
 		svcs.Mongo = mt.Client
@@ -783,334 +788,275 @@ func Test_dataExpressionHandler_ExecStatPut(t *testing.T) {
 	})
 }
 
-// Output:
-// 400
-// invalid character ':' after array element
-//
-// 200
-//
-// 200
+// NOTE: Major flaw here is that we can't "check" what the DB write looks like!
+func Test_dataExpressionHandler_DeleteNotFound(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-func Example_dataExpressionHandler_Delete() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
+	mt.Run("success", func(mt *mtest.T) {
+		mongoMockedResponses := []primitive.D{
+			// GET returns no existing item
+			mtest.CreateCursorResponse(
+				1,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+			),
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.NextBatch,
+			),
+		}
 
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil,
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(exprFile))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(exprFile))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(exprFile))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-    "def456": {
-        "name": "Iron Error",
-        "expression": "element(\"Fe\", \"err\")",
-        "type": "BinaryPlot",
-        "comments": "comments for def456 expression",
-        "tags": [],
-        "shared": false,
-        "creator": {
-            "name": "The sharer",
-            "user_id": "600f2a0806b6c70071d3d174",
-            "email": "niko@spicule.co.uk"
-        }
-    }
-}`))),
-		},
-	}
+		mt.AddMockResponses(mongoMockedResponses...)
 
-	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path), Body: bytes.NewReader([]byte(`{
-    "def456": {
-        "name": "Iron Error",
-        "expression": "element(\"Fe\", \"err\")",
-        "type": "BinaryPlot",
-        "comments": "comments for def456 expression",
-        "tags": [],
-        "shared": false,
-        "creator": {
-            "name": "Peter N",
-            "user_id": "999",
-            "email": "niko@spicule.co.uk"
-        },
-        "create_unix_time_sec": 1668100001,
-        "mod_unix_time_sec": 1668100001
-    }
-}`)),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path), Body: bytes.NewReader([]byte(`{}`)),
-		},
-	}
-	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
-		{},
-		{},
-	}
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		envName := "unit_test"
+		svcs.Mongo = mt.Client
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, envName)
+		svcs.Expressions = expressionDB.MakeExpressionDB(envName, &svcs)
+		apiRouter := MakeRouter(svcs)
 
-	// Delete finds file missing, ERROR
-	req, _ := http.NewRequest("DELETE", "/data-expression/abc123", nil)
-	resp := executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Delete finds empty file, ERROR
-	req, _ = http.NewRequest("DELETE", "/data-expression/abc123", nil)
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Delete cant find item, ERROR
-	req, _ = http.NewRequest("DELETE", "/data-expression/abc999", nil)
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Delete finds item, OK
-	req, _ = http.NewRequest("DELETE", "/data-expression/abc123", nil)
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Delete shared item but from wrong user, ERROR
-	req, _ = http.NewRequest("DELETE", "/data-expression/shared-def456", nil)
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Delete shared item, OK
-	req, _ = http.NewRequest("DELETE", "/data-expression/shared-def456", nil)
-	resp = executeRequest(req, apiRouter.Router)
-
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
-
-	// Output:
-	// 404
-	// abc123 not found
-	//
-	// 404
-	// abc123 not found
-	//
-	// 404
-	// abc999 not found
-	//
-	// 200
-	// {
-	//     "abc123": "abc123"
-	// }
-	//
-	// 401
-	// def456 not owned by 600f2a0806b6c70071d3d174
-	//
-	// 200
-	// {
-	//     "shared-def456": "shared-def456"
-	// }
+		// Not found
+		req, _ := http.NewRequest("DELETE", "/data-expression/abc999", nil)
+		resp := executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 404, `abc999 not found
+`)
+	})
 }
 
-func Example_dataExpressionHandler_Share() {
-	sharedExpressionsContents := `{
-		"aaa333": {
-			"name": "Calcium Error",
-			"expression": "element(\"Ca\", \"err\")",
-			"type": "TernaryPlot",
-			"comments": "calcium comments",
-			"tags": [],
-			"shared": false,
-			"creator": {
-				"name": "The sharer",
-				"user_id": "600f2a0806b6c70071d3d174",
-				"email": "niko@spicule.co.uk"
-			},
-			"create_unix_time_sec": 1668150001,
-			"mod_unix_time_sec": 1668150001
+// NOTE: Major flaw here is that we can't "check" what the DB write looks like!
+func Test_dataExpressionHandler_DeleteNoPermission(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("success", func(mt *mtest.T) {
+		mongoMockedResponses := []primitive.D{
+			// GET item
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+				makeExprDBList(0, true),
+			),
 		}
-	}`
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprS3Path),
-		},
-		// Reading shared file to add to it
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path),
-		},
-	}
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil,
-		// Shared file
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(sharedExpressionsContents))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{}`))),
-		},
-		// Shared file
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(sharedExpressionsContents))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(exprFile))),
-		},
-		// Shared file
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(sharedExpressionsContents))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(exprFile))),
-		},
-		// Shared file
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(sharedExpressionsContents))),
-		},
-	}
-	// NOTE: PUT expected JSON needs to have spaces not tabs
-	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(exprSharedS3Path), Body: bytes.NewReader([]byte(`{
-    "aaa333": {
-        "name": "Calcium Error",
-        "expression": "element(\"Ca\", \"err\")",
-        "type": "TernaryPlot",
-        "comments": "calcium comments",
-        "tags": [],
-        "shared": false,
-        "creator": {
-            "name": "The sharer",
-            "user_id": "600f2a0806b6c70071d3d174",
-            "email": "niko@spicule.co.uk"
-        },
-        "create_unix_time_sec": 1668150001,
-        "mod_unix_time_sec": 1668150001
-    },
-    "ddd222": {
-        "name": "Iron Error",
-        "expression": "element(\"Fe\", \"err\")",
-        "type": "BinaryPlot",
-        "comments": "comments for def456 expression",
-        "tags": [],
-        "shared": true,
-        "creator": {
-            "name": "Peter N",
-            "user_id": "999",
-            "email": "niko@spicule.co.uk"
-        },
-        "create_unix_time_sec": 1668100001,
-        "mod_unix_time_sec": 1668142579
-    }
-}`)),
-		},
-	}
-	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
-		{},
-	}
 
-	idGen := services.MockIDGenerator{
-		IDs: []string{"ddd222"},
-	}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
-	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
-		QueuedTimeStamps: []int64{1668142579},
-	}
-	apiRouter := MakeRouter(svcs)
+		mt.AddMockResponses(mongoMockedResponses...)
 
-	const putItem = ""
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
 
-	// User file not there, should say not found
-	req, _ := http.NewRequest("POST", "/share/data-expression/abc123", bytes.NewReader([]byte(putItem)))
-	resp := executeRequest(req, apiRouter.Router)
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		envName := "unit_test"
+		svcs.Mongo = mt.Client
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, envName)
+		svcs.Expressions = expressionDB.MakeExpressionDB(envName, &svcs)
+		apiRouter := MakeRouter(svcs)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		// Not found
+		req, _ := http.NewRequest("DELETE", "/data-expression/abc999", nil)
+		resp := executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 401, `abc999 not owned by 600f2a0806b6c70071d3d174
+`)
+	})
+}
 
-	// File empty in S3, should say not found
-	req, _ = http.NewRequest("POST", "/share/data-expression/abc123", bytes.NewReader([]byte(putItem)))
-	resp = executeRequest(req, apiRouter.Router)
+// NOTE: Major flaw here is that we can't "check" what the DB write looks like!
+func Test_dataExpressionHandler_DeleteOK(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+	mt.Run("success", func(mt *mtest.T) {
+		mongoMockedResponses := []primitive.D{
+			// GET item
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+				makeExprDBList(3, false),
+			),
+			// DELETE success
+			mtest.CreateSuccessResponse(),
+		}
 
-	// File missing the id being shared
-	req, _ = http.NewRequest("POST", "/share/data-expression/zzz222", bytes.NewReader([]byte(putItem)))
-	resp = executeRequest(req, apiRouter.Router)
+		mt.AddMockResponses(mongoMockedResponses...)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
 
-	// File contains ID, share OK
-	req, _ = http.NewRequest("POST", "/share/data-expression/def456", bytes.NewReader([]byte(putItem)))
-	resp = executeRequest(req, apiRouter.Router)
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		envName := "unit_test"
+		svcs.Mongo = mt.Client
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, envName)
+		svcs.Expressions = expressionDB.MakeExpressionDB(envName, &svcs)
+		apiRouter := MakeRouter(svcs)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		// Not found
+		req, _ := http.NewRequest("DELETE", "/data-expression/abc111", nil)
+		resp := executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 200, `"abc111"
+`)
+	})
+}
 
-	// Output:
-	// 404
-	// abc123 not found
-	//
-	// 404
-	// abc123 not found
-	//
-	// 404
-	// zzz222 not found
-	//
-	// 200
-	// "ddd222"
+// NOTE: Major flaw here is that we can't "check" what the DB write looks like!
+func Test_dataExpressionHandler_ShareNotFound(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("success", func(mt *mtest.T) {
+		mongoMockedResponses := []primitive.D{
+			// GET returns no existing item
+			mtest.CreateCursorResponse(
+				1,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+			),
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.NextBatch,
+			),
+		}
+
+		mt.AddMockResponses(mongoMockedResponses...)
+
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		envName := "unit_test"
+		svcs.Mongo = mt.Client
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, envName)
+		svcs.Expressions = expressionDB.MakeExpressionDB(envName, &svcs)
+		apiRouter := MakeRouter(svcs)
+
+		// Not found
+		req, _ := http.NewRequest("POST", "/share/data-expression/abc999", nil)
+		resp := executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 404, `abc999 not found
+`)
+	})
+}
+
+// NOTE: Major flaw here is that we can't "check" what the DB write looks like!
+func Test_dataExpressionHandler_ShareNoPermissions(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("success", func(mt *mtest.T) {
+		mongoMockedResponses := []primitive.D{
+			// GET item
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+				makeExprDBList(0, true),
+			),
+		}
+
+		mt.AddMockResponses(mongoMockedResponses...)
+
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		envName := "unit_test"
+		svcs.Mongo = mt.Client
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, envName)
+		svcs.Expressions = expressionDB.MakeExpressionDB(envName, &svcs)
+		apiRouter := MakeRouter(svcs)
+
+		// Not found
+		req, _ := http.NewRequest("POST", "/share/data-expression/abc999", nil)
+		resp := executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 401, `abc999 not owned by 600f2a0806b6c70071d3d174
+`)
+	})
+}
+
+// NOTE: Major flaw here is that we can't "check" what the DB write looks like!
+func Test_dataExpressionHandler_ShareAlreadyShared(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("success", func(mt *mtest.T) {
+		mongoMockedResponses := []primitive.D{
+			// GET item
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+				makeExprDBList(4, true),
+			),
+		}
+
+		mt.AddMockResponses(mongoMockedResponses...)
+
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+			QueuedTimeStamps: []int64{1668100000},
+		}
+		envName := "unit_test"
+		svcs.Mongo = mt.Client
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, envName)
+		svcs.Expressions = expressionDB.MakeExpressionDB(envName, &svcs)
+		apiRouter := MakeRouter(svcs)
+
+		// Not found
+		req, _ := http.NewRequest("POST", "/share/data-expression/abc999", nil)
+		resp := executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 400, `abc999 already shared
+`)
+	})
+}
+
+// NOTE: Major flaw here is that we can't "check" what the DB write looks like!
+func Test_dataExpressionHandler_ShareOK(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("success", func(mt *mtest.T) {
+		mongoMockedResponses := []primitive.D{
+			// GET item
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+				makeExprDBList(3, true),
+			),
+			// Success for the share
+			mtest.CreateSuccessResponse(),
+		}
+
+		mt.AddMockResponses(mongoMockedResponses...)
+
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+
+		idGen := services.MockIDGenerator{
+			IDs: []string{"ddd222"},
+		}
+		svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+		svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+			QueuedTimeStamps: []int64{1668100008},
+		}
+		envName := "unit_test"
+		svcs.Mongo = mt.Client
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, envName)
+		svcs.Expressions = expressionDB.MakeExpressionDB(envName, &svcs)
+		apiRouter := MakeRouter(svcs)
+
+		// Not found
+		req, _ := http.NewRequest("POST", "/share/data-expression/abc999", nil)
+		resp := executeRequest(req, apiRouter.Router)
+		checkResult(t, resp, 200, `"ddd222"
+`)
+	})
 }

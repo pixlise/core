@@ -58,7 +58,7 @@ func Test_Module_DB_List_None(t *testing.T) {
 
 		svcs.Expressions = db
 
-		mods, err := db.ListModules()
+		mods, err := db.ListModules(true)
 
 		if err != nil {
 			t.Error(err)
@@ -81,7 +81,7 @@ func Test_Module_DB_List_MissingVersion(t *testing.T) {
 				"modules-unit_test.modules",
 				mtest.FirstBatch,
 				bson.D{
-					{"id", "mod123"},
+					{"_id", "mod123"},
 					{"name", "Module1"},
 					{"comments", "Module 1"},
 					{"origin", bson.D{
@@ -101,7 +101,7 @@ func Test_Module_DB_List_MissingVersion(t *testing.T) {
 				"modules-unit_test.modules",
 				mtest.NextBatch,
 				bson.D{
-					{"id", "mod234"},
+					{"_id", "mod234"},
 					{"name", "Module2"},
 					{"comments", "Module 2"},
 					{"origin", bson.D{
@@ -139,7 +139,7 @@ func Test_Module_DB_List_MissingVersion(t *testing.T) {
 
 		svcs.Expressions = db
 
-		mods, err := db.ListModules()
+		mods, err := db.ListModules(true)
 
 		if err == nil {
 			t.Error("Expected error")
@@ -167,7 +167,7 @@ func Test_Module_DB_List_ReturnsOK(t *testing.T) {
 				"modules-unit_test.modules",
 				mtest.FirstBatch,
 				bson.D{
-					{"id", "mod123"},
+					{"_id", "mod123"},
 					{"name", "Module1"},
 					{"comments", "Module 1"},
 					{"origin", bson.D{
@@ -186,7 +186,7 @@ func Test_Module_DB_List_ReturnsOK(t *testing.T) {
 				"modules-unit_test.modules",
 				mtest.NextBatch,
 				bson.D{
-					{"id", "mod234"},
+					{"_id", "mod234"},
 					{"name", "Module2"},
 					{"comments", "Module 2"},
 					{"origin", bson.D{
@@ -266,7 +266,7 @@ func Test_Module_DB_List_ReturnsOK(t *testing.T) {
 
 		svcs.Expressions = db
 
-		mods, err := db.ListModules()
+		mods, err := db.ListModules(true)
 
 		if err != nil {
 			t.Error(err)

@@ -94,7 +94,7 @@ func Test_Module_DB_AddVersion_OK(t *testing.T) {
 				"modules-unit_test.modules",
 				mtest.FirstBatch,
 				bson.D{
-					{"id", "mod123"},
+					{"_id", "mod123"},
 					{"name", "Module1"},
 					{"comments", "Module 1"},
 					{"origin", bson.D{
@@ -157,7 +157,8 @@ func Test_Module_DB_AddVersion_OK(t *testing.T) {
 
 		// Check entire returned result
 		expected := modules.DataModuleSpecificVersionWire{
-			DataModule: &modules.DataModule{ID: "mod123",
+			DataModule: &modules.DataModule{
+				ID:       "mod123",
 				Name:     "Module1",
 				Comments: "Module 1",
 				Origin: pixlUser.APIObjectItem{

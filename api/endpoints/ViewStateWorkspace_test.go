@@ -29,6 +29,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
+	expressionDB "github.com/pixlise/core/v2/core/expressions/database"
+	"github.com/pixlise/core/v2/core/expressions/expressions"
 	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/timestamper"
 	"go.mongodb.org/mongo-driver/bson"
@@ -1350,71 +1352,119 @@ func Example_viewStateHandler_DeleteSavedShared() {
 	//
 }
 
-func Example_viewStateHandler_GetReferencedIDs() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		// Test 1
+func makeExprDBItem(idx int, useCallerUserId bool) bson.D {
+	ownerID := "444"
+	ownerID2 := "999"
+	if useCallerUserId {
+		ownerID = "600f2a0806b6c70071d3d174"
+		ownerID2 = ownerID
+	}
+	items := []expressions.DataExpression{
 		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/331.json"),
-		},
-		// Test 2
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/332.json"),
-		},
-		// Test 3
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/333.json"),
-		},
-		// Getting ROIs
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/TheDataSetID/ROI.json"),
+			"abc123", "Temp data", "housekeeping(\"something\")", "PIXLANG", "comments for abc123 expression", []string{},
+			makeOrigin(ownerID, "Niko", "niko@spicule.co.uk", false, 1668100000, 1668100000),
+			nil,
 		},
 		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/TheDataSetID/ROI.json"),
-		},
-		// Getting expressions
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/DataExpressions.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/DataExpressions.json"),
-		},
-		// Getting rgb mixes
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/RGBMixes.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/RGBMixes.json"),
-		},
-		// Getting quant config
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/TheDataSetID/Quantifications/summary-quant123.json"),
+			"expr1", "Calcium weight%", "element(\"Ca\", \"%\")", "PIXLANG", "comments for expr1", []string{},
+			makeOrigin(ownerID2, "Peter N", "peter@spicule.co.uk", false, 1668100001, 1668100001),
+			nil,
 		},
 	}
 
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		nil,
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`}`))),
+	item := items[idx]
+	data, err := bson.Marshal(item)
+	if err != nil {
+		panic(err)
+	}
+	bsonD := bson.D{}
+	err = bson.Unmarshal(data, &bsonD)
+	if err != nil {
+		panic(err)
+	}
+	return bsonD
+}
+
+func Test_viewStateHandler_GetReferencedIDs(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("success", func(mt *mtest.T) {
+		mongoMockedResponses := []primitive.D{
+			mtest.CreateCursorResponse(
+				1,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+				makeExprDBItem(0, false),
+			),
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.NextBatch,
+				makeExprDBItem(1, false),
+			),
+		}
+
+		mt.AddMockResponses(mongoMockedResponses...)
+
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+			// Test 1
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/331.json"),
+			},
+			// Test 2
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/332.json"),
+			},
+			// Test 3
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/333.json"),
+			},
+			// Getting ROIs
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/TheDataSetID/ROI.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/TheDataSetID/ROI.json"),
+			},
+			// Getting rgb mixes
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/RGBMixes.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/RGBMixes.json"),
+			},
+			// Getting quant config
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/TheDataSetID/Quantifications/summary-quant123.json"),
+			},
+		}
+
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			nil,
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`}`))),
+			},
+			{
+				// View state that references non-shared IDs. We want to make sure it returns the right ones and
+				// count, so we return multiple IDs here:
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"viewState": {
+			"contextImages": { "0": { "mapLayers": [ { "expressionID": "rgbmix-123", "opacity": 1, "visible": true } ] } },
+			"quantification": {"appliedQuantID": "quant123"},
+			"binaryPlots": { "44": { "expressionIDs": ["shared-expr", "expr1"], "visibleROIs": ["shared-roi"] } },
+			"ternaryPlots": { "66": { "expressionIDs": ["shared-expr2"], "visibleROIs": ["roi2"] } }
 		},
-		{
-			// View state that references non-shared IDs. We want to make sure it returns the right ones and
-			// count, so we return multiple IDs here:
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-				 "viewState": {
-					 "contextImages": { "0": { "mapLayers": [ { "expressionID": "rgbmix-123", "opacity": 1, "visible": true } ] } },
-					 "quantification": {"appliedQuantID": "quant123"},
-					 "binaryPlots": { "44": { "expressionIDs": ["shared-expr", "expr1"], "visibleROIs": ["shared-roi"] } },
-					 "ternaryPlots": { "66": { "expressionIDs": ["shared-expr2"], "visibleROIs": ["roi2"] } }
-				 },
-				 "name": "333",
-				"description": "the description of 333"
-			}`))),
-		},
-		// ROIs
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"name": "333",
+	"description": "the description of 333"
+}`))),
+			},
+			// ROIs
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
 	"roi2": {
 		"name": "Dark patch 2",
 		"description": "The second dark patch",
@@ -1422,9 +1472,9 @@ func Example_viewStateHandler_GetReferencedIDs() {
 		"creator": { "name": "Peter", "user_id": "u123" }
 	}
 }`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
 	"roi": {
 		"name": "Shared patch 2",
 		"description": "The shared patch",
@@ -1432,38 +1482,10 @@ func Example_viewStateHandler_GetReferencedIDs() {
 		"creator": { "name": "PeterN", "user_id": "u123" }
 	}
 }`))),
-		},
-		// Expressions
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-	"abc123": {
-		"name": "Temp data",
-		"expression": "housekeeping(\"something\")",
-		"type": "All",
-		"comments": "comments for abc123 expression",
-		"creator": {
-			"user_id": "444",
-			"name": "Niko",
-			"email": "niko@spicule.co.uk"
-		}
-	},
-	"expr1": {
-		"name": "Calcium weight%",
-		"expression": "element(\"Ca\", \"%\")",
-		"type": "All",
-		"comments": "comments for expr1",
-		"creator": {
-			"user_id": "999",
-			"name": "Peter N",
-			"email": "peter@spicule.co.uk"
-		}
-	}
-}`))),
-		},
-		nil, // simulate missing shared expressions file...
-		// User RGB mixes
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+			},
+			// User RGB mixes
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
 	"123": {
 		"name": "Ca-Ti-Al ratios",
 		"red": {
@@ -1488,10 +1510,10 @@ func Example_viewStateHandler_GetReferencedIDs() {
 		}
 	}
 }`))),
-		},
-		// Shared RGB mixes
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+			},
+			// Shared RGB mixes
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
 	"380": {
 		"name": "Fe-Ca-Al ratios",
 		"red": {
@@ -1516,10 +1538,10 @@ func Example_viewStateHandler_GetReferencedIDs() {
 		}
 	}
 }`))),
-		},
-		// Quant summary
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+			},
+			// Quant summary
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
 	"shared": false,
 	"params": {
 		"pmcsCount": 93,
@@ -1540,7 +1562,7 @@ func Example_viewStateHandler_GetReferencedIDs() {
 		"creator": {
 			"name": "peternemere",
 			"user_id": "600f2a0806b6c70071d3d174",
-            "email": ""
+			"email": ""
 		},
 		"roiID": "ZcH49SYZ",
 		"elementSetID": "",
@@ -1556,113 +1578,109 @@ func Example_viewStateHandler_GetReferencedIDs() {
 		"https://dev-pixlise-piquant-jobs.s3.us-east-1.amazonaws.com/Jobs/UC2Bchyz/piquant-logs/node00001.pmcs_threads.log"
 	]
 }`))),
-		},
-	}
+			},
+		}
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
-	apiRouter := MakeRouter(svcs)
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.Mongo = mt.Client
+		db := expressionDB.MakeExpressionDB("local", &svcs)
 
-	// User file not there, should say not found
-	req, _ := http.NewRequest("GET", "/view-state/saved/TheDataSetID/331/references", bytes.NewReader([]byte{}))
-	resp := executeRequest(req, apiRouter.Router)
+		svcs.Expressions = db
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		apiRouter := MakeRouter(svcs)
 
-	// File empty in S3, should say not found
-	req, _ = http.NewRequest("GET", "/view-state/saved/TheDataSetID/332/references", bytes.NewReader([]byte{}))
-	resp = executeRequest(req, apiRouter.Router)
+		// User file not there, should say not found
+		req, _ := http.NewRequest("GET", "/view-state/saved/TheDataSetID/331/references", bytes.NewReader([]byte{}))
+		resp := executeRequest(req, apiRouter.Router)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		checkResult(t, resp, 404, `331 not found
+`)
 
-	// Gets mix of shared and not shared IDs
-	req, _ = http.NewRequest("GET", "/view-state/saved/TheDataSetID/333/references", bytes.NewReader([]byte{}))
-	resp = executeRequest(req, apiRouter.Router)
+		// File empty in S3, should say not found
+		req, _ = http.NewRequest("GET", "/view-state/saved/TheDataSetID/332/references", bytes.NewReader([]byte{}))
+		resp = executeRequest(req, apiRouter.Router)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		checkResult(t, resp, 404, `332 not found
+`)
 
-	// Output:
-	// 404
-	// 331 not found
-	//
-	// 404
-	// 332 not found
-	//
-	// 200
-	// {
-	//     "quant": {
-	//         "id": "quant123",
-	//         "name": "my test quant",
-	//         "creator": {
-	//             "name": "peternemere",
-	//             "user_id": "600f2a0806b6c70071d3d174",
-	//             "email": ""
-	//         }
-	//     },
-	//     "ROIs": [
-	//         {
-	//             "id": "roi2",
-	//             "name": "Dark patch 2",
-	//             "creator": {
-	//                 "name": "Peter",
-	//                 "user_id": "u123",
-	//                 "email": ""
-	//             }
-	//         },
-	//         {
-	//             "id": "shared-roi",
-	//             "name": "Shared patch 2",
-	//             "creator": {
-	//                 "name": "PeterN",
-	//                 "user_id": "u123",
-	//                 "email": ""
-	//             }
-	//         }
-	//     ],
-	//     "expressions": [
-	//         {
-	//             "id": "expr1",
-	//             "name": "Calcium weight%",
-	//             "creator": {
-	//                 "name": "Peter N",
-	//                 "user_id": "999",
-	//                 "email": "peter@spicule.co.uk"
-	//             }
-	//         },
-	//         {
-	//             "id": "shared-expr",
-	//             "name": "",
-	//             "creator": {
-	//                 "name": "",
-	//                 "user_id": "",
-	//                 "email": ""
-	//             }
-	//         },
-	//         {
-	//             "id": "shared-expr2",
-	//             "name": "",
-	//             "creator": {
-	//                 "name": "",
-	//                 "user_id": "",
-	//                 "email": ""
-	//             }
-	//         }
-	//     ],
-	//     "rgbMixes": [
-	//         {
-	//             "id": "rgbmix-123",
-	//             "name": "",
-	//             "creator": {
-	//                 "name": "",
-	//                 "user_id": "",
-	//                 "email": ""
-	//             }
-	//         }
-	//     ],
-	//     "nonSharedCount": 3
-	// }
+		// Gets mix of shared and not shared IDs
+		req, _ = http.NewRequest("GET", "/view-state/saved/TheDataSetID/333/references", bytes.NewReader([]byte{}))
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "quant": {
+        "id": "quant123",
+        "name": "my test quant",
+        "creator": {
+            "name": "peternemere",
+            "user_id": "600f2a0806b6c70071d3d174",
+            "email": ""
+        }
+    },
+    "ROIs": [
+        {
+            "id": "roi2",
+            "name": "Dark patch 2",
+            "creator": {
+                "name": "Peter",
+                "user_id": "u123",
+                "email": ""
+            }
+        },
+        {
+            "id": "shared-roi",
+            "name": "Shared patch 2",
+            "creator": {
+                "name": "PeterN",
+                "user_id": "u123",
+                "email": ""
+            }
+        }
+    ],
+    "expressions": [
+        {
+            "id": "expr1",
+            "name": "Calcium weight%",
+            "creator": {
+                "name": "Peter N",
+                "user_id": "999",
+                "email": "peter@spicule.co.uk"
+            }
+        },
+        {
+            "id": "shared-expr",
+            "name": "",
+            "creator": {
+                "name": "",
+                "user_id": "",
+                "email": ""
+            }
+        },
+        {
+            "id": "shared-expr2",
+            "name": "",
+            "creator": {
+                "name": "",
+                "user_id": "",
+                "email": ""
+            }
+        }
+    ],
+    "rgbMixes": [
+        {
+            "id": "rgbmix-123",
+            "name": "",
+            "creator": {
+                "name": "",
+                "user_id": "",
+                "email": ""
+            }
+        }
+    ],
+    "nonSharedCount": 3
+}
+`)
+	})
 }
 
 func Example_viewStateHandler_ShareViewState() {
@@ -1864,60 +1882,95 @@ func Example_viewStateHandler_ShareViewState() {
 }
 
 // Shares a view state, with automatic sharing of referenced items turned on
-func Example_viewStateHandler_ShareViewState_AutoShare() {
-	var mockS3 awsutil.MockS3Client
-	defer mockS3.FinishTest()
-	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
-		// Test 1
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/222.json"),
-		},
+func Test_viewStateHandler_ShareViewState_AutoShare(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
 
-		// Getting ROIs to be able to share...
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/TheDataSetID/ROI.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/TheDataSetID/ROI.json"),
-		},
-		// Getting expressions to be able to share...
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/DataExpressions.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/DataExpressions.json"),
-		},
-		// Getting rgb mixes
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/RGBMixes.json"),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/RGBMixes.json"),
-		},
-	}
+	mt.Run("success", func(mt *mtest.T) {
+		mongoMockedResponses := []primitive.D{
+			// User get
+			mtest.CreateCursorResponse(
+				1,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+				makeExprDBItem(0, true),
+			),
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.NextBatch,
+				makeExprDBItem(1, true),
+			),
+			// Expression sharing responses
+			// NOTE: we are unable to verify what was sent to DB. In the old code that talked to S3 we were expecting to see a write:
+			/*
+				"expr1(sh)": {
+					"name": "Calcium weight%",
+					"expression": "element(\"Ca\", \"%\")",
+					"type": "All",
+					"comments": "comments for expr1",
+					"tags": [],
+					"shared": true,
+					"creator": {
+						"name": "Peter N",
+						"user_id": "999",
+						"email": "peter@spicule.co.uk"
+					},
+					"create_unix_time_sec": 1668100018,
+					"mod_unix_time_sec": 16681425780
+				}
+			*/
+			mtest.CreateSuccessResponse(),
+		}
 
-	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
-		{
-			// View state that references non-shared IDs. We want to make sure it returns the right ones and
-			// count, so we return multiple IDs here:
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-				 "viewState": {
-					"contextImages": { "0": { "mapLayers": [ { "expressionID": "rgbmix-123", "opacity": 1, "visible": true } ] } },
-					"quantification": {"appliedQuantID": "shared-quant123"},
-					"binaryPlots": { "44": { "expressionIDs": ["shared-expr", "expr1"], "visibleROIs": ["shared-roi"] } },
-					"ternaryPlots": { "66": { "expressionIDs": ["shared-expr2"], "visibleROIs": ["roi2"] } }
-				 },
-				 "name": "222",
-				"description": "the description of 222",
-				"creator": { "name": "Kyle", "user_id": "u124" },
-				"create_unix_time_sec": 1668100010,
-				"mod_unix_time_sec": 1668100011
-			}`))),
-		},
+		mt.AddMockResponses(mongoMockedResponses...)
 
-		// ROIs
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+		mockS3.ExpGetObjectInput = []s3.GetObjectInput{
+			// Test 1
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String(viewStateS3Path + "Workspaces/222.json"),
+			},
+
+			// Getting ROIs to be able to share...
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/TheDataSetID/ROI.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/TheDataSetID/ROI.json"),
+			},
+			// Getting rgb mixes
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/RGBMixes.json"),
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/RGBMixes.json"),
+			},
+		}
+
+		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
+			{
+				// View state that references non-shared IDs. We want to make sure it returns the right ones and
+				// count, so we return multiple IDs here:
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+		"viewState": {
+		"contextImages": { "0": { "mapLayers": [ { "expressionID": "rgbmix-123", "opacity": 1, "visible": true } ] } },
+		"quantification": {"appliedQuantID": "shared-quant123"},
+		"binaryPlots": { "44": { "expressionIDs": ["shared-expr", "expr1"], "visibleROIs": ["shared-roi"] } },
+		"ternaryPlots": { "66": { "expressionIDs": ["shared-expr2"], "visibleROIs": ["roi2"] } }
+		},
+		"name": "222",
+	"description": "the description of 222",
+	"creator": { "name": "Kyle", "user_id": "u124" },
+	"create_unix_time_sec": 1668100010,
+	"mod_unix_time_sec": 1668100011
+}`))),
+			},
+
+			// ROIs
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
 	"roi2": {
 		"name": "Dark patch 2",
 		"description": "The second dark patch",
@@ -1927,9 +1980,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
         "mod_unix_time_sec": 1668100013
 	}
 }`))),
-		},
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
 	"roi": {
 		"name": "Shared patch 2",
 		"tags": [],
@@ -1941,44 +1994,10 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
         "mod_unix_time_sec": 1668100015
 	}
 }`))),
-		},
-		// Expressions
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-	"abc123": {
-		"name": "Temp data",
-		"expression": "housekeeping(\"something\")",
-		"type": "All",
-		"comments": "comments for abc123 expression",
-		"tags": [],
-		"creator": {
-			"user_id": "444",
-			"name": "Niko",
-			"email": "niko@spicule.co.uk"
-		},
-        "create_unix_time_sec": 1668100016,
-        "mod_unix_time_sec": 1668100017
-	},
-	"expr1": {
-		"name": "Calcium weight%",
-		"expression": "element(\"Ca\", \"%\")",
-		"type": "All",
-		"comments": "comments for expr1",
-		"tags": [],
-		"creator": {
-			"user_id": "999",
-			"name": "Peter N",
-			"email": "peter@spicule.co.uk"
-		},
-        "create_unix_time_sec": 1668100018,
-        "mod_unix_time_sec": 1668100019
-	}
-}`))),
-		},
-		nil, // simulate missing shared expressions file...
-		// User RGB mixes
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+			},
+			// User RGB mixes
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
 	"rgbmix-123": {
 		"name": "Ca-Ti-Al ratios",
 		"red": {
@@ -2006,10 +2025,10 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
         "mod_unix_time_sec": 1668100021
 	}
 }`))),
-		},
-		// Shared RGB mixes
-		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+			},
+			// Shared RGB mixes
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
 	"380": {
 		"name": "Fe-Ca-Al ratios",
 		"red": {
@@ -2038,13 +2057,13 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
         "mod_unix_time_sec": 1668100023
 	}
 }`))),
-		},
-	}
+			},
+		}
 
-	// NOTE: PUT expected JSON needs to have spaces not tabs
-	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/TheDataSetID/ROI.json"), Body: bytes.NewReader([]byte(`{
+		// NOTE: PUT expected JSON needs to have spaces not tabs
+		mockS3.ExpPutObjectInput = []s3.PutObjectInput{
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/TheDataSetID/ROI.json"), Body: bytes.NewReader([]byte(`{
     "roi": {
         "name": "Shared patch 2",
         "locationIndexes": [
@@ -2096,28 +2115,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
         "mod_unix_time_sec": 1668142579
     }
 }`)),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/DataExpressions.json"), Body: bytes.NewReader([]byte(`{
-    "expr1(sh)": {
-        "name": "Calcium weight%",
-        "expression": "element(\"Ca\", \"%\")",
-        "type": "All",
-        "comments": "comments for expr1",
-        "tags": [],
-        "shared": true,
-        "creator": {
-            "name": "Peter N",
-            "user_id": "999",
-            "email": "peter@spicule.co.uk"
-        },
-        "create_unix_time_sec": 1668100018,
-        "mod_unix_time_sec": 16681425780
-    }
-}`)),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/RGBMixes.json"), Body: bytes.NewReader([]byte(`{
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/RGBMixes.json"), Body: bytes.NewReader([]byte(`{
     "380": {
         "name": "Fe-Ca-Al ratios",
         "red": {
@@ -2173,9 +2173,9 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
         "mod_unix_time_sec": 1668142581
     }
 }`)),
-		},
-		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/TheDataSetID/ViewState/Workspaces/222.json"), Body: bytes.NewReader([]byte(`{
+			},
+			{
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/TheDataSetID/ViewState/Workspaces/222.json"), Body: bytes.NewReader([]byte(`{
     "viewState": {
         "analysisLayout": {
             "topWidgetSelectors": [],
@@ -2286,32 +2286,33 @@ func Example_viewStateHandler_ShareViewState_AutoShare() {
     "create_unix_time_sec": 1668100010,
     "mod_unix_time_sec": 1668142582
 }`)),
-		},
-	}
-	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
-		{},
-		{},
-		{},
-		{},
-	}
+			},
+		}
+		mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
+			{},
+			{},
+			{},
+		}
 
-	idGen := services.MockIDGenerator{
-		IDs: []string{"roi2(sh)", "expr1(sh)", "123roi"},
-	}
-	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
-	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
-		QueuedTimeStamps: []int64{1668142579, 16681425780, 1668142581, 1668142582},
-	}
-	apiRouter := MakeRouter(svcs)
+		idGen := services.MockIDGenerator{
+			IDs: []string{"roi2(sh)", "expr1(sh)", "123roi"},
+		}
+		svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
+		svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+			QueuedTimeStamps: []int64{1668142579, 16681425780, 1668142581, 1668142582},
+		}
 
-	// User file not there, should say not found
-	req, _ := http.NewRequest("POST", "/share/view-state/TheDataSetID/222?auto-share=true", bytes.NewReader([]byte{}))
-	resp := executeRequest(req, apiRouter.Router)
+		svcs.Mongo = mt.Client
+		db := expressionDB.MakeExpressionDB("local", &svcs)
 
-	fmt.Println(resp.Code)
-	fmt.Println(resp.Body)
+		svcs.Expressions = db
+		apiRouter := MakeRouter(svcs)
 
-	// Output:
-	// 200
-	// "222 shared"
+		// User file not there, should say not found
+		req, _ := http.NewRequest("POST", "/share/view-state/TheDataSetID/222?auto-share=true", bytes.NewReader([]byte{}))
+		resp := executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `"222 shared"
+`)
+	})
 }

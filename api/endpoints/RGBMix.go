@@ -341,15 +341,18 @@ func rgbMixShare(params handlers.ApiHandlerParams) (interface{}, error) {
 }
 
 func shareRGBMixes(svcs *services.APIServices, userID string, idsToShare []string) ([]string, error) {
+	sharedIDs := []string{} // The shared IDs we will generate
 	s3Path := filepaths.GetRGBMixPath(userID)
 	userItems, err := readRGBMixData(svcs, s3Path)
+	if err != nil {
+		return sharedIDs, err
+	}
 
 	// NOTE: would make more sense to read the shared list here too but this would result in many tests
 	// breaking as this was written with 1 id to share previously. This way works too we just need
 	// to check for unique ids twice - once among newly generated ids, then among the shared ones
 	// that get read in
 
-	sharedIDs := []string{} // The shared IDs we will generate
 	newlySharedItems := RGBMixLookup{}
 
 	for _, idToFind := range idsToShare {
