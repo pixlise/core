@@ -52,6 +52,7 @@ func setTestAuth0Config(svcs *services.APIServices) {
 	svcs.Config.Auth0Domain = os.Getenv("PIXLISE_API_TEST_AUTH0_DOMAIN")
 	svcs.Config.Auth0ManagementClientID = os.Getenv("PIXLISE_API_TEST_AUTH0_CLIENT_ID")
 	svcs.Config.Auth0ManagementSecret = os.Getenv("PIXLISE_API_TEST_AUTH0_SECRET")
+	svcs.Config.Auth0NewUserRoleID = os.Getenv("PIXLISE_API_TEST_AUTH0_NEWUSER_ROLE_ID")
 
 	if len(svcs.Config.Auth0ManagementClientID) <= 0 {
 		panic("Missing one or more env vars for testing: PIXLISE_API_TEST_AUTH0_DOMAIN, PIXLISE_API_TEST_AUTH0_CLIENT_ID, PIXLISE_API_TEST_AUTH0_SECRET")

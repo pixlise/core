@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -152,7 +151,6 @@ func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jo
 
 					Env: []apiv1.EnvVar{
 						{Name: "QUANT_PARAMS", Value: paramsStr},
-						{Name: "AWS_DEFAULT_REGION", Value: os.Getenv("AWS_DEFAULT_REGION")},
 						{Name: "PYTHONUNBUFFERED", Value: "TRUE"},
 					},
 				},

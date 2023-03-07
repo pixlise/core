@@ -22,8 +22,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/pixlise/core/v2/core/logger"
 )
@@ -33,13 +37,12 @@ import (
 
 // APIConfig combines env vars and config JSON values
 type APIConfig struct {
-	AWSBucketRegion     string
-	AWSCloudwatchRegion string
-	AdminEmails         []string
+	AdminEmails []string
 
 	Auth0Domain             string
 	Auth0ManagementClientID string
 	Auth0ManagementSecret   string
+	Auth0NewUserRoleID 		string
 
 	BuildsBucket string // Piquant download bucket
 	ConfigBucket string
@@ -49,8 +52,6 @@ type APIConfig struct {
 	DataSourceSNSTopic string
 
 	DatasetsBucket string
-
-	DatasourceArtifactsBucket string // Goes away
 
 	EnvironmentName string
 
@@ -62,9 +63,7 @@ type APIConfig struct {
 	ManualUploadBucket string
 
 	// Mongo Connection
-	MongoEndpoint string
-	MongoUsername string
-	MongoSecret   string
+	MongoSecret string
 
 	PiquantDockerImage string // PIQUANT docker image to use to run a job
 	PiquantJobsBucket  string // PIQUANT job scratch drive
@@ -94,6 +93,62 @@ func homeDir() string {
 	return os.Getenv("USERPROFILE") // windows
 }
 
+func NewConfigFromFile(configFilePath string) (APIConfig, error) {
+	var cfg APIConfig
+
+	fmt.Printf("Loading custom config from: %s\n", configFilePath)
+	customConfig, err := ioutil.ReadFile(configFilePath)
+	if err != nil {
+		return cfg, fmt.Errorf("could not read config file at %s", configFilePath)
+	}
+	return buildConfig(customConfig)
+}
+
+func NewConfigFromJsonString(customConfigStr string) (APIConfig, error) {
+	customConfig := []byte(customConfigStr)
+	fmt.Printf("WARNING: Passing json string via CUSTOM_CONFIG is deprecated and will soon be removed")
+	return buildConfig(customConfig)
+}
+
+func buildConfig(configJson []byte) (APIConfig, error) {
+	var cfg APIConfig
+
+	err := json.Unmarshal(configJson, &cfg)
+	if err != nil {
+		return cfg, fmt.Errorf("failed to parse custom config: %v", err)
+	}
+
+	// Override Config with any values explicitly set in Env Vars (PIXLISE_CONFIG_*)
+	// NOTE: For []string slices, pass in a comma-separated string to the corresponding PIXLISE_CONFIG_ var
+	// 			Ex: export PIXLISE_CONFIG_AdminEmails="me@example.com,you@example.com"
+	reflection := reflect.ValueOf(&cfg).Elem()
+	for i := 0; i < reflection.NumField(); i++ {
+		fieldName := reflection.Type().Field(i).Name
+		field := reflection.Field(i)
+		if val, present := os.LookupEnv(fmt.Sprintf("PIXLISE_CONFIG_%s", fieldName)); present {
+			// fmt.Printf("Overriding %s with env var PIXLISE_CONFIG_%s=%s", fieldName, fieldName, val)
+			switch field.Kind() {
+			case reflect.String:
+				field.SetString(val)
+			case reflect.Slice:
+				if field.Type().Elem().Kind() == reflect.String {
+					slicedVal := strings.Split(val, ",")
+					field.Set(reflect.ValueOf(slicedVal))
+				}
+
+			case reflect.Int32:
+				i, err := strconv.Atoi(val)
+				if err != nil {
+					fmt.Printf("Could not cast value PIXLISE_CONFIG_%s=%s to Int", fieldName, val)
+					continue
+				}
+				field.SetInt(int64(i))
+			}
+		}
+	}
+	return cfg, nil
+}
+
 // Init config, loads config params
 func Init() (APIConfig, error) {
 	// Firstly, read command line arguments
@@ -104,19 +159,28 @@ func Init() (APIConfig, error) {
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
+	configFilePath := flag.String("customConfigPath", "", "(optional) path to the json file holding a set of custom config for the Pixlise API")
 	flag.Parse()
 
-	// Now that we have that, read the env config file from S3
+	// Now that we have that, construct the Config from the possible sources
 	var cfg APIConfig
+	var err error
 
-	customConfig, ok := os.LookupEnv("CUSTOM_CONFIG")
-	if !ok || len(customConfig) <= 0 {
-		return cfg, errors.New("No CUSTOM_CONFIG environment variable provided")
+	// Populate API Config with contents of config.json or CUSTOM_CONFIG if supplied
+	if configFilePath != nil && *configFilePath != "" {
+		// Load config from a referenced json file
+		cfg, err = NewConfigFromFile(*configFilePath)
+	} else {
+		// Load config from a jsonString in environment variable
+		customConfigStr, ok := os.LookupEnv("CUSTOM_CONFIG")
+		if !ok || len(customConfigStr) <= 0 {
+			return cfg, errors.New("no CUSTOM_CONFIG environment variable provided")
+		} else {
+			cfg, err = NewConfigFromJsonString(customConfigStr)
+		}
 	}
-
-	err := json.Unmarshal([]byte(customConfig), &cfg)
 	if err != nil {
-		return cfg, fmt.Errorf("Failed to parse custom config: %v", err)
+		return cfg, err
 	}
 
 	if nodeCountOverride != nil && *nodeCountOverride > 0 {

@@ -19,6 +19,7 @@ package quantModel
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -76,6 +77,13 @@ func runDockerInstance(wg *sync.WaitGroup, params PiquantParams, dockerImage str
 func (r *dockerRunner) runPiquant(piquantDockerImage string, params PiquantParams, pmcListNames []string, cfg config.APIConfig, notifications notifications.NotificationManager, creator pixlUser.UserInfo, log logger.ILogger) error {
 	// Here we start multiple instances of docker and wait for them all to finish using the WaitGroup
 	var wg sync.WaitGroup
+
+	// Make sure AWS env vars are available, because that's what we'll be passing to PIQUANT docker container
+	if len(os.Getenv("AWS_ACCESS_KEY_ID")) <= 0 || len(os.Getenv("AWS_SECRET_ACCESS_KEY")) <= 0 || len(os.Getenv("AWS_DEFAULT_REGION")) <= 0 {
+		txt := "No AWS environment variables defined"
+		log.Errorf(txt)
+		return errors.New(txt)
+	}
 
 	for _, name := range pmcListNames {
 		wg.Add(1)
