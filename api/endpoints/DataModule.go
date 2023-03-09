@@ -57,9 +57,14 @@ func dataModuleGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	modID := params.PathParams[idIdentifier]
 	version := params.PathParams[idVersion]
 
-	ver, err := modules.SemanticVersionFromString(version)
-	if err != nil {
-		return nil, fmt.Errorf("Invalid version specified: %v", err)
+	var ver *modules.SemanticVersion
+
+	if len(version) > 0 {
+		verParsed, err := modules.SemanticVersionFromString(version)
+		if err != nil {
+			return nil, api.MakeBadRequestError(fmt.Errorf("Invalid version specified: %v", err))
+		}
+		ver = &verParsed
 	}
 
 	return params.Svcs.Expressions.GetModule(modID, ver, true)

@@ -24,6 +24,7 @@ import (
 
 	"github.com/pixlise/core/v2/core/expressions/modules"
 	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v2/core/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -156,7 +157,7 @@ func (e *ExpressionDB) getModuleVersion(moduleID string, version modules.Semanti
 	return result, err
 }
 
-func (e *ExpressionDB) GetModule(moduleID string, version modules.SemanticVersion, retrieveUpdatedUserInfo bool) (modules.DataModuleSpecificVersionWire, error) {
+func (e *ExpressionDB) GetModule(moduleID string, version *modules.SemanticVersion, retrieveUpdatedUserInfo bool) (modules.DataModuleSpecificVersionWire, error) {
 	if e.Modules == nil {
 		return modules.DataModuleSpecificVersionWire{}, errors.New("GetModule: Mongo not connected")
 	}
@@ -167,10 +168,21 @@ func (e *ExpressionDB) GetModule(moduleID string, version modules.SemanticVersio
 		return modules.DataModuleSpecificVersionWire{}, err
 	}
 
-	ver, err := e.getModuleVersion(moduleID, version)
+	// if version is not supplied, get latest
+	if version == nil {
+		ver, err := e.getLatestVersion(moduleID)
+		if err != nil {
+			return modules.DataModuleSpecificVersionWire{}, err
+		}
+
+		// Query this one!
+		version = &ver
+	}
+
+	ver, err := e.getModuleVersion(moduleID, *version)
 
 	if err != nil {
-		return modules.DataModuleSpecificVersionWire{}, fmt.Errorf("Failed to get version: %v for module: %v. Error: %v", modules.SemanticVersionToString(version), moduleID, err)
+		return modules.DataModuleSpecificVersionWire{}, fmt.Errorf("Failed to get version: %v for module: %v. Error: %v", modules.SemanticVersionToString(*version), moduleID, err)
 	}
 
 	result := modules.DataModuleSpecificVersionWire{
@@ -298,6 +310,11 @@ func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModul
 		return modules.DataModuleSpecificVersionWire{}, errors.New("AddModuleVersion: Mongo not connected")
 	}
 
+	// Check that the version update field is a valid value
+	if !utils.StringInSlice(input.VersionUpdate, []string{"", "patch", "minor", "major"}) {
+		return modules.DataModuleSpecificVersionWire{}, fmt.Errorf("Invalid version update field: %v", input.VersionUpdate)
+	}
+
 	// Check that the module exists
 	mod, err := e.getModule(moduleID, false)
 
@@ -310,8 +327,17 @@ func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModul
 		return modules.DataModuleSpecificVersionWire{}, err
 	}
 
-	// Increment the last version
-	ver.Patch++
+	// Increment the version as needed
+	if input.VersionUpdate == "major" {
+		ver.Major++
+		ver.Minor = 0
+		ver.Patch = 0
+	} else if input.VersionUpdate == "minor" {
+		ver.Minor++
+		ver.Patch = 0
+	} else {
+		ver.Patch++
+	}
 
 	// Write out the new version
 	verId := moduleID + "-v" + modules.SemanticVersionToString(ver)

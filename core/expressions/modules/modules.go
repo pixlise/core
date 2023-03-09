@@ -66,9 +66,10 @@ type DataModuleInput struct {
 
 // And what we get in PUT for new versions being uploaded
 type DataModuleVersionInput struct {
-	SourceCode string   `json:"sourceCode"` // The module executable code
-	Comments   string   `json:"comments"`   // Editable comments
-	Tags       []string `json:"tags"`       // Any tags for this version
+	SourceCode    string   `json:"sourceCode"`    // The module executable code
+	Comments      string   `json:"comments"`      // Editable comments
+	Tags          []string `json:"tags"`          // Any tags for this version
+	VersionUpdate string   `json:"versionupdate"` // What are we updating? patch, minor or major. Anything else = error
 }
 
 type SemanticVersion struct {

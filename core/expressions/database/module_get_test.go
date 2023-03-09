@@ -58,7 +58,7 @@ func Test_Module_DB_Get_DoesntExist(t *testing.T) {
 
 		svcs.Expressions = db
 
-		_, err := db.GetModule("mod123", modules.SemanticVersion{Major: 1, Minor: 0, Patch: 1}, false)
+		_, err := db.GetModule("mod123", &modules.SemanticVersion{Major: 1, Minor: 0, Patch: 1}, false)
 
 		if err == nil {
 			t.Error("Expected error")
@@ -121,7 +121,7 @@ func Test_Module_DB_Get_MissingVersion(t *testing.T) {
 
 		svcs.Expressions = db
 
-		_, err := db.GetModule("mod123", modules.SemanticVersion{Major: 1, Minor: 0, Patch: 0}, false)
+		_, err := db.GetModule("mod123", &modules.SemanticVersion{Major: 1, Minor: 0, Patch: 0}, false)
 
 		if err == nil {
 			t.Error("Expected error")
@@ -191,7 +191,7 @@ func Test_Module_DB_Get_OK(t *testing.T) {
 
 		svcs.Expressions = db
 
-		result, err := db.GetModule("mod123", modules.SemanticVersion{Major: 2, Minor: 1, Patch: 43}, true)
+		result, err := db.GetModule("mod123", &modules.SemanticVersion{Major: 2, Minor: 1, Patch: 43}, true)
 
 		if err != nil {
 			t.Error(err)

@@ -71,7 +71,7 @@ func main() {
 	}
 
 	ts := &timestamper.MockTimeNowStamper{
-		QueuedTimeStamps: []int64{1234500001, 1234500002, 1234500003, 1234500004, 1234500005, 1234500006, 1234500007},
+		QueuedTimeStamps: []int64{1234500001, 1234500002, 1234500003, 1234500004, 1234500005, 1234500006, 1234500007, 1234500008, 1234500009},
 	}
 
 	l := logger.StdOutLogger{}
@@ -321,7 +321,7 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 	)
 
 	// Get version 0.0.1 of module 1
-	mod1v1, err := db.GetModule("mod1", modules.SemanticVersion{0, 0, 1}, true)
+	mod1v1, err := db.GetModule("mod1", &modules.SemanticVersion{0, 0, 1}, true)
 
 	verifyResult(
 		err,
@@ -331,7 +331,7 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 	)
 
 	// Get version 0.0.2 of module 1
-	mod1v2, err := db.GetModule("mod1", modules.SemanticVersion{0, 0, 2}, true)
+	mod1v2, err := db.GetModule("mod1", &modules.SemanticVersion{0, 0, 2}, true)
 
 	verifyResult(
 		err,
@@ -340,8 +340,18 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 		"Get version 0.0.2 of module 1",
 	)
 
+	// Get latest version of module 1
+	mod1latest, err := db.GetModule("mod1", nil, true)
+
+	verifyResult(
+		err,
+		mod1latest,
+		`{"id":"mod1","name":"module 1","comments":"module one","origin":{"shared":true,"creator":{"name":"Peter","user_id":"999","email":"peter@pixlise.org"},"create_unix_time_sec":1234500003,"mod_unix_time_sec":1234500003},"version":{"sourceCode":"module1a()","version":"0.0.2","tags":["v1","v1.1"],"comments":"module one A","mod_unix_time_sec":1234500006}}`,
+		"Get latest version of module 1",
+	)
+
 	// Get version 0.0.1 of module 2
-	mod2v1, err := db.GetModule("mod2", modules.SemanticVersion{0, 0, 1}, true)
+	mod2v1, err := db.GetModule("mod2", &modules.SemanticVersion{0, 0, 1}, true)
 
 	verifyResult(
 		err,
@@ -400,6 +410,52 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 		expr2Get,
 		`{"id":"exp1","name":"expression 1a","sourceCode":"expression1a()","sourceLanguage":"LUA","comments":"expression one A","tags":["v1","v1.1"],"moduleReferences":[{"moduleID":"mod333","version":"5.22.13"}],"origin":{"shared":false,"creator":{"name":"Peter N","user_id":"999","email":"peter_n@pixlise.org"},"create_unix_time_sec":1234400000,"mod_unix_time_sec":1234500005}}`,
 		"Get expression 1",
+	)
+
+	// Add minor version to module 1
+	mod1vminor, err := db.AddModuleVersion(
+		"mod1",
+		modules.DataModuleVersionInput{
+			SourceCode:    "module1aminor()",
+			Comments:      "module one minor ver",
+			Tags:          []string{"v1", "v1.1"},
+			VersionUpdate: "minor",
+		},
+	)
+
+	verifyResult(
+		err,
+		mod1vminor,
+		`{"id":"mod1","name":"module 1","comments":"module one","origin":{"shared":true,"creator":{"name":"Peter","user_id":"999","email":"peter@pixlise.org"},"create_unix_time_sec":1234500003,"mod_unix_time_sec":1234500003},"version":{"sourceCode":"module1aminor()","version":"0.1.0","tags":["v1","v1.1"],"comments":"module one minor ver","mod_unix_time_sec":1234500008}}`,
+		"Add minor version to module 1",
+	)
+
+	// Add major version to module 1
+	mod1vmajor, err := db.AddModuleVersion(
+		"mod1",
+		modules.DataModuleVersionInput{
+			SourceCode:    "module1amajor()",
+			Comments:      "module one major",
+			Tags:          []string{"v1", "v1.1"},
+			VersionUpdate: "major",
+		},
+	)
+
+	verifyResult(
+		err,
+		mod1vmajor,
+		`{"id":"mod1","name":"module 1","comments":"module one","origin":{"shared":true,"creator":{"name":"Peter","user_id":"999","email":"peter@pixlise.org"},"create_unix_time_sec":1234500003,"mod_unix_time_sec":1234500003},"version":{"sourceCode":"module1amajor()","version":"1.0.0","tags":["v1","v1.1"],"comments":"module one major","mod_unix_time_sec":1234500009}}`,
+		"Add major version to module 1",
+	)
+
+	// List modules
+	modList3, err := db.ListModules(true)
+
+	verifyResult(
+		err,
+		modList3,
+		`{"mod1":{"id":"mod1","name":"module 1","comments":"module one","origin":{"shared":true,"creator":{"name":"Peter N","user_id":"999","email":"peter_n@pixlise.org"},"create_unix_time_sec":1234500003,"mod_unix_time_sec":1234500003},"versions":[{"version":"0.0.1","tags":["v1"],"comments":"Initial version","mod_unix_time_sec":1234500003},{"version":"0.0.2","tags":["v1","v1.1"],"comments":"module one A","mod_unix_time_sec":1234500006},{"version":"0.1.0","tags":["v1","v1.1"],"comments":"module one minor ver","mod_unix_time_sec":1234500008},{"version":"1.0.0","tags":["v1","v1.1"],"comments":"module one major","mod_unix_time_sec":1234500009}]},"mod2":{"id":"mod2","name":"module 2","comments":"module two","origin":{"shared":true,"creator":{"name":"Peter N","user_id":"999","email":"peter_n@pixlise.org"},"create_unix_time_sec":1234500004,"mod_unix_time_sec":1234500004},"versions":[{"version":"0.0.1","tags":["v2"],"comments":"Initial version","mod_unix_time_sec":1234500004}]}}`,
+		"List modules again",
 	)
 
 	return nil
