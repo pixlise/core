@@ -153,6 +153,11 @@ type DataModuleWireLookup map[string]DataModuleWire
 
 // Some validation functions
 func IsValidModuleName(name string) bool {
+	// Limit length to something reasonable (this will be used in code so we don't want huge module names)
+	if len(name) > 20 {
+		return false
+	}
+
 	// Names must be valid Lua variable names...
 	match, err := regexp.MatchString("^[A-Za-z]$|^[A-Za-z_]+[A-Za-z0-9_]*[A-Za-z0-9]$", name)
 	if err != nil {

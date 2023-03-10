@@ -177,7 +177,7 @@ func Test_Module_Create_BadModule(t *testing.T) {
 		req, _ := http.NewRequest("POST", "/data-module", bytes.NewReader([]byte(postItem)))
 		resp := executeRequest(req, apiRouter.Router)
 
-		checkResult(t, resp, 400, `Invalid module name: My Module
+		checkResult(t, resp, 400, `Invalid module name: My Module. Must only contain letters, under-score, numbers (but not in first character), and be less than 20 characters long.
 `)
 	})
 }

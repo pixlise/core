@@ -83,7 +83,7 @@ func dataModulePost(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	if !modules.IsValidModuleName(req.Name) {
-		return modules.DataModuleSpecificVersionWire{}, api.MakeBadRequestError(fmt.Errorf("Invalid module name: %v", req.Name))
+		return modules.DataModuleSpecificVersionWire{}, api.MakeBadRequestError(fmt.Errorf("Invalid module name: %v. Must only contain letters, under-score, numbers (but not in first character), and be less than 20 characters long.", req.Name))
 	}
 
 	if len(req.SourceCode) <= 0 {

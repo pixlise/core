@@ -24,6 +24,7 @@ import (
 
 func Test_IsValidModuleName(t *testing.T) {
 	expResult := []bool{
+		false,
 		true,
 		false,
 		true,
@@ -37,6 +38,7 @@ func Test_IsValidModuleName(t *testing.T) {
 		true,
 	}
 	names := []string{
+		"oneverylongmodulenamethatshouldfail",
 		"Hello",
 		"Hello World",
 		"Var1",
