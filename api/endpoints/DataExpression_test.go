@@ -679,6 +679,50 @@ func Test_dataExpressionHandler_Put(t *testing.T) {
 
 		checkResult(t, resp, 400, `cannot edit expression not owned by user
 `)
+
+		const putItemBadModule = `{
+	"name": "Calcium weight%",
+	"sourceCode": "element(\"Ca\", \"%\")",
+	"sourceLanguage": "LUA",
+	"comments": "comments for abc123 expression",
+	"tags": ["newest"],
+	"moduleReferences": [
+		{
+			"moduleID": "mod123",
+			"version": "2.three.4"
+		}
+	]
+}`
+		// Bad module version specified
+		req, _ = http.NewRequest("PUT", "/data-expression/abc123", bytes.NewReader([]byte(putItemBadModule)))
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 400, `Invalid version for module: mod123. Error was: 2.three.4
+`)
+
+		const putItemDuplicateModule = `{
+	"name": "Calcium weight%",
+	"sourceCode": "element(\"Ca\", \"%\")",
+	"sourceLanguage": "LUA",
+	"comments": "comments for abc123 expression",
+	"tags": ["newest"],
+	"moduleReferences": [
+		{
+			"moduleID": "mod123",
+			"version": "2.3.4"
+		},
+		{
+			"moduleID": "mod123",
+			"version": "2.4.4"
+		}
+	]
+}`
+		// Bad module version specified
+		req, _ = http.NewRequest("PUT", "/data-expression/abc123", bytes.NewReader([]byte(putItemDuplicateModule)))
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 400, `Duplicate modules: mod123
+`)
 	})
 }
 

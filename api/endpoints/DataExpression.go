@@ -30,6 +30,7 @@ import (
 	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/expressions/expressions"
+	"github.com/pixlise/core/v2/core/expressions/modules"
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/utils"
 )
@@ -142,6 +143,12 @@ func dataExpressionPost(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
+	// Check there aren't any silly modules configured
+	err = isValidModuleReferences(req.ModuleReferences)
+	if err != nil {
+		return nil, api.MakeBadRequestError(err)
+	}
+
 	result, err := params.Svcs.Expressions.CreateExpression(*req, params.UserInfo, false)
 
 	resultItem := toWire(result)
@@ -154,6 +161,12 @@ func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	req, err := readRequest(params)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check there aren't any silly modules configured
+	err = isValidModuleReferences(req.ModuleReferences)
+	if err != nil {
+		return nil, api.MakeBadRequestError(err)
 	}
 
 	// Check that it exists, and that this user has the same ID (don't want to allow editing others expressions
@@ -171,6 +184,23 @@ func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	resultItem := toWire(result)
 	return resultItem, err
+}
+
+func isValidModuleReferences(refs []expressions.ModuleReference) error {
+	// Make sure there are no duplicate modules and also that versions are parsable
+	moduleIDs := map[string]bool{}
+	for _, r := range refs {
+		if _, ok := moduleIDs[r.ModuleID]; ok {
+			return fmt.Errorf("Duplicate modules: %v", r.ModuleID)
+		}
+		moduleIDs[r.ModuleID] = true
+
+		_, err := modules.SemanticVersionFromString(r.Version)
+		if err != nil {
+			return fmt.Errorf("Invalid version for module: %v. Error was: %v", r.ModuleID, r.Version)
+		}
+	}
+	return nil
 }
 
 func dataExpressionExecutionStatPut(params handlers.ApiHandlerParams) (interface{}, error) {
