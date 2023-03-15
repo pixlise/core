@@ -790,7 +790,14 @@ func Test_dataExpressionHandler_ExecStatPut(t *testing.T) {
 		req, _ = http.NewRequest("PUT", "/data-expression/execution-stat/aaa111", bytes.NewReader([]byte(putItem)))
 		resp = executeRequest(req, apiRouter.Router)
 
-		checkResult(t, resp, 200, "")
+		checkResult(t, resp, 200, `{
+    "dataRequired": [
+        "Ca",
+        "Fe"
+    ],
+    "runtimeMs": 340,
+    "mod_unix_time_sec": 1668100001
+}`)
 
 		// Non-existant expression ID
 		putItem = `{

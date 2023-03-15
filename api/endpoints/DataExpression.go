@@ -220,7 +220,7 @@ func dataExpressionExecutionStatPut(params handlers.ApiHandlerParams) (interface
 	// Set the time stamp to now
 	req.TimeStampUnixSec = params.Svcs.TimeStamper.GetTimeNowSec()
 
-	return nil, params.Svcs.Expressions.StoreExpressionRecentRunStats(itemID, req)
+	return req, params.Svcs.Expressions.StoreExpressionRecentRunStats(itemID, req)
 }
 
 func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error) {
