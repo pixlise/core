@@ -797,7 +797,8 @@ func Test_dataExpressionHandler_ExecStatPut(t *testing.T) {
     ],
     "runtimeMs": 340,
     "mod_unix_time_sec": 1668100001
-}`)
+}
+`)
 
 		// Non-existant expression ID
 		putItem = `{
