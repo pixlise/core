@@ -1,0 +1,213 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: apis-guru
+  description: The apis.guru REST API
+spec:
+  type: openapi
+  lifecycle: production
+  owner: 'user:guest'
+  definition: |
+    basePath: /
+    definitions:
+      dataExpression.DataExpression:
+        properties:
+          comments:
+            type: string
+          create_unix_time_sec:
+            type: integer
+          creator:
+            $ref: '#/definitions/pixlUser.UserInfo'
+          expression:
+            type: string
+          mod_unix_time_sec:
+            type: integer
+          name:
+            type: string
+          shared:
+            type: boolean
+          tags:
+            items:
+              type: string
+            type: array
+          type:
+            $ref: '#/definitions/dataExpression.expressionType'
+        type: object
+      dataExpression.DataExpressionInput:
+        properties:
+          comments:
+            type: string
+          expression:
+            type: string
+          name:
+            type: string
+          tags:
+            items:
+              type: string
+            type: array
+          type:
+            $ref: '#/definitions/dataExpression.expressionType'
+        type: object
+      dataExpression.DataExpressionLookup:
+        additionalProperties:
+          $ref: '#/definitions/dataExpression.DataExpression'
+        type: object
+      dataExpression.expressionType:
+        enum:
+        - ContextImage
+        type: string
+        x-enum-varnames:
+        - contextImage
+      pixlUser.UserInfo:
+        properties:
+          email:
+            type: string
+          name:
+            type: string
+          user_id:
+            type: string
+        type: object
+    host: www-api.pixlise.org
+    info:
+      contact:
+        email: info@pixlise.org
+        name: Pixlise Support
+        url: https://github.com/pixlise/core/issues
+      description: This API drives the Pixlise UI and associated services.
+      license:
+        name: Apache 2.0
+        url: http://www.apache.org/licenses/LICENSE-2.0.html
+      title: Pixlise API
+      version: "1.0"
+    paths:
+      /data-expression:
+        get:
+          consumes:
+          - application/json
+          description: This will list the data expressions available to the user.
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                $ref: '#/definitions/dataExpression.DataExpressionLookup'
+            "404":
+              description: Not Found
+              schema: {}
+          security:
+          - OAuth2Application:
+            - openid
+            - email
+          summary: Lists available data expressions.
+          tags:
+          - data-expression
+        post:
+          consumes:
+          - application/json
+          description: Creates a new data expression for a user.
+          parameters:
+          - description: Data Expression Input Object
+            in: body
+            name: id
+            required: true
+            schema:
+              $ref: '#/definitions/dataExpression.DataExpressionInput'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                $ref: '#/definitions/dataExpression.DataExpressionLookup'
+            "404":
+              description: Not Found
+              schema: {}
+          summary: Post a new data expression.
+          tags:
+          - data-expression
+      /data-expression/{id}:
+        delete:
+          consumes:
+          - application/json
+          description: This endpoint deletes an existing data expression.
+          parameters:
+          - description: Data Expression ID
+            in: path
+            name: id
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+            "404":
+              description: Not Found
+              schema: {}
+          summary: Deletes a data expression.
+          tags:
+          - data-expression
+        post:
+          consumes:
+          - application/json
+          description: Updates and existing expression for a user.
+          parameters:
+          - description: Data Expression ID
+            in: path
+            name: id
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                $ref: '#/definitions/dataExpression.DataExpressionLookup'
+            "404":
+              description: Not Found
+              schema: {}
+          summary: Update an existing data expression.
+          tags:
+          - data-expression
+      /share/data-expression/{id}:
+        post:
+          consumes:
+          - application/json
+          description: This endpoint shares an existing data expression with other users.
+          parameters:
+          - description: Data Expression ID
+            in: path
+            name: id
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                type: string
+            "404":
+              description: Not Found
+              schema: {}
+          summary: Shares a data expression.
+          tags:
+          - data-expression
+    securityDefinitions:
+      OAuth2Application:
+        authorizationUrl: https://pixlise.au.auth0.com/authorize
+        description: swagger
+        flow: accessCode
+        scopes:
+          email: ' Grants admin access'
+          openid: ' Grants write access'
+        tokenUrl: https://pixlise.au.auth0.com/oauth/token
+        type: oauth2
+        x-tokenname: id_token
+    swagger: "2.0"

@@ -6,9 +6,9 @@
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/pixlise/core)
 
- 
-[![pipeline status](https://github.com/pixlise/go-rest-api/badges/master/pipeline.svg)](https://github.com/pixlise/go-rest-api/-/commits/master)
-[![coverage report](https://github.com/pixlise/go-rest-api/badges/master/coverage.svg)](https://github.com/pixlise/go-rest-api/-/commits/master)
+[![build](https://github.com/pixlise/core/actions/workflows/features.yml/badge.svg)](https://github.com/pixlise/core/actions/workflows/features.yml)
+[![build](https://github.com/pixlise/core/actions/workflows/dev.yml/badge.svg?branch=development)](https://github.com/pixlise/core/actions/workflows/dev.yml)
+[![build](https://github.com/pixlise/core/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/pixlise/core/actions/workflows/release.yml)
 
 ## What is it?
 

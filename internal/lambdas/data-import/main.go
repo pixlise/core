@@ -96,7 +96,7 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 					remoteFS,
 					result.IsUpdate,
 					result.WhatChanged,
-					nil,
+					notificationStack,
 					result.Logger,
 				)
 

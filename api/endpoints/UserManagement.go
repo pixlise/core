@@ -61,7 +61,6 @@ type roleInfo struct {
 
 const userIDIdentifier = "user_id"
 const fieldIDIdentifier = "field_id"
-const unassignedNewUserRoleID = "rol_BDm6RvOwIGqxSbYt" // "Unassigned New User" role
 
 func registerUserManagementHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "user"
@@ -230,6 +229,7 @@ func userPostRoles(params handlers.ApiHandlerParams) (interface{}, error) {
 	userID := params.PathParams[userIDIdentifier]
 
 	unassignNeeded := false
+	unassignedNewUserRoleID := params.Svcs.Config.Auth0NewUserRoleID
 
 	if roleID != unassignedNewUserRoleID {
 		// If the user has the role "Unassigned New User" and is being assigned another role, we clear
