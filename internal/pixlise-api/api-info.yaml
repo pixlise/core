@@ -1,12 +1,11 @@
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: apis-guru
-  description: The apis.guru REST API
+  name: pixlise-api
+  description: The Pixlise REST API
 spec:
   type: openapi
   lifecycle: production
-  owner: 'user:guest'
   definition: |
     basePath: /
     definitions:

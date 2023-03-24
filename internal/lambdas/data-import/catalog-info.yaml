@@ -1,20 +1,28 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: data-import
+  name: data-import-lambda
   description: |
-    The data importer lambda for pixlise.
+    The data importer lambda for pixlise. This lambda accepts raw data notifications, 
+    then downloads the files, along with any existing data for the dataset and then combines it all and turns it into a pixlise dataset, posting the result back to S3.
   links:
     - title: Website
       url: https://pixlise.org
     - title: Documentation
       url: https://pixlise.gitbook.io/
+    - title: Slack
+      url: https://pixlise.slack.com/archives/CQUA2FSS0
   annotations:
     github.com/project-slug: pixlise/core/internal/lambdas/data-import
     backstage.io/techdocs-ref: dir:.
+    aws.com/lambda-function-name: ProdPixlise-DatasetManagerServiceDataImportB790E19-uziSbe6y2BSJ
+    aws.com/lambda-region: us-east-1
+  tags:
+    - lambda
 spec:
   type: service
   owner: default/developers
   lifecycle: production
+  system: data-processing
   dependsOn:
     - component:pixlise-core-packages
