@@ -155,7 +155,16 @@ func (h *LoggerMiddleware) Middleware(next http.Handler) http.Handler {
 			)
 			// This always showed an exception for errors.errorString or whatever, what we have here is a message to print to sentry...
 			//sentry.CaptureException(errors.New(msg))
-			sentry.CaptureMessage(msg)
+
+			// Filter out common spam errors that we don't want to know about. For example, getting 500 on an API call due
+			// to client disconnecting while downloading. This resulted in heaps of spam that must only be caused by someone
+			// closing their tab/laptop during downloading stuff.
+			if w2.Status == 500 && (strings.Contains(respBodyTxt, "connection reset by peer") || strings.Contains(respBodyTxt, "broken pipe")) ||
+				w2.Status == 404 && r.Method == "GET" && strings.Contains(r.URL.String(), "/logger/fetch/") {
+				h.Log.Errorf("Decided error is spam, not sending to SENTRY. Message: %v", msg)
+			} else {
+				sentry.CaptureMessage(msg)
+			}
 		}
 
 		// Don't log requests to / as some load balancer seems to be doing this constantly, so we lose all other logs
