@@ -42,6 +42,7 @@ type APIConfig struct {
 	Auth0Domain             string
 	Auth0ManagementClientID string
 	Auth0ManagementSecret   string
+	Auth0NewUserRoleID 		string
 
 	BuildsBucket string // Piquant download bucket
 	ConfigBucket string
