@@ -28,6 +28,8 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	"github.com/pixlise/core/v2/core/logger"
 	"go.mongodb.org/mongo-driver/event"
@@ -103,9 +105,13 @@ func getCustomTLSConfig(caFile string) (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
-func GetMongoConnectionInfoFromSecretCache(secretName string) (MongoConnectionInfo, error) {
+func GetMongoConnectionInfoFromSecretCache(session *session.Session, secretName string) (MongoConnectionInfo, error) {
+	// Do some special init magic to get a secret manager with the right region set
+	// This may not be needed in envs, but running locally it was needed!
+	secMan := secretsmanager.New(session) //, aws.NewConfig().WithRegion("us-west-2"))
+
 	var info MongoConnectionInfo
-	seccache, err := secretcache.New()
+	seccache, err := secretcache.New(func(c *secretcache.Cache) { c.Client = secMan })
 	if err != nil {
 		return info, err
 	}

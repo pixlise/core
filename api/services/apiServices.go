@@ -175,7 +175,7 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 	// Connect to mongo
 	if len(cfg.MongoSecret) > 0 {
 		// Remote is configured, connect to it
-		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache(cfg.MongoSecret)
+		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache(sess, cfg.MongoSecret)
 		if err != nil {
 			err2 := fmt.Errorf("failed to read mongo DB connection info from secrets cache: %v", err)
 			ourLogger.Errorf("%v", err2)

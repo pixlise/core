@@ -128,7 +128,7 @@ func (e *ExpressionDB) CreateExpression(input expressions.DataExpressionInput, c
 		// RecentExecStats is blank at this point!
 	}
 
-	// Write the module itself
+	// Write the expression itself
 	insertResult, err := e.Expressions.InsertOne(context.TODO(), expr)
 	if err != nil {
 		return expr, err

@@ -21,15 +21,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
-	"github.com/pixlise/core/v2/core/timestamper"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"log"
 	"os"
 	"time"
 
+	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
+	"github.com/pixlise/core/v2/core/timestamper"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/logger"
@@ -73,7 +75,7 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 	// Normally we'd only expect event.Records to be of length 1...
 	worked := 0
 	for _, record := range event.Records {
-		mongoclient := connectMongo(&logger.StdOutLogger{})
+		mongoclient := connectMongo(sess, &logger.StdOutLogger{})
 
 		notificationStack, err := apiNotifications.MakeNotificationStack(mongoclient, envName, &timestamper.UnixTimeNowStamper{}, &logger.StdOutLogger{}, []string{})
 		if err != nil {
@@ -187,13 +189,13 @@ func triggerNotifications(
 	return err
 }
 
-func connectMongo(ourLogger logger.ILogger) *mongo.Client {
+func connectMongo(sess *session.Session, ourLogger logger.ILogger) *mongo.Client {
 	var mongoClient *mongo.Client
 	var err error
 	// Connect to mongo
 	if len("pixlise-db.cluster-clcm0b2sosn0.us-east-1.docdb.amazonaws.com:27017") > 0 && len("pixlise") > 0 && len("pixlise/docdb/masteruser") > 0 {
 		// Remote is configured, connect to it
-		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache("pixlise/docdb/masteruser")
+		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache(sess, "pixlise/docdb/masteruser")
 		if err != nil {
 			err2 := fmt.Errorf("failed to read mongo DB connection info from secrets cache: %v", err)
 			ourLogger.Errorf("%v", err2)
