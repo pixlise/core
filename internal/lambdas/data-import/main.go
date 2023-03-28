@@ -21,13 +21,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"time"
+
 	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
 	"github.com/pixlise/core/v2/core/timestamper"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"log"
-	"os"
-	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/pixlise/core/v2/core/awsutil"
@@ -191,7 +192,8 @@ func connectMongo(ourLogger logger.ILogger) *mongo.Client {
 	var mongoClient *mongo.Client
 	var err error
 	// Connect to mongo
-	if len("pixlise-db.cluster-clcm0b2sosn0.us-east-1.docdb.amazonaws.com:27017") > 0 && len("pixlise") > 0 && len("pixlise/docdb/masteruser") > 0 {
+	mongoSecret := os.Getenv("DB_SECRET_NAME")
+	if len(mongoSecret) > 0 {
 		// Remote is configured, connect to it
 		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache("pixlise/docdb/masteruser")
 		if err != nil {

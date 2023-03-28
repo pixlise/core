@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
@@ -124,17 +125,29 @@ func GetMongoConnectionInfoFromSecretCache(secretName string) (MongoConnectionIn
 	return info, nil
 }
 
+func defaultEnv(key string, fallback string) string {
+	val, present := os.LookupEnv(key)
+	if present {
+		return val
+	}
+	return fallback
+}
+
 // Assumes local mongo running in docker as per this command:
 // docker run -d  --name mongo-on-docker  -p 27888:27017 -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=secret mongo
 func ConnectToLocalMongoDB(log logger.ILogger) (*mongo.Client, error) {
 	cmdMonitor := makeMongoCommandMonitor(log)
 
 	log.Infof("Connecting to local mongo db...")
-
+	dbHost := defaultEnv("PIXLISE_CONFIG_DB_HOST", "localhost")
+	dbUser := defaultEnv("PIXLISE_CONFIG_DB_USER", "mongoadmin")
+	dbPass := defaultEnv("PIXLISE_CONFIG_DB_PASS", "secret")
+	dbPort := defaultEnv("PIXLISE_CONFIG_DB_PORT", "27888")
+	uri := fmt.Sprintf("mongodb://%s:%s@%s:%s/", dbUser, dbPass, dbHost, dbPort)
 	//ctx := context.Background()
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://mongoadmin:secret@localhost:27888/?authSource=admin").SetMonitor(cmdMonitor))
+	client, err := mongo.NewClient(options.Client().ApplyURI(uri).SetMonitor(cmdMonitor))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create new local mongo DB connection: %v", err)
+		return nil, fmt.Errorf("failed to create new local mongo DB connection: %v", err)
 	}
 
 	ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
