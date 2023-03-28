@@ -103,7 +103,7 @@ func main() {
 	svcs.Expressions = db
 	svcs.Users = pixlUser.MakeUserDetailsLookup(mongoClient, envName)
 
-	userDatabase := mongoClient.Database(mongoDBConnection.GetUserDatabaseName(envName))
+	userDatabase := mongoClient.Database(mongoDBConnection.GetDatabaseName("userdatabase", envName))
 
 	err = runTests(db, &svcs.Users, userDatabase.Collection("users"))
 	if err != nil {

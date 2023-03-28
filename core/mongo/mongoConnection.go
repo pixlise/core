@@ -169,17 +169,6 @@ func makeMongoCommandMonitor(log logger.ILogger) *event.CommandMonitor {
 	}
 }
 
-// Unfortunately the first DB we created was just called "userdatabase" and other envs are tacked on
-// for future DBs we won't make this same mistake
-func GetUserDatabaseName(envName string) string {
-	userDatabaseName := "userdatabase"
-	if envName != "prod" {
-		userDatabaseName += "-" + envName
-	}
-	return userDatabaseName
-}
-
-// NOT to be used for user database...
 func GetDatabaseName(dbName string, envName string) string {
 	return dbName + "-" + envName
 }

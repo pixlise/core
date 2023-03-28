@@ -49,7 +49,7 @@ type NotificationStack struct {
 }
 
 func MakeNotificationStack(mongoClient *mongo.Client, envName string, timestamper timestamper.ITimeStamper, log logger.ILogger, adminEmails []string) (*NotificationStack, error) {
-	userDatabaseName := mongoDBConnection.GetUserDatabaseName(envName)
+	userDatabaseName := mongoDBConnection.GetDatabaseName("userdatabase", envName)
 	userDatabase := mongoClient.Database(userDatabaseName)
 	userCollection := userDatabase.Collection("users")
 	notificationCollection := userDatabase.Collection("notifications")
