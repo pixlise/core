@@ -247,6 +247,8 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 		},
 		userInfoPeter,
 		1234400000,
+		false,
+		"expression1()",
 	)
 
 	verifyResult(

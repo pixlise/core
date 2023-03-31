@@ -28,7 +28,14 @@ type ExpressionDB interface {
 	ListExpressions(userID string, includeShared bool, retrieveUpdatedUserInfo bool) (expressions.DataExpressionLookup, error)
 	GetExpression(expressionID string, retrieveUpdatedUserInfo bool) (expressions.DataExpression, error)
 	CreateExpression(input expressions.DataExpressionInput, creator pixlUser.UserInfo, createShared bool) (expressions.DataExpression, error)
-	UpdateExpression(expressionID string, input expressions.DataExpressionInput, creator pixlUser.UserInfo, createdUnixTimeSec int64) (expressions.DataExpression, error)
+	UpdateExpression(
+		expressionID string,
+		input expressions.DataExpressionInput,
+		creator pixlUser.UserInfo,
+		createdUnixTimeSec int64, // Expected to be read from existing item
+		isShared bool, // Expected to be read from existing item
+		existingSourceCode string, // Expected to be read from existing item
+	) (expressions.DataExpression, error)
 	StoreExpressionRecentRunStats(expressionID string, stats expressions.DataExpressionExecStats) error
 	DeleteExpression(expressionID string) error
 

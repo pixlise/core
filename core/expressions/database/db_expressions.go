@@ -20,6 +20,7 @@ package expressionDB
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/pixlise/core/v2/core/api"
 	"github.com/pixlise/core/v2/core/expressions/expressions"
@@ -142,12 +143,14 @@ func (e *ExpressionDB) CreateExpression(input expressions.DataExpressionInput, c
 // Replaces the existing expression with the new one
 // This assumes a GetExpression was required already to validate user permissions to this expression, etc
 // therefore the prevUnixTime should be available. This way we can preserve the creation time but set a new
-// modified time now
+// modified time now. Also now requires the existing expression shared and source code field!
 func (e *ExpressionDB) UpdateExpression(
 	expressionID string,
 	input expressions.DataExpressionInput,
 	creator pixlUser.UserInfo,
 	createdUnixTimeSec int64,
+	isShared bool,
+	existingSourceCode string,
 ) (expressions.DataExpression, error) {
 	filter := bson.D{{"_id", expressionID}}
 
@@ -166,18 +169,29 @@ func (e *ExpressionDB) UpdateExpression(
 	*/
 	// But the above seemed risky because BSON field names may change as the struct changes, but this code wouldn't!
 	// So instead opting to replace with a new record as this will obey struct field naming
+	// Only complication is we've since introduced the idea of sending in a blank string for source code meaning preserve the old code
+	// so we have to read the existing expression here in that case:
+	sourceCode := input.SourceCode
+	if len(sourceCode) <= 0 {
+		// Use existing source field...
+		sourceCode = existingSourceCode
+	}
+
+	if len(sourceCode) <= 0 {
+		return expressions.DataExpression{}, fmt.Errorf("Expression source code field cannot be blank, when updating expression: %v", expressionID)
+	}
 
 	nowUnix := e.Svcs.TimeStamper.GetTimeNowSec()
 	replacement := expressions.DataExpression{
 		ID:               expressionID,
 		Name:             input.Name,
-		SourceCode:       input.SourceCode,
+		SourceCode:       sourceCode,
 		SourceLanguage:   input.SourceLanguage,
 		Comments:         input.Comments,
 		Tags:             input.Tags,
 		ModuleReferences: input.ModuleReferences,
 		Origin: pixlUser.APIObjectItem{
-			Shared:              false,
+			Shared:              isShared,
 			Creator:             creator,
 			CreatedUnixTimeSec:  createdUnixTimeSec,
 			ModifiedUnixTimeSec: nowUnix,

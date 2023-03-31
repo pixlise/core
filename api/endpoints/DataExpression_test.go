@@ -623,18 +623,18 @@ func Test_dataExpressionHandler_Put(t *testing.T) {
 		apiRouter := MakeRouter(svcs)
 
 		const putItem = `{
-		"name": "Calcium weight%",
-        "sourceCode": "element(\"Ca\", \"%\")",
-        "sourceLanguage": "LUA",
-        "comments": "comments for abc123 expression",
-        "tags": ["newest"],
-		"moduleReferences": [
-			{
-				"moduleID": "mod123",
-				"version": "2.3.4"
-			}
-		]
-	}`
+	"name": "Calcium weight%",
+	"sourceCode": "element(\"Ca\", \"%\")",
+	"sourceLanguage": "LUA",
+	"comments": "comments for abc123 expression",
+	"tags": ["newest"],
+	"moduleReferences": [
+		{
+			"moduleID": "mod123",
+			"version": "2.3.4"
+		}
+	]
+}`
 
 		// OK
 		req, _ := http.NewRequest("PUT", "/data-expression/abc111", bytes.NewReader([]byte(putItem)))
@@ -722,6 +722,248 @@ func Test_dataExpressionHandler_Put(t *testing.T) {
 		resp = executeRequest(req, apiRouter.Router)
 
 		checkResult(t, resp, 400, `Duplicate modules: mod123
+`)
+	})
+}
+
+// NOTE: Major flaw here is that we can't "check" what the DB write looks like!
+func Test_dataExpressionHandler_Put_NoSourceCode(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("success", func(mt *mtest.T) {
+		mongoMockedResponses := []primitive.D{
+			// GET item
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+				makeExprDBList(3, true),
+			),
+			// PUT success
+			mtest.CreateSuccessResponse(),
+			// GET item
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+				makeExprDBList(3, true),
+			),
+			// PUT success
+			mtest.CreateSuccessResponse(),
+		}
+
+		mt.AddMockResponses(mongoMockedResponses...)
+
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+			QueuedTimeStamps: []int64{1668100002, 1668100003},
+		}
+		envName := "unit_test"
+		svcs.Mongo = mt.Client
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, envName)
+		svcs.Expressions = expressionDB.MakeExpressionDB(envName, &svcs)
+		apiRouter := MakeRouter(svcs)
+
+		// Act as an update, if input doesn't contain source code, we look for the existing item
+		// and preserve the old source field
+		const putItemNoSource = `{
+	"name": "Calcium weight%",
+	"sourceLanguage": "LUA",
+	"comments": "comments for abc123 expression",
+	"tags": ["newest"],
+	"moduleReferences": [
+		{
+			"moduleID": "mod123",
+			"version": "2.3.4"
+		}
+	]
+}`
+		req, _ := http.NewRequest("PUT", "/data-expression/abc123", bytes.NewReader([]byte(putItemNoSource)))
+		resp := executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "id": "abc123",
+    "name": "Calcium weight%",
+    "sourceCode": "element(\"Ca\", \"%\")",
+    "sourceLanguage": "LUA",
+    "comments": "comments for abc123 expression",
+    "tags": [
+        "newest"
+    ],
+    "moduleReferences": [
+        {
+            "moduleID": "mod123",
+            "version": "2.3.4"
+        }
+    ],
+    "shared": false,
+    "creator": {
+        "name": "Niko Bellic",
+        "user_id": "600f2a0806b6c70071d3d174",
+        "email": "niko@spicule.co.uk"
+    },
+    "create_unix_time_sec": 1668100000,
+    "mod_unix_time_sec": 1668100002
+}
+`)
+
+		const putItemBlankSource = `{
+	"name": "Calcium weight%",
+	"sourceCode": "",
+	"sourceLanguage": "LUA",
+	"comments": "comments for abc123 expression",
+	"tags": ["newest"],
+	"moduleReferences": [
+		{
+			"moduleID": "mod123",
+			"version": "2.3.4"
+		}
+	]
+}`
+
+		req, _ = http.NewRequest("PUT", "/data-expression/abc123", bytes.NewReader([]byte(putItemBlankSource)))
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "id": "abc123",
+    "name": "Calcium weight%",
+    "sourceCode": "element(\"Ca\", \"%\")",
+    "sourceLanguage": "LUA",
+    "comments": "comments for abc123 expression",
+    "tags": [
+        "newest"
+    ],
+    "moduleReferences": [
+        {
+            "moduleID": "mod123",
+            "version": "2.3.4"
+        }
+    ],
+    "shared": false,
+    "creator": {
+        "name": "Niko Bellic",
+        "user_id": "600f2a0806b6c70071d3d174",
+        "email": "niko@spicule.co.uk"
+    },
+    "create_unix_time_sec": 1668100000,
+    "mod_unix_time_sec": 1668100003
+}
+`)
+	})
+}
+
+// NOTE: Major flaw here is that we can't "check" what the DB write looks like!
+func Test_dataExpressionHandler_Put_Shared(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("success", func(mt *mtest.T) {
+		mongoMockedResponses := []primitive.D{
+			// GET not found
+			mtest.CreateCursorResponse(
+				1,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+			),
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.NextBatch,
+			),
+			// GET found (existing, not owned by user)
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+				makeExprDBList(2, true),
+			),
+			// GET found (existing)
+			mtest.CreateCursorResponse(
+				0,
+				"expressions-unit_test.expressions",
+				mtest.FirstBatch,
+				makeExprDBList(4, true),
+			),
+			// PUT success
+			mtest.CreateSuccessResponse(),
+		}
+
+		mt.AddMockResponses(mongoMockedResponses...)
+
+		var mockS3 awsutil.MockS3Client
+		defer mockS3.FinishTest()
+
+		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+		svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+			QueuedTimeStamps: []int64{1668100004},
+		}
+		envName := "unit_test"
+		svcs.Mongo = mt.Client
+		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, envName)
+		svcs.Expressions = expressionDB.MakeExpressionDB(envName, &svcs)
+		apiRouter := MakeRouter(svcs)
+
+		// Act as an update, if input doesn't contain source code, we look for the existing item
+		// and preserve the old source field
+		const putItem = `{
+	"name": "Calcium weight %",
+    "sourceCode": "element(\"CaO\", \"%\")",
+	"sourceLanguage": "LUA",
+	"comments": "comments for abc111 expression new",
+	"tags": ["newest"],
+	"moduleReferences": [
+		{
+			"moduleID": "mod123",
+			"version": "2.3.4"
+		}
+	]
+}`
+
+		// Editing without shared prefix on ID should fail
+		req, _ := http.NewRequest("PUT", "/data-expression/abc111", bytes.NewReader([]byte(putItem)))
+		resp := executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 404, `abc111 not found
+`)
+
+		// Editing one not owned by caller, should fail
+		req, _ = http.NewRequest("PUT", "/data-expression/ghi789", bytes.NewReader([]byte(putItem)))
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 400, `cannot edit expression not owned by user
+`)
+
+		req, _ = http.NewRequest("PUT", "/data-expression/shared-abc111", bytes.NewReader([]byte(putItem)))
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "id": "shared-abc111",
+    "name": "Calcium weight %",
+    "sourceCode": "element(\"CaO\", \"%\")",
+    "sourceLanguage": "LUA",
+    "comments": "comments for abc111 expression new",
+    "tags": [
+        "newest"
+    ],
+    "moduleReferences": [
+        {
+            "moduleID": "mod123",
+            "version": "2.3.4"
+        }
+    ],
+    "shared": true,
+    "creator": {
+        "name": "Niko Bellic",
+        "user_id": "600f2a0806b6c70071d3d174",
+        "email": "niko@spicule.co.uk"
+    },
+    "create_unix_time_sec": 1668100000,
+    "mod_unix_time_sec": 1668100004
+}
 `)
 	})
 }

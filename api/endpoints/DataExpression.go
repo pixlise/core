@@ -126,9 +126,6 @@ func readRequest(params handlers.ApiHandlerParams) (*expressions.DataExpressionI
 	if !fileaccess.IsValidObjectName(req.Name) {
 		return nil, api.MakeBadRequestError(fmt.Errorf("Invalid expression name: %v", req.Name))
 	}
-	if len(req.SourceCode) <= 0 {
-		return nil, api.MakeBadRequestError(errors.New("Expression source code cannot be empty"))
-	}
 
 	if req.Tags == nil {
 		req.Tags = []string{}
@@ -141,6 +138,10 @@ func dataExpressionPost(params handlers.ApiHandlerParams) (interface{}, error) {
 	req, err := readRequest(params)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(req.SourceCode) <= 0 {
+		return nil, api.MakeBadRequestError(errors.New("Expression source code cannot be empty"))
 	}
 
 	// Check there aren't any silly modules configured
@@ -157,6 +158,7 @@ func dataExpressionPost(params handlers.ApiHandlerParams) (interface{}, error) {
 
 func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	itemID := params.PathParams[idIdentifier]
+	strippedID, _ := utils.StripSharedItemIDPrefix(itemID)
 
 	req, err := readRequest(params)
 	if err != nil {
@@ -171,7 +173,7 @@ func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	// Check that it exists, and that this user has the same ID (don't want to allow editing others expressions
 	// or editing shared ones you didn't create)
-	existingExpr, err := params.Svcs.Expressions.GetExpression(itemID, false)
+	existingExpr, err := params.Svcs.Expressions.GetExpression(strippedID, false)
 	if err != nil {
 		return nil, api.MakeNotFoundError(itemID)
 	}
@@ -180,7 +182,14 @@ func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, api.MakeBadRequestError(errors.New("cannot edit expression not owned by user"))
 	}
 
-	result, err := params.Svcs.Expressions.UpdateExpression(itemID, *req, params.UserInfo, existingExpr.Origin.CreatedUnixTimeSec)
+	result, err := params.Svcs.Expressions.UpdateExpression(
+		strippedID,
+		*req,
+		params.UserInfo,
+		existingExpr.Origin.CreatedUnixTimeSec,
+		existingExpr.Origin.Shared,
+		existingExpr.SourceCode,
+	)
 
 	resultItem := toWire(result)
 	return resultItem, err
@@ -280,7 +289,7 @@ func shareExpressions(svcs *services.APIServices, userID string, expressionIDs [
 		}
 
 		// Make sure it isn't already shared
-		if expr.Origin.Shared != false {
+		if expr.Origin.Shared {
 			return generatedIDs, api.MakeStatusError(http.StatusBadRequest, fmt.Errorf("%v already shared", exprId))
 		}
 
