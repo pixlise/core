@@ -105,7 +105,11 @@ func (r *kubernetesRunner) runPiquant(piquantDockerImage string, params PiquantP
 
 func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jobid, namespace string, creator pixlUser.UserInfo, length int) *apiv1.Pod {
 	sec := apiv1.LocalObjectReference{Name: "api-auth"}
+	application := "piquant-runner"
 	parts := strings.Split(params.PMCListName, ".")
+	node := parts[0]
+	name := fmt.Sprintf("piquant-%s", params.Command)
+	instance := fmt.Sprintf("%s-%s", name, node)
 	// Set the serviceaccount for the piquant pods based on namespace
 	// Piquant Fit commands will run in the same namespace and share a service account
 	// Piquant Map commands (jobs) will run in the piquant-map namespace with a more limited service account
@@ -121,12 +125,16 @@ func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jo
 			Name:      jobid + "-" + parts[0],
 			Namespace: namespace,
 			Labels: map[string]string{
-				"pixlise/application": "piquant-runner",
-				"piquant/command":     params.Command,
-				"app":                 parts[0],
-				"owner":               creator.UserID,
-				"jobid":               jobid,
-				"numberofpods":        strconv.Itoa(length),
+				"pixlise.org/application":     application,
+				"pixlise.org/environment":     params.RunTimeEnv,
+				"app.kubernetes.io/name":      name,
+				"app.kubernetes.io/instance":  instance,
+				"app.kubernetes.io/component": application,
+				"piquant/command":             params.Command,
+				"app":                         node,
+				"owner":                       creator.UserID,
+				"jobid":                       jobid,
+				"numberofpods":                strconv.Itoa(length),
 			},
 		},
 		Spec: apiv1.PodSpec{
