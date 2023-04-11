@@ -95,7 +95,7 @@ func (dl *DatasetArchiveDownloader) DownloadPseudoIntensityRangesFile(configBuck
 	dl.log.Debugf("Downloading pseudo-intensity ranges...")
 
 	localRangesPath := filepath.Join(downloadPath, "StandardPseudoIntensities.csv")
-	err := dl.fetchFile(configBucket, filepath.Join(filepaths.RootDatasetConfig, "StandardPseudoIntensities.csv"), localRangesPath)
+	err := dl.fetchFile(configBucket, path.Join(filepaths.RootDatasetConfig, "StandardPseudoIntensities.csv"), localRangesPath)
 	if err != nil {
 		dl.log.Errorf("%v", err)
 		return "", err
