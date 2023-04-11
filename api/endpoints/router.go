@@ -31,6 +31,7 @@ func MakeRouter(svcs services.APIServices) apiRouter.ApiObjectRouter {
 
 	registerVersionHandler(&apiRouter)
 	registerDataExpressionHandler(&apiRouter)
+	registerDataModuleHandler(&apiRouter)
 	registerDatasetHandler(&apiRouter)
 	registerElementSetHandler(&apiRouter)
 	registerROIHandler(&apiRouter)

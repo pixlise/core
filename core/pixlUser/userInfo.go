@@ -39,7 +39,7 @@ type UserDetailsLookup struct {
 }
 
 func MakeUserDetailsLookup( /*timeStamper timestamper.ITimeStamper,*/ mongoClient *mongo.Client, envName string) UserDetailsLookup {
-	userDatabaseName := mongoDBConnection.GetUserDatabaseName(envName)
+	userDatabaseName := mongoDBConnection.GetDatabaseName("userdatabase", envName)
 
 	userDatabase := mongoClient.Database(userDatabaseName)
 	userCollection := userDatabase.Collection("users")

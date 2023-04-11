@@ -18,26 +18,56 @@
 package endpoints
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v2/core/timestamper"
 )
 
 func Example_registerMetricsHandlerTest() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
+	// NOTE: PUT expected JSON needs to have spaces not tabs
+	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
+		{
+			Bucket: aws.String(UsersBucketForUnitTest),
+			Key:    aws.String("Activity/2023-03-16/metric-button-600f2a0806b6c70071d3d174-1678938381.json"),
+			Body:   bytes.NewReader([]byte(`{"name": "something", "counter": 3, "comment": "lala"}`)),
+		},
+	}
+	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
+		{},
+	}
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
+		QueuedTimeStamps: []int64{1678938381},
+	}
 	apiRouter := MakeRouter(svcs)
 
-	req, _ := http.NewRequest("POST", "/metrics", nil)
+	postItem := `{"name": "something", "counter": 3, "comment": "lala"}`
+
+	// POST without ID should fail
+	req, _ := http.NewRequest("POST", "/metrics", bytes.NewReader([]byte(postItem)))
 	resp := executeRequest(req, apiRouter.Router)
 
 	fmt.Println(resp.Code)
 	fmt.Println(string(resp.Body.Bytes()))
 
+	req, _ = http.NewRequest("POST", "/metrics/button", bytes.NewReader([]byte(postItem)))
+	resp = executeRequest(req, apiRouter.Router)
+
+	fmt.Println(resp.Code)
+	fmt.Println(string(resp.Body.Bytes()))
+
 	// Output:
+	// 404
+	// 404 page not found
+	//
 	// 200
-	// "{}"
+	//
 }

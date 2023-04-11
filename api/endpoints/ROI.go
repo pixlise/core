@@ -88,7 +88,7 @@ func roiList(params handlers.ApiHandlerParams) (interface{}, error) {
 		roi := rois[k]
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(roi.Creator.UserID)
 		if creatorErr != nil {
-			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (ROI listing). Error: %v", roi.Creator.UserID, roi.Creator.Name, creatorErr)
+			params.Svcs.Log.Infof("Failed to lookup user details for ID: %v, creator name in file: %v (ROI listing). Error: %v", roi.Creator.UserID, roi.Creator.Name, creatorErr)
 		} else {
 			roi.Creator = updatedCreator
 		}

@@ -648,7 +648,7 @@ func (s *PIXLISEDataSaver) saveExperimentLocationItem(saveToExperiment *protos.E
 			ContextLocations: alignedBeamCoords,
 		}
 
-		// geom_corr is optional, so only set it if it's non-0\
+		// geom_corr is optional, so only set it if it's non-0
 		if data.Beam.GeomCorr > 0 {
 			beamLoc.GeomCorr = data.Beam.GeomCorr
 		}

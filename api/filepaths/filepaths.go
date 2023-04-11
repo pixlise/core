@@ -141,7 +141,7 @@ const RootUserContent = "UserContent"
 const elementSetFile = "ElementSets.json"
 
 // --------DataExpressions.json - User created expressions
-const expressionFile = "DataExpressions.json"
+const ExpressionFile = "DataExpressions.json"
 
 // --------RGBMixes.json - User created RGB mixes
 const rgbMixFile = "RGBMixes.json"
@@ -352,7 +352,7 @@ func GetElementSetPath(userID string) string {
 }
 
 func GetExpressionPath(userID string) string {
-	return GetUserContentPath(userID, expressionFile)
+	return GetUserContentPath(userID, ExpressionFile)
 }
 
 func GetRGBMixPath(userID string) string {
@@ -401,6 +401,12 @@ func GetCollectionPath(userID string, datasetID string, id string) string {
 	// ensure it's a valid file name
 	id = fileaccess.MakeValidObjectName(id, true)
 	return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateCollectionsSubpath, id+".json")
+}
+
+const ExpressionExecutionStatPath = "ExpressionExecStat"
+
+func GetExpressionExecutionStatPath(exprID string) string {
+	return GetUserContentPath(pixlUser.ShareUserID, ExpressionExecutionStatPath+"/"+exprID+".json")
 }
 
 ////////////////////////////////////////////////////////////////////////////////////

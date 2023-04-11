@@ -31,7 +31,6 @@ import (
 	"github.com/pixlise/core/v2/api/handlers"
 	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/api"
-	dataExpression "github.com/pixlise/core/v2/core/expression"
 	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/quantModel"
 	"github.com/pixlise/core/v2/core/roiModel"
@@ -120,7 +119,7 @@ func getViewStateListing(svcs *services.APIServices, datasetID string, userID st
 
 		updatedCreator, creatorErr := svcs.Users.GetCurrentCreatorDetails(state.Creator.UserID)
 		if creatorErr != nil {
-			svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Workspace listing). Error: %v", state.Creator.UserID, state.Creator.Name, creatorErr)
+			svcs.Log.Infof("Failed to lookup user details for ID: %v, creator name in file: %v (Workspace listing). Error: %v", state.Creator.UserID, state.Creator.Name, creatorErr)
 		} else {
 			state.Creator = updatedCreator
 		}
@@ -161,7 +160,7 @@ func savedViewStateGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	if state.APIObjectItem != nil {
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(state.Creator.UserID)
 		if creatorErr != nil {
-			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Workspace GET). Error: %v", state.Creator.UserID, state.Creator.Name, creatorErr)
+			params.Svcs.Log.Infof("Failed to lookup user details for ID: %v, creator name in file: %v (Workspace GET). Error: %v", state.Creator.UserID, state.Creator.Name, creatorErr)
 		} else {
 			state.Creator = updatedCreator
 		}
@@ -353,25 +352,17 @@ func savedViewStateGetReferencedIDs(params handlers.ApiHandlerParams) (interface
 	}
 
 	if len(ids.Expressions) > 0 {
-		exprs := dataExpression.DataExpressionLookup{}
-
-		// Read user items
-		err := dataExpression.GetListing(params.Svcs, params.UserInfo.UserID, &exprs)
+		// Read all expressions
+		exprs, err := params.Svcs.Expressions.ListExpressions(params.UserInfo.UserID, true, true)
 
 		if err != nil {
-			params.Svcs.Log.Errorf("Failed to load user expressions file, returned items may not have name/creator. Error: %v", err)
-		}
-
-		// Read shared items
-		err = dataExpression.GetListing(params.Svcs, pixlUser.ShareUserID, &exprs)
-		if err != nil {
-			params.Svcs.Log.Errorf("Failed to load shared expressions file, returned items may not have name/creator. Error: %v", err)
+			params.Svcs.Log.Errorf("Failed to load user/shared expressions file, returned items may not have name/creator. Error: %v", err)
 		}
 
 		for idx, expr := range ids.Expressions {
 			if item, ok := exprs[expr.ID]; ok {
 				ids.Expressions[idx].Name = item.Name
-				ids.Expressions[idx].Creator = item.Creator
+				ids.Expressions[idx].Creator = item.Origin.Creator
 			}
 		}
 	}
