@@ -38,7 +38,7 @@ type DataExpressionInput struct {
 // by parsing expression text but we no longer supply ALL expression texts to client
 type DataExpressionExecStats struct {
 	DataRequired     []string `json:"dataRequired"`
-	RuntimeMS        int32    `json:"runtimeMs"`
+	RuntimeMS        float32  `json:"runtimeMs"`
 	TimeStampUnixSec int64    `json:"mod_unix_time_sec,omitempty"`
 }
 
