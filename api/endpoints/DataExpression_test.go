@@ -61,7 +61,7 @@ func makeExprDBList(idx int, includeSource bool) bson.D {
 			makeOrigin("999", "Peter N", "niko@spicule.co.uk", false, 1668100000, 1668100000),
 			&expressions.DataExpressionExecStats{
 				[]string{"Ca", "Fe"},
-				340,
+				340.5,
 				1234568888,
 			},
 		},
@@ -247,7 +247,7 @@ func Test_dataExpressionHandler_List_OK(t *testing.T) {
                 "Ca",
                 "Fe"
             ],
-            "runtimeMs": 340,
+            "runtimeMs": 340.5,
             "mod_unix_time_sec": 1234568888
         }
     },
@@ -436,7 +436,7 @@ func Test_dataExpressionHandler_Get_OK(t *testing.T) {
             "Ca",
             "Fe"
         ],
-        "runtimeMs": 340,
+        "runtimeMs": 340.5,
         "mod_unix_time_sec": 1234568888
     }
 }

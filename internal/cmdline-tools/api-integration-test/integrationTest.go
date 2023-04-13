@@ -165,6 +165,13 @@ func main() {
 		"integration-test 983561(fail) " + quantNameSuffix,
 	}
 
+	// Run a fit command first
+	if err == nil {
+		printTestStart("Checking Fit command")
+		err = runQuantFit(JWT, environment, datasetIDs[0], pmcList[0], elementList, detectorConfig[0])
+		printTestResult(err, "")
+	}
+
 	// Start each quant
 	quantJobIDs := make([]string, len(datasetIDs))
 	expectedFailJobID := ""

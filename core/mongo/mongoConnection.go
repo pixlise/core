@@ -32,6 +32,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	"github.com/pixlise/core/v2/core/logger"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -69,7 +70,8 @@ func ConnectToRemoteMongoDB(
 		return nil, fmt.Errorf("Failed getting TLS configuration: %v", err)
 	}
 
-	connectionURI := fmt.Sprintf("mongodb://%s:%s@%s/userdatabase?tls=true&replicaSet=rs0&readpreference=%s", MongoUsername, url.QueryEscape(MongoPassword), MongoEndpoint, "secondaryPreferred")
+	const extraOptions = "&replicaSet=rs0&readpreference=secondaryPreferred"
+	connectionURI := fmt.Sprintf("mongodb://%s:%s@%s/%s", MongoUsername, url.QueryEscape(MongoPassword), MongoEndpoint, extraOptions)
 	client, err = mongo.NewClient(options.Client().ApplyURI(connectionURI).SetMonitor(cmdMonitor).SetTLSConfig(tlsConfig).SetRetryWrites(false))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create new mongo DB connection: %v", err)
@@ -77,6 +79,13 @@ func ConnectToRemoteMongoDB(
 
 	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
 	err = client.Connect(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Try to ping the DB to confirm connection
+	var result bson.M
+	err = client.Database("admin").RunCommand(context.TODO(), bson.D{{"ping", 1}}).Decode(&result)
 	if err != nil {
 		return nil, err
 	}
