@@ -52,7 +52,8 @@ func main() {
 	ilog := logger.StdOutLogger{}
 
 	var s3Bucket = flag.String("bucket", "", "Name of bucket to import expressions from")
-	var mongoConnString = flag.String("mongo", "", "Connection string to get mongo connected")
+	var mongoConnString = flag.String("mongoDB", "", "Connection string to connect to mongo DB, of the form user:pass@host. If this is specified, mongoSecret is ignored")
+	var mongoSecretString = flag.String("mongoSecret", "", "Mongo secret name, which allows retrieval of mongo connection string from AWS")
 	var mongoDBName = flag.String("db", "", "Name of mongo DB to write expressions to")
 	var mongoCollection = flag.String("collection", "", "Name of mongo collection to write expressions to")
 	flag.Parse()
@@ -72,7 +73,40 @@ func main() {
 	var mongoClient *mongo.Client
 
 	if len(*mongoConnString) > 0 {
-		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache(sess, *mongoConnString)
+		user := ""
+		pass := ""
+		host := ""
+
+		// Break it up
+		idx := strings.Index(*mongoConnString, ":")
+		if idx <= 0 {
+			log.Fatalf("mongoDB connection string had no user name")
+		}
+
+		user = (*mongoConnString)[0:idx]
+
+		remainder := (*mongoConnString)[(idx + 1):]
+
+		idx = strings.Index(remainder, "@")
+		if idx <= 0 {
+			log.Fatalf("mongoDB connection string had no password@host")
+		}
+
+		pass = remainder[0:idx]
+		host = remainder[(idx + 1):]
+
+		mongoClient, err = mongoDBConnection.ConnectToRemoteMongoDB(
+			host,
+			user,
+			pass,
+			&ilog,
+		)
+
+		if err != nil {
+			log.Fatalf("Failed to connect to remote mongo (%v): %v", *mongoConnString, err)
+		}
+	} else if len(*mongoSecretString) > 0 {
+		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache(sess, *mongoSecretString)
 		if err != nil {
 			log.Fatalf("Failed to get mongo connection info: %v", err)
 		}

@@ -70,7 +70,11 @@ func ConnectToRemoteMongoDB(
 		return nil, fmt.Errorf("Failed getting TLS configuration: %v", err)
 	}
 
-	const extraOptions = "&replicaSet=rs0&readpreference=secondaryPreferred"
+	tlsConfig.InsecureSkipVerify = true
+	// This works with mongosh locally through SSH tunnel:
+	// mongodb://<credentials>@127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&tlsAllowInvalidHostnames=true&tls=true&tlsCAFile=C%3A%2FUsers%2Fpeter%2FDocuments%2FKeys%2Frds-combined-ca-bundle.pem&retryWrites=false&appName=mongosh+1.8.0
+
+	const extraOptions = "" //"&retryWrites=false&tlsAllowInvalidHostnames=true" //"&replicaSet=rs0&readpreference=secondaryPreferred"
 	connectionURI := fmt.Sprintf("mongodb://%s:%s@%s/%s", MongoUsername, url.QueryEscape(MongoPassword), MongoEndpoint, extraOptions)
 	client, err = mongo.NewClient(options.Client().ApplyURI(connectionURI).SetMonitor(cmdMonitor).SetTLSConfig(tlsConfig).SetRetryWrites(false))
 	if err != nil {
