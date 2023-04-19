@@ -50,9 +50,11 @@ func main() {
 	fmt.Println("=================================")
 
 	ilog := logger.StdOutLogger{}
+	ilog.SetLogLevel(logger.LogInfo)
 
 	var s3Bucket = flag.String("bucket", "", "Name of bucket to import expressions from")
-	var mongoConnString = flag.String("mongo", "", "Connection string to get mongo connected")
+	var mongoConnString = flag.String("mongoDB", "", "Connection string to connect to mongo DB, of the form user:pass@host. If this is specified, mongoSecret is ignored")
+	var mongoSecretString = flag.String("mongoSecret", "", "Mongo secret name, which allows retrieval of mongo connection string from AWS")
 	var mongoDBName = flag.String("db", "", "Name of mongo DB to write expressions to")
 	var mongoCollection = flag.String("collection", "", "Name of mongo collection to write expressions to")
 	flag.Parse()
@@ -72,7 +74,40 @@ func main() {
 	var mongoClient *mongo.Client
 
 	if len(*mongoConnString) > 0 {
-		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache(sess, *mongoConnString)
+		user := ""
+		pass := ""
+		host := ""
+
+		// Break it up
+		idx := strings.Index(*mongoConnString, ":")
+		if idx <= 0 {
+			log.Fatalf("mongoDB connection string had no user name")
+		}
+
+		user = (*mongoConnString)[0:idx]
+
+		remainder := (*mongoConnString)[(idx + 1):]
+
+		idx = strings.Index(remainder, "@")
+		if idx <= 0 {
+			log.Fatalf("mongoDB connection string had no password@host")
+		}
+
+		pass = remainder[0:idx]
+		host = remainder[(idx + 1):]
+
+		mongoClient, err = mongoDBConnection.ConnectToRemoteMongoDB(
+			host,
+			user,
+			pass,
+			&ilog,
+		)
+
+		if err != nil {
+			log.Fatalf("Failed to connect to remote mongo (%v): %v", *mongoConnString, err)
+		}
+	} else if len(*mongoSecretString) > 0 {
+		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache(sess, *mongoSecretString)
 		if err != nil {
 			log.Fatalf("Failed to get mongo connection info: %v", err)
 		}
@@ -127,7 +162,7 @@ func main() {
 	if len(exprFiles) > 0 {
 		ilog.Infof("Processed %v files. These can be deleted from S3:", len(exprFiles))
 		for _, exprFile := range exprFiles {
-			ilog.Infof("s3 rm %v://%v", *s3Bucket, exprFile)
+			ilog.Infof("s3 rm s3://%v/%v", *s3Bucket, exprFile)
 		}
 	}
 }
@@ -146,7 +181,7 @@ type OldDataExpression struct {
 }
 
 func importExpressions(remoteFS fileaccess.FileAccess, bucket string, s3Path string, exprCollection *mongo.Collection, l logger.ILogger) error {
-	l.Infof("Reading expression file %v://%v...", bucket, s3Path)
+	l.Infof("Reading expression file s3://%v/%v...", bucket, s3Path)
 
 	itemLookup := map[string]OldDataExpression{}
 	err := remoteFS.ReadJSON(bucket, s3Path, &itemLookup, true)

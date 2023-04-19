@@ -25,7 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/url"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -70,9 +70,28 @@ func ConnectToRemoteMongoDB(
 		return nil, fmt.Errorf("Failed getting TLS configuration: %v", err)
 	}
 
-	const extraOptions = "&replicaSet=rs0&readpreference=secondaryPreferred"
-	connectionURI := fmt.Sprintf("mongodb://%s:%s@%s/%s", MongoUsername, url.QueryEscape(MongoPassword), MongoEndpoint, extraOptions)
-	client, err = mongo.NewClient(options.Client().ApplyURI(connectionURI).SetMonitor(cmdMonitor).SetTLSConfig(tlsConfig).SetRetryWrites(false))
+	if strings.Contains(MongoEndpoint, "localhost") {
+		tlsConfig.InsecureSkipVerify = true
+	}
+
+	const extraOptions = "" //"&retryWrites=false&tlsAllowInvalidHostnames=true" //"&replicaSet=rs0&readpreference=secondaryPreferred"
+	connectionURI := fmt.Sprintf("mongodb://%s/%s", MongoEndpoint, extraOptions)
+
+	client, err = mongo.NewClient(
+		options.Client().
+			ApplyURI(connectionURI).
+			SetMonitor(cmdMonitor).
+			SetTLSConfig(tlsConfig).
+			SetRetryWrites(false).
+			SetDirect(true).
+			SetAuth(
+				options.Credential{
+					Username:    MongoUsername,
+					Password:    MongoPassword,
+					PasswordSet: true,
+					AuthSource:  "admin",
+				}))
+
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create new mongo DB connection: %v", err)
 	}
