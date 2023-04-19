@@ -50,6 +50,7 @@ func main() {
 	fmt.Println("=================================")
 
 	ilog := logger.StdOutLogger{}
+	ilog.SetLogLevel(logger.LogInfo)
 
 	var s3Bucket = flag.String("bucket", "", "Name of bucket to import expressions from")
 	var mongoConnString = flag.String("mongoDB", "", "Connection string to connect to mongo DB, of the form user:pass@host. If this is specified, mongoSecret is ignored")
@@ -161,7 +162,7 @@ func main() {
 	if len(exprFiles) > 0 {
 		ilog.Infof("Processed %v files. These can be deleted from S3:", len(exprFiles))
 		for _, exprFile := range exprFiles {
-			ilog.Infof("s3 rm %v://%v", *s3Bucket, exprFile)
+			ilog.Infof("s3 rm s3://%v/%v", *s3Bucket, exprFile)
 		}
 	}
 }
@@ -180,7 +181,7 @@ type OldDataExpression struct {
 }
 
 func importExpressions(remoteFS fileaccess.FileAccess, bucket string, s3Path string, exprCollection *mongo.Collection, l logger.ILogger) error {
-	l.Infof("Reading expression file %v://%v...", bucket, s3Path)
+	l.Infof("Reading expression file s3://%v/%v...", bucket, s3Path)
 
 	itemLookup := map[string]OldDataExpression{}
 	err := remoteFS.ReadJSON(bucket, s3Path, &itemLookup, true)
