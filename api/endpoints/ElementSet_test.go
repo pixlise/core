@@ -26,6 +26,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/timestamper"
@@ -576,9 +577,9 @@ func Example_elementSetHandler_Post() {
 		&s3.PutObjectOutput{},
 		&s3.PutObjectOutput{},
 	}
-
-	var idGen MockIDGenerator
-	idGen.ids = []string{"55", "56", "57"}
+	idGen := services.MockIDGenerator{
+		IDs: []string{"55", "56", "57"},
+	}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1668142579, 1668142580, 1668142581},
@@ -1058,8 +1059,9 @@ func Example_elementSetHandler_Share() {
 		&s3.PutObjectOutput{},
 	}
 
-	var idGen MockIDGenerator
-	idGen.ids = []string{"77"}
+	idGen := services.MockIDGenerator{
+		IDs: []string{"77"},
+	}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 

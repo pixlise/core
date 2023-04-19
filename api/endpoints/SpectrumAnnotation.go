@@ -144,7 +144,7 @@ func annotationList(params handlers.ApiHandlerParams) (interface{}, error) {
 		item := annotations[k]
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
 		if creatorErr != nil {
-			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Spectrum annotation listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
+			params.Svcs.Log.Infof("Failed to lookup user details for ID: %v, creator name in file: %v (Spectrum annotation listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
 		} else {
 			item.Creator = updatedCreator
 		}
@@ -172,7 +172,7 @@ func annotationGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	if err == nil {
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(line.Creator.UserID)
 		if creatorErr != nil {
-			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Spectrum annotation GET). Error: %v", line.Creator.UserID, line.Creator.Name, creatorErr)
+			params.Svcs.Log.Infof("Failed to lookup user details for ID: %v, creator name in file: %v (Spectrum annotation GET). Error: %v", line.Creator.UserID, line.Creator.Name, creatorErr)
 		} else {
 			line.Creator = updatedCreator
 		}

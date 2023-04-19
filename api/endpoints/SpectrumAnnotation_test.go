@@ -26,6 +26,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/timestamper"
@@ -446,8 +447,9 @@ func Example_spectrumAnnotationHandler_Post() {
 		{},
 	}
 
-	var idGen MockIDGenerator
-	idGen.ids = []string{"id1", "id2", "id3"}
+	idGen := services.MockIDGenerator{
+		IDs: []string{"id1", "id2", "id3"},
+	}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1668142579, 1668142580, 1668142581},
@@ -941,8 +943,9 @@ func Example_spectrumAnnotationHandler_Share() {
 		{},
 	}
 
-	var idGen MockIDGenerator
-	idGen.ids = []string{"83"}
+	idGen := services.MockIDGenerator{
+		IDs: []string{"83"},
+	}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	apiRouter := MakeRouter(svcs)
 

@@ -22,7 +22,7 @@ type UserInfo struct {
 	Name        string          `json:"name"`
 	UserID      string          `json:"user_id"`
 	Email       string          `json:"email"`
-	Permissions map[string]bool `json:"-"` // This is a lookup - we don't want this in JSON sent out of API though!
+	Permissions map[string]bool `json:"-" bson:"-"` // This is a lookup - we don't want this in JSON sent out of API though!
 }
 
 // APIObjectItem API endpoints send around versions of this struct (with extra fields depending on the data type)

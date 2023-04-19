@@ -183,7 +183,7 @@ func elementSetList(params handlers.ApiHandlerParams) (interface{}, error) {
 		item := summaryLookup[k]
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
 		if creatorErr != nil {
-			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (element set listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
+			params.Svcs.Log.Infof("Failed to lookup user details for ID: %v, creator name in file: %v (element set listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
 		} else {
 			item.Creator = updatedCreator
 		}
@@ -211,7 +211,7 @@ func elementSetGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	if err == nil {
 		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(elemSet.Creator.UserID)
 		if creatorErr != nil {
-			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (element set GET). Error: %v", elemSet.Creator.UserID, elemSet.Creator.Name, creatorErr)
+			params.Svcs.Log.Infof("Failed to lookup user details for ID: %v, creator name in file: %v (element set GET). Error: %v", elemSet.Creator.UserID, elemSet.Creator.Name, creatorErr)
 		} else {
 			elemSet.Creator = updatedCreator
 		}

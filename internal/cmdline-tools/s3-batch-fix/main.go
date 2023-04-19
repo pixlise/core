@@ -35,7 +35,7 @@ import (
 	"github.com/pixlise/core/v2/api/endpoints"
 	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/core/awsutil"
-	dataExpression "github.com/pixlise/core/v2/core/expression"
+	"github.com/pixlise/core/v2/core/expressions/expressions"
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/roiModel"
@@ -208,7 +208,7 @@ func editElementSets(remoteFS fileaccess.FileAccess, userBucket string, userID s
 
 func editExpressions(remoteFS fileaccess.FileAccess, userBucket string, userID string, fileCreateLookup map[string]int) {
 	filePath := filepaths.GetExpressionPath(userID)
-	itemLookup := dataExpression.DataExpressionLookup{}
+	itemLookup := expressions.DataExpressionLookup{}
 
 	editArrayFile(remoteFS, userBucket, userID, filePath, fileCreateLookup, itemLookup)
 }
@@ -247,7 +247,7 @@ func editCollections(remoteFS fileaccess.FileAccess, userBucket string, userID s
 }
 
 type setTimeItem interface {
-	endpoints.SpectrumAnnotationLine | dataExpression.DataExpression | endpoints.RGBMix | endpoints.ElementSet | roiModel.ROISavedItem | endpoints.Workspace | endpoints.WorkspaceCollection
+	endpoints.SpectrumAnnotationLine | expressions.DataExpression | endpoints.RGBMix | endpoints.ElementSet | roiModel.ROISavedItem | endpoints.Workspace | endpoints.WorkspaceCollection
 	SetTimes(string, int64)
 }
 
@@ -255,7 +255,7 @@ func SetTimes[T setTimeItem](x *T, userID string, t int64) {
 	(*x).SetTimes(userID, t)
 }
 
-func editArrayFile[K comparable, V setTimeItem]( // endpoints.SpectrumAnnotationLine | dataExpression.DataExpression | endpoints.RGBMix | endpoints.ElementSet | roiModel.ROISavedItem](
+func editArrayFile[K comparable, V setTimeItem]( // endpoints.SpectrumAnnotationLine | expressions.DataExpression | endpoints.RGBMix | endpoints.ElementSet | roiModel.ROISavedItem](
 	remoteFS fileaccess.FileAccess,
 	userBucket string,
 	userID string,
@@ -291,7 +291,7 @@ func editArrayFile[K comparable, V setTimeItem]( // endpoints.SpectrumAnnotation
 	}
 }
 
-func editItemFile[V setTimeItem]( // endpoints.SpectrumAnnotationLine | dataExpression.DataExpression | endpoints.RGBMix | endpoints.ElementSet | roiModel.ROISavedItem](
+func editItemFile[V setTimeItem]( // endpoints.SpectrumAnnotationLine | expressions.DataExpression | endpoints.RGBMix | endpoints.ElementSet | roiModel.ROISavedItem](
 	remoteFS fileaccess.FileAccess,
 	userBucket string,
 	userID string,

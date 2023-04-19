@@ -35,10 +35,14 @@ func (l *StdOutLoggerForTest) Printf(level LogLevel, format string, a ...interfa
 	log.Println(txt)
 }
 func (l *StdOutLoggerForTest) Debugf(format string, a ...interface{}) {
-	l.Printf(LogDebug, format, a...)
+	if l.logLevel <= LogDebug {
+		l.Printf(LogDebug, format, a...)
+	}
 }
 func (l *StdOutLoggerForTest) Infof(format string, a ...interface{}) {
-	l.Printf(LogInfo, format, a...)
+	if l.logLevel <= LogInfo {
+		l.Printf(LogInfo, format, a...)
+	}
 }
 func (l *StdOutLoggerForTest) Errorf(format string, a ...interface{}) {
 	l.Printf(LogError, format, a...)

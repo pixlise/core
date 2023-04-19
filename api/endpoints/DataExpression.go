@@ -23,17 +23,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"sort"
 
-	"github.com/pixlise/core/v2/api/filepaths"
 	"github.com/pixlise/core/v2/api/handlers"
 	"github.com/pixlise/core/v2/api/permission"
 	apiRouter "github.com/pixlise/core/v2/api/router"
 	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/api"
-	dataExpression "github.com/pixlise/core/v2/core/expression"
+	"github.com/pixlise/core/v2/core/expressions/expressions"
+	"github.com/pixlise/core/v2/core/expressions/modules"
 	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/utils"
 )
 
@@ -48,214 +46,214 @@ func registerDataExpressionHandler(router *apiRouter.ApiObjectRouter) {
 
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWriteDataAnalysis), dataExpressionPut)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("DELETE", permission.PermWriteDataAnalysis), dataExpressionDelete)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), dataExpressionGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/execution-stat", idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWriteDataAnalysis), dataExpressionExecutionStatPut)
 
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedExpression), dataExpressionShare)
 }
 
+func toWire(expr expressions.DataExpression) expressions.DataExpressionWire {
+	orig := expr.Origin
+	id := expr.ID
+	// If it's shared, we prefix the ID (kept around for legacy reasons)
+	if expr.Origin.Shared {
+		id = utils.SharedItemIDPrefix + id
+	}
+	resultItem := expressions.DataExpressionWire{
+		ID:               id,
+		Name:             expr.Name,
+		SourceCode:       expr.SourceCode,
+		SourceLanguage:   expr.SourceLanguage,
+		Comments:         expr.Comments,
+		Tags:             expr.Tags,
+		ModuleReferences: expr.ModuleReferences,
+		APIObjectItem:    &orig,
+		RecentExecStats:  expr.RecentExecStats,
+	}
+	return resultItem
+}
+
 func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
-	items := dataExpression.DataExpressionLookup{}
-
-	// Get user expressions
-	err := dataExpression.GetListing(params.Svcs, params.UserInfo.UserID, &items)
+	// Get user and expressions
+	items, err := params.Svcs.Expressions.ListExpressions(params.UserInfo.UserID, true, true)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get shared expressions (into same map)
-	err = dataExpression.GetListing(params.Svcs, pixlUser.ShareUserID, &items)
-	if err != nil {
-		return nil, err
-	}
+	result := map[string]expressions.DataExpressionWire{}
 
-	// Read keys in alphabetical order, else we randomly fail unit test
-	keys := []string{}
-	for k := range items {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// Update all creator infos
-	for _, k := range keys {
-		item := items[k]
-
-		// Ensure tags is not nil as this is a new field
-		if item.Tags == nil {
-			item.Tags = []string{}
-		}
-
-		updatedCreator, creatorErr := params.Svcs.Users.GetCurrentCreatorDetails(item.Creator.UserID)
-		if creatorErr != nil {
-			params.Svcs.Log.Errorf("Failed to lookup user details for ID: %v, creator name in file: %v (Expressions listing). Error: %v", item.Creator.UserID, item.Creator.Name, creatorErr)
-		} else {
-			item.Creator = updatedCreator
-		}
+	// We're sending them back in a different struct for legacy reasons
+	for _, item := range items {
+		resultItem := toWire(item)
+		result[resultItem.ID] = resultItem
 	}
 
 	// Return the combined set
-	return &items, nil
+	return &result, nil
 }
 
-func setupForSave(params handlers.ApiHandlerParams, s3Path string) (*dataExpression.DataExpressionLookup, *dataExpression.DataExpressionInput, error) {
+func dataExpressionGet(params handlers.ApiHandlerParams) (interface{}, error) {
+	itemID := params.PathParams[idIdentifier]
+	strippedID, _ := utils.StripSharedItemIDPrefix(itemID)
+
+	// Get expression
+	expr, err := params.Svcs.Expressions.GetExpression(strippedID, true)
+	if err != nil {
+		if params.Svcs.Expressions.IsNotFoundError(err) {
+			return nil, api.MakeNotFoundError(itemID)
+		}
+		return nil, err
+	}
+
+	resultItem := toWire(expr)
+	return resultItem, nil
+}
+
+func readRequest(params handlers.ApiHandlerParams) (*expressions.DataExpressionInput, error) {
 	// Read in body
 	body, err := ioutil.ReadAll(params.Request.Body)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	var req dataExpression.DataExpressionInput
+	var req expressions.DataExpressionInput
 	err = json.Unmarshal(body, &req)
 	if err != nil {
-		return nil, nil, api.MakeBadRequestError(err)
+		return nil, api.MakeBadRequestError(err)
 	}
 
-	// Validate
+	// Validate - these used to be file names, but lets still keep them sensible
 	if !fileaccess.IsValidObjectName(req.Name) {
-		return nil, nil, api.MakeBadRequestError(fmt.Errorf("Invalid ID: %v", req.Name))
-	}
-	err = req.Type.IsValid()
-	if err != nil {
-		return nil, nil, api.MakeBadRequestError(err)
-	}
-	if len(req.Expression) <= 0 {
-		return nil, nil, api.MakeBadRequestError(errors.New("Expression cannot be empty"))
+		return nil, api.MakeBadRequestError(fmt.Errorf("Invalid expression name: %v", req.Name))
 	}
 
 	if req.Tags == nil {
 		req.Tags = []string{}
 	}
 
-	// Download the file
-	items, err := dataExpression.ReadExpressionData(params.Svcs, s3Path)
-	if err != nil && !params.Svcs.FS.IsNotFoundError(err) {
-		// Only return error if it's not about the file missing, because user may not have interacted with this dataset yet
-		return nil, nil, err
-	}
-
-	return &items, &req, nil
+	return &req, nil
 }
 
 func dataExpressionPost(params handlers.ApiHandlerParams) (interface{}, error) {
-	s3Path := filepaths.GetExpressionPath(params.UserInfo.UserID)
-	expressions, req, err := setupForSave(params, s3Path)
+	req, err := readRequest(params)
 	if err != nil {
 		return nil, err
 	}
 
-	// Save it & upload
-	saveID := params.Svcs.IDGen.GenObjectID()
-	_, exists := (*expressions)[saveID]
-	if exists {
-		return nil, fmt.Errorf("Failed to generate unique ID")
+	if len(req.SourceCode) <= 0 {
+		return nil, api.MakeBadRequestError(errors.New("Expression source code cannot be empty"))
 	}
 
-	timeNow := params.Svcs.TimeStamper.GetTimeNowSec()
-
-	(*expressions)[saveID] = dataExpression.DataExpression{
-		DataExpressionInput: req,
-		APIObjectItem: &pixlUser.APIObjectItem{
-			Shared:              false,
-			Creator:             params.UserInfo,
-			CreatedUnixTimeSec:  timeNow,
-			ModifiedUnixTimeSec: timeNow,
-		},
-	}
-
-	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *expressions)
+	// Check there aren't any silly modules configured
+	err = isValidModuleReferences(req.ModuleReferences)
 	if err != nil {
-		return nil, err
+		return nil, api.MakeBadRequestError(err)
 	}
 
-	// Only return new item
-	response := dataExpression.DataExpressionLookup{}
-	response[saveID] = (*expressions)[saveID]
+	result, err := params.Svcs.Expressions.CreateExpression(*req, params.UserInfo, false)
 
-	return response, nil
+	resultItem := toWire(result)
+	return resultItem, err
 }
 
 func dataExpressionPut(params handlers.ApiHandlerParams) (interface{}, error) {
 	itemID := params.PathParams[idIdentifier]
+	strippedID, _ := utils.StripSharedItemIDPrefix(itemID)
 
-	s3Path := filepaths.GetExpressionPath(params.UserInfo.UserID)
-	id, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
-
-	if isSharedReq {
-		s3Path = filepaths.GetExpressionPath(pixlUser.ShareUserID)
-	}
-
-	expressions, req, err := setupForSave(params, s3Path)
+	req, err := readRequest(params)
 	if err != nil {
 		return nil, err
 	}
 
-	existing, ok := (*expressions)[id]
-	if !ok {
-		return nil, api.MakeNotFoundError(id)
+	// Check there aren't any silly modules configured
+	err = isValidModuleReferences(req.ModuleReferences)
+	if err != nil {
+		return nil, api.MakeBadRequestError(err)
 	}
 
-	if isSharedReq && params.UserInfo.UserID != existing.Creator.UserID {
-		return nil, api.MakeBadRequestError(errors.New("cannot edit shared expression not owned by user"))
+	// Check that it exists, and that this user has the same ID (don't want to allow editing others expressions
+	// or editing shared ones you didn't create)
+	existingExpr, err := params.Svcs.Expressions.GetExpression(strippedID, false)
+	if err != nil {
+		return nil, api.MakeNotFoundError(itemID)
 	}
 
-	// Save it & upload
-	(*expressions)[id] = dataExpression.DataExpression{
-		DataExpressionInput: req,
-		APIObjectItem: &pixlUser.APIObjectItem{
-			Shared:              isSharedReq,
-			Creator:             existing.Creator,
-			CreatedUnixTimeSec:  existing.CreatedUnixTimeSec,
-			ModifiedUnixTimeSec: params.Svcs.TimeStamper.GetTimeNowSec(),
-		},
+	if params.UserInfo.UserID != existingExpr.Origin.Creator.UserID {
+		return nil, api.MakeBadRequestError(errors.New("cannot edit expression not owned by user"))
 	}
-	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, *expressions)
+
+	result, err := params.Svcs.Expressions.UpdateExpression(
+		strippedID,
+		*req,
+		params.UserInfo,
+		existingExpr.Origin.CreatedUnixTimeSec,
+		existingExpr.Origin.Shared,
+		existingExpr.SourceCode,
+	)
+
+	resultItem := toWire(result)
+	return resultItem, err
+}
+
+func isValidModuleReferences(refs []expressions.ModuleReference) error {
+	// Make sure there are no duplicate modules and also that versions are parsable
+	moduleIDs := map[string]bool{}
+	for _, r := range refs {
+		if _, ok := moduleIDs[r.ModuleID]; ok {
+			return fmt.Errorf("Duplicate modules: %v", r.ModuleID)
+		}
+		moduleIDs[r.ModuleID] = true
+
+		_, err := modules.SemanticVersionFromString(r.Version)
+		if err != nil {
+			return fmt.Errorf("Invalid version for module: %v. Error was: %v", r.ModuleID, r.Version)
+		}
+	}
+	return nil
+}
+
+func dataExpressionExecutionStatPut(params handlers.ApiHandlerParams) (interface{}, error) {
+	itemID := params.PathParams[idIdentifier]
+
+	body, err := ioutil.ReadAll(params.Request.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	// Use non-stripped ID for response
-	response := dataExpression.DataExpressionLookup{}
-	response[itemID] = (*expressions)[id]
+	var req expressions.DataExpressionExecStats
+	err = json.Unmarshal(body, &req)
+	if err != nil {
+		return nil, api.MakeBadRequestError(err)
+	}
 
-	return response, nil
+	// Set the time stamp to now
+	req.TimeStampUnixSec = params.Svcs.TimeStamper.GetTimeNowSec()
+
+	return req, params.Svcs.Expressions.StoreExpressionRecentRunStats(itemID, req)
 }
 
 func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error) {
-	// If deleting a shared item, we need to strip the prefix from the ID and also ensure that only the creator can delete
 	itemID := params.PathParams[idIdentifier]
-	s3Path := filepaths.GetExpressionPath(params.UserInfo.UserID)
 
-	id, isSharedReq := utils.StripSharedItemIDPrefix(itemID)
-	if isSharedReq {
-		s3Path = filepaths.GetExpressionPath(pixlUser.ShareUserID)
-	}
-
-	// Using path params, work out path
-	items, err := dataExpression.ReadExpressionData(params.Svcs, s3Path)
+	// Read to make sure it exists and we have the permissions to delete it
+	existingExpr, err := params.Svcs.Expressions.GetExpression(itemID, false)
 	if err != nil {
-		return nil, err
+		return nil, api.MakeNotFoundError(itemID)
 	}
 
-	sharedItem, ok := items[id]
-	if !ok {
-		return nil, api.MakeNotFoundError(id)
+	if existingExpr.Origin.Creator.UserID != params.UserInfo.UserID {
+		return nil, api.MakeStatusError(http.StatusUnauthorized, fmt.Errorf("%v not owned by %v", itemID, params.UserInfo.UserID))
 	}
 
-	if isSharedReq && sharedItem.Creator.UserID != params.UserInfo.UserID {
-		return nil, api.MakeStatusError(http.StatusUnauthorized, fmt.Errorf("%v not owned by %v", id, params.UserInfo.UserID))
-	}
-
-	// Found it, delete & we're done
-	delete(items, id)
-
-	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.UsersBucket, s3Path, items)
+	// If deleting a shared item, we need to strip the prefix from the ID and also ensure that only the creator can delete
+	id, _ := utils.StripSharedItemIDPrefix(itemID)
+	err = params.Svcs.Expressions.DeleteExpression(id)
 	if err != nil {
 		return nil, err
 	}
 
 	// Return just the one deleted id
-	response := map[string]string{}
-	response[itemID] = itemID
-
-	return response, nil
+	return itemID, nil
 }
 
 func dataExpressionShare(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -279,63 +277,47 @@ func dataExpressionShare(params handlers.ApiHandlerParams) (interface{}, error) 
 
 func shareExpressions(svcs *services.APIServices, userID string, expressionIDs []string) ([]string, error) {
 	generatedIDs := []string{}
-	// Read user items
-	s3Path := filepaths.GetExpressionPath(userID)
-	userItems, err := dataExpression.ReadExpressionData(svcs, s3Path)
 
-	if err != nil {
-		return generatedIDs, err
-	}
-
-	// Read shared items
-	sharedS3Path := filepaths.GetExpressionPath(pixlUser.ShareUserID)
-	sharedItems, err := dataExpression.ReadExpressionData(svcs, sharedS3Path)
-
-	if err != nil {
-		return generatedIDs, err
-	}
-
-	// Run through and share each one
-	for _, id := range expressionIDs {
-		exprItem, ok := userItems[id]
-		if !ok {
-			return generatedIDs, api.MakeNotFoundError(id)
+	// Loop through & load each one
+	for _, exprId := range expressionIDs {
+		expr, err := svcs.Expressions.GetExpression(exprId, false)
+		if err != nil {
+			if svcs.Expressions.IsNotFoundError(err) {
+				return generatedIDs, api.MakeNotFoundError(exprId)
+			}
+			return generatedIDs, err
 		}
 
-		// We found it, now generate id to save it to
-		sharedID := svcs.IDGen.GenObjectID()
-		_, ok = sharedItems[sharedID]
-		if ok {
-			return generatedIDs, fmt.Errorf("Failed to generate unique share ID for " + id)
+		// Make sure it isn't already shared
+		if expr.Origin.Shared {
+			return generatedIDs, api.MakeStatusError(http.StatusBadRequest, fmt.Errorf("%v already shared", exprId))
 		}
 
-		tags := exprItem.Tags
-		if tags == nil {
-			tags = []string{}
+		// Check that user has rights to do this
+		if expr.Origin.Creator.UserID != userID {
+			return nil, api.MakeStatusError(http.StatusUnauthorized, fmt.Errorf("%v not owned by %v", exprId, userID))
 		}
 
-		// Add it to the shared file and we're done
-		timeNow := svcs.TimeStamper.GetTimeNowSec()
-		sharedCopy := dataExpression.DataExpression{
-			DataExpressionInput: &dataExpression.DataExpressionInput{
-				Name:       exprItem.Name,
-				Expression: exprItem.Expression,
-				Type:       exprItem.Type,
-				Tags:       tags,
-				Comments:   exprItem.Comments,
+		// Sharing is an act of saving the same expression, with a different ID, and the share flag set
+		sharedExpr, err := svcs.Expressions.CreateExpression(
+			expressions.DataExpressionInput{
+				Name:             expr.Name,
+				SourceCode:       expr.SourceCode,
+				SourceLanguage:   expr.SourceLanguage,
+				Comments:         expr.Comments,
+				Tags:             expr.Tags,
+				ModuleReferences: expr.ModuleReferences,
 			},
-			APIObjectItem: &pixlUser.APIObjectItem{
-				Shared:              true,
-				Creator:             exprItem.Creator,
-				CreatedUnixTimeSec:  exprItem.CreatedUnixTimeSec,
-				ModifiedUnixTimeSec: timeNow,
-			},
+			expr.Origin.Creator,
+			true,
+		)
+
+		if err != nil {
+			return generatedIDs, err
 		}
 
-		sharedItems[sharedID] = sharedCopy
-		generatedIDs = append(generatedIDs, sharedID)
+		generatedIDs = append(generatedIDs, sharedExpr.ID)
 	}
 
-	// Save the shared file
-	return generatedIDs, svcs.FS.WriteJSON(svcs.Config.UsersBucket, sharedS3Path, sharedItems)
+	return generatedIDs, nil
 }

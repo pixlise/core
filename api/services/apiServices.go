@@ -25,6 +25,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 
+	expressionStorage "github.com/pixlise/core/v2/core/expressions"
 	"github.com/pixlise/core/v2/core/fileaccess"
 	"github.com/pixlise/core/v2/core/notifications"
 	"github.com/pixlise/core/v2/core/timestamper"
@@ -116,6 +117,9 @@ type APIServices struct {
 
 	// "User DB"
 	Users pixlUser.UserDetailsLookup
+
+	// "Expression DB"
+	Expressions expressionStorage.ExpressionDB
 }
 
 // InitAPIServices sets up a new APIServices instance
@@ -171,7 +175,7 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 	// Connect to mongo
 	if len(cfg.MongoSecret) > 0 {
 		// Remote is configured, connect to it
-		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache(cfg.MongoSecret)
+		mongoConnectionInfo, err := mongoDBConnection.GetMongoConnectionInfoFromSecretCache(sess, cfg.MongoSecret)
 		if err != nil {
 			err2 := fmt.Errorf("failed to read mongo DB connection info from secrets cache: %v", err)
 			ourLogger.Errorf("%v", err2)

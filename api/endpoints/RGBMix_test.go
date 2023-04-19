@@ -26,6 +26,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/v2/api/services"
 	"github.com/pixlise/core/v2/core/awsutil"
 	"github.com/pixlise/core/v2/core/pixlUser"
 	"github.com/pixlise/core/v2/core/timestamper"
@@ -540,8 +541,9 @@ func Example_RGBMixHandler_Post() {
 		{},
 	}
 
-	var idGen MockIDGenerator
-	idGen.ids = []string{"id16", "id17", "id18"}
+	idGen := services.MockIDGenerator{
+		IDs: []string{"id16", "id17", "id18"},
+	}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1668142579, 1668142580, 1668142581},
@@ -1110,8 +1112,9 @@ func Example_RGBMixHandler_Share() {
 		{},
 	}
 
-	var idGen MockIDGenerator
-	idGen.ids = []string{"ddd222"}
+	idGen := services.MockIDGenerator{
+		IDs: []string{"ddd222"},
+	}
 	svcs := MakeMockSvcs(&mockS3, &idGen, nil, nil)
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1668142579},

@@ -81,6 +81,11 @@ The API takes a few seconds to start up. Watch the Debug Console in VS Code! You
 - A listing of all API endpoints and what permission they require
 - `"INFO: API Started..."` signifying the API is ready to accept requests
 
+## Local Mongo database access
+
+Download "MongoDB Compass" and when the docker container is running locally (in docker), connect to it with this connection string:
+`mongodb://mongoadmin:secret@localhost:27888/?authMechanism=DEFAULT`
+
 ### Example CLI flags
 
 `-quantExecutor docker` - this tells the API to use local docker as the quant executor, meaning PIQUANT jobs will start on your local development machine.

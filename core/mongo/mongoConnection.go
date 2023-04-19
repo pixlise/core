@@ -25,11 +25,14 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/url"
+	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	"github.com/pixlise/core/v2/core/logger"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -67,14 +70,41 @@ func ConnectToRemoteMongoDB(
 		return nil, fmt.Errorf("Failed getting TLS configuration: %v", err)
 	}
 
-	connectionURI := fmt.Sprintf("mongodb://%s:%s@%s/userdatabase?tls=true&replicaSet=rs0&readpreference=%s", MongoUsername, url.QueryEscape(MongoPassword), MongoEndpoint, "secondaryPreferred")
-	client, err = mongo.NewClient(options.Client().ApplyURI(connectionURI).SetMonitor(cmdMonitor).SetTLSConfig(tlsConfig).SetRetryWrites(false))
+	if strings.Contains(MongoEndpoint, "localhost") {
+		tlsConfig.InsecureSkipVerify = true
+	}
+
+	const extraOptions = "" //"&retryWrites=false&tlsAllowInvalidHostnames=true" //"&replicaSet=rs0&readpreference=secondaryPreferred"
+	connectionURI := fmt.Sprintf("mongodb://%s/%s", MongoEndpoint, extraOptions)
+
+	client, err = mongo.NewClient(
+		options.Client().
+			ApplyURI(connectionURI).
+			SetMonitor(cmdMonitor).
+			SetTLSConfig(tlsConfig).
+			SetRetryWrites(false).
+			SetDirect(true).
+			SetAuth(
+				options.Credential{
+					Username:    MongoUsername,
+					Password:    MongoPassword,
+					PasswordSet: true,
+					AuthSource:  "admin",
+				}))
+
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create new mongo DB connection: %v", err)
 	}
 
 	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
 	err = client.Connect(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Try to ping the DB to confirm connection
+	var result bson.M
+	err = client.Database("admin").RunCommand(context.TODO(), bson.D{{"ping", 1}}).Decode(&result)
 	if err != nil {
 		return nil, err
 	}
@@ -103,9 +133,13 @@ func getCustomTLSConfig(caFile string) (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
-func GetMongoConnectionInfoFromSecretCache(secretName string) (MongoConnectionInfo, error) {
+func GetMongoConnectionInfoFromSecretCache(session *session.Session, secretName string) (MongoConnectionInfo, error) {
+	// Do some special init magic to get a secret manager with the right region set
+	// This may not be needed in envs, but running locally it was needed!
+	secMan := secretsmanager.New(session) //, aws.NewConfig().WithRegion("us-west-2"))
+
 	var info MongoConnectionInfo
-	seccache, err := secretcache.New()
+	seccache, err := secretcache.New(func(c *secretcache.Cache) { c.Client = secMan })
 	if err != nil {
 		return info, err
 	}
@@ -163,10 +197,6 @@ func makeMongoCommandMonitor(log logger.ILogger) *event.CommandMonitor {
 	}
 }
 
-func GetUserDatabaseName(envName string) string {
-	userDatabaseName := "userdatabase"
-	if envName != "prod" {
-		userDatabaseName += "-" + envName
-	}
-	return userDatabaseName
+func GetDatabaseName(dbName string, envName string) string {
+	return dbName + "-" + envName
 }
