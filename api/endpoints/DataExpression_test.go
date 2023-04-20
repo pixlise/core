@@ -986,15 +986,12 @@ func Test_dataExpressionHandler_ExecStatPut(t *testing.T) {
 			mtest.CreateSuccessResponse(bson.E{Key: "nModified", Value: 1}, bson.E{Key: "n", Value: 1}),
 			// GET 2 returns no existing item
 			mtest.CreateCursorResponse(
-				1,
+				0,
 				"expressions-unit_test.expressions",
 				mtest.FirstBatch,
 			),
-			mtest.CreateCursorResponse(
-				0,
-				"expressions-unit_test.expressions",
-				mtest.NextBatch,
-			),
+			// PUT success
+			mtest.CreateSuccessResponse(bson.E{Key: "nModified", Value: 1}, bson.E{Key: "n", Value: 1}),
 		}
 
 		mt.AddMockResponses(mongoMockedResponses...)
@@ -1004,7 +1001,7 @@ func Test_dataExpressionHandler_ExecStatPut(t *testing.T) {
 
 		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 		svcs.TimeStamper = &timestamper.MockTimeNowStamper{
-			QueuedTimeStamps: []int64{1668100001, 1668100002},
+			QueuedTimeStamps: []int64{1668100001, 1668100002, 1668100003},
 		}
 		envName := "unit_test"
 		svcs.Mongo = mt.Client
@@ -1025,7 +1022,7 @@ func Test_dataExpressionHandler_ExecStatPut(t *testing.T) {
 		// Note: timestamp should be ignored!
 		putItem = `{
 			"dataRequired": ["Ca", "Fe"],
-			"runtimeMs": 340,
+			"runtimeMs": 345,
 			"mod_unix_time_sec": 1234567890
 		}`
 
@@ -1037,7 +1034,7 @@ func Test_dataExpressionHandler_ExecStatPut(t *testing.T) {
         "Ca",
         "Fe"
     ],
-    "runtimeMs": 340,
+    "runtimeMs": 345,
     "mod_unix_time_sec": 1668100001
 }
 `)
@@ -1045,13 +1042,34 @@ func Test_dataExpressionHandler_ExecStatPut(t *testing.T) {
 		// Non-existant expression ID
 		putItem = `{
 			"dataRequired": ["Ca", "Fe"],
-			"runtimeMs": 340,
+			"runtimeMs": 350,
 			"mod_unix_time_sec": 1234567890
 		}`
 		req, _ = http.NewRequest("PUT", "/data-expression/execution-stat/aaa123", bytes.NewReader([]byte(putItem)))
 		resp = executeRequest(req, apiRouter.Router)
 
 		checkResult(t, resp, 404, `aaa123 not found
+`)
+
+		// Shared item, verify that it looks up the right ID and stores
+		putItem = `{
+			"dataRequired": ["Ca", "Fe", "Ti"],
+			"runtimeMs": 360,
+			"mod_unix_time_sec": 1234567890
+		}`
+
+		req, _ = http.NewRequest("PUT", "/data-expression/execution-stat/shared-aaa777", bytes.NewReader([]byte(putItem)))
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 200, `{
+    "dataRequired": [
+        "Ca",
+        "Fe",
+        "Ti"
+    ],
+    "runtimeMs": 360,
+    "mod_unix_time_sec": 1668100003
+}
 `)
 	})
 }
