@@ -16,6 +16,8 @@ if [ -e ./generated/diffraction/diffraction.pb.go ]
 fi
 
 # NOTE: Make sure protoc-gen-go is in path so protoc works
+# Since Go 1.17, thi should get it ready:
+# go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 protoc --go_out=./generated-protos/ ./data-formats/experiment.proto
 protoc --go_out=./generated-protos/ ./data-formats/quantification.proto
 protoc --go_out=./generated-protos/ ./data-formats/diffraction.proto
