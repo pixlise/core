@@ -18,10 +18,10 @@
 package expressionDB
 
 import (
-	"github.com/pixlise/core/v2/api/config"
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v3/api/config"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/logger"
 )
 
 func makeMockSvcs(idGen services.IDGenerator) services.APIServices {

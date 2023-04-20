@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/pixlise/core/v2/core/logger"
-	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
-	protos "github.com/pixlise/core/v2/generated-protos"
+	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v3/data-import/internal/dataConvertModels"
+	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
 func ReadHousekeepingFile(path string, headerRowCount int, jobLog logger.ILogger) (dataConvertModels.HousekeepingData, error) {

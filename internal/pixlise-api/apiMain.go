@@ -27,24 +27,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/v2/core/notifications"
-	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v3/core/notifications"
+	"github.com/pixlise/core/v3/core/pixlUser"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gorilla/handlers"
 
-	"github.com/pixlise/core/v2/api/config"
-	"github.com/pixlise/core/v2/api/endpoints"
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/api"
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v3/api/config"
+	"github.com/pixlise/core/v3/api/endpoints"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/api"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/utils"
 
 	_ "net/http/pprof"
 
-	"github.com/pixlise/core/v2/core/export"
+	"github.com/pixlise/core/v3/core/export"
 
-	expressionDB "github.com/pixlise/core/v2/core/expressions/database"
+	expressionDB "github.com/pixlise/core/v3/core/expressions/database"
 )
 
 func printRoutePermissions(routePermissions map[string]string) {

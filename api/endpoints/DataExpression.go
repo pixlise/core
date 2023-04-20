@@ -24,15 +24,15 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/pixlise/core/v2/api/handlers"
-	"github.com/pixlise/core/v2/api/permission"
-	apiRouter "github.com/pixlise/core/v2/api/router"
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/api"
-	"github.com/pixlise/core/v2/core/expressions/expressions"
-	"github.com/pixlise/core/v2/core/expressions/modules"
-	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/api/permission"
+	apiRouter "github.com/pixlise/core/v3/api/router"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/api"
+	"github.com/pixlise/core/v3/core/expressions/expressions"
+	"github.com/pixlise/core/v3/core/expressions/modules"
+	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/utils"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -226,10 +226,13 @@ func dataExpressionExecutionStatPut(params handlers.ApiHandlerParams) (interface
 		return nil, api.MakeBadRequestError(err)
 	}
 
+	// Get the id, stripped of shared- otherwise we can't find it
+	strippedID, _ := utils.StripSharedItemIDPrefix(itemID)
+
 	// Set the time stamp to now
 	req.TimeStampUnixSec = params.Svcs.TimeStamper.GetTimeNowSec()
 
-	return req, params.Svcs.Expressions.StoreExpressionRecentRunStats(itemID, req)
+	return req, params.Svcs.Expressions.StoreExpressionRecentRunStats(strippedID, req)
 }
 
 func dataExpressionDelete(params handlers.ApiHandlerParams) (interface{}, error) {

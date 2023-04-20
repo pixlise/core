@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"html/template"
 
-	"github.com/pixlise/core/v2/core/logger"
-	textTemplates "github.com/pixlise/core/v2/core/notifications/templates"
-	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v3/core/logger"
+	textTemplates "github.com/pixlise/core/v3/core/notifications/templates"
+	"github.com/pixlise/core/v3/core/pixlUser"
 )
 
 const (

@@ -27,11 +27,11 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sns"
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/api"
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/utils"
-	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/api"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/utils"
+	datasetArchive "github.com/pixlise/core/v3/data-import/dataset-archive"
 )
 
 // One of the 2 SNS messages we accept. The other is an AWS S3 event message

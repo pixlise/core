@@ -25,13 +25,13 @@ import (
 	"path"
 	"strings"
 
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/expressions/expressions"
-	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/logger"
-	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
-	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/expressions/expressions"
+	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/logger"
+	mongoDBConnection "github.com/pixlise/core/v3/core/mongo"
+	"github.com/pixlise/core/v3/core/pixlUser"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

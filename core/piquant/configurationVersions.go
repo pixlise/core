@@ -20,8 +20,8 @@ package piquant
 import (
 	"strings"
 
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/services"
 )
 
 // PIQUANT config versioning

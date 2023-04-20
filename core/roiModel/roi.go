@@ -22,13 +22,13 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/api"
-	datasetModel "github.com/pixlise/core/v2/core/dataset"
-	"github.com/pixlise/core/v2/core/pixlUser"
-	"github.com/pixlise/core/v2/core/utils"
-	protos "github.com/pixlise/core/v2/generated-protos"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/api"
+	datasetModel "github.com/pixlise/core/v3/core/dataset"
+	"github.com/pixlise/core/v3/core/pixlUser"
+	"github.com/pixlise/core/v3/core/utils"
+	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
 type MistROIItem struct {

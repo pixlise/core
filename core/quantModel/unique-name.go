@@ -20,8 +20,8 @@ package quantModel
 import (
 	"sync"
 
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/services"
 )
 
 func CheckQuantificationNameExists(name string, datasetID string, userID string, svcs *services.APIServices) bool {

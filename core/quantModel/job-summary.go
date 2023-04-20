@@ -18,8 +18,8 @@
 package quantModel
 
 import (
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/core/fileaccess"
 )
 
 // JobSummaryItem all metadata stored for an individual job/quant file (even after it was generated)

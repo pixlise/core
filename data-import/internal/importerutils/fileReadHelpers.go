@@ -25,9 +25,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/pixlise/core/v2/core/logger"
-	gdsfilename "github.com/pixlise/core/v2/data-import/gds-filename"
-	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
+	"github.com/pixlise/core/v3/core/logger"
+	gdsfilename "github.com/pixlise/core/v3/data-import/gds-filename"
+	"github.com/pixlise/core/v3/data-import/internal/dataConvertModels"
 )
 
 func ReadCSV(filePath string, headerIdx int, sep rune, jobLog logger.ILogger) ([][]string, error) {

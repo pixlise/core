@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pixlise/core/v2/api/handlers"
-	apiRouter "github.com/pixlise/core/v2/api/router"
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/api"
-	"github.com/pixlise/core/v2/core/piquant"
+	"github.com/pixlise/core/v3/api/handlers"
+	apiRouter "github.com/pixlise/core/v3/api/router"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/api"
+	"github.com/pixlise/core/v3/core/piquant"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

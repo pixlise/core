@@ -20,7 +20,7 @@ package dataset
 import (
 	"fmt"
 
-	protos "github.com/pixlise/core/v2/generated-protos"
+	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
 // GetDetectorMetaValue - Has to do the same job as the function with the same name in PIXLISE DataSets.ts:

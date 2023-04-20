@@ -22,9 +22,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pixlise/core/v2/core/dataset"
-	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v3/core/dataset"
+	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/logger"
 )
 
 func initTest(testDir string) (fileaccess.FileAccess, *logger.StdOutLoggerForTest, string, string, string, string) {

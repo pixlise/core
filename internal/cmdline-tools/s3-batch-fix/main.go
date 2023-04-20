@@ -32,14 +32,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/pixlise/core/v2/api/endpoints"
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/expressions/expressions"
-	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/pixlUser"
-	"github.com/pixlise/core/v2/core/roiModel"
-	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v3/api/endpoints"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/expressions/expressions"
+	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/pixlUser"
+	"github.com/pixlise/core/v3/core/roiModel"
+	"github.com/pixlise/core/v3/core/utils"
 )
 
 // What to do:

@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v3/core/pixlUser"
 )
 
 // DataModuleInput - This defines a "module" of code that can be used as part of expressions. At the time

@@ -27,14 +27,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/v2/core/api"
-	datasetModel "github.com/pixlise/core/v2/core/dataset"
-	"github.com/pixlise/core/v2/core/utils"
-	dataConverter "github.com/pixlise/core/v2/data-import/data-converter"
-	"github.com/pixlise/core/v2/data-import/importer"
+	"github.com/pixlise/core/v3/core/api"
+	datasetModel "github.com/pixlise/core/v3/core/dataset"
+	"github.com/pixlise/core/v3/core/utils"
+	dataConverter "github.com/pixlise/core/v3/data-import/data-converter"
+	"github.com/pixlise/core/v3/data-import/importer"
 
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/api/handlers"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/handlers"
 )
 
 // NOTE: No registration function here, this sits in the dataset registration function, shares paths with it. Only separated

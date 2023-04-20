@@ -24,14 +24,14 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/api/handlers"
-	"github.com/pixlise/core/v2/api/permission"
-	apiRouter "github.com/pixlise/core/v2/api/router"
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/api"
-	"github.com/pixlise/core/v2/core/pixlUser"
-	tagModel "github.com/pixlise/core/v2/core/tagModel"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/api/permission"
+	apiRouter "github.com/pixlise/core/v3/api/router"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/api"
+	"github.com/pixlise/core/v3/core/pixlUser"
+	tagModel "github.com/pixlise/core/v3/core/tagModel"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

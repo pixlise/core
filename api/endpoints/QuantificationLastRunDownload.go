@@ -22,10 +22,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/api/handlers"
-	"github.com/pixlise/core/v2/api/permission"
-	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/api/permission"
+	"github.com/pixlise/core/v3/core/api"
 )
 
 func quantificationLastRunFileStream(params handlers.ApiHandlerStreamParams) (*s3.GetObjectOutput, string, error) {

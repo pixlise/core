@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v3/core/awsutil"
 )
 
 func Example_registerExportHandlerSunny() {

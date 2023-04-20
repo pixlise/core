@@ -26,7 +26,7 @@ build-linux:
 	mkdir -p _out
 	echo "version: ${BUILD_VERSION}"
 	echo "sha: ${GITHUB_SHA}"
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v2/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v2/api/services.GitHash=${GITHUB_SHA}'" -v -o ./_out/pixlise-api-linux ./internal/pixlise-api
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v3/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v3/api/services.GitHash=${GITHUB_SHA}'" -v -o ./_out/pixlise-api-linux ./internal/pixlise-api
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/jobupdater-linux ./internal/lambdas/quant-job-updater
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/datasourceupdater-linux ./internal/lambdas/dataset-tile-updater
 	GOOS=linux GOARCH=amd64 go build -v -o ./_out/integrationtest-linux ./internal/cmdline-tools/api-integration-test

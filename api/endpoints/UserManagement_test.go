@@ -31,8 +31,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 	"gopkg.in/auth0.v4/management"
 
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/awsutil"
 )
 
 // TODO: this is not really a unit test, as it calls out to Auth0 and interacts with a test user, adding/removing a role!

@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/logger"
 )
 
 func AddToDatasetArchive(remoteFS fileaccess.FileAccess, log logger.ILogger, datasetBucket string, sourceBucket string, sourceFilePath string) (bool, error) {

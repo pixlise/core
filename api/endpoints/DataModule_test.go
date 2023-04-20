@@ -23,9 +23,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/pixlise/core/v2/core/awsutil"
+	"github.com/pixlise/core/v3/core/awsutil"
 
-	expressionDB "github.com/pixlise/core/v2/core/expressions/database"
+	expressionDB "github.com/pixlise/core/v3/core/expressions/database"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"

@@ -29,18 +29,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/v2/api/handlers"
-	"github.com/pixlise/core/v2/api/permission"
-	apiRouter "github.com/pixlise/core/v2/api/router"
-	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/api/permission"
+	apiRouter "github.com/pixlise/core/v3/api/router"
+	"github.com/pixlise/core/v3/api/services"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v2/api/filepaths"
-	datasetModel "github.com/pixlise/core/v2/core/dataset"
-	"github.com/pixlise/core/v2/core/fileaccess"
-	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
-	"github.com/pixlise/core/v2/data-import/importer"
+	"github.com/pixlise/core/v3/api/filepaths"
+	datasetModel "github.com/pixlise/core/v3/core/dataset"
+	"github.com/pixlise/core/v3/core/fileaccess"
+	datasetArchive "github.com/pixlise/core/v3/data-import/dataset-archive"
+	"github.com/pixlise/core/v3/data-import/importer"
 )
 
 const datasetURLEnd = "dataset"

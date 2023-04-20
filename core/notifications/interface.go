@@ -17,7 +17,7 @@
 
 package notifications
 
-import "github.com/pixlise/core/v2/core/pixlUser"
+import "github.com/pixlise/core/v3/core/pixlUser"
 
 type NotificationManager interface {
 	// Sending notifications
