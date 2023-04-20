@@ -18,9 +18,9 @@
 package expressionStorage
 
 import (
-	"github.com/pixlise/core/v2/core/expressions/expressions"
-	"github.com/pixlise/core/v2/core/expressions/modules"
-	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v3/core/expressions/expressions"
+	"github.com/pixlise/core/v3/core/expressions/modules"
+	"github.com/pixlise/core/v3/core/pixlUser"
 )
 
 type ExpressionDB interface {

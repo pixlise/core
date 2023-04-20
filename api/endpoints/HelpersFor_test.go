@@ -25,18 +25,18 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/notifications"
+	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/notifications"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 
-	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v3/core/pixlUser"
 
 	"github.com/gorilla/mux"
-	"github.com/pixlise/core/v2/api/config"
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v3/api/config"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/logger"
 )
 
 const DatasetsBucketForUnitTest = "datasets-bucket"

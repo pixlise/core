@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/pixlise/core/v2/api/handlers"
-	"github.com/pixlise/core/v2/api/permission"
-	apiRouter "github.com/pixlise/core/v2/api/router"
-	"github.com/pixlise/core/v2/core/api"
+	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/api/permission"
+	apiRouter "github.com/pixlise/core/v3/api/router"
+	"github.com/pixlise/core/v3/core/api"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

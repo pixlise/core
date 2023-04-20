@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/pixlise/core/v2/core/logger"
-	"github.com/pixlise/core/v2/core/utils"
-	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
+	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v3/core/utils"
+	"github.com/pixlise/core/v3/data-import/internal/dataConvertModels"
 )
 
 func ReadPseudoIntensityRangesFile(path string, jobLog logger.ILogger) ([]dataConvertModels.PseudoIntensityRange, error) {

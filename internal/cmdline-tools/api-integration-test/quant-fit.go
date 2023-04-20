@@ -25,7 +25,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pixlise/core/v2/core/quantModel"
+	"github.com/pixlise/core/v3/core/quantModel"
 )
 
 // Runs a quantification and checks that it steps through the expected states

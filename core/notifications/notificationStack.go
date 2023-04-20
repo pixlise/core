@@ -24,11 +24,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	cmap "github.com/orcaman/concurrent-map"
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/logger"
-	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
-	"github.com/pixlise/core/v2/core/pixlUser"
-	"github.com/pixlise/core/v2/core/timestamper"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/logger"
+	mongoDBConnection "github.com/pixlise/core/v3/core/mongo"
+	"github.com/pixlise/core/v3/core/pixlUser"
+	"github.com/pixlise/core/v3/core/timestamper"
 )
 
 // NotificationStack - Thing that manages user notifications on UI and email including preferences

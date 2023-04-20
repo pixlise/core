@@ -24,10 +24,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/pixlUser"
-	"github.com/pixlise/core/v2/core/roiModel"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/pixlUser"
+	"github.com/pixlise/core/v3/core/roiModel"
 )
 
 /*
@@ -43,39 +43,39 @@ import (
 
 3 elements => 2.10sec/spectra
 3 elements => 2.22sec/spectra
-  3 elems jumped 1.09sec
+	3 elems jumped 1.09sec
 6 elements => 3.31sec/spectra
-  3 elems jumped 0.71sec
+	3 elems jumped 0.71sec
 9 elements => 4.02sec/spectra
 
 Assumptions:
-- Lets make this calcatable: 9elem=4sec/spectra, 3elem = 2sec/spectra, linearly interpolate in this range
-- Works out to elements = 3*sec - 3
-- To calculate node count, we are given Core count, Runtime desired, Spectra count, Element count
-- Using the above:
-  Runtime = Spectra*SpectraRuntime / (Core*Nodes)
-  Nodes = Spectra*SpectraRuntime / (Runtime * Core)
+  - Lets make this calcatable: 9elem=4sec/spectra, 3elem = 2sec/spectra, linearly interpolate in this range
+  - Works out to elements = 3*sec - 3
+  - To calculate node count, we are given Core count, Runtime desired, Spectra count, Element count
+  - Using the above:
+    Runtime = Spectra*SpectraRuntime / (Core*Nodes)
+    Nodes = Spectra*SpectraRuntime / (Runtime * Core)
 
-  SpectraRuntime is calculated using the above formula:
-  Elements = 3 * Sec - 3
-  SpectraRuntime = (Elements+3) / 3
+    SpectraRuntime is calculated using the above formula:
+    Elements = 3 * Sec - 3
+    SpectraRuntime = (Elements+3) / 3
 
-  Nodes = Spectra*((Elements + 3) / 3) / (RuntimeDesired * Cores)
-  Nodes = Spectra*(Elements+3) / 3*(RuntimeDesired * Cores)
+    Nodes = Spectra*((Elements + 3) / 3) / (RuntimeDesired * Cores)
+    Nodes = Spectra*(Elements+3) / 3*(RuntimeDesired * Cores)
 
-  Example using the values from above:
-  Nodes = 8070*(3+3)/(3*120*8)
-  Nodes = 8070*6/5088 = 9.5, close to 10
+    Example using the values from above:
+    Nodes = 8070*(3+3)/(3*120*8)
+    Nodes = 8070*6/5088 = 9.5, close to 10
 
-  Nodes = 8070*(9+3)/(3*203*8)
-  Nodes = 96840 / 4872 = 19.9, close to 20
+    Nodes = 8070*(9+3)/(3*203*8)
+    Nodes = 96840 / 4872 = 19.9, close to 20
 
-  Nodes = 8070*(6+3)/(3*167*8)
-  Nodes = 72630 / 4008 = 18.12, close to 20
+    Nodes = 8070*(6+3)/(3*167*8)
+    Nodes = 72630 / 4008 = 18.12, close to 20
 
-  If we're happy to run 6 elems, 8070 spectra, 8 cores in 5 minutes:
-  Nodes = 8070*(6+3) / (3*300*8)
-  Nodes = 72630 / 7200 = 10 nodes... seems reasonable
+    If we're happy to run 6 elems, 8070 spectra, 8 cores in 5 minutes:
+    Nodes = 8070*(6+3) / (3*300*8)
+    Nodes = 72630 / 7200 = 10 nodes... seems reasonable
 */
 func Example_estimateNodeCount() {
 	// Based on experimental runs in: https://github.com/pixlise/core/-/issues/113

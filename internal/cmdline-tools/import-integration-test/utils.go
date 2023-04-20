@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v3/core/fileaccess"
 )
 
 const timeFormat = "15:04:05" // "2006-01-02 15:04:05"

@@ -10,12 +10,12 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/api"
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/logger"
-	"github.com/pixlise/core/v2/core/notifications"
-	"github.com/pixlise/core/v2/core/timestamper"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/api"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v3/core/notifications"
+	"github.com/pixlise/core/v3/core/timestamper"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 

@@ -22,7 +22,7 @@ import (
 	"errors"
 	"sync"
 
-	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
+	mongoDBConnection "github.com/pixlise/core/v3/core/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

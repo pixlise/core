@@ -20,7 +20,7 @@ package quantModel
 import (
 	"fmt"
 
-	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v3/core/logger"
 )
 
 func Example_filterListItems() {

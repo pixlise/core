@@ -25,16 +25,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/pixlise/core/v2/api/config"
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/awsutil"
-	expressionDB "github.com/pixlise/core/v2/core/expressions/database"
-	"github.com/pixlise/core/v2/core/expressions/expressions"
-	"github.com/pixlise/core/v2/core/expressions/modules"
-	"github.com/pixlise/core/v2/core/logger"
-	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
-	"github.com/pixlise/core/v2/core/pixlUser"
-	"github.com/pixlise/core/v2/core/timestamper"
+	"github.com/pixlise/core/v3/api/config"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/awsutil"
+	expressionDB "github.com/pixlise/core/v3/core/expressions/database"
+	"github.com/pixlise/core/v3/core/expressions/expressions"
+	"github.com/pixlise/core/v3/core/expressions/modules"
+	"github.com/pixlise/core/v3/core/logger"
+	mongoDBConnection "github.com/pixlise/core/v3/core/mongo"
+	"github.com/pixlise/core/v3/core/pixlUser"
+	"github.com/pixlise/core/v3/core/timestamper"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -263,7 +263,7 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 		"exp2",
 		expressions.DataExpressionExecStats{
 			DataRequired:     []string{"elem-Ca", "elem-Fe", "data-ChiSq", "pseudo-Na", "spectrum"},
-			RuntimeMS:        233,
+			RuntimeMS:        23.3,
 			TimeStampUnixSec: 1234500006,
 		},
 	)

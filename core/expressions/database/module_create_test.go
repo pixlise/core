@@ -20,11 +20,11 @@ package expressionDB
 import (
 	"testing"
 
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/expressions/modules"
-	"github.com/pixlise/core/v2/core/pixlUser"
-	"github.com/pixlise/core/v2/core/timestamper"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/expressions/modules"
+	"github.com/pixlise/core/v3/core/pixlUser"
+	"github.com/pixlise/core/v3/core/timestamper"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )

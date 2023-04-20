@@ -21,9 +21,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/expressions/modules"
-	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/expressions/modules"
+	"github.com/pixlise/core/v3/core/pixlUser"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"

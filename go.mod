@@ -1,4 +1,4 @@
-module github.com/pixlise/core/v2
+module github.com/pixlise/core/v3
 
 go 1.18
 

@@ -25,13 +25,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/logger"
-	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
-	gdsfilename "github.com/pixlise/core/v2/data-import/gds-filename"
-	converter "github.com/pixlise/core/v2/data-import/internal/data-converters/interface"
-	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
-	"github.com/pixlise/core/v2/data-import/internal/importerutils"
+	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/logger"
+	datasetArchive "github.com/pixlise/core/v3/data-import/dataset-archive"
+	gdsfilename "github.com/pixlise/core/v3/data-import/gds-filename"
+	converter "github.com/pixlise/core/v3/data-import/internal/data-converters/interface"
+	"github.com/pixlise/core/v3/data-import/internal/dataConvertModels"
+	"github.com/pixlise/core/v3/data-import/internal/importerutils"
 )
 
 type CombinedDatasetImport struct {

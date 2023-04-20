@@ -22,9 +22,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/api"
-	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/api"
+	"github.com/pixlise/core/v3/core/logger"
 )
 
 const HostParamName = "hostname"

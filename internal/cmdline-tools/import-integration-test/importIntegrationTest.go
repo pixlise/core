@@ -26,9 +26,9 @@ import (
 	"path"
 	"time"
 
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/fileaccess"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/fileaccess"
 )
 
 const testDatasetID = "000000001"                          // an ID (RTT) that wouldn't ever come from OCS

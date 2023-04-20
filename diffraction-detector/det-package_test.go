@@ -21,7 +21,7 @@ import (
 	"math"
 	"testing"
 
-	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	datasetModel "github.com/pixlise/core/v3/core/dataset"
 )
 
 func TestProtobuf(t *testing.T) {

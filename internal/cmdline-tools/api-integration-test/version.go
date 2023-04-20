@@ -24,7 +24,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pixlise/core/v2/api/endpoints"
+	"github.com/pixlise/core/v3/api/endpoints"
 )
 
 // Checks API version is valid (just as a string, checks with regex, does not check against an expected deployed version!)

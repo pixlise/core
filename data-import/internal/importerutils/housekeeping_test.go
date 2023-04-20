@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"sort"
 
-	protos "github.com/pixlise/core/v2/generated-protos"
+	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
 func Example_scanHousekeepingData() {

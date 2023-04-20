@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pixlise/core/v2/api/config"
-	"github.com/pixlise/core/v2/core/logger"
-	"github.com/pixlise/core/v2/core/pixlUser"
-	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v3/api/config"
+	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v3/core/pixlUser"
+	"github.com/pixlise/core/v3/core/utils"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -224,7 +224,7 @@ func (k *KubeHelper) getPodObject(cmd []string, args []string, env map[string]st
 	optional := true
 	envvar := []apiv1.EnvVar{
 		{Name: "PYTHONUNBUFFERED", Value: "TRUE"},
-		{  // TODO: Remove this or change how it is injected once we pick the ocs-poster work back up
+		{ // TODO: Remove this or change how it is injected once we pick the ocs-poster work back up
 			Name: "credss_password",
 			ValueFrom: &apiv1.EnvVarSource{
 				SecretKeyRef: &apiv1.SecretKeySelector{
