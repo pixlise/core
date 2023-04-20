@@ -25,8 +25,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pixlise/core/v2/core/auth0login"
-	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v3/core/auth0login"
+	"github.com/pixlise/core/v3/core/utils"
 )
 
 func main() {

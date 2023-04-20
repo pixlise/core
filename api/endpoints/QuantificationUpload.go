@@ -23,9 +23,9 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/pixlise/core/v2/api/handlers"
-	"github.com/pixlise/core/v2/core/api"
-	"github.com/pixlise/core/v2/core/quantModel"
+	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/core/api"
+	"github.com/pixlise/core/v3/core/quantModel"
 )
 
 // Users can also upload a compatible CSV file which we can convert into a quantification that's usable inside PIXLISE

@@ -20,7 +20,7 @@ package quantModel
 import (
 	"strings"
 
-	protos "github.com/pixlise/core/v2/generated-protos"
+	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
 // GetWeightPercentColumnsInQuant - returns weight % columns, ones ending in _%

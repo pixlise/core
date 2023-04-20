@@ -25,19 +25,19 @@ import (
 	"os"
 	"time"
 
-	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
-	"github.com/pixlise/core/v2/core/timestamper"
+	mongoDBConnection "github.com/pixlise/core/v3/core/mongo"
+	"github.com/pixlise/core/v3/core/timestamper"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/logger"
-	apiNotifications "github.com/pixlise/core/v2/core/notifications"
-	"github.com/pixlise/core/v2/data-import/importer"
-	"github.com/pixlise/core/v2/data-import/importtime"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/logger"
+	apiNotifications "github.com/pixlise/core/v3/core/notifications"
+	"github.com/pixlise/core/v3/data-import/importer"
+	"github.com/pixlise/core/v3/data-import/importtime"
 )
 
 func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {

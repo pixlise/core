@@ -3,12 +3,12 @@ package endpoints
 import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/pixlise/core/v2/api/handlers"
-	"github.com/pixlise/core/v2/api/permission"
-	apiRouter "github.com/pixlise/core/v2/api/router"
-	"github.com/pixlise/core/v2/core/api"
-	"github.com/pixlise/core/v2/core/cloudwatch"
-	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/api/permission"
+	apiRouter "github.com/pixlise/core/v3/api/router"
+	"github.com/pixlise/core/v3/core/api"
+	"github.com/pixlise/core/v3/core/cloudwatch"
+	"github.com/pixlise/core/v3/core/logger"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

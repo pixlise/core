@@ -29,13 +29,13 @@ import (
 	"strconv"
 	"testing"
 
-	datasetModel "github.com/pixlise/core/v2/core/dataset"
-	"github.com/pixlise/core/v2/core/pixlUser"
-	"github.com/pixlise/core/v2/core/quantModel"
-	"github.com/pixlise/core/v2/core/roiModel"
-	"github.com/pixlise/core/v2/core/timestamper"
-	"github.com/pixlise/core/v2/core/utils"
-	protos "github.com/pixlise/core/v2/generated-protos"
+	datasetModel "github.com/pixlise/core/v3/core/dataset"
+	"github.com/pixlise/core/v3/core/pixlUser"
+	"github.com/pixlise/core/v3/core/quantModel"
+	"github.com/pixlise/core/v3/core/roiModel"
+	"github.com/pixlise/core/v3/core/timestamper"
+	"github.com/pixlise/core/v3/core/utils"
+	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
 func Test_makeMarkupImage(t *testing.T) {

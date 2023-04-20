@@ -22,11 +22,11 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/api/handlers"
-	"github.com/pixlise/core/v2/api/permission"
-	"github.com/pixlise/core/v2/core/quantModel"
-	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/api/permission"
+	"github.com/pixlise/core/v3/core/quantModel"
+	"github.com/pixlise/core/v3/core/utils"
 )
 
 // TODO: need to write unit test for this! At the time it was deamed difficult because we talk to cloudwatch, but no longer the case

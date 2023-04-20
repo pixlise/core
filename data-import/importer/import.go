@@ -20,12 +20,12 @@ package importer
 import (
 	"fmt"
 
-	"github.com/pixlise/core/v2/core/awsutil"
-	datasetModel "github.com/pixlise/core/v2/core/dataset"
-	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/logger"
-	dataConverter "github.com/pixlise/core/v2/data-import/data-converter"
-	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
+	"github.com/pixlise/core/v3/core/awsutil"
+	datasetModel "github.com/pixlise/core/v3/core/dataset"
+	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/logger"
+	dataConverter "github.com/pixlise/core/v3/data-import/data-converter"
+	datasetArchive "github.com/pixlise/core/v3/data-import/dataset-archive"
 )
 
 // Structure returned after importing

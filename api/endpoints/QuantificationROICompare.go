@@ -24,13 +24,13 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/pixlise/core/v2/api/handlers"
-	"github.com/pixlise/core/v2/core/api"
-	datasetModel "github.com/pixlise/core/v2/core/dataset"
-	"github.com/pixlise/core/v2/core/downloader"
-	"github.com/pixlise/core/v2/core/quantModel"
-	"github.com/pixlise/core/v2/core/utils"
-	protos "github.com/pixlise/core/v2/generated-protos"
+	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/core/api"
+	datasetModel "github.com/pixlise/core/v3/core/dataset"
+	"github.com/pixlise/core/v3/core/downloader"
+	"github.com/pixlise/core/v3/core/quantModel"
+	"github.com/pixlise/core/v3/core/utils"
+	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
 type MultiQuantificationComparisonRequest struct {

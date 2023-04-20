@@ -21,8 +21,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pixlise/core/v2/core/pixlUser"
-	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v3/core/pixlUser"
+	"github.com/pixlise/core/v3/core/utils"
 )
 
 // All the structures in a view state config, and their "make" functions:

@@ -17,7 +17,7 @@
 
 package quantModel
 
-import "github.com/pixlise/core/v2/core/pixlUser"
+import "github.com/pixlise/core/v3/core/pixlUser"
 
 // Structures, constants and functionality of a quantification job
 

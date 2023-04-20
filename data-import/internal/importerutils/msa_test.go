@@ -20,7 +20,7 @@ package importerutils
 import (
 	"fmt"
 
-	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
+	"github.com/pixlise/core/v3/data-import/internal/dataConvertModels"
 )
 
 func Example_ReadMSAFileLines() {

@@ -18,8 +18,8 @@
 package expressionDB
 
 import (
-	"github.com/pixlise/core/v2/api/services"
-	mongoDBConnection "github.com/pixlise/core/v2/core/mongo"
+	"github.com/pixlise/core/v3/api/services"
+	mongoDBConnection "github.com/pixlise/core/v3/core/mongo"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

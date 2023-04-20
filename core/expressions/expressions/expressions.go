@@ -18,7 +18,7 @@
 package expressions
 
 import (
-	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v3/core/pixlUser"
 )
 
 // What users send in POST and PUT

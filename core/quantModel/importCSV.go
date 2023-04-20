@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/api"
-	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/api"
+	"github.com/pixlise/core/v3/core/pixlUser"
 )
 
 func ImportQuantCSV(svcs *services.APIServices, datasetID string, importUser pixlUser.UserInfo, csvBody string, csvOrigin string, idPrefix string, quantName string, quantModeEnum string, comments string) (string, error) {

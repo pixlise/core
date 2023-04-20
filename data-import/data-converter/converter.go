@@ -26,20 +26,20 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/core/dataset"
-	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/core/dataset"
+	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/logger"
 
-	datasetModel "github.com/pixlise/core/v2/core/dataset"
-	datasetArchive "github.com/pixlise/core/v2/data-import/dataset-archive"
-	"github.com/pixlise/core/v2/data-import/internal/data-converters/combined"
-	converter "github.com/pixlise/core/v2/data-import/internal/data-converters/interface"
-	"github.com/pixlise/core/v2/data-import/internal/data-converters/jplbreadboard"
-	"github.com/pixlise/core/v2/data-import/internal/data-converters/pixlfm"
-	"github.com/pixlise/core/v2/data-import/internal/data-converters/soff"
-	"github.com/pixlise/core/v2/data-import/output"
-	diffractionDetection "github.com/pixlise/core/v2/diffraction-detector"
+	datasetModel "github.com/pixlise/core/v3/core/dataset"
+	datasetArchive "github.com/pixlise/core/v3/data-import/dataset-archive"
+	"github.com/pixlise/core/v3/data-import/internal/data-converters/combined"
+	converter "github.com/pixlise/core/v3/data-import/internal/data-converters/interface"
+	"github.com/pixlise/core/v3/data-import/internal/data-converters/jplbreadboard"
+	"github.com/pixlise/core/v3/data-import/internal/data-converters/pixlfm"
+	"github.com/pixlise/core/v3/data-import/internal/data-converters/soff"
+	"github.com/pixlise/core/v3/data-import/output"
+	diffractionDetection "github.com/pixlise/core/v3/diffraction-detector"
 )
 
 // All dataset conversions are started through here. This can contain multiple implementations

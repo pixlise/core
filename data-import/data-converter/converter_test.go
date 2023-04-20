@@ -20,7 +20,7 @@ package dataConverter
 import (
 	"fmt"
 
-	"github.com/pixlise/core/v2/core/dataset"
+	"github.com/pixlise/core/v3/core/dataset"
 )
 
 func Example_getUpdateType_NormalSpectra() {

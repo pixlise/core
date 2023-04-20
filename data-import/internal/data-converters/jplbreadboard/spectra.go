@@ -25,10 +25,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/v2/core/logger"
-	"github.com/pixlise/core/v2/core/utils"
-	"github.com/pixlise/core/v2/data-import/internal/dataConvertModels"
-	"github.com/pixlise/core/v2/data-import/internal/importerutils"
+	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v3/core/utils"
+	"github.com/pixlise/core/v3/data-import/internal/dataConvertModels"
+	"github.com/pixlise/core/v3/data-import/internal/importerutils"
 )
 
 func getSpectraFiles(allFiles []string, verifyReadType bool, jobLog logger.ILogger) ([]string, []string) {

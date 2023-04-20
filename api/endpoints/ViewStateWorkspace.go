@@ -27,14 +27,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pixlise/core/v2/api/filepaths"
-	"github.com/pixlise/core/v2/api/handlers"
-	"github.com/pixlise/core/v2/api/services"
-	"github.com/pixlise/core/v2/core/api"
-	"github.com/pixlise/core/v2/core/pixlUser"
-	"github.com/pixlise/core/v2/core/quantModel"
-	"github.com/pixlise/core/v2/core/roiModel"
-	"github.com/pixlise/core/v2/core/utils"
+	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/api"
+	"github.com/pixlise/core/v3/core/pixlUser"
+	"github.com/pixlise/core/v3/core/quantModel"
+	"github.com/pixlise/core/v3/core/roiModel"
+	"github.com/pixlise/core/v3/core/utils"
 )
 
 type Workspace struct {

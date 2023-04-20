@@ -28,10 +28,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/v2/api/endpoints"
-	"github.com/pixlise/core/v2/core/quantModel"
-	"github.com/pixlise/core/v2/core/utils"
-	protos "github.com/pixlise/core/v2/generated-protos"
+	"github.com/pixlise/core/v3/api/endpoints"
+	"github.com/pixlise/core/v3/core/quantModel"
+	"github.com/pixlise/core/v3/core/utils"
+	protos "github.com/pixlise/core/v3/generated-protos"
 	"google.golang.org/protobuf/proto"
 )
 

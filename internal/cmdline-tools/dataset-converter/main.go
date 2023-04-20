@@ -24,13 +24,13 @@ import (
 	"log"
 	"os"
 
-	"github.com/pixlise/core/v2/core/awsutil"
-	"github.com/pixlise/core/v2/core/fileaccess"
-	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/logger"
 
-	datasetModel "github.com/pixlise/core/v2/core/dataset"
-	dataConverter "github.com/pixlise/core/v2/data-import/data-converter"
-	"github.com/pixlise/core/v2/data-import/importer"
+	datasetModel "github.com/pixlise/core/v3/core/dataset"
+	dataConverter "github.com/pixlise/core/v3/data-import/data-converter"
+	"github.com/pixlise/core/v3/data-import/importer"
 )
 
 func main() {

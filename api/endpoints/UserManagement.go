@@ -23,11 +23,11 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/pixlise/core/v2/api/config"
-	"github.com/pixlise/core/v2/api/handlers"
-	"github.com/pixlise/core/v2/api/permission"
-	apiRouter "github.com/pixlise/core/v2/api/router"
-	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v3/api/config"
+	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/api/permission"
+	apiRouter "github.com/pixlise/core/v3/api/router"
+	"github.com/pixlise/core/v3/core/pixlUser"
 	"gopkg.in/auth0.v4/management"
 )
 

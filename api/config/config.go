@@ -29,7 +29,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/v2/core/logger"
+	"github.com/pixlise/core/v3/core/logger"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,7 +42,7 @@ type APIConfig struct {
 	Auth0Domain             string
 	Auth0ManagementClientID string
 	Auth0ManagementSecret   string
-	Auth0NewUserRoleID 		string
+	Auth0NewUserRoleID      string
 
 	BuildsBucket string // Piquant download bucket
 	ConfigBucket string

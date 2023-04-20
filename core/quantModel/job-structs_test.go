@@ -20,7 +20,7 @@ package quantModel
 import (
 	"fmt"
 
-	"github.com/pixlise/core/v2/core/pixlUser"
+	"github.com/pixlise/core/v3/core/pixlUser"
 )
 
 // Making sure our embedded structure copying works

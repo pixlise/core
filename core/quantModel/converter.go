@@ -27,9 +27,9 @@ import (
 	"strconv"
 	"strings"
 
-	datasetModel "github.com/pixlise/core/v2/core/dataset"
-	"github.com/pixlise/core/v2/core/logger"
-	protos "github.com/pixlise/core/v2/generated-protos"
+	datasetModel "github.com/pixlise/core/v3/core/dataset"
+	"github.com/pixlise/core/v3/core/logger"
+	protos "github.com/pixlise/core/v3/generated-protos"
 	"google.golang.org/protobuf/proto"
 )
 

@@ -3,7 +3,7 @@ package cloudwatch
 import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/pixlise/core/v2/api/services"
+	"github.com/pixlise/core/v3/api/services"
 )
 
 /* Used to query the latest log stream name within a group...

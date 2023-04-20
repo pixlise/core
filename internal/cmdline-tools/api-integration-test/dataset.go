@@ -25,7 +25,7 @@ import (
 	"net/http"
 	"regexp"
 
-	datasetModel "github.com/pixlise/core/v2/core/dataset"
+	datasetModel "github.com/pixlise/core/v3/core/dataset"
 )
 
 // Requests all dataset summaries, and verifies they're well formatted
