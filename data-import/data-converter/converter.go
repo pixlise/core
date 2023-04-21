@@ -39,7 +39,7 @@ import (
 	"github.com/pixlise/core/v3/data-import/internal/data-converters/pixlfm"
 	"github.com/pixlise/core/v3/data-import/internal/data-converters/soff"
 	"github.com/pixlise/core/v3/data-import/output"
-	diffractionDetection "github.com/pixlise/core/v3/diffraction-detector"
+	diffractionDetector "github.com/pixlise/diffraction-peak-detection/v2/detection"
 )
 
 // All dataset conversions are started through here. This can contain multiple implementations
@@ -286,7 +286,7 @@ func createPeakDiffractionDB(path string, savepath string, jobLog logger.ILogger
 
 	jobLog.Infof("  Opened %v, got RTT: %v, title: \"%v\". Scanning for diffraction peaks...", path, protoParsed.Rtt, protoParsed.Title)
 
-	datasetPeaks, err := diffractionDetection.ScanDataset(protoParsed)
+	datasetPeaks, err := diffractionDetector.ScanDataset(protoParsed)
 	if err != nil {
 		jobLog.Errorf("Error Encoundered During Scanning: %v", err)
 		return err
@@ -296,8 +296,8 @@ func createPeakDiffractionDB(path string, savepath string, jobLog logger.ILogger
 
 	if savepath != "" {
 		jobLog.Infof("  Saving diffraction db file: %v", savepath)
-		diffractionPB := diffractionDetection.BuildDiffractionProtobuf(protoParsed, datasetPeaks)
-		err := diffractionDetection.SaveDiffractionProtobuf(diffractionPB, savepath)
+		diffractionPB := diffractionDetector.BuildDiffractionProtobuf(protoParsed, datasetPeaks)
+		err := diffractionDetector.SaveDiffractionProtobuf(diffractionPB, savepath)
 		if err != nil {
 			jobLog.Errorf("Error Encoundered During Saving: %v", err)
 			return err
