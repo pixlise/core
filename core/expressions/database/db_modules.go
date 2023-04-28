@@ -205,6 +205,7 @@ func (e *ExpressionDB) GetModule(moduleID string, version *modules.SemanticVersi
 func (e *ExpressionDB) CreateModule(
 	input modules.DataModuleInput,
 	creator pixlUser.UserInfo,
+	publishDOI bool,
 ) (modules.DataModuleSpecificVersionWire, error) {
 	nowUnix := e.Svcs.TimeStamper.GetTimeNowSec()
 	modId := e.Svcs.IDGen.GenObjectID()
@@ -267,6 +268,17 @@ func (e *ExpressionDB) CreateModule(
 		Version:    verWire,
 	}
 
+	if publishDOI {
+		deposition, err := zenodo.PublishModuleToZenodo(result)
+		if err != nil {
+			e.Svcs.Log.Errorf("Failed to publish new module to Zenodo: %v. Error: %v", modId, err)
+		}
+
+		result.Version.DOI = deposition.DOI
+		result.Version.DOIBadge = deposition.Links.Badge
+		result.Version.DOILink = deposition.Links.DOI
+	}
+
 	return result, err
 }
 
@@ -306,7 +318,7 @@ func (e *ExpressionDB) getLatestVersion(moduleID string) (modules.SemanticVersio
 	return result, err
 }
 
-func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModuleVersionInput) (modules.DataModuleSpecificVersionWire, error) {
+func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModuleVersionInput, publishDOI bool) (modules.DataModuleSpecificVersionWire, error) {
 	if e.Modules == nil {
 		return modules.DataModuleSpecificVersionWire{}, errors.New("AddModuleVersion: Mongo not connected")
 	}
@@ -377,13 +389,17 @@ func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModul
 		Version:    verWire,
 	}
 
-	deposition, err := zenodo.PublishModuleToZenodo(result)
-	if err != nil {
-		e.Svcs.Log.Errorf("Failed to release Zenodo update for module: %v. Error: %v", moduleID, err)
-		return result, err
-	}
+	if publishDOI {
+		deposition, err := zenodo.PublishModuleToZenodo(result)
+		if err != nil {
+			e.Svcs.Log.Errorf("Failed to publish new version of module to Zenodo: %v. Error: %v", moduleID, err)
+			return result, err
+		}
 
-	fmt.Println("Deposition: ", deposition)
+		result.Version.DOI = deposition.DOI
+		result.Version.DOIBadge = deposition.Links.Badge
+		result.Version.DOILink = deposition.Links.DOI
+	}
 
 	return result, nil
 }

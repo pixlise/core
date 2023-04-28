@@ -130,6 +130,9 @@ type DataModuleVersionWire struct {
 	Tags             []string `json:"tags"`
 	Comments         string   `json:"comments"`
 	TimeStampUnixSec int64    `json:"mod_unix_time_sec"`
+	DOI              string   `json:"doi"`
+	DOILink          string   `json:"doiLink"`
+	DOIBadge         string   `json:"doiBadge"`
 }
 
 // As above, but with source field
