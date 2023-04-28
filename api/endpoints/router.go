@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Endpoints defined by API, along with their paths and permission required. A lot of exported members are structs
+// only used in here, but need to be public so Go JSON parsing can see their fields
 package endpoints
 
 import (
@@ -23,6 +25,8 @@ import (
 	"github.com/pixlise/core/v3/api/services"
 )
 
+// Call to create a router. This registers all endpoints with the router. Each register function is responsible for
+// defining endpoint paths, what permission is required, and what function to call to handle that endpoint
 func MakeRouter(svcs services.APIServices) apiRouter.ApiObjectRouter {
 	router := mux.NewRouter() //.StrictSlash(true)
 	// Should we use StrictSlash??

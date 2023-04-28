@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Permissions for routes - these should match the permissions defined
+// Permission constants and helper functions for defining routes. These should match the permissions defined
 // in Auth0 JWT tokens that come in with requests
 package permission
 

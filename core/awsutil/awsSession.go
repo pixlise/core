@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// AWS utility functions to wrap some functionality and provide mocking capabilities for unit testing.
+// At time of writing this deals with S3, SES, SNS, SQS and
 package awsutil
 
 import (

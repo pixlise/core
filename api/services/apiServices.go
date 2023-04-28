@@ -15,6 +15,17 @@
 // specific language governing permissions and limitations
 // under the License.
 
+/*
+Services used by API endpoint handlers and other bits of code. This is a collection
+of common things needed by code, such as:
+  - Access to an instance of logger
+  - AWS S3 API
+  - The current Mongo DB connection
+  - Facilities to send user notifications
+  - API configuration
+
+among others
+*/
 package services
 
 import (
@@ -144,6 +155,7 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 	var ourLogger logger.ILogger
 	if cfg.EnvironmentName == "local" {
 		ourLogger = &logger.StdOutLogger{}
+		ourLogger.SetLogLevel(cfg.LogLevel)
 	} else {
 		ourLogger, err = logger.InitCloudWatchLogger(
 			sess,
