@@ -58,6 +58,9 @@ type DataExpression struct {
 	Origin           pixlUser.APIObjectItem `json:"origin"`
 	// NOTE: if modifying below, ensure it's in sync with ExpressionDB StoreExpressionRecentRunStats()
 	RecentExecStats *DataExpressionExecStats `json:"recentExecStats,omitempty" bson:"recentExecStats,omitempty"`
+	DOI             string                   `json:"doi,omitempty" bson:"doi,omitempty"`
+	DOILink         string                   `json:"doiLink,omitempty" bson:"doiLink,omitempty"`
+	DOIBadge        string                   `json:"doiBadge,omitempty" bson:"doiBadge,omitempty"`
 }
 
 func (a DataExpression) SetTimes(userID string, t int64) {
@@ -84,4 +87,7 @@ type DataExpressionWire struct {
 	*pixlUser.APIObjectItem
 	// NOTE: if modifying below, ensure it's in sync with ExpressionDB StoreExpressionRecentRunStats()
 	RecentExecStats *DataExpressionExecStats `json:"recentExecStats,omitempty" bson:"recentExecStats,omitempty"`
+	DOI             string                   `json:"doi,omitempty" bson:"doi,omitempty"`
+	DOILink         string                   `json:"doiLink,omitempty" bson:"doiLink,omitempty"`
+	DOIBadge        string                   `json:"doiBadge,omitempty" bson:"doiBadge,omitempty"`
 }

@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/pixlise/core/v3/core/expressions/expressions"
 	"github.com/pixlise/core/v3/core/expressions/modules"
 )
 
@@ -296,6 +297,17 @@ func uploadModuleToZenodo(deposition ZenodoDepositionResponse, module modules.Da
 	return fileUploadResponse, nil
 }
 
+func uploadExpressionZipToZenodo(deposition ZenodoDepositionResponse, filename string, zipFile []byte, accessToken string) (*ZenodoFileUploadResponse, error) {
+	zenodoResponse := ZenodoFileUploadResponse{}
+
+	fileUploadResponse, err := uploadFileContentsToZenodo(deposition, filename, bytes.NewBuffer([]byte(zipFile)), accessToken)
+	if err != nil {
+		return &zenodoResponse, err
+	}
+
+	return fileUploadResponse, nil
+}
+
 func addMetadataToDeposition(deposition ZenodoDepositionResponse, metadata map[string]interface{}, accessToken string) (*ZenodoMetaResponse, error) {
 	emptyResponse := ZenodoMetaResponse{}
 
@@ -344,6 +356,26 @@ func addModuleMetadataToDeposition(deposition ZenodoDepositionResponse, module m
 			"creators": []map[string]interface{}{
 				{
 					"name": module.DataModule.Origin.Creator.Name,
+				},
+			},
+		},
+	}
+
+	return addMetadataToDeposition(deposition, metadata, accessToken)
+}
+
+func addExpressionMetadataToDeposition(deposition ZenodoDepositionResponse, expression expressions.DataExpression, accessToken string) (*ZenodoMetaResponse, error) {
+	description := fmt.Sprintf("Expression created using PIXLISE (https://pixlise.org). %v", expression.Comments)
+
+	// API fails if any empty keys are included, so we need to remove them
+	metadata := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"title":       expression.Name,
+			"upload_type": "software",
+			"description": description,
+			"creators": []map[string]interface{}{
+				{
+					"name": expression.Origin.Creator.Name,
 				},
 			},
 		},
@@ -405,6 +437,44 @@ func PublishModuleToZenodo(module modules.DataModuleSpecificVersionWire) (*Zenod
 	}
 
 	_, err = addModuleMetadataToDeposition(*deposition, module, accessToken)
+	if err != nil {
+		return &zenodoResponse, err
+	}
+
+	publishResponse, err := publishDeposition(*deposition, accessToken)
+	if err != nil {
+		return &zenodoResponse, err
+	}
+
+	zenodoResponse = *publishResponse
+	return &zenodoResponse, nil
+}
+
+func PublishExpressionZipToZenodo(expression expressions.DataExpression, zipFile []byte) (*ZenodoPublishResponse, error) {
+	zenodoResponse := ZenodoPublishResponse{}
+
+	accessToken, foundAccessToken := os.LookupEnv("ZENODO_ACCESS_TOKEN")
+	if !foundAccessToken {
+		return &zenodoResponse, errors.New("ZENODO_ACCESS_TOKEN not found")
+	}
+
+	zenodoURI, foundZenodoURI := os.LookupEnv("ZENODO_URI")
+	if !foundZenodoURI {
+		return &zenodoResponse, errors.New("ZENODO_URI not found")
+	}
+
+	deposition, err := createEmptyDeposition(zenodoURI, accessToken)
+	if err != nil {
+		return &zenodoResponse, err
+	}
+
+	filename := expression.ID + ".zip"
+	_, err = uploadExpressionZipToZenodo(*deposition, filename, zipFile, accessToken)
+	if err != nil {
+		return &zenodoResponse, err
+	}
+
+	_, err = addExpressionMetadataToDeposition(*deposition, expression, accessToken)
 	if err != nil {
 		return &zenodoResponse, err
 	}

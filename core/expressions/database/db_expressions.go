@@ -24,6 +24,7 @@ import (
 
 	"github.com/pixlise/core/v3/core/api"
 	"github.com/pixlise/core/v3/core/expressions/expressions"
+	"github.com/pixlise/core/v3/core/expressions/zenodo"
 	"github.com/pixlise/core/v3/core/pixlUser"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -143,7 +144,7 @@ func (e *ExpressionDB) CreateExpression(input expressions.DataExpressionInput, c
 // Replaces the existing expression with the new one
 // This assumes a GetExpression was required already to validate user permissions to this expression, etc
 // therefore the prevUnixTime should be available. This way we can preserve the creation time but set a new
-// modified time now. Also now requires the existing expression shared and source code field!
+// modified time now. Also now requires the existing expressƒion shared and source code field!
 func (e *ExpressionDB) UpdateExpression(
 	expressionID string,
 	input expressions.DataExpressionInput,
@@ -243,4 +244,58 @@ func (e *ExpressionDB) DeleteExpression(expressionID string) error {
 	}
 
 	return nil
+}
+
+func (e *ExpressionDB) PublishExpressionToZenodo(expressionID string, zipData []byte) (expressions.DataExpression, error) {
+	result := expressions.DataExpression{}
+
+	exprResult := e.Expressions.FindOne(context.TODO(), bson.M{"_id": expressionID})
+
+	if exprResult.Err() != nil {
+		return result, exprResult.Err()
+	}
+
+	// Read the expression item
+	err := exprResult.Decode(&result)
+	if err != nil {
+		return result, err
+	}
+
+	// Verify the expression exists and is shared before publishing
+	if result.ID == expressionID && result.Origin.Shared {
+
+		deposition, err := zenodo.PublishExpressionZipToZenodo(result, zipData)
+		if err != nil {
+			return result, err
+		}
+
+		// Update the expression with the DOI
+		filter := bson.D{{"_id", expressionID}}
+
+		// Update DOI, DOILink, and DOIBadge
+		update := bson.D{
+			{"$set", bson.D{
+				{"doi", deposition.DOI},
+				{"doiLink", deposition.Links.DOI},
+				{"doiBadge", deposition.Links.Badge},
+			}},
+		}
+
+		updResult, err := e.Expressions.UpdateOne(context.TODO(), filter, update)
+		if err != nil {
+			return result, err
+		}
+
+		// Make sure it worked
+		if updResult.MatchedCount != 1 || updResult.ModifiedCount != 1 {
+			return result, api.MakeNotFoundError(expressionID)
+		}
+
+		// Update result
+		result.DOI = deposition.DOI
+		result.DOILink = deposition.Links.DOI
+		result.DOIBadge = deposition.Links.Badge
+	}
+
+	return result, nil
 }
