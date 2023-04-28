@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v3/core/expressions/modules"
+	"github.com/pixlise/core/v3/core/expressions/zenodo"
 	"github.com/pixlise/core/v3/core/pixlUser"
 	"github.com/pixlise/core/v3/core/utils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -375,6 +376,14 @@ func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModul
 		DataModule: &mod,
 		Version:    verWire,
 	}
+
+	deposition, err := zenodo.PublishModuleToZenodo(result)
+	if err != nil {
+		e.Svcs.Log.Errorf("Failed to release Zenodo update for module: %v. Error: %v", moduleID, err)
+		return result, err
+	}
+
+	fmt.Println("Deposition: ", deposition)
 
 	return result, nil
 }
