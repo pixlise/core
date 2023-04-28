@@ -75,19 +75,19 @@ func registerPiquantHandler(router *apiRouter.ApiObjectRouter) {
 	const downloadPrefix = "download"
 
 	// Gets all config names
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/"+configPrefix), apiRouter.MakeMethodPermission("GET", permission.PermWritePiquantConfig), piquantConfigList)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/"+configPrefix), apiRouter.MakeMethodPermission("GET", permission.PermReadPiquantConfig), piquantConfigList)
 
 	// Gets config versions (for a given name)
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/"+configPrefix, idIdentifier, "versions"), apiRouter.MakeMethodPermission("GET", permission.PermWritePiquantConfig), piquantConfigVersionsList)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/"+configPrefix, idIdentifier, "versions"), apiRouter.MakeMethodPermission("GET", permission.PermReadPiquantConfig), piquantConfigVersionsList)
 
 	// Gets a config (for given name+version)
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/"+configPrefix, idIdentifier, "version", versionIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermWritePiquantConfig), piquantConfigGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/"+configPrefix, idIdentifier, "version", versionIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadPiquantConfig), piquantConfigGet)
 
 	// Listing PIQUANT builds that can be downloaded
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/"+downloadPrefix), apiRouter.MakeMethodPermission("GET", permission.PermDownloadPiquant), piquantDownloadList)
 
 	// Setting/getting PIQUANT version string
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/"+versionPath), apiRouter.MakeMethodPermission("GET", permission.PermWritePiquantConfig), piquantVersionGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/"+versionPath), apiRouter.MakeMethodPermission("GET", permission.PermReadPiquantConfig), piquantVersionGet)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/"+versionPath), apiRouter.MakeMethodPermission("POST", permission.PermWritePiquantConfig), piquantVersionPost)
 }
 
