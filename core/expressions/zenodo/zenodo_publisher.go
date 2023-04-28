@@ -1,3 +1,20 @@
+// Licensed to NASA JPL under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. NASA JPL licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package zenodo
 
 import (
@@ -279,10 +296,10 @@ func uploadModuleToZenodo(deposition ZenodoDepositionResponse, module modules.Da
 	return fileUploadResponse, nil
 }
 
-func addMetadataToDeposition(deposition ZenodoDepositionResponse, metadata ZenodoDepositionMetadata, accessToken string) (*ZenodoMetaResponse, error) {
+func addMetadataToDeposition(deposition ZenodoDepositionResponse, metadata map[string]interface{}, accessToken string) (*ZenodoMetaResponse, error) {
 	emptyResponse := ZenodoMetaResponse{}
 
-	metadataJson, err := json.Marshal(map[string]interface{}{"metadata": metadata})
+	metadataJson, err := json.Marshal(metadata)
 	if err != nil {
 		return &emptyResponse, err
 	}
@@ -318,16 +335,16 @@ func addMetadataToDeposition(deposition ZenodoDepositionResponse, metadata Zenod
 func addModuleMetadataToDeposition(deposition ZenodoDepositionResponse, module modules.DataModuleSpecificVersionWire, accessToken string) (*ZenodoMetaResponse, error) {
 	description := fmt.Sprintf("Lua module created using PIXLISE (https://pixlise.org). %v", module.DataModule.Comments)
 
-	metadata := ZenodoDepositionMetadata{
-		Title:       module.DataModule.Name,
-		UploadType:  "software",
-		Description: description,
-		Creators: []struct {
-			Name        string `json:"name"`
-			Affiliation string `json:"affiliation"`
-		}{
-			{
-				Name: module.DataModule.Origin.Creator.Name,
+	// API fails if any empty keys are included, so we need to remove them
+	metadata := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"title":       module.DataModule.Name,
+			"upload_type": "software",
+			"description": description,
+			"creators": []map[string]interface{}{
+				{
+					"name": module.DataModule.Origin.Creator.Name,
+				},
 			},
 		},
 	}
