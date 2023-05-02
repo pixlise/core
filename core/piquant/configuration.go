@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Storage/versioning and retrieval of PIQUANT configuration files and the currently selected PIQUANT pod version to be run
 package piquant
 
 import (

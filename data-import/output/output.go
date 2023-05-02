@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Allows outputting (in PIXLISE protobuf dataset format) of in-memory representation of PIXL data that importer has read. Also
+// outputs summary JSON files for the dataset.
 package output
 
 import (

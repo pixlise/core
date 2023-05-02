@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Implements importer triggering based on SNS queues. This decodes incoming SNS messages and extracts files ready
+// for importer code to run
 package importer
 
 import (

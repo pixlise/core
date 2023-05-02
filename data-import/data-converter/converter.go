@@ -15,6 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Exposes the interface of the dataset importer aka converter and selecting one automatically based on what
+// files are in the folder being imported. The converter supports various formats as delivered by GDS or test
+// instruments and this is inteded to be extendable further to other lab instruments and devices in future.
 package dataConverter
 
 import (

@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Provides a higher-level file access interface which is implemented using local file storage as well as AWS S3. This makes writing code
+// that is agnostic to file storage medium much easier. Both are tested with the same unit testing framework to ensure they are compatible
 package fileaccess
 
 import "strings"

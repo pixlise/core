@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Storage/retrieval of PIXLISE user data and preferences from Mongo DB. This also exposes the
+// standard "creator/owner" structure (APIObjectItem) stored in all user-created objects
 package pixlUser
 
 import (
