@@ -15,9 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// api - package for containing "core" API things, which are reusable
-// in building any API for our platform. These should not contain
-// specific PIXLISE API business logic
+// Contains "core"-level helper code to build APIs. These should
+// be reusable in building any API for our platform, and should
+// not contain specific PIXLISE API business logic
 package api
 
 import (

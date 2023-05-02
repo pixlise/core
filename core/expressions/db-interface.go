@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Exposees an interface to access expression and modules from mongo DB. References the structures exposed by inner packages
 package expressionStorage
 
 import (

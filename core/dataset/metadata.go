@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Contains access/util functions to read parts of binary protobuf dataset files, JSON dataset metadata summaries, spectra, etc
 package dataset
 
 import (

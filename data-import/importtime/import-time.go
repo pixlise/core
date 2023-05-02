@@ -15,6 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Allows reading/writing last imported time for a given dataset. This is used by importer lambda function to determine
+// if it needs to send a data imported notification, because if we get a flurry of zip files arriving we don't want to
+// spam users.
 package importtime
 
 import (

@@ -15,9 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// api - package for containing "core" API things, which are reusable
-// in building any API for our platform. These should not contain
-// specific PIXLISE API business logic
 package api
 
 import (
@@ -29,6 +26,7 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
+// Implements a JWT validation and claim extraction interface
 type JWTInterface interface {
 	ValidateRequest(r *http.Request) (*jwt.JSONWebToken, error)
 	Claims(r *http.Request, token *jwt.JSONWebToken, values ...interface{}) error

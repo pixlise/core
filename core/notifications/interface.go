@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Interface for all notification capabilities (sending emails to users and the UI)
 package notifications
 
 import "github.com/pixlise/core/v3/core/pixlUser"

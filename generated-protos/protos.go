@@ -15,31 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// An interface to get a unix time stamp (in seconds) with an included mock that can be pre-loaded
-// with timestamps for predictable unit test output.
-package timestamper
-
-import "time"
-
-type ITimeStamper interface {
-	GetTimeNowSec() int64
-}
-
-type UnixTimeNowStamper struct {
-}
-
-// GetTimeNowSec - Returns unix time now in seconds
-func (ts *UnixTimeNowStamper) GetTimeNowSec() int64 {
-	return time.Now().Unix()
-}
-
-type MockTimeNowStamper struct {
-	QueuedTimeStamps []int64
-}
-
-// GetTimeNowSec - Returns unix time now in seconds
-func (ts *MockTimeNowStamper) GetTimeNowSec() int64 {
-	val := ts.QueuedTimeStamps[0]
-	ts.QueuedTimeStamps = ts.QueuedTimeStamps[1:]
-	return val
-}
+// Generated protobuf serialisation code. This is checked in so other repositories can depend on these as a Go module
+// instead of implementing the generator in each. New code can be generated using ../genproto.sh and will overwrite
+// the files in here. These should be checked in after they change.
+package protos

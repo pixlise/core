@@ -15,6 +15,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Implements archiving/retrieval of dataset source zip files as delivered by GDS. When new data arrives from GDS, we receive
+// it in snapshot zip files containing what arrived at a given time. These are all stored in an S3 bucket and when required
+// they are extracted in timestamp order on top of each other to get a view of the data at a given time. Used to then
+// generate a PIXLISE dataset using the dataset importer.
 package datasetArchive
 
 import (

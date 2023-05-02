@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Exposes interfaces and structures required to run PIQUANT in the Kubernetes cluster along with functions
+// to access quantification files, logs, results and summaries of quant jobs.
 package quantModel
 
 import (

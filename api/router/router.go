@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// The guts of PIXLISE API endpoint handler/routing code. Allows us to define a router, permissions, and services to be used
+// by code that processes HTTP requests.
 package apiRouter
 
 import (

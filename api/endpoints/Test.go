@@ -18,8 +18,8 @@ import (
 func registerTestHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "test"
 
-	router.AddGenericHandler("/"+path.Join(pathPrefix, "500"), apiRouter.MakeMethodPermission("GET", permission.PermReadPIXLISESettings), test500)
-	router.AddGenericHandler("/"+path.Join(pathPrefix, "503"), apiRouter.MakeMethodPermission("GET", permission.PermReadPIXLISESettings), test503)
+	router.AddGenericHandler("/"+path.Join(pathPrefix, "500"), apiRouter.MakeMethodPermission("GET", permission.PermTestEndpoints), test500)
+	router.AddGenericHandler("/"+path.Join(pathPrefix, "503"), apiRouter.MakeMethodPermission("GET", permission.PermTestEndpoints), test503)
 }
 
 func test500(params handlers.ApiHandlerGenericParams) error {
