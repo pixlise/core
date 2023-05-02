@@ -94,4 +94,4 @@ Download "MongoDB Compass" and when the docker container is running locally (in 
 
 Given this is written in Go, it supports godoc! Being a public repository, documentation automatically is pulled into the online Go
 documentation site, but to view documentation locally, you can run `godoc -http=:6060` and to export to a zip file you can create
-a directory and run `godoc-static --destination=./doctest`
+a directory and run `godoc-static --destination=./doctest ./`. That last parameter being the current directory - if it's missed, then all go packages are documented (and somehow the ones in this project are not!)
