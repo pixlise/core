@@ -279,9 +279,9 @@ func quantificationCombine(params handlers.ApiHandlerParams) (interface{}, error
 	// Form a CSV
 	csv := formCombinedCSV(quantIDs, dataPerDetectorPerPMC, allColumns)
 
-	quantMode := quantModel.QuantModeCombinedMultiQuant
+	quantMode := quantModel.quantModeCombinedMultiQuant
 	if len(detectors) > 1 {
-		quantMode = quantModel.QuantModeABMultiQuant
+		quantMode = quantModel.quantModeABMultiQuant
 	}
 
 	return quantModel.ImportQuantCSV(params.Svcs, datasetID, params.UserInfo, csv, "combined-multi", "multi", req.Name, quantMode, req.Description)
