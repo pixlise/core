@@ -96,11 +96,11 @@ csv rows`
 
 	csvBody := strings.Join(csvRows[3:], "\n")
 
-	quantMode := quantModel.quantModeCombinedManualUpload
+	quantMode := quantModel.QuantModeCombinedManualUpload
 
 	// We know the filename column exists due to parseCSVColumns above
 	if isABQuant(csvRows, colLookup["filename"]) {
-		quantMode = quantModel.quantModeABManualUpload
+		quantMode = quantModel.QuantModeABManualUpload
 	}
 
 	return quantModel.ImportQuantCSV(params.Svcs, datasetID, params.UserInfo, csvBody, "user-supplied", "upload", quantName, quantMode, comments)

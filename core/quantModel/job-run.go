@@ -50,10 +50,10 @@ const quantModeSeparateAB = "AB"
 const quantModeCombinedAB = "Combined"
 const quantModeSeparateABBulk = "ABBulk"
 const quantModeCombinedABBulk = "CombinedBulk"
-const quantModeCombinedManualUpload = "ABManual"
-const quantModeABManualUpload = "ABManual"
-const quantModeCombinedMultiQuant = "CombinedMultiQuant"
-const quantModeABMultiQuant = "ABMultiQuant"
+const QuantModeCombinedManualUpload = "ABManual"
+const QuantModeABManualUpload = "ABManual"
+const QuantModeCombinedMultiQuant = "CombinedMultiQuant"
+const QuantModeABMultiQuant = "ABMultiQuant"
 
 // CreateJob - creates a new quantification job
 func CreateJob(svcs *services.APIServices, createParams JobCreateParams, wg *sync.WaitGroup) (string, error) {
