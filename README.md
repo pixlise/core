@@ -89,3 +89,9 @@ Download "MongoDB Compass" and when the docker container is running locally (in 
 ### Example CLI flags
 
 `-quantExecutor docker` - this tells the API to use local docker as the quant executor, meaning PIQUANT jobs will start on your local development machine.
+
+## Documentation
+
+Given this is written in Go, it supports godoc! Being a public repository, documentation automatically is pulled into the online Go
+documentation site, but to view documentation locally, you can run `godoc -http=:6060` and to export to a zip file you can create
+a directory and run `godoc-static --destination=./doctest`
