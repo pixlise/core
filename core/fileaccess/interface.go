@@ -15,6 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Provides a higher-level file access interface which is implemented using local file storage as well as AWS S3. This makes writing code
+// that is agnostic to file storage medium much easier. Both are tested with the same unit testing framework to ensure they are compatible
+// NOTE: In the FileAccess interface any reference to a bucket when used with the local file storage model is concatented with
+// the path, so it could be thought of as a reference to the disk the path is on, or the root of where relative paths are
+// available from
 package fileaccess
 
 import "strings"
@@ -29,29 +34,44 @@ import "strings"
 // id at the start of a path.
 
 type FileAccess interface {
+	// Effectively recursive listing of files in a given directory
 	ListObjects(bucket string, prefix string) ([]string, error)
 
+	// Does a file at a given path exist
 	ObjectExists(rootPath string, path string) (bool, error)
 
+	// Reads a file as bytes
 	ReadObject(bucket string, path string) ([]byte, error)
+	// Writes a file as bytes
 	WriteObject(bucket string, path string, data []byte) error
 
+	// Reads a file as JSON and decodes it into itemsPtr
 	ReadJSON(bucket string, s3Path string, itemsPtr interface{}, emptyIfNotFound bool) error
+	// Writes itemsPtr as a JSON file
 	WriteJSON(bucket string, s3Path string, itemsPtr interface{}) error
-	// A few places in the code need to write non-pretty-printed JSON for those
-	// files to work with Athena queries. Instead of adding a flag to WriteJSON
-	// this is easier to implement. Searching for WriteJSON still returns these!
+
+	// Same as WriteJSON, but a few places in the code need to write
+	// non-pretty-printed JSON for those files to work with Athena queries for
+	// example. Instead of adding a flag to WriteJSON this is easier to implement.
+	// Searching for WriteJSON still returns these!
 	WriteJSONNoIndent(bucket string, s3Path string, itemsPtr interface{}) error
 
+	// Delete a file
 	DeleteObject(bucket string, path string) error
 
+	// Copy a file
 	CopyObject(srcBucket string, srcPath string, dstBucket string, dstPath string) error
 
+	// Effectively performs "rm -rf" of all files the given bucket/root directory
 	EmptyObjects(targetBucket string) error
 
+	// Checks if the given error is a "not found" error for the implementation. This is because
+	// AWS S3 would provide a different "not found" error than would a local file system fopen() failing
 	IsNotFoundError(err error) bool
 }
 
+// Turns a string name potentially typed by a user into a file name that should be valid for storage
+// in anything we store in. This removes or replaces illegal characters with _.
 func MakeValidObjectName(name string, allowSpace bool) string {
 	//name = strings.ReplaceAll(name, " ", "_")
 	name = strings.ReplaceAll(name, "?", "")

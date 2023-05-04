@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Exposes various utility functions for strings, generation of valid filenames
+// and random ID strings, zipping files/directories, reading/writing images
 package utils
 
 import (

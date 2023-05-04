@@ -15,6 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Exporter module allowing creation of a zip file containing requested files. This can export a
+// whole range of files from the dataset (eg spectra, images) to quantifications and user-created
+// objects such as ROIs and diffraction data
 package export
 
 import (
@@ -58,14 +61,14 @@ type imageDataWithMatchMeta struct {
 	data       []byte
 }
 
-const FileIdSpectra = "raw-spectra"
-const FileIdQuantMapCSV = "quant-map-csv"
-const FileIdQuantMapTIF = "quant-map-tif"
-const FileIdBeamLocations = "beam-locations"
-const FileIdROIs = "rois"
-const FileIdContextImage = "context-image"
-const FileIdUnquantifiedWeightPct = "unquantified-weight"
-const FileIdDiffractionPeak = "diffraction-peak"
+const fileIdSpectra = "raw-spectra"
+const fileIdQuantMapCSV = "quant-map-csv"
+const fileIdQuantMapTIF = "quant-map-tif"
+const fileIdBeamLocations = "beam-locations"
+const fileIdROIs = "rois"
+const fileIdContextImage = "context-image"
+const fileIdUnquantifiedWeightPct = "unquantified-weight"
+const fileIdDiffractionPeak = "diffraction-peak"
 
 // The above IDs specify what to download, and they get downloaded in parallel into this structure by downloadInputs()
 type inputFiles struct {
@@ -102,21 +105,21 @@ func (m *Exporter) MakeExportFilesZip(svcs *services.APIServices, outfileNamePre
 	wantDiffractionPeak := false
 
 	for _, id := range fileIDs {
-		if id == FileIdQuantMapCSV {
+		if id == fileIdQuantMapCSV {
 			wantQuantCSV = true
-		} else if id == FileIdQuantMapTIF {
+		} else if id == fileIdQuantMapTIF {
 			wantQuantTIF = true
-		} else if id == FileIdUnquantifiedWeightPct {
+		} else if id == fileIdUnquantifiedWeightPct {
 			wantUnquantifiedPct = true
-		} else if id == FileIdSpectra {
+		} else if id == fileIdSpectra {
 			wantSpectra = true
-		} else if id == FileIdBeamLocations {
+		} else if id == fileIdBeamLocations {
 			wantBeamLocations = true
-		} else if id == FileIdROIs {
+		} else if id == fileIdROIs {
 			wantROIs = true
-		} else if id == FileIdContextImage {
+		} else if id == fileIdContextImage {
 			wantContextImage = true
-		} else if id == FileIdDiffractionPeak {
+		} else if id == fileIdDiffractionPeak {
 			wantDiffractionPeak = true
 		}
 	}
@@ -1215,7 +1218,7 @@ func writeDiffractionCSV(datasetID string, pmcToDatasetLookup map[int32]int32, o
 		return firstLocID < secondLocID
 	})
 
-	_, err = csv.WriteString("PMC, Peak Channel, Peak Height, Effect Size, Baseline Variation, Difference Sigma, Global Difference\n")
+	_, err = csv.WriteString("PMC, Peak Channel, Peak Height, Effect Size, Baseline Variation, Difference Sigma, Global Difference, Detector\n")
 	if err != nil {
 		return err
 	}
@@ -1229,7 +1232,7 @@ func writeDiffractionCSV(datasetID string, pmcToDatasetLookup map[int32]int32, o
 			}
 
 			if dstPMC, ok := pmcToDatasetLookup[int32(locPMC)]; ok {
-				line := fmt.Sprintf("%v, %v, %v, %v, %v, %v, %v\n", dstPMC, p.PeakChannel, p.PeakHeight, p.EffectSize, p.BaselineVariation, p.DifferenceSigma, p.GlobalDifference)
+				line := fmt.Sprintf("%v, %v, %v, %v, %v, %v, %v, %v\n", dstPMC, p.PeakChannel, p.PeakHeight, p.EffectSize, p.BaselineVariation, p.DifferenceSigma, p.GlobalDifference, p.Detector)
 				_, err = csv.WriteString(line)
 				if err != nil {
 					return err

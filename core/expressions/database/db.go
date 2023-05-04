@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Contains all functionality to access expressions and modules from Mongo DB
 package expressionDB
 
 import (

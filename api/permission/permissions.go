@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Permission constants and helper functions for defining routes. These should match the permissions defined
+// in Auth0 JWT tokens that come in with requests
 package permission
 
 import (
@@ -29,71 +31,95 @@ import (
 	"github.com/pixlise/core/v3/core/pixlUser"
 )
 
-// We have a few public things, mainly getting the API version...
+// Public endpoints, mainly for getting the API version
 const PermPublic = "public"
-
-// Permissions for routes - these should match the permissions defined
-// in Auth0 JWT tokens that come in with requests
 
 // Quantification creation
 const PermCreateQuantification = "write:quantification"
 
-// Quantification blessing
+// Quantification "blessing" - marking it as the correct one to use
 const PermBlessQuantification = "write:bless-quant"
 
-// Quantification publishing
+// Quantification publishing - to PDS
 const PermPublishQuantification = "write:publish-quant"
 
-// Piquant setup/administration
+// Reading piquant detector config and piquant config files
 const PermReadPiquantConfig = "read:piquant-config"
+
+// Writing piquant config (for spectroscopists who know what they're doing with piquant)
 const PermWritePiquantConfig = "write:piquant-config"
+
+// Downloading PIQUANT builds - not fully finished, likely only serving linux binaries if our build system still creates them
 const PermDownloadPiquant = "download:piquant"
+
+// Reading diffraction peaks DB that's created along with a dataset
 const PermReadDiffractionPeaks = "read:diffraction-peaks"
+
+// Editing diffraction peaks (manually creating new ones, or marking detected ones as deleted)
 const PermEditDiffractionPeaks = "write:diffraction-peaks"
 
-// Ability to export
+// Ability to export various data
 const PermExportMap = "export:map"
 
-// Permissions to view different kinds of datasets
-const PermReadPIXLFullDataset = "read:pixl-full-dataset"
-const PermReadPIXLTacticalDataset = "read:pixl-tactical-dataset"
-const PermReadTestFullDataset = "read:test-full-dataset"
-const PermReadTestTacticalDataset = "read:test-tactical-dataset"
-
-// For reading ROI, element set, annotation, expressions
+// Reading ROI, element set, annotation, expressions, modules, tags, quantifications, RGB mixes
 const PermReadDataAnalysis = "read:data-analysis"
 
-// For being able to write/delete/edit the above
+// Write/delete/edit ROI, element set, annotation, expressions, modules, tags, quantifications, RGB mixes
 const PermWriteDataAnalysis = "write:data-analysis"
 
-// For being able to edit custom fields/images on dataset
+// Allows editing custom fields/images on dataset, or creating new ones (using zipped MSA files, etc)
 const PermWriteDataset = "write:dataset"
 
-// General app permissions, eg saving/loading view state
+// Reading current view state, collections, workspaces
 const PermReadPIXLISESettings = "read:pixlise-settings"
+
+// Writing current view state, collections, workspaces
 const PermWritePIXLISESettings = "write:pixlise-settings"
 
-// For saving metrics
+// Ability to call test endpoints (admin feature)
+const PermTestEndpoints = "write:test-endpoints"
+
+// For saving metrics - aka user tracking info, UI behaviours, for research purposes
 const PermWriteMetrics = "write:metrics"
 
-// Piquant jobs
+// Reading logs and log level of API
+const PermReadLogs = "read:logs"
+
+// Changing API log level (admin feature really!)
+const PermWriteLogLevel = "write:log-level"
+
+// Reads all piquant jobs - admin level
 const PermReadPiquantJobs = "read:piquant-jobs"
 
-// User administration
+// User role access - reading user listing, role listing and user/role individual gets
 const PermReadUserRoles = "read:user-roles"
+
+// Writing/deleting user roles, and editing users in bulk
 const PermWriteUserRoles = "write:user-roles"
 
-// Users own settings/name/data collection agreement
+// Get users own config and data collection agreement
 const PermReadUserSettings = "read:user-settings"
+
+// Writing users own config and data collection agreement
 const PermWriteUserSettings = "write:user-settings"
 
-// Sharing
+// Sharing ROI
 const PermWriteSharedROI = "write:shared-roi"
+
+// Sharing element sets
 const PermWriteSharedElementSet = "write:shared-element-set"
+
+// Sharing quantifications
 const PermWriteSharedQuantification = "write:shared-quantification"
+
+// Sharing annotations (of spectrum chart)
 const PermWriteSharedAnnotation = "write:shared-annotation"
+
+// Sharing expressions
 const PermWriteSharedExpression = "write:shared-expression"
 
+// Get all groups that are accessible by the list of permissions provided. This means
+// basically returning what's after access: in each permission
 func GetAccessibleGroups(permissions map[string]bool) map[string]bool {
 	result := map[string]bool{}
 
@@ -119,6 +145,7 @@ func UserCanAccessDataset(userInfo pixlUser.UserInfo, summary datasetModel.Summa
 	return nil
 }
 
+// Checking if the user can access a given dataset - use this if you don't already have summary info downloaded
 func UserCanAccessDatasetWithSummaryDownload(fs fileaccess.FileAccess, userInfo pixlUser.UserInfo, dataBucket string, datasetID string) (datasetModel.SummaryFileData, error) {
 	summary, err := datasetModel.ReadDataSetSummary(fs, dataBucket, datasetID)
 	if err != nil {

@@ -71,7 +71,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 	beamDir := fileStructure{}
 	spectraDir := fileStructure{}
 	bulkSpectraDir := fileStructure{}
-	contexImgDir := fileStructure{}
+	contextImgDir := fileStructure{}
 	housekeepingDir := fileStructure{}
 	pseudoIntensityDir := fileStructure{}
 	rgbuImgDir := fileStructure{}
@@ -88,7 +88,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		beamDir = fileStructure{[]string{"RXL"}, "csv", 1} // The BGT file contains the positions of the commanded X-ray shots and the actual X-ray shots (in x,y,z). We need RXL (containing image i/js)
 		spectraDir = fileStructure{[]string{"RFS"}, "csv", 1}
 		bulkSpectraDir = fileStructure{[]string{"RBS", "RMS"}, "msa", 2}
-		contexImgDir = fileStructure{[]string{"RCM"}, "tif", -1}
+		contextImgDir = fileStructure{[]string{"RCM"}, "tif", -1}
 		housekeepingDir = fileStructure{[]string{"RSI"}, "csv", 1}
 		pseudoIntensityDir = fileStructure{[]string{"RPM"}, "csv", 1} //EPN
 		rgbuImgDir = fileStructure{[]string{"RGBU"}, "tif", -1}
@@ -101,7 +101,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		beamDir = fileStructure{[]string{"drift_corr_x_ray_beam_location"}, "csv", 2}
 		spectraDir = fileStructure{[]string{"localized_full_spectra"}, "csv", 1}
 		bulkSpectraDir = fileStructure{[]string{"bulk_histogram_inputs"}, "msa", 2}
-		contexImgDir = fileStructure{[]string{"image_mark_up"}, "tif", -1}
+		contextImgDir = fileStructure{[]string{"image_mark_up"}, "tif", -1}
 		housekeepingDir = fileStructure{[]string{"spatial_inputs"}, "csv", 1}
 		pseudoIntensityDir = fileStructure{[]string{"pseudointensity_maps"}, "csv", 1}
 	}
@@ -122,8 +122,8 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 	housekeepingFileNameMeta := gdsfilename.FileNameMeta{}
 
 	// Get a path for each file
-	//pathsToRead := [][]string{beamDir, spectraDir, bulkSpectraDir, contexImgDir, housekeepingDir, pseudoIntensityDir}
-	pathsToRead := map[string]fileStructure{"beamDir": beamDir, "spectraDir": spectraDir, "bulkSpectraDir": bulkSpectraDir, "contextImgDir": contexImgDir, "housekeepingDir": housekeepingDir, "pseudoIntensityDir": pseudoIntensityDir, "rgbuImgDir": rgbuImgDir, "discoImgDir": discoImgDir}
+	//pathsToRead := [][]string{beamDir, spectraDir, bulkSpectraDir, contextImgDir, housekeepingDir, pseudoIntensityDir}
+	pathsToRead := map[string]fileStructure{"beamDir": beamDir, "spectraDir": spectraDir, "bulkSpectraDir": bulkSpectraDir, "contextImgDir": contextImgDir, "housekeepingDir": housekeepingDir, "pseudoIntensityDir": pseudoIntensityDir, "rgbuImgDir": rgbuImgDir, "discoImgDir": discoImgDir}
 	for dirType, subdir := range pathsToRead {
 		pathToSubdir := importPath
 		log.Infof("READING %v from \"%v\", subdirs: \"%v\"...", dirType, pathToSubdir, strings.Join(subdir.directories, ","))

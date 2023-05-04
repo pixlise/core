@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Lowest-level code to connect to Mongo DB (locally in Docker and remotely) and get consistant collection names.
 package mongoDBConnection
 
 import (

@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// File name parser and writer, allowing us to extract metadata from the strict file name conventions defined by GDS
 package gdsfilename
 
 import (

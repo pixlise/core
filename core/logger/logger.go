@@ -15,6 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// A common logging interface used throughout the code which has implementations using stdout and AWS cloudwatch.
+// Log levels are settable (DEBUG, INFO, ERROR) and there are implementations which provide less verbosity for use
+// in things like Example unit tests.
 package logger
 
 import (

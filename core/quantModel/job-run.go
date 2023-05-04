@@ -46,10 +46,10 @@ import (
 	"github.com/pixlise/core/v3/core/logger"
 )
 
-const QuantModeSeparateAB = "AB"
-const QuantModeCombinedAB = "Combined"
-const QuantModeSeparateABBulk = "ABBulk"
-const QuantModeCombinedABBulk = "CombinedBulk"
+const quantModeSeparateAB = "AB"
+const quantModeCombinedAB = "Combined"
+const quantModeSeparateABBulk = "ABBulk"
+const quantModeCombinedABBulk = "CombinedBulk"
 const QuantModeCombinedManualUpload = "ABManual"
 const QuantModeABManualUpload = "ABManual"
 const QuantModeCombinedMultiQuant = "CombinedMultiQuant"
@@ -231,8 +231,8 @@ func triggerPiquantNodes(svcs *services.APIServices, jobLog logger.ILogger, jobI
 
 	// Generate the lists, and then save each, and start the quantification
 	// NOTE: empty == combined, just to honor the previous mode of operation before quantMode field was added
-	combined := params.QuantMode == "" || params.QuantMode == QuantModeCombinedABBulk || params.QuantMode == QuantModeCombinedAB
-	quantByROI := params.QuantMode == QuantModeCombinedABBulk || params.QuantMode == QuantModeSeparateABBulk || params.Command != "map"
+	combined := params.QuantMode == "" || params.QuantMode == quantModeCombinedABBulk || params.QuantMode == quantModeCombinedAB
+	quantByROI := params.QuantMode == quantModeCombinedABBulk || params.QuantMode == quantModeSeparateABBulk || params.Command != "map"
 
 	// If we're quantifying ROIs, do that
 	pmcFiles := []string{}
