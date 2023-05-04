@@ -150,6 +150,8 @@ github.com/orcaman/concurrent-map v1.0.0/go.mod h1:Lu3tH6HLW3feq74c2GC+jIMS/K2CF
 github.com/pingcap/errors v0.11.4 h1:lFuQV/oaUMGcD2tqt+01ROSmJs75VG1ToEOkZIZ4nE4=
 github.com/pixlise/diffraction-peak-detection/v2 v2.0.0 h1:x2ZvhTf/h7futHp774YnME08/kxErtNpk6P8VW+eT6Y=
 github.com/pixlise/diffraction-peak-detection/v2 v2.0.0/go.mod h1:FoJ2URzrSV8pzoXK0CDH4CP0IyhfeaEpTnYUmOKEDt0=
+github.com/pixlise/diffraction-peak-detection/v2 v2.0.1 h1:Vsj5uuKOGSnhD3h0RTNkGmCftzIEGA6h3vM43S0tltw=
+github.com/pixlise/diffraction-peak-detection/v2 v2.0.1/go.mod h1:FoJ2URzrSV8pzoXK0CDH4CP0IyhfeaEpTnYUmOKEDt0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
