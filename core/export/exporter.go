@@ -1218,7 +1218,7 @@ func writeDiffractionCSV(datasetID string, pmcToDatasetLookup map[int32]int32, o
 		return firstLocID < secondLocID
 	})
 
-	_, err = csv.WriteString("PMC, Peak Channel, Peak Height, Effect Size, Baseline Variation, Difference Sigma, Global Difference\n")
+	_, err = csv.WriteString("PMC, Peak Channel, Peak Height, Effect Size, Baseline Variation, Difference Sigma, Global Difference, Detector\n")
 	if err != nil {
 		return err
 	}
@@ -1232,7 +1232,7 @@ func writeDiffractionCSV(datasetID string, pmcToDatasetLookup map[int32]int32, o
 			}
 
 			if dstPMC, ok := pmcToDatasetLookup[int32(locPMC)]; ok {
-				line := fmt.Sprintf("%v, %v, %v, %v, %v, %v, %v\n", dstPMC, p.PeakChannel, p.PeakHeight, p.EffectSize, p.BaselineVariation, p.DifferenceSigma, p.GlobalDifference)
+				line := fmt.Sprintf("%v, %v, %v, %v, %v, %v, %v, %v\n", dstPMC, p.PeakChannel, p.PeakHeight, p.EffectSize, p.BaselineVariation, p.DifferenceSigma, p.GlobalDifference, p.Detector)
 				_, err = csv.WriteString(line)
 				if err != nil {
 					return err
