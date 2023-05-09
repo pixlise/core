@@ -289,8 +289,8 @@ func publishDataExpressionToZenodo(params handlers.ApiHandlerParams) (interface{
 		return nil, err
 	}
 
-	zenodoURI := params.Svcs.Config.ZENODO_URI
-	zenodoToken := params.Svcs.Config.ZENODO_ACCESS_TOKEN
+	zenodoURI := params.Svcs.Config.ZenodoURI
+	zenodoToken := params.Svcs.Config.ZenodoAccessToken
 
 	expression, err := params.Svcs.Expressions.PublishExpressionToZenodo(expressionID, zipData, zenodoURI, zenodoToken)
 	if err != nil {

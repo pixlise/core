@@ -258,7 +258,7 @@ func (e *ExpressionDB) CreateModule(
 					TimeStampUnixSec: ver.TimeStampUnixSec,
 				},
 			},
-		}, e.Svcs.Config.ZENODO_URI, e.Svcs.Config.ZENODO_ACCESS_TOKEN)
+		}, e.Svcs.Config.ZenodoURI, e.Svcs.Config.ZenodoAccessToken)
 		if err != nil {
 			e.Svcs.Log.Errorf("Failed to publish new module to Zenodo: %v. Error: %v", modId, err)
 		}
@@ -394,7 +394,7 @@ func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModul
 					DOIMetadata:      verRec.DOIMetadata,
 				},
 			},
-		}, e.Svcs.Config.ZENODO_URI, e.Svcs.Config.ZENODO_ACCESS_TOKEN)
+		}, e.Svcs.Config.ZenodoURI, e.Svcs.Config.ZenodoAccessToken)
 		if err != nil {
 			e.Svcs.Log.Errorf("Failed to publish new version of module to Zenodo: %v. Error: %v", moduleID, err)
 			return modules.DataModuleSpecificVersionWire{}, err

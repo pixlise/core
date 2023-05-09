@@ -20,7 +20,6 @@ package zenodo
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"testing"
 
 	"github.com/pixlise/core/v3/api/config"
@@ -42,14 +41,14 @@ func makeMockSvcs(idGen services.IDGenerator) services.APIServices {
 	}
 }
 
-func setTestZenodoConfig(svcs *services.APIServices) {
-	svcs.Config.ZENODO_URI = os.Getenv("ZENODO_URI")
-	svcs.Config.ZENODO_ACCESS_TOKEN = os.Getenv("ZENODO_ACCESS_TOKEN")
+// func setTestZenodoConfig(svcs *services.APIServices) {
+// 	svcs.Config.ZenodoURI = os.Getenv("ZENODO_URI")
+// 	svcs.Config.ZenodoAccessToken = os.Getenv("ZENODO_ACCESS_TOKEN")
 
-	if len(svcs.Config.ZENODO_URI) <= 0 || len(svcs.Config.ZENODO_ACCESS_TOKEN) <= 0 {
-		panic("Missing one or more env vars for testing: ZENODO_URI, ZENODO_ACCESS_TOKEN")
-	}
-}
+// 	if len(svcs.Config.ZenodoURI) <= 0 || len(svcs.Config.ZenodoAccessToken) <= 0 {
+// 		panic("Missing one or more env vars for testing: ZENODO_URI, ZENODO_ACCESS_TOKEN")
+// 	}
+// }
 
 func Test_create_empty_deposition(t *testing.T) {
 	idGen := services.MockIDGenerator{
@@ -57,9 +56,9 @@ func Test_create_empty_deposition(t *testing.T) {
 	}
 
 	svcs := makeMockSvcs(&idGen)
-	setTestZenodoConfig(&svcs)
+	// setTestZenodoConfig(&svcs)
 
-	deposition, err := createEmptyDeposition(svcs.Config.ZENODO_URI, svcs.Config.ZENODO_ACCESS_TOKEN)
+	deposition, err := createEmptyDeposition(svcs.Config.ZenodoURI, svcs.Config.ZenodoAccessToken)
 	if err != nil {
 		t.Errorf("Failed to create empty deposition: %v", err)
 	}
@@ -81,9 +80,9 @@ func Test_upload_file_to_deposition(t *testing.T) {
 	}
 
 	svcs := makeMockSvcs(&idGen)
-	setTestZenodoConfig(&svcs)
+	// setTestZenodoConfig(&svcs)
 
-	deposition, err := createEmptyDeposition(svcs.Config.ZENODO_URI, svcs.Config.ZENODO_ACCESS_TOKEN)
+	deposition, err := createEmptyDeposition(svcs.Config.ZenodoURI, svcs.Config.ZenodoAccessToken)
 	if err != nil {
 		t.Errorf("Failed to create empty deposition: %v", err)
 	}
@@ -98,7 +97,7 @@ func Test_upload_file_to_deposition(t *testing.T) {
 		t.Errorf("Failed to marshal test data: %v", err)
 	}
 
-	fileUploadResponse, err := uploadFileContentsToZenodo(*deposition, filename, bytes.NewBuffer([]byte(jsonContents)), svcs.Config.ZENODO_ACCESS_TOKEN)
+	fileUploadResponse, err := uploadFileContentsToZenodo(*deposition, filename, bytes.NewBuffer([]byte(jsonContents)), svcs.Config.ZenodoAccessToken)
 	if err != nil {
 		t.Errorf("Failed to upload test file contents to Zenodo: %v", err)
 	}
@@ -131,7 +130,7 @@ func Test_upload_file_to_deposition(t *testing.T) {
 		},
 	}
 
-	fileUploadResponse, err = uploadModuleToZenodo(*deposition, testModule, svcs.Config.ZENODO_ACCESS_TOKEN)
+	fileUploadResponse, err = uploadModuleToZenodo(*deposition, testModule, svcs.Config.ZenodoAccessToken)
 	if err != nil {
 		t.Errorf("Failed to upload test module to Zenodo: %v", err)
 	}
@@ -142,7 +141,7 @@ func Test_upload_file_to_deposition(t *testing.T) {
 		t.Errorf("File upload response.Key is empty for test module, probably malformed file data")
 	}
 
-	metadataResponse, err := addMetadataToDeposition(*deposition, testModule.Version.DOIMetadata, svcs.Config.ZENODO_ACCESS_TOKEN)
+	metadataResponse, err := addMetadataToDeposition(*deposition, testModule.Version.DOIMetadata, svcs.Config.ZenodoAccessToken)
 	if err != nil {
 		t.Errorf("Failed to add metadata to deposition: %v", err)
 	}
@@ -153,7 +152,7 @@ func Test_upload_file_to_deposition(t *testing.T) {
 		t.Errorf("Metadata response.ConceptRecID is empty, probably malformed metadata")
 	}
 
-	publishResponse, err := publishDeposition(*deposition, svcs.Config.ZENODO_ACCESS_TOKEN)
+	publishResponse, err := publishDeposition(*deposition, svcs.Config.ZenodoAccessToken)
 	if err != nil {
 		t.Errorf("Failed to publish deposition: %v", err)
 	}
