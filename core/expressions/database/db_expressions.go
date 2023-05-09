@@ -25,7 +25,9 @@ import (
 	"github.com/pixlise/core/v3/core/api"
 	"github.com/pixlise/core/v3/core/expressions/expressions"
 	"github.com/pixlise/core/v3/core/expressions/zenodo"
+	zenodoModels "github.com/pixlise/core/v3/core/expressions/zenodo-models"
 	"github.com/pixlise/core/v3/core/pixlUser"
+	"github.com/pixlise/core/v3/core/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -127,6 +129,7 @@ func (e *ExpressionDB) CreateExpression(input expressions.DataExpressionInput, c
 			CreatedUnixTimeSec:  nowUnix,
 			ModifiedUnixTimeSec: nowUnix,
 		},
+		DOIMetadata: zenodoModels.DOIMetadata{},
 		// RecentExecStats is blank at this point!
 	}
 
@@ -197,6 +200,7 @@ func (e *ExpressionDB) UpdateExpression(
 			CreatedUnixTimeSec:  createdUnixTimeSec,
 			ModifiedUnixTimeSec: nowUnix,
 		},
+		DOIMetadata: input.DOIMetadata,
 		// Expression was edited, so any previous RecentExecStats are no longer valid, so blank!
 	}
 
@@ -249,7 +253,8 @@ func (e *ExpressionDB) DeleteExpression(expressionID string) error {
 func (e *ExpressionDB) PublishExpressionToZenodo(expressionID string, zipData []byte) (expressions.DataExpression, error) {
 	result := expressions.DataExpression{}
 
-	exprResult := e.Expressions.FindOne(context.TODO(), bson.M{"_id": expressionID})
+	strippedID, _ := utils.StripSharedItemIDPrefix(expressionID)
+	exprResult := e.Expressions.FindOne(context.TODO(), bson.M{"_id": strippedID})
 
 	if exprResult.Err() != nil {
 		return result, exprResult.Err()
@@ -262,7 +267,7 @@ func (e *ExpressionDB) PublishExpressionToZenodo(expressionID string, zipData []
 	}
 
 	// Verify the expression exists and is shared before publishing
-	if result.ID == expressionID && result.Origin.Shared {
+	if result.ID == strippedID && result.Origin.Shared {
 
 		deposition, err := zenodo.PublishExpressionZipToZenodo(result, zipData)
 		if err != nil {
@@ -270,14 +275,16 @@ func (e *ExpressionDB) PublishExpressionToZenodo(expressionID string, zipData []
 		}
 
 		// Update the expression with the DOI
-		filter := bson.D{{"_id", expressionID}}
+		filter := bson.D{{"_id", strippedID}}
 
-		// Update DOI, DOILink, and DOIBadge
+		// Add the returned DOI links to the stored metadata
+		result.DOIMetadata.DOI = deposition.DOI
+		result.DOIMetadata.DOILink = deposition.Links.DOI
+		result.DOIMetadata.DOIBadge = deposition.Links.Badge
+
 		update := bson.D{
 			{"$set", bson.D{
-				{"doi", deposition.DOI},
-				{"doiLink", deposition.Links.DOI},
-				{"doiBadge", deposition.Links.Badge},
+				{"doiMetadata", result.DOIMetadata},
 			}},
 		}
 
@@ -288,13 +295,8 @@ func (e *ExpressionDB) PublishExpressionToZenodo(expressionID string, zipData []
 
 		// Make sure it worked
 		if updResult.MatchedCount != 1 || updResult.ModifiedCount != 1 {
-			return result, api.MakeNotFoundError(expressionID)
+			return result, api.MakeNotFoundError(strippedID)
 		}
-
-		// Update result
-		result.DOI = deposition.DOI
-		result.DOILink = deposition.Links.DOI
-		result.DOIBadge = deposition.Links.Badge
 	}
 
 	return result, nil

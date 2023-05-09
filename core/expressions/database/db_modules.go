@@ -195,6 +195,7 @@ func (e *ExpressionDB) GetModule(moduleID string, version *modules.SemanticVersi
 				Tags:             ver.Tags,
 				Comments:         ver.Comments,
 				TimeStampUnixSec: ver.TimeStampUnixSec,
+				DOIMetadata:      ver.DOIMetadata,
 			},
 		},
 	}
@@ -242,6 +243,32 @@ func (e *ExpressionDB) CreateModule(
 		Tags:             input.Tags,
 		Comments:         "Initial version",
 		TimeStampUnixSec: nowUnix,
+		DOIMetadata:      input.DOIMetadata,
+	}
+
+	if publishDOI {
+		deposition, err := zenodo.PublishModuleToZenodo(modules.DataModuleSpecificVersionWire{
+			DataModule: &mod,
+			Version: modules.DataModuleVersionSourceWire{
+				SourceCode: input.SourceCode,
+				DataModuleVersionWire: &modules.DataModuleVersionWire{
+					Version:          modules.SemanticVersionToString(ver.Version),
+					Tags:             ver.Tags,
+					Comments:         ver.Comments,
+					TimeStampUnixSec: ver.TimeStampUnixSec,
+				},
+			},
+		})
+		if err != nil {
+			e.Svcs.Log.Errorf("Failed to publish new module to Zenodo: %v. Error: %v", modId, err)
+		}
+
+		ver.DOIMetadata.DOI = deposition.DOI
+		ver.DOIMetadata.DOIBadge = deposition.Links.Badge
+		ver.DOIMetadata.DOILink = deposition.Links.DOI
+		// ver.DOI = deposition.DOI
+		// ver.DOIBadge = deposition.Links.Badge
+		// ver.DOILink = deposition.Links.DOI
 	}
 
 	insertResult, err = e.ModuleVersions.InsertOne(context.TODO(), ver)
@@ -260,6 +287,10 @@ func (e *ExpressionDB) CreateModule(
 			Tags:             ver.Tags,
 			Comments:         ver.Comments,
 			TimeStampUnixSec: ver.TimeStampUnixSec,
+			DOIMetadata:      ver.DOIMetadata,
+			// DOI:              ver.DOI,
+			// DOIBadge:         ver.DOIBadge,
+			// DOILink:          ver.DOILink,
 		},
 	}
 
@@ -268,22 +299,11 @@ func (e *ExpressionDB) CreateModule(
 		Version:    verWire,
 	}
 
-	if publishDOI {
-		deposition, err := zenodo.PublishModuleToZenodo(result)
-		if err != nil {
-			e.Svcs.Log.Errorf("Failed to publish new module to Zenodo: %v. Error: %v", modId, err)
-		}
-
-		result.Version.DOI = deposition.DOI
-		result.Version.DOIBadge = deposition.Links.Badge
-		result.Version.DOILink = deposition.Links.DOI
-	}
-
 	return result, err
 }
 
-func (e *ExpressionDB) getLatestVersion(moduleID string) (modules.SemanticVersion, error) {
-	result := modules.SemanticVersion{}
+func (e *ExpressionDB) getLatestModule(moduleID string) (modules.DataModuleVersion, error) {
+	result := modules.DataModuleVersion{}
 
 	ctx := context.TODO()
 	cursor, err := e.ModuleVersions.Aggregate(ctx, bson.A{
@@ -311,11 +331,12 @@ func (e *ExpressionDB) getLatestVersion(moduleID string) (modules.SemanticVersio
 		err = cursor.Decode(&ver)
 	}
 
-	result = ver.Version
-	//ver := bson.D{}
-	//err = cursor.Decode(&ver)
+	return ver, err
+}
 
-	return result, err
+func (e *ExpressionDB) getLatestVersion(moduleID string) (modules.SemanticVersion, error) {
+	version, err := e.getLatestModule(moduleID)
+	return version.Version, err
 }
 
 func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModuleVersionInput, publishDOI bool) (modules.DataModuleSpecificVersionWire, error) {
@@ -363,6 +384,31 @@ func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModul
 		Tags:             input.Tags,
 		Comments:         input.Comments,
 		TimeStampUnixSec: nowUnix,
+		DOIMetadata:      input.DOIMetadata,
+	}
+
+	if publishDOI {
+		deposition, err := zenodo.PublishModuleToZenodo(modules.DataModuleSpecificVersionWire{
+			DataModule: &mod,
+			Version: modules.DataModuleVersionSourceWire{
+				SourceCode: input.SourceCode,
+				DataModuleVersionWire: &modules.DataModuleVersionWire{
+					Version:          modules.SemanticVersionToString(verRec.Version),
+					Tags:             verRec.Tags,
+					Comments:         verRec.Comments,
+					TimeStampUnixSec: verRec.TimeStampUnixSec,
+					DOIMetadata:      verRec.DOIMetadata,
+				},
+			},
+		})
+		if err != nil {
+			e.Svcs.Log.Errorf("Failed to publish new version of module to Zenodo: %v. Error: %v", moduleID, err)
+			return modules.DataModuleSpecificVersionWire{}, err
+		}
+
+		verRec.DOIMetadata.DOI = deposition.DOI
+		verRec.DOIMetadata.DOIBadge = deposition.Links.Badge
+		verRec.DOIMetadata.DOILink = deposition.Links.DOI
 	}
 
 	insertResult, err := e.ModuleVersions.InsertOne(context.TODO(), verRec)
@@ -381,24 +427,13 @@ func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModul
 			Tags:             verRec.Tags,
 			Comments:         verRec.Comments,
 			TimeStampUnixSec: verRec.TimeStampUnixSec,
+			DOIMetadata:      verRec.DOIMetadata,
 		},
 	}
 
 	result := modules.DataModuleSpecificVersionWire{
 		DataModule: &mod,
 		Version:    verWire,
-	}
-
-	if publishDOI {
-		deposition, err := zenodo.PublishModuleToZenodo(result)
-		if err != nil {
-			e.Svcs.Log.Errorf("Failed to publish new version of module to Zenodo: %v. Error: %v", moduleID, err)
-			return result, err
-		}
-
-		result.Version.DOI = deposition.DOI
-		result.Version.DOIBadge = deposition.Links.Badge
-		result.Version.DOILink = deposition.Links.DOI
 	}
 
 	return result, nil

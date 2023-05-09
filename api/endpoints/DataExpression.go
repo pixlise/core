@@ -70,6 +70,7 @@ func toWire(expr expressions.DataExpression) expressions.DataExpressionWire {
 		ModuleReferences: expr.ModuleReferences,
 		APIObjectItem:    &orig,
 		RecentExecStats:  expr.RecentExecStats,
+		DOIMetadata:      expr.DOIMetadata,
 	}
 	return resultItem
 }

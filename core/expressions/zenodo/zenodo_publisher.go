@@ -21,211 +21,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/pixlise/core/v3/core/expressions/expressions"
 	"github.com/pixlise/core/v3/core/expressions/modules"
+	zenodoModels "github.com/pixlise/core/v3/core/expressions/zenodo-models"
 )
 
-type ZenodoPublishResponse struct {
-	ConceptDOI   string `json:"conceptdoi"`
-	ConceptRecID string `json:"conceptrecid"`
-	Created      string `json:"created"`
-	DOI          string `json:"doi"`
-	DOIURL       string `json:"doi_url"`
-
-	Files []struct {
-		Checksum string `json:"checksum"`
-		Filename string `json:"filename"`
-		Filesize int    `json:"filesize"`
-		ID       string `json:"id"`
-
-		Links struct {
-			Download string `json:"download"`
-			Self     string `json:"self"`
-		} `json:"links"`
-	} `json:"files"`
-
-	ID int `json:"id"`
-
-	Links struct {
-		Badge        string `json:"badge"`
-		Bucket       string `json:"bucket"`
-		ConceptBadge string `json:"conceptbadge"`
-		ConceptDOI   string `json:"conceptdoi"`
-		DOI          string `json:"doi"`
-		Latest       string `json:"latest"`
-		LatestHTML   string `json:"latest_html"`
-		Record       string `json:"record"`
-		RecordHTML   string `json:"record_html"`
-	} `json:"links"`
-
-	Metadata struct {
-		AccessRight string `json:"access_right"`
-
-		Communities []struct {
-			Identifier string `json:"identifier"`
-		} `json:"communities"`
-
-		Creators []struct {
-			Name string `json:"name"`
-		} `json:"creators"`
-
-		Description string `json:"description"`
-		DOI         string `json:"doi"`
-		License     string `json:"license"`
-
-		PrereserveDOI struct {
-			DOI   string `json:"doi"`
-			RecID int    `json:"recid"`
-		} `json:"prereserve_doi"`
-
-		PublicationDate string `json:"publication_date"`
-		Title           string `json:"title"`
-		UploadType      string `json:"upload_type"`
-	} `json:"metadata"`
-
-	Modified string `json:"modified"`
-	Owner    int    `json:"owner"`
-
-	RecordID int    `json:"record_id"`
-	State    string `json:"state"`
-
-	Submitted bool   `json:"submitted"`
-	Title     string `json:"title"`
-}
-
-type ZenodoDepositionMetadata struct {
-	AccessRight string `json:"access_right"`
-
-	Communities []struct {
-		Identifier string `json:"identifier"`
-	} `json:"communities"`
-
-	Creators []struct {
-		Name        string `json:"name"`
-		Affiliation string `json:"affiliation"`
-	} `json:"creators"`
-
-	Description string `json:"description"`
-	DOI         string `json:"doi"`
-	License     string `json:"license"`
-
-	PrereserveDOI struct {
-		DOI   string `json:"doi"`
-		RecID int    `json:"recid"`
-	} `json:"prereserve_doi"`
-
-	PublicationDate string `json:"publication_date"`
-	Title           string `json:"title"`
-	UploadType      string `json:"upload_type"`
-}
-
-type ZenodoMetaResponse struct {
-	ConceptRecID string `json:"conceptrecid"`
-	Created      string `json:"created"`
-	DOI          string `json:"doi"`
-	DOIURL       string `json:"doi_url"`
-
-	Files []struct {
-		Checksum string `json:"checksum"`
-		Filename string `json:"filename"`
-		Filesize int    `json:"filesize"`
-		ID       string `json:"id"`
-
-		Links struct {
-			Download string `json:"download"`
-			Self     string `json:"self"`
-		} `json:"links"`
-	} `json:"files"`
-
-	ID int `json:"id"`
-
-	Links struct {
-		Badge        string `json:"badge"`
-		Bucket       string `json:"bucket"`
-		ConceptBadge string `json:"conceptbadge"`
-		ConceptDOI   string `json:"conceptdoi"`
-		DOI          string `json:"doi"`
-		Latest       string `json:"latest"`
-		LatestHTML   string `json:"latest_html"`
-		Record       string `json:"record"`
-		RecordHTML   string `json:"record_html"`
-	} `json:"links"`
-
-	Metadata ZenodoDepositionMetadata `json:"metadata"`
-
-	Modified string `json:"modified"`
-	Owner    int    `json:"owner"`
-
-	RecordID int    `json:"record_id"`
-	State    string `json:"state"`
-
-	Submitted bool   `json:"submitted"`
-	Title     string `json:"title"`
-}
-
-type ZenodoDepositionResponse struct {
-	ConceptRecID string `json:"conceptrecid"`
-	Created      string `json:"created"`
-
-	Files []struct {
-		Links struct {
-			Download string `json:"download"`
-		} `json:"links"`
-	} `json:"files"`
-
-	ID    int `json:"id"`
-	Links struct {
-		Bucket          string `json:"bucket"`
-		Discard         string `json:"discard"`
-		Edit            string `json:"edit"`
-		Files           string `json:"files"`
-		HTML            string `json:"html"`
-		LatestDraft     string `json:"latest_draft"`
-		LatestDraftHTML string `json:"latest_draft_html"`
-		Publish         string `json:"publish"`
-		Self            string `json:"self"`
-	}
-
-	Meta struct {
-		PrereserveDOI struct {
-			DOI   string `json:"doi"`
-			RecID int    `json:"recid"`
-		} `json:"prereserve_doi"`
-	} `json:"metadata"`
-
-	Owner     int    `json:"owner"`
-	RecordID  int    `json:"record_id"`
-	State     string `json:"state"`
-	Submitted bool   `json:"submitted"`
-	Title     string `json:"title"`
-}
-
-type ZenodoFileUploadResponse struct {
-	Key       string `json:"key"`
-	Mimetype  string `json:"mimetype"`
-	Checksum  string `json:"checksum"`
-	VersionID string `json:"version_id"`
-	Size      int    `json:"size"`
-	Created   string `json:"created"`
-	Updated   string `json:"updated"`
-
-	Links struct {
-		Self    string `json:"self"`
-		Version string `json:"version"`
-		Uploads string `json:"uploads"`
-	} `json:"links"`
-
-	IsHead       bool `json:"is_head"`
-	DeleteMarker bool `json:"delete_marker"`
-}
-
-func createEmptyDeposition(zenodoURI string, accessToken string) (*ZenodoDepositionResponse, error) {
-	emptyResponse := ZenodoDepositionResponse{}
+func createEmptyDeposition(zenodoURI string, accessToken string) (*zenodoModels.ZenodoDepositionResponse, error) {
+	emptyResponse := zenodoModels.ZenodoDepositionResponse{}
 
 	depositionsURL := zenodoURI + "/api/deposit/depositions?access_token=" + accessToken
 
@@ -240,7 +47,7 @@ func createEmptyDeposition(zenodoURI string, accessToken string) (*ZenodoDeposit
 		return &emptyResponse, err
 	}
 
-	response := ZenodoDepositionResponse{}
+	response := zenodoModels.ZenodoDepositionResponse{}
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return &emptyResponse, err
@@ -249,8 +56,8 @@ func createEmptyDeposition(zenodoURI string, accessToken string) (*ZenodoDeposit
 	return &response, nil
 }
 
-func uploadFileContentsToZenodo(deposition ZenodoDepositionResponse, filename string, contents *bytes.Buffer, accessToken string) (*ZenodoFileUploadResponse, error) {
-	emptyResponse := ZenodoFileUploadResponse{}
+func uploadFileContentsToZenodo(deposition zenodoModels.ZenodoDepositionResponse, filename string, contents *bytes.Buffer, accessToken string) (*zenodoModels.ZenodoFileUploadResponse, error) {
+	emptyResponse := zenodoModels.ZenodoFileUploadResponse{}
 
 	uploadUrl := deposition.Links.Bucket + "/" + filename + "?access_token=" + accessToken
 	putReq, err := http.NewRequest("PUT", uploadUrl, contents)
@@ -271,7 +78,7 @@ func uploadFileContentsToZenodo(deposition ZenodoDepositionResponse, filename st
 		return &emptyResponse, err
 	}
 
-	fileUploadResponse := ZenodoFileUploadResponse{}
+	fileUploadResponse := zenodoModels.ZenodoFileUploadResponse{}
 	err = json.Unmarshal(putBody, &fileUploadResponse)
 	if err != nil {
 		return &emptyResponse, err
@@ -280,8 +87,8 @@ func uploadFileContentsToZenodo(deposition ZenodoDepositionResponse, filename st
 	return &fileUploadResponse, nil
 }
 
-func uploadModuleToZenodo(deposition ZenodoDepositionResponse, module modules.DataModuleSpecificVersionWire, accessToken string) (*ZenodoFileUploadResponse, error) {
-	zenodoResponse := ZenodoFileUploadResponse{}
+func uploadModuleToZenodo(deposition zenodoModels.ZenodoDepositionResponse, module modules.DataModuleSpecificVersionWire, accessToken string) (*zenodoModels.ZenodoFileUploadResponse, error) {
+	zenodoResponse := zenodoModels.ZenodoFileUploadResponse{}
 
 	filename := module.DataModule.ID + ".json"
 	jsonContents, err := json.Marshal(module)
@@ -297,8 +104,8 @@ func uploadModuleToZenodo(deposition ZenodoDepositionResponse, module modules.Da
 	return fileUploadResponse, nil
 }
 
-func uploadExpressionZipToZenodo(deposition ZenodoDepositionResponse, filename string, zipFile []byte, accessToken string) (*ZenodoFileUploadResponse, error) {
-	zenodoResponse := ZenodoFileUploadResponse{}
+func uploadExpressionZipToZenodo(deposition zenodoModels.ZenodoDepositionResponse, filename string, zipFile []byte, accessToken string) (*zenodoModels.ZenodoFileUploadResponse, error) {
+	zenodoResponse := zenodoModels.ZenodoFileUploadResponse{}
 
 	fileUploadResponse, err := uploadFileContentsToZenodo(deposition, filename, bytes.NewBuffer([]byte(zipFile)), accessToken)
 	if err != nil {
@@ -308,8 +115,8 @@ func uploadExpressionZipToZenodo(deposition ZenodoDepositionResponse, filename s
 	return fileUploadResponse, nil
 }
 
-func addMetadataToDeposition(deposition ZenodoDepositionResponse, metadata map[string]interface{}, accessToken string) (*ZenodoMetaResponse, error) {
-	emptyResponse := ZenodoMetaResponse{}
+func uploadMetadataToDeposition(deposition zenodoModels.ZenodoDepositionResponse, metadata map[string]interface{}, accessToken string) (*zenodoModels.ZenodoMetaResponse, error) {
+	emptyResponse := zenodoModels.ZenodoMetaResponse{}
 
 	metadataJson, err := json.Marshal(metadata)
 	if err != nil {
@@ -335,7 +142,7 @@ func addMetadataToDeposition(deposition ZenodoDepositionResponse, metadata map[s
 		return &emptyResponse, err
 	}
 
-	metaResponseObj := ZenodoMetaResponse{}
+	metaResponseObj := zenodoModels.ZenodoMetaResponse{}
 	err = json.Unmarshal(metaObject, &metaResponseObj)
 	if err != nil {
 		return &emptyResponse, err
@@ -344,47 +151,93 @@ func addMetadataToDeposition(deposition ZenodoDepositionResponse, metadata map[s
 	return &metaResponseObj, nil
 }
 
-func addModuleMetadataToDeposition(deposition ZenodoDepositionResponse, module modules.DataModuleSpecificVersionWire, accessToken string) (*ZenodoMetaResponse, error) {
-	description := fmt.Sprintf("Lua module created using PIXLISE (https://pixlise.org). %v", module.DataModule.Comments)
-
+func addMetadataToDeposition(deposition zenodoModels.ZenodoDepositionResponse, doiMetadata zenodoModels.DOIMetadata, accessToken string) (*zenodoModels.ZenodoMetaResponse, error) {
 	// API fails if any empty keys are included, so we need to remove them
+
 	metadata := map[string]interface{}{
 		"metadata": map[string]interface{}{
-			"title":       module.DataModule.Name,
+			"title":       doiMetadata.Title,
 			"upload_type": "software",
-			"description": description,
-			"creators": []map[string]interface{}{
-				{
-					"name": module.DataModule.Origin.Creator.Name,
-				},
-			},
+			"description": doiMetadata.Description,
 		},
 	}
 
-	return addMetadataToDeposition(deposition, metadata, accessToken)
-}
+	if doiMetadata.Creators != nil && len(doiMetadata.Creators) > 0 {
+		metadata["metadata"].(map[string]interface{})["creators"] = []map[string]interface{}{}
 
-func addExpressionMetadataToDeposition(deposition ZenodoDepositionResponse, expression expressions.DataExpression, accessToken string) (*ZenodoMetaResponse, error) {
-	description := fmt.Sprintf("Expression created using PIXLISE (https://pixlise.org). %v", expression.Comments)
+		for _, creator := range doiMetadata.Creators {
+			creatorMap := map[string]interface{}{
+				"name": creator.Name,
+			}
 
-	// API fails if any empty keys are included, so we need to remove them
-	metadata := map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"title":       expression.Name,
-			"upload_type": "software",
-			"description": description,
-			"creators": []map[string]interface{}{
-				{
-					"name": expression.Origin.Creator.Name,
-				},
-			},
-		},
+			if creator.Affiliation != "" {
+				creatorMap["affiliation"] = creator.Affiliation
+			}
+
+			if creator.Orcid != "" {
+				creatorMap["orcid"] = creator.Orcid
+			}
+
+			metadata["metadata"].(map[string]interface{})["creators"] = append(metadata["metadata"].(map[string]interface{})["creators"].([]map[string]interface{}), creatorMap)
+		}
 	}
 
-	return addMetadataToDeposition(deposition, metadata, accessToken)
+	if doiMetadata.Keywords != "" {
+		metadata["metadata"].(map[string]interface{})["keywords"] = strings.Split(doiMetadata.Keywords, ",")
+	}
+
+	if doiMetadata.Notes != "" {
+		metadata["metadata"].(map[string]interface{})["notes"] = doiMetadata.Notes
+	}
+
+	if doiMetadata.RelatedIdentifiers != nil && len(doiMetadata.RelatedIdentifiers) > 0 {
+		metadata["metadata"].(map[string]interface{})["related_identifiers"] = []map[string]interface{}{}
+
+		for _, relatedIdentifier := range doiMetadata.RelatedIdentifiers {
+			relatedID := map[string]interface{}{
+				"identifier": relatedIdentifier.Identifier,
+				"relation":   relatedIdentifier.Relation,
+			}
+			metadata["metadata"].(map[string]interface{})["related_identifiers"] = append(metadata["metadata"].(map[string]interface{})["related_identifiers"].([]map[string]interface{}), relatedID)
+		}
+	}
+
+	if doiMetadata.Contributors != nil && len(doiMetadata.Contributors) > 0 {
+		metadata["metadata"].(map[string]interface{})["contributors"] = []map[string]interface{}{}
+
+		for _, contributor := range doiMetadata.Contributors {
+			contributorMap := map[string]interface{}{
+				"name": contributor.Name,
+			}
+
+			if contributor.Affiliation != "" {
+				contributorMap["affiliation"] = contributor.Affiliation
+			}
+
+			if contributor.Type != "" {
+				contributorMap["type"] = contributor.Type
+			}
+
+			if contributor.Orcid != "" {
+				contributorMap["orcid"] = contributor.Orcid
+			}
+
+			metadata["metadata"].(map[string]interface{})["contributors"] = append(metadata["metadata"].(map[string]interface{})["contributors"].([]map[string]interface{}), contributorMap)
+		}
+	}
+
+	if doiMetadata.References != "" {
+		metadata["metadata"].(map[string]interface{})["references"] = strings.Split(doiMetadata.References, ",")
+	}
+
+	if doiMetadata.Version != "" {
+		metadata["metadata"].(map[string]interface{})["version"] = doiMetadata.Version
+	}
+
+	return uploadMetadataToDeposition(deposition, metadata, accessToken)
 }
 
-func publishDeposition(deposition ZenodoDepositionResponse, accessToken string) (*ZenodoPublishResponse, error) {
+func publishDeposition(deposition zenodoModels.ZenodoDepositionResponse, accessToken string) (*zenodoModels.ZenodoPublishResponse, error) {
 	publishURL := deposition.Links.Publish + "?access_token=" + accessToken
 	publishReq, err := http.NewRequest(http.MethodPost, publishURL, bytes.NewBuffer([]byte("{}")))
 	if err != nil {
@@ -404,7 +257,7 @@ func publishDeposition(deposition ZenodoDepositionResponse, accessToken string) 
 		return nil, err
 	}
 
-	zenodoResponse := ZenodoPublishResponse{}
+	zenodoResponse := zenodoModels.ZenodoPublishResponse{}
 	err = json.Unmarshal(publishBody, &zenodoResponse)
 	if err != nil {
 		return nil, err
@@ -413,8 +266,8 @@ func publishDeposition(deposition ZenodoDepositionResponse, accessToken string) 
 	return &zenodoResponse, nil
 }
 
-func PublishModuleToZenodo(module modules.DataModuleSpecificVersionWire) (*ZenodoPublishResponse, error) {
-	zenodoResponse := ZenodoPublishResponse{}
+func PublishModuleToZenodo(module modules.DataModuleSpecificVersionWire) (*zenodoModels.ZenodoPublishResponse, error) {
+	zenodoResponse := zenodoModels.ZenodoPublishResponse{}
 
 	accessToken, foundAccessToken := os.LookupEnv("ZENODO_ACCESS_TOKEN")
 	if !foundAccessToken {
@@ -436,7 +289,7 @@ func PublishModuleToZenodo(module modules.DataModuleSpecificVersionWire) (*Zenod
 		return &zenodoResponse, err
 	}
 
-	_, err = addModuleMetadataToDeposition(*deposition, module, accessToken)
+	_, err = addMetadataToDeposition(*deposition, module.Version.DOIMetadata, accessToken)
 	if err != nil {
 		return &zenodoResponse, err
 	}
@@ -450,8 +303,8 @@ func PublishModuleToZenodo(module modules.DataModuleSpecificVersionWire) (*Zenod
 	return &zenodoResponse, nil
 }
 
-func PublishExpressionZipToZenodo(expression expressions.DataExpression, zipFile []byte) (*ZenodoPublishResponse, error) {
-	zenodoResponse := ZenodoPublishResponse{}
+func PublishExpressionZipToZenodo(expression expressions.DataExpression, zipFile []byte) (*zenodoModels.ZenodoPublishResponse, error) {
+	zenodoResponse := zenodoModels.ZenodoPublishResponse{}
 
 	accessToken, foundAccessToken := os.LookupEnv("ZENODO_ACCESS_TOKEN")
 	if !foundAccessToken {
@@ -474,7 +327,7 @@ func PublishExpressionZipToZenodo(expression expressions.DataExpression, zipFile
 		return &zenodoResponse, err
 	}
 
-	_, err = addExpressionMetadataToDeposition(*deposition, expression, accessToken)
+	_, err = addMetadataToDeposition(*deposition, expression.DOIMetadata, accessToken)
 	if err != nil {
 		return &zenodoResponse, err
 	}

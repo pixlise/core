@@ -18,6 +18,7 @@
 package expressions
 
 import (
+	zenodoModels "github.com/pixlise/core/v3/core/expressions/zenodo-models"
 	"github.com/pixlise/core/v3/core/pixlUser"
 )
 
@@ -29,6 +30,7 @@ type DataExpressionInput struct {
 	Comments         string            `json:"comments"`
 	Tags             []string          `json:"tags"`
 	ModuleReferences []ModuleReference `json:"moduleReferences,omitempty" bson:"moduleReferences,omitempty"`
+	DOIMetadata      zenodoModels.DOIMetadata
 }
 
 // Stats related to executing an expression. We get these from the UI when it runs
@@ -58,9 +60,7 @@ type DataExpression struct {
 	Origin           pixlUser.APIObjectItem `json:"origin"`
 	// NOTE: if modifying below, ensure it's in sync with ExpressionDB StoreExpressionRecentRunStats()
 	RecentExecStats *DataExpressionExecStats `json:"recentExecStats,omitempty" bson:"recentExecStats,omitempty"`
-	DOI             string                   `json:"doi,omitempty" bson:"doi,omitempty"`
-	DOILink         string                   `json:"doiLink,omitempty" bson:"doiLink,omitempty"`
-	DOIBadge        string                   `json:"doiBadge,omitempty" bson:"doiBadge,omitempty"`
+	DOIMetadata     zenodoModels.DOIMetadata `json:"doiMetadata,omitempty" bson:"doiMetadata,omitempty"`
 }
 
 func (a DataExpression) SetTimes(userID string, t int64) {
@@ -87,7 +87,5 @@ type DataExpressionWire struct {
 	*pixlUser.APIObjectItem
 	// NOTE: if modifying below, ensure it's in sync with ExpressionDB StoreExpressionRecentRunStats()
 	RecentExecStats *DataExpressionExecStats `json:"recentExecStats,omitempty" bson:"recentExecStats,omitempty"`
-	DOI             string                   `json:"doi,omitempty" bson:"doi,omitempty"`
-	DOILink         string                   `json:"doiLink,omitempty" bson:"doiLink,omitempty"`
-	DOIBadge        string                   `json:"doiBadge,omitempty" bson:"doiBadge,omitempty"`
+	DOIMetadata     zenodoModels.DOIMetadata `json:"doiMetadata,omitempty" bson:"doiMetadata,omitempty"`
 }

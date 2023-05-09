@@ -130,7 +130,7 @@ func Test_upload_file_to_deposition(t *testing.T) {
 		t.Errorf("File upload response.Key is empty for test module, probably malformed file data")
 	}
 
-	metadataResponse, err := addModuleMetadataToDeposition(*deposition, testModule, accessToken)
+	metadataResponse, err := addMetadataToDeposition(*deposition, testModule.Version.DOIMetadata, accessToken)
 	if err != nil {
 		t.Errorf("Failed to add metadata to deposition: %v", err)
 	}
@@ -148,7 +148,7 @@ func Test_upload_file_to_deposition(t *testing.T) {
 
 	if publishResponse == nil {
 		t.Errorf("Publish response is nil")
-	} else if publishResponse.Submitted != true {
+	} else if !publishResponse.Submitted {
 		t.Errorf("Publish response.Submitted is false, test data was not published!")
 	}
 }
