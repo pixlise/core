@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Exposes structures and functions to store/retrieve/share regions of interest including MIST algorithm versions
 package roiModel
 
 import (

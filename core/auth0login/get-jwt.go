@@ -15,6 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Contains all the code needed to do an Auth0 login and retrieve a JWT.
+// This is useful for command line tools that access the API and for integration tests
+// It is not intended to be used by the API runtime itself, that should only ever
+// parse JWTs passed to it in HTTP requests, it shouldn't generate an Auth0 JWT for
+// any internal reasons
 package auth0login
 
 import (

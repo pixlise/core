@@ -42,6 +42,8 @@ import (
 // /UserContent/UserID/DataExpressions.json
 // /UserContent/shared/DataExpressions.json
 
+const expressionFile = "DataExpressions.json"
+
 func main() {
 	fmt.Println("=================================")
 	fmt.Println("=  PIXLISE expression importer  =")
@@ -148,7 +150,7 @@ func main() {
 	exprFiles := []string{}
 
 	for _, filePath := range userContentPaths {
-		if strings.HasSuffix(filePath, filepaths.ExpressionFile) {
+		if strings.HasSuffix(filePath, expressionFile) {
 			err = importExpressions(remoteFS, *s3Bucket, filePath, exprCollection, &ilog)
 
 			if err != nil {

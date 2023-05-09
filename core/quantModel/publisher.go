@@ -331,7 +331,7 @@ func makeQuantProducts(fs fileaccess.FileAccess, usersBucket string, datasetsBuc
 	contextImageFileMeta.SetInstrumentType("PE")
 	// Set the quantCode based on the job summary params and note it in the repurposed ColourFilter filename component
 	var quantCode DetectorCode
-	if jobSummary.Params.QuantMode == QuantModeCombinedAB {
+	if jobSummary.Params.QuantMode == quantModeCombinedAB {
 		quantCode = Combined
 	} else {
 		quantCode = Separate

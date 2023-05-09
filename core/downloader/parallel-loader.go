@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Parallel file downloader that knows where to download from based on ids requested
 package downloader
 
 import (

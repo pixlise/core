@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Exposes structures and functions to store/retrieve/share tags which are applied to various user-created objects to allow
+// easier filtering/tracking of them
 package tagModel
 
 import (

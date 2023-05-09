@@ -207,7 +207,8 @@ func editElementSets(remoteFS fileaccess.FileAccess, userBucket string, userID s
 }
 
 func editExpressions(remoteFS fileaccess.FileAccess, userBucket string, userID string, fileCreateLookup map[string]int) {
-	filePath := filepaths.GetExpressionPath(userID)
+	const expressionFile = "DataExpressions.json"
+	filePath := filepaths.GetUserContentPath(userID, expressionFile)
 	itemLookup := expressions.DataExpressionLookup{}
 
 	editArrayFile(remoteFS, userBucket, userID, filePath, fileCreateLookup, itemLookup)

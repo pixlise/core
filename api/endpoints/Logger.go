@@ -21,11 +21,11 @@ func registerLoggerHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "logger"
 
 	// Adjusting and getting log level
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/level"), apiRouter.MakeMethodPermission("GET", permission.PermReadPIXLISESettings), getLogLevel)
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/level", logLevelId), apiRouter.MakeMethodPermission("PUT", permission.PermWriteMetrics), putLogLevel)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/level"), apiRouter.MakeMethodPermission("GET", permission.PermReadLogs), getLogLevel)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/level", logLevelId), apiRouter.MakeMethodPermission("PUT", permission.PermWriteLogLevel), putLogLevel)
 
 	// Querying logs
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/fetch", logStreamId), apiRouter.MakeMethodPermission("GET", permission.PermWriteMetrics), logRequest)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/fetch", logStreamId), apiRouter.MakeMethodPermission("GET", permission.PermReadLogs), logRequest)
 }
 
 func logRequest(params handlers.ApiHandlerParams) (interface{}, error) {

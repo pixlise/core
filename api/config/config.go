@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// API configuration as read from strings/JSON and some constants defined here also
 package config
 
 import (

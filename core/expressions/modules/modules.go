@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Data structures used to store and version modules (code in Lua environment)
 package modules
 
 import (

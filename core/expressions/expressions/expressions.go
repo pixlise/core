@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Data structures used to store expressions (both Lua and PIXLang expression code)
 package expressions
 
 import (
