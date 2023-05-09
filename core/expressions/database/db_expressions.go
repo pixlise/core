@@ -250,7 +250,7 @@ func (e *ExpressionDB) DeleteExpression(expressionID string) error {
 	return nil
 }
 
-func (e *ExpressionDB) PublishExpressionToZenodo(expressionID string, zipData []byte) (expressions.DataExpression, error) {
+func (e *ExpressionDB) PublishExpressionToZenodo(expressionID string, zipData []byte, zenodoURI string, zenodoToken string) (expressions.DataExpression, error) {
 	result := expressions.DataExpression{}
 
 	strippedID, _ := utils.StripSharedItemIDPrefix(expressionID)
@@ -269,7 +269,7 @@ func (e *ExpressionDB) PublishExpressionToZenodo(expressionID string, zipData []
 	// Verify the expression exists and is shared before publishing
 	if result.ID == strippedID && result.Origin.Shared {
 
-		deposition, err := zenodo.PublishExpressionZipToZenodo(result, zipData)
+		deposition, err := zenodo.PublishExpressionZipToZenodo(result, zipData, zenodoURI, zenodoToken)
 		if err != nil {
 			return result, err
 		}

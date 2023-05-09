@@ -23,7 +23,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/pixlise/core/v3/core/expressions/expressions"
@@ -266,35 +265,33 @@ func publishDeposition(deposition zenodoModels.ZenodoDepositionResponse, accessT
 	return &zenodoResponse, nil
 }
 
-func PublishModuleToZenodo(module modules.DataModuleSpecificVersionWire) (*zenodoModels.ZenodoPublishResponse, error) {
+func PublishModuleToZenodo(module modules.DataModuleSpecificVersionWire, zenodoURI string, zenodoToken string) (*zenodoModels.ZenodoPublishResponse, error) {
 	zenodoResponse := zenodoModels.ZenodoPublishResponse{}
 
-	accessToken, foundAccessToken := os.LookupEnv("ZENODO_ACCESS_TOKEN")
-	if !foundAccessToken {
-		return &zenodoResponse, errors.New("ZENODO_ACCESS_TOKEN not found")
-	}
-
-	zenodoURI, foundZenodoURI := os.LookupEnv("ZENODO_URI")
-	if !foundZenodoURI {
+	if zenodoURI == "" {
 		return &zenodoResponse, errors.New("ZENODO_URI not found")
 	}
 
-	deposition, err := createEmptyDeposition(zenodoURI, accessToken)
+	if zenodoToken == "" {
+		return &zenodoResponse, errors.New("ZENODO_ACCESS_TOKEN not found")
+	}
+
+	deposition, err := createEmptyDeposition(zenodoURI, zenodoToken)
 	if err != nil {
 		return &zenodoResponse, err
 	}
 
-	_, err = uploadModuleToZenodo(*deposition, module, accessToken)
+	_, err = uploadModuleToZenodo(*deposition, module, zenodoToken)
 	if err != nil {
 		return &zenodoResponse, err
 	}
 
-	_, err = addMetadataToDeposition(*deposition, module.Version.DOIMetadata, accessToken)
+	_, err = addMetadataToDeposition(*deposition, module.Version.DOIMetadata, zenodoToken)
 	if err != nil {
 		return &zenodoResponse, err
 	}
 
-	publishResponse, err := publishDeposition(*deposition, accessToken)
+	publishResponse, err := publishDeposition(*deposition, zenodoToken)
 	if err != nil {
 		return &zenodoResponse, err
 	}
@@ -303,36 +300,34 @@ func PublishModuleToZenodo(module modules.DataModuleSpecificVersionWire) (*zenod
 	return &zenodoResponse, nil
 }
 
-func PublishExpressionZipToZenodo(expression expressions.DataExpression, zipFile []byte) (*zenodoModels.ZenodoPublishResponse, error) {
+func PublishExpressionZipToZenodo(expression expressions.DataExpression, zipFile []byte, zenodoURI string, zenodoToken string) (*zenodoModels.ZenodoPublishResponse, error) {
 	zenodoResponse := zenodoModels.ZenodoPublishResponse{}
 
-	accessToken, foundAccessToken := os.LookupEnv("ZENODO_ACCESS_TOKEN")
-	if !foundAccessToken {
-		return &zenodoResponse, errors.New("ZENODO_ACCESS_TOKEN not found")
-	}
-
-	zenodoURI, foundZenodoURI := os.LookupEnv("ZENODO_URI")
-	if !foundZenodoURI {
+	if zenodoURI == "" {
 		return &zenodoResponse, errors.New("ZENODO_URI not found")
 	}
 
-	deposition, err := createEmptyDeposition(zenodoURI, accessToken)
+	if zenodoToken == "" {
+		return &zenodoResponse, errors.New("ZENODO_ACCESS_TOKEN not found")
+	}
+
+	deposition, err := createEmptyDeposition(zenodoURI, zenodoToken)
 	if err != nil {
 		return &zenodoResponse, err
 	}
 
 	filename := expression.ID + ".zip"
-	_, err = uploadExpressionZipToZenodo(*deposition, filename, zipFile, accessToken)
+	_, err = uploadExpressionZipToZenodo(*deposition, filename, zipFile, zenodoToken)
 	if err != nil {
 		return &zenodoResponse, err
 	}
 
-	_, err = addMetadataToDeposition(*deposition, expression.DOIMetadata, accessToken)
+	_, err = addMetadataToDeposition(*deposition, expression.DOIMetadata, zenodoToken)
 	if err != nil {
 		return &zenodoResponse, err
 	}
 
-	publishResponse, err := publishDeposition(*deposition, accessToken)
+	publishResponse, err := publishDeposition(*deposition, zenodoToken)
 	if err != nil {
 		return &zenodoResponse, err
 	}

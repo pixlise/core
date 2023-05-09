@@ -23,25 +23,43 @@ import (
 	"os"
 	"testing"
 
+	"github.com/pixlise/core/v3/api/config"
+	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/core/awsutil"
 	"github.com/pixlise/core/v3/core/expressions/modules"
+	"github.com/pixlise/core/v3/core/logger"
 	"github.com/pixlise/core/v3/core/pixlUser"
 )
 
+func makeMockSvcs(idGen services.IDGenerator) services.APIServices {
+	cfg := config.APIConfig{}
+
+	return services.APIServices{
+		Config: cfg,
+		Log:    &logger.NullLogger{},
+		SNS:    &awsutil.MockSNS{},
+		IDGen:  idGen,
+	}
+}
+
+func setTestZenodoConfig(svcs *services.APIServices) {
+	svcs.Config.ZENODO_URI = os.Getenv("ZENODO_URI")
+	svcs.Config.ZENODO_ACCESS_TOKEN = os.Getenv("ZENODO_ACCESS_TOKEN")
+
+	if len(svcs.Config.ZENODO_URI) <= 0 || len(svcs.Config.ZENODO_ACCESS_TOKEN) <= 0 {
+		panic("Missing one or more env vars for testing: ZENODO_URI, ZENODO_ACCESS_TOKEN")
+	}
+}
+
 func Test_create_empty_deposition(t *testing.T) {
-	t.Setenv("ZENODO_URI", "https://sandbox.zenodo.org")
-	t.Setenv("ZENODO_ACCESS_TOKEN", "TEST_TOKEN")
-
-	accessToken := os.Getenv("ZENODO_ACCESS_TOKEN")
-	if accessToken == "" {
-		t.Errorf("Failed to find ZENODO_ACCESS_TOKEN")
+	idGen := services.MockIDGenerator{
+		IDs: []string{"expr111"},
 	}
 
-	zenodoURI := os.Getenv("ZENODO_URI")
-	if zenodoURI == "" {
-		t.Errorf("Failed to find ZENODO_URI")
-	}
+	svcs := makeMockSvcs(&idGen)
+	setTestZenodoConfig(&svcs)
 
-	deposition, err := createEmptyDeposition(zenodoURI, accessToken)
+	deposition, err := createEmptyDeposition(svcs.Config.ZENODO_URI, svcs.Config.ZENODO_ACCESS_TOKEN)
 	if err != nil {
 		t.Errorf("Failed to create empty deposition: %v", err)
 	}
@@ -58,20 +76,14 @@ func Test_create_empty_deposition(t *testing.T) {
 }
 
 func Test_upload_file_to_deposition(t *testing.T) {
-	t.Setenv("ZENODO_URI", "https://sandbox.zenodo.org")
-	t.Setenv("ZENODO_ACCESS_TOKEN", "TEST_TOKEN")
-
-	accessToken, foundAccessToken := os.LookupEnv("ZENODO_ACCESS_TOKEN")
-	if !foundAccessToken {
-		t.Errorf("Failed to find ZENODO_ACCESS_TOKEN")
+	idGen := services.MockIDGenerator{
+		IDs: []string{"expr123"},
 	}
 
-	zenodoURI, foundZenodoURI := os.LookupEnv("ZENODO_URI")
-	if !foundZenodoURI {
-		t.Errorf("Failed to find ZENODO_URI")
-	}
+	svcs := makeMockSvcs(&idGen)
+	setTestZenodoConfig(&svcs)
 
-	deposition, err := createEmptyDeposition(zenodoURI, accessToken)
+	deposition, err := createEmptyDeposition(svcs.Config.ZENODO_URI, svcs.Config.ZENODO_ACCESS_TOKEN)
 	if err != nil {
 		t.Errorf("Failed to create empty deposition: %v", err)
 	}
@@ -86,7 +98,7 @@ func Test_upload_file_to_deposition(t *testing.T) {
 		t.Errorf("Failed to marshal test data: %v", err)
 	}
 
-	fileUploadResponse, err := uploadFileContentsToZenodo(*deposition, filename, bytes.NewBuffer([]byte(jsonContents)), accessToken)
+	fileUploadResponse, err := uploadFileContentsToZenodo(*deposition, filename, bytes.NewBuffer([]byte(jsonContents)), svcs.Config.ZENODO_ACCESS_TOKEN)
 	if err != nil {
 		t.Errorf("Failed to upload test file contents to Zenodo: %v", err)
 	}
@@ -119,7 +131,7 @@ func Test_upload_file_to_deposition(t *testing.T) {
 		},
 	}
 
-	fileUploadResponse, err = uploadModuleToZenodo(*deposition, testModule, accessToken)
+	fileUploadResponse, err = uploadModuleToZenodo(*deposition, testModule, svcs.Config.ZENODO_ACCESS_TOKEN)
 	if err != nil {
 		t.Errorf("Failed to upload test module to Zenodo: %v", err)
 	}
@@ -130,7 +142,7 @@ func Test_upload_file_to_deposition(t *testing.T) {
 		t.Errorf("File upload response.Key is empty for test module, probably malformed file data")
 	}
 
-	metadataResponse, err := addMetadataToDeposition(*deposition, testModule.Version.DOIMetadata, accessToken)
+	metadataResponse, err := addMetadataToDeposition(*deposition, testModule.Version.DOIMetadata, svcs.Config.ZENODO_ACCESS_TOKEN)
 	if err != nil {
 		t.Errorf("Failed to add metadata to deposition: %v", err)
 	}
@@ -141,7 +153,7 @@ func Test_upload_file_to_deposition(t *testing.T) {
 		t.Errorf("Metadata response.ConceptRecID is empty, probably malformed metadata")
 	}
 
-	publishResponse, err := publishDeposition(*deposition, accessToken)
+	publishResponse, err := publishDeposition(*deposition, svcs.Config.ZENODO_ACCESS_TOKEN)
 	if err != nil {
 		t.Errorf("Failed to publish deposition: %v", err)
 	}

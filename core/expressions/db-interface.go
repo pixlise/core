@@ -38,7 +38,7 @@ type ExpressionDB interface {
 	) (expressions.DataExpression, error)
 	StoreExpressionRecentRunStats(expressionID string, stats expressions.DataExpressionExecStats) error
 	DeleteExpression(expressionID string) error
-	PublishExpressionToZenodo(expressionID string, zipData []byte) (expressions.DataExpression, error)
+	PublishExpressionToZenodo(expressionID string, zipData []byte, zenodoURI string, zenodoToken string) (expressions.DataExpression, error)
 
 	// Module storage
 	ListModules(retrieveUpdatedUserInfo bool) (modules.DataModuleWireLookup, error)
