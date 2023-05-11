@@ -24,7 +24,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/api"
 	datasetModel "github.com/pixlise/core/v3/core/dataset"
 	"github.com/pixlise/core/v3/core/fileaccess"
@@ -135,8 +137,60 @@ func GetAccessibleGroups(permissions map[string]bool) map[string]bool {
 	return result
 }
 
+func ReadDatasetsAuth(fs fileaccess.FileAccess, configBucket string, s3Path string) (datasetModel.DatasetsAuth, error) {
+	datasetsAuth := datasetModel.DatasetsAuth{}
+	return datasetsAuth, fs.ReadJSON(configBucket, s3Path, &datasetsAuth, false)
+}
+
+func CheckAndUpdatePublicDataset(fs fileaccess.FileAccess, configBucket string, datasetID string, datasetsAuth datasetModel.DatasetsAuth) (bool, error) {
+	isPublic := false
+	datasetsAuthPath := filepaths.GetDatasetsAuthPath()
+
+	// Check if it's in the public dict
+	if datasetInfo, ok := datasetsAuth[datasetID]; ok {
+		isPublic = datasetInfo.Public
+		if !isPublic {
+			// Check if it's past the date where the dataset should be released public
+			if datasetInfo.PublicReleaseUTCTimeSec > 0 {
+				isPublic = time.Now().Unix() > datasetInfo.PublicReleaseUTCTimeSec
+
+				// If it's now public, update the public flag in the dict
+				if isPublic {
+					datasetInfo.Public = true
+					err := fs.WriteJSON(configBucket, datasetsAuthPath, datasetsAuth)
+					if err != nil {
+						return isPublic, err
+					}
+				}
+			}
+		}
+	}
+
+	return isPublic, nil
+}
+
+func CheckIsPublicDataset(fs fileaccess.FileAccess, configBucket string, datasetID string) (bool, error) {
+	isPublic := false
+
+	datasetsAuthPath := filepaths.GetDatasetsAuthPath()
+	datasetsAuth, err := ReadDatasetsAuth(fs, configBucket, datasetsAuthPath)
+	if err != nil {
+		return isPublic, err
+	}
+
+	return CheckAndUpdatePublicDataset(fs, configBucket, datasetID, datasetsAuth)
+}
+
 // Returns nil if user CAN access it, otherwise a api.StatusError with the right HTTP error code
-func UserCanAccessDataset(userInfo pixlUser.UserInfo, summary datasetModel.SummaryFileData) error {
+func UserCanAccessDataset(userInfo pixlUser.UserInfo, summary datasetModel.SummaryFileData, fs fileaccess.FileAccess, configBucket string) error {
+	isPublic, err := CheckIsPublicDataset(fs, configBucket, summary.DatasetID)
+	if err != nil {
+		return err
+	} else if isPublic {
+		// Public dataset, anyone can access it
+		return nil
+	}
+
 	userAllowedGroups := GetAccessibleGroups(userInfo.Permissions)
 	if !userAllowedGroups[summary.Group] {
 		// User is not allowed to see this
@@ -146,7 +200,7 @@ func UserCanAccessDataset(userInfo pixlUser.UserInfo, summary datasetModel.Summa
 }
 
 // Checking if the user can access a given dataset - use this if you don't already have summary info downloaded
-func UserCanAccessDatasetWithSummaryDownload(fs fileaccess.FileAccess, userInfo pixlUser.UserInfo, dataBucket string, datasetID string) (datasetModel.SummaryFileData, error) {
+func UserCanAccessDatasetWithSummaryDownload(fs fileaccess.FileAccess, userInfo pixlUser.UserInfo, dataBucket string, configBucket string, datasetID string) (datasetModel.SummaryFileData, error) {
 	summary, err := datasetModel.ReadDataSetSummary(fs, dataBucket, datasetID)
 	if err != nil {
 		if fs.IsNotFoundError(err) {
@@ -156,5 +210,5 @@ func UserCanAccessDatasetWithSummaryDownload(fs fileaccess.FileAccess, userInfo 
 		}
 	}
 
-	return summary, UserCanAccessDataset(userInfo, summary)
+	return summary, UserCanAccessDataset(userInfo, summary, fs, configBucket)
 }

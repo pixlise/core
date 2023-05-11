@@ -30,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/api/permission"
 	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/core/api"
 	"github.com/pixlise/core/v3/core/pixlUser"
@@ -77,6 +78,13 @@ type workspaceCollectionListItem struct {
 
 func viewStateCollectionList(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
+
+	// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
+	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+	if err != nil {
+		return nil, err
+	}
+
 	userList, _ := getViewStateCollectionListing(params.Svcs, datasetID, params.UserInfo.UserID)
 	sharedList, _ := getViewStateCollectionListing(params.Svcs, datasetID, pixlUser.ShareUserID)
 
@@ -127,6 +135,12 @@ func getViewStateCollectionListing(svcs *services.APIServices, datasetID string,
 func viewStateCollectionGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	collectionID := params.PathParams[idIdentifier]
+
+	// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
+	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+	if err != nil {
+		return nil, err
+	}
 
 	s3Path := filepaths.GetCollectionPath(params.UserInfo.UserID, datasetID, collectionID)
 	strippedID, isSharedReq := utils.StripSharedItemIDPrefix(collectionID)

@@ -75,28 +75,28 @@ var allowedQueryNames = map[string]bool{
 
 func registerDatasetHandler(router *apiRouter.ApiObjectRouter) {
 	// Listing datasets (tiles screen)
-	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), datasetListing)
+	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix), apiRouter.MakeMethodPermission("GET", permission.PermPublic), datasetListing)
 
 	// Creating datasets
 	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteDataset), datasetCreatePost)
 
 	// Regeneration/manual editing of datasets
 	// Setting/getting meta fields
-	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/meta", datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), datasetCustomMetaGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/meta", datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), datasetCustomMetaGet)
 	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/meta", datasetIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWriteDataset), datasetCustomMetaPut)
 
 	// Reprocess
 	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/reprocess", datasetIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermReadDataAnalysis), datasetReprocess)
 
 	// Adding/viewing/removing extra images (eg WATSON)
-	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/images", datasetIdentifier, customImageTypeIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), datasetCustomImagesList)
-	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/images", datasetIdentifier, customImageTypeIdentifier, customImageIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), datasetCustomImageGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/images", datasetIdentifier, customImageTypeIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), datasetCustomImagesList)
+	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/images", datasetIdentifier, customImageTypeIdentifier, customImageIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), datasetCustomImageGet)
 	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/images", datasetIdentifier, customImageTypeIdentifier, customImageIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteDataset), datasetCustomImagesPost)
 	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/images", datasetIdentifier, customImageTypeIdentifier, customImageIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWriteDataset), datasetCustomImagesPut)
 	router.AddJSONHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/images", datasetIdentifier, customImageTypeIdentifier, customImageIdentifier), apiRouter.MakeMethodPermission("DELETE", permission.PermWriteDataset), datasetCustomImagesDelete)
 
 	// Streaming from S3
-	router.AddCacheControlledStreamHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/"+handlers.UrlStreamDownloadIndicator, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), datasetFileStream)
+	router.AddCacheControlledStreamHandler(handlers.MakeEndpointPath(datasetPathPrefix+"/"+handlers.UrlStreamDownloadIndicator, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), datasetFileStream)
 }
 
 func readDataSetData(svcs *services.APIServices, s3Path string) (datasetModel.DatasetConfig, error) {
@@ -306,11 +306,21 @@ func datasetListing(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
+	datasetsAuthPath := filepaths.GetDatasetsAuthPath()
+	datasetsAuth, err := permission.ReadDatasetsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, datasetsAuthPath)
+	if err != nil {
+		return nil, err
+	}
+
 	userAllowedGroups := permission.GetAccessibleGroups(params.UserInfo.Permissions)
 
 	for _, item := range dataSets.Datasets {
+		isPublic, err := permission.CheckAndUpdatePublicDataset(params.Svcs.FS, params.Svcs.Config.ConfigBucket, item.DatasetID, datasetsAuth)
+		if err != nil {
+			return nil, err
+		}
 		// Check that the user is allowed to see this dataset based on group permissions
-		if !userAllowedGroups[item.Group] {
+		if !userAllowedGroups[item.Group] && !isPublic {
 			continue
 		}
 
@@ -352,7 +362,7 @@ func datasetFileStream(params handlers.ApiHandlerStreamParams) (*s3.GetObjectOut
 	statuscode := 200
 
 	// Due to newly implemented group permissions, we now need to download the dataset summary to check the group is allowable
-	summary, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, datasetID)
+	summary, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
 	if err != nil {
 		return nil, "", "", "", http.StatusInternalServerError, err
 	}

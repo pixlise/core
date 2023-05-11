@@ -35,7 +35,7 @@ func quantificationLogFileStream(params handlers.ApiHandlerStreamParams) (*s3.Ge
 	// First, check if the user is allowed to access the given dataset
 	datasetID := params.PathParams[datasetIdentifier]
 
-	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, datasetID)
+	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
 	if err != nil {
 		return nil, "", err
 	}
