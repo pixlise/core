@@ -50,6 +50,7 @@ func registerDataExpressionHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/execution-stat", idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWriteDataAnalysis), dataExpressionExecutionStatPut)
 
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedExpression), dataExpressionShare)
+	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/doi/"+pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedExpression), publishDataExpressionToZenodo)
 }
 
 func toWire(expr expressions.DataExpression) expressions.DataExpressionWire {
@@ -69,6 +70,7 @@ func toWire(expr expressions.DataExpression) expressions.DataExpressionWire {
 		ModuleReferences: expr.ModuleReferences,
 		APIObjectItem:    &orig,
 		RecentExecStats:  expr.RecentExecStats,
+		DOIMetadata:      expr.DOIMetadata,
 	}
 	return resultItem
 }
@@ -276,6 +278,26 @@ func dataExpressionShare(params handlers.ApiHandlerParams) (interface{}, error) 
 
 	// Return just the one shared id
 	return sharedIDs[0], nil
+}
+
+func publishDataExpressionToZenodo(params handlers.ApiHandlerParams) (interface{}, error) {
+	expressionID := params.PathParams[idIdentifier]
+
+	// Get the uploaded zip data
+	zipData, err := ioutil.ReadAll(params.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	zenodoURI := params.Svcs.Config.ZenodoURI
+	zenodoToken := params.Svcs.Config.ZenodoAccessToken
+
+	expression, err := params.Svcs.Expressions.PublishExpressionToZenodo(expressionID, zipData, zenodoURI, zenodoToken)
+	if err != nil {
+		return nil, err
+	}
+
+	return expression, nil
 }
 
 func shareExpressions(svcs *services.APIServices, userID string, expressionIDs []string) ([]string, error) {

@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v3/core/expressions/modules"
+	"github.com/pixlise/core/v3/core/expressions/zenodo"
 	"github.com/pixlise/core/v3/core/pixlUser"
 	"github.com/pixlise/core/v3/core/utils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -194,6 +195,7 @@ func (e *ExpressionDB) GetModule(moduleID string, version *modules.SemanticVersi
 				Tags:             ver.Tags,
 				Comments:         ver.Comments,
 				TimeStampUnixSec: ver.TimeStampUnixSec,
+				DOIMetadata:      ver.DOIMetadata,
 			},
 		},
 	}
@@ -204,6 +206,7 @@ func (e *ExpressionDB) GetModule(moduleID string, version *modules.SemanticVersi
 func (e *ExpressionDB) CreateModule(
 	input modules.DataModuleInput,
 	creator pixlUser.UserInfo,
+	publishDOI bool,
 ) (modules.DataModuleSpecificVersionWire, error) {
 	nowUnix := e.Svcs.TimeStamper.GetTimeNowSec()
 	modId := e.Svcs.IDGen.GenObjectID()
@@ -240,6 +243,29 @@ func (e *ExpressionDB) CreateModule(
 		Tags:             input.Tags,
 		Comments:         "Initial version",
 		TimeStampUnixSec: nowUnix,
+		DOIMetadata:      input.DOIMetadata,
+	}
+
+	if publishDOI {
+		deposition, err := zenodo.PublishModuleToZenodo(modules.DataModuleSpecificVersionWire{
+			DataModule: &mod,
+			Version: modules.DataModuleVersionSourceWire{
+				SourceCode: input.SourceCode,
+				DataModuleVersionWire: &modules.DataModuleVersionWire{
+					Version:          modules.SemanticVersionToString(ver.Version),
+					Tags:             ver.Tags,
+					Comments:         ver.Comments,
+					TimeStampUnixSec: ver.TimeStampUnixSec,
+				},
+			},
+		}, e.Svcs.Config.ZenodoURI, e.Svcs.Config.ZenodoAccessToken)
+		if err != nil {
+			e.Svcs.Log.Errorf("Failed to publish new module to Zenodo: %v. Error: %v", modId, err)
+		}
+
+		ver.DOIMetadata.DOI = deposition.DOI
+		ver.DOIMetadata.DOIBadge = deposition.Links.Badge
+		ver.DOIMetadata.DOILink = deposition.Links.DOI
 	}
 
 	insertResult, err = e.ModuleVersions.InsertOne(context.TODO(), ver)
@@ -258,6 +284,7 @@ func (e *ExpressionDB) CreateModule(
 			Tags:             ver.Tags,
 			Comments:         ver.Comments,
 			TimeStampUnixSec: ver.TimeStampUnixSec,
+			DOIMetadata:      ver.DOIMetadata,
 		},
 	}
 
@@ -269,8 +296,8 @@ func (e *ExpressionDB) CreateModule(
 	return result, err
 }
 
-func (e *ExpressionDB) getLatestVersion(moduleID string) (modules.SemanticVersion, error) {
-	result := modules.SemanticVersion{}
+func (e *ExpressionDB) getLatestModule(moduleID string) (modules.DataModuleVersion, error) {
+	result := modules.DataModuleVersion{}
 
 	ctx := context.TODO()
 	cursor, err := e.ModuleVersions.Aggregate(ctx, bson.A{
@@ -298,14 +325,15 @@ func (e *ExpressionDB) getLatestVersion(moduleID string) (modules.SemanticVersio
 		err = cursor.Decode(&ver)
 	}
 
-	result = ver.Version
-	//ver := bson.D{}
-	//err = cursor.Decode(&ver)
-
-	return result, err
+	return ver, err
 }
 
-func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModuleVersionInput) (modules.DataModuleSpecificVersionWire, error) {
+func (e *ExpressionDB) getLatestVersion(moduleID string) (modules.SemanticVersion, error) {
+	version, err := e.getLatestModule(moduleID)
+	return version.Version, err
+}
+
+func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModuleVersionInput, publishDOI bool) (modules.DataModuleSpecificVersionWire, error) {
 	if e.Modules == nil {
 		return modules.DataModuleSpecificVersionWire{}, errors.New("AddModuleVersion: Mongo not connected")
 	}
@@ -350,6 +378,31 @@ func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModul
 		Tags:             input.Tags,
 		Comments:         input.Comments,
 		TimeStampUnixSec: nowUnix,
+		DOIMetadata:      input.DOIMetadata,
+	}
+
+	if publishDOI {
+		deposition, err := zenodo.PublishModuleToZenodo(modules.DataModuleSpecificVersionWire{
+			DataModule: &mod,
+			Version: modules.DataModuleVersionSourceWire{
+				SourceCode: input.SourceCode,
+				DataModuleVersionWire: &modules.DataModuleVersionWire{
+					Version:          modules.SemanticVersionToString(verRec.Version),
+					Tags:             verRec.Tags,
+					Comments:         verRec.Comments,
+					TimeStampUnixSec: verRec.TimeStampUnixSec,
+					DOIMetadata:      verRec.DOIMetadata,
+				},
+			},
+		}, e.Svcs.Config.ZenodoURI, e.Svcs.Config.ZenodoAccessToken)
+		if err != nil {
+			e.Svcs.Log.Errorf("Failed to publish new version of module to Zenodo: %v. Error: %v", moduleID, err)
+			return modules.DataModuleSpecificVersionWire{}, err
+		}
+
+		verRec.DOIMetadata.DOI = deposition.DOI
+		verRec.DOIMetadata.DOIBadge = deposition.Links.Badge
+		verRec.DOIMetadata.DOILink = deposition.Links.DOI
 	}
 
 	insertResult, err := e.ModuleVersions.InsertOne(context.TODO(), verRec)
@@ -368,6 +421,7 @@ func (e *ExpressionDB) AddModuleVersion(moduleID string, input modules.DataModul
 			Tags:             verRec.Tags,
 			Comments:         verRec.Comments,
 			TimeStampUnixSec: verRec.TimeStampUnixSec,
+			DOIMetadata:      verRec.DOIMetadata,
 		},
 	}
 

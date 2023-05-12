@@ -39,12 +39,13 @@ type ExpressionDB interface {
 	) (expressions.DataExpression, error)
 	StoreExpressionRecentRunStats(expressionID string, stats expressions.DataExpressionExecStats) error
 	DeleteExpression(expressionID string) error
+	PublishExpressionToZenodo(expressionID string, zipData []byte, zenodoURI string, zenodoToken string) (expressions.DataExpression, error)
 
 	// Module storage
 	ListModules(retrieveUpdatedUserInfo bool) (modules.DataModuleWireLookup, error)
 	GetModule(moduleID string, version *modules.SemanticVersion, retrieveUpdatedUserInfo bool) (modules.DataModuleSpecificVersionWire, error)
-	CreateModule(input modules.DataModuleInput, creator pixlUser.UserInfo) (modules.DataModuleSpecificVersionWire, error)
-	AddModuleVersion(moduleID string, input modules.DataModuleVersionInput) (modules.DataModuleSpecificVersionWire, error)
+	CreateModule(input modules.DataModuleInput, creator pixlUser.UserInfo, publishDOI bool) (modules.DataModuleSpecificVersionWire, error)
+	AddModuleVersion(moduleID string, input modules.DataModuleVersionInput, publishDOI bool) (modules.DataModuleSpecificVersionWire, error)
 
 	// Helper to decide what kind of error was returned
 	IsNotFoundError(err error) bool
