@@ -24,7 +24,10 @@ import (
 
 	"github.com/pixlise/core/v3/core/api"
 	"github.com/pixlise/core/v3/core/expressions/expressions"
+	"github.com/pixlise/core/v3/core/expressions/zenodo"
+	zenodoModels "github.com/pixlise/core/v3/core/expressions/zenodo-models"
 	"github.com/pixlise/core/v3/core/pixlUser"
+	"github.com/pixlise/core/v3/core/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -126,6 +129,7 @@ func (e *ExpressionDB) CreateExpression(input expressions.DataExpressionInput, c
 			CreatedUnixTimeSec:  nowUnix,
 			ModifiedUnixTimeSec: nowUnix,
 		},
+		DOIMetadata: zenodoModels.DOIMetadata{},
 		// RecentExecStats is blank at this point!
 	}
 
@@ -143,7 +147,7 @@ func (e *ExpressionDB) CreateExpression(input expressions.DataExpressionInput, c
 // Replaces the existing expression with the new one
 // This assumes a GetExpression was required already to validate user permissions to this expression, etc
 // therefore the prevUnixTime should be available. This way we can preserve the creation time but set a new
-// modified time now. Also now requires the existing expression shared and source code field!
+// modified time now. Also now requires the existing expressƒion shared and source code field!
 func (e *ExpressionDB) UpdateExpression(
 	expressionID string,
 	input expressions.DataExpressionInput,
@@ -196,6 +200,7 @@ func (e *ExpressionDB) UpdateExpression(
 			CreatedUnixTimeSec:  createdUnixTimeSec,
 			ModifiedUnixTimeSec: nowUnix,
 		},
+		DOIMetadata: input.DOIMetadata,
 		// Expression was edited, so any previous RecentExecStats are no longer valid, so blank!
 	}
 
@@ -243,4 +248,56 @@ func (e *ExpressionDB) DeleteExpression(expressionID string) error {
 	}
 
 	return nil
+}
+
+func (e *ExpressionDB) PublishExpressionToZenodo(expressionID string, zipData []byte, zenodoURI string, zenodoToken string) (expressions.DataExpression, error) {
+	result := expressions.DataExpression{}
+
+	strippedID, _ := utils.StripSharedItemIDPrefix(expressionID)
+	exprResult := e.Expressions.FindOne(context.TODO(), bson.M{"_id": strippedID})
+
+	if exprResult.Err() != nil {
+		return result, exprResult.Err()
+	}
+
+	// Read the expression item
+	err := exprResult.Decode(&result)
+	if err != nil {
+		return result, err
+	}
+
+	// Verify the expression exists and is shared before publishing
+	if result.ID == strippedID && result.Origin.Shared {
+
+		deposition, err := zenodo.PublishExpressionZipToZenodo(result, zipData, zenodoURI, zenodoToken)
+		if err != nil {
+			return result, err
+		}
+
+		// Update the expression with the DOI
+		filter := bson.D{{"_id", strippedID}}
+
+		// Add the returned DOI links to the stored metadata
+		result.DOIMetadata.DOI = deposition.DOI
+		result.DOIMetadata.DOILink = deposition.Links.DOI
+		result.DOIMetadata.DOIBadge = deposition.Links.Badge
+
+		update := bson.D{
+			{"$set", bson.D{
+				{"doiMetadata", result.DOIMetadata},
+			}},
+		}
+
+		updResult, err := e.Expressions.UpdateOne(context.TODO(), filter, update)
+		if err != nil {
+			return result, err
+		}
+
+		// Make sure it worked
+		if updResult.MatchedCount != 1 || updResult.ModifiedCount != 1 {
+			return result, api.MakeNotFoundError(strippedID)
+		}
+	}
+
+	return result, nil
 }

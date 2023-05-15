@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	zenodoModels "github.com/pixlise/core/v3/core/expressions/zenodo-models"
 	"github.com/pixlise/core/v3/core/pixlUser"
 )
 
@@ -59,18 +60,20 @@ import (
 
 // What users send in POST
 type DataModuleInput struct {
-	Name       string   `json:"name"`       // Editable name
-	SourceCode string   `json:"sourceCode"` // The module executable code
-	Comments   string   `json:"comments"`   // Editable comments
-	Tags       []string `json:"tags"`       // Any tags for this version
+	Name        string                   `json:"name"`       // Editable name
+	SourceCode  string                   `json:"sourceCode"` // The module executable code
+	Comments    string                   `json:"comments"`   // Editable comments
+	Tags        []string                 `json:"tags"`       // Any tags for this version
+	DOIMetadata zenodoModels.DOIMetadata `json:"doiMetadata,omitempty" bson:"doiMetadata,omitempty"`
 }
 
 // And what we get in PUT for new versions being uploaded
 type DataModuleVersionInput struct {
-	SourceCode    string   `json:"sourceCode"`    // The module executable code
-	Comments      string   `json:"comments"`      // Editable comments
-	Tags          []string `json:"tags"`          // Any tags for this version
-	VersionUpdate string   `json:"versionupdate"` // What are we updating? patch, minor or major. Anything else = error
+	SourceCode    string                   `json:"sourceCode"`    // The module executable code
+	Comments      string                   `json:"comments"`      // Editable comments
+	Tags          []string                 `json:"tags"`          // Any tags for this version
+	VersionUpdate string                   `json:"versionupdate"` // What are we updating? patch, minor or major. Anything else = error
+	DOIMetadata   zenodoModels.DOIMetadata `json:"doiMetadata,omitempty" bson:"doiMetadata,omitempty"`
 }
 
 type SemanticVersion struct {
@@ -108,13 +111,14 @@ func SemanticVersionFromString(v string) (SemanticVersion, error) {
 
 // Stored version of a module
 type DataModuleVersion struct {
-	ID               string          `json:"-" bson:"_id"` // Use as Mongo ID
-	ModuleID         string          `json:"moduleID"`     // The ID of the module we belong to
-	SourceCode       string          `json:"sourceCode"`
-	Version          SemanticVersion `json:"version"`
-	Tags             []string        `json:"tags"`
-	Comments         string          `json:"comments"`
-	TimeStampUnixSec int64           `json:"mod_unix_time_sec"`
+	ID               string                   `json:"-" bson:"_id"` // Use as Mongo ID
+	ModuleID         string                   `json:"moduleID"`     // The ID of the module we belong to
+	SourceCode       string                   `json:"sourceCode"`
+	Version          SemanticVersion          `json:"version"`
+	Tags             []string                 `json:"tags"`
+	Comments         string                   `json:"comments"`
+	TimeStampUnixSec int64                    `json:"mod_unix_time_sec"`
+	DOIMetadata      zenodoModels.DOIMetadata `json:"doiMetadata,omitempty" bson:"doiMetadata,omitempty"`
 }
 
 // Stored module object itself
@@ -127,10 +131,11 @@ type DataModule struct {
 
 // What we send out to users - notice versions only contains version numbers & tags
 type DataModuleVersionWire struct {
-	Version          string   `json:"version"`
-	Tags             []string `json:"tags"`
-	Comments         string   `json:"comments"`
-	TimeStampUnixSec int64    `json:"mod_unix_time_sec"`
+	Version          string                   `json:"version"`
+	Tags             []string                 `json:"tags"`
+	Comments         string                   `json:"comments"`
+	TimeStampUnixSec int64                    `json:"mod_unix_time_sec"`
+	DOIMetadata      zenodoModels.DOIMetadata `json:"doiMetadata,omitempty" bson:"doiMetadata,omitempty"`
 }
 
 // As above, but with source field

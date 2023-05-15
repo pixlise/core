@@ -208,6 +208,7 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 			Tags:       []string{"v1"},
 		},
 		userInfoPeter,
+		false,
 	)
 
 	verifyResult(
@@ -225,6 +226,7 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 			Tags:       []string{"v2"},
 		},
 		userInfoPeter,
+		false,
 	)
 
 	verifyResult(
@@ -279,6 +281,7 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 			Comments:   "module one A",
 			Tags:       []string{"v1", "v1.1"},
 		},
+		false,
 	)
 
 	verifyResult(
@@ -423,6 +426,7 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 			Tags:          []string{"v1", "v1.1"},
 			VersionUpdate: "minor",
 		},
+		false,
 	)
 
 	verifyResult(
@@ -441,6 +445,7 @@ func runTests(db *expressionDB.ExpressionDB, userDB *pixlUser.UserDetailsLookup,
 			Tags:          []string{"v1", "v1.1"},
 			VersionUpdate: "major",
 		},
+		false,
 	)
 
 	verifyResult(

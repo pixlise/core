@@ -26,6 +26,7 @@ import (
 	"github.com/pixlise/core/v3/core/awsutil"
 	expressionDB "github.com/pixlise/core/v3/core/expressions/database"
 	"github.com/pixlise/core/v3/core/expressions/expressions"
+	zenodoModels "github.com/pixlise/core/v3/core/expressions/zenodo-models"
 	"github.com/pixlise/core/v3/core/pixlUser"
 	"github.com/pixlise/core/v3/core/timestamper"
 	"go.mongodb.org/mongo-driver/bson"
@@ -64,11 +65,13 @@ func makeExprDBList(idx int, includeSource bool) bson.D {
 				340.5,
 				1234568888,
 			},
+			zenodoModels.DOIMetadata{},
 		},
 		{
 			"def456", "Iron Error", "element(\"Fe\", \"err\")", "PIXLANG", "comments for def456 expression", []string{}, []expressions.ModuleReference{},
 			makeOrigin("999", "Peter N", "niko@spicule.co.uk", false, 1668100001, 1668100001),
 			nil,
+			zenodoModels.DOIMetadata{},
 		},
 		{
 			"ghi789", "Iron %", "element(\"Fe\", \"%\")", "PIXLANG", "", []string{}, []expressions.ModuleReference{},
@@ -78,6 +81,7 @@ func makeExprDBList(idx int, includeSource bool) bson.D {
 				20,
 				1234568999,
 			},
+			zenodoModels.DOIMetadata{},
 		},
 		// Same as first item, but with real user id and different ID
 		{
@@ -88,6 +92,7 @@ func makeExprDBList(idx int, includeSource bool) bson.D {
 				340,
 				1234568888,
 			},
+			zenodoModels.DOIMetadata{},
 		},
 		// Same as above item, but shared
 		{
@@ -98,6 +103,7 @@ func makeExprDBList(idx int, includeSource bool) bson.D {
 				340,
 				1234568888,
 			},
+			zenodoModels.DOIMetadata{},
 		},
 	}
 
@@ -249,6 +255,20 @@ func Test_dataExpressionHandler_List_OK(t *testing.T) {
             ],
             "runtimeMs": 340.5,
             "mod_unix_time_sec": 1234568888
+        },
+        "doiMetadata": {
+            "title": "",
+            "creators": null,
+            "description": "",
+            "keywords": "",
+            "notes": "",
+            "relatedIdentifiers": null,
+            "contributors": null,
+            "references": "",
+            "version": "",
+            "doi": "",
+            "doiBadge": "",
+            "doiLink": ""
         }
     },
     "def456": {
@@ -265,7 +285,21 @@ func Test_dataExpressionHandler_List_OK(t *testing.T) {
             "email": "peter@spicule.co.uk"
         },
         "create_unix_time_sec": 1668100001,
-        "mod_unix_time_sec": 1668100001
+        "mod_unix_time_sec": 1668100001,
+        "doiMetadata": {
+            "title": "",
+            "creators": null,
+            "description": "",
+            "keywords": "",
+            "notes": "",
+            "relatedIdentifiers": null,
+            "contributors": null,
+            "references": "",
+            "version": "",
+            "doi": "",
+            "doiBadge": "",
+            "doiLink": ""
+        }
     },
     "shared-ghi789": {
         "id": "shared-ghi789",
@@ -289,6 +323,20 @@ func Test_dataExpressionHandler_List_OK(t *testing.T) {
             ],
             "runtimeMs": 20,
             "mod_unix_time_sec": 1234568999
+        },
+        "doiMetadata": {
+            "title": "",
+            "creators": null,
+            "description": "",
+            "keywords": "",
+            "notes": "",
+            "relatedIdentifiers": null,
+            "contributors": null,
+            "references": "",
+            "version": "",
+            "doi": "",
+            "doiBadge": "",
+            "doiLink": ""
         }
     }
 }
@@ -438,6 +486,20 @@ func Test_dataExpressionHandler_Get_OK(t *testing.T) {
         ],
         "runtimeMs": 340.5,
         "mod_unix_time_sec": 1234568888
+    },
+    "doiMetadata": {
+        "title": "",
+        "creators": null,
+        "description": "",
+        "keywords": "",
+        "notes": "",
+        "relatedIdentifiers": null,
+        "contributors": null,
+        "references": "",
+        "version": "",
+        "doi": "",
+        "doiBadge": "",
+        "doiLink": ""
     }
 }
 `)
@@ -467,6 +529,20 @@ func Test_dataExpressionHandler_Get_OK(t *testing.T) {
         ],
         "runtimeMs": 20,
         "mod_unix_time_sec": 1234568999
+    },
+    "doiMetadata": {
+        "title": "",
+        "creators": null,
+        "description": "",
+        "keywords": "",
+        "notes": "",
+        "relatedIdentifiers": null,
+        "contributors": null,
+        "references": "",
+        "version": "",
+        "doi": "",
+        "doiBadge": "",
+        "doiLink": ""
     }
 }
 `)
@@ -547,7 +623,21 @@ func Test_dataExpressionHandler_Post(t *testing.T) {
         "email": "niko@spicule.co.uk"
     },
     "create_unix_time_sec": 1668142579,
-    "mod_unix_time_sec": 1668142579
+    "mod_unix_time_sec": 1668142579,
+    "doiMetadata": {
+        "title": "",
+        "creators": null,
+        "description": "",
+        "keywords": "",
+        "notes": "",
+        "relatedIdentifiers": null,
+        "contributors": null,
+        "references": "",
+        "version": "",
+        "doi": "",
+        "doiBadge": "",
+        "doiLink": ""
+    }
 }
 `)
 	})
@@ -662,7 +752,21 @@ func Test_dataExpressionHandler_Put(t *testing.T) {
         "email": "niko@spicule.co.uk"
     },
     "create_unix_time_sec": 1668100000,
-    "mod_unix_time_sec": 1668100000
+    "mod_unix_time_sec": 1668100000,
+    "doiMetadata": {
+        "title": "",
+        "creators": null,
+        "description": "",
+        "keywords": "",
+        "notes": "",
+        "relatedIdentifiers": null,
+        "contributors": null,
+        "references": "",
+        "version": "",
+        "doi": "",
+        "doiBadge": "",
+        "doiLink": ""
+    }
 }
 `)
 
@@ -807,7 +911,21 @@ func Test_dataExpressionHandler_Put_NoSourceCode(t *testing.T) {
         "email": "niko@spicule.co.uk"
     },
     "create_unix_time_sec": 1668100000,
-    "mod_unix_time_sec": 1668100002
+    "mod_unix_time_sec": 1668100002,
+    "doiMetadata": {
+        "title": "",
+        "creators": null,
+        "description": "",
+        "keywords": "",
+        "notes": "",
+        "relatedIdentifiers": null,
+        "contributors": null,
+        "references": "",
+        "version": "",
+        "doi": "",
+        "doiBadge": "",
+        "doiLink": ""
+    }
 }
 `)
 
@@ -850,7 +968,21 @@ func Test_dataExpressionHandler_Put_NoSourceCode(t *testing.T) {
         "email": "niko@spicule.co.uk"
     },
     "create_unix_time_sec": 1668100000,
-    "mod_unix_time_sec": 1668100003
+    "mod_unix_time_sec": 1668100003,
+    "doiMetadata": {
+        "title": "",
+        "creators": null,
+        "description": "",
+        "keywords": "",
+        "notes": "",
+        "relatedIdentifiers": null,
+        "contributors": null,
+        "references": "",
+        "version": "",
+        "doi": "",
+        "doiBadge": "",
+        "doiLink": ""
+    }
 }
 `)
 	})
@@ -962,7 +1094,21 @@ func Test_dataExpressionHandler_Put_Shared(t *testing.T) {
         "email": "niko@spicule.co.uk"
     },
     "create_unix_time_sec": 1668100000,
-    "mod_unix_time_sec": 1668100004
+    "mod_unix_time_sec": 1668100004,
+    "doiMetadata": {
+        "title": "",
+        "creators": null,
+        "description": "",
+        "keywords": "",
+        "notes": "",
+        "relatedIdentifiers": null,
+        "contributors": null,
+        "references": "",
+        "version": "",
+        "doi": "",
+        "doiBadge": "",
+        "doiLink": ""
+    }
 }
 `)
 	})

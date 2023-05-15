@@ -68,7 +68,7 @@ func Test_Module_DB_Create(t *testing.T) {
 		}
 		user := pixlUser.UserInfo{Name: "Peter N", UserID: "999", Email: "peter@pixlise.org"}
 
-		_, err := db.CreateModule(input, user)
+		_, err := db.CreateModule(input, user, false)
 
 		if err != nil {
 			t.Error(err)

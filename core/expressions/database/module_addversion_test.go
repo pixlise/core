@@ -70,7 +70,7 @@ func Test_Module_DB_AddVersion_NoModule(t *testing.T) {
 			Comments:   "My comment",
 			Tags:       []string{"The best"},
 		}
-		_, err := db.AddModuleVersion("mod123", input)
+		_, err := db.AddModuleVersion("mod123", input, false)
 
 		if err == nil {
 			t.Error("Expected error")
@@ -149,7 +149,7 @@ func Test_Module_DB_AddVersion_OK(t *testing.T) {
 			Comments:   "My comment",
 			Tags:       []string{"The best"},
 		}
-		result, err := db.AddModuleVersion("mod123", input)
+		result, err := db.AddModuleVersion("mod123", input, false)
 
 		if err != nil {
 			t.Error(err)

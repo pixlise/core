@@ -31,6 +31,7 @@ import (
 	"github.com/pixlise/core/v3/core/awsutil"
 	expressionDB "github.com/pixlise/core/v3/core/expressions/database"
 	"github.com/pixlise/core/v3/core/expressions/expressions"
+	zenodoModels "github.com/pixlise/core/v3/core/expressions/zenodo-models"
 	"github.com/pixlise/core/v3/core/pixlUser"
 	"github.com/pixlise/core/v3/core/timestamper"
 	"go.mongodb.org/mongo-driver/bson"
@@ -1364,11 +1365,13 @@ func makeExprDBItem(idx int, useCallerUserId bool) bson.D {
 			"abc123", "Temp data", "housekeeping(\"something\")", "PIXLANG", "comments for abc123 expression", []string{}, []expressions.ModuleReference{},
 			makeOrigin(ownerID, "Niko", "niko@spicule.co.uk", false, 1668100000, 1668100000),
 			nil,
+			zenodoModels.DOIMetadata{},
 		},
 		{
 			"expr1", "Calcium weight%", "element(\"Ca\", \"%\")", "PIXLANG", "comments for expr1", []string{}, []expressions.ModuleReference{},
 			makeOrigin(ownerID2, "Peter N", "peter@spicule.co.uk", false, 1668100001, 1668100001),
 			nil,
+			zenodoModels.DOIMetadata{},
 		},
 	}
 

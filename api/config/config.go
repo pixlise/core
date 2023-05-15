@@ -81,6 +81,9 @@ type APIConfig struct {
 
 	UsersBucket string
 
+	ZenodoURI string
+	ZenodoAccessToken string
+
 	// Vars not set by environment
 	NodeCountOverride int32
 	MaxQuantNodes     int32

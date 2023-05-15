@@ -115,7 +115,21 @@ func Test_Module_Listing(t *testing.T) {
                     "A"
                 ],
                 "comments": "Module 1",
-                "mod_unix_time_sec": 1234567891
+                "mod_unix_time_sec": 1234567891,
+                "doiMetadata": {
+                    "title": "",
+                    "creators": null,
+                    "description": "",
+                    "keywords": "",
+                    "notes": "",
+                    "relatedIdentifiers": null,
+                    "contributors": null,
+                    "references": "",
+                    "version": "",
+                    "doi": "",
+                    "doiBadge": "",
+                    "doiLink": ""
+                }
             }
         ]
     }

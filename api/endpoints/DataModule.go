@@ -76,6 +76,9 @@ func dataModulePost(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
+	// A new DOI is published to Zenodo if the "publish_doi" query parameter is true
+	publishDOI := params.Request.URL.Query().Get("publish_doi") == "true"
+
 	var req modules.DataModuleInput
 	err = json.Unmarshal(body, &req)
 	if err != nil {
@@ -90,11 +93,14 @@ func dataModulePost(params handlers.ApiHandlerParams) (interface{}, error) {
 		return modules.DataModuleSpecificVersionWire{}, api.MakeBadRequestError(errors.New("Source code field cannot be empty"))
 	}
 
-	return params.Svcs.Expressions.CreateModule(req, params.UserInfo)
+	return params.Svcs.Expressions.CreateModule(req, params.UserInfo, publishDOI)
 }
 
 func dataModulePut(params handlers.ApiHandlerParams) (interface{}, error) {
 	modID := params.PathParams[idIdentifier]
+
+	// A new DOI is published to Zenodo if the "publish_doi" query parameter is true
+	publishDOI := params.Request.URL.Query().Get("publish_doi") == "true"
 
 	body, err := ioutil.ReadAll(params.Request.Body)
 	if err != nil {
@@ -107,5 +113,5 @@ func dataModulePut(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, api.MakeBadRequestError(err)
 	}
 
-	return params.Svcs.Expressions.AddModuleVersion(modID, req)
+	return params.Svcs.Expressions.AddModuleVersion(modID, req, publishDOI)
 }
