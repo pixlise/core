@@ -314,11 +314,29 @@ func datasetListing(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	userAllowedGroups := permission.GetAccessibleGroups(params.UserInfo.Permissions)
 
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
+	publicObjectsAuth, err := permission.GetPublicObjectsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, isPublicUser)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, item := range dataSets.Datasets {
 		isPublic, err := permission.CheckAndUpdatePublicDataset(params.Svcs.FS, params.Svcs.Config.ConfigBucket, item.DatasetID, datasetsAuth)
 		if err != nil {
 			return nil, err
 		}
+
+		if isPublicUser {
+			isDatasetPublicWithObjects, err := permission.CheckIsObjectInPublicSet(publicObjectsAuth.Datasets, item.DatasetID)
+			if err != nil {
+				return nil, err
+			}
+
+			if !isDatasetPublicWithObjects {
+				continue
+			}
+		}
+
 		// Check that the user is allowed to see this dataset based on group permissions
 		if !userAllowedGroups[item.Group] && !isPublic {
 			continue
