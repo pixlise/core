@@ -62,7 +62,7 @@ func registerQuantificationHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddJSONHandler(handlers.MakeEndpointPath(quantURLPathPrefix), apiRouter.MakeMethodPermission("GET", permission.PermReadPiquantJobs), quantificationJobAdminList)
 
 	// Normal users can access this - what quants are available and in-progress
-	router.AddJSONHandler(handlers.MakeEndpointPath(quantURLPathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), quantificationList)
+	router.AddJSONHandler(handlers.MakeEndpointPath(quantURLPathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), quantificationList)
 
 	// Multi-quant comparison
 	router.AddJSONHandler(handlers.MakeEndpointPath(quantURLPathPrefix+"/comparison-for-roi", datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermReadDataAnalysis), multiQuantificationComparisonPost)
@@ -80,7 +80,7 @@ func registerQuantificationHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddJSONHandler(handlers.MakeEndpointPath(quantURLPathPrefix+"/combine", datasetIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermCreateQuantification), quantificationCombine)
 
 	// Accessing individual quant
-	router.AddJSONHandler(handlers.MakeEndpointPath(quantURLPathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), quantificationGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(quantURLPathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), quantificationGet)
 
 	// Deleting a quant
 	router.AddJSONHandler(handlers.MakeEndpointPath(quantURLPathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("DELETE", permission.PermWriteDataAnalysis), quantificationDelete)

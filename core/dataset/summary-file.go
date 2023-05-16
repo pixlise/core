@@ -103,16 +103,3 @@ func ReadDataSetSummary(fs fileaccess.FileAccess, dataBucket string, datasetID s
 	}
 	return result, err
 }
-
-// DatasetAuthInfo - Structure of dataset auth JSON files
-// This is used to check whether an individual dataset is public or not
-type DatasetAuthInfo struct {
-	DatasetID               string `json:"dataset_id"`
-	Public                  bool   `json:"public"`
-	PublicReleaseUTCTimeSec int64  `json:"public_release_utc_time_sec"`
-	Sol                     string `json:"sol"`
-}
-
-// DatasetsAuth - Structure of dataset auth JSON files
-// This is used to check the public status of all datasets
-type DatasetsAuth map[string]DatasetAuthInfo

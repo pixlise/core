@@ -153,6 +153,10 @@ func GetDatasetsAuthPath() string {
 	return GetConfigFilePath("datasets-auth.json")
 }
 
+func GetPublicObjectsPath() string {
+	return GetConfigFilePath("public-objects.json")
+}
+
 // Config contains the docker container to use for PIQUANT. Separate from config.json because users can configure this in UI
 const PiquantVersionFileName = "piquant-version.json"
 

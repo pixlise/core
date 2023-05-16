@@ -47,7 +47,7 @@ type roiHandler struct {
 func registerROIHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "roi"
 
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), roiList)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), roiList)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteDataAnalysis), roiPost)
 
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier, "bulk"), apiRouter.MakeMethodPermission("POST", permission.PermWriteDataAnalysis), roiBulkPost)
@@ -64,14 +64,16 @@ func roiList(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	rois := roiModel.ROILookup{}
 
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
+
 	// Get user item summaries
-	err := roiModel.GetROIs(params.Svcs, params.UserInfo.UserID, datasetID, &rois)
+	err := roiModel.GetROIs(params.Svcs, params.UserInfo.UserID, datasetID, &rois, isPublicUser)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get shared item summaries (into same map)
-	err = roiModel.GetROIs(params.Svcs, pixlUser.ShareUserID, datasetID, &rois)
+	err = roiModel.GetROIs(params.Svcs, pixlUser.ShareUserID, datasetID, &rois, isPublicUser)
 	if err != nil {
 		return nil, err
 	}

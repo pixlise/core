@@ -31,6 +31,7 @@ import (
 	datasetModel "github.com/pixlise/core/v3/core/dataset"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/pixlUser"
+	"github.com/pixlise/core/v3/core/utils"
 )
 
 // Public endpoints, mainly for getting the API version
@@ -137,12 +138,21 @@ func GetAccessibleGroups(permissions map[string]bool) map[string]bool {
 	return result
 }
 
-func ReadDatasetsAuth(fs fileaccess.FileAccess, configBucket string, s3Path string) (datasetModel.DatasetsAuth, error) {
-	datasetsAuth := datasetModel.DatasetsAuth{}
-	return datasetsAuth, fs.ReadJSON(configBucket, s3Path, &datasetsAuth, false)
+func ReadPublicObjectsAuth(fs fileaccess.FileAccess, configBucket string, s3Path string) (PublicObjectsAuth, error) {
+	publicObjectsAuth := PublicObjectsAuth{}
+
+	err := fs.ReadJSON(configBucket, s3Path, &publicObjectsAuth, true)
+	return publicObjectsAuth, err
 }
 
-func CheckAndUpdatePublicDataset(fs fileaccess.FileAccess, configBucket string, datasetID string, datasetsAuth datasetModel.DatasetsAuth) (bool, error) {
+func ReadDatasetsAuth(fs fileaccess.FileAccess, configBucket string, s3Path string) (DatasetsAuth, error) {
+	datasetsAuth := DatasetsAuth{}
+
+	err := fs.ReadJSON(configBucket, s3Path, &datasetsAuth, false)
+	return datasetsAuth, err
+}
+
+func CheckAndUpdatePublicDataset(fs fileaccess.FileAccess, configBucket string, datasetID string, datasetsAuth DatasetsAuth) (bool, error) {
 	isPublic := false
 	datasetsAuthPath := filepaths.GetDatasetsAuthPath()
 
@@ -169,6 +179,7 @@ func CheckAndUpdatePublicDataset(fs fileaccess.FileAccess, configBucket string, 
 	return isPublic, nil
 }
 
+// Check if the dataset CAN be public
 func CheckIsPublicDataset(fs fileaccess.FileAccess, configBucket string, datasetID string) (bool, error) {
 	isPublic := false
 
@@ -179,6 +190,73 @@ func CheckIsPublicDataset(fs fileaccess.FileAccess, configBucket string, dataset
 	}
 
 	return CheckAndUpdatePublicDataset(fs, configBucket, datasetID, datasetsAuth)
+}
+
+func GetPublicObjectsAuth(fs fileaccess.FileAccess, configBucket string, isPublicUser bool) (PublicObjectsAuth, error) {
+	publicObjectsAuth := PublicObjectsAuth{}
+	if !isPublicUser {
+		return publicObjectsAuth, nil
+	}
+
+	publicObjectsPath := filepaths.GetPublicObjectsPath()
+	publicObjectsAuth, err := ReadPublicObjectsAuth(fs, configBucket, publicObjectsPath)
+	if err != nil {
+		return publicObjectsAuth, err
+	}
+
+	return publicObjectsAuth, nil
+}
+
+// Check if the dataset is both public and has shared objects in it
+func CheckIsPublicDatasetWithSharedObjects(fs fileaccess.FileAccess, configBucket string, datasetID string) (bool, error) {
+	publicObjectsAuth, err := GetPublicObjectsAuth(fs, configBucket, true)
+	if err != nil {
+		return false, err
+	}
+
+	return utils.StringInSlice(datasetID, publicObjectsAuth.Datasets), nil
+}
+
+func CheckIsObjectPublic(fs fileaccess.FileAccess, configBucket string, objectType PublicObjectEnumType, objectID string) (bool, error) {
+	publicObjectsPath := filepaths.GetPublicObjectsPath()
+	publicObjectsAuth, err := ReadPublicObjectsAuth(fs, configBucket, publicObjectsPath)
+	if err != nil {
+		return false, err
+	}
+
+	switch objectType {
+	case PublicObjectDataset:
+		return CheckIsObjectInPublicSet(publicObjectsAuth.Datasets, objectID)
+	case PublicObjectROI:
+		return CheckIsObjectInPublicSet(publicObjectsAuth.ROIs, objectID)
+	case PublicObjectExpression:
+		return CheckIsObjectInPublicSet(publicObjectsAuth.Expressions, objectID)
+	case PublicObjectModule:
+		return CheckIsObjectInPublicSet(publicObjectsAuth.Modules, objectID)
+	case PublicObjectRGBMix:
+		return CheckIsObjectInPublicSet(publicObjectsAuth.RGBMixes, objectID)
+	case PublicObjectQuantification:
+		return CheckIsObjectInPublicSet(publicObjectsAuth.Quantifications, objectID)
+	case PublicObjectCollection:
+		return CheckIsObjectInPublicSet(publicObjectsAuth.Collections, objectID)
+	case PublicObjectWorkspace:
+		return CheckIsObjectInPublicSet(publicObjectsAuth.Workspaces, objectID)
+	default:
+		return false, errors.New("unknown object type")
+	}
+}
+
+func CheckIsObjectInPublicSet(publicObjectsList []string, objectID string) (bool, error) {
+	strippedObjectID, _ := utils.StripSharedItemIDPrefix(objectID)
+
+	for _, publicObjectID := range publicObjectsList {
+		strippedPublicObjectID, _ := utils.StripSharedItemIDPrefix(publicObjectID)
+		if strippedPublicObjectID == strippedObjectID {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // Returns nil if user CAN access it, otherwise a api.StatusError with the right HTTP error code
