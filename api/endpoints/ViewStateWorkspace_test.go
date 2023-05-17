@@ -257,6 +257,14 @@ func Test_viewStateHandler_ListSaved(t *testing.T) {
 
 		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		mockUser := pixlUser.UserInfo{
+			Name:   "Niko Bellic",
+			UserID: "600f2a0806b6c70071d3d174",
+			Permissions: map[string]bool{
+				"read:pixlise-settings": true,
+			},
+		}
+		svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
 		apiRouter := MakeRouter(svcs)
 
 		// None
@@ -486,6 +494,14 @@ func Test_viewStateHandler_GetSaved(t *testing.T) {
 
 		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+		mockUser := pixlUser.UserInfo{
+			Name:   "Niko Bellic",
+			UserID: "600f2a0806b6c70071d3d174",
+			Permissions: map[string]bool{
+				"read:pixlise-settings": true,
+			},
+		}
+		svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
 		apiRouter := MakeRouter(svcs)
 
 		// Doesn't exist, should fail
@@ -678,6 +694,14 @@ func Example_viewStateHandler_GetSaved_ROIQuantFallbackCheck() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	mockUser := pixlUser.UserInfo{
+		Name:   "Niko Bellic",
+		UserID: "600f2a0806b6c70071d3d174",
+		Permissions: map[string]bool{
+			"read:pixlise-settings": true,
+		},
+	}
+	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
 	apiRouter := MakeRouter(svcs)
 
 	// Doesn't exist, should fail
@@ -806,6 +830,14 @@ func Example_viewStateHandler_GetSavedShared() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	mockUser := pixlUser.UserInfo{
+		Name:   "Niko Bellic",
+		UserID: "600f2a0806b6c70071d3d174",
+		Permissions: map[string]bool{
+			"read:pixlise-settings": true,
+		},
+	}
+	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
 	apiRouter := MakeRouter(svcs)
 
 	// Doesn't exist, should fail
@@ -1590,6 +1622,14 @@ func Test_viewStateHandler_GetReferencedIDs(t *testing.T) {
 
 		svcs.Expressions = db
 
+		mockUser := pixlUser.UserInfo{
+			Name:   "Niko Bellic",
+			UserID: "600f2a0806b6c70071d3d174",
+			Permissions: map[string]bool{
+				"read:pixlise-settings": true,
+			},
+		}
+		svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
 		apiRouter := MakeRouter(svcs)
 
 		// User file not there, should say not found

@@ -154,10 +154,13 @@ func savedViewStateGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	viewStateID := params.PathParams[idIdentifier]
 
-	// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
-	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
-	if err != nil {
-		return nil, err
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadPIXLISESettings]
+	if isPublicUser {
+		// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
+		_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	s3Path := filepaths.GetWorkspacePath(params.UserInfo.UserID, datasetID, viewStateID)
@@ -172,7 +175,7 @@ func savedViewStateGet(params handlers.ApiHandlerParams) (interface{}, error) {
 		ViewState: defaultWholeViewState(),
 	}
 
-	err = params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, s3Path, &state, false)
+	err := params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, s3Path, &state, false)
 	if err != nil {
 		return nil, api.MakeNotFoundError(viewStateID)
 	}
@@ -344,12 +347,12 @@ func savedViewStateGetReferencedIDs(params handlers.ApiHandlerParams) (interface
 		if !isWorkspacePublic {
 			return nil, api.MakeBadRequestError(errors.New("workspace is not public"))
 		}
-	}
 
-	// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
-	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
-	if err != nil {
-		return nil, err
+		// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
+		_, err = permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Read the file in
@@ -357,7 +360,7 @@ func savedViewStateGetReferencedIDs(params handlers.ApiHandlerParams) (interface
 		ViewState: defaultWholeViewState(),
 	}
 
-	err = params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, s3Path, &state, false)
+	err := params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, s3Path, &state, false)
 	if err != nil {
 		return nil, api.MakeNotFoundError(viewStateID)
 	}
