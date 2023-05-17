@@ -120,9 +120,13 @@ func datasetCustomImagesList(params handlers.ApiHandlerParams) (interface{}, err
 	datasetID := params.PathParams[datasetIdentifier]
 	imgType := params.PathParams[customImageTypeIdentifier]
 
-	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
-	if err != nil {
-		return nil, err
+	isSuperAdmin := params.UserInfo.Permissions[permission.PermSuperAdmin]
+
+	if !isSuperAdmin {
+		_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if !isValidCustomImageType(imgType) {

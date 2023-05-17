@@ -121,6 +121,9 @@ const PermWriteSharedAnnotation = "write:shared-annotation"
 // Sharing expressions
 const PermWriteSharedExpression = "write:shared-expression"
 
+// Super Admin - not a real permission and mainly used to bypass tests
+const PermSuperAdmin = "access:super-admin"
+
 // Get all groups that are accessible by the list of permissions provided. This means
 // basically returning what's after access: in each permission
 func GetAccessibleGroups(permissions map[string]bool) map[string]bool {
