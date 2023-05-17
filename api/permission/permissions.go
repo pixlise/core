@@ -147,8 +147,7 @@ func ReadPublicObjectsAuth(fs fileaccess.FileAccess, configBucket string, s3Path
 
 func ReadDatasetsAuth(fs fileaccess.FileAccess, configBucket string, s3Path string) (DatasetsAuth, error) {
 	datasetsAuth := DatasetsAuth{}
-
-	err := fs.ReadJSON(configBucket, s3Path, &datasetsAuth, false)
+	err := fs.ReadJSON(configBucket, s3Path, &datasetsAuth, true)
 	return datasetsAuth, err
 }
 
@@ -261,18 +260,18 @@ func CheckIsObjectInPublicSet(publicObjectsList []string, objectID string) (bool
 
 // Returns nil if user CAN access it, otherwise a api.StatusError with the right HTTP error code
 func UserCanAccessDataset(userInfo pixlUser.UserInfo, summary datasetModel.SummaryFileData, fs fileaccess.FileAccess, configBucket string) error {
-	isPublic, err := CheckIsPublicDataset(fs, configBucket, summary.DatasetID)
-	if err != nil {
-		return err
-	} else if isPublic {
-		// Public dataset, anyone can access it
-		return nil
-	}
-
 	userAllowedGroups := GetAccessibleGroups(userInfo.Permissions)
 	if !userAllowedGroups[summary.Group] {
-		// User is not allowed to see this
-		return api.MakeStatusError(http.StatusForbidden, fmt.Errorf("dataset %v not permitted", summary.DatasetID))
+		isPublic, err := CheckIsPublicDataset(fs, configBucket, summary.DatasetID)
+		if err != nil {
+			return err
+		} else if isPublic {
+			// Public dataset, anyone can access it
+			return nil
+		} else {
+			// User is not allowed to see this
+			return api.MakeStatusError(http.StatusForbidden, fmt.Errorf("dataset %v not permitted", summary.DatasetID))
+		}
 	}
 	return nil
 }

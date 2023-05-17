@@ -48,7 +48,7 @@ func registerViewStateHandler(router *apiRouter.ApiObjectRouter) {
 
 	// "Current" view state, as saved by widgets as we go along, and the GET call to retrieve it
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), viewStateList)
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermPublic), viewStatePut)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWritePIXLISESettings), viewStatePut)
 
 	// Saved view states - these are named copies of a view state, with CRUD calls
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), savedViewStateGet)
@@ -78,10 +78,13 @@ func viewStateList(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	// It's a get, we don't care about the body...
 
-	// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
-	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
-	if err != nil {
-		return nil, err
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
+	if isPublicUser {
+		// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
+		_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	state := defaultWholeViewState()
@@ -312,14 +315,6 @@ func splitWidgetFileName(fileNameOnly string) (string, string) {
 }
 
 func viewStatePut(params handlers.ApiHandlerParams) (interface{}, error) {
-	datasetID := params.PathParams[datasetIdentifier]
-
-	// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
-	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
-	if err != nil {
-		return nil, err
-	}
-
 	body, err := ioutil.ReadAll(params.Request.Body)
 	if err != nil {
 		return nil, err

@@ -79,17 +79,20 @@ type workspaceCollectionListItem struct {
 func viewStateCollectionList(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 
-	// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
-	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
-	if err != nil {
-		return nil, err
-	}
-
 	isPublicUser := !params.UserInfo.Permissions[permission.PermReadPIXLISESettings]
+	publicObjectsAuth := permission.PublicObjectsAuth{}
 
-	publicObjectsAuth, err := permission.GetPublicObjectsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, isPublicUser)
-	if err != nil {
-		return nil, err
+	if isPublicUser {
+		// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
+		_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+		if err != nil {
+			return nil, err
+		}
+
+		publicObjectsAuth, err = permission.GetPublicObjectsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, isPublicUser)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	userList, _ := getViewStateCollectionListing(params.Svcs, datasetID, params.UserInfo.UserID)
@@ -155,15 +158,15 @@ func viewStateCollectionGet(params handlers.ApiHandlerParams) (interface{}, erro
 	datasetID := params.PathParams[datasetIdentifier]
 	collectionID := params.PathParams[idIdentifier]
 
-	// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
-	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
-	if err != nil {
-		return nil, err
-	}
-
 	isPublicUser := !params.UserInfo.Permissions[permission.PermReadPIXLISESettings]
 
 	if isPublicUser {
+		// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
+		_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+		if err != nil {
+			return nil, err
+		}
+
 		isCollectionPublic, err := permission.CheckIsObjectPublic(params.Svcs.FS, params.Svcs.Config.ConfigBucket, permission.PublicObjectCollection, collectionID)
 		if err != nil {
 			return nil, err
