@@ -1122,7 +1122,8 @@ func Example_quant_Stream_OK() {
 		Name:   "Niko Bellic",
 		UserID: "600f2a0806b6c70071d3d174",
 		Permissions: map[string]bool{
-			"access:groupie": true,
+			"access:groupie":     true,
+			"read:data-analysis": true,
 		},
 	}
 	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}

@@ -257,7 +257,6 @@ func quantificationGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	jobID := params.PathParams[idIdentifier]
-
 	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
 
 	if isPublicUser {
@@ -317,11 +316,25 @@ func quantificationFileStream(params handlers.ApiHandlerStreamParams) (*s3.GetOb
 		return nil, "", err
 	}
 
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
+
 	jobID := params.PathParams[idIdentifier]
+	if isPublicUser {
+		isQuantPublic, err := permission.CheckIsObjectPublic(params.Svcs.FS, params.Svcs.Config.ConfigBucket, permission.PublicObjectQuantification, jobID)
+		if err != nil {
+			return nil, "", err
+		}
+
+		if !isQuantPublic {
+			return nil, "", api.MakeBadRequestError(errors.New("quantification is not public"))
+		}
+	}
+
 	fileName := filepaths.MakeQuantDataFileName(jobID)
 	binPath := filepaths.GetUserQuantPath(params.UserInfo.UserID, datasetID, fileName)
 
 	strippedID, isSharedReq := utils.StripSharedItemIDPrefix(jobID)
+
 	if isSharedReq {
 		jobID = strippedID
 		// New job ID!
