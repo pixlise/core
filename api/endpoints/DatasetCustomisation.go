@@ -35,6 +35,7 @@ import (
 
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/api/permission"
 )
 
 // NOTE: No registration function here, this sits in the dataset registration function, shares paths with it. Only separated
@@ -118,6 +119,15 @@ type datasetCustomMatchedImageMeta struct {
 func datasetCustomImagesList(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	imgType := params.PathParams[customImageTypeIdentifier]
+
+	isSuperAdmin := params.UserInfo.Permissions[permission.PermSuperAdmin]
+
+	if !isSuperAdmin {
+		_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	if !isValidCustomImageType(imgType) {
 		return nil, api.MakeBadRequestError(fmt.Errorf("Invalid custom image type: \"%v\"", imgType))

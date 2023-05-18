@@ -107,7 +107,7 @@ func DownloadFiles(
 		svcs.Log.Debugf("  Downloading ROIs for datasetID: %v, roiID: %v", datasetID, roiLoadUserID)
 
 		roisLoaded := roiModel.ROILookup{}
-		err := roiModel.GetROIs(svcs, roiLoadUserID, datasetID, &roisLoaded)
+		err := roiModel.GetROIs(svcs, roiLoadUserID, datasetID, &roisLoaded, false)
 
 		mu.Lock()
 		defer mu.Unlock()

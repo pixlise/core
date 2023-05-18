@@ -30,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/api/permission"
 	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/core/api"
 	"github.com/pixlise/core/v3/core/pixlUser"
@@ -77,15 +78,44 @@ type workspaceCollectionListItem struct {
 
 func viewStateCollectionList(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
+
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadPIXLISESettings]
+	publicObjectsAuth := permission.PublicObjectsAuth{}
+
+	if isPublicUser {
+		// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
+		_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+		if err != nil {
+			return nil, err
+		}
+
+		publicObjectsAuth, err = permission.GetPublicObjectsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, isPublicUser)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	userList, _ := getViewStateCollectionListing(params.Svcs, datasetID, params.UserInfo.UserID)
 	sharedList, _ := getViewStateCollectionListing(params.Svcs, datasetID, pixlUser.ShareUserID)
 
 	result := []workspaceCollectionListItem{}
-	for _, item := range userList {
-		result = append(result, item)
+
+	// If user is not public, return their own collections
+	if !isPublicUser {
+		result = append(result, userList...)
 	}
 
 	for _, item := range sharedList {
+		if isPublicUser {
+			isCollectionPublic, err := permission.CheckIsObjectInPublicSet(publicObjectsAuth.Collections, item.Name)
+			if err != nil {
+				return nil, err
+			}
+
+			if !isCollectionPublic {
+				continue
+			}
+		}
 		item.Name = utils.SharedItemIDPrefix + item.Name
 		result = append(result, item)
 	}
@@ -127,6 +157,25 @@ func getViewStateCollectionListing(svcs *services.APIServices, datasetID string,
 func viewStateCollectionGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	collectionID := params.PathParams[idIdentifier]
+
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadPIXLISESettings]
+
+	if isPublicUser {
+		// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
+		_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+		if err != nil {
+			return nil, err
+		}
+
+		isCollectionPublic, err := permission.CheckIsObjectPublic(params.Svcs.FS, params.Svcs.Config.ConfigBucket, permission.PublicObjectCollection, collectionID)
+		if err != nil {
+			return nil, err
+		}
+
+		if !isCollectionPublic {
+			return nil, api.MakeBadRequestError(errors.New("workspace is not public"))
+		}
+	}
 
 	s3Path := filepaths.GetCollectionPath(params.UserInfo.UserID, datasetID, collectionID)
 	strippedID, isSharedReq := utils.StripSharedItemIDPrefix(collectionID)
@@ -181,21 +230,170 @@ func loadViewStates(params handlers.ApiHandlerParams, viewStateIDs []string) (ma
 	for _, viewStateID := range viewStateIDs {
 		s3Path := filepaths.GetWorkspacePath(params.UserInfo.UserID, datasetID, viewStateID)
 
+		// If this is a shared view state, load it from the shared user's workspace
+		strippedID, isShared := utils.StripSharedItemIDPrefix(viewStateID)
+		if isShared {
+			s3Path = filepaths.GetWorkspacePath(pixlUser.ShareUserID, datasetID, strippedID)
+		}
+
 		// Set up a default view state to read into
 		loadedWorkspace := Workspace{
 			ViewState: defaultWholeViewState(),
 		}
+
 		err := params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, s3Path, &loadedWorkspace, false)
 		if err != nil {
-			return nil, api.MakeNotFoundError(viewStateID)
+			return nil, api.MakeNotFoundError(strippedID)
 		}
 
 		applyQuantByROIFallback(&loadedWorkspace.ViewState.Quantification)
 
-		result[viewStateID] = loadedWorkspace.ViewState
+		result[strippedID] = loadedWorkspace.ViewState
 	}
 
 	return result, nil
+}
+
+func viewStateCollectionPostPublic(params handlers.ApiHandlerParams) (interface{}, error) {
+	datasetID := params.PathParams[datasetIdentifier]
+	collectionID := params.PathParams[idIdentifier]
+
+	strippedID, isSharedReq := utils.StripSharedItemIDPrefix(collectionID)
+	if !isSharedReq {
+		return nil, api.MakeBadRequestError(errors.New("can't make non-shared collections public"))
+	}
+
+	// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
+	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify the dataset is public before sharing contained objects
+	isDatasetPublic, err := permission.CheckIsPublicDataset(params.Svcs.FS, params.Svcs.Config.ConfigBucket, datasetID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isDatasetPublic {
+		return nil, api.MakeBadRequestError(errors.New("cannot share a collection from a non-public dataset"))
+	}
+
+	// Verify user has access to collection
+	s3SharedPath := filepaths.GetCollectionPath(pixlUser.ShareUserID, datasetID, strippedID)
+	collection, err := getCollection(params, strippedID, s3SharedPath, true)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all existing public objects
+	publicObjectsPath := filepaths.GetPublicObjectsPath()
+	publicObjects, err := permission.ReadPublicObjectsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, publicObjectsPath)
+	if err != nil {
+		// Assume the file doesn't exist yet
+		log.Printf("No public objects file found, creating new one")
+		publicObjects = permission.PublicObjectsAuth{}
+	}
+
+	// Get all view states in collection
+	states, err := loadViewStates(params, collection.ViewStateIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get flat lists of all objects in view states
+	collectionObjects := publicObjects
+
+	// Ensure all lists are initialised
+	if collectionObjects.Expressions == nil {
+		collectionObjects.Expressions = []string{}
+	}
+	if collectionObjects.Modules == nil {
+		collectionObjects.Modules = []string{}
+	}
+	if collectionObjects.ROIs == nil {
+		collectionObjects.ROIs = []string{}
+	}
+	if collectionObjects.RGBMixes == nil {
+		collectionObjects.RGBMixes = []string{}
+	}
+	if collectionObjects.Quantifications == nil {
+		collectionObjects.Quantifications = []string{}
+	}
+	if collectionObjects.Workspaces == nil {
+		collectionObjects.Workspaces = []string{}
+	}
+	if collectionObjects.Collections == nil {
+		collectionObjects.Collections = []string{}
+	}
+	if collectionObjects.Datasets == nil {
+		collectionObjects.Datasets = []string{}
+	}
+
+	// Add dataset to public objects
+	if !utils.StringInSlice(datasetID, collectionObjects.Datasets) {
+		collectionObjects.Datasets = append(collectionObjects.Datasets, datasetID)
+	}
+
+	// Add collection to public objects
+	if !utils.StringInSlice(strippedID, collectionObjects.Collections) {
+		collectionObjects.Collections = append(collectionObjects.Collections, strippedID)
+	}
+
+	for viewStateID, state := range states {
+
+		// Add view state to public objects
+		if !utils.StringInSlice(viewStateID, collectionObjects.Workspaces) {
+			collectionObjects.Workspaces = append(collectionObjects.Workspaces, viewStateID)
+		}
+
+		// Add all objects in view state to public objects
+		referencedIDs := state.getReferencedIDs()
+
+		for _, roi := range referencedIDs.ROIs {
+			if !utils.StringInSlice(roi.ID, collectionObjects.ROIs) {
+				collectionObjects.ROIs = append(collectionObjects.ROIs, roi.ID)
+			}
+		}
+
+		for _, expression := range referencedIDs.Expressions {
+			if !utils.StringInSlice(expression.ID, collectionObjects.Expressions) {
+				collectionObjects.Expressions = append(collectionObjects.Expressions, expression.ID)
+			}
+
+			strippedID, _ := utils.StripSharedItemIDPrefix(expression.ID)
+			expr, err := params.Svcs.Expressions.GetExpression(strippedID, true)
+			if err != nil {
+				continue
+			}
+
+			// Still need to check expression module references even if it is already public because
+			// references may have changed since it was made public
+			for _, module := range expr.ModuleReferences {
+				if !utils.StringInSlice(module.ModuleID, collectionObjects.Modules) {
+					collectionObjects.Modules = append(collectionObjects.Modules, module.ModuleID)
+				}
+			}
+		}
+
+		for _, rgbmixes := range referencedIDs.RGBMixes {
+			if !utils.StringInSlice(rgbmixes.ID, collectionObjects.RGBMixes) {
+				collectionObjects.RGBMixes = append(collectionObjects.RGBMixes, rgbmixes.ID)
+			}
+		}
+
+		if !utils.StringInSlice(referencedIDs.Quant.ID, collectionObjects.Quantifications) {
+			collectionObjects.Quantifications = append(collectionObjects.Quantifications, referencedIDs.Quant.ID)
+		}
+	}
+
+	// Save public objects
+	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.ConfigBucket, publicObjectsPath, collectionObjects)
+	if err != nil {
+		return nil, err
+	}
+
+	return collectionObjects, nil
 }
 
 func viewStateCollectionPut(params handlers.ApiHandlerParams) (interface{}, error) {
@@ -284,12 +482,12 @@ func viewStateCollectionShare(params handlers.ApiHandlerParams) (interface{}, er
 	datasetID := params.PathParams[datasetIdentifier]
 	collectionID := params.PathParams[idIdentifier]
 
-	s3Path := filepaths.GetCollectionPath(params.UserInfo.UserID, datasetID, collectionID)
 	_, isSharedReq := utils.StripSharedItemIDPrefix(collectionID)
 	if isSharedReq {
-		return nil, fmt.Errorf("Cannot share a shared ID")
+		return nil, fmt.Errorf("cannot share a shared ID")
 	}
 
+	s3Path := filepaths.GetCollectionPath(params.UserInfo.UserID, datasetID, collectionID)
 	collectionContents, err := getCollection(params, collectionID, s3Path, true)
 	if err != nil {
 		return nil, err

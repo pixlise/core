@@ -496,6 +496,8 @@ Quantification.AppliedQuantID
 func (state wholeViewState) getReferencedIDs() viewStateReferencedIDs {
 	// Unfortunately this has to be manually coded... can't exactly search for field names or something to identify them
 
+	// Modules?
+
 	// We use maps here for uniqueness
 	roiIDs := map[string]bool{}
 	expressionIDs := map[string]bool{}

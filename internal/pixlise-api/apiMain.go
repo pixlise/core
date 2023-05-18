@@ -160,7 +160,9 @@ func main() {
 		JwtValidator: jwtReader.Validator,
 	}
 
-	router.Router.Use(authware.Middleware, logware.Middleware)
+	promware := endpoints.PrometheusMiddleware
+
+	router.Router.Use(authware.Middleware, logware.Middleware, promware)
 
 	// Now also log this to the world...
 	svcs.Log.Infof("API version \"%v\" started...", services.ApiVersion)

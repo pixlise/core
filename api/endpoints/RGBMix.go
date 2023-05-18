@@ -79,7 +79,7 @@ type RGBMixLookup map[string]RGBMix
 func registerRGBMixHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "rgb-mix"
 
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), rgbMixList)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix), apiRouter.MakeMethodPermission("GET", permission.PermPublic), rgbMixList)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix), apiRouter.MakeMethodPermission("POST", permission.PermWriteDataAnalysis), rgbMixPost)
 
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWriteDataAnalysis), rgbMixPut)
@@ -134,13 +134,29 @@ func getRGBMixByID(svcs *services.APIServices, ID string, s3PathFrom string, mar
 	return result, nil
 }
 
-func getRGBMixListing(svcs *services.APIServices, s3PathFrom string, sharedFile bool, outMap *RGBMixLookup) error {
+func getRGBMixListing(svcs *services.APIServices, s3PathFrom string, sharedFile bool, outMap *RGBMixLookup, isPublicUser bool) error {
 	items, err := readRGBMixData(svcs, s3PathFrom)
 	if err != nil {
 		return err
 	}
 
+	publicObjectsAuth, err := permission.GetPublicObjectsAuth(svcs.FS, svcs.Config.ConfigBucket, isPublicUser)
+	if err != nil {
+		return err
+	}
+
 	for id, item := range items {
+		if isPublicUser {
+			isRGBMixPublic, err := permission.CheckIsObjectInPublicSet(publicObjectsAuth.RGBMixes, id)
+			if err != nil {
+				return err
+			}
+
+			if !isRGBMixPublic {
+				continue
+			}
+		}
+
 		// We modify the ids of shared items, so if passed to GET/PUT/DELETE we know this refers to something that's shared
 		saveID := id
 		if sharedFile {
@@ -157,14 +173,16 @@ func getRGBMixListing(svcs *services.APIServices, s3PathFrom string, sharedFile 
 func rgbMixList(params handlers.ApiHandlerParams) (interface{}, error) {
 	items := RGBMixLookup{}
 
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
+
 	// Get user item summaries
-	err := getRGBMixListing(params.Svcs, filepaths.GetRGBMixPath(params.UserInfo.UserID), false, &items)
+	err := getRGBMixListing(params.Svcs, filepaths.GetRGBMixPath(params.UserInfo.UserID), false, &items, isPublicUser)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get shared item summaries (into same map)
-	err = getRGBMixListing(params.Svcs, filepaths.GetRGBMixPath(pixlUser.ShareUserID), true, &items)
+	err = getRGBMixListing(params.Svcs, filepaths.GetRGBMixPath(pixlUser.ShareUserID), true, &items, isPublicUser)
 	if err != nil {
 		return nil, err
 	}

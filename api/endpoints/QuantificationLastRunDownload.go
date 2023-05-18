@@ -33,7 +33,7 @@ func quantificationLastRunFileStream(params handlers.ApiHandlerStreamParams) (*s
 	datasetID := params.PathParams[datasetIdentifier]
 
 	// Check if user has rights for this dataset
-	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, datasetID)
+	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
 	if err != nil {
 		return nil, "", err
 	}

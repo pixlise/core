@@ -43,7 +43,7 @@ func quantificationCombineListSave(params handlers.ApiHandlerParams) (interface{
 	}
 
 	// Make sure this dataset exists already by loading its summary file
-	_, err = permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, datasetID)
+	_, err = permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
 	if err != nil {
 		return nil, api.MakeBadRequestError(err)
 	}

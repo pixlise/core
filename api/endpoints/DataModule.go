@@ -39,9 +39,9 @@ func registerDataModuleHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "data-module"
 
 	// Listing
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), dataModuleList)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix), apiRouter.MakeMethodPermission("GET", permission.PermPublic), dataModuleList)
 	// Getting an individual module
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier, idVersion), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), dataModuleGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier, idVersion), apiRouter.MakeMethodPermission("GET", permission.PermPublic), dataModuleGet)
 	// Adding a new module
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix), apiRouter.MakeMethodPermission("POST", permission.PermWriteDataAnalysis), dataModulePost)
 	// Adding a new version for a module
@@ -50,12 +50,55 @@ func registerDataModuleHandler(router *apiRouter.ApiObjectRouter) {
 }
 
 func dataModuleList(params handlers.ApiHandlerParams) (interface{}, error) {
-	return params.Svcs.Expressions.ListModules(true)
+	filteredModules := modules.DataModuleWireLookup{}
+
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
+	allModules, err := params.Svcs.Expressions.ListModules(true)
+	if err != nil {
+		return filteredModules, err
+	}
+
+	if isPublicUser {
+		publicObjectsAuth, err := permission.GetPublicObjectsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, isPublicUser)
+		if err != nil {
+			return nil, err
+		}
+
+		// Filter out any modules that are not public
+		for _, mod := range allModules {
+			isModPublic, err := permission.CheckIsObjectInPublicSet(publicObjectsAuth.Modules, mod.ID)
+			if err != nil {
+				return nil, err
+			}
+
+			if isModPublic {
+				fmt.Println("MOD IS PUBLIC, ADDING", mod.ID)
+				filteredModules[mod.ID] = mod
+			}
+		}
+	} else {
+		// No filtering needed
+		filteredModules = allModules
+	}
+
+	return filteredModules, nil
 }
 
 func dataModuleGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	modID := params.PathParams[idIdentifier]
 	version := params.PathParams[idVersion]
+
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
+	if isPublicUser {
+		isModulePublic, err := permission.CheckIsObjectPublic(params.Svcs.FS, params.Svcs.Config.ConfigBucket, permission.PublicObjectModule, modID)
+		if err != nil {
+			return nil, err
+		}
+
+		if !isModulePublic {
+			return nil, api.MakeBadRequestError(errors.New("module is not public"))
+		}
+	}
 
 	var ver *modules.SemanticVersion
 

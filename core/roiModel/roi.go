@@ -24,6 +24,7 @@ import (
 	"strconv"
 
 	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/permission"
 	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/core/api"
 	datasetModel "github.com/pixlise/core/v3/core/dataset"
@@ -185,7 +186,7 @@ func ReadROIData(svcs *services.APIServices, s3Path string) (ROILookup, error) {
 	return itemLookup, err
 }
 
-func GetROIs(svcs *services.APIServices, userID string, datasetID string, outMap *ROILookup) error {
+func GetROIs(svcs *services.APIServices, userID string, datasetID string, outMap *ROILookup, isPublicUser bool) error {
 	s3Path := filepaths.GetROIPath(userID, datasetID)
 
 	items, err := ReadROIData(svcs, s3Path)
@@ -195,8 +196,24 @@ func GetROIs(svcs *services.APIServices, userID string, datasetID string, outMap
 
 	sharedFile := userID == pixlUser.ShareUserID
 
+	publicObjectsAuth, err := permission.GetPublicObjectsAuth(svcs.FS, svcs.Config.ConfigBucket, isPublicUser)
+	if err != nil {
+		return err
+	}
+
 	// Run through and just return summary info
 	for id, item := range items {
+		if isPublicUser {
+			isROIPublic, err := permission.CheckIsObjectInPublicSet(publicObjectsAuth.ROIs, id)
+			if err != nil {
+				return err
+			}
+
+			if !isROIPublic {
+				continue
+			}
+		}
+
 		toSave := ROISavedItem{
 			ROIItem: item.ROIItem,
 			APIObjectItem: &pixlUser.APIObjectItem{

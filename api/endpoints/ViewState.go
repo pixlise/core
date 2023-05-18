@@ -44,27 +44,29 @@ func registerViewStateHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "view-state"
 	const savedURIPath = "/saved"
 	const collectionURIPath = "/collections"
+	const publicPath = "/public"
 
 	// "Current" view state, as saved by widgets as we go along, and the GET call to retrieve it
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadPIXLISESettings), viewStateList)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), viewStateList)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWritePIXLISESettings), viewStatePut)
 
 	// Saved view states - these are named copies of a view state, with CRUD calls
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadPIXLISESettings), savedViewStateGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), savedViewStateGet)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWritePIXLISESettings), savedViewStatePut)
 	// Renaming a view state
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier, idIdentifier)+"/references", apiRouter.MakeMethodPermission("GET", permission.PermReadPIXLISESettings), savedViewStateGetReferencedIDs)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier, idIdentifier)+"/references", apiRouter.MakeMethodPermission("GET", permission.PermPublic), savedViewStateGetReferencedIDs)
 	//router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier, idIdentifier)+"/rename", apiRouter.MakeMethodPermission("POST", permission.PermWritePIXLISESettings), savedViewStateRenamePost)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("DELETE", permission.PermWritePIXLISESettings), savedViewStateDelete)
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadPIXLISESettings), savedViewStateList)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+savedURIPath, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), savedViewStateList)
 
 	// Collections (of saved view states)
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+collectionURIPath, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadPIXLISESettings), viewStateCollectionList)
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+collectionURIPath, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadPIXLISESettings), viewStateCollectionGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+collectionURIPath, datasetIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), viewStateCollectionList)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+collectionURIPath, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), viewStateCollectionGet)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+collectionURIPath, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWritePIXLISESettings), viewStateCollectionPut)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+collectionURIPath, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("DELETE", permission.PermWritePIXLISESettings), viewStateCollectionDelete)
 
 	// Sharing the above
+	router.AddJSONHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix+publicPath, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWritePIXLISESettings), viewStateCollectionPostPublic)
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWritePIXLISESettings), viewStateShare)
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix+"-collection", datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWritePIXLISESettings), viewStateCollectionShare)
 }
@@ -75,6 +77,15 @@ func registerViewStateHandler(router *apiRouter.ApiObjectRouter) {
 func viewStateList(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	// It's a get, we don't care about the body...
+
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
+	if isPublicUser {
+		// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
+		_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	state := defaultWholeViewState()
 
