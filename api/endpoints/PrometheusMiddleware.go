@@ -12,6 +12,10 @@ var (
 		Name: "http_response_time_seconds",
 		Help: "Duration of HTTP requests.",
 	}, []string{"path"})
+	httpRequests = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "http_requests_total",
+		Help: "Number of HTTP requests.",
+	}, []string{"path"})
 )
 
 func PrometheusMiddleware(next http.Handler) http.Handler {
@@ -19,6 +23,8 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 		start := time.Now()
 		next.ServeHTTP(w, r)
 		duration := time.Since(start)
-		httpDuration.WithLabelValues(r.URL.Path).Observe(duration.Seconds())
+		path := r.URL.Path
+		httpDuration.WithLabelValues(path).Observe(duration.Seconds())
+		httpRequests.WithLabelValues(path).Inc()
 	})
 }

@@ -161,7 +161,7 @@ func main() {
 	}
 
 	promware := endpoints.PrometheusMiddleware
-	
+
 	router.Router.Use(authware.Middleware, logware.Middleware, promware)
 
 	// Now also log this to the world...
