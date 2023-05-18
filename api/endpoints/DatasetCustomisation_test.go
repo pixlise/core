@@ -26,6 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/pixlUser"
 )
 
 const artifactManualUploadBucket = "Manual-Uploads"
@@ -148,6 +149,15 @@ func Example_datasetCustomImagesList_rgbu() {
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
+	mockUser := pixlUser.UserInfo{
+		Name:   "Niko Bellic",
+		UserID: "600f2a0806b6c70071d3d174",
+		Permissions: map[string]bool{
+			"read:data-analysis": true,
+			"access:super-admin": true,
+		},
+	}
+	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/dataset/images/abc-111/rgbu", nil)
@@ -195,6 +205,15 @@ func Example_datasetCustomImagesList_unaligned() {
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
+	mockUser := pixlUser.UserInfo{
+		Name:   "Niko Bellic",
+		UserID: "600f2a0806b6c70071d3d174",
+		Permissions: map[string]bool{
+			"read:data-analysis": true,
+			"access:super-admin": true,
+		},
+	}
+	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/dataset/images/abc-111/unaligned", nil)
@@ -247,6 +266,15 @@ func Example_datasetCustomImagesList_matched() {
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
+	mockUser := pixlUser.UserInfo{
+		Name:   "Niko Bellic",
+		UserID: "600f2a0806b6c70071d3d174",
+		Permissions: map[string]bool{
+			"read:data-analysis": true,
+			"access:super-admin": true,
+		},
+	}
+	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("GET", "/dataset/images/abc-111/matched", nil)

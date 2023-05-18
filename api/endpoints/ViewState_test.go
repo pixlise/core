@@ -32,6 +32,7 @@ import (
 	"github.com/pixlise/core/v3/core/awsutil"
 	"github.com/pixlise/core/v3/core/logger"
 	"github.com/pixlise/core/v3/core/notifications"
+	"github.com/pixlise/core/v3/core/pixlUser"
 	"github.com/pixlise/core/v3/core/timestamper"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
@@ -315,6 +316,15 @@ func Example_viewStateHandler_List() {
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	apiRouter := MakeRouter(svcs)
+
+	mockUser := pixlUser.UserInfo{
+		Name:   "Niko Bellic",
+		UserID: "600f2a0806b6c70071d3d174",
+		Permissions: map[string]bool{
+			"read:data-analysis": true,
+		},
+	}
+	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
 
 	// Various bits should return in the response...
 	req, _ := http.NewRequest("GET", "/view-state/TheDataSetID", nil)

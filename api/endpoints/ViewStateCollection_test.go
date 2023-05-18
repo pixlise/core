@@ -64,6 +64,15 @@ func Example_viewStateHandler_ListCollections() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	mockUser := pixlUser.UserInfo{
+		Name:   "Niko Bellic",
+		UserID: "600f2a0806b6c70071d3d174",
+		Permissions: map[string]bool{
+			"read:pixlise-settings": true,
+		},
+	}
+	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
+
 	apiRouter := MakeRouter(svcs)
 
 	// Exists, success
@@ -184,6 +193,16 @@ func Test_viewStateHandler_GetCollection(t *testing.T) {
 
 		svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 		svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
+
+		mockUser := pixlUser.UserInfo{
+			Name:   "Niko Bellic",
+			UserID: "600f2a0806b6c70071d3d174",
+			Permissions: map[string]bool{
+				"read:pixlise-settings": true,
+			},
+		}
+		svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
+
 		apiRouter := MakeRouter(svcs)
 
 		// Doesn't exist, should fail
@@ -546,6 +565,15 @@ func Example_viewStateHandler_GetCollectionShared() {
 	}
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
+	mockUser := pixlUser.UserInfo{
+		Name:   "Niko Bellic",
+		UserID: "600f2a0806b6c70071d3d174",
+		Permissions: map[string]bool{
+			"read:pixlise-settings": true,
+		},
+	}
+	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
+
 	apiRouter := MakeRouter(svcs)
 
 	// Doesn't exist, should fail

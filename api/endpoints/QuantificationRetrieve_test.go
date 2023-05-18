@@ -865,6 +865,15 @@ func Test_quantHandler_Get(t *testing.T) {
    "pseudo_intensities": 441,
    "detector_config": "PIXL"
 }`
+
+		const publicDatasetsJSON = `{
+   "rtt-456": {
+      "dataset_id": "rtt-456",
+      "public": false,
+      "public_release_utc_time_sec": 0,
+      "sol": ""
+   }
+}`
 		var mockS3 awsutil.MockS3Client
 		defer mockS3.FinishTest()
 
@@ -873,34 +882,25 @@ func Test_quantHandler_Get(t *testing.T) {
 				Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/rtt-456/summary.json"),
 			},
 			{
-				Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/rtt-456/summary.json"),
+				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/rtt-456/Quantifications/summary-job1.json"), // 4
 			},
 			{
-				Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/rtt-456/summary.json"),
+				Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/rtt-456/summary.json"), // 1
 			},
 			{
-				Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/rtt-456/summary.json"),
+				Bucket: aws.String("config-bucket"), Key: aws.String("PixliseConfig/datasets-auth.json"), // 1
 			},
 			{
-				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/rtt-456/Quantifications/summary-job1.json"),
+				Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/rtt-456/summary.json"), // 2
 			},
 			{
-				Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/rtt-456/summary.json"),
+				Bucket: aws.String("config-bucket"), Key: aws.String("PixliseConfig/datasets-auth.json"), // 2
 			},
 			{
-				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/600f2a0806b6c70071d3d174/rtt-456/Quantifications/summary-job1.json"),
+				Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/rtt-456/summary.json"), // 3
 			},
 			{
-				Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/rtt-456/summary.json"),
-			},
-			{
-				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/rtt-456/Quantifications/summary-job7.json"),
-			},
-			{
-				Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/rtt-456/summary.json"),
-			},
-			{
-				Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("UserContent/shared/rtt-456/Quantifications/summary-job7.json"),
+				Bucket: aws.String("config-bucket"), Key: aws.String("PixliseConfig/datasets-auth.json"), // 2
 			},
 		}
 		mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -908,100 +908,61 @@ func Test_quantHandler_Get(t *testing.T) {
 				Body: ioutil.NopCloser(bytes.NewReader([]byte(summaryJSON))),
 			},
 			{
-				Body: ioutil.NopCloser(bytes.NewReader([]byte("bad json"))),
-			},
-			nil,
-			{
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(summaryJSON))),
-			},
-			nil,
-			{
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(summaryJSON))),
-			},
-			{
 				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-	"shared": false,
-	"params": {
-		"pmcsCount": 93,
-		"name": "my test quant",
-		"dataBucket": "dev-pixlise-data",
-		"datasetPath": "Datasets/rtt-456/5x5dataset.bin",
-		"datasetID": "rtt-456",
-		"jobBucket": "dev-pixlise-piquant-jobs",
-		"detectorConfig": "PIXL",
-		"elements": [
-			"Sc",
-			"Cr"
-		],
-		"parameters": "-q,pPIETXCFsr -b,0,12,60,910,280,16",
-		"runTimeSec": 120,
-		"coresPerNode": 6,
-		"startUnixTime": 1589948988,
-		"creator": {
-			"name": "peternemere",
-			"user_id": "600f2a0806b6c70071d3d174",
-			"email": ""
-		},
-		"roiID": "ZcH49SYZ",
-		"elementSetID": "",
-		"quantMode": "AB"
-	},
-	"jobId": "job1",
-	"status": "complete",
-	"message": "Nodes ran: 1",
-	"endUnixTime": 1589949035,
-	"outputFilePath": "UserContent/user-1/rtt-456/Quantifications",
-	"piquantLogList": [
-		"https://dev-pixlise-piquant-jobs.s3.us-east-1.amazonaws.com/Jobs/UC2Bchyz/piquant-logs/node00001.pmcs_stdout.log",
-		"https://dev-pixlise-piquant-jobs.s3.us-east-1.amazonaws.com/Jobs/UC2Bchyz/piquant-logs/node00001.pmcs_threads.log"
-	]
-}`))),
+				"shared": false,
+				"params": {
+					"pmcsCount": 93,
+					"name": "my test quant",
+					"dataBucket": "dev-pixlise-data",
+					"datasetPath": "Datasets/rtt-456/5x5dataset.bin",
+					"datasetID": "rtt-456",
+					"jobBucket": "dev-pixlise-piquant-jobs",
+					"detectorConfig": "PIXL",
+					"elements": [
+						"Sc",
+						"Cr"
+					],
+					"parameters": "-q,pPIETXCFsr -b,0,12,60,910,280,16",
+					"runTimeSec": 120,
+					"coresPerNode": 6,
+					"startUnixTime": 1589948988,
+					"creator": {
+						"name": "peternemere",
+						"user_id": "600f2a0806b6c70071d3d174",
+						"email": ""
+					},
+					"roiID": "ZcH49SYZ",
+					"elementSetID": "",
+					"quantMode": "AB"
+				},
+				"jobId": "job1",
+				"status": "complete",
+				"message": "Nodes ran: 1",
+				"endUnixTime": 1589949035,
+				"outputFilePath": "UserContent/user-1/rtt-456/Quantifications",
+				"piquantLogList": [
+					"https://dev-pixlise-piquant-jobs.s3.us-east-1.amazonaws.com/Jobs/UC2Bchyz/piquant-logs/node00001.pmcs_stdout.log",
+					"https://dev-pixlise-piquant-jobs.s3.us-east-1.amazonaws.com/Jobs/UC2Bchyz/piquant-logs/node00001.pmcs_threads.log"
+				]
+			}`))),
 			},
 			{
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(summaryJSON))),
-			},
-			nil,
-			{
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(summaryJSON))),
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(summaryJSON))), // 1
 			},
 			{
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-	"shared": false,
-	"params": {
-		"pmcsCount": 93,
-		"name": "my test quant",
-		"dataBucket": "dev-pixlise-data",
-		"datasetPath": "Datasets/rtt-456/5x5dataset.bin",
-		"datasetID": "rtt-456",
-		"jobBucket": "dev-pixlise-piquant-jobs",
-		"detectorConfig": "PIXL",
-		"elements": [
-			"Sc",
-			"Cr"
-		],
-		"parameters": "-q,pPIETXCFsr -b,0,12,60,910,280,16",
-		"runTimeSec": 120,
-		"coresPerNode": 6,
-		"startUnixTime": 1589948988,
-		"creator": {
-			"name": "peternemere",
-			"user_id": "600f2a0806b6c70071d3d174",
-			"email": ""
-		},
-		"roiID": "ZcH49SYZ",
-		"elementSetID": ""
-	},
-	"elements": ["Sc", "Cr"],
-	"jobId": "job7",
-	"status": "complete",
-	"message": "Nodes ran: 1",
-	"endUnixTime": 1589949035,
-	"outputFilePath": "UserContent/user-1/rtt-456/Quantifications",
-	"piquantLogList": [
-		"https://dev-pixlise-piquant-jobs.s3.us-east-1.amazonaws.com/Jobs/UC2Bchyz/piquant-logs/node00001.pmcs_stdout.log",
-		"https://dev-pixlise-piquant-jobs.s3.us-east-1.amazonaws.com/Jobs/UC2Bchyz/piquant-logs/node00001.pmcs_threads.log"
-	]
-}`))),
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(publicDatasetsJSON))), // 1
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte("bad json"))), // 2
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(publicDatasetsJSON))), // 2
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte("bad json"))), // 3
+			},
+			{
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(publicDatasetsJSON))), // 2
 			},
 		}
 
@@ -1011,50 +972,16 @@ func Test_quantHandler_Get(t *testing.T) {
 			Name:   "Niko Bellic",
 			UserID: "600f2a0806b6c70071d3d174",
 			Permissions: map[string]bool{
-				"access:wrong-group": true,
+				"read:data-analysis": true,
+				"access:the-group":   true,
 			},
 		}
 		svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
 		apiRouter := MakeRouter(svcs)
 
-		// Dataset summary file wrong group, ERROR - NO ACCESS
+		// File found, OK
 		req, _ := http.NewRequest("GET", "/quantification/rtt-456/job1", nil)
 		resp := executeRequest(req, apiRouter.Router)
-
-		checkResult(t, resp, 403, `dataset rtt-456 not permitted
-`)
-		mockUser = pixlUser.UserInfo{
-			Name:   "Niko Bellic",
-			UserID: "600f2a0806b6c70071d3d174",
-			Permissions: map[string]bool{
-				"access:the-group": true,
-			},
-		}
-
-		// Dataset summary has different group, ACCESS DENIED
-		req, _ = http.NewRequest("GET", "/quantification/rtt-456/job1", nil)
-		resp = executeRequest(req, apiRouter.Router)
-
-		checkResult(t, resp, 500, `failed to verify dataset group permission
-`)
-
-		// Failed to parse summary JSON, ERROR
-		req, _ = http.NewRequest("GET", "/quantification/rtt-456/job1", nil)
-		resp = executeRequest(req, apiRouter.Router)
-
-		checkResult(t, resp, 404, `rtt-456 not found
-`)
-
-		// File not found, ERROR
-		req, _ = http.NewRequest("GET", "/quantification/rtt-456/job1", nil)
-		resp = executeRequest(req, apiRouter.Router)
-
-		checkResult(t, resp, 404, `job1 not found
-`)
-
-		// File found, OK
-		req, _ = http.NewRequest("GET", "/quantification/rtt-456/job1", nil)
-		resp = executeRequest(req, apiRouter.Router)
 
 		checkResult(t, resp, 200, `{
     "summary": {
@@ -1102,64 +1029,46 @@ func Test_quantHandler_Get(t *testing.T) {
 }
 `)
 
-		// Shared file not found, ERROR
-		req, _ = http.NewRequest("GET", "/quantification/rtt-456/shared-job7", nil)
+		mockUser = pixlUser.UserInfo{
+			Name:   "Niko Bellic",
+			UserID: "600f2a0806b6c70071d3d174",
+			Permissions: map[string]bool{
+				"read:data-analysis": true,
+				"access:wrong-group": true,
+			},
+		}
+		svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
+		apiRouter = MakeRouter(svcs)
+
+		// Dataset summary file wrong group, ERROR - NO ACCESS
+		req, _ = http.NewRequest("GET", "/quantification/rtt-456/job1", nil)
 		resp = executeRequest(req, apiRouter.Router)
 
-		checkResult(t, resp, 404, `job7 not found
+		checkResult(t, resp, 403, `dataset rtt-456 not permitted
 `)
 
-		// Shared file found, OK
-		req, _ = http.NewRequest("GET", "/quantification/rtt-456/shared-job7", nil)
+		// Dataset summary has different group, ACCESS DENIED
+		req, _ = http.NewRequest("GET", "/quantification/rtt-456/job1", nil)
 		resp = executeRequest(req, apiRouter.Router)
 
-		checkResult(t, resp, 200, `{
-    "summary": {
-        "shared": false,
-        "params": {
-            "pmcsCount": 93,
-            "name": "my test quant",
-            "dataBucket": "dev-pixlise-data",
-            "datasetPath": "Datasets/rtt-456/5x5dataset.bin",
-            "datasetID": "rtt-456",
-            "jobBucket": "dev-pixlise-piquant-jobs",
-            "detectorConfig": "PIXL",
-            "elements": [
-                "Sc",
-                "Cr"
-            ],
-            "parameters": "-q,pPIETXCFsr -b,0,12,60,910,280,16",
-            "runTimeSec": 120,
-            "coresPerNode": 6,
-            "startUnixTime": 1589948988,
-            "creator": {
-                "name": "Peter N",
-                "user_id": "600f2a0806b6c70071d3d174",
-                "email": "peter@pixlise.org"
-            },
-            "roiID": "ZcH49SYZ",
-            "elementSetID": "",
-            "piquantVersion": "",
-            "quantMode": "",
-            "comments": "",
-            "roiIDs": []
-        },
-        "elements": [
-            "Sc",
-            "Cr"
-        ],
-        "jobId": "job7",
-        "status": "complete",
-        "message": "Nodes ran: 1",
-        "endUnixTime": 1589949035,
-        "outputFilePath": "UserContent/user-1/rtt-456/Quantifications",
-        "piquantLogList": [
-            "https://dev-pixlise-piquant-jobs.s3.us-east-1.amazonaws.com/Jobs/UC2Bchyz/piquant-logs/node00001.pmcs_stdout.log",
-            "https://dev-pixlise-piquant-jobs.s3.us-east-1.amazonaws.com/Jobs/UC2Bchyz/piquant-logs/node00001.pmcs_threads.log"
-        ]
-    },
-    "url": "https:///quantification/download/rtt-456/shared-job7"
-}
+		checkResult(t, resp, 500, `failed to verify dataset group permission
+`)
+		mockUser = pixlUser.UserInfo{
+			Name:   "Niko Bellic",
+			UserID: "600f2a0806b6c70071d3d174",
+			Permissions: map[string]bool{
+				"read:data-analysis": true,
+				"access:the-group":   true,
+			},
+		}
+		svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
+		apiRouter = MakeRouter(svcs)
+
+		// Failed to parse summary JSON, ERROR
+		req, _ = http.NewRequest("GET", "/quantification/rtt-456/job1", nil)
+		resp = executeRequest(req, apiRouter.Router)
+
+		checkResult(t, resp, 500, `failed to verify dataset group permission
 `)
 	})
 }

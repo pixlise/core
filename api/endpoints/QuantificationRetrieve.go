@@ -18,6 +18,7 @@
 package endpoints
 
 import (
+	"errors"
 	"path"
 	"sort"
 	"strings"
@@ -109,7 +110,12 @@ func (a ByJobID) Less(i, j int) bool { return a[i].JobID < a[j].JobID }
 func quantificationList(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 
-	summaries, availableQuantIds, err := listQuantsForUser(params.Svcs, datasetID, params.UserInfo.UserID)
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
+
+	summaries, availableQuantIds, err := listQuantsForUser(params.Svcs, datasetID, params.UserInfo.UserID, isPublicUser)
+	if err != nil {
+		return nil, err
+	}
 
 	// Also list in-progress quantifications
 	processing, err := quantModel.ListQuantJobsForDataset(params.Svcs, params.UserInfo.UserID, params.PathParams[datasetIdentifier])
@@ -153,7 +159,7 @@ func quantificationList(params handlers.ApiHandlerParams) (interface{}, error) {
 	return &QuantListingResponse{Summaries: summaries, BlessedQuant: blessItem}, nil
 }
 
-func listQuantsForUser(svcs *services.APIServices, datasetID string, userID string) ([]quantModel.JobSummaryItem, map[string]bool, error) {
+func listQuantsForUser(svcs *services.APIServices, datasetID string, userID string, isPublicUser bool) ([]quantModel.JobSummaryItem, map[string]bool, error) {
 	userQuantSummaryPrefixedPath := filepaths.GetUserQuantPath(userID, datasetID, filepaths.QuantSummaryFilePrefix)
 	sharedQuantSummaryPrefixedPath := filepaths.GetSharedQuantPath(datasetID, filepaths.QuantSummaryFilePrefix)
 
@@ -210,7 +216,23 @@ func listQuantsForUser(svcs *services.APIServices, datasetID string, userID stri
 		}
 	}
 
+	publicObjectsAuth, err := permission.GetPublicObjectsAuth(svcs.FS, svcs.Config.ConfigBucket, isPublicUser)
+	if err != nil {
+		return summaries, availableQuantIds, err
+	}
+
 	for summary := range summariesCh {
+		// If we're a public user, check if the quant is in the public set and filter out if not
+		if isPublicUser {
+			isQuantPublic, err := permission.CheckIsObjectInPublicSet(publicObjectsAuth.Quantifications, summary.JobID)
+			if err != nil {
+				return summaries, availableQuantIds, err
+			}
+
+			if !isQuantPublic {
+				continue
+			}
+		}
 		summaries = append(summaries, summary)
 		availableQuantIds[summary.JobID] = true
 	}
@@ -229,12 +251,25 @@ func quantificationGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	// First, check if the user is allowed to access the given dataset
 	datasetID := params.PathParams[datasetIdentifier]
 
-	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, datasetID)
+	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
 	if err != nil {
 		return nil, err
 	}
 
 	jobID := params.PathParams[idIdentifier]
+
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
+
+	if isPublicUser {
+		isQuantPublic, err := permission.CheckIsObjectPublic(params.Svcs.FS, params.Svcs.Config.ConfigBucket, permission.PublicObjectQuantification, jobID)
+		if err != nil {
+			return nil, err
+		}
+
+		if !isQuantPublic {
+			return nil, api.MakeBadRequestError(errors.New("quantification is not public"))
+		}
+	}
 
 	requestJobID := jobID
 
@@ -277,7 +312,7 @@ func quantificationFileStream(params handlers.ApiHandlerStreamParams) (*s3.GetOb
 	// First, check if the user is allowed to access the given dataset
 	datasetID := params.PathParams[datasetIdentifier]
 
-	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, datasetID)
+	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
 	if err != nil {
 		return nil, "", err
 	}

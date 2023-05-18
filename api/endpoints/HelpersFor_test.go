@@ -54,10 +54,12 @@ func (m MockJWTReader) GetUserInfo(*http.Request) (pixlUser.UserInfo, error) {
 	}
 	//This user id is real don't change it....
 	return pixlUser.UserInfo{
-		Name:        "Niko Bellic",
-		UserID:      "600f2a0806b6c70071d3d174",
-		Email:       "niko@spicule.co.uk",
-		Permissions: map[string]bool{},
+		Name:   "Niko Bellic",
+		UserID: "600f2a0806b6c70071d3d174",
+		Email:  "niko@spicule.co.uk",
+		Permissions: map[string]bool{
+			"read:data-analysis": true,
+		},
 	}, nil
 }
 
@@ -177,8 +179,8 @@ func checkResult(t *testing.T, resp *httptest.ResponseRecorder, expectedStatus i
 
 	gotRespBody := resp.Body.String()
 	if gotRespBody != expectedBody {
-		t.Errorf("Bad resp body:\n%v", gotRespBody)
-		t.Errorf("vs expected body:\n%v", expectedBody)
+		t.Errorf("Bad resp body:\n|%v|", gotRespBody)
+		t.Errorf("vs expected body:\n|%v|", expectedBody)
 	}
 }
 

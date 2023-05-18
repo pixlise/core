@@ -29,6 +29,7 @@ import (
 
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/handlers"
+	"github.com/pixlise/core/v3/api/permission"
 	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/core/api"
 	"github.com/pixlise/core/v3/core/pixlUser"
@@ -77,8 +78,27 @@ func savedViewStateList(params handlers.ApiHandlerParams) (interface{}, error) {
 	sharedList, _ := getViewStateListing(params.Svcs, datasetID, pixlUser.ShareUserID)
 	// We don't check for errors because path may not exist yet and thats a valid scenario, just don't return any in that case
 
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadPIXLISESettings]
+
 	result := []workspaceSummary{}
+	publicObjectsAuth, err := permission.GetPublicObjectsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, isPublicUser)
+	if err != nil {
+		return result, err
+	}
+
 	for _, item := range userList {
+		// If public user, check if workspace is in public set
+		if isPublicUser {
+			isWorkspacePublic, err := permission.CheckIsObjectInPublicSet(publicObjectsAuth.Workspaces, item.ID)
+			if err != nil {
+				return result, err
+			}
+
+			if !isWorkspacePublic {
+				continue
+			}
+		}
+
 		result = append(result, item)
 	}
 
@@ -133,6 +153,15 @@ func getViewStateListing(svcs *services.APIServices, datasetID string, userID st
 func savedViewStateGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	viewStateID := params.PathParams[idIdentifier]
+
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadPIXLISESettings]
+	if isPublicUser {
+		// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
+		_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	s3Path := filepaths.GetWorkspacePath(params.UserInfo.UserID, datasetID, viewStateID)
 
@@ -307,6 +336,24 @@ func savedViewStateGetReferencedIDs(params handlers.ApiHandlerParams) (interface
 	datasetID := params.PathParams[datasetIdentifier]
 	viewStateID := params.PathParams[idIdentifier]
 	s3Path := filepaths.GetWorkspacePath(params.UserInfo.UserID, datasetID, viewStateID)
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadPIXLISESettings]
+
+	if isPublicUser {
+		isWorkspacePublic, err := permission.CheckIsObjectPublic(params.Svcs.FS, params.Svcs.Config.ConfigBucket, permission.PublicObjectWorkspace, viewStateID)
+		if err != nil {
+			return nil, err
+		}
+
+		if !isWorkspacePublic {
+			return nil, api.MakeBadRequestError(errors.New("workspace is not public"))
+		}
+
+		// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
+		_, err = permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	// Read the file in
 	state := Workspace{
@@ -332,13 +379,14 @@ func savedViewStateGetReferencedIDs(params handlers.ApiHandlerParams) (interface
 		rois := roiModel.ROILookup{}
 
 		// Get user item summaries
-		err := roiModel.GetROIs(params.Svcs, params.UserInfo.UserID, datasetID, &rois)
+		// We don't have to check permissions here, as we've already checked them above
+		err := roiModel.GetROIs(params.Svcs, params.UserInfo.UserID, datasetID, &rois, false)
 		if err != nil {
 			params.Svcs.Log.Errorf("Failed to load user ROIs file, returned items may not have name/creator. Error: %v", err)
 		}
 
 		// Get shared item summaries (into same map)
-		err = roiModel.GetROIs(params.Svcs, pixlUser.ShareUserID, datasetID, &rois)
+		err = roiModel.GetROIs(params.Svcs, pixlUser.ShareUserID, datasetID, &rois, false)
 		if err != nil {
 			params.Svcs.Log.Errorf("Failed to load shared ROIs file, returned items may not have name/creator. Error: %v", err)
 		}

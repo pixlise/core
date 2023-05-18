@@ -140,12 +140,24 @@ func Example_quantHandler_ZStackSave() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
+	const publicDatasetsJSON = `{
+   "rtt-456": {
+      "dataset_id": "rtt-456",
+      "public": false,
+      "public_release_utc_time_sec": 0,
+      "sol": ""
+   }
+}`
+
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
 			Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/datasetThatDoesntExist/summary.json"),
 		},
 		{
 			Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/datasetNoPermission/summary.json"),
+		},
+		{
+			Bucket: aws.String("config-bucket"), Key: aws.String("PixliseConfig/datasets-auth.json"),
 		},
 		{
 			Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/dataset123/summary.json"),
@@ -174,6 +186,9 @@ func Example_quantHandler_ZStackSave() {
 				"pseudo_intensities": 441,
 				"detector_config": "PIXL"
 			 }`))),
+		},
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(publicDatasetsJSON))), // 2
 		},
 		{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
@@ -215,7 +230,8 @@ func Example_quantHandler_ZStackSave() {
 		Name:   "Niko Bellic",
 		UserID: "600f2a0806b6c70071d3d174",
 		Permissions: map[string]bool{
-			"access:GroupB": true,
+			"read:data-analysis": true,
+			"access:GroupB":      true,
 		},
 	}
 	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}

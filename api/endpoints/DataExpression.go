@@ -41,12 +41,12 @@ import (
 func registerDataExpressionHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "data-expression"
 
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), dataExpressionList)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix), apiRouter.MakeMethodPermission("GET", permission.PermPublic), dataExpressionList)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix), apiRouter.MakeMethodPermission("POST", permission.PermWriteDataAnalysis), dataExpressionPost)
 
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWriteDataAnalysis), dataExpressionPut)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("DELETE", permission.PermWriteDataAnalysis), dataExpressionDelete)
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), dataExpressionGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), dataExpressionGet)
 	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix+"/execution-stat", idIdentifier), apiRouter.MakeMethodPermission("PUT", permission.PermWriteDataAnalysis), dataExpressionExecutionStatPut)
 
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedExpression), dataExpressionShare)
@@ -82,10 +82,27 @@ func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
+
 	result := map[string]expressions.DataExpressionWire{}
+
+	publicObjectsAuth, err := permission.GetPublicObjectsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, isPublicUser)
+	if err != nil {
+		return result, err
+	}
 
 	// We're sending them back in a different struct for legacy reasons
 	for _, item := range items {
+		if isPublicUser {
+			isExpressionPublic, err := permission.CheckIsObjectInPublicSet(publicObjectsAuth.Expressions, item.ID)
+			if err != nil {
+				return result, err
+			}
+
+			if !isExpressionPublic {
+				continue
+			}
+		}
 		resultItem := toWire(item)
 		result[resultItem.ID] = resultItem
 	}
@@ -97,6 +114,18 @@ func dataExpressionList(params handlers.ApiHandlerParams) (interface{}, error) {
 func dataExpressionGet(params handlers.ApiHandlerParams) (interface{}, error) {
 	itemID := params.PathParams[idIdentifier]
 	strippedID, _ := utils.StripSharedItemIDPrefix(itemID)
+
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
+	if isPublicUser {
+		isExpressionPublic, err := permission.CheckIsObjectPublic(params.Svcs.FS, params.Svcs.Config.ConfigBucket, permission.PublicObjectExpression, strippedID)
+		if err != nil {
+			return nil, err
+		}
+
+		if !isExpressionPublic {
+			return nil, api.MakeBadRequestError(errors.New("expression is not public"))
+		}
+	}
 
 	// Get expression
 	expr, err := params.Svcs.Expressions.GetExpression(strippedID, true)
