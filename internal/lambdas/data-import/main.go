@@ -89,6 +89,10 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 			fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
 
 			result, err := importer.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, nil, remoteFS)
+			if err != nil {
+				return "", err
+			}
+
 			defer result.Logger.Close()
 
 			if len(result.WhatChanged) > 0 {
