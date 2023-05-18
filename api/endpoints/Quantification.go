@@ -95,7 +95,7 @@ func registerQuantificationHandler(router *apiRouter.ApiObjectRouter) {
 	router.AddShareHandler(handlers.MakeEndpointPath(shareURLRoot+"/"+quantURLPathPrefix, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermWriteSharedQuantification), quantificationShare)
 
 	// Streaming quant files from S3 (map command)
-	router.AddStreamHandler(handlers.MakeEndpointPath(quantURLPathPrefix+"/"+handlers.UrlStreamDownloadIndicator, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), quantificationFileStream)
+	router.AddStreamHandler(handlers.MakeEndpointPath(quantURLPathPrefix+"/"+handlers.UrlStreamDownloadIndicator, datasetIdentifier, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic), quantificationFileStream)
 
 	// Streaming log files from S3
 	router.AddStreamHandler(handlers.MakeEndpointPath(quantURLPathPrefix+"/log/"+handlers.UrlStreamDownloadIndicator, datasetIdentifier, idIdentifier, quantLogIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadDataAnalysis), quantificationLogFileStream)
