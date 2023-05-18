@@ -17,11 +17,10 @@ metadata:
   annotations:
     backstage.io/kubernetes-id: pixlise-api
     github.com/project-slug: pixlise/core/internal/pixlise-api
-    grafana/overview-dashboard: 'https://grafana.admin.pixlise.org/d/7wcZ94dnz/webapp_metric?orgId=1&kiosk'
     grafana/dashboard-selector: api
     backstage.io/techdocs-ref: dir:.
     sentry.io/project-slug: pixl-api
-    oargocd/app-name: backstage
+    argocd/app-name: pixlise-prod-application
 spec:
   type: service
   owner: default/developers
