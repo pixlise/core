@@ -328,6 +328,10 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		log,
 	)
 
+	if err != nil {
+		return nil, "", err
+	}
+
 	return data, importPath, nil
 }
 
