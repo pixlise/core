@@ -469,7 +469,7 @@ func viewStateShare(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	_, isSharedReq := utils.StripSharedItemIDPrefix(viewStateID)
 	if isSharedReq {
-		return nil, api.MakeBadRequestError(fmt.Errorf("Cannot share a shared ID"))
+		return nil, api.MakeBadRequestError(fmt.Errorf("cannot share a shared ID"))
 	}
 
 	// Read the file in
@@ -532,6 +532,18 @@ func viewStateShare(params handlers.ApiHandlerParams) (interface{}, error) {
 	return viewStateID + " shared", nil
 }
 
+func checkIsBuiltinID(id string) bool {
+	ignoredIDs := []string{"AllPoints", "SelectedPoints", "RemainingPoints", "rgbmix-runtime-exploratory"}
+
+	for _, ignoredID := range ignoredIDs {
+		if id == ignoredID {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Saved view state helpers
 func autoShareNonSharedItems(svcs *services.APIServices, ids viewStateReferencedIDs, datasetID string, userID string) (map[string]string, error) {
 	idRemap := map[string]string{}
@@ -541,7 +553,7 @@ func autoShareNonSharedItems(svcs *services.APIServices, ids viewStateReferenced
 	unsharedRGBMixIDs := []string{}
 
 	for _, item := range ids.ROIs {
-		if !strings.HasPrefix(item.ID, utils.SharedItemIDPrefix) {
+		if !strings.HasPrefix(item.ID, utils.SharedItemIDPrefix) && !checkIsBuiltinID(item.ID) {
 			unsharedROIIDs = append(unsharedROIIDs, item.ID)
 		}
 	}
@@ -553,7 +565,7 @@ func autoShareNonSharedItems(svcs *services.APIServices, ids viewStateReferenced
 	}
 
 	for _, item := range ids.RGBMixes {
-		if !strings.HasPrefix(item.ID, utils.SharedItemIDPrefix) {
+		if !strings.HasPrefix(item.ID, utils.SharedItemIDPrefix) && !checkIsBuiltinID(item.ID) {
 			unsharedRGBMixIDs = append(unsharedRGBMixIDs, item.ID)
 		}
 	}

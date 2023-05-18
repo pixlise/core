@@ -230,18 +230,25 @@ func loadViewStates(params handlers.ApiHandlerParams, viewStateIDs []string) (ma
 	for _, viewStateID := range viewStateIDs {
 		s3Path := filepaths.GetWorkspacePath(params.UserInfo.UserID, datasetID, viewStateID)
 
+		// If this is a shared view state, load it from the shared user's workspace
+		strippedID, isShared := utils.StripSharedItemIDPrefix(viewStateID)
+		if isShared {
+			s3Path = filepaths.GetWorkspacePath(pixlUser.ShareUserID, datasetID, strippedID)
+		}
+
 		// Set up a default view state to read into
 		loadedWorkspace := Workspace{
 			ViewState: defaultWholeViewState(),
 		}
+
 		err := params.Svcs.FS.ReadJSON(params.Svcs.Config.UsersBucket, s3Path, &loadedWorkspace, false)
 		if err != nil {
-			return nil, api.MakeNotFoundError(viewStateID)
+			return nil, api.MakeNotFoundError(strippedID)
 		}
 
 		applyQuantByROIFallback(&loadedWorkspace.ViewState.Quantification)
 
-		result[viewStateID] = loadedWorkspace.ViewState
+		result[strippedID] = loadedWorkspace.ViewState
 	}
 
 	return result, nil
@@ -250,6 +257,11 @@ func loadViewStates(params handlers.ApiHandlerParams, viewStateIDs []string) (ma
 func viewStateCollectionPostPublic(params handlers.ApiHandlerParams) (interface{}, error) {
 	datasetID := params.PathParams[datasetIdentifier]
 	collectionID := params.PathParams[idIdentifier]
+
+	strippedID, isSharedReq := utils.StripSharedItemIDPrefix(collectionID)
+	if !isSharedReq {
+		return nil, api.MakeBadRequestError(errors.New("can't make non-shared collections public"))
+	}
 
 	// Verify user has access to dataset (need to do this now that permissions are on a per-dataset basis)
 	_, err := permission.UserCanAccessDatasetWithSummaryDownload(params.Svcs.FS, params.UserInfo, params.Svcs.Config.DatasetsBucket, params.Svcs.Config.ConfigBucket, datasetID)
@@ -268,7 +280,8 @@ func viewStateCollectionPostPublic(params handlers.ApiHandlerParams) (interface{
 	}
 
 	// Verify user has access to collection
-	collection, err := getCollection(params, collectionID, filepaths.GetCollectionPath(params.UserInfo.UserID, datasetID, collectionID), true)
+	s3SharedPath := filepaths.GetCollectionPath(pixlUser.ShareUserID, datasetID, strippedID)
+	collection, err := getCollection(params, strippedID, s3SharedPath, true)
 	if err != nil {
 		return nil, err
 	}
@@ -323,8 +336,8 @@ func viewStateCollectionPostPublic(params handlers.ApiHandlerParams) (interface{
 	}
 
 	// Add collection to public objects
-	if !utils.StringInSlice(collectionID, collectionObjects.Collections) {
-		collectionObjects.Collections = append(collectionObjects.Collections, collectionID)
+	if !utils.StringInSlice(strippedID, collectionObjects.Collections) {
+		collectionObjects.Collections = append(collectionObjects.Collections, strippedID)
 	}
 
 	for viewStateID, state := range states {
@@ -469,12 +482,12 @@ func viewStateCollectionShare(params handlers.ApiHandlerParams) (interface{}, er
 	datasetID := params.PathParams[datasetIdentifier]
 	collectionID := params.PathParams[idIdentifier]
 
-	s3Path := filepaths.GetCollectionPath(params.UserInfo.UserID, datasetID, collectionID)
 	_, isSharedReq := utils.StripSharedItemIDPrefix(collectionID)
 	if isSharedReq {
-		return nil, fmt.Errorf("Cannot share a shared ID")
+		return nil, fmt.Errorf("cannot share a shared ID")
 	}
 
+	s3Path := filepaths.GetCollectionPath(params.UserInfo.UserID, datasetID, collectionID)
 	collectionContents, err := getCollection(params, collectionID, s3Path, true)
 	if err != nil {
 		return nil, err
