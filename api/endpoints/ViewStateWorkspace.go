@@ -469,7 +469,7 @@ func viewStateShare(params handlers.ApiHandlerParams) (interface{}, error) {
 
 	_, isSharedReq := utils.StripSharedItemIDPrefix(viewStateID)
 	if isSharedReq {
-		return nil, api.MakeBadRequestError(fmt.Errorf("cannot share a shared ID"))
+		return nil, api.MakeBadRequestError(fmt.Errorf("Cannot share a shared ID"))
 	}
 
 	// Read the file in
