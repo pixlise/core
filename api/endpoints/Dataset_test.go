@@ -267,6 +267,8 @@ func Example_datasetHandler_List() {
 			"access:the-group":     true,
 			"access:groupie":       true,
 			"access:another-group": true,
+			"access:super-admin":   true,
+			"read:data-analysis":   true,
 		},
 	}
 	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
@@ -406,7 +408,7 @@ func Example_datasetHandler_List() {
 	//     }
 	// ]
 	//
-	// Permissions left: 2
+	// Permissions left: 4
 	// 200
 	// [
 	//     {
@@ -584,16 +586,32 @@ func Example_datasetHandler_Stream_BadGroup_403() {
    "pseudo_intensities": 441,
    "detector_config": "PIXL"
 }`
+
+	const publicDatasetsJSON = `{
+   "590340": {
+      "dataset_id": "590340",
+      "public": false,
+      "public_release_utc_time_sec": 0,
+      "sol": ""
+   }
+}`
+
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
 			Bucket: aws.String(DatasetsBucketForUnitTest), Key: aws.String("Datasets/590340/summary.json"),
 		},
+		{
+			Bucket: aws.String("config-bucket"), Key: aws.String("PixliseConfig/datasets-auth.json"),
+		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(summaryJSON))),
+		},
+		{
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(publicDatasetsJSON))),
 		},
 	}
 
@@ -603,7 +621,9 @@ func Example_datasetHandler_Stream_BadGroup_403() {
 		"600f2a0806b6c70071d3d174",
 		"niko@rockstar.com",
 		map[string]bool{
-			"access:the-group": true,
+			"access:the-group":   true,
+			"access:super-admin": true,
+			"read:data-analysis": true,
 		},
 	}
 	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}

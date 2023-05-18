@@ -306,24 +306,33 @@ func datasetListing(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	datasetsAuthPath := filepaths.GetDatasetsAuthPath()
-	datasetsAuth, err := permission.ReadDatasetsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, datasetsAuthPath)
-	if err != nil {
-		return nil, err
+	datasetsAuth := permission.DatasetsAuth{}
+	publicObjectsAuth := permission.PublicObjectsAuth{}
+	isSuperAdmin := params.UserInfo.Permissions[permission.PermSuperAdmin]
+	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
+
+	if !isSuperAdmin {
+		datasetsAuthPath := filepaths.GetDatasetsAuthPath()
+		datasetsAuth, err = permission.ReadDatasetsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, datasetsAuthPath)
+		if err != nil {
+			return nil, err
+		}
+
+		publicObjectsAuth, err = permission.GetPublicObjectsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, isPublicUser)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	userAllowedGroups := permission.GetAccessibleGroups(params.UserInfo.Permissions)
 
-	isPublicUser := !params.UserInfo.Permissions[permission.PermReadDataAnalysis]
-	publicObjectsAuth, err := permission.GetPublicObjectsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, isPublicUser)
-	if err != nil {
-		return nil, err
-	}
-
 	for _, item := range dataSets.Datasets {
-		isPublic, err := permission.CheckAndUpdatePublicDataset(params.Svcs.FS, params.Svcs.Config.ConfigBucket, item.DatasetID, datasetsAuth)
-		if err != nil {
-			return nil, err
+		isPublic := false
+		if !isSuperAdmin {
+			isPublic, err = permission.CheckAndUpdatePublicDataset(params.Svcs.FS, params.Svcs.Config.ConfigBucket, item.DatasetID, datasetsAuth)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if isPublicUser {
