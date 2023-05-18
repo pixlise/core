@@ -12,7 +12,9 @@
 
 ## What is it?
 
-PIXLISE Core is the API and data management processes for the PIXLISE platform. 
+PIXLISE Core is the API and data management processes for the PIXLISE platform.
+
+PIXLISE is deployed to https://www.pixlise.org
 
 ## Building
 

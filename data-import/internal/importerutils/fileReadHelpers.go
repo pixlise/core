@@ -122,10 +122,23 @@ func MakeFMDatasetOutput(
 		return nil, errors.New("Failed to determine dataset RTT")
 	}
 
+	isEM := false
+
 	// Ensure it matches what we're expecting
 	// We allow for missing 0's at the start because for a while we imported RTTs as ints, so older dataset RTTs
 	// were coming in as eg 76481028, while we now read them as 076481028
-	if meta.RTT != datasetIDExpected && meta.RTT != "0"+datasetIDExpected {
+	// NOTE: it looks like EM datasets are generated with the RTT: 000000453
+	// so if this is the RTT we don't do the check
+	if meta.RTT == "000000453" {
+		isEM = true
+		if datasetIDExpected == meta.RTT {
+			return nil, fmt.Errorf("Read RTT %v, need expected dataset ID to be different", meta.RTT)
+		} else {
+			// Set the RTT to the expected ID, we're importing some kind of test dataset
+			// so use something else, otherwise we would overwrite them all the time
+			meta.RTT = datasetIDExpected
+		}
+	} else if meta.RTT != datasetIDExpected && meta.RTT != "0"+datasetIDExpected {
 		return nil, fmt.Errorf("Expected dataset ID %v, read %v", datasetIDExpected, meta.RTT)
 	}
 
@@ -134,7 +147,7 @@ func MakeFMDatasetOutput(
 
 	// Depending on the SOL we may override the group and detector, as we have some test datasets that came
 	// from the EM and have special characters as first part of SOL
-	if len(meta.SOL) > 0 && (meta.SOL[0] == 'D' || meta.SOL[0] == 'C') {
+	if isEM || len(meta.SOL) > 0 && (meta.SOL[0] == 'D' || meta.SOL[0] == 'C') {
 		detectorConfig = "PIXL-EM-E2E"
 		group = "PIXL-EM"
 	}
