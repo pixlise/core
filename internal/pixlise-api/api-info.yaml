@@ -9,15 +9,151 @@ spec:
   definition: |
     basePath: /
     definitions:
-      dataExpression.DataExpression:
+      api_endpoints.AnnotationLookup:
+        additionalProperties:
+          $ref: '#/definitions/api_endpoints.SpectrumAnnotationLine'
+        type: object
+      api_endpoints.AnnotationPoint:
         properties:
-          comments:
-            type: string
+          screenHeight:
+            type: number
+          screenWidth:
+            type: number
+          x:
+            type: number
+          "y":
+            type: number
+        type: object
+      api_endpoints.ElementSet:
+        properties:
           create_unix_time_sec:
             type: integer
           creator:
-            $ref: '#/definitions/pixlUser.UserInfo'
-          expression:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserInfo'
+          lines:
+            items:
+              $ref: '#/definitions/api_endpoints.elementLines'
+            type: array
+          mod_unix_time_sec:
+            type: integer
+          name:
+            type: string
+          shared:
+            type: boolean
+        type: object
+      api_endpoints.FullScreenAnnotationItem:
+        properties:
+          colour:
+            type: string
+          complete:
+            type: boolean
+          fontSize:
+            type: integer
+          id:
+            type: integer
+          points:
+            items:
+              $ref: '#/definitions/api_endpoints.AnnotationPoint'
+            type: array
+          text:
+            type: string
+          type:
+            type: string
+        type: object
+      api_endpoints.HintsData:
+        properties:
+          hints:
+            items:
+              type: string
+            type: array
+        type: object
+      api_endpoints.MultiQuantificationComparisonResponse:
+        properties:
+          quantTables:
+            items:
+              $ref: '#/definitions/api_endpoints.QuantTable'
+            type: array
+          roiID:
+            type: string
+        type: object
+      api_endpoints.QuantCombineItem:
+        properties:
+          quantificationID:
+            type: string
+          roiID:
+            type: string
+        type: object
+      api_endpoints.QuantCombineRequest:
+        properties:
+          description:
+            type: string
+          name:
+            type: string
+          roiZStack:
+            items:
+              $ref: '#/definitions/api_endpoints.QuantCombineItem'
+            type: array
+          summaryOnly:
+            type: boolean
+        type: object
+      api_endpoints.QuantListingResponse:
+        properties:
+          blessedQuant:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_quantModel.BlessFileItem'
+          summaries:
+            items:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_quantModel.JobSummaryItem'
+            type: array
+        type: object
+      api_endpoints.QuantTable:
+        properties:
+          elementWeights:
+            additionalProperties:
+              type: number
+            type: object
+          quantID:
+            type: string
+          quantName:
+            type: string
+        type: object
+      api_endpoints.SpectrumAnnotationLine:
+        properties:
+          create_unix_time_sec:
+            type: integer
+          creator:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserInfo'
+          eV:
+            type: number
+          mod_unix_time_sec:
+            type: integer
+          name:
+            type: string
+          roiID:
+            type: string
+          shared:
+            type: boolean
+        type: object
+      api_endpoints.UserDiffractionPeak:
+        properties:
+          keV:
+            type: number
+          pmc:
+            type: integer
+        type: object
+      api_endpoints.UserSubscriptions:
+        properties:
+          topics:
+            items:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.Topics'
+            type: array
+        type: object
+      api_endpoints.Workspace:
+        properties:
+          create_unix_time_sec:
+            type: integer
+          creator:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserInfo'
+          description:
             type: string
           mod_unix_time_sec:
             type: integer
@@ -25,39 +161,1409 @@ spec:
             type: string
           shared:
             type: boolean
-          tags:
+          viewState:
+            $ref: '#/definitions/api_endpoints.wholeViewState'
+        type: object
+      api_endpoints.analysisLayoutState:
+        properties:
+          bottomWidgetSelectors:
             items:
               type: string
             type: array
-          type:
-            $ref: '#/definitions/dataExpression.expressionType'
+          topWidgetSelectors:
+            items:
+              type: string
+            type: array
         type: object
-      dataExpression.DataExpressionInput:
+      api_endpoints.annotationDisplayState:
         properties:
-          comments:
+          savedAnnotations:
+            items:
+              $ref: '#/definitions/api_endpoints.FullScreenAnnotationItem'
+            type: array
+        type: object
+      api_endpoints.auth0UserInfo:
+        properties:
+          created_at:
+            type: integer
+          email:
             type: string
-          expression:
+          last_login:
+            type: integer
+          name:
+            type: string
+          picture:
+            type: string
+          roles:
+            items:
+              type: string
+            type: array
+          user_details:
+            allOf:
+            - $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserStruct'
+            description: This data isn't from Auth0, but we're joining it in
+          user_id:
+            type: string
+        type: object
+      api_endpoints.binaryState:
+        properties:
+          expressionIDs:
+            items:
+              type: string
+            type: array
+          showMmol:
+            type: boolean
+          visibleROIs:
+            items:
+              type: string
+            type: array
+        type: object
+      api_endpoints.chordState:
+        properties:
+          displayROI:
+            type: string
+          drawMode:
+            type: string
+          expressionIDs:
+            items:
+              type: string
+            type: array
+          showForSelection:
+            type: boolean
+          threshold:
+            type: number
+        type: object
+      api_endpoints.contextImageState:
+        properties:
+          brightness:
+            type: number
+          colourRatioMax:
+            type: number
+          colourRatioMin:
+            type: number
+          contextImage:
+            type: string
+          contextImageSmoothing:
+            type: string
+          elementRelativeShading:
+            type: boolean
+          mapLayers:
+            items:
+              $ref: '#/definitions/api_endpoints.mapLayerVisibility'
+            type: array
+          panX:
+            type: number
+          panY:
+            type: number
+          pointBBoxColourScheme:
+            type: string
+          pointColourScheme:
+            type: string
+          removeBottomSpecularArtifacts:
+            type: boolean
+          removeTopSpecularArtifacts:
+            type: boolean
+          rgbuChannels:
+            type: string
+          roiLayers:
+            items:
+              $ref: '#/definitions/api_endpoints.roiLayerVisibility'
+            type: array
+          showPointBBox:
+            type: boolean
+          showPoints:
+            type: boolean
+          unselectedGrayscale:
+            type: boolean
+          unselectedOpacity:
+            type: number
+          zoomX:
+            type: number
+          zoomY:
+            type: number
+        type: object
+      api_endpoints.datasetCustomImageMeta:
+        properties:
+          download-link:
+            type: string
+        type: object
+      api_endpoints.detectorConfigListing:
+        properties:
+          configNames:
+            items:
+              type: string
+            type: array
+        type: object
+      api_endpoints.elementLines:
+        properties:
+          Esc:
+            type: boolean
+          K:
+            type: boolean
+          L:
+            type: boolean
+          M:
+            type: boolean
+          Z:
+            description: 118 still fits! Will we break past 127 any time soon? :)
+            type: integer
+        type: object
+      api_endpoints.elementSetSummary:
+        properties:
+          atomicNumbers:
+            items:
+              type: integer
+            type: array
+          create_unix_time_sec:
+            type: integer
+          creator:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserInfo'
+          mod_unix_time_sec:
+            type: integer
+          name:
+            type: string
+          shared:
+            type: boolean
+        type: object
+      api_endpoints.elementSetSummaryLookup:
+        additionalProperties:
+          $ref: '#/definitions/api_endpoints.elementSetSummary'
+        type: object
+      api_endpoints.energyCalibration:
+        properties:
+          detector:
+            type: string
+          eVPerChannel:
+            type: number
+          eVStart:
+            type: number
+        type: object
+      api_endpoints.exportFilesParams:
+        properties:
+          fileIds:
+            items:
+              type: string
+            type: array
+          fileName:
+            type: string
+          quantificationId:
+            type: string
+          roiIds:
+            items:
+              type: string
+            type: array
+        type: object
+      api_endpoints.histogramState:
+        properties:
+          expressionIDs:
+            items:
+              type: string
+            type: array
+          logScale:
+            type: boolean
+          showStdDeviation:
+            type: boolean
+          visibleROIs:
+            items:
+              type: string
+            type: array
+        type: object
+      api_endpoints.mapLayerVisibility:
+        properties:
+          displayValueRangeMax:
+            type: number
+          displayValueRangeMin:
+            type: number
+          displayValueShading:
+            type: string
+          expressionID:
+            type: string
+          opacity:
+            type: number
+          visible:
+            type: boolean
+        type: object
+      api_endpoints.parallelogramWidgetState:
+        properties:
+          channels:
+            items:
+              type: string
+            type: array
+          regions:
+            items:
+              type: string
+            type: array
+        type: object
+      api_endpoints.piquantDownloadListing:
+        properties:
+          downloadItems:
+            items:
+              $ref: '#/definitions/api_endpoints.piquantDownloadable'
+            type: array
+        type: object
+      api_endpoints.piquantDownloadable:
+        properties:
+          buildDateUnixSec:
+            type: integer
+          buildVersion:
+            type: string
+          downloadUrl:
+            type: string
+          fileName:
+            type: string
+          fileSizeBytes:
+            type: integer
+          os:
+            type: string
+        type: object
+      api_endpoints.quantConfig:
+        properties:
+          pixliseConfig:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_detector.DetectorConfig'
+          quantConfig:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_piquant.PiquantConfig'
+        type: object
+      api_endpoints.quantGetResponse:
+        properties:
+          summary:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_quantModel.JobSummaryItem'
+          url:
+            type: string
+        type: object
+      api_endpoints.quantificationState:
+        properties:
+          appliedQuantID:
+            type: string
+          quantificationByROI:
+            additionalProperties:
+              type: string
+            description: |-
+              DEPRECATED: This was supposed to replace the above, but went unused. We now load this map and write the first quant ID
+              to the above
+            type: object
+        type: object
+      api_endpoints.rgbuImagesWidgetState:
+        properties:
+          brightness:
+            type: number
+          logColour:
+            type: boolean
+        type: object
+      api_endpoints.rgbuPlotWidgetState:
+        properties:
+          drawMonochrome:
+            type: boolean
+          minerals:
+            items:
+              type: string
+            type: array
+          selectedMaxXValue:
+            type: number
+          selectedMaxYValue:
+            type: number
+          selectedMinXValue:
+            type: number
+          selectedMinYValue:
+            type: number
+          xChannelA:
+            type: string
+          xChannelB:
+            type: string
+          yChannelA:
+            type: string
+          yChannelB:
+            type: string
+        type: object
+      api_endpoints.roiDisplayState:
+        properties:
+          roiColours:
+            additionalProperties:
+              type: string
+            type: object
+          roiShapes:
+            additionalProperties:
+              type: string
+            type: object
+        type: object
+      api_endpoints.roiLayerVisibility:
+        properties:
+          opacity:
+            type: number
+          roiID:
+            type: string
+          visible:
+            type: boolean
+        type: object
+      api_endpoints.roiQuantTableState:
+        properties:
+          quantIDs:
+            items:
+              type: string
+            type: array
+          roi:
+            type: string
+        type: object
+      api_endpoints.roleInfo:
+        properties:
+          description:
+            type: string
+          id:
             type: string
           name:
             type: string
+        type: object
+      api_endpoints.selectionState:
+        properties:
+          cropPixelIdxs:
+            items:
+              type: integer
+            type: array
+          locIdxs:
+            items:
+              type: integer
+            type: array
+          pixelIdxs:
+            items:
+              type: integer
+            type: array
+          pixelSelectionImageName:
+            description: PIXEL selection world (Added for RGBU)
+            type: string
+          roiID:
+            description: PMC selection world
+            type: string
+          roiName:
+            type: string
+        type: object
+      api_endpoints.singleAxisRGBUWidgetState:
+        properties:
+          channelA:
+            type: string
+          channelB:
+            type: string
+          minerals:
+            items:
+              type: string
+            type: array
+          roiStackedOverlap:
+            type: boolean
+        type: object
+      api_endpoints.spectrumLines:
+        properties:
+          lineExpressions:
+            description: max(A), bulk(A) or things like sum(max(A), max(B))
+            items:
+              type: string
+            type: array
+          roiID:
+            description: can be "dataset" or "selection" for those special cases
+            type: string
+        type: object
+      api_endpoints.spectrumWidgetState:
+        properties:
+          energyCalibration:
+            items:
+              $ref: '#/definitions/api_endpoints.energyCalibration'
+            type: array
+          logScale:
+            type: boolean
+          panX:
+            type: number
+          panY:
+            type: number
+          showXAsEnergy:
+            type: boolean
+          spectrumLines:
+            items:
+              $ref: '#/definitions/api_endpoints.spectrumLines'
+            type: array
+          xrflines:
+            items:
+              $ref: '#/definitions/api_endpoints.spectrumXRFLineState'
+            type: array
+          zoomX:
+            type: number
+          zoomY:
+            type: number
+        type: object
+      api_endpoints.spectrumXRFLineState:
+        properties:
+          line_info:
+            $ref: '#/definitions/api_endpoints.elementLines'
+          visible:
+            type: boolean
+        type: object
+      api_endpoints.tableState:
+        properties:
+          order:
+            type: string
+          showPureElements:
+            type: boolean
+          visibleROIs:
+            items:
+              type: string
+            type: array
+        type: object
+      api_endpoints.ternaryState:
+        properties:
+          expressionIDs:
+            items:
+              type: string
+            type: array
+          showMmol:
+            type: boolean
+          visibleROIs:
+            items:
+              type: string
+            type: array
+        type: object
+      api_endpoints.variogramState:
+        properties:
+          binCount:
+            type: integer
+          drawModeVector:
+            description: vector or isotropic
+            type: boolean
+          expressionIDs:
+            items:
+              type: string
+            type: array
+          maxDistance:
+            type: number
+          varioModel:
+            description: 'valid: "exponential", "spherical", "gaussian"'
+            type: string
+          visibleROIs:
+            items:
+              type: string
+            type: array
+        type: object
+      api_endpoints.wholeViewState:
+        properties:
+          analysisLayout:
+            $ref: '#/definitions/api_endpoints.analysisLayoutState'
+          annotations:
+            allOf:
+            - $ref: '#/definitions/api_endpoints.annotationDisplayState'
+            description: Full Screen Annotations
+          binaryPlots:
+            additionalProperties:
+              $ref: '#/definitions/api_endpoints.binaryState'
+            type: object
+          chordDiagrams:
+            additionalProperties:
+              $ref: '#/definitions/api_endpoints.chordState'
+            type: object
+          contextImages:
+            additionalProperties:
+              $ref: '#/definitions/api_endpoints.contextImageState'
+            type: object
+          histograms:
+            additionalProperties:
+              $ref: '#/definitions/api_endpoints.histogramState'
+            type: object
+          parallelograms:
+            additionalProperties:
+              $ref: '#/definitions/api_endpoints.parallelogramWidgetState'
+            type: object
+          quantification:
+            allOf:
+            - $ref: '#/definitions/api_endpoints.quantificationState'
+            description: Loaded quantification ID
+          rgbuImages:
+            additionalProperties:
+              $ref: '#/definitions/api_endpoints.rgbuImagesWidgetState'
+            type: object
+          rgbuPlots:
+            additionalProperties:
+              $ref: '#/definitions/api_endpoints.rgbuPlotWidgetState'
+            type: object
+          roiQuantTables:
+            additionalProperties:
+              $ref: '#/definitions/api_endpoints.roiQuantTableState'
+            type: object
+          rois:
+            allOf:
+            - $ref: '#/definitions/api_endpoints.roiDisplayState'
+            description: |-
+              Not strictly the view-state of a widget, but the shared display state of ROIs
+              for the given user/dataset
+          selection:
+            allOf:
+            - $ref: '#/definitions/api_endpoints.selectionState'
+            description: Again not the state of a single widget but the shared selection
+              all widgets can show
+          singleAxisRGBU:
+            additionalProperties:
+              $ref: '#/definitions/api_endpoints.singleAxisRGBUWidgetState'
+            type: object
+          spectrum:
+            allOf:
+            - $ref: '#/definitions/api_endpoints.spectrumWidgetState'
+            description: |-
+              Deprecated - we used to enforce only one spectrum in the top-right. Now not restricted, so if an old state file
+              is loaded, we still allow for this, but new state files should be written with this in the spectrums field
+          spectrums:
+            additionalProperties:
+              $ref: '#/definitions/api_endpoints.spectrumWidgetState'
+            type: object
+          tables:
+            additionalProperties:
+              $ref: '#/definitions/api_endpoints.tableState'
+            type: object
+          ternaryPlots:
+            additionalProperties:
+              $ref: '#/definitions/api_endpoints.ternaryState'
+            type: object
+          variograms:
+            additionalProperties:
+              $ref: '#/definitions/api_endpoints.variogramState'
+            type: object
+        type: object
+      api_endpoints.workspaceCollectionListItem:
+        properties:
+          modifiedUnixSec:
+            type: integer
+          name:
+            type: string
+        type: object
+      api_endpoints.workspaceSummary:
+        properties:
+          create_unix_time_sec:
+            type: integer
+          creator:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserInfo'
+          id:
+            type: string
+          mod_unix_time_sec:
+            type: integer
+          name:
+            type: string
+          shared:
+            type: boolean
+        type: object
+      aws.Config:
+        properties:
+          credentials:
+            allOf:
+            - $ref: '#/definitions/credentials.Credentials'
+            description: |-
+              The credentials object to use when signing requests. Defaults to a
+              chain of credential providers to search for credentials in environment
+              variables, shared credential file, and EC2 Instance Roles.
+          credentialsChainVerboseErrors:
+            description: |-
+              Enables verbose error printing of all credential chain errors.
+              Should be used when wanting to see all errors while attempting to
+              retrieve credentials.
+            type: boolean
+          disableComputeChecksums:
+            description: |-
+              Disables the computation of request and response checksums, e.g.,
+              CRC32 checksums in Amazon DynamoDB.
+            type: boolean
+          disableEndpointHostPrefix:
+            description: |-
+              DisableEndpointHostPrefix will disable the SDK's behavior of prefixing
+              request endpoint hosts with modeled information.
+    
+              Disabling this feature is useful when you want to use local endpoints
+              for testing that do not support the modeled host prefix pattern.
+            type: boolean
+          disableParamValidation:
+            description: |-
+              Disables semantic parameter validation, which validates input for
+              missing required fields and/or other semantic request input errors.
+            type: boolean
+          disableRestProtocolURICleaning:
+            description: "DisableRestProtocolURICleaning will not clean the URL path when
+              making rest protocol requests.\nWill default to false. This would only be
+              used for empty directory names in s3 requests.\n\nExample:\n   sess := session.Must(session.NewSession(&aws.Config{\n
+              \       DisableRestProtocolURICleaning: aws.Bool(true),\n   }))\n\n   svc
+              := s3.New(sess)\n   out, err := svc.GetObject(&s3.GetObjectInput {\n   \tBucket:
+              aws.String(\"bucketname\"),\n   \tKey: aws.String(\"//foo//bar//moo\"),\n
+              \  })"
+            type: boolean
+          disableSSL:
+            description: |-
+              Set this to `true` to disable SSL when sending requests. Defaults
+              to `false`.
+            type: boolean
+          ec2MetadataDisableTimeoutOverride:
+            description: |-
+              Set this to `true` to disable the EC2Metadata client from overriding the
+              default http.Client's Timeout. This is helpful if you do not want the
+              EC2Metadata client to create a new http.Client. This options is only
+              meaningful if you're not already using a custom HTTP client with the
+              SDK. Enabled by default.
+    
+              Must be set and provided to the session.NewSession() in order to disable
+              the EC2Metadata overriding the timeout for default credentials chain.
+    
+              Example:
+                 sess := session.Must(session.NewSession(aws.NewConfig()
+                    .WithEC2MetadataDisableTimeoutOverride(true)))
+    
+                 svc := s3.New(sess)
+            type: boolean
+          enableEndpointDiscovery:
+            description: "EnableEndpointDiscovery will allow for endpoint discovery on
+              operations that\nhave the definition in its model. By default, endpoint
+              discovery is off.\nTo use EndpointDiscovery, Endpoint should be unset or
+              set to an empty string.\n\nExample:\n   sess := session.Must(session.NewSession(&aws.Config{\n
+              \       EnableEndpointDiscovery: aws.Bool(true),\n   }))\n\n   svc := s3.New(sess)\n
+              \  out, err := svc.GetObject(&s3.GetObjectInput {\n   \tBucket: aws.String(\"bucketname\"),\n
+              \  \tKey: aws.String(\"/foo/bar/moo\"),\n   })"
+            type: boolean
+          endpoint:
+            description: |-
+              An optional endpoint URL (hostname only or fully qualified URI)
+              that overrides the default generated endpoint for a client. Set this
+              to `nil` or the value to `""` to use the default generated endpoint.
+    
+              Note: You must still provide a `Region` value when specifying an
+              endpoint for a client.
+            type: string
+          endpointResolver:
+            description: |-
+              The resolver to use for looking up endpoints for AWS service clients
+              to use based on region.
+          enforceShouldRetryCheck:
+            description: |-
+              EnforceShouldRetryCheck is used in the AfterRetryHandler to always call
+              ShouldRetry regardless of whether or not if request.Retryable is set.
+              This will utilize ShouldRetry method of custom retryers. If EnforceShouldRetryCheck
+              is not set, then ShouldRetry will only be called if request.Retryable is nil.
+              Proper handling of the request.Retryable field is important when setting this field.
+            type: boolean
+          httpclient:
+            allOf:
+            - $ref: '#/definitions/http.Client'
+            description: |-
+              The HTTP client to use when sending requests. Defaults to
+              `http.DefaultClient`.
+          logLevel:
+            allOf:
+            - $ref: '#/definitions/aws.LogLevelType'
+            description: |-
+              An integer value representing the logging level. The default log level
+              is zero (LogOff), which represents no logging. To enable logging set
+              to a LogLevel Value.
+          logger:
+            description: |-
+              The logger writer interface to write logging messages to. Defaults to
+              standard out.
+          lowerCaseHeaderMaps:
+            description: |-
+              Set this to `true` to enable the SDK to unmarshal API response header maps to
+              normalized lower case map keys.
+    
+              For example S3's X-Amz-Meta prefixed header will be unmarshaled to lower case
+              Metadata member's map keys. The value of the header in the map is unaffected.
+    
+              The AWS SDK for Go v2, uses lower case header maps by default. The v1
+              SDK provides this opt-in for this option, for backwards compatibility.
+            type: boolean
+          maxRetries:
+            description: |-
+              The maximum number of times that a request will be retried for failures.
+              Defaults to -1, which defers the max retry setting to the service
+              specific configuration.
+            type: integer
+          region:
+            description: |-
+              The region to send requests to. This parameter is required and must
+              be configured globally or on a per-client basis unless otherwise
+              noted. A full list of regions is found in the "Regions and Endpoints"
+              document.
+    
+              See http://docs.aws.amazon.com/general/latest/gr/rande.html for AWS
+              Regions and Endpoints.
+            type: string
+          retryer:
+            description: |-
+              Retryer guides how HTTP requests should be retried in case of
+              recoverable failures.
+    
+              When nil or the value does not implement the request.Retryer interface,
+              the client.DefaultRetryer will be used.
+    
+              When both Retryer and MaxRetries are non-nil, the former is used and
+              the latter ignored.
+    
+              To set the Retryer field in a type-safe manner and with chaining, use
+              the request.WithRetryer helper function:
+    
+                cfg := request.WithRetryer(aws.NewConfig(), myRetryer)
+          s3Disable100Continue:
+            description: |-
+              Set this to `true` to disable the SDK adding the `Expect: 100-Continue`
+              header to PUT requests over 2MB of content. 100-Continue instructs the
+              HTTP client not to send the body until the service responds with a
+              `continue` status. This is useful to prevent sending the request body
+              until after the request is authenticated, and validated.
+    
+              http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
+    
+              100-Continue is only enabled for Go 1.6 and above. See `http.Transport`'s
+              `ExpectContinueTimeout` for information on adjusting the continue wait
+              timeout. https://golang.org/pkg/net/http/#Transport
+    
+              You should use this flag to disable 100-Continue if you experience issues
+              with proxies or third party S3 compatible services.
+            type: boolean
+          s3DisableContentMD5Validation:
+            description: |-
+              S3DisableContentMD5Validation config option is temporarily disabled,
+              For S3 GetObject API calls, #1837.
+    
+              Set this to `true` to disable the S3 service client from automatically
+              adding the ContentMD5 to S3 Object Put and Upload API calls. This option
+              will also disable the SDK from performing object ContentMD5 validation
+              on GetObject API calls.
+            type: boolean
+          s3ForcePathStyle:
+            description: |-
+              Set this to `true` to force the request to use path-style addressing,
+              i.e., `http://s3.amazonaws.com/BUCKET/KEY`. By default, the S3 client
+              will use virtual hosted bucket addressing when possible
+              (`http://BUCKET.s3.amazonaws.com/KEY`).
+    
+              Note: This configuration option is specific to the Amazon S3 service.
+    
+              See http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html
+              for Amazon S3: Virtual Hosting of Buckets
+            type: boolean
+          s3UsEast1RegionalEndpoint:
+            allOf:
+            - $ref: '#/definitions/endpoints.S3UsEast1RegionalEndpoint'
+            description: S3UsEast1RegionalEndpoint will enable regional or legacy endpoint
+              resolving
+          s3UseARNRegion:
+            description: |-
+              Set this to `true` to have the S3 service client to use the region specified
+              in the ARN, when an ARN is provided as an argument to a bucket parameter.
+            type: boolean
+          s3UseAccelerate:
+            description: |-
+              Set this to `true` to enable S3 Accelerate feature. For all operations
+              compatible with S3 Accelerate will use the accelerate endpoint for
+              requests. Requests not compatible will fall back to normal S3 requests.
+    
+              The bucket must be enable for accelerate to be used with S3 client with
+              accelerate enabled. If the bucket is not enabled for accelerate an error
+              will be returned. The bucket name must be DNS compatible to also work
+              with accelerate.
+            type: boolean
+          stsregionalEndpoint:
+            allOf:
+            - $ref: '#/definitions/endpoints.STSRegionalEndpoint'
+            description: STSRegionalEndpoint will enable regional or legacy endpoint resolving
+          useDualStack:
+            description: |-
+              Instructs the endpoint to be generated for a service client to
+              be the dual stack endpoint. The dual stack endpoint will support
+              both IPv4 and IPv6 addressing.
+    
+              Setting this for a service which does not support dual stack will fail
+              to make requests. It is not recommended to set this value on the session
+              as it will apply to all service clients created with the session. Even
+              services which don't support dual stack endpoints.
+    
+              If the Endpoint config value is also provided the UseDualStack flag
+              will be ignored.
+    
+              Only supported with.
+    
+                  sess := session.Must(session.NewSession())
+    
+                  svc := s3.New(sess, &aws.Config{
+                      UseDualStack: aws.Bool(true),
+                  })
+    
+              Deprecated: This option will continue to function for S3 and S3 Control for backwards compatibility.
+              UseDualStackEndpoint should be used to enable usage of a service's dual-stack endpoint for all service clients
+              moving forward. For S3 and S3 Control, when UseDualStackEndpoint is set to a non-zero value it takes higher
+              precedence then this option.
+            type: boolean
+          useDualStackEndpoint:
+            allOf:
+            - $ref: '#/definitions/endpoints.DualStackEndpointState'
+            description: Sets the resolver to resolve a dual-stack endpoint for the service.
+          useFIPSEndpoint:
+            allOf:
+            - $ref: '#/definitions/endpoints.FIPSEndpointState'
+            description: UseFIPSEndpoint specifies the resolver must resolve a FIPS endpoint.
+        type: object
+      aws.LogLevelType:
+        enum:
+        - 0
+        - 4096
+        - 4097
+        - 4098
+        - 4100
+        - 4104
+        - 4112
+        - 4128
+        type: integer
+        x-enum-varnames:
+        - LogOff
+        - LogDebug
+        - LogDebugWithSigning
+        - LogDebugWithHTTPBody
+        - LogDebugWithRequestRetries
+        - LogDebugWithRequestErrors
+        - LogDebugWithEventStreamBody
+        - LogDebugWithDeprecated
+      big.Int:
+        type: object
+      credentials.Credentials:
+        type: object
+      endpoints.DualStackEndpointState:
+        enum:
+        - 0
+        - 1
+        - 2
+        type: integer
+        x-enum-varnames:
+        - DualStackEndpointStateUnset
+        - DualStackEndpointStateEnabled
+        - DualStackEndpointStateDisabled
+      endpoints.FIPSEndpointState:
+        enum:
+        - 0
+        - 1
+        - 2
+        type: integer
+        x-enum-varnames:
+        - FIPSEndpointStateUnset
+        - FIPSEndpointStateEnabled
+        - FIPSEndpointStateDisabled
+      endpoints.S3UsEast1RegionalEndpoint:
+        enum:
+        - 0
+        - 1
+        - 2
+        type: integer
+        x-enum-varnames:
+        - UnsetS3UsEast1Endpoint
+        - LegacyS3UsEast1Endpoint
+        - RegionalS3UsEast1Endpoint
+      endpoints.STSRegionalEndpoint:
+        enum:
+        - 0
+        - 1
+        - 2
+        type: integer
+        x-enum-varnames:
+        - UnsetSTSEndpoint
+        - LegacySTSEndpoint
+        - RegionalSTSEndpoint
+      github_com_pixlise_core_v3_api_config.APIConfig:
+        properties:
+          adminEmails:
+            items:
+              type: string
+            type: array
+          auth0Domain:
+            type: string
+          auth0ManagementClientID:
+            type: string
+          auth0ManagementSecret:
+            type: string
+          auth0NewUserRoleID:
+            type: string
+          buildsBucket:
+            description: Piquant download bucket
+            type: string
+          configBucket:
+            type: string
+          coresPerNode:
+            type: integer
+          dataSourceSNSTopic:
+            type: string
+          datasetsBucket:
+            type: string
+          environmentName:
+            type: string
+          hotQuantNamespace:
+            description: Used for faster PIQUANT runs, eg executing a spectral fit
+            type: string
+          kubeConfig:
+            description: Env sets this via command line parameter
+            type: string
+          kubernetesLocation:
+            description: '"internal" vs "external"'
+            type: string
+          logLevel:
+            allOf:
+            - $ref: '#/definitions/github_com_pixlise_core_v3_core_logger.LogLevel'
+            description: Can be changed at runtime, but if API restarts, it goes back
+              to configured value
+          manualUploadBucket:
+            type: string
+          maxQuantNodes:
+            type: integer
+          mongoSecret:
+            description: Mongo Connection
+            type: string
+          nodeCountOverride:
+            description: Vars not set by environment
+            type: integer
+          piquantDockerImage:
+            description: PIQUANT docker image to use to run a job
+            type: string
+          piquantJobsBucket:
+            description: PIQUANT job scratch drive
+            type: string
+          posterImage:
+            type: string
+          quantDestinationPackage:
+            type: string
+          quantExecutor:
+            type: string
+          quantNamespace:
+            description: Used for running large multi-node quants
+            type: string
+          quantObjectType:
+            type: string
+          sentryEndpoint:
+            type: string
+          usersBucket:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_api_handlers.ApiHandlerParams:
+        properties:
+          pathParams:
+            additionalProperties:
+              type: string
+            type: object
+          request:
+            $ref: '#/definitions/http.Request'
+          svcs:
+            $ref: '#/definitions/github_com_pixlise_core_v3_api_services.APIServices'
+          userInfo:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserInfo'
+        type: object
+      github_com_pixlise_core_v3_api_services.APIServices:
+        properties:
+          awssessionCW:
+            allOf:
+            - $ref: '#/definitions/session.Session'
+            description: This is configured on startup to talk to the configured AWSCloudwatchRegion
+          config:
+            allOf:
+            - $ref: '#/definitions/github_com_pixlise_core_v3_api_config.APIConfig'
+            description: Configuration read in on startup
+          exporter:
+            description: Zip File Generator
+          expressions:
+            description: '"Expression DB"'
+          fs:
+            description: Anything accessing files should use this
+          idgen:
+            description: ID generator
+          jwtreader:
+            description: Validation of JWT tokens
+          log:
+            description: Default logger
+          mongo:
+            allOf:
+            - $ref: '#/definitions/mongo.Client'
+            description: Our mongo db connection
+          notifications:
+            description: Notification Handler
+          s3:
+            description: Anything talking to S3 should use this
+          signer:
+            description: URL signer for S3
+          sns: {}
+          timeStamper:
+            description: Timestamp retriever - so can be mocked for unit tests
+          users:
+            allOf:
+            - $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserDetailsLookup'
+            description: '"User DB"'
+        type: object
+      github_com_pixlise_core_v3_core_api.StatusError:
+        properties:
+          code:
+            type: integer
+          err: {}
+        type: object
+      github_com_pixlise_core_v3_core_cloudwatch.LogData:
+        properties:
+          lines:
+            items:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_cloudwatch.LogLine'
+            type: array
+        type: object
+      github_com_pixlise_core_v3_core_cloudwatch.LogLine:
+        properties:
+          message:
+            type: string
+          timeStampUnixMs:
+            type: integer
+        type: object
+      github_com_pixlise_core_v3_core_dataset.APIDatasetSummary:
+        properties:
+          bulk_spectra:
+            type: integer
+          context_image:
+            type: string
+          context_image_link:
+            type: string
+          context_images:
+            type: integer
+          create_unixtime_sec:
+            type: integer
+          data_file_size:
+            type: integer
+          dataset_id:
+            type: string
+          dataset_link:
+            type: string
+          detector_config:
+            type: string
+          drive_id:
+            type: integer
+          dwell_spectra:
+            type: integer
+          group:
+            type: string
+          location_count:
+            type: integer
+          max_spectra:
+            type: integer
+          normal_spectra:
+            type: integer
+          pseudo_intensities:
+            type: integer
+          rtt:
+            description: Unfortunately we stored it as int initially, so this has to accept
+              files stored that way
+          sclk:
+            type: integer
+          site:
+            type: string
+          site_id:
+            type: integer
+          sol:
+            type: string
+          target:
+            type: string
+          target_id:
+            type: string
+          tiff_context_images:
+            type: integer
+          title:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_detector.DetectorConfig:
+        properties:
+          defaultParams:
+            type: string
+          maxElement:
+            type: integer
+          minElement:
+            type: integer
+          mmBeamRadius:
+            type: number
+          tubeElement:
+            type: integer
+          windowElement:
+            type: integer
+          xrfeVLowerBound:
+            type: integer
+          xrfeVResolution:
+            type: integer
+          xrfeVUpperBound:
+            type: integer
+        type: object
+      github_com_pixlise_core_v3_core_expressions_expressions.DataExpression:
+        properties:
+          comments:
+            type: string
+          id:
+            description: Use as Mongo ID
+            type: string
+          moduleReferences:
+            items:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_expressions.ModuleReference'
+            type: array
+          name:
+            type: string
+          origin:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.APIObjectItem'
+          recentExecStats:
+            allOf:
+            - $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_expressions.DataExpressionExecStats'
+            description: 'NOTE: if modifying below, ensure it''s in sync with ExpressionDB
+              StoreExpressionRecentRunStats()'
+          sourceCode:
+            type: string
+          sourceLanguage:
+            description: LUA vs PIXLANG
+            type: string
           tags:
             items:
               type: string
             type: array
-          type:
-            $ref: '#/definitions/dataExpression.expressionType'
         type: object
-      dataExpression.DataExpressionLookup:
+      github_com_pixlise_core_v3_core_expressions_expressions.DataExpressionExecStats:
+        properties:
+          dataRequired:
+            items:
+              type: string
+            type: array
+          mod_unix_time_sec:
+            type: integer
+          runtimeMs:
+            type: number
+        type: object
+      github_com_pixlise_core_v3_core_expressions_expressions.DataExpressionWire:
+        properties:
+          comments:
+            type: string
+          create_unix_time_sec:
+            type: integer
+          creator:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserInfo'
+          id:
+            type: string
+          mod_unix_time_sec:
+            type: integer
+          moduleReferences:
+            items:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_expressions.ModuleReference'
+            type: array
+          name:
+            type: string
+          recentExecStats:
+            allOf:
+            - $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_expressions.DataExpressionExecStats'
+            description: 'NOTE: if modifying below, ensure it''s in sync with ExpressionDB
+              StoreExpressionRecentRunStats()'
+          shared:
+            type: boolean
+          sourceCode:
+            type: string
+          sourceLanguage:
+            description: LUA vs PIXLANG
+            type: string
+          tags:
+            items:
+              type: string
+            type: array
+        type: object
+      github_com_pixlise_core_v3_core_expressions_expressions.ModuleReference:
+        properties:
+          moduleID:
+            type: string
+          version:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_expressions_modules.DataModuleInput:
+        properties:
+          comments:
+            description: Editable comments
+            type: string
+          name:
+            description: Editable name
+            type: string
+          sourceCode:
+            description: The module executable code
+            type: string
+          tags:
+            description: Any tags for this version
+            items:
+              type: string
+            type: array
+        type: object
+      github_com_pixlise_core_v3_core_expressions_modules.DataModuleSpecificVersionWire:
+        properties:
+          comments:
+            type: string
+          id:
+            description: Use as Mongo ID
+            type: string
+          name:
+            type: string
+          origin:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.APIObjectItem'
+          version:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_modules.DataModuleVersionSourceWire'
+        type: object
+      github_com_pixlise_core_v3_core_expressions_modules.DataModuleVersionInput:
+        properties:
+          comments:
+            description: Editable comments
+            type: string
+          sourceCode:
+            description: The module executable code
+            type: string
+          tags:
+            description: Any tags for this version
+            items:
+              type: string
+            type: array
+          versionupdate:
+            description: What are we updating? patch, minor or major. Anything else =
+              error
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_expressions_modules.DataModuleVersionSourceWire:
+        properties:
+          comments:
+            type: string
+          mod_unix_time_sec:
+            type: integer
+          sourceCode:
+            type: string
+          tags:
+            items:
+              type: string
+            type: array
+          version:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_expressions_modules.DataModuleVersionWire:
+        properties:
+          comments:
+            type: string
+          mod_unix_time_sec:
+            type: integer
+          tags:
+            items:
+              type: string
+            type: array
+          version:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_expressions_modules.DataModuleWire:
+        properties:
+          comments:
+            type: string
+          id:
+            description: Use as Mongo ID
+            type: string
+          name:
+            type: string
+          origin:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.APIObjectItem'
+          versions:
+            items:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_modules.DataModuleVersionWire'
+            type: array
+        type: object
+      github_com_pixlise_core_v3_core_expressions_modules.DataModuleWireLookup:
         additionalProperties:
-          $ref: '#/definitions/dataExpression.DataExpression'
+          $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_modules.DataModuleWire'
         type: object
-      dataExpression.expressionType:
+      github_com_pixlise_core_v3_core_logger.LogLevel:
         enum:
-        - ContextImage
-        type: string
+        - 0
+        - 1
+        - 2
+        type: integer
         x-enum-varnames:
-        - contextImage
-      pixlUser.UserInfo:
+        - LogDebug
+        - LogInfo
+        - LogError
+      github_com_pixlise_core_v3_core_piquant.PiquantConfig:
+        properties:
+          calibrationFile:
+            type: string
+          configFile:
+            type: string
+          description:
+            type: string
+          opticEfficiencyFile:
+            type: string
+          standardsFile:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_piquant.PiquantVersionConfig:
+        properties:
+          changedUnixTimeSec:
+            type: integer
+          creator:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserInfo'
+          version:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_pixlUser.APIObjectItem:
+        properties:
+          create_unix_time_sec:
+            type: integer
+          creator:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserInfo'
+          mod_unix_time_sec:
+            type: integer
+          shared:
+            type: boolean
+        type: object
+      github_com_pixlise_core_v3_core_pixlUser.Method:
+        properties:
+          email:
+            type: boolean
+          sms:
+            type: boolean
+          ui:
+            type: boolean
+        type: object
+      github_com_pixlise_core_v3_core_pixlUser.NotificationConfig:
+        properties:
+          method:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.Method'
+        type: object
+      github_com_pixlise_core_v3_core_pixlUser.Notifications:
+        properties:
+          hints:
+            items:
+              type: string
+            type: array
+          topics:
+            items:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.Topics'
+            type: array
+          uinotifications:
+            items:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UINotificationItem'
+            type: array
+        type: object
+      github_com_pixlise_core_v3_core_pixlUser.Topics:
+        properties:
+          config:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.NotificationConfig'
+          name:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_pixlUser.UINotificationItem:
+        properties:
+          message:
+            type: string
+          timestamp:
+            type: string
+          topic:
+            type: string
+          userid:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_pixlUser.UserDetails:
+        properties:
+          cell:
+            type: string
+          data_collection:
+            type: string
+          email:
+            type: string
+          name:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_pixlUser.UserDetailsLookup:
+        type: object
+      github_com_pixlise_core_v3_core_pixlUser.UserInfo:
         properties:
           email:
             type: string
@@ -66,6 +1572,1224 @@ spec:
           user_id:
             type: string
         type: object
+      github_com_pixlise_core_v3_core_pixlUser.UserStruct:
+        properties:
+          notifications:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.Notifications'
+          userconfig:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserDetails'
+          userid:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_quantModel.BlessFileItem:
+        properties:
+          blessedAt:
+            type: integer
+          jobId:
+            type: string
+          userId:
+            type: string
+          userName:
+            type: string
+          version:
+            type: integer
+        type: object
+      github_com_pixlise_core_v3_core_quantModel.JobStartingParametersWithPMCCount:
+        properties:
+          command:
+            type: string
+          comments:
+            type: string
+          coresPerNode:
+            type: integer
+          creator:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserInfo'
+          dataBucket:
+            type: string
+          datasetID:
+            type: string
+          datasetPath:
+            type: string
+          detectorConfig:
+            type: string
+          elementSetID:
+            type: string
+          elements:
+            items:
+              type: string
+            type: array
+          includeDwells:
+            type: boolean
+          jobBucket:
+            type: string
+          name:
+            type: string
+          parameters:
+            type: string
+          piquantVersion:
+            type: string
+          pmcsCount:
+            type: integer
+          quantMode:
+            type: string
+          roiID:
+            type: string
+          roiIDs:
+            items:
+              type: string
+            type: array
+          runTimeSec:
+            type: integer
+          startUnixTime:
+            type: integer
+        type: object
+      github_com_pixlise_core_v3_core_quantModel.JobStatusValue:
+        enum:
+        - starting
+        type: string
+        x-enum-varnames:
+        - JobStarting
+      github_com_pixlise_core_v3_core_quantModel.JobSummaryItem:
+        properties:
+          elements:
+            items:
+              type: string
+            type: array
+          endUnixTime:
+            type: integer
+          jobId:
+            type: string
+          message:
+            type: string
+          outputFilePath:
+            type: string
+          params:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_quantModel.JobStartingParametersWithPMCCount'
+          piquantLogList:
+            items:
+              type: string
+            type: array
+          shared:
+            type: boolean
+          status:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_quantModel.JobStatusValue'
+        type: object
+      github_com_pixlise_core_v3_core_roiModel.MistROIItem:
+        properties:
+          ClassificationTrail:
+            type: string
+          ID_Depth:
+            type: integer
+          formula:
+            type: string
+          mineralGroupID:
+            type: string
+          species:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_roiModel.ROIItem:
+        properties:
+          description:
+            type: string
+          imageName:
+            description: Name of image whose pixels are present in this ROI.
+            type: string
+          locationIndexes:
+            items:
+              type: integer
+            type: array
+          mistROIItem:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_roiModel.MistROIItem'
+          name:
+            type: string
+          pixelIndexes:
+            description: If no imageName, it's a traditional ROI consisting of PMCs
+            items:
+              type: integer
+            type: array
+          tags:
+            items:
+              type: string
+            type: array
+        type: object
+      github_com_pixlise_core_v3_core_roiModel.ROIItemOptions:
+        properties:
+          deleteExistingMistROIs:
+            type: boolean
+          overwrite:
+            type: boolean
+          roiItems:
+            items:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_roiModel.ROIItem'
+            type: array
+          shareROIs:
+            type: boolean
+          skipDuplicates:
+            type: boolean
+        type: object
+      github_com_pixlise_core_v3_core_roiModel.ROILookup:
+        additionalProperties:
+          $ref: '#/definitions/github_com_pixlise_core_v3_core_roiModel.ROISavedItem'
+        type: object
+      github_com_pixlise_core_v3_core_roiModel.ROISavedItem:
+        properties:
+          create_unix_time_sec:
+            type: integer
+          creator:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserInfo'
+          description:
+            type: string
+          imageName:
+            description: Name of image whose pixels are present in this ROI.
+            type: string
+          locationIndexes:
+            items:
+              type: integer
+            type: array
+          mistROIItem:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_roiModel.MistROIItem'
+          mod_unix_time_sec:
+            type: integer
+          name:
+            type: string
+          pixelIndexes:
+            description: If no imageName, it's a traditional ROI consisting of PMCs
+            items:
+              type: integer
+            type: array
+          shared:
+            type: boolean
+          tags:
+            items:
+              type: string
+            type: array
+        type: object
+      github_com_pixlise_core_v3_core_tagModel.Tag:
+        properties:
+          creator:
+            $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserInfo'
+          datasetID:
+            type: string
+          dateCreated:
+            type: integer
+          id:
+            type: string
+          name:
+            type: string
+          type:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_tagModel.TagID:
+        properties:
+          id:
+            type: string
+        type: object
+      github_com_pixlise_core_v3_core_tagModel.TagLookup:
+        additionalProperties:
+          $ref: '#/definitions/github_com_pixlise_core_v3_core_tagModel.Tag'
+        type: object
+      github_com_pixlise_core_v3_data-import_data-converter.DatasetCustomMeta:
+        properties:
+          defaultContextImage:
+            type: string
+          title:
+            type: string
+        type: object
+      http.Client:
+        properties:
+          jar:
+            description: |-
+              Jar specifies the cookie jar.
+    
+              The Jar is used to insert relevant cookies into every
+              outbound Request and is updated with the cookie values
+              of every inbound Response. The Jar is consulted for every
+              redirect that the Client follows.
+    
+              If Jar is nil, cookies are only sent if they are explicitly
+              set on the Request.
+          timeout:
+            allOf:
+            - $ref: '#/definitions/time.Duration'
+            description: |-
+              Timeout specifies a time limit for requests made by this
+              Client. The timeout includes connection time, any
+              redirects, and reading the response body. The timer remains
+              running after Get, Head, Post, or Do return and will
+              interrupt reading of the Response.Body.
+    
+              A Timeout of zero means no timeout.
+    
+              The Client cancels requests to the underlying Transport
+              as if the Request's Context ended.
+    
+              For compatibility, the Client will also use the deprecated
+              CancelRequest method on Transport if found. New
+              RoundTripper implementations should use the Request's Context
+              for cancellation instead of implementing CancelRequest.
+          transport:
+            description: |-
+              Transport specifies the mechanism by which individual
+              HTTP requests are made.
+              If nil, DefaultTransport is used.
+        type: object
+      http.Header:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      http.Request:
+        properties:
+          body:
+            description: |-
+              Body is the request's body.
+    
+              For client requests, a nil body means the request has no
+              body, such as a GET request. The HTTP Client's Transport
+              is responsible for calling the Close method.
+    
+              For server requests, the Request Body is always non-nil
+              but will return EOF immediately when no body is present.
+              The Server will close the request body. The ServeHTTP
+              Handler does not need to.
+    
+              Body must allow Read to be called concurrently with Close.
+              In particular, calling Close should unblock a Read waiting
+              for input.
+          cancel:
+            description: |-
+              Cancel is an optional channel whose closure indicates that the client
+              request should be regarded as canceled. Not all implementations of
+              RoundTripper may support Cancel.
+    
+              For server requests, this field is not applicable.
+    
+              Deprecated: Set the Request's context with NewRequestWithContext
+              instead. If a Request's Cancel field and context are both
+              set, it is undefined whether Cancel is respected.
+            type: object
+          close:
+            description: |-
+              Close indicates whether to close the connection after
+              replying to this request (for servers) or after sending this
+              request and reading its response (for clients).
+    
+              For server requests, the HTTP server handles this automatically
+              and this field is not needed by Handlers.
+    
+              For client requests, setting this field prevents re-use of
+              TCP connections between requests to the same hosts, as if
+              Transport.DisableKeepAlives were set.
+            type: boolean
+          contentLength:
+            description: |-
+              ContentLength records the length of the associated content.
+              The value -1 indicates that the length is unknown.
+              Values >= 0 indicate that the given number of bytes may
+              be read from Body.
+    
+              For client requests, a value of 0 with a non-nil Body is
+              also treated as unknown.
+            type: integer
+          form:
+            allOf:
+            - $ref: '#/definitions/url.Values'
+            description: |-
+              Form contains the parsed form data, including both the URL
+              field's query parameters and the PATCH, POST, or PUT form data.
+              This field is only available after ParseForm is called.
+              The HTTP client ignores Form and uses Body instead.
+          header:
+            allOf:
+            - $ref: '#/definitions/http.Header'
+            description: "Header contains the request header fields either received\nby
+              the server or to be sent by the client.\n\nIf a server received a request
+              with header lines,\n\n\tHost: example.com\n\taccept-encoding: gzip, deflate\n\tAccept-Language:
+              en-us\n\tfOO: Bar\n\tfoo: two\n\nthen\n\n\tHeader = map[string][]string{\n\t\t\"Accept-Encoding\":
+              {\"gzip, deflate\"},\n\t\t\"Accept-Language\": {\"en-us\"},\n\t\t\"Foo\":
+              {\"Bar\", \"two\"},\n\t}\n\nFor incoming requests, the Host header is promoted
+              to the\nRequest.Host field and removed from the Header map.\n\nHTTP defines
+              that header names are case-insensitive. The\nrequest parser implements this
+              by using CanonicalHeaderKey,\nmaking the first character and any characters
+              following a\nhyphen uppercase and the rest lowercase.\n\nFor client requests,
+              certain headers such as Content-Length\nand Connection are automatically
+              written when needed and\nvalues in Header may be ignored. See the documentation\nfor
+              the Request.Write method."
+          host:
+            description: |-
+              For server requests, Host specifies the host on which the
+              URL is sought. For HTTP/1 (per RFC 7230, section 5.4), this
+              is either the value of the "Host" header or the host name
+              given in the URL itself. For HTTP/2, it is the value of the
+              ":authority" pseudo-header field.
+              It may be of the form "host:port". For international domain
+              names, Host may be in Punycode or Unicode form. Use
+              golang.org/x/net/idna to convert it to either format if
+              needed.
+              To prevent DNS rebinding attacks, server Handlers should
+              validate that the Host header has a value for which the
+              Handler considers itself authoritative. The included
+              ServeMux supports patterns registered to particular host
+              names and thus protects its registered Handlers.
+    
+              For client requests, Host optionally overrides the Host
+              header to send. If empty, the Request.Write method uses
+              the value of URL.Host. Host may contain an international
+              domain name.
+            type: string
+          method:
+            description: |-
+              Method specifies the HTTP method (GET, POST, PUT, etc.).
+              For client requests, an empty string means GET.
+    
+              Go's HTTP client does not support sending a request with
+              the CONNECT method. See the documentation on Transport for
+              details.
+            type: string
+          multipartForm:
+            allOf:
+            - $ref: '#/definitions/multipart.Form'
+            description: |-
+              MultipartForm is the parsed multipart form, including file uploads.
+              This field is only available after ParseMultipartForm is called.
+              The HTTP client ignores MultipartForm and uses Body instead.
+          postForm:
+            allOf:
+            - $ref: '#/definitions/url.Values'
+            description: |-
+              PostForm contains the parsed form data from PATCH, POST
+              or PUT body parameters.
+    
+              This field is only available after ParseForm is called.
+              The HTTP client ignores PostForm and uses Body instead.
+          proto:
+            description: |-
+              The protocol version for incoming server requests.
+    
+              For client requests, these fields are ignored. The HTTP
+              client code always uses either HTTP/1.1 or HTTP/2.
+              See the docs on Transport for details.
+            type: string
+          protoMajor:
+            description: "1"
+            type: integer
+          protoMinor:
+            description: "0"
+            type: integer
+          remoteAddr:
+            description: |-
+              RemoteAddr allows HTTP servers and other software to record
+              the network address that sent the request, usually for
+              logging. This field is not filled in by ReadRequest and
+              has no defined format. The HTTP server in this package
+              sets RemoteAddr to an "IP:port" address before invoking a
+              handler.
+              This field is ignored by the HTTP client.
+            type: string
+          requestURI:
+            description: |-
+              RequestURI is the unmodified request-target of the
+              Request-Line (RFC 7230, Section 3.1.1) as sent by the client
+              to a server. Usually the URL field should be used instead.
+              It is an error to set this field in an HTTP client request.
+            type: string
+          response:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            description: |-
+              Response is the redirect response which caused this request
+              to be created. This field is only populated during client
+              redirects.
+          tls:
+            allOf:
+            - $ref: '#/definitions/tls.ConnectionState'
+            description: |-
+              TLS allows HTTP servers and other software to record
+              information about the TLS connection on which the request
+              was received. This field is not filled in by ReadRequest.
+              The HTTP server in this package sets the field for
+              TLS-enabled connections before invoking a handler;
+              otherwise it leaves the field nil.
+              This field is ignored by the HTTP client.
+          trailer:
+            allOf:
+            - $ref: '#/definitions/http.Header'
+            description: |-
+              Trailer specifies additional headers that are sent after the request
+              body.
+    
+              For server requests, the Trailer map initially contains only the
+              trailer keys, with nil values. (The client declares which trailers it
+              will later send.)  While the handler is reading from Body, it must
+              not reference Trailer. After reading from Body returns EOF, Trailer
+              can be read again and will contain non-nil values, if they were sent
+              by the client.
+    
+              For client requests, Trailer must be initialized to a map containing
+              the trailer keys to later send. The values may be nil or their final
+              values. The ContentLength must be 0 or -1, to send a chunked request.
+              After the HTTP request is sent the map values can be updated while
+              the request body is read. Once the body returns EOF, the caller must
+              not mutate Trailer.
+    
+              Few HTTP clients, servers, or proxies support HTTP trailers.
+          transferEncoding:
+            description: |-
+              TransferEncoding lists the transfer encodings from outermost to
+              innermost. An empty list denotes the "identity" encoding.
+              TransferEncoding can usually be ignored; chunked encoding is
+              automatically added and removed as necessary when sending and
+              receiving requests.
+            items:
+              type: string
+            type: array
+          url:
+            allOf:
+            - $ref: '#/definitions/url.URL'
+            description: |-
+              URL specifies either the URI being requested (for server
+              requests) or the URL to access (for client requests).
+    
+              For server requests, the URL is parsed from the URI
+              supplied on the Request-Line as stored in RequestURI.  For
+              most requests, fields other than Path and RawQuery will be
+              empty. (See RFC 7230, Section 5.3)
+    
+              For client requests, the URL's Host specifies the server to
+              connect to, while the Request's Host field optionally
+              specifies the Host header value to send in the HTTP
+              request.
+        type: object
+      http.Response:
+        properties:
+          body:
+            description: |-
+              Body represents the response body.
+    
+              The response body is streamed on demand as the Body field
+              is read. If the network connection fails or the server
+              terminates the response, Body.Read calls return an error.
+    
+              The http Client and Transport guarantee that Body is always
+              non-nil, even on responses without a body or responses with
+              a zero-length body. It is the caller's responsibility to
+              close Body. The default HTTP client's Transport may not
+              reuse HTTP/1.x "keep-alive" TCP connections if the Body is
+              not read to completion and closed.
+    
+              The Body is automatically dechunked if the server replied
+              with a "chunked" Transfer-Encoding.
+    
+              As of Go 1.12, the Body will also implement io.Writer
+              on a successful "101 Switching Protocols" response,
+              as used by WebSockets and HTTP/2's "h2c" mode.
+          close:
+            description: |-
+              Close records whether the header directed that the connection be
+              closed after reading Body. The value is advice for clients: neither
+              ReadResponse nor Response.Write ever closes a connection.
+            type: boolean
+          contentLength:
+            description: |-
+              ContentLength records the length of the associated content. The
+              value -1 indicates that the length is unknown. Unless Request.Method
+              is "HEAD", values >= 0 indicate that the given number of bytes may
+              be read from Body.
+            type: integer
+          header:
+            allOf:
+            - $ref: '#/definitions/http.Header'
+            description: |-
+              Header maps header keys to values. If the response had multiple
+              headers with the same key, they may be concatenated, with comma
+              delimiters.  (RFC 7230, section 3.2.2 requires that multiple headers
+              be semantically equivalent to a comma-delimited sequence.) When
+              Header values are duplicated by other fields in this struct (e.g.,
+              ContentLength, TransferEncoding, Trailer), the field values are
+              authoritative.
+    
+              Keys in the map are canonicalized (see CanonicalHeaderKey).
+          proto:
+            description: e.g. "HTTP/1.0"
+            type: string
+          protoMajor:
+            description: e.g. 1
+            type: integer
+          protoMinor:
+            description: e.g. 0
+            type: integer
+          request:
+            allOf:
+            - $ref: '#/definitions/http.Request'
+            description: |-
+              Request is the request that was sent to obtain this Response.
+              Request's Body is nil (having already been consumed).
+              This is only populated for Client requests.
+          status:
+            description: e.g. "200 OK"
+            type: string
+          statusCode:
+            description: e.g. 200
+            type: integer
+          tls:
+            allOf:
+            - $ref: '#/definitions/tls.ConnectionState'
+            description: |-
+              TLS contains information about the TLS connection on which the
+              response was received. It is nil for unencrypted responses.
+              The pointer is shared between responses and should not be
+              modified.
+          trailer:
+            allOf:
+            - $ref: '#/definitions/http.Header'
+            description: |-
+              Trailer maps trailer keys to values in the same
+              format as Header.
+    
+              The Trailer initially contains only nil values, one for
+              each key specified in the server's "Trailer" header
+              value. Those values are not added to Header.
+    
+              Trailer must not be accessed concurrently with Read calls
+              on the Body.
+    
+              After Body.Read has returned io.EOF, Trailer will contain
+              any trailer values sent by the server.
+          transferEncoding:
+            description: |-
+              Contains transfer encodings from outer-most to inner-most. Value is
+              nil, means that "identity" encoding is used.
+            items:
+              type: string
+            type: array
+          uncompressed:
+            description: |-
+              Uncompressed reports whether the response was sent compressed but
+              was decompressed by the http package. When true, reading from
+              Body yields the uncompressed content instead of the compressed
+              content actually set from the server, ContentLength is set to -1,
+              and the "Content-Length" and "Content-Encoding" fields are deleted
+              from the responseHeader. To get the original response from
+              the server, set Transport.DisableCompression to true.
+            type: boolean
+        type: object
+      mongo.Client:
+        type: object
+      multipart.FileHeader:
+        properties:
+          filename:
+            type: string
+          header:
+            $ref: '#/definitions/textproto.MIMEHeader'
+          size:
+            type: integer
+        type: object
+      multipart.Form:
+        properties:
+          file:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/multipart.FileHeader'
+              type: array
+            type: object
+          value:
+            additionalProperties:
+              items:
+                type: string
+              type: array
+            type: object
+        type: object
+      net.IPNet:
+        properties:
+          ip:
+            description: network number
+            items:
+              type: integer
+            type: array
+          mask:
+            description: network mask
+            items:
+              type: integer
+            type: array
+        type: object
+      pkix.AttributeTypeAndValue:
+        properties:
+          type:
+            items:
+              type: integer
+            type: array
+          value: {}
+        type: object
+      pkix.Extension:
+        properties:
+          critical:
+            type: boolean
+          id:
+            items:
+              type: integer
+            type: array
+          value:
+            items:
+              type: integer
+            type: array
+        type: object
+      pkix.Name:
+        properties:
+          country:
+            items:
+              type: string
+            type: array
+          extraNames:
+            description: |-
+              ExtraNames contains attributes to be copied, raw, into any marshaled
+              distinguished names. Values override any attributes with the same OID.
+              The ExtraNames field is not populated when parsing, see Names.
+            items:
+              $ref: '#/definitions/pkix.AttributeTypeAndValue'
+            type: array
+          locality:
+            items:
+              type: string
+            type: array
+          names:
+            description: |-
+              Names contains all parsed attributes. When parsing distinguished names,
+              this can be used to extract non-standard attributes that are not parsed
+              by this package. When marshaling to RDNSequences, the Names field is
+              ignored, see ExtraNames.
+            items:
+              $ref: '#/definitions/pkix.AttributeTypeAndValue'
+            type: array
+          serialNumber:
+            type: string
+          streetAddress:
+            items:
+              type: string
+            type: array
+        type: object
+      request.HandlerList:
+        type: object
+      request.Handlers:
+        properties:
+          afterRetry:
+            $ref: '#/definitions/request.HandlerList'
+          build:
+            $ref: '#/definitions/request.HandlerList'
+          buildStream:
+            $ref: '#/definitions/request.HandlerList'
+          complete:
+            $ref: '#/definitions/request.HandlerList'
+          completeAttempt:
+            $ref: '#/definitions/request.HandlerList'
+          retry:
+            $ref: '#/definitions/request.HandlerList'
+          send:
+            $ref: '#/definitions/request.HandlerList'
+          sign:
+            $ref: '#/definitions/request.HandlerList'
+          unmarshal:
+            $ref: '#/definitions/request.HandlerList'
+          unmarshalError:
+            $ref: '#/definitions/request.HandlerList'
+          unmarshalMeta:
+            $ref: '#/definitions/request.HandlerList'
+          unmarshalStream:
+            $ref: '#/definitions/request.HandlerList'
+          validate:
+            $ref: '#/definitions/request.HandlerList'
+          validateResponse:
+            $ref: '#/definitions/request.HandlerList'
+        type: object
+      session.Session:
+        properties:
+          config:
+            $ref: '#/definitions/aws.Config'
+          handlers:
+            $ref: '#/definitions/request.Handlers'
+        type: object
+      textproto.MIMEHeader:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      time.Duration:
+        enum:
+        - -9223372036854775808
+        - 9223372036854775807
+        - 1
+        - 1000
+        - 1000000
+        - 1000000000
+        - 60000000000
+        - 3600000000000
+        type: integer
+        x-enum-varnames:
+        - minDuration
+        - maxDuration
+        - Nanosecond
+        - Microsecond
+        - Millisecond
+        - Second
+        - Minute
+        - Hour
+      tls.ConnectionState:
+        properties:
+          cipherSuite:
+            description: |-
+              CipherSuite is the cipher suite negotiated for the connection (e.g.
+              TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, TLS_AES_128_GCM_SHA256).
+            type: integer
+          didResume:
+            description: |-
+              DidResume is true if this connection was successfully resumed from a
+              previous session with a session ticket or similar mechanism.
+            type: boolean
+          handshakeComplete:
+            description: HandshakeComplete is true if the handshake has concluded.
+            type: boolean
+          negotiatedProtocol:
+            description: NegotiatedProtocol is the application protocol negotiated with
+              ALPN.
+            type: string
+          negotiatedProtocolIsMutual:
+            description: |-
+              NegotiatedProtocolIsMutual used to indicate a mutual NPN negotiation.
+    
+              Deprecated: this value is always true.
+            type: boolean
+          ocspresponse:
+            description: |-
+              OCSPResponse is a stapled Online Certificate Status Protocol (OCSP)
+              response provided by the peer for the leaf certificate, if any.
+            items:
+              type: integer
+            type: array
+          peerCertificates:
+            description: |-
+              PeerCertificates are the parsed certificates sent by the peer, in the
+              order in which they were sent. The first element is the leaf certificate
+              that the connection is verified against.
+    
+              On the client side, it can't be empty. On the server side, it can be
+              empty if Config.ClientAuth is not RequireAnyClientCert or
+              RequireAndVerifyClientCert.
+            items:
+              $ref: '#/definitions/x509.Certificate'
+            type: array
+          serverName:
+            description: |-
+              ServerName is the value of the Server Name Indication extension sent by
+              the client. It's available both on the server and on the client side.
+            type: string
+          signedCertificateTimestamps:
+            description: |-
+              SignedCertificateTimestamps is a list of SCTs provided by the peer
+              through the TLS handshake for the leaf certificate, if any.
+            items:
+              items:
+                type: integer
+              type: array
+            type: array
+          tlsunique:
+            description: |-
+              TLSUnique contains the "tls-unique" channel binding value (see RFC 5929,
+              Section 3). This value will be nil for TLS 1.3 connections and for all
+              resumed connections.
+    
+              Deprecated: there are conditions in which this value might not be unique
+              to a connection. See the Security Considerations sections of RFC 5705 and
+              RFC 7627, and https://mitls.org/pages/attacks/3SHAKE#channelbindings.
+            items:
+              type: integer
+            type: array
+          verifiedChains:
+            description: |-
+              VerifiedChains is a list of one or more chains where the first element is
+              PeerCertificates[0] and the last element is from Config.RootCAs (on the
+              client side) or Config.ClientCAs (on the server side).
+    
+              On the client side, it's set if Config.InsecureSkipVerify is false. On
+              the server side, it's set if Config.ClientAuth is VerifyClientCertIfGiven
+              (and the peer provided a certificate) or RequireAndVerifyClientCert.
+            items:
+              items:
+                $ref: '#/definitions/x509.Certificate'
+              type: array
+            type: array
+          version:
+            description: Version is the TLS version used by the connection (e.g. VersionTLS12).
+            type: integer
+        type: object
+      url.URL:
+        properties:
+          forceQuery:
+            description: append a query ('?') even if RawQuery is empty
+            type: boolean
+          fragment:
+            description: fragment for references, without '#'
+            type: string
+          host:
+            description: host or host:port
+            type: string
+          opaque:
+            description: encoded opaque data
+            type: string
+          path:
+            description: path (relative paths may omit leading slash)
+            type: string
+          rawFragment:
+            description: encoded fragment hint (see EscapedFragment method)
+            type: string
+          rawPath:
+            description: encoded path hint (see EscapedPath method)
+            type: string
+          rawQuery:
+            description: encoded query values, without '?'
+            type: string
+          scheme:
+            type: string
+          user:
+            allOf:
+            - $ref: '#/definitions/url.Userinfo'
+            description: username and password information
+        type: object
+      url.Userinfo:
+        type: object
+      url.Values:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      x509.Certificate:
+        properties:
+          authorityKeyId:
+            items:
+              type: integer
+            type: array
+          basicConstraintsValid:
+            description: |-
+              BasicConstraintsValid indicates whether IsCA, MaxPathLen,
+              and MaxPathLenZero are valid.
+            type: boolean
+          crldistributionPoints:
+            description: CRL Distribution Points
+            items:
+              type: string
+            type: array
+          dnsnames:
+            description: |-
+              Subject Alternate Name values. (Note that these values may not be valid
+              if invalid values were contained within a parsed certificate. For
+              example, an element of DNSNames may not be a valid DNS domain name.)
+            items:
+              type: string
+            type: array
+          emailAddresses:
+            items:
+              type: string
+            type: array
+          excludedDNSDomains:
+            items:
+              type: string
+            type: array
+          excludedEmailAddresses:
+            items:
+              type: string
+            type: array
+          excludedIPRanges:
+            items:
+              $ref: '#/definitions/net.IPNet'
+            type: array
+          excludedURIDomains:
+            items:
+              type: string
+            type: array
+          extKeyUsage:
+            description: Sequence of extended key usages.
+            items:
+              $ref: '#/definitions/x509.ExtKeyUsage'
+            type: array
+          extensions:
+            description: |-
+              Extensions contains raw X.509 extensions. When parsing certificates,
+              this can be used to extract non-critical extensions that are not
+              parsed by this package. When marshaling certificates, the Extensions
+              field is ignored, see ExtraExtensions.
+            items:
+              $ref: '#/definitions/pkix.Extension'
+            type: array
+          extraExtensions:
+            description: |-
+              ExtraExtensions contains extensions to be copied, raw, into any
+              marshaled certificates. Values override any extensions that would
+              otherwise be produced based on the other fields. The ExtraExtensions
+              field is not populated when parsing certificates, see Extensions.
+            items:
+              $ref: '#/definitions/pkix.Extension'
+            type: array
+          ipaddresses:
+            items:
+              items:
+                type: integer
+              type: array
+            type: array
+          isCA:
+            type: boolean
+          issuer:
+            $ref: '#/definitions/pkix.Name'
+          issuingCertificateURL:
+            items:
+              type: string
+            type: array
+          keyUsage:
+            $ref: '#/definitions/x509.KeyUsage'
+          maxPathLen:
+            description: |-
+              MaxPathLen and MaxPathLenZero indicate the presence and
+              value of the BasicConstraints' "pathLenConstraint".
+    
+              When parsing a certificate, a positive non-zero MaxPathLen
+              means that the field was specified, -1 means it was unset,
+              and MaxPathLenZero being true mean that the field was
+              explicitly set to zero. The case of MaxPathLen==0 with MaxPathLenZero==false
+              should be treated equivalent to -1 (unset).
+    
+              When generating a certificate, an unset pathLenConstraint
+              can be requested with either MaxPathLen == -1 or using the
+              zero value for both MaxPathLen and MaxPathLenZero.
+            type: integer
+          maxPathLenZero:
+            description: |-
+              MaxPathLenZero indicates that BasicConstraintsValid==true
+              and MaxPathLen==0 should be interpreted as an actual
+              maximum path length of zero. Otherwise, that combination is
+              interpreted as MaxPathLen not being set.
+            type: boolean
+          notBefore:
+            description: Validity bounds.
+            type: string
+          ocspserver:
+            description: RFC 5280, 4.2.2.1 (Authority Information Access)
+            items:
+              type: string
+            type: array
+          permittedDNSDomains:
+            items:
+              type: string
+            type: array
+          permittedDNSDomainsCritical:
+            description: Name constraints
+            type: boolean
+          permittedEmailAddresses:
+            items:
+              type: string
+            type: array
+          permittedIPRanges:
+            items:
+              $ref: '#/definitions/net.IPNet'
+            type: array
+          permittedURIDomains:
+            items:
+              type: string
+            type: array
+          policyIdentifiers:
+            items:
+              items:
+                type: integer
+              type: array
+            type: array
+          publicKey: {}
+          publicKeyAlgorithm:
+            $ref: '#/definitions/x509.PublicKeyAlgorithm'
+          raw:
+            description: Complete ASN.1 DER content (certificate, signature algorithm
+              and signature).
+            items:
+              type: integer
+            type: array
+          rawIssuer:
+            description: DER encoded Issuer
+            items:
+              type: integer
+            type: array
+          rawSubject:
+            description: DER encoded Subject
+            items:
+              type: integer
+            type: array
+          rawSubjectPublicKeyInfo:
+            description: DER encoded SubjectPublicKeyInfo.
+            items:
+              type: integer
+            type: array
+          rawTBSCertificate:
+            description: Certificate part of raw ASN.1 DER content.
+            items:
+              type: integer
+            type: array
+          serialNumber:
+            $ref: '#/definitions/big.Int'
+          signature:
+            items:
+              type: integer
+            type: array
+          signatureAlgorithm:
+            $ref: '#/definitions/x509.SignatureAlgorithm'
+          subject:
+            $ref: '#/definitions/pkix.Name'
+          subjectKeyId:
+            items:
+              type: integer
+            type: array
+          unhandledCriticalExtensions:
+            description: |-
+              UnhandledCriticalExtensions contains a list of extension IDs that
+              were not (fully) processed when parsing. Verify will fail if this
+              slice is non-empty, unless verification is delegated to an OS
+              library which understands all the critical extensions.
+    
+              Users can access these extensions using Extensions and can remove
+              elements from this slice if they believe that they have been
+              handled.
+            items:
+              items:
+                type: integer
+              type: array
+            type: array
+          unknownExtKeyUsage:
+            description: Encountered extended key usages unknown to this package.
+            items:
+              items:
+                type: integer
+              type: array
+            type: array
+          uris:
+            items:
+              $ref: '#/definitions/url.URL'
+            type: array
+          version:
+            type: integer
+        type: object
+      x509.ExtKeyUsage:
+        enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+        - 9
+        - 10
+        - 11
+        - 12
+        - 13
+        type: integer
+        x-enum-varnames:
+        - ExtKeyUsageAny
+        - ExtKeyUsageServerAuth
+        - ExtKeyUsageClientAuth
+        - ExtKeyUsageCodeSigning
+        - ExtKeyUsageEmailProtection
+        - ExtKeyUsageIPSECEndSystem
+        - ExtKeyUsageIPSECTunnel
+        - ExtKeyUsageIPSECUser
+        - ExtKeyUsageTimeStamping
+        - ExtKeyUsageOCSPSigning
+        - ExtKeyUsageMicrosoftServerGatedCrypto
+        - ExtKeyUsageNetscapeServerGatedCrypto
+        - ExtKeyUsageMicrosoftCommercialCodeSigning
+        - ExtKeyUsageMicrosoftKernelCodeSigning
+      x509.KeyUsage:
+        enum:
+        - 1
+        - 2
+        - 4
+        - 8
+        - 16
+        - 32
+        - 64
+        - 128
+        - 256
+        type: integer
+        x-enum-varnames:
+        - KeyUsageDigitalSignature
+        - KeyUsageContentCommitment
+        - KeyUsageKeyEncipherment
+        - KeyUsageDataEncipherment
+        - KeyUsageKeyAgreement
+        - KeyUsageCertSign
+        - KeyUsageCRLSign
+        - KeyUsageEncipherOnly
+        - KeyUsageDecipherOnly
+      x509.PublicKeyAlgorithm:
+        enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        type: integer
+        x-enum-comments:
+          DSA: Unsupported.
+        x-enum-varnames:
+        - UnknownPublicKeyAlgorithm
+        - RSA
+        - DSA
+        - ECDSA
+        - Ed25519
+      x509.SignatureAlgorithm:
+        enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+        - 9
+        - 10
+        - 11
+        - 12
+        - 13
+        - 14
+        - 15
+        - 16
+        type: integer
+        x-enum-comments:
+          DSAWithSHA1: Unsupported.
+          DSAWithSHA256: Unsupported.
+          ECDSAWithSHA1: Only supported for signing, and verification of CRLs, CSRs, and
+            OCSP responses.
+          MD2WithRSA: Unsupported.
+          MD5WithRSA: Only supported for signing, not verification.
+          SHA1WithRSA: Only supported for signing, and verification of CRLs, CSRs, and
+            OCSP responses.
+        x-enum-varnames:
+        - UnknownSignatureAlgorithm
+        - MD2WithRSA
+        - MD5WithRSA
+        - SHA1WithRSA
+        - SHA256WithRSA
+        - SHA384WithRSA
+        - SHA512WithRSA
+        - DSAWithSHA1
+        - DSAWithSHA256
+        - ECDSAWithSHA1
+        - ECDSAWithSHA256
+        - ECDSAWithSHA384
+        - ECDSAWithSHA512
+        - SHA256WithRSAPSS
+        - SHA384WithRSAPSS
+        - SHA512WithRSAPSS
+        - PureEd25519
     host: www-api.pixlise.org
     info:
       contact:
@@ -79,6 +2803,207 @@ spec:
       title: Pixlise API
       version: "1.0"
     paths:
+      /ROIQuantTableState/{whichInstance}:
+        post:
+          consumes:
+          - application/json
+          description: save the current state of a ROI Quant Table widget
+          parameters:
+          - description: Update ROI Quant Table State
+            in: body
+            name: body
+            required: true
+            schema:
+              $ref: '#/definitions/github_com_pixlise_core_v3_api_handlers.ApiHandlerParams'
+          - description: Instance Identifier
+            in: path
+            name: whichInstance
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+            "400":
+              description: Bad Request
+              schema:
+                type: string
+          summary: Update ROI Quant Table state
+          tags:
+          - widgets
+      /annotation/{datasetIdentifier}:
+        get:
+          consumes:
+          - application/json
+          description: Get a list of annotations for a given dataset
+          operationId: annotation-list
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Annotations details
+              schema:
+                items:
+                  $ref: '#/definitions/api_endpoints.AnnotationLookup'
+                type: array
+          security:
+          - ApiKeyAuth: []
+          summary: List annotations
+          tags:
+          - annotation
+        post:
+          consumes:
+          - application/json
+          description: Create a new annotation
+          operationId: annotation-post
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Annotation to create
+            in: body
+            name: annotation
+            required: true
+            schema:
+              $ref: '#/definitions/api_endpoints.AnnotationLookup'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully created annotation
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Create an annotation
+          tags:
+          - annotation
+      /annotation/{datasetIdentifier}/{idIdentifier}:
+        delete:
+          consumes:
+          - application/json
+          description: Delete an existing annotation
+          operationId: annotation-delete
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Annotation Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully deleted annotation
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Delete an annotation
+          tags:
+          - annotation
+        get:
+          consumes:
+          - application/json
+          description: Get an existing annotation
+          operationId: annotation-get
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Annotation Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Annotation details
+              schema:
+                $ref: '#/definitions/api_endpoints.SpectrumAnnotationLine'
+          security:
+          - ApiKeyAuth: []
+          summary: Get annotation
+          tags:
+          - annotation
+        put:
+          consumes:
+          - application/json
+          description: Update an existing annotation
+          operationId: annotation-put
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Annotation Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          - description: Annotation to update
+            in: body
+            name: annotation
+            required: true
+            schema:
+              $ref: '#/definitions/api_endpoints.AnnotationLookup'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully updated annotation
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Update an annotation
+          tags:
+          - annotation
+      /api/view-state/{datasetIdentifier}/{idIdentifier}:
+        put:
+          consumes:
+          - application/json
+          description: Saves the current state of all views
+          parameters:
+          - description: Api handler parameters
+            in: body
+            name: params
+            required: true
+            schema:
+              $ref: '#/definitions/github_com_pixlise_core_v3_api_handlers.ApiHandlerParams'
+          - description: State of all views in byte format
+            in: body
+            name: body
+            required: true
+            schema:
+              items:
+                type: integer
+              type: array
+          responses:
+            "200":
+              description: OK
+          summary: Save all state
+          tags:
+          - All
       /data-expression:
         get:
           consumes:
@@ -90,7 +3015,9 @@ spec:
             "200":
               description: OK
               schema:
-                $ref: '#/definitions/dataExpression.DataExpressionLookup'
+                additionalProperties:
+                  $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_expressions.DataExpressionWire'
+                type: object
             "404":
               description: Not Found
               schema: {}
@@ -111,14 +3038,14 @@ spec:
             name: id
             required: true
             schema:
-              $ref: '#/definitions/dataExpression.DataExpressionInput'
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_expressions.DataExpression'
           produces:
           - application/json
           responses:
             "200":
               description: OK
               schema:
-                $ref: '#/definitions/dataExpression.DataExpressionLookup'
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_expressions.DataExpressionWire'
             "404":
               description: Not Found
               schema: {}
@@ -151,6 +3078,29 @@ spec:
           summary: Deletes a data expression.
           tags:
           - data-expression
+        get:
+          consumes:
+          - application/json
+          description: Fetch a single expression based on its ID
+          operationId: get-expression
+          parameters:
+          - description: Expression ID
+            in: path
+            name: id
+            required: true
+            type: integer
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully retrieved expression
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_expressions.DataExpressionWire'
+            "404":
+              description: Expression not found
+            "500":
+              description: Internal Server Error
+          summary: Get an expression
         post:
           consumes:
           - application/json
@@ -167,13 +3117,1655 @@ spec:
             "200":
               description: OK
               schema:
-                $ref: '#/definitions/dataExpression.DataExpressionLookup'
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_expressions.DataExpressionWire'
             "404":
               description: Not Found
               schema: {}
           summary: Update an existing data expression.
           tags:
           - data-expression
+        put:
+          consumes:
+          - application/json
+          description: Update an expression's execution statistics based on the expression
+            ID
+          operationId: update-expression-execution-statistics
+          parameters:
+          - description: Expression ID
+            in: path
+            name: id
+            required: true
+            type: integer
+          - description: Execution Statistics
+            in: body
+            name: expression
+            required: true
+            schema:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_expressions.DataExpressionExecStats'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully updated statistics
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_expressions.DataExpressionExecStats'
+            "400":
+              description: Bad Request
+            "500":
+              description: Internal Server Error
+          summary: Update an expression's execution statistics
+      /data-module:
+        get:
+          consumes:
+          - application/json
+          description: Retrieve a list of all modules
+          operationId: list-modules
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully retrieved list of modules
+              schema:
+                items:
+                  $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_modules.DataModuleWireLookup'
+                type: array
+            "500":
+              description: Internal Server Error
+          summary: List all modules
+        post:
+          consumes:
+          - application/json
+          description: Create a new module with the provided details
+          operationId: create-module
+          parameters:
+          - description: Module Details
+            in: body
+            name: module
+            required: true
+            schema:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_modules.DataModuleInput'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully created module
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_modules.DataModuleSpecificVersionWire'
+            "400":
+              description: Bad Request
+            "500":
+              description: Internal Server Error
+          summary: Create a module
+      /data-module/{id}:
+        put:
+          consumes:
+          - application/json
+          description: Update a specific module's version based on its ID
+          operationId: update-module
+          parameters:
+          - description: Module ID
+            in: path
+            name: id
+            required: true
+            type: integer
+          - description: Module Version Details
+            in: body
+            name: module
+            required: true
+            schema:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_modules.DataModuleVersionInput'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully updated module
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_modules.DataModuleSpecificVersionWire'
+            "400":
+              description: Bad Request
+            "500":
+              description: Internal Server Error
+          summary: Update a module
+      /data-module/{id}/{version}:
+        get:
+          consumes:
+          - application/json
+          description: Retrieve a specific module and version based on its ID and optional
+            version
+          operationId: get-module
+          parameters:
+          - description: Module ID
+            in: path
+            name: id
+            required: true
+            type: integer
+          - description: Module Version
+            in: path
+            name: version
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully retrieved module
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_expressions_modules.DataModuleSpecificVersionWire'
+            "400":
+              description: Invalid version specified
+            "500":
+              description: Internal Server Error
+          summary: Get a module
+      /dataset/:
+        get:
+          consumes:
+          - application/json
+          description: Get a list of all datasets accessible by the user
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                items:
+                  $ref: '#/definitions/github_com_pixlise_core_v3_core_dataset.APIDatasetSummary'
+                type: array
+            "400":
+              description: Error message
+              schema:
+                type: string
+          summary: List all datasets
+          tags:
+          - Datasets
+      /dataset/{datasetId}/images/{customImageType}/{customImageIdentifier}:
+        delete:
+          consumes:
+          - application/json
+          description: delete a custom image from dataset
+          parameters:
+          - description: ID of the dataset
+            in: path
+            name: datasetId
+            required: true
+            type: string
+          - description: Type of the custom image
+            in: path
+            name: customImageType
+            required: true
+            type: string
+          - description: Identifier for the custom image
+            in: path
+            name: customImageIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: "null"
+              schema:
+                type: string
+            "400":
+              description: Invalid custom image type or file name
+              schema:
+                type: string
+            "404":
+              description: Requested image or corresponding metadata not found
+              schema:
+                type: string
+          summary: Deletes a custom image and its metadata from the dataset
+          tags:
+          - Dataset Custom Images
+      /dataset/{datasetIdentifier}:
+        post:
+          consumes:
+          - application/octet-stream
+          description: This function creates a new dataset from a POSTed zip file. Currently,
+            only JPL Breadboard format is supported.
+          parameters:
+          - description: ID of the dataset
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Format of the dataset
+            in: path
+            name: format
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Log ID of the creation process
+              schema:
+                type: string
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Create a dataset
+          tags:
+          - Datasets
+      /dataset/{datasetIdentifier}/{idIdentifier}/{loadCustomType}:
+        get:
+          description: This function streams a file from a specified dataset. It handles
+            various file types and respects user access permissions.
+          parameters:
+          - description: Identifier of the dataset
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Identifier of the file
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          - description: Custom type of the file to load
+            in: path
+            name: loadCustomType
+            type: string
+          produces:
+          - application/octet-stream
+          responses:
+            "200":
+              description: Stream of the file
+              schema:
+                type: string
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Stream a dataset file
+          tags:
+          - Datasets
+      /dataset/{id}/custom-images/{imgType}:
+        get:
+          consumes:
+          - application/json
+          description: Retrieve all custom image file names of a specific dataset based
+            on its ID and image type
+          operationId: list-dataset-custom-images
+          parameters:
+          - description: Dataset ID
+            in: path
+            name: id
+            required: true
+            type: integer
+          - description: Image Type
+            in: path
+            name: imgType
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully retrieved custom image file names
+              schema:
+                items:
+                  type: string
+                type: array
+            "400":
+              description: Bad Request
+            "404":
+              description: Custom images not found
+            "500":
+              description: Internal Server Error
+          summary: List dataset custom images
+      /dataset/{id}/custom-images/{imgType}/{fileName}:
+        get:
+          consumes:
+          - application/json
+          description: Retrieve the metadata of a custom image of a specific dataset based
+            on its ID, image type and file name
+          operationId: get-dataset-custom-image-metadata
+          parameters:
+          - description: Dataset ID
+            in: path
+            name: id
+            required: true
+            type: integer
+          - description: Image Type
+            in: path
+            name: imgType
+            required: true
+            type: string
+          - description: File Name
+            in: path
+            name: fileName
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully retrieved custom image metadata
+              schema:
+                $ref: '#/definitions/api_endpoints.datasetCustomImageMeta'
+            "400":
+              description: Bad Request
+            "404":
+              description: Dataset custom image meta not found
+            "500":
+              description: Internal Server Error
+          summary: Get dataset custom image metadata
+        post:
+          consumes:
+          - application/json
+          description: Upload a custom image to a specific dataset based on its ID, image
+            type and file name
+          operationId: upload-dataset-custom-image
+          parameters:
+          - description: Dataset ID
+            in: path
+            name: id
+            required: true
+            type: integer
+          - description: Image Type
+            in: path
+            name: imgType
+            required: true
+            type: string
+          - description: File Name
+            in: path
+            name: fileName
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully uploaded custom image
+            "400":
+              description: Bad Request
+            "500":
+              description: Internal Server Error
+          summary: Upload dataset custom image
+        put:
+          consumes:
+          - application/json
+          description: Edit the parameters of a custom image in a specific dataset based
+            on its ID, image type and file name
+          operationId: edit-dataset-custom-image-parameters
+          parameters:
+          - description: Dataset ID
+            in: path
+            name: id
+            required: true
+            type: integer
+          - description: Image Type
+            in: path
+            name: imgType
+            required: true
+            type: string
+          - description: File Name
+            in: path
+            name: fileName
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully edited custom image parameters
+            "400":
+              description: Bad Request
+            "404":
+              description: Custom image not found
+            "500":
+              description: Internal Server Error
+          summary: Edit dataset custom image parameters
+      /dataset/{id}/custom-meta:
+        get:
+          consumes:
+          - application/json
+          description: Retrieve the custom metadata of a dataset based on its ID
+          operationId: get-dataset-custom-metadata
+          parameters:
+          - description: Dataset ID
+            in: path
+            name: id
+            required: true
+            type: integer
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully retrieved dataset custom metadata
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_data-import_data-converter.DatasetCustomMeta'
+            "404":
+              description: Dataset custom metadata not found
+            "500":
+              description: Internal Server Error
+          summary: Get dataset custom metadata
+        put:
+          consumes:
+          - application/json
+          description: Update or create the custom metadata for a specific dataset based
+            on its ID
+          operationId: update-dataset-custom-metadata
+          parameters:
+          - description: Dataset ID
+            in: path
+            name: id
+            required: true
+            type: integer
+          - description: Dataset Custom Metadata
+            in: body
+            name: metadata
+            required: true
+            schema:
+              $ref: '#/definitions/github_com_pixlise_core_v3_data-import_data-converter.DatasetCustomMeta'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully updated dataset custom metadata
+            "400":
+              description: Bad Request
+            "500":
+              description: Internal Server Error
+          summary: Update dataset custom metadata
+      /diffraction/manual/{datasetIdentifier}:
+        get:
+          consumes:
+          - application/json
+          description: Retrieve the list of manually entered diffraction peaks
+          parameters:
+          - description: Identifier of the dataset
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Returns a map of diffraction peaks
+              schema:
+                additionalProperties:
+                  $ref: '#/definitions/api_endpoints.UserDiffractionPeak'
+                type: object
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Get the list of manually entered diffraction peaks
+          tags:
+          - Diffraction
+        post:
+          consumes:
+          - application/json
+          description: Update a manually entered diffraction peak
+          parameters:
+          - description: Identifier of the dataset
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Returns updated map of diffraction peaks
+              schema:
+                additionalProperties:
+                  $ref: '#/definitions/api_endpoints.UserDiffractionPeak'
+                type: object
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Post a manually entered diffraction peak
+          tags:
+          - Diffraction
+      /diffraction/manual/{datasetIdentifier}/{idIdentifier}:
+        delete:
+          consumes:
+          - application/json
+          description: Remove a manually entered diffraction peak
+          parameters:
+          - description: Identifier of the dataset
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Identifier of the diffraction peak
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Returns updated map of diffraction peaks
+              schema:
+                additionalProperties:
+                  $ref: '#/definitions/api_endpoints.UserDiffractionPeak'
+                type: object
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Delete a manually entered diffraction peak
+          tags:
+          - Diffraction
+      /diffraction/status/{datasetIdentifier}:
+        get:
+          consumes:
+          - application/json
+          description: Retrieve the list of diffraction peak statuses
+          parameters:
+          - description: Identifier of the dataset
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Returns a map of statuses
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Get the list of diffraction peak statuses
+          tags:
+          - Diffraction
+      /diffraction/status/{datasetIdentifier}/{idIdentifier}:
+        delete:
+          consumes:
+          - application/json
+          description: Remove a diffraction peak status
+          parameters:
+          - description: Identifier of the dataset
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Identifier of the diffraction peak
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Returns updated map of statuses
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Delete a diffraction peak status
+          tags:
+          - Diffraction
+      /diffraction/status/{statusId}/{datasetIdentifier}/{idIdentifier}:
+        post:
+          consumes:
+          - application/json
+          description: Update a diffraction peak status
+          parameters:
+          - description: Status identifier
+            in: path
+            name: statusId
+            required: true
+            type: string
+          - description: Identifier of the dataset
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Identifier of the diffraction peak
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Returns updated map of statuses
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Post a diffraction peak status
+          tags:
+          - Diffraction
+      /element-set:
+        get:
+          consumes:
+          - application/json
+          description: Retrieve the list of element sets
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Returns a map of element set summaries
+              schema:
+                $ref: '#/definitions/api_endpoints.elementSetSummaryLookup'
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Get the list of element sets
+          tags:
+          - ElementSet
+        post:
+          consumes:
+          - application/json
+          description: Create a new element set
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Success message
+              schema:
+                type: string
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Create an element set
+          tags:
+          - ElementSet
+      /element-set/{idIdentifier}:
+        delete:
+          consumes:
+          - application/json
+          description: Delete an existing element set
+          parameters:
+          - description: Identifier of the element set
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Success message
+              schema:
+                type: string
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Delete an element set
+          tags:
+          - ElementSet
+        get:
+          consumes:
+          - application/json
+          description: Retrieve an element set by ID
+          parameters:
+          - description: Identifier of the element set
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Returns an element set object
+              schema:
+                $ref: '#/definitions/api_endpoints.ElementSet'
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Get an element set
+          tags:
+          - ElementSet
+        put:
+          consumes:
+          - application/json
+          description: Update an existing element set
+          parameters:
+          - description: Identifier of the element set
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Success message
+              schema:
+                type: string
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Update an element set
+          tags:
+          - ElementSet
+      /export/files/{datasetIdentifier}:
+        post:
+          description: This function allows users to export selected files in a .zip format.
+          parameters:
+          - description: Identifier of the dataset to be exported
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Parameters required for exporting files
+            in: body
+            name: body
+            required: true
+            schema:
+              $ref: '#/definitions/api_endpoints.exportFilesParams'
+          produces:
+          - application/octet-stream
+          responses:
+            "200":
+              description: Successfully exported files, returning a .zip file
+              schema:
+                type: string
+            "400":
+              description: Bad request, likely due to missing or incorrect parameters
+                in request. Error message in the 'detail' field of the response.
+              schema: {}
+            "404":
+              description: Error exporting the files (may not be found), detailed error
+                message in the 'detail' field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: Export Files
+          tags:
+          - Files
+      /logger/fetch/{logStreamId}:
+        get:
+          description: This function fetches logs based on the provided log stream ID.
+          parameters:
+          - description: ID of the log stream to fetch
+            in: path
+            name: logStreamId
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully fetched logs.
+              schema:
+                items:
+                  $ref: '#/definitions/github_com_pixlise_core_v3_core_cloudwatch.LogData'
+                type: array
+            "404":
+              description: Error, log stream not found.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: Fetch Logs
+          tags:
+          - Logger
+      /logger/level:
+        get:
+          description: This function returns the current log level setting.
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully returned current log level.
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Get Log Level
+          tags:
+          - Logger
+      /logger/level/{logLevelId}:
+        put:
+          description: This function allows updating the current log level setting.
+          parameters:
+          - description: New log level to set
+            in: path
+            name: logLevelId
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully updated log level.
+              schema:
+                type: string
+            "400":
+              description: Error, unable to set log level. Detailed error message in the
+                'detail' field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: Update Log Level
+          tags:
+          - Logger
+      /metrics/{idIdentifier}:
+        post:
+          consumes:
+          - application/json
+          description: This function writes metrics to an S3 bucket. The data to be stored
+            is read from the request body.
+          parameters:
+          - description: Identifier for the metrics
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully wrote the metrics to S3.
+              schema:
+                type: string
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: Post Metrics
+          tags:
+          - Metrics
+      /notification/alerts:
+        get:
+          description: Get UI notifications for the user
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: List of notifications for the user.
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UINotificationItem'
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: List Alerts
+          tags:
+          - Notifications
+      /notification/global:
+        post:
+          consumes:
+          - application/json
+          description: Sends a global email notification
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully sent the global email notification.
+              schema:
+                type: string
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: Send Global Notification
+          tags:
+          - Notifications
+      /notification/hints:
+        get:
+          description: Get list of notification hints for the user
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: List of notification hints for the user.
+              schema:
+                $ref: '#/definitions/api_endpoints.HintsData'
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: List Notification Hints
+          tags:
+          - Notifications
+        post:
+          consumes:
+          - application/json
+          description: Update notification hints for the user
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Updated list of notification hints for the user.
+              schema:
+                $ref: '#/definitions/api_endpoints.HintsData'
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: Update Notification Hints
+          tags:
+          - Notifications
+      /notification/subscriptions:
+        get:
+          description: Get list of subscriptions for the user
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: List of subscriptions for the user.
+              schema:
+                $ref: '#/definitions/api_endpoints.UserSubscriptions'
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: List Subscriptions
+          tags:
+          - Notifications
+        post:
+          consumes:
+          - application/json
+          description: Update subscriptions for the user
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Updated list of subscriptions for the user.
+              schema:
+                $ref: '#/definitions/api_endpoints.UserSubscriptions'
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: Update Subscriptions
+          tags:
+          - Notifications
+      /notification/test:
+        post:
+          consumes:
+          - application/json
+          description: Execute a test for email or sms notification
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully executed the notification test.
+              schema:
+                type: string
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: Execute Notification Test
+          tags:
+          - Notifications
+      /piquant/config:
+        get:
+          description: Gets all PIQUANT config names
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: List of PIQUANT config names.
+              schema:
+                $ref: '#/definitions/api_endpoints.detectorConfigListing'
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: List PIQUANT Config Names
+          tags:
+          - PIQUANT
+      /piquant/config/{id}/version/{version}:
+        get:
+          description: Gets a PIQUANT config for given config name and version
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: PIQUANT configuration.
+              schema:
+                $ref: '#/definitions/api_endpoints.quantConfig'
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: Get PIQUANT Config
+          tags:
+          - PIQUANT
+      /piquant/config/{id}/versions:
+        get:
+          description: Gets PIQUANT config versions for a given config name
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: List of PIQUANT config versions.
+              schema:
+                items:
+                  type: string
+                type: array
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: List PIQUANT Config Versions
+          tags:
+          - PIQUANT
+      /piquant/download:
+        get:
+          description: Lists PIQUANT builds that can be downloaded
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: List of PIQUANT downloads.
+              schema:
+                $ref: '#/definitions/api_endpoints.piquantDownloadListing'
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: List PIQUANT Downloads
+          tags:
+          - PIQUANT
+      /piquant/version:
+        get:
+          description: Gets the PIQUANT version string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: PIQUANT version.
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_piquant.PiquantVersionConfig'
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: Get PIQUANT Version
+          tags:
+          - PIQUANT
+        post:
+          consumes:
+          - application/json
+          description: Sets the PIQUANT version string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Updated PIQUANT version.
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: Update PIQUANT Version
+          tags:
+          - PIQUANT
+      /quantification/{dataset_id}:
+        post:
+          consumes:
+          - application/json
+          description: Create a new quantification
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully created the quantification.
+              schema:
+                type: string
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: Create Quantification
+          tags:
+          - Quantification
+      /quantification/{datasetIdentifier}/{idIdentifier}:
+        delete:
+          consumes:
+          - application/json
+          description: Deletes a specific quantification based on the ID provided
+          parameters:
+          - description: Dataset ID
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Quantification ID
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "204":
+              description: Successfully deleted
+            "401":
+              description: Unauthorized
+              schema:
+                type: string
+            "404":
+              description: Not found
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Delete quantification
+          tags:
+          - Quantification
+      /quantification/bless/{dataset_id}/{job_id}:
+        post:
+          consumes:
+          - application/json
+          description: Mark a given quantification as "the one to use"
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully blessed the quantification.
+            "400":
+              description: Error, bad request. Detailed error message in the 'detail'
+                field of the response.
+              schema: {}
+          security:
+          - ApiKeyAuth: []
+          summary: Bless Quantification
+          tags:
+          - Quantification
+      /quantification/combine/{datasetIdentifier}:
+        post:
+          consumes:
+          - application/json
+          description: Combines a set of quantifications to create a new one
+          parameters:
+          - description: Dataset ID
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Combination request
+            in: body
+            name: body
+            required: true
+            schema:
+              $ref: '#/definitions/api_endpoints.QuantCombineRequest'
+          produces:
+          - application/json
+          responses:
+            "201":
+              description: Successfully created
+              schema:
+                type: string
+            "400":
+              description: Bad request
+              schema:
+                type: string
+            "401":
+              description: Unauthorized
+              schema:
+                type: string
+            "404":
+              description: Not found
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Combine quantifications
+          tags:
+          - Quantification
+      /quantification/get/{dataset_id}/{job_id}:
+        get:
+          consumes:
+          - application/json
+          description: Retrieve a specific quantification job
+          parameters:
+          - description: Dataset ID
+            in: path
+            name: dataset_id
+            required: true
+            type: string
+          - description: Job ID
+            in: path
+            name: job_id
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully retrieved quantification job
+              schema:
+                $ref: '#/definitions/api_endpoints.quantGetResponse'
+            "400":
+              description: Bad request
+              schema:
+                type: string
+            "401":
+              description: Unauthorized
+              schema:
+                type: string
+            "404":
+              description: Not found
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Get quantification
+          tags:
+          - Quantification
+      /quantification/job/admin/list:
+        get:
+          consumes:
+          - application/json
+          description: Retrieves a list of quantification jobs for admin users
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully retrieved list
+              schema:
+                items:
+                  $ref: '#/definitions/github_com_pixlise_core_v3_core_quantModel.JobSummaryItem'
+                type: array
+            "400":
+              description: Bad request
+              schema:
+                type: string
+            "401":
+              description: Unauthorized
+              schema:
+                type: string
+            "404":
+              description: Not found
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Get quantification job admin list
+          tags:
+          - Quantification
+      /quantification/list/{dataset_id}:
+        get:
+          consumes:
+          - application/json
+          description: Retrieve a list of quantification jobs for a user
+          parameters:
+          - description: Dataset ID
+            in: path
+            name: dataset_id
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully retrieved list
+              schema:
+                $ref: '#/definitions/api_endpoints.QuantListingResponse'
+            "400":
+              description: Bad request
+              schema:
+                type: string
+            "401":
+              description: Unauthorized
+              schema:
+                type: string
+            "404":
+              description: Not found
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: List quantifications
+          tags:
+          - Quantification
+      /quantification/multi/comparison/{dataset_id}/{roi_id}:
+        post:
+          consumes:
+          - application/json
+          description: Compare multiple quantification jobs
+          parameters:
+          - description: Dataset ID
+            in: path
+            name: dataset_id
+            required: true
+            type: string
+          - description: ROI ID
+            in: path
+            name: roi_id
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully compared quantification jobs
+              schema:
+                $ref: '#/definitions/api_endpoints.MultiQuantificationComparisonResponse'
+            "400":
+              description: Bad request
+              schema:
+                type: string
+            "401":
+              description: Unauthorized
+              schema:
+                type: string
+            "404":
+              description: Not found
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Post multi quantification comparison
+          tags:
+          - Quantification
+      /quantification/publish/{datasetIdentifier}/{idIdentifier}:
+        post:
+          consumes:
+          - application/json
+          description: Publishes a quantification based on dataset and job identifiers
+          parameters:
+          - description: Dataset ID
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Quantification ID
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "204":
+              description: Successfully published
+            "400":
+              description: Bad request
+              schema:
+                type: string
+            "401":
+              description: Unauthorized
+              schema:
+                type: string
+            "404":
+              description: Not found
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Publish quantification
+          tags:
+          - Quantification
+      /roi/{datasetIdentifier}:
+        get:
+          consumes:
+          - application/json
+          description: Retrieves a list of ROI items for a specific dataset.
+          operationId: roi-list
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successful operation
+              schema:
+                items:
+                  $ref: '#/definitions/github_com_pixlise_core_v3_core_roiModel.ROILookup'
+                type: array
+            "400":
+              description: Bad Request
+            "500":
+              description: Internal Server Error
+          summary: Lists ROI items
+        post:
+          consumes:
+          - application/json
+          description: Creates a new ROI item.
+          operationId: roi-post
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: ROI Item
+            in: body
+            name: body
+            required: true
+            schema:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_roiModel.ROIItem'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successful operation
+            "400":
+              description: Bad Request
+            "500":
+              description: Internal Server Error
+          summary: Create a new ROI
+      /roi/{datasetIdentifier}/{idIdentifier}:
+        delete:
+          consumes:
+          - application/json
+          description: Deletes an existing ROI item.
+          operationId: roi-delete
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: ROI Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successful operation
+            "400":
+              description: Bad Request
+            "404":
+              description: ROI Not Found
+            "500":
+              description: Internal Server Error
+          summary: Delete an existing ROI
+        put:
+          consumes:
+          - application/json
+          description: Updates an existing ROI item.
+          operationId: roi-put
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: ROI Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          - description: ROI Item
+            in: body
+            name: body
+            required: true
+            schema:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_roiModel.ROIItem'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successful operation
+            "400":
+              description: Bad Request
+            "404":
+              description: ROI Not Found
+            "500":
+              description: Internal Server Error
+          summary: Update an existing ROI
+      /roi/{datasetIdentifier}/bulk:
+        post:
+          consumes:
+          - application/json
+          description: Creates multiple ROI items in bulk.
+          operationId: roi-bulk-post
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: ROI Options
+            in: body
+            name: body
+            required: true
+            schema:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_roiModel.ROIItemOptions'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successful operation
+            "400":
+              description: Bad Request
+            "500":
+              description: Internal Server Error
+          summary: Bulk create ROIs
+      /share/annotation/{datasetIdentifier}/{idIdentifier}:
+        post:
+          consumes:
+          - application/json
+          description: Share an existing annotation
+          operationId: annotation-share
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Annotation Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully shared annotation
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Share an annotation
+          tags:
+          - annotation
       /share/data-expression/{id}:
         post:
           consumes:
@@ -198,6 +4790,687 @@ spec:
           summary: Shares a data expression.
           tags:
           - data-expression
+      /share/element-set/{idIdentifier}:
+        post:
+          consumes:
+          - application/json
+          description: Share an existing element set
+          parameters:
+          - description: Identifier of the element set
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Returns the shared ID
+              schema:
+                type: string
+            "400":
+              description: Error message
+              schema:
+                type: string
+            "500":
+              description: Error message
+              schema:
+                type: string
+          summary: Share an element set
+          tags:
+          - ElementSet
+      /share/roi/{datasetIdentifier}/{idIdentifier}:
+        post:
+          consumes:
+          - application/json
+          description: Share an existing ROI
+          operationId: roi-share
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: ROI Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successfully shared ROI
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Share a ROI
+          tags:
+          - roi
+      /share/view-state/{datasetIdentifier}/{idIdentifier}:
+        post:
+          description: Allows a user to share a view state. If any referenced items in
+            the view state are not already shared, the request will either be rejected
+            or those items will be auto-shared, depending on the value of the auto-share
+            parameter.
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: ID Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          - description: Auto-Share Parameter
+            in: query
+            name: autoShareParamID
+            type: boolean
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successful Operation
+              schema:
+                type: string
+            "400":
+              description: Bad Request
+          security:
+          - ApiKeyAuth: []
+          summary: Share a ViewState
+          tags:
+          - view-state
+      /tableState/{whichInstance}:
+        post:
+          consumes:
+          - application/json
+          description: save the current state of a Table widget
+          parameters:
+          - description: Update Table State
+            in: body
+            name: body
+            required: true
+            schema:
+              $ref: '#/definitions/github_com_pixlise_core_v3_api_handlers.ApiHandlerParams'
+          - description: Instance Identifier
+            in: path
+            name: whichInstance
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+            "400":
+              description: Bad Request
+              schema:
+                type: string
+          summary: Update Table state
+          tags:
+          - widgets
+      /tags/{datasetIdentifier}:
+        get:
+          description: This function retrieves all tags for the current user.
+          operationId: tagList
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Tags
+              schema:
+                additionalProperties:
+                  $ref: '#/definitions/github_com_pixlise_core_v3_core_tagModel.TagLookup'
+                type: object
+          summary: Get a list of tags
+        post:
+          description: This function creates a new tag for a dataset.
+          operationId: tagPost
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Tag object to create
+            in: body
+            name: tag
+            required: true
+            schema:
+              $ref: '#/definitions/github_com_pixlise_core_v3_core_tagModel.Tag'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: ID of the created Tag
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_tagModel.TagID'
+          summary: Create a new tag
+      /tags/{datasetIdentifier}/{idIdentifier}:
+        delete:
+          description: This function deletes a tag by its ID.
+          operationId: tagDelete
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: Tag Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Empty object
+              schema:
+                type: object
+          summary: Delete a tag
+      /user/all-roles:
+        get:
+          description: This endpoint retrieves all roles from the Auth0 Management API.
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: List of Roles
+              schema:
+                items:
+                  $ref: '#/definitions/api_endpoints.roleInfo'
+                type: array
+          security:
+          - ApiKeyAuth: []
+          summary: List all roles
+          tags:
+          - UserManagement
+      /user/bulk-user-details:
+        post:
+          consumes:
+          - application/json
+          description: This endpoint edits users' details in bulk from a provided JSON.
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: User editing complete
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Edit users in bulk
+          tags:
+          - UserManagement
+      /user/by-id/{id}:
+        get:
+          description: This endpoint retrieves a specific user based on the provided id.
+          parameters:
+          - description: User ID
+            in: path
+            name: id
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: User
+              schema:
+                $ref: '#/definitions/api_endpoints.auth0UserInfo'
+          security:
+          - ApiKeyAuth: []
+          summary: Get user by id
+          tags:
+          - UserManagement
+      /user/by-role/{id}:
+        get:
+          description: This endpoint retrieves users based on a given role.
+          parameters:
+          - description: Role ID
+            in: path
+            name: id
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: List of Users
+              schema:
+                items:
+                  $ref: '#/definitions/api_endpoints.auth0UserInfo'
+                type: array
+          security:
+          - ApiKeyAuth: []
+          summary: Get users by role
+          tags:
+          - UserManagement
+      /user/config:
+        get:
+          description: This endpoint retrieves the configuration for a specific user.
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: User Config
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserDetails'
+          security:
+          - ApiKeyAuth: []
+          summary: Get user config
+          tags:
+          - UserManagement
+        post:
+          consumes:
+          - application/json
+          description: This endpoint updates the configuration for a specific user.
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Updated User Config
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_pixlUser.UserDetails'
+          security:
+          - ApiKeyAuth: []
+          summary: Update user config
+          tags:
+          - UserManagement
+      /user/field/{fieldID}:
+        put:
+          consumes:
+          - application/json
+          description: This endpoint updates a specific field for a user.
+          parameters:
+          - description: User ID
+            in: path
+            name: userID
+            required: true
+            type: string
+          - description: Field ID (name or email)
+            in: path
+            name: fieldID
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Field updated successfully
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Update user field
+          tags:
+          - UserManagement
+      /user/query:
+        get:
+          description: This endpoint retrieves a list of users based on a provided query.
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: List of Users
+              schema:
+                items:
+                  $ref: '#/definitions/api_endpoints.auth0UserInfo'
+                type: array
+          security:
+          - ApiKeyAuth: []
+          summary: Query users
+          tags:
+          - UserManagement
+      /user/roles/{userID}:
+        get:
+          description: This endpoint retrieves all roles for a specific user.
+          parameters:
+          - description: User ID
+            in: path
+            name: userID
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: List of Roles
+              schema:
+                items:
+                  $ref: '#/definitions/api_endpoints.roleInfo'
+                type: array
+          security:
+          - ApiKeyAuth: []
+          summary: Get user roles
+          tags:
+          - UserManagement
+      /user/roles/{userID}/{roleID}:
+        delete:
+          description: This endpoint removes a role from a user.
+          parameters:
+          - description: User ID
+            in: path
+            name: userID
+            required: true
+            type: string
+          - description: Role ID
+            in: path
+            name: roleID
+            required: true
+            type: string
+          responses:
+            "200":
+              description: Successfully deleted
+              schema:
+                type: string
+          security:
+          - ApiKeyAuth: []
+          summary: Remove roles from a user
+          tags:
+          - UserManagement
+        post:
+          consumes:
+          - application/json
+          description: This endpoint assigns a role to a user.
+          parameters:
+          - description: User ID
+            in: path
+            name: userID
+            required: true
+            type: string
+          - description: Role ID
+            in: path
+            name: roleID
+            required: true
+            type: string
+          responses:
+            "200":
+              description: Assigned Roles
+          security:
+          - ApiKeyAuth: []
+          summary: Assign roles to a user
+          tags:
+          - UserManagement
+      /view-state/{dataset_id}:
+        get:
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: dataset_id
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                $ref: '#/definitions/api_endpoints.wholeViewState'
+            "400":
+              description: Bad Request
+              schema:
+                type: string
+          summary: Get the current view state
+          tags:
+          - ViewState
+      /view-state/{dataset_id}/{idIdentifier}:
+        put:
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: dataset_id
+            required: true
+            type: string
+          - description: ID Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+            "400":
+              description: Bad Request
+              schema:
+                type: string
+          summary: Update a specific view state
+          tags:
+          - ViewState
+      /view-state/{whichInstance}:
+        post:
+          consumes:
+          - application/json
+          description: save the current state of a Parallelogram widget
+          parameters:
+          - description: Update Parallelogram State
+            in: body
+            name: body
+            required: true
+            schema:
+              $ref: '#/definitions/api_endpoints.parallelogramWidgetState'
+          - description: Instance Identifier
+            in: path
+            name: whichInstance
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+            "400":
+              description: Bad Request
+              schema:
+                type: string
+          summary: Update Parallelogram state
+          tags:
+          - widgets
+      /view-state/collections/{datasetIdentifier}:
+        get:
+          consumes:
+          - application/json
+          description: get a list of view state collections
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                items:
+                  $ref: '#/definitions/api_endpoints.workspaceCollectionListItem'
+                type: array
+          summary: List view state collections
+          tags:
+          - view-state
+      /view-state/roi:
+        post:
+          consumes:
+          - application/json
+          description: save the current state of a ROI widget
+          parameters:
+          - description: Update ROI State
+            in: body
+            name: body
+            required: true
+            schema:
+              $ref: '#/definitions/api_endpoints.roiDisplayState'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+            "400":
+              description: Bad Request
+              schema:
+                type: string
+          summary: Update ROI state
+          tags:
+          - widgets
+      /view-state/saved/{datasetIdentifier}:
+        get:
+          description: Returns a list of all saved view states, both by the user and those
+            shared with the user.
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                items:
+                  $ref: '#/definitions/api_endpoints.workspaceSummary'
+                type: array
+          security:
+          - ApiKeyAuth: []
+          tags:
+          - ViewState
+      /view-state/saved/{datasetIdentifier}/{idIdentifier}:
+        delete:
+          description: Deletes a saved view state, provided the user is the owner and
+            it's not part of any collection.
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: ViewState Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          responses:
+            "200":
+              description: OK
+            "401":
+              description: ViewState not owned by user
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_api.StatusError'
+            "409":
+              description: ViewState is part of a collection
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_api.StatusError'
+          security:
+          - ApiKeyAuth: []
+          summary: Delete a saved view state
+          tags:
+          - ViewState
+        get:
+          description: Returns the details of a specific saved view state, identified
+            by the provided ID.
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: ViewState Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+              schema:
+                $ref: '#/definitions/api_endpoints.Workspace'
+          security:
+          - ApiKeyAuth: []
+          summary: Get a specific saved view state
+          tags:
+          - ViewState
+        put:
+          description: Creates a new saved view state or updates an existing one. Shared
+            workspaces cannot be edited.
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: ViewState Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          - description: ViewState Details
+            in: body
+            name: body
+            required: true
+            schema:
+              $ref: '#/definitions/api_endpoints.Workspace'
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: OK
+            "400":
+              description: Cannot edit shared workspaces
+              schema: {}
+            "409":
+              description: ViewState already exists
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_core_api.StatusError'
+          security:
+          - ApiKeyAuth: []
+          summary: Create or update a saved view state
+          tags:
+          - ViewState
+      /view-state/saved/{datasetIdentifier}/{idIdentifier}/references:
+        get:
+          description: Returns a list of referenced IDs in a given view state, sorted
+            and filled with additional information about each referenced item.
+          parameters:
+          - description: Dataset Identifier
+            in: path
+            name: datasetIdentifier
+            required: true
+            type: string
+          - description: ID Identifier
+            in: path
+            name: idIdentifier
+            required: true
+            type: string
+          produces:
+          - application/json
+          responses:
+            "200":
+              description: Successful Operation
+              schema:
+                $ref: '#/definitions/github_com_pixlise_core_v3_api_handlers.ApiHandlerParams'
+            "404":
+              description: Not Found
+          security:
+          - ApiKeyAuth: []
+          summary: Get Referenced IDs of a Saved ViewState
+          tags:
+          - view-state
     securityDefinitions:
       OAuth2Application:
         authorizationUrl: https://pixlise.au.auth0.com/authorize
@@ -210,3 +5483,4 @@ spec:
         type: oauth2
         x-tokenname: id_token
     swagger: "2.0"
+
