@@ -3,6 +3,7 @@ kind: API
 metadata:
   name: pixlise-api
   description: The Pixlise REST API
+  owner: 'user:guest'  
 spec:
   type: openapi
   lifecycle: production
