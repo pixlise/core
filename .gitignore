@@ -4,6 +4,8 @@ __debug_bin.exe
 
 # Build output from make for exes, coverage reports, etc
 /_out/
+generated-protos/
+api/ws/wsMessage.go
 
 # temp files that get generated for tests
 diffraction-detector/test-files/dataset-diffraction.bin

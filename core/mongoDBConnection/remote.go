@@ -22,16 +22,12 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/secretsmanager"
-	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
 	"github.com/pixlise/core/v3/core/logger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/event"
@@ -39,32 +35,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// Helpers for connecting to Mongo DB
-// NOTE: we support remote, local and "test" connections as per https://medium.com/@victor.neuret/mocking-the-official-mongo-golang-driver-5aad5b226a78
-
-type MongoConnectionInfo struct {
-	DbClusterIdentifier string `json:"dbClusterIdentifier"`
-	Password            string `json:"password"`
-	Engine              string `json:"engine"`
-	Port                string `json:"port"`
-	Host                string `json:"host"`
-	Ssl                 string `json:"ssl"`
-	Username            string `json:"username"`
-}
-
-func ConnectToRemoteMongoDB(
+func connectToRemoteMongoDB(
 	MongoEndpoint string,
 	MongoUsername string,
 	MongoPassword string,
-	log logger.ILogger,
+	iLog logger.ILogger,
 ) (*mongo.Client, error) {
-	cmdMonitor := makeMongoCommandMonitor(log)
-
 	//ctx := context.Background()
 	var err error
 	var client *mongo.Client
 
-	log.Infof("Connecting to remote mongo db: %v, user: %v", MongoEndpoint, MongoUsername)
+	iLog.Infof("Connecting to remote mongo db: %v, user: %v", MongoEndpoint, MongoUsername)
 
 	tlsConfig, err := getCustomTLSConfig("./rds-combined-ca-bundle.pem")
 	if err != nil {
@@ -77,6 +58,8 @@ func ConnectToRemoteMongoDB(
 
 	const extraOptions = "" //"&retryWrites=false&tlsAllowInvalidHostnames=true" //"&replicaSet=rs0&readpreference=secondaryPreferred"
 	connectionURI := fmt.Sprintf("mongodb://%s/%s", MongoEndpoint, extraOptions)
+
+	cmdMonitor := makeMongoCommandMonitor(iLog)
 
 	client, err = mongo.NewClient(
 		options.Client().
@@ -110,7 +93,7 @@ func ConnectToRemoteMongoDB(
 		return nil, err
 	}
 
-	log.Infof("Successfully connected to remote mongo db!")
+	iLog.Infof("Successfully connected to remote mongo db!")
 
 	//defer client.Disconnect(ctx)
 	return client, nil
@@ -134,56 +117,6 @@ func getCustomTLSConfig(caFile string) (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
-func GetMongoConnectionInfoFromSecretCache(session *session.Session, secretName string) (MongoConnectionInfo, error) {
-	// Do some special init magic to get a secret manager with the right region set
-	// This may not be needed in envs, but running locally it was needed!
-	secMan := secretsmanager.New(session) //, aws.NewConfig().WithRegion("us-west-2"))
-
-	var info MongoConnectionInfo
-	seccache, err := secretcache.New(func(c *secretcache.Cache) { c.Client = secMan })
-	if err != nil {
-		return info, err
-	}
-
-	secretValue, err := seccache.GetSecretString(secretName)
-	if err != nil {
-		return info, err
-	}
-
-	// Secret cache seems to return these types... Unmarshall it
-	json.Unmarshal([]byte(secretValue), &info)
-	if err != nil {
-		return info, fmt.Errorf("failed to parse secret: %v", secretName)
-	}
-
-	return info, nil
-}
-
-// Assumes local mongo running in docker as per this command:
-// docker run -d  --name mongo-on-docker  -p 27888:27017 -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=secret mongo
-func ConnectToLocalMongoDB(log logger.ILogger) (*mongo.Client, error) {
-	cmdMonitor := makeMongoCommandMonitor(log)
-
-	log.Infof("Connecting to local mongo db...")
-
-	//ctx := context.Background()
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://mongoadmin:secret@localhost:27888/?authSource=admin").SetMonitor(cmdMonitor))
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create new local mongo DB connection: %v", err)
-	}
-
-	ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
-	err = client.Connect(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Infof("Successfully connected to local mongo db!")
-
-	//defer client.Disconnect(ctx)
-	return client, nil
-}
-
 func makeMongoCommandMonitor(log logger.ILogger) *event.CommandMonitor {
 	return &event.CommandMonitor{
 		Started: func(_ context.Context, evt *event.CommandStartedEvent) {
@@ -196,8 +129,4 @@ func makeMongoCommandMonitor(log logger.ILogger) *event.CommandMonitor {
 			log.Errorf("Mongo FAIL:\n%v", evt.Failure)
 		},
 	}
-}
-
-func GetDatabaseName(dbName string, envName string) string {
-	return dbName + "-" + envName
 }

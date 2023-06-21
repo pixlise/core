@@ -15,37 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package idgen
+// Permission constants and helper functions for defining routes. These should match the permissions defined
+// in Auth0 JWT tokens that come in with requests
+package permission
 
-import "github.com/pixlise/core/v3/core/utils"
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Generation of random string IDs
-
-// IDGenerator - Generates ID strings
-type IDGenerator interface {
-	GenObjectID() string
-}
-
-// IDGen - Implementation of ID generator interface
-type IDGen struct {
-}
-
-// GenObjectID - Implementation of ID generator interface
-func (i *IDGen) GenObjectID() string {
-	return utils.RandStringBytesMaskImpr(16)
-}
-
-// Here we really just expose some test helpers
-type MockIDGenerator struct {
-	IDs []string
-}
-
-func (m *MockIDGenerator) GenObjectID() string {
-	if len(m.IDs) > 0 {
-		id := m.IDs[0]
-		m.IDs = m.IDs[1:]
-		return id
-	}
-	return "NO_ID_DEFINED"
-}
+// Public endpoints, mainly for getting the API version
+const PermPublic = "public"

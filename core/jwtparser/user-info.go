@@ -23,6 +23,11 @@ import (
 	"strings"
 )
 
+// IJWTReader - User ID getter from HTTP request
+type IJWTReader interface {
+	GetUserInfo(*http.Request) (JWTUserInfo, error)
+}
+
 type JWTUserInfo struct {
 	Name        string          `json:"name"`
 	UserID      string          `json:"user_id"`

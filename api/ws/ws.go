@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/olahol/melody"
+	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/core/jwtparser"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -21,13 +22,15 @@ type WSHandler struct {
 	connectTokens map[string]connectToken
 	jwtReader     jwtparser.RealJWTReader
 	melody        *melody.Melody
+	svcs          *services.APIServices
 }
 
-func MakeWSHandler(jwtValidator jwtparser.RealJWTReader, m *melody.Melody) *WSHandler {
+func MakeWSHandler(jwtValidator jwtparser.RealJWTReader, m *melody.Melody, svcs *services.APIServices) *WSHandler {
 	ws := WSHandler{
 		connectTokens: map[string]connectToken{},
 		jwtReader:     jwtValidator,
 		melody:        m,
+		svcs:          svcs,
 	}
 	return &ws
 }

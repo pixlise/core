@@ -46,17 +46,3 @@ func Example_genObjectID() {
 	// Output:
 	// done
 }
-
-// Here we really just expose some test helpers
-type MockIDGenerator struct {
-	IDs []string
-}
-
-func (m *MockIDGenerator) GenObjectID() string {
-	if len(m.IDs) > 0 {
-		id := m.IDs[0]
-		m.IDs = m.IDs[1:]
-		return id
-	}
-	return "NO_ID_DEFINED"
-}

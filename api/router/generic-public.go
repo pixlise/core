@@ -15,37 +15,32 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package idgen
+package apiRouter
 
-import "github.com/pixlise/core/v3/core/utils"
+import (
+	"net/http"
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Generation of random string IDs
+	"github.com/pixlise/core/v3/api/services"
+)
 
-// IDGenerator - Generates ID strings
-type IDGenerator interface {
-	GenObjectID() string
+// As with generic handler, but for public API endpoints ONLY
+type ApiHandlerGenericPublicParams struct {
+	Svcs       *services.APIServices
+	PathParams map[string]string
+	Writer     http.ResponseWriter
+	Request    *http.Request
+}
+type ApiHandlerGenericPublicFunc func(ApiHandlerGenericPublicParams) error
+type ApiHandlerGenericPublic struct {
+	*services.APIServices
+	Handler ApiHandlerGenericPublicFunc
 }
 
-// IDGen - Implementation of ID generator interface
-type IDGen struct {
-}
+func (h ApiHandlerGenericPublic) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	pathParams := makePathParams(h.APIServices, r)
 
-// GenObjectID - Implementation of ID generator interface
-func (i *IDGen) GenObjectID() string {
-	return utils.RandStringBytesMaskImpr(16)
-}
-
-// Here we really just expose some test helpers
-type MockIDGenerator struct {
-	IDs []string
-}
-
-func (m *MockIDGenerator) GenObjectID() string {
-	if len(m.IDs) > 0 {
-		id := m.IDs[0]
-		m.IDs = m.IDs[1:]
-		return id
+	err := h.Handler(ApiHandlerGenericPublicParams{h.APIServices, pathParams, w, r})
+	if err != nil {
+		logHandlerErrors(err, h.APIServices.Log, w, r)
 	}
-	return "NO_ID_DEFINED"
 }

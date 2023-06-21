@@ -1,22 +1,43 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"math/rand"
 	"net/http"
 	"time"
 
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v3/api/config"
 	"github.com/pixlise/core/v3/api/endpoints"
 	"github.com/pixlise/core/v3/api/filepaths"
+	apiRouter "github.com/pixlise/core/v3/api/router"
+	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/api/ws"
 	"github.com/pixlise/core/v3/core/awsutil"
 	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/idgen"
 	"github.com/pixlise/core/v3/core/jwtparser"
+	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v3/core/mongoDBConnection"
+	"github.com/pixlise/core/v3/core/timestamper"
+	"github.com/pixlise/core/v3/core/utils"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
+	// This was added for a profiler to be able to connect, otherwise uses no reasources really
+	go func() {
+		http.ListenAndServe(":1234", nil)
+	}()
+	// This is for prometheus
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":2112", nil)
+	}()
+
 	rand.Seed(time.Now().UnixNano())
 	m := melody.New()
 
@@ -24,6 +45,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("Something went wrong with API config. Error: %v\n", err)
 	}
+
+	// Show the config
+	cfgJSON, err := json.MarshalIndent(cfg, "", utils.PrettyPrintIndentForJSON)
+	if err != nil {
+		log.Fatalf("Error trying to display config\n")
+	}
+
+	// Core count can't be 0!
+	if cfg.CoresPerNode <= 0 {
+		cfg.CoresPerNode = 6 // Reasonable, our laptops have 6...
+	}
+
+	if cfg.MaxQuantNodes <= 0 {
+		cfg.MaxQuantNodes = 40
+	}
+
+	cfgStr := string(cfgJSON)
+	log.Println(cfgStr)
 
 	// Get a session for the bucket region
 	sess, err := awsutil.GetSession()
@@ -38,14 +77,21 @@ func main() {
 
 	fs := fileaccess.MakeS3Access(s3svc)
 
-	// Public API version page
-	http.HandleFunc("/", endpoints.GetAboutPage)
+	// Init logger - this used to be local=stdout, cloud env=cloudwatch, but we now write all logs to stdout
+	iLog := &logger.StdOutLogger{}
+	iLog.SetLogLevel(cfg.LogLevel)
 
-	// Public endpoints
-	http.HandleFunc("/version-binary", endpoints.GetVersion)
-	http.HandleFunc("/version-json", endpoints.GetVersionJSON)
+	// Connect to mongo
+	mongoClient, err := mongoDBConnection.Connect(sess, cfg.MongoSecret, iLog)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// Authenticated endpoints
+	// Get handle to the DB
+	dbName := mongoDBConnection.GetDatabaseName("pixlise", cfg.EnvironmentName)
+	db := mongoClient.Database(dbName)
+
+	// Authenticaton for endpoints
 	jwtValidator, err := jwtparser.InitJWTValidator(
 		cfg.Auth0Domain,
 		cfg.ConfigBucket,
@@ -59,18 +105,76 @@ func main() {
 
 	jwt := jwtparser.RealJWTReader{Validator: jwtValidator}
 
-	// Websocket handling
-	ws := ws.MakeWSHandler(jwt, m)
+	// Set up services
+	svcs := &services.APIServices{
+		Config:      cfg,
+		Log:         iLog,
+		FS:          fs,
+		JWTReader:   jwt,
+		IDGen:       &idgen.IDGen{},
+		TimeStamper: &timestamper.UnixTimeNowStamper{},
+		MongoDB:     db,
+	}
+
+	////////////////////////////////////////////////////
+	// Set up WebSocket server
+	ws := ws.MakeWSHandler(jwt, m, svcs)
+
+	// WS initiation - token retrieval to be allowed to create socket
 	http.HandleFunc("/ws-connect", ws.BeginWSConnection)
 
+	// Actual web socket creation, expects the HTTP upgrade header
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		m.HandleRequest(w, r)
 	})
 
+	// Create event handlers for websocket
 	m.HandleConnect(ws.HandleConnect)
 	m.HandleDisconnect(ws.HandleDisconnect)
-	m.HandleMessage(ws.HandleMessage)
+	//m.HandleMessage(ws.HandleMessage) <-- For now we don't accept text messages in web socket, all protobuf binary!
 	m.HandleMessageBinary(ws.HandleMessage)
 
-	http.ListenAndServe(":8080", nil)
+	////////////////////////////////////////////////////
+	// Set up HTTP server
+
+	muxRouter := mux.NewRouter() //.StrictSlash(true)
+	// Should we use StrictSlash??
+
+	router := apiRouter.NewAPIRouter(svcs, muxRouter)
+
+	// Root request which shows status HTML page
+	router.AddPublicHandler("/", "GET", endpoints.RootRequest)
+
+	// User requesting version as protobuf
+	router.AddPublicHandler("/version-binary", "GET", endpoints.GetVersionProtobuf)
+	// User requesting version as JSON
+	router.AddPublicHandler("/version-json", "GET", endpoints.GetVersionJSON)
+
+	// Setup middleware
+	routePermissions := router.GetPermissions()
+	printRoutePermissions(routePermissions)
+
+	authware := endpoints.AuthMiddleWareData{
+		RoutePermissionsRequired: routePermissions,
+		JWTValidator:             jwtValidator,
+		Logger:                   svcs.Log,
+	}
+	logware := endpoints.LoggerMiddleware{
+		APIServices:  svcs,
+		JwtValidator: jwtValidator,
+	}
+
+	promware := endpoints.PrometheusMiddleware
+
+	router.Router.Use(authware.Middleware, logware.Middleware, promware)
+
+	// Now also log this to the world...
+	svcs.Log.Infof("API version \"%v\" started...", services.ApiVersion)
+
+	log.Fatal(
+		http.ListenAndServe(":8080",
+			handlers.CORS(
+				handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
+				handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"}),
+				handlers.AllowedOrigins([]string{"*"}))(router.Router)))
 }

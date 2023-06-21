@@ -9,7 +9,7 @@ import (
 )
 
 func SendProtoBinary(w http.ResponseWriter, m protoreflect.ProtoMessage) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
+	//w.Header().Add("Access-Control-Allow-Origin", "*")
 
 	b, err := proto.Marshal(m)
 	if err != nil {
@@ -27,7 +27,7 @@ func SendProtoBinary(w http.ResponseWriter, m protoreflect.ProtoMessage) {
 }
 
 func SendProtoJSON(w http.ResponseWriter, m protoreflect.ProtoMessage) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
+	//w.Header().Add("Access-Control-Allow-Origin", "*")
 
 	b, err := protojson.Marshal(m)
 	if err != nil {
