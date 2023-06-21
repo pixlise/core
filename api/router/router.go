@@ -49,11 +49,11 @@ func NewAPIRouter(svcs *services.APIServices, router *mux.Router) ApiObjectRoute
 	return ApiObjectRouter{RouteMethodPermissions{}, svcs, router}
 }
 
-/*
-	func (r *ApiObjectRouter) AddGenericHandler(path string, methodPerm MethodPermission, handleFunc handlers.ApiHandlerGenericFunc) {
-		r.addHandler(path, methodPerm, &handlers.ApiHandlerGeneric{APIServices: r.Svcs, Handler: handleFunc})
-	}
+func (r *ApiObjectRouter) AddGenericHandler(path string, methodPerm MethodPermission, handleFunc ApiHandlerGenericFunc) {
+	r.addHandler(path, methodPerm, &ApiHandlerGeneric{APIServices: r.Svcs, Handler: handleFunc})
+}
 
+/*
 	func (r *ApiObjectRouter) AddJSONHandler(path string, methodPerm MethodPermission, handleFunc handlers.ApiHandlerFunc) {
 		r.addHandler(path, methodPerm, &handlers.ApiHandlerJSON{APIServices: r.Svcs, Handler: handleFunc})
 	}

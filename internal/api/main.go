@@ -13,6 +13,7 @@ import (
 	"github.com/pixlise/core/v3/api/config"
 	"github.com/pixlise/core/v3/api/endpoints"
 	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/permission"
 	apiRouter "github.com/pixlise/core/v3/api/router"
 	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/api/ws"
@@ -39,8 +40,74 @@ func main() {
 	}()
 
 	rand.Seed(time.Now().UnixNano())
-	m := melody.New()
 
+	cfg := loadConfig()
+	svcs := initServices(cfg)
+
+	////////////////////////////////////////////////////
+	// Set up WebSocket server
+	m := melody.New()
+	ws := ws.MakeWSHandler(m, svcs)
+
+	// Create event handlers for websocket
+	m.HandleConnect(ws.HandleConnect)
+	m.HandleDisconnect(ws.HandleDisconnect)
+	//m.HandleMessage(ws.HandleMessage) <-- For now we don't accept text messages in web socket, all protobuf binary!
+	m.HandleMessageBinary(ws.HandleMessage)
+
+	////////////////////////////////////////////////////
+	// Set up HTTP server
+
+	muxRouter := mux.NewRouter() //.StrictSlash(true)
+	// Should we use StrictSlash??
+
+	router := apiRouter.NewAPIRouter(svcs, muxRouter)
+
+	// Root request which shows status HTML page
+	router.AddPublicHandler("/", "GET", endpoints.RootRequest)
+
+	// User requesting version as protobuf
+	router.AddPublicHandler("/version-binary", "GET", endpoints.GetVersionProtobuf)
+	// User requesting version as JSON
+	router.AddPublicHandler("/version-json", "GET", endpoints.GetVersionJSON)
+
+	// WS initiation - token retrieval to be allowed to create socket
+	router.AddGenericHandler("/ws-connect", apiRouter.MakeMethodPermission("GET", permission.PermPublic), ws.HandleBeginWSConnection)
+
+	// Actual web socket creation, expects the HTTP upgrade header
+	router.AddPublicHandler("/ws", "GET", ws.HandleSocketCreation)
+
+	// Setup middleware
+	routePermissions := router.GetPermissions()
+	printRoutePermissions(routePermissions)
+
+	jwtValidator := svcs.JWTReader.GetValidator()
+	authware := endpoints.AuthMiddleWareData{
+		RoutePermissionsRequired: routePermissions,
+		JWTValidator:             jwtValidator,
+		Logger:                   svcs.Log,
+	}
+	logware := endpoints.LoggerMiddleware{
+		APIServices:  svcs,
+		JwtValidator: jwtValidator,
+	}
+
+	promware := endpoints.PrometheusMiddleware
+
+	router.Router.Use(authware.Middleware, logware.Middleware, promware)
+
+	// Now also log this to the world...
+	svcs.Log.Infof("API version \"%v\" started...", services.ApiVersion)
+
+	log.Fatal(
+		http.ListenAndServe(":8080",
+			handlers.CORS(
+				handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
+				handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"}),
+				handlers.AllowedOrigins([]string{"*"}))(router.Router)))
+}
+
+func loadConfig() config.APIConfig {
 	cfg, err := config.Init()
 	if err != nil {
 		log.Fatalf("Something went wrong with API config. Error: %v\n", err)
@@ -63,7 +130,10 @@ func main() {
 
 	cfgStr := string(cfgJSON)
 	log.Println(cfgStr)
+	return cfg
+}
 
+func initServices(cfg config.APIConfig) *services.APIServices {
 	// Get a session for the bucket region
 	sess, err := awsutil.GetSession()
 	if err != nil {
@@ -116,65 +186,5 @@ func main() {
 		MongoDB:     db,
 	}
 
-	////////////////////////////////////////////////////
-	// Set up WebSocket server
-	ws := ws.MakeWSHandler(jwt, m, svcs)
-
-	// WS initiation - token retrieval to be allowed to create socket
-	http.HandleFunc("/ws-connect", ws.BeginWSConnection)
-
-	// Actual web socket creation, expects the HTTP upgrade header
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		m.HandleRequest(w, r)
-	})
-
-	// Create event handlers for websocket
-	m.HandleConnect(ws.HandleConnect)
-	m.HandleDisconnect(ws.HandleDisconnect)
-	//m.HandleMessage(ws.HandleMessage) <-- For now we don't accept text messages in web socket, all protobuf binary!
-	m.HandleMessageBinary(ws.HandleMessage)
-
-	////////////////////////////////////////////////////
-	// Set up HTTP server
-
-	muxRouter := mux.NewRouter() //.StrictSlash(true)
-	// Should we use StrictSlash??
-
-	router := apiRouter.NewAPIRouter(svcs, muxRouter)
-
-	// Root request which shows status HTML page
-	router.AddPublicHandler("/", "GET", endpoints.RootRequest)
-
-	// User requesting version as protobuf
-	router.AddPublicHandler("/version-binary", "GET", endpoints.GetVersionProtobuf)
-	// User requesting version as JSON
-	router.AddPublicHandler("/version-json", "GET", endpoints.GetVersionJSON)
-
-	// Setup middleware
-	routePermissions := router.GetPermissions()
-	printRoutePermissions(routePermissions)
-
-	authware := endpoints.AuthMiddleWareData{
-		RoutePermissionsRequired: routePermissions,
-		JWTValidator:             jwtValidator,
-		Logger:                   svcs.Log,
-	}
-	logware := endpoints.LoggerMiddleware{
-		APIServices:  svcs,
-		JwtValidator: jwtValidator,
-	}
-
-	promware := endpoints.PrometheusMiddleware
-
-	router.Router.Use(authware.Middleware, logware.Middleware, promware)
-
-	// Now also log this to the world...
-	svcs.Log.Infof("API version \"%v\" started...", services.ApiVersion)
-
-	log.Fatal(
-		http.ListenAndServe(":8080",
-			handlers.CORS(
-				handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
-				handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"}),
-				handlers.AllowedOrigins([]string{"*"}))(router.Router)))
+	return svcs
 }

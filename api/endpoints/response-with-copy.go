@@ -18,7 +18,10 @@
 package endpoints
 
 import (
+	"bufio"
 	"bytes"
+	"errors"
+	"net"
 	"net/http"
 	"strconv"
 )
@@ -51,4 +54,12 @@ func (w *responseWriterWithCopy) Write(p []byte) (int, error) {
 func (w *responseWriterWithCopy) WriteHeader(statusCode int) {
 	w.Status = statusCode
 	w.RealWriter.WriteHeader(statusCode)
+}
+
+func (w *responseWriterWithCopy) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := w.RealWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("hijack not supported")
+	}
+	return h.Hijack()
 }

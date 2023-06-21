@@ -25,6 +25,7 @@ import (
 
 // IJWTReader - User ID getter from HTTP request
 type IJWTReader interface {
+	GetValidator() JWTInterface
 	GetUserInfo(*http.Request) (JWTUserInfo, error)
 }
 
@@ -38,6 +39,10 @@ type JWTUserInfo struct {
 // RealJWTReader - Reader
 type RealJWTReader struct {
 	Validator JWTInterface
+}
+
+func (j RealJWTReader) GetValidator() JWTInterface {
+	return j.Validator
 }
 
 // GetSimpleUserInfo - Get Simple User Info

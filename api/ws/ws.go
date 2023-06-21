@@ -2,10 +2,10 @@ package ws
 
 import (
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/olahol/melody"
+	apiRouter "github.com/pixlise/core/v3/api/router"
 	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/core/jwtparser"
 	"github.com/pixlise/core/v3/core/utils"
@@ -20,15 +20,13 @@ type connectToken struct {
 
 type WSHandler struct {
 	connectTokens map[string]connectToken
-	jwtReader     jwtparser.RealJWTReader
 	melody        *melody.Melody
 	svcs          *services.APIServices
 }
 
-func MakeWSHandler(jwtValidator jwtparser.RealJWTReader, m *melody.Melody, svcs *services.APIServices) *WSHandler {
+func MakeWSHandler(m *melody.Melody, svcs *services.APIServices) *WSHandler {
 	ws := WSHandler{
 		connectTokens: map[string]connectToken{},
-		jwtReader:     jwtValidator,
 		melody:        m,
 		svcs:          svcs,
 	}
@@ -44,28 +42,7 @@ func (ws *WSHandler) clearOldTokens() {
 	}
 }
 
-func (ws *WSHandler) BeginWSConnection(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "OPTIONS" {
-		w.Header().Add("Access-Control-Allow-Origin", "*")
-		w.Header().Add("Access-Control-Allow-Headers", "*")
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	if r.Method != "GET" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	// Expect & read JWT
-	usr, err := ws.jwtReader.GetUserInfo(r)
-
-	if err != nil {
-		fmt.Printf("Failed to parse JWT, not accepting ws connection")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
+func (ws *WSHandler) HandleBeginWSConnection(params apiRouter.ApiHandlerGenericParams) error {
 	// Generate a token that is valid for a short time
 	token := utils.RandStringBytesMaskImpr(32)
 
@@ -74,11 +51,17 @@ func (ws *WSHandler) BeginWSConnection(w http.ResponseWriter, r *http.Request) {
 	// Clear out old ones, now is a good a time as any!
 	ws.clearOldTokens()
 
-	ws.connectTokens[token] = connectToken{expirySec, usr}
+	ws.connectTokens[token] = connectToken{expirySec, params.UserInfo}
 
 	result := &protos.BeginWSConnectionResponse{}
 	result.ConnToken = token
-	utils.SendProtoBinary(w, result)
+	utils.SendProtoBinary(params.Writer, result)
+	return nil
+}
+
+func (ws *WSHandler) HandleSocketCreation(params apiRouter.ApiHandlerGenericPublicParams) error {
+	ws.melody.HandleRequest(params.Writer, params.Request)
+	return nil
 }
 
 func (ws *WSHandler) HandleConnect(s *melody.Session) {
@@ -180,12 +163,16 @@ func (ws *WSHandler) HandleMessage(s *melody.Session, msg []byte) {
 
 	resp, err := ws.dispatchWSMessage(&wsmsg, s)
 	if err != nil {
-		fmt.Printf("HandleMessage:  %v\n", err)
-	} else {
+		//fmt.Printf("HandleMessage: %v\n", err)
+	}
+
+	if resp != nil {
 		// Set incoming message ID on the outgoing one
 		resp.MsgId = wsmsg.MsgId
 
 		// Send
 		sendForSession(s, resp)
+	} else {
+		fmt.Printf("WARNING: No response generated for request: %+v\n", resp)
 	}
 }
