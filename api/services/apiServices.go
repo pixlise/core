@@ -29,6 +29,7 @@ among others
 package services
 
 import (
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/pixlise/core/v3/api/config"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/idgen"
@@ -53,6 +54,9 @@ type APIServices struct {
 
 	// Default logger
 	Log logger.ILogger
+
+	// Anything talking to S3 should use this
+	S3 s3iface.S3API
 
 	// Anything accessing files should use this
 	FS fileaccess.FileAccess

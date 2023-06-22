@@ -49,3 +49,5 @@ protoc --go_out=./generated-protos/ ./data-formats/file-formats/diffraction.prot
 
 protoc --go_out=./generated-protos/ --proto_path=./data-formats/api-messages/ ./data-formats/api-messages/*.proto
 go run data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
+
+protoc-go-inject-tag -remove_tag_comment -input="./generated-protos/*.pb.go"

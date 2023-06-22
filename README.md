@@ -27,6 +27,11 @@ make build
 within the project root directory. This will build a number of binary files that are then located in the `_out` directory. The main API is called `pixlise-api-xxx` where xxx is the target architecture. 
 By default we build for Mac, Linux and Windows.
 
+## Code Generation
+- go install github.com/favadi/protoc-go-inject-tag@latest
+- Run ./genproto.sh
+
+
 ## Run-time Configuration
 
 Executing the API requires several environment variables to be set. These include ones related to AWS (see below), but we also supply a JSON configuration string in a single environment variable called CUSTOM_CONFIG. This specifies buckets and other configuration parameters to allow the API to execute containers and log errors, etc.

@@ -20,6 +20,8 @@ package apiRouter
 import (
 	"fmt"
 	"net/http"
+	"path"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/pixlise/core/v3/api/services"
@@ -66,3 +68,20 @@ func logHandlerErrors(err error, log logger.ILogger, w http.ResponseWriter, r *h
 		http.Error(w, fmt.Sprintf("%v", e), http.StatusInternalServerError)
 	}
 }
+
+// Some constants
+const downloadCacheMaxAgeSec = 604800 // how long we tell browser to cache files for, in sec
+const downloadCacheMinMaxAgeSec = 120
+
+// Public general-purpose functions
+func MakeEndpointPath(pathPrefix string, pathParamNames ...string) string {
+	vals := []string{"/" + pathPrefix}
+
+	for _, param := range pathParamNames {
+		vals = append(vals, "{"+strings.Trim(param, "/")+"}")
+	}
+
+	return path.Join(vals...)
+}
+
+// The rest can be found in use-specific handler go files

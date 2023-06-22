@@ -53,6 +53,15 @@ func (r *ApiObjectRouter) AddGenericHandler(path string, methodPerm MethodPermis
 	r.addHandler(path, methodPerm, &ApiHandlerGeneric{APIServices: r.Svcs, Handler: handleFunc})
 }
 
+// Not used yet in this project
+// func (r *ApiObjectRouter) AddStreamHandler(path string, methodPerm MethodPermission, handleFunc ApiStreamHandlerFunc) {
+// 	r.addHandler(path, methodPerm, &ApiStreamFromS3Handler{APIServices: r.Svcs, Stream: handleFunc})
+// }
+
+func (r *ApiObjectRouter) AddCacheControlledStreamHandler(path string, methodPerm MethodPermission, handleFunc ApiCacheControlledStreamHandlerFunc) {
+	r.addHandler(path, methodPerm, &ApiCacheControlledStreamFromS3Handler{APIServices: r.Svcs, Stream: handleFunc})
+}
+
 /*
 	func (r *ApiObjectRouter) AddJSONHandler(path string, methodPerm MethodPermission, handleFunc handlers.ApiHandlerFunc) {
 		r.addHandler(path, methodPerm, &handlers.ApiHandlerJSON{APIServices: r.Svcs, Handler: handleFunc})
@@ -61,15 +70,8 @@ func (r *ApiObjectRouter) AddGenericHandler(path string, methodPerm MethodPermis
 	func (r *ApiObjectRouter) AddShareHandler(path string, methodPerm MethodPermission, handleFunc handlers.ApiHandlerFunc) {
 		r.addHandler(path, methodPerm, &handlers.ApiSharingHandler{APIServices: r.Svcs, Share: handleFunc})
 	}
-
-	func (r *ApiObjectRouter) AddStreamHandler(path string, methodPerm MethodPermission, handleFunc handlers.ApiStreamHandlerFunc) {
-		r.addHandler(path, methodPerm, &handlers.ApiStreamFromS3Handler{APIServices: r.Svcs, Stream: handleFunc})
-	}
-
-	func (r *ApiObjectRouter) AddCacheControlledStreamHandler(path string, methodPerm MethodPermission, handleFunc handlers.ApiCacheControlledStreamHandlerFunc) {
-		r.addHandler(path, methodPerm, &handlers.ApiCacheControlledStreamFromS3Handler{APIServices: r.Svcs, Stream: handleFunc})
-	}
 */
+
 func (r *ApiObjectRouter) AddPublicHandler(path string, method string, handleFunc ApiHandlerGenericPublicFunc) {
 	r.addHandler(path, MethodPermission{method, permission.PermPublic}, &ApiHandlerGenericPublic{APIServices: r.Svcs, Handler: handleFunc})
 }

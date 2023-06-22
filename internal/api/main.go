@@ -71,6 +71,13 @@ func main() {
 	// User requesting version as JSON
 	router.AddPublicHandler("/version-json", "GET", endpoints.GetVersionJSON)
 
+	// Requesting images
+	router.AddCacheControlledStreamHandler(
+		apiRouter.MakeEndpointPath("/images/"+apiRouter.UrlStreamDownloadIndicator, endpoints.ScanIdentifier, endpoints.FileNameIdentifier),
+		apiRouter.MakeMethodPermission("GET", permission.PermPublic),
+		endpoints.GetImage,
+	)
+
 	// WS initiation - token retrieval to be allowed to create socket
 	router.AddGenericHandler("/ws-connect", apiRouter.MakeMethodPermission("GET", permission.PermPublic), ws.HandleBeginWSConnection)
 
@@ -179,6 +186,7 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 	svcs := &services.APIServices{
 		Config:      cfg,
 		Log:         iLog,
+		S3:          s3svc,
 		FS:          fs,
 		JWTReader:   jwt,
 		IDGen:       &idgen.IDGen{},
