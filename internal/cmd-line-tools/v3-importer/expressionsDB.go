@@ -118,6 +118,11 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database) 
 
 	destExprs := []interface{}{} //[]protos.DataExpression{}
 	for _, expr := range srcExprs {
+		if shouldIgnoreUser(expr.Origin.Creator.UserID) {
+			fmt.Printf("Skipping import of expression from user: %v aka %v\n", expr.Origin.Creator.UserID, usersIdsToIgnore[expr.Origin.Creator.UserID])
+			continue
+		}
+
 		/*
 			if expr.Name == "fuzzstring" ||
 				expr.SourceCode == "fuzzstring" ||
@@ -127,13 +132,17 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database) 
 				continue
 			}
 		*/
+		tags := expr.Tags
+		if tags == nil {
+			tags = []string{}
+		}
 		destExpr := protos.DataExpression{
 			Id:             expr.ID,
 			Name:           expr.Name,
 			SourceCode:     expr.SourceCode,
 			SourceLanguage: expr.SourceLanguage,
 			Comments:       expr.Comments,
-			Tags:           expr.Tags,
+			Tags:           tags,
 			Owner:          convertOwnership(expr.Origin),
 		}
 		if expr.RecentExecStats != nil {
@@ -256,6 +265,11 @@ func migrateExpressionsDBModuleVersions(src *mongo.Database, dest *mongo.Databas
 
 	destModuleVers := []interface{}{}
 	for _, modVer := range srcModuleVers {
+		tags := modVer.Tags
+		if tags == nil {
+			tags = []string{}
+		}
+
 		destModVer := protos.DataModuleVersion{
 			Id:       modVer.ID,
 			ModuleId: modVer.ModuleID,
@@ -264,7 +278,7 @@ func migrateExpressionsDBModuleVersions(src *mongo.Database, dest *mongo.Databas
 				Minor: int32(modVer.Version.Minor),
 				Patch: int32(modVer.Version.Patch),
 			},
-			Tags:             modVer.Tags,
+			Tags:             tags,
 			Comments:         modVer.Comments,
 			TimeStampUnixSec: uint64(modVer.TimeStampUnixSec),
 			SourceCode:       modVer.SourceCode,

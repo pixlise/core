@@ -95,6 +95,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	/* Decided to leave PIQUANT configs in S3 because that way PIQUANT docker container has authenticated direct access
 	fmt.Println("Piquant Configs...")
 	err = migratePiquantConfigs(configBucket, fs, destDB)
@@ -108,6 +109,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("  Listed %v files\n", len(userContentPaths))
 
 	fmt.Println("==========================================")
 	fmt.Println("Migrating data from user content bucket...")
@@ -143,6 +145,22 @@ func main() {
 		log.Fatal(err)
 	}
 
+	/*
+		fmt.Println("View States...")
+		err = migrateViewStates(userContentBucket, userContentPaths, fs, destDB)
+		if err != nil {
+			log.Fatal(err)
+		}*/
+
+	fmt.Println("==========================================")
+	fmt.Println("Migrating data from datasets bucket...")
+	fmt.Println("==========================================")
+
+	fmt.Println("Datasets...")
+	err = migrateDatasets(configBucket, dataBucket, fs, destDB)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Quants
-	// View States
 }

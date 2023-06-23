@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/pixlise/core/v3/core/fileaccess"
@@ -40,6 +41,12 @@ func migrateElementSets(userContentBucket string, userContentFiles []string, fs 
 
 	for _, p := range userContentFiles {
 		if strings.HasSuffix(p, "ElementSets.json") {
+			userIdFromPath := filepath.Base(filepath.Dir(p))
+			if shouldIgnoreUser(userIdFromPath) {
+				fmt.Printf("Skipping import of element set from user: %v aka %v\n", userIdFromPath, usersIdsToIgnore[userIdFromPath])
+				continue
+			}
+
 			// Read this file
 			items := SrcElementSetLookup{}
 			err = fs.ReadJSON(userContentBucket, p, &items, false)

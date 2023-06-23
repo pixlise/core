@@ -47,6 +47,14 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 
 	for _, p := range userContentFiles {
 		if strings.HasSuffix(p, "ROI.json") {
+			scanId := filepath.Base(filepath.Dir(p))
+			userIdFromPath := filepath.Base(filepath.Dir(filepath.Dir(p)))
+
+			if shouldIgnoreUser(userIdFromPath) {
+				fmt.Printf("Skipping import of ROI from user: %v aka %v\n", userIdFromPath, usersIdsToIgnore[userIdFromPath])
+				continue
+			}
+
 			// Read this file
 			items := SrcROILookup{}
 			err = fs.ReadJSON(userContentBucket, p, &items, false)
@@ -54,10 +62,6 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 				return err
 			}
 
-			scanId := filepath.Base(filepath.Dir(p))
-			userIdFromPath := filepath.Base(filepath.Dir(filepath.Dir(p)))
-
-			if userIdFromPath == 
 			if strings.HasPrefix(p, "UserContent/shared/") {
 				// Store these till we're finished here
 				for id, item := range items {
@@ -89,13 +93,16 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 					for _, i := range item.PixelIndexes {
 						pixelIdxs = append(pixelIdxs, uint32(i))
 					}
-
+					tags := item.Tags
+					if tags == nil {
+						tags = []string{}
+					}
 					destROI := protos.ROIItem{
 						Id:              saveId,
 						ScanId:          scanId,
 						Name:            item.Name,
 						Description:     item.Description,
-						Tags:            item.Tags,
+						Tags:            tags,
 						LocationIndexes: locIdxs,
 						ImageName:       item.ImageName,
 						PixelIndexes:    pixelIdxs,

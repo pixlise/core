@@ -17,7 +17,7 @@ func migrateDiffraction(userContentBucket string, userContentFiles []string, fs 
 	if err != nil {
 		return err
 	}
-	return nil // migrateDiffractionDetectedPeakStatuses(userContentBucket, userContentFiles, fs, dest)
+	return migrateDiffractionDetectedPeakStatuses(userContentBucket, userContentFiles, fs, dest)
 }
 
 type SrcUserDiffractionPeak struct {
@@ -66,6 +66,7 @@ func migrateManualDiffractionPeaks(userContentBucket string, userContentFiles []
 						ScanId:    scanId,
 						Pmc:       item.PMC,
 						EnergykeV: item.KeV,
+						Owner:     nil, // None of the existing values had ownership data
 					}
 
 					destItems = append(destItems, destItem)
@@ -80,6 +81,58 @@ func migrateManualDiffractionPeaks(userContentBucket string, userContentFiles []
 	}
 
 	fmt.Printf("User Diffraction Peaks inserted: %v\n", len(result.InsertedIDs))
+
+	return err
+}
+
+func migrateDiffractionDetectedPeakStatuses(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database) error {
+	const collectionName = "diffractionDetectedPeakStatuses"
+
+	err := dest.Collection(collectionName).Drop(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	destItems := []interface{}{}
+
+	for _, p := range userContentFiles {
+		if strings.HasSuffix(p, filepaths.DiffractionPeakStatusFileName) {
+			if !strings.HasPrefix(p, "UserContent/shared/") {
+				return fmt.Errorf("Unexpected %v: %v", filepaths.DiffractionPeakStatusFileName, p)
+			} else {
+				scanId := filepath.Base(filepath.Dir(p))
+
+				// Read this file
+				items := map[string]string{}
+				err = fs.ReadJSON(userContentBucket, p, &items, false)
+				if err != nil {
+					return err
+				}
+
+				statuses := map[string]*protos.DetectedDiffractionPeakStatuses_PeakStatus{}
+				for id, status := range items {
+					statuses[id] = &protos.DetectedDiffractionPeakStatuses_PeakStatus{
+						Status: status,
+						Owner:  nil, // None of the existing values had ownership data
+					}
+				}
+
+				destItem := protos.DetectedDiffractionPeakStatuses{
+					Id:       scanId,
+					ScanId:   scanId,
+					Statuses: statuses,
+				}
+				destItems = append(destItems, destItem)
+			}
+		}
+	}
+
+	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destItems)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Diffraction Peak Statuses inserted: %v\n", len(result.InsertedIDs))
 
 	return err
 }

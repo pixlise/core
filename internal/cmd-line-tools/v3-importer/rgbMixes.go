@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/pixlise/core/v3/core/fileaccess"
@@ -67,6 +68,12 @@ func migrateRGBMixes(userContentBucket string, userContentFiles []string, fs fil
 
 	for _, p := range userContentFiles {
 		if strings.HasSuffix(p, "RGBMixes.json") {
+			userIdFromPath := filepath.Base(filepath.Dir(p))
+			if shouldIgnoreUser(userIdFromPath) {
+				fmt.Printf("Skipping import of RGB mix from user: %v aka %v\n", userIdFromPath, usersIdsToIgnore[userIdFromPath])
+				continue
+			}
+
 			// Read this file
 			items := SrcRGBMixLookup{}
 			err = fs.ReadJSON(userContentBucket, p, &items, false)
@@ -88,9 +95,14 @@ func migrateRGBMixes(userContentBucket string, userContentFiles []string, fs fil
 					}
 					allItems[id] = item
 
+					tags := item.Tags
+					if tags == nil {
+						tags = []string{}
+					}
 					destGroup := protos.ExpressionGroup{
+						Id:   id,
 						Name: item.Name,
-						Tags: item.Tags,
+						Tags: tags,
 						GroupItems: []*protos.ExpressionGroupItem{
 							{
 								ExpressionID: item.Red.ExpressionID,
