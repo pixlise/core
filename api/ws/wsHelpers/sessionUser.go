@@ -1,4 +1,4 @@
-package ws
+package wsHelpers
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/pixlise/core/v3/core/jwtparser"
 )
 
-func getSessionUser(s *melody.Session) (jwtparser.JWTUserInfo, error) {
+func GetSessionUser(s *melody.Session) (jwtparser.JWTUserInfo, error) {
 	var sessionID = ""
 	var connectingUser jwtparser.JWTUserInfo
 

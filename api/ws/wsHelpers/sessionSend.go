@@ -1,4 +1,4 @@
-package ws
+package wsHelpers
 
 import (
 	"github.com/olahol/melody"
@@ -6,7 +6,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func sendForSession(s *melody.Session, wsmsg *protos.WSMessage) {
+func SendForSession(s *melody.Session, wsmsg *protos.WSMessage) {
 	bytes, err := proto.Marshal(wsmsg)
 	if err != nil {
 		s.CloseWithMsg([]byte(err.Error()))

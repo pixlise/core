@@ -7,6 +7,7 @@ import (
 	"github.com/olahol/melody"
 	apiRouter "github.com/pixlise/core/v3/api/router"
 	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/jwtparser"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -143,7 +144,7 @@ func (ws *WSHandler) HandleDisconnect(s *melody.Session) {
 		}
 	}
 
-	connectingUser, err := getSessionUser(s)
+	connectingUser, err := wsHelpers.GetSessionUser(s)
 	if err != nil {
 		fmt.Printf("Disconnect %v\n", err)
 		return
@@ -171,7 +172,7 @@ func (ws *WSHandler) HandleMessage(s *melody.Session, msg []byte) {
 		resp.MsgId = wsmsg.MsgId
 
 		// Send
-		sendForSession(s, resp)
+		wsHelpers.SendForSession(s, resp)
 	} else {
 		fmt.Printf("WARNING: No response generated for request: %+v\n", resp)
 	}
