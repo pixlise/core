@@ -12,6 +12,8 @@ import (
 	"github.com/pixlise/core/v3/core/mongoDBConnection"
 )
 
+var maxItemsToRead int
+
 func main() {
 	var sourceMongoSecret string
 	var destMongoSecret string
@@ -28,6 +30,7 @@ func main() {
 	flag.StringVar(&configBucket, "configBucket", "", "Config bucket")
 	flag.StringVar(&srcEnvName, "srcEnvName", "", "Source Environment Name")
 	flag.StringVar(&destEnvName, "destEnvName", "", "Destination Environment Name")
+	flag.IntVar(&maxItemsToRead, "maxItems", 0, "Max number of items to read into any table, 0=unlimited")
 
 	flag.Parse()
 
@@ -144,13 +147,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	/*
 		fmt.Println("View States...")
 		err = migrateViewStates(userContentBucket, userContentPaths, fs, destDB)
 		if err != nil {
 			log.Fatal(err)
-		}*/
+	}
 
 	fmt.Println("==========================================")
 	fmt.Println("Migrating data from datasets bucket...")
