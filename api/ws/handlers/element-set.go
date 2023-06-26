@@ -6,6 +6,8 @@ import (
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/api/ws/wsHelpers"
+	"github.com/pixlise/core/v3/core/errorwithstatus"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -14,11 +16,19 @@ import (
 const elementSetCollection = "elementSets"
 
 func HandleElementSetDeleteReq(req *protos.ElementSetDeleteReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ElementSetDeleteResp, error) {
-	return nil, errors.New("HandleElementSetDeleteReq not implemented yet")
+	result, err := svcs.MongoDB.Collection(elementSetCollection).DeleteOne(context.TODO(), bson.M{"_id": req.Id})
+	if err != nil {
+		return nil, errorwithstatus.MakeBadRequestError(err)
+	}
+
+	if result.DeletedCount != 1 {
+		return nil, errorwithstatus.MakeNotFoundError(req.Id)
+	}
+
+	return &protos.ElementSetDeleteResp{}, nil
 }
 
 func HandleElementSetGetReq(req *protos.ElementSetGetReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ElementSetGetResp, error) {
-	// Read from DB too
 	result := svcs.MongoDB.Collection(elementSetCollection).FindOne(context.TODO(), bson.M{"_id": req.Id})
 	if result.Err() != nil {
 		return nil, result.Err()
@@ -70,13 +80,58 @@ func HandleElementSetListReq(req *protos.ElementSetListReq, s *melody.Session, m
 }
 
 func HandleElementSetWriteReq(req *protos.ElementSetWriteReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ElementSetWriteResp, error) {
+	// Owner should never be accepted from API
+	saveOwner, err := wsHelpers.MakeOwnerForWrite(req.ElementSet.Owner, s, svcs)
+	if err != nil {
+		return nil, err
+	}
+	req.ElementSet.Owner = saveOwner
+
+	resp := &protos.ElementSetWriteResp{}
+
 	if len(req.ElementSet.Id) > 0 {
-		// It's an overwrite operation...
-		_, err := svcs.MongoDB.Collection(elementSetCollection).UpdateByID(context.TODO(), req.Id, req.ElementSet)
+		// It's an overwrite operation... check that fields are valid and build a list of what we're setting
+		update := bson.D{}
+
+		if len(req.ElementSet.Name) > 50 {
+			return nil, errorwithstatus.MakeBadRequestError(errors.New("Name length is invalid"))
+		} else if len(req.ElementSet.Name) > 0 {
+			update = append(update, bson.E{Key: "name", Value: req.ElementSet.Name})
+		}
+		if len(req.ElementSet.Lines) > 118 /*Max Z*/ {
+			return nil, errorwithstatus.MakeBadRequestError(errors.New("Lines length is invalid"))
+		} else if len(req.ElementSet.Lines) > 0 {
+			update = append(update, bson.E{Key: "lines", Value: req.ElementSet.Lines})
+		}
+
+		_, err := svcs.MongoDB.Collection(elementSetCollection).UpdateByID(context.TODO(), req.ElementSet.Id, bson.D{{Key: "$set", Value: update}})
 		if err != nil {
 			return nil, err
 		}
+
+		// TODO: is there a better way than another query?
+		// Query the current edited object so we can return it
+		result := svcs.MongoDB.Collection(elementSetCollection).FindOne(context.TODO(), bson.M{"_id": req.ElementSet.Id})
+		if result.Err() != nil {
+			return nil, result.Err()
+		}
+
+		dbItem := protos.ElementSet{}
+		err = result.Decode(&dbItem)
+		if err != nil {
+			return nil, err
+		}
+
+		resp.ElementSet = &dbItem
 	} else {
+		// It's a new item, check these fields...
+		if len(req.ElementSet.Name) <= 0 || len(req.ElementSet.Name) > 50 {
+			return nil, errorwithstatus.MakeBadRequestError(errors.New("Name length is invalid"))
+		}
+		if len(req.ElementSet.Lines) <= 0 || len(req.ElementSet.Lines) > 118 /*Max Z*/ {
+			return nil, errorwithstatus.MakeBadRequestError(errors.New("Lines length is invalid"))
+		}
+
 		// Generate a new id
 		id := svcs.IDGen.GenObjectID()
 		req.ElementSet.Id = id
@@ -85,7 +140,9 @@ func HandleElementSetWriteReq(req *protos.ElementSetWriteReq, s *melody.Session,
 		if err != nil {
 			return nil, err
 		}
+
+		resp.ElementSet = req.ElementSet
 	}
 
-	return &protos.ElementSetWriteResp{}, nil
+	return resp, nil
 }
