@@ -6,6 +6,7 @@ __debug_bin.exe
 /_out/
 generated-protos/
 api/ws/wsMessage.go
+/OLDCODE
 
 # temp files that get generated for tests
 diffraction-detector/test-files/dataset-diffraction.bin

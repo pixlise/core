@@ -1,8 +1,0 @@
-site_name: 'API Executable Docs'
-
-nav:
-  - Home: index.md
-  - Release Process: release-process.md
-
-plugins:
-  - techdocs-core
