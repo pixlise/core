@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/awsutil"
@@ -15,6 +18,8 @@ import (
 var maxItemsToRead int
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	var sourceMongoSecret string
 	var destMongoSecret string
 	var dataBucket string
@@ -22,6 +27,7 @@ func main() {
 	var userContentBucket string
 	var srcEnvName string
 	var destEnvName string
+	var auth0Domain, auth0ClientId, auth0Secret string
 
 	flag.StringVar(&sourceMongoSecret, "sourceMongoSecret", "", "Source mongo DB secret")
 	flag.StringVar(&destMongoSecret, "destMongoSecret", "", "Destination mongo DB secret")
@@ -31,6 +37,9 @@ func main() {
 	flag.StringVar(&srcEnvName, "srcEnvName", "", "Source Environment Name")
 	flag.StringVar(&destEnvName, "destEnvName", "", "Destination Environment Name")
 	flag.IntVar(&maxItemsToRead, "maxItems", 0, "Max number of items to read into any table, 0=unlimited")
+	flag.StringVar(&auth0Domain, "auth0Domain", "", "Auth0 domain for management API")
+	flag.StringVar(&auth0ClientId, "auth0ClientId", "", "Auth0 client id for management API")
+	flag.StringVar(&auth0Secret, "auth0Secret", "", "Auth0 secret for management API")
 
 	flag.Parse()
 
@@ -69,12 +78,28 @@ func main() {
 	// Destination DB is the new pixlise one
 	destDB := destMongoClient.Database(mongoDBConnection.GetDatabaseName("pixlise", destEnvName))
 
+	// Clear out ownership table first
+	err = destDB.Collection(ownershipCollection).Drop(context.TODO())
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	fmt.Println("==========================================")
 	fmt.Println("Migrating data from old users DB...")
 	fmt.Println("==========================================")
 	err = migrateUsersDB(srcUserDB, destDB)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if len(auth0Domain) > 0 && len(auth0ClientId) > 0 && len(auth0Secret) > 0 {
+		fmt.Println("==========================================")
+		fmt.Println("Migrating user groups from Auth0...")
+		fmt.Println("==========================================")
+		err = migrateAuth0UserGroups(auth0Domain, auth0ClientId, auth0Secret, destDB)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	fmt.Println("==========================================")
@@ -147,10 +172,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-		fmt.Println("View States...")
-		err = migrateViewStates(userContentBucket, userContentPaths, fs, destDB)
-		if err != nil {
-			log.Fatal(err)
+
+	fmt.Println("View States...")
+	err = migrateViewStates(userContentBucket, userContentPaths, fs, destDB)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	fmt.Println("==========================================")
@@ -163,5 +189,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Quants
+	// TODO: Quants
 }

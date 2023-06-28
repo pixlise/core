@@ -94,7 +94,7 @@ func migrateUsersDBUsers(src *mongo.Database, dest *mongo.Database) error {
 
 		// We add back the auth0| to the start of user id, which we stripped in past. This should allow us flexibility
 		// in future to introduce auth0 users via google or other single sign-on services
-		saveUserId := "auth0|" + usr.Userid
+		saveUserId := fixUserId(usr.Userid)
 		destUser := protos.UserDBItem{
 			Id:                    saveUserId,
 			DataCollectionVersion: usr.Config.DataCollection,

@@ -143,8 +143,14 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database) 
 			SourceLanguage: expr.SourceLanguage,
 			Comments:       expr.Comments,
 			Tags:           tags,
-			Owner:          convertOwnership(expr.Origin),
+			OwnerEntryId:   makeID(),
 		}
+
+		err = saveOwnershipItem(destExpr.OwnerEntryId, destExpr.Id, protos.ObjectType_OT_ROI, expr.Origin.Creator.UserID, uint64(expr.Origin.CreatedUnixTimeSec), dest)
+		if err != nil {
+			return err
+		}
+
 		if expr.RecentExecStats != nil {
 			destExpr.RecentExecStats = &protos.DataExpressionExecStats{
 				DataRequired:     expr.RecentExecStats.DataRequired,
@@ -206,10 +212,15 @@ func migrateExpressionsDBModules(src *mongo.Database, dest *mongo.Database) erro
 	destModules := []interface{}{}
 	for _, mod := range srcModules {
 		destMod := protos.DataModule{
-			Id:       mod.ID,
-			Name:     mod.Name,
-			Comments: mod.Comments,
-			Owner:    convertOwnership(mod.Origin),
+			Id:           mod.ID,
+			Name:         mod.Name,
+			Comments:     mod.Comments,
+			OwnerEntryId: makeID(),
+		}
+
+		err = saveOwnershipItem(destMod.OwnerEntryId, destMod.Id, protos.ObjectType_OT_ROI, mod.Origin.Creator.UserID, uint64(mod.Origin.CreatedUnixTimeSec), dest)
+		if err != nil {
+			return err
 		}
 
 		destModules = append(destModules, destMod)

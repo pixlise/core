@@ -59,20 +59,16 @@ func migrateTags(userContentBucket string, userContentFiles []string, fs fileacc
 					allItems[id] = item
 
 					destTag := protos.Tag{
-						Id:        item.ID,
-						Name:      item.Name,
-						Type:      item.Type,
-						DatasetID: item.DatasetID,
-						Owner: &protos.Ownership{
-							Creator: &protos.UserInfo{
-								Id: item.Creator.UserID,
-								// Name - Not sent to DB!
-								// Email - Not sent to DB!
-								// IconURL - Not sent to DB!
-							},
-							CreatedUnixSec:  uint64(item.DateCreated),
-							ModifiedUnixSec: uint64(item.DateCreated),
-						},
+						Id:           item.ID,
+						Name:         item.Name,
+						Type:         item.Type,
+						DatasetID:    item.DatasetID,
+						OwnerEntryId: makeID(),
+					}
+
+					err = saveOwnershipItem(destTag.OwnerEntryId, destTag.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, uint64(item.DateCreated), dest)
+					if err != nil {
+						return err
 					}
 
 					destTags = append(destTags, destTag)

@@ -66,7 +66,7 @@ func migrateManualDiffractionPeaks(userContentBucket string, userContentFiles []
 						ScanId:    scanId,
 						Pmc:       item.PMC,
 						EnergykeV: item.KeV,
-						Owner:     nil, // None of the existing values had ownership data
+						// CreatorUserId: None of the existing values had ownership data
 					}
 
 					destItems = append(destItems, destItem)
@@ -113,7 +113,7 @@ func migrateDiffractionDetectedPeakStatuses(userContentBucket string, userConten
 				for id, status := range items {
 					statuses[id] = &protos.DetectedDiffractionPeakStatuses_PeakStatus{
 						Status: status,
-						Owner:  nil, // None of the existing values had ownership data
+						// CreatorUserId: None of the existing values had ownership data
 					}
 				}
 

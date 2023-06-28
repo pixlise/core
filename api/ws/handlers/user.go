@@ -21,7 +21,7 @@ func HandleUserDetailsReq(req *protos.UserDetailsReq, s *melody.Session, m *melo
 	}
 
 	// Read from DB too
-	result := svcs.MongoDB.Collection(userCollection).FindOne(context.TODO(), bson.M{"_id": "auth0|" + user.UserID})
+	result := svcs.MongoDB.Collection(userCollection).FindOne(context.TODO(), bson.M{"_id": user.UserID})
 	if result.Err() != nil {
 		return nil, result.Err()
 	}

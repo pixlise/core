@@ -350,8 +350,8 @@ func migrateViewStates(userContentBucket string, userContentFiles []string, fs f
 		parallelograms := map[string]*protos.ParallelogramWidgetState{}
 
 		destState := protos.ViewState{
-			Id:     id,
-			ScanId: datasetId,
+			Id: id,
+			//ScanId: datasetId,
 			UserId: userId,
 			AnalysisLayout: &protos.AnalysisLayout{
 				TopWidgetSelectors:    state.AnalysisLayout.TopWidgetSelectors,

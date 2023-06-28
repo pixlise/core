@@ -2,6 +2,7 @@ package wsHelpers
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v3/core/jwtparser"
@@ -25,6 +26,10 @@ func GetSessionUser(s *melody.Session) (jwtparser.JWTUserInfo, error) {
 		if !ok {
 			return connectingUser, fmt.Errorf("User details corrupt on session %v", sessionID)
 		}
+	}
+
+	if !strings.HasPrefix(connectingUser.UserID, "auth0|") {
+		connectingUser.UserID = "auth0|" + connectingUser.UserID
 	}
 
 	return connectingUser, nil

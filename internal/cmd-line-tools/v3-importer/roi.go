@@ -107,7 +107,12 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 						ImageName:       item.ImageName,
 						PixelIndexes:    pixelIdxs,
 						// MistROIItem
-						Owner: convertOwnership(*item.SrcAPIObjectItem),
+						OwnerEntryId: makeID(),
+					}
+
+					err = saveOwnershipItem(destROI.OwnerEntryId, destROI.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, uint64(item.CreatedUnixTimeSec), dest)
+					if err != nil {
+						return err
 					}
 
 					destROIs = append(destROIs, destROI)

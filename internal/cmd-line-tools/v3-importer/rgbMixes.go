@@ -120,7 +120,12 @@ func migrateRGBMixes(userContentBucket string, userContentFiles []string, fs fil
 								RangeMax:     item.Blue.RangeMax,
 							},
 						},
-						Owner: convertOwnership(*item.SrcAPIObjectItem),
+						OwnerEntryId: makeID(),
+					}
+
+					err = saveOwnershipItem(destGroup.OwnerEntryId, destGroup.Id, protos.ObjectType_OT_EXPRESSION_GROUP, item.Creator.UserID, uint64(item.CreatedUnixTimeSec), dest)
+					if err != nil {
+						return err
 					}
 
 					destGroups = append(destGroups, destGroup)
