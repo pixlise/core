@@ -1,11 +1,8 @@
 package wsHelpers
 
 import (
-	"errors"
-
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v3/api/services"
-	"github.com/pixlise/core/v3/core/errorwithstatus"
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
@@ -19,11 +16,7 @@ func MakeOwnerForWrite(writable HasOwnerField, s *melody.Session, svcs *services
 	if writable.Owner != nil {
 */
 
-func MakeOwnerForWrite(reqOwnerField *protos.Ownership, s *melody.Session, svcs *services.APIServices) (*protos.Ownership, error) {
-	if reqOwnerField != nil {
-		return nil, errorwithstatus.MakeBadRequestError(errors.New("Owner must be empty for write messages"))
-	}
-
+func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, s *melody.Session, svcs *services.APIServices) (*protos.OwnershipItem, error) {
 	sessUser, err := GetSessionUser(s)
 	if err != nil {
 		return nil, err
@@ -31,11 +24,18 @@ func MakeOwnerForWrite(reqOwnerField *protos.Ownership, s *melody.Session, svcs 
 
 	ts := uint64(svcs.TimeStamper.GetTimeNowSec())
 
-	return &protos.Ownership{
-		Creator: &protos.UserInfo{
-			Id: sessUser.UserID,
+	ownerId := svcs.IDGen.GenObjectID()
+	ownerItem := &protos.OwnershipItem{
+		Id:             ownerId,
+		ObjectId:       objectId,
+		ObjectType:     objectType,
+		CreatorUserId:  sessUser.UserID,
+		CreatedUnixSec: ts,
+		//Viewers: ,
+		Editors: &protos.UserGroupList{
+			UserIds: []string{sessUser.UserID},
 		},
-		CreatedUnixSec:  ts,
-		ModifiedUnixSec: ts,
-	}, nil
+	}
+
+	return ownerItem, nil
 }
