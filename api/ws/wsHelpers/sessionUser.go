@@ -8,9 +8,11 @@ import (
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/jwtparser"
+	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type SessionUser struct {
@@ -53,22 +55,52 @@ func ReadUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, 
 		userId = "auth0|" + userId
 	}
 
-	result := db.Collection(dbCollections.UsersName).FindOne(context.TODO(), bson.M{"_id": userId})
-	if result.Err() != nil {
-		return nil, result.Err()
+	userResult := db.Collection(dbCollections.UsersName).FindOne(context.TODO(), bson.M{"_id": userId})
+	if userResult.Err() != nil {
+		return nil, userResult.Err()
 	}
 
 	userDBItem := protos.UserDBItem{}
-	err := result.Decode(&userDBItem)
+	err := userResult.Decode(&userDBItem)
 	if err != nil {
 		return nil, err
 	}
 
-	groups := []string{}
+	ourGroups := map[string]bool{}
+
+	// Now we read all the groups and find which ones we are members of
+	filter := bson.D{}
+	opts := options.Find()
+	cursor, err := db.Collection(dbCollections.UserGroupsName).Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	userGroups := []*protos.UserGroup{}
+	err = cursor.All(context.TODO(), &userGroups)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, userGroup := range userGroups {
+		if utils.StringInSlice(userId, userGroup.Members.UserIds) {
+			ourGroups[userGroup.Id] = true
+		}
+	}
+
+	// Finally, if we are in a group which itself is also within a group, find again
+	// TODO: This may not detect outside of 2 levels deep grouping, we may want more...
+	for _, userGroup := range userGroups {
+		for groupToCheck, _ := range ourGroups {
+			if utils.StringInSlice(groupToCheck, userGroup.Members.GroupIds) {
+				ourGroups[userGroup.Id] = true
+			}
+		}
+	}
 
 	return &SessionUser{
 		User:             userDBItem.Info,
 		Permissions:      jwtUser.Permissions,
-		MemberOfGroupIds: groups,
+		MemberOfGroupIds: utils.GetStringMapKeys(ourGroups),
 	}, nil
 }
