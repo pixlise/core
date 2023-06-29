@@ -10,6 +10,7 @@ import (
 	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
+	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,7 +18,7 @@ import (
 )
 
 func HandleElementSetDeleteReq(req *protos.ElementSetDeleteReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ElementSetDeleteResp, error) {
-	_, err := wsHelpers.CheckObjectAccess(true, req.Id, protos.ObjectType_OT_ELEMENT_SET, s, svcs)
+	_, err := wsHelpers.CheckObjectAccess(true, req.Id, protos.ObjectType_OT_ELEMENT_SET, s, svcs.MongoDB)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +36,7 @@ func HandleElementSetDeleteReq(req *protos.ElementSetDeleteReq, s *melody.Sessio
 }
 
 func HandleElementSetGetReq(req *protos.ElementSetGetReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ElementSetGetResp, error) {
-	owner, err := wsHelpers.CheckObjectAccess(false, req.Id, protos.ObjectType_OT_ELEMENT_SET, s, svcs)
+	owner, err := wsHelpers.CheckObjectAccess(false, req.Id, protos.ObjectType_OT_ELEMENT_SET, s, svcs.MongoDB)
 	if err != nil {
 		return nil, err
 	}
@@ -45,13 +46,19 @@ func HandleElementSetGetReq(req *protos.ElementSetGetReq, s *melody.Session, m *
 		return nil, err
 	}
 
+	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, svcs.MongoDB)
 	return &protos.ElementSetGetResp{
 		ElementSet: dbItem,
 	}, nil
 }
 
 func HandleElementSetListReq(req *protos.ElementSetListReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ElementSetListResp, error) {
-	filter := bson.D{}
+	objAndUsers, err := wsHelpers.ListAccessibleIDs(false, protos.ObjectType_OT_ELEMENT_SET, s, svcs.MongoDB)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{"_id": bson.M{"$in": utils.GetStringMapStringKeys(objAndUsers)}}
 	opts := options.Find()
 	cursor, err := svcs.MongoDB.Collection(dbCollections.ElementSetsName).Find(context.TODO(), filter, opts)
 	if err != nil {
@@ -76,7 +83,7 @@ func HandleElementSetListReq(req *protos.ElementSetListReq, s *melody.Session, m
 			Name:           item.Name,
 			AtomicNumbers:  z,
 			ModifedUnixSec: item.ModifedUnixSec,
-			Owner:          item.Owner,
+			Owner:          item.Owner, // TODO: set this, we have user IDs above but really need ownership struct so we can call MakeOwnerSummary()
 		}
 	}
 
@@ -154,7 +161,7 @@ func createElementSet(elementSet *protos.ElementSet, s *melody.Session, svcs *se
 func updateElementSet(elementSet *protos.ElementSet, s *melody.Session, svcs *services.APIServices) (*protos.ElementSet, error) {
 	ctx := context.TODO()
 
-	owner, err := wsHelpers.CheckObjectAccess(true, elementSet.Id, protos.ObjectType_OT_ELEMENT_SET, s, svcs)
+	owner, err := wsHelpers.CheckObjectAccess(true, elementSet.Id, protos.ObjectType_OT_ELEMENT_SET, s, svcs.MongoDB)
 	if err != nil {
 		return nil, err
 	}
@@ -197,6 +204,7 @@ func updateElementSet(elementSet *protos.ElementSet, s *melody.Session, svcs *se
 	}
 
 	// Return the merged item we validated, which in theory is in the DB now
+	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, svcs.MongoDB)
 	return dbItem, nil
 }
 

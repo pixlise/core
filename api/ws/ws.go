@@ -125,7 +125,7 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	}
 
 	// Store the connection info!
-	s.Set("user", sessionUser)
+	s.Set("user", *sessionUser)
 
 	sessId := utils.RandStringBytesMaskImpr(32)
 	s.Set("id", sessId)

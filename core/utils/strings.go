@@ -65,6 +65,16 @@ func GetStringMapKeys(theMap map[string]bool) []string {
 	return result
 }
 
+func GetStringMapStringKeys(theMap map[string]string) []string {
+	result := []string{}
+
+	for key := range theMap {
+		result = append(result, key)
+	}
+
+	return result
+}
+
 func ReplaceStringsInSlice(vals []string, replacements map[string]string) {
 	for idx, val := range vals {
 		if replacement, ok := replacements[val]; ok {
