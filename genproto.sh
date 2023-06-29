@@ -2,6 +2,7 @@
 
 set -e
 
+rm -rf ./generated-protos
 mkdir -p ./generated-protos
 
 # Back up old ones if they exist
