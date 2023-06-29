@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/olahol/melody"
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
@@ -15,12 +16,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const elementSetCollection = "elementSets"
-
-const ownershipCollection = "ownership"
-
 func HandleElementSetDeleteReq(req *protos.ElementSetDeleteReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ElementSetDeleteResp, error) {
-	result, err := svcs.MongoDB.Collection(elementSetCollection).DeleteOne(context.TODO(), bson.M{"_id": req.Id})
+	_, err := wsHelpers.CheckObjectAccess(true, req.Id, protos.ObjectType_OT_ELEMENT_SET, s, svcs)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := svcs.MongoDB.Collection(dbCollections.ElementSetsName).DeleteOne(context.TODO(), bson.M{"_id": req.Id})
 	if err != nil {
 		return nil, errorwithstatus.MakeBadRequestError(err)
 	}
@@ -33,6 +35,11 @@ func HandleElementSetDeleteReq(req *protos.ElementSetDeleteReq, s *melody.Sessio
 }
 
 func HandleElementSetGetReq(req *protos.ElementSetGetReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ElementSetGetResp, error) {
+	owner, err := wsHelpers.CheckObjectAccess(false, req.Id, protos.ObjectType_OT_ELEMENT_SET, s, svcs)
+	if err != nil {
+		return nil, err
+	}
+
 	dbItem, err := getElementSet(req.Id, svcs)
 	if err != nil {
 		return nil, err
@@ -46,7 +53,7 @@ func HandleElementSetGetReq(req *protos.ElementSetGetReq, s *melody.Session, m *
 func HandleElementSetListReq(req *protos.ElementSetListReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ElementSetListResp, error) {
 	filter := bson.D{}
 	opts := options.Find()
-	cursor, err := svcs.MongoDB.Collection(elementSetCollection).Find(context.TODO(), filter, opts)
+	cursor, err := svcs.MongoDB.Collection(dbCollections.ElementSetsName).Find(context.TODO(), filter, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -65,9 +72,11 @@ func HandleElementSetListReq(req *protos.ElementSetListReq, s *melody.Session, m
 			z = append(z, l.Z)
 		}
 		itemMap[item.Id] = &protos.ElementSetSummary{
-			Id:            item.Id,
-			Name:          item.Name,
-			AtomicNumbers: z,
+			Id:             item.Id,
+			Name:           item.Name,
+			AtomicNumbers:  z,
+			ModifedUnixSec: item.ModifedUnixSec,
+			Owner:          item.Owner,
 		}
 	}
 
@@ -87,7 +96,7 @@ func validateElementSet(elementSet *protos.ElementSet) error {
 }
 
 func getElementSet(id string, svcs *services.APIServices) (*protos.ElementSet, error) {
-	result := svcs.MongoDB.Collection(elementSetCollection).FindOne(context.TODO(), bson.M{"_id": id})
+	result := svcs.MongoDB.Collection(dbCollections.ElementSetsName).FindOne(context.TODO(), bson.M{"_id": id})
 	if result.Err() != nil {
 		return nil, result.Err()
 	}
@@ -116,8 +125,6 @@ func createElementSet(elementSet *protos.ElementSet, s *melody.Session, svcs *se
 		return nil, err
 	}
 
-	elementSet.OwnerEntryId = ownerItem.Id
-
 	sess, err := svcs.MongoDB.Client().StartSession()
 	if err != nil {
 		return nil, err
@@ -126,10 +133,10 @@ func createElementSet(elementSet *protos.ElementSet, s *melody.Session, svcs *se
 
 	// Write the 2 items in a single transaction
 	result, err := sess.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
-		if _, err := svcs.MongoDB.Collection(elementSetCollection).InsertOne(sessCtx, elementSet); err != nil {
+		if _, err := svcs.MongoDB.Collection(dbCollections.ElementSetsName).InsertOne(sessCtx, elementSet); err != nil {
 			return nil, err
 		}
-		if _, err := svcs.MongoDB.Collection(ownershipCollection).InsertOne(sessCtx, ownerItem); err != nil {
+		if _, err := svcs.MongoDB.Collection(dbCollections.OwnershipName).InsertOne(sessCtx, ownerItem); err != nil {
 			return nil, err
 		}
 		return nil, nil
@@ -144,8 +151,13 @@ func createElementSet(elementSet *protos.ElementSet, s *melody.Session, svcs *se
 	return elementSet, nil
 }
 
-func updateElementSet(elementSet *protos.ElementSet, svcs *services.APIServices) (*protos.ElementSet, error) {
+func updateElementSet(elementSet *protos.ElementSet, s *melody.Session, svcs *services.APIServices) (*protos.ElementSet, error) {
 	ctx := context.TODO()
+
+	owner, err := wsHelpers.CheckObjectAccess(true, elementSet.Id, protos.ObjectType_OT_ELEMENT_SET, s, svcs)
+	if err != nil {
+		return nil, err
+	}
 
 	// First, we read the existing object, so we can validate it together
 	dbItem, err := getElementSet(elementSet.Id, svcs)
@@ -171,8 +183,11 @@ func updateElementSet(elementSet *protos.ElementSet, svcs *services.APIServices)
 		return nil, errorwithstatus.MakeBadRequestError(err)
 	}
 
+	// Update modified time
+	update = append(update, bson.E{Key: "modifedUnixSec", Value: svcs.TimeStamper.GetTimeNowSec()})
+
 	// It's valid, update the DB
-	result, err := svcs.MongoDB.Collection(elementSetCollection).UpdateByID(ctx, elementSet.Id, bson.D{{Key: "$set", Value: update}})
+	result, err := svcs.MongoDB.Collection(dbCollections.ElementSetsName).UpdateByID(ctx, elementSet.Id, bson.D{{Key: "$set", Value: update}})
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +202,7 @@ func updateElementSet(elementSet *protos.ElementSet, svcs *services.APIServices)
 
 func HandleElementSetWriteReq(req *protos.ElementSetWriteReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ElementSetWriteResp, error) {
 	// Owner should never be accepted from API
-	if len(req.ElementSet.OwnerEntryId) > 0 {
+	if req.ElementSet.Owner != nil {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("Owner must be empty for write messages"))
 	}
 
@@ -197,7 +212,7 @@ func HandleElementSetWriteReq(req *protos.ElementSetWriteReq, s *melody.Session,
 	if len(req.ElementSet.Id) <= 0 {
 		item, err = createElementSet(req.ElementSet, s, svcs)
 	} else {
-		item, err = updateElementSet(req.ElementSet, svcs)
+		item, err = updateElementSet(req.ElementSet, s, svcs)
 	}
 	if err != nil {
 		return nil, err

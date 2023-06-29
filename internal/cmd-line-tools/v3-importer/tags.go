@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -28,9 +29,9 @@ type SrcTags []SrcTag
 type SrcTagLookup map[string]SrcTag
 
 func migrateTags(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database) error {
-	const collectionName = "tags"
+	coll := dest.Collection(dbCollections.TagsName)
 
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -59,14 +60,13 @@ func migrateTags(userContentBucket string, userContentFiles []string, fs fileacc
 					allItems[id] = item
 
 					destTag := protos.Tag{
-						Id:           item.ID,
-						Name:         item.Name,
-						Type:         item.Type,
-						DatasetID:    item.DatasetID,
-						OwnerEntryId: makeID(),
+						Id:        item.ID,
+						Name:      item.Name,
+						Type:      item.Type,
+						DatasetID: item.DatasetID,
 					}
 
-					err = saveOwnershipItem(destTag.OwnerEntryId, destTag.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, uint64(item.DateCreated), dest)
+					err = saveOwnershipItem(destTag.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, uint64(item.DateCreated), dest)
 					if err != nil {
 						return err
 					}
@@ -77,7 +77,7 @@ func migrateTags(userContentBucket string, userContentFiles []string, fs fileacc
 		}
 	}
 
-	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destTags)
+	result, err := coll.InsertMany(context.TODO(), destTags)
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,14 +18,11 @@ func fixUserId(userId string) string {
 	return userId
 }
 
-const ownershipCollection = "ownership"
-
-func saveOwnershipItem(ownerId string, objectId string, objectType protos.ObjectType, userId string, timeStampUnixSec uint64, dest *mongo.Database) error {
+func saveOwnershipItem(objectId string, objectType protos.ObjectType, userId string, timeStampUnixSec uint64, dest *mongo.Database) error {
 	userId = fixUserId(userId)
 
 	ownerItem := &protos.OwnershipItem{
-		Id:             ownerId,
-		ObjectId:       objectId,
+		Id:             objectId,
 		ObjectType:     objectType,
 		CreatorUserId:  userId,
 		CreatedUnixSec: timeStampUnixSec,
@@ -33,11 +31,11 @@ func saveOwnershipItem(ownerId string, objectId string, objectType protos.Object
 			UserIds: []string{userId},
 		},
 	}
-	result, err := dest.Collection(ownershipCollection).InsertOne(context.TODO(), ownerItem)
+	result, err := dest.Collection(dbCollections.OwnershipName).InsertOne(context.TODO(), ownerItem)
 	if err != nil {
 		return err
 	}
-	if result.InsertedID != ownerId {
+	if result.InsertedID != objectId {
 		return fmt.Errorf("Ownership insert for object %v %v inserted different id %v", objectType, objectId, result.InsertedID)
 	}
 	return nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -96,16 +97,15 @@ func migrateExpressionsDB(src *mongo.Database, dest *mongo.Database) error {
 }
 
 func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database) error {
-	const collectionName = "expressions"
-
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	destColl := dest.Collection(dbCollections.ExpressionsName)
+	err := destColl.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
 
 	filter := bson.D{}
 	opts := options.Find()
-	cursor, err := src.Collection(collectionName).Find(context.TODO(), filter, opts)
+	cursor, err := src.Collection("expressions").Find(context.TODO(), filter, opts)
 	if err != nil {
 		return err
 	}
@@ -143,10 +143,9 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database) 
 			SourceLanguage: expr.SourceLanguage,
 			Comments:       expr.Comments,
 			Tags:           tags,
-			OwnerEntryId:   makeID(),
 		}
 
-		err = saveOwnershipItem(destExpr.OwnerEntryId, destExpr.Id, protos.ObjectType_OT_ROI, expr.Origin.Creator.UserID, uint64(expr.Origin.CreatedUnixTimeSec), dest)
+		err = saveOwnershipItem(destExpr.Id, protos.ObjectType_OT_ROI, expr.Origin.Creator.UserID, uint64(expr.Origin.CreatedUnixTimeSec), dest)
 		if err != nil {
 			return err
 		}
@@ -171,7 +170,7 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database) 
 		destExprs = append(destExprs, destExpr)
 	}
 
-	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destExprs)
+	result, err := destColl.InsertMany(context.TODO(), destExprs)
 	if err != nil {
 		return err
 	}
@@ -189,16 +188,15 @@ type SrcDataModule struct {
 }
 
 func migrateExpressionsDBModules(src *mongo.Database, dest *mongo.Database) error {
-	const collectionName = "modules"
-
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	destColl := dest.Collection(dbCollections.ModulesName)
+	err := destColl.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
 
 	filter := bson.D{}
 	opts := options.Find()
-	cursor, err := src.Collection(collectionName).Find(context.TODO(), filter, opts)
+	cursor, err := src.Collection("modules").Find(context.TODO(), filter, opts)
 	if err != nil {
 		return err
 	}
@@ -212,13 +210,12 @@ func migrateExpressionsDBModules(src *mongo.Database, dest *mongo.Database) erro
 	destModules := []interface{}{}
 	for _, mod := range srcModules {
 		destMod := protos.DataModule{
-			Id:           mod.ID,
-			Name:         mod.Name,
-			Comments:     mod.Comments,
-			OwnerEntryId: makeID(),
+			Id:       mod.ID,
+			Name:     mod.Name,
+			Comments: mod.Comments,
 		}
 
-		err = saveOwnershipItem(destMod.OwnerEntryId, destMod.Id, protos.ObjectType_OT_ROI, mod.Origin.Creator.UserID, uint64(mod.Origin.CreatedUnixTimeSec), dest)
+		err = saveOwnershipItem(destMod.Id, protos.ObjectType_OT_ROI, mod.Origin.Creator.UserID, uint64(mod.Origin.CreatedUnixTimeSec), dest)
 		if err != nil {
 			return err
 		}
@@ -226,7 +223,7 @@ func migrateExpressionsDBModules(src *mongo.Database, dest *mongo.Database) erro
 		destModules = append(destModules, destMod)
 	}
 
-	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destModules)
+	result, err := destColl.InsertMany(context.TODO(), destModules)
 	if err != nil {
 		return err
 	}
@@ -254,16 +251,15 @@ type SrcDataModuleVersion struct {
 }
 
 func migrateExpressionsDBModuleVersions(src *mongo.Database, dest *mongo.Database) error {
-	const collectionName = "moduleVersions"
-
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	destColl := dest.Collection(dbCollections.ModuleVersionsName)
+	err := destColl.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
 
 	filter := bson.D{}
 	opts := options.Find()
-	cursor, err := src.Collection(collectionName).Find(context.TODO(), filter, opts)
+	cursor, err := src.Collection("moduleVersions").Find(context.TODO(), filter, opts)
 	if err != nil {
 		return err
 	}
@@ -300,7 +296,7 @@ func migrateExpressionsDBModuleVersions(src *mongo.Database, dest *mongo.Databas
 		destModuleVers = append(destModuleVers, destModVer)
 	}
 
-	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destModuleVers)
+	result, err := destColl.InsertMany(context.TODO(), destModuleVers)
 	if err != nil {
 		return err
 	}

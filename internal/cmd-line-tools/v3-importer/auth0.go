@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -12,10 +13,8 @@ import (
 )
 
 func migrateAuth0UserGroups(auth0Domain string, auth0ClientId string, auth0Secret string, dest *mongo.Database) error {
-	const collectionName = "userGroups"
-
-	// Drop the old one
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	coll := dest.Collection(dbCollections.UserGroupsName)
+	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -52,7 +51,7 @@ func migrateAuth0UserGroups(auth0Domain string, auth0ClientId string, auth0Secre
 			AdminUserIds: []string{},
 		}
 
-		_, err := dest.Collection(collectionName).InsertOne(context.TODO(), dbGroup)
+		_, err := coll.InsertOne(context.TODO(), dbGroup)
 		if err != nil {
 			return err
 		}

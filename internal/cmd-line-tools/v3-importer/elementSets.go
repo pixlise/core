@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -28,9 +29,8 @@ type SrcElementSet struct {
 type SrcElementSetLookup map[string]SrcElementSet
 
 func migrateElementSets(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database) error {
-	const collectionName = "elementSets"
-
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	coll := dest.Collection(dbCollections.ElementSetsName)
+	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -67,10 +67,9 @@ func migrateElementSets(userContentBucket string, userContentFiles []string, fs 
 					allItems[id] = item
 
 					destSet := protos.ElementSet{
-						Id:           id,
-						Name:         item.Name,
-						Lines:        []*protos.ElementLine{},
-						OwnerEntryId: makeID(),
+						Id:    id,
+						Name:  item.Name,
+						Lines: []*protos.ElementLine{},
 					}
 
 					for _, line := range item.Lines {
@@ -83,7 +82,7 @@ func migrateElementSets(userContentBucket string, userContentFiles []string, fs 
 						})
 					}
 
-					err = saveOwnershipItem(destSet.OwnerEntryId, destSet.Id, protos.ObjectType_OT_ELEMENT_SET, item.Creator.UserID, uint64(item.CreatedUnixTimeSec), dest)
+					err = saveOwnershipItem(destSet.Id, protos.ObjectType_OT_ELEMENT_SET, item.Creator.UserID, uint64(item.CreatedUnixTimeSec), dest)
 					if err != nil {
 						return err
 					}
@@ -94,7 +93,7 @@ func migrateElementSets(userContentBucket string, userContentFiles []string, fs 
 		}
 	}
 
-	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destSets)
+	result, err := coll.InsertMany(context.TODO(), destSets)
 	if err != nil {
 		return err
 	}

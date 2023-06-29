@@ -5,18 +5,17 @@ import (
 	"errors"
 
 	"github.com/olahol/melody"
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/services"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const scanCollection = "scans"
-
 func HandleScanListReq(req *protos.ScanListReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ScanListResp, error) {
 	filter := bson.D{}
 	opts := options.Find()
-	cursor, err := svcs.MongoDB.Collection(scanCollection).Find(context.TODO(), filter, opts)
+	cursor, err := svcs.MongoDB.Collection(dbCollections.ScansName).Find(context.TODO(), filter, opts)
 	if err != nil {
 		return nil, err
 	}

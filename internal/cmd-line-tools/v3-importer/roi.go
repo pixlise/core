@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -34,9 +35,8 @@ type SrcROISavedItem struct {
 type SrcROILookup map[string]SrcROISavedItem
 
 func migrateROIs(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database) error {
-	const collectionName = "regionsOfInterest"
-
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	coll := dest.Collection(dbCollections.RegionsOfInterestName)
+	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -107,10 +107,9 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 						ImageName:       item.ImageName,
 						PixelIndexes:    pixelIdxs,
 						// MistROIItem
-						OwnerEntryId: makeID(),
 					}
 
-					err = saveOwnershipItem(destROI.OwnerEntryId, destROI.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, uint64(item.CreatedUnixTimeSec), dest)
+					err = saveOwnershipItem(destROI.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, uint64(item.CreatedUnixTimeSec), dest)
 					if err != nil {
 						return err
 					}
@@ -121,7 +120,7 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 		}
 	}
 
-	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destROIs)
+	result, err := coll.InsertMany(context.TODO(), destROIs)
 	if err != nil {
 		return err
 	}

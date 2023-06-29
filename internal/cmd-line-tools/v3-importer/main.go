@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/awsutil"
 	"github.com/pixlise/core/v3/core/fileaccess"
@@ -79,7 +80,7 @@ func main() {
 	destDB := destMongoClient.Database(mongoDBConnection.GetDatabaseName("pixlise", destEnvName))
 
 	// Clear out ownership table first
-	err = destDB.Collection(ownershipCollection).Drop(context.TODO())
+	err = destDB.Collection(dbCollections.OwnershipName).Drop(context.TODO())
 	if err != nil {
 		log.Fatal(err)
 	}

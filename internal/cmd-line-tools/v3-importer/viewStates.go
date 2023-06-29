@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/utils"
@@ -292,9 +293,8 @@ func splitWidgetFileName(fileNameOnly string) (string, string) {
 }
 
 func migrateViewStates(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database) error {
-	const collectionName = "viewStates"
-
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	coll := dest.Collection(dbCollections.ViewStatesName)
+	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ func migrateViewStates(userContentBucket string, userContentFiles []string, fs f
 				return fmt.Errorf("Unexpected view state path: %v\n", p)
 			} else {
 				datasetId := filepath.Base(filepath.Dir(filepath.Dir(p)))
-				userId := filepath.Base(filepath.Dir(filepath.Dir(filepath.Dir(p))))
+				userId := fixUserId(filepath.Base(filepath.Dir(filepath.Dir(filepath.Dir(p)))))
 
 				// Form an id that should make a scan unique
 				id := userId + "_" + datasetId
@@ -397,7 +397,7 @@ func migrateViewStates(userContentBucket string, userContentFiles []string, fs f
 		}
 	}
 
-	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destViewStates)
+	result, err := coll.InsertMany(context.TODO(), destViewStates)
 	if err != nil {
 		return err
 	}

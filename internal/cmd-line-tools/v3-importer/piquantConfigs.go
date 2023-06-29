@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -17,9 +18,8 @@ type SrcPiquantVersionConfig struct {
 }
 
 func migratePiquantVersion(configBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
-	const collectionName = "piquantVersion"
-
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	coll := dest.Collection(dbCollections.PiquantVersionName)
+	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -34,9 +34,9 @@ func migratePiquantVersion(configBucket string, fs fileaccess.FileAccess, dest *
 		Id:              "current",
 		Version:         ver.Version,
 		ModifiedUnixSec: uint64(ver.ChangedUnixTimeSec),
-		ModifierUserId:  ver.Creator.UserID,
+		ModifierUserId:  fixUserId(ver.Creator.UserID),
 	}
-	_, err = dest.Collection(collectionName).InsertOne(context.TODO(), outVer)
+	_, err = coll.InsertOne(context.TODO(), outVer)
 	if err != nil {
 		return err
 	}

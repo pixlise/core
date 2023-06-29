@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -62,16 +63,15 @@ func migrateUsersDB(src *mongo.Database, dest *mongo.Database) error {
 }
 
 func migrateUsersDBUsers(src *mongo.Database, dest *mongo.Database) error {
-	const collectionName = "users"
-
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	destColl := dest.Collection(dbCollections.UsersName)
+	err := destColl.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
 
 	filter := bson.D{}
 	opts := options.Find()
-	cursor, err := src.Collection(collectionName).Find(context.TODO(), filter, opts)
+	cursor, err := src.Collection("users").Find(context.TODO(), filter, opts)
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func migrateUsersDBUsers(src *mongo.Database, dest *mongo.Database) error {
 		destUsers = append(destUsers, destUser)
 	}
 
-	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destUsers)
+	result, err := destColl.InsertMany(context.TODO(), destUsers)
 	if err != nil {
 		return err
 	}

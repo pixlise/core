@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -94,9 +95,8 @@ type SrcDatasetConfig struct {
 }
 
 func migrateDatasets(configBucket string, dataBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
-	const collectionName = "scans"
-
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	coll := dest.Collection(dbCollections.ScansName)
+	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func migrateDatasets(configBucket string, dataBucket string, fs fileaccess.FileA
 		destItems = append(destItems, destItem)
 	}
 
-	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destItems)
+	result, err := coll.InsertMany(context.TODO(), destItems)
 	if err != nil {
 		return err
 	}

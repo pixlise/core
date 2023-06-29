@@ -68,6 +68,13 @@ func MakeBadRequestError(err error) StatusError {
 	}
 }
 
+func MakeUnauthorisedError(err error) StatusError {
+	return StatusError{
+		Code: http.StatusUnauthorized,
+		Err:  err,
+	}
+}
+
 // Mainly so we don't get a bunch of errors for not using field names in StatusError{}
 func MakeStatusError(code int, err error) StatusError {
 	return StatusError{

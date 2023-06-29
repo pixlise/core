@@ -5,14 +5,13 @@ import (
 	"errors"
 
 	"github.com/olahol/melody"
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 )
-
-const userCollection = "users"
 
 func HandleUserDetailsReq(req *protos.UserDetailsReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.UserDetailsResp, error) {
 	user, err := wsHelpers.GetSessionUser(s)
@@ -21,7 +20,7 @@ func HandleUserDetailsReq(req *protos.UserDetailsReq, s *melody.Session, m *melo
 	}
 
 	// Read from DB too
-	result := svcs.MongoDB.Collection(userCollection).FindOne(context.TODO(), bson.M{"_id": user.UserID})
+	result := svcs.MongoDB.Collection(dbCollections.UsersName).FindOne(context.TODO(), bson.M{"_id": user.User.Id})
 	if result.Err() != nil {
 		return nil, result.Err()
 	}

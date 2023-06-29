@@ -118,8 +118,14 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 		}
 	}
 
+	// Look up user info
+	sessionUser, err := wsHelpers.ReadUser(connectingUser, ws.svcs.MongoDB)
+	if err != nil {
+		s.CloseWithMsg([]byte("Failed to validate session user"))
+	}
+
 	// Store the connection info!
-	s.Set("user", connectingUser)
+	s.Set("user", sessionUser)
 
 	sessId := utils.RandStringBytesMaskImpr(32)
 	s.Set("id", sessId)
@@ -131,7 +137,6 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 
 func (ws *WSHandler) HandleDisconnect(s *melody.Session) {
 	var id string
-	var connectingUser jwtparser.JWTUserInfo
 
 	if _id, ok := s.Get("id"); !ok {
 		fmt.Println("Disconnect MISSING SESSION ID")
@@ -150,7 +155,7 @@ func (ws *WSHandler) HandleDisconnect(s *melody.Session) {
 		return
 	}
 
-	fmt.Printf("Disconnect user: %v, session: %v\n", connectingUser.UserID, id)
+	fmt.Printf("Disconnect user: %v, session: %v\n", connectingUser.User.Id, id)
 }
 
 func (ws *WSHandler) HandleMessage(s *melody.Session, msg []byte) {
@@ -162,9 +167,15 @@ func (ws *WSHandler) HandleMessage(s *melody.Session, msg []byte) {
 		return
 	}
 
-	resp, err := ws.dispatchWSMessage(&wsmsg, s)
+	user, err := wsHelpers.GetSessionUser(s)
 	if err != nil {
-		//fmt.Printf("HandleMessage: %v\n", err)
+		fmt.Printf("HandleMessage: Error while retrieving session user: %v\n", err)
+		return
+	}
+
+	resp, err := ws.dispatchWSMessage(&wsmsg, s, user.Permissions)
+	if err != nil {
+		fmt.Printf("HandleMessage: %v\n", err)
 	}
 
 	if resp != nil {

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -55,9 +56,8 @@ func fixOldIDs(itemLookup SrcRGBMixLookup) SrcRGBMixLookup {
 }
 
 func migrateRGBMixes(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database) error {
-	const collectionName = "expressionGroups"
-
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	coll := dest.Collection(dbCollections.ExpressionGroupsName)
+	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -120,10 +120,9 @@ func migrateRGBMixes(userContentBucket string, userContentFiles []string, fs fil
 								RangeMax:     item.Blue.RangeMax,
 							},
 						},
-						OwnerEntryId: makeID(),
 					}
 
-					err = saveOwnershipItem(destGroup.OwnerEntryId, destGroup.Id, protos.ObjectType_OT_EXPRESSION_GROUP, item.Creator.UserID, uint64(item.CreatedUnixTimeSec), dest)
+					err = saveOwnershipItem(destGroup.Id, protos.ObjectType_OT_EXPRESSION_GROUP, item.Creator.UserID, uint64(item.CreatedUnixTimeSec), dest)
 					if err != nil {
 						return err
 					}
@@ -134,7 +133,7 @@ func migrateRGBMixes(userContentBucket string, userContentFiles []string, fs fil
 		}
 	}
 
-	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destGroups)
+	result, err := coll.InsertMany(context.TODO(), destGroups)
 	if err != nil {
 		return err
 	}

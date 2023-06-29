@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -14,9 +15,8 @@ import (
 )
 
 func migrateDetectorConfigs(configBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
-	const collectionName = "detectorConfigs"
-
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	coll := dest.Collection(dbCollections.DetectorConfigsName)
+	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func migrateDetectorConfigs(configBucket string, fs fileaccess.FileAccess, dest 
 		}
 	}
 
-	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destCfgs)
+	result, err := coll.InsertMany(context.TODO(), destCfgs)
 	if err != nil {
 		return err
 	}

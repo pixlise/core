@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -30,9 +31,8 @@ type SrcUserDiffractionPeakFileContents struct {
 }
 
 func migrateManualDiffractionPeaks(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database) error {
-	const collectionName = "diffractionUserPeaks"
-
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	coll := dest.Collection(dbCollections.DiffractionUserPeaksName)
+	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func migrateManualDiffractionPeaks(userContentBucket string, userContentFiles []
 		}
 	}
 
-	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destItems)
+	result, err := coll.InsertMany(context.TODO(), destItems)
 	if err != nil {
 		return err
 	}
@@ -86,9 +86,8 @@ func migrateManualDiffractionPeaks(userContentBucket string, userContentFiles []
 }
 
 func migrateDiffractionDetectedPeakStatuses(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database) error {
-	const collectionName = "diffractionDetectedPeakStatuses"
-
-	err := dest.Collection(collectionName).Drop(context.TODO())
+	coll := dest.Collection(dbCollections.DiffractionDetectedPeakStatusesName)
+	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -127,7 +126,7 @@ func migrateDiffractionDetectedPeakStatuses(userContentBucket string, userConten
 		}
 	}
 
-	result, err := dest.Collection(collectionName).InsertMany(context.TODO(), destItems)
+	result, err := coll.InsertMany(context.TODO(), destItems)
 	if err != nil {
 		return err
 	}
