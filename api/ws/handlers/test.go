@@ -1,12 +1,11 @@
 package wsHandler
 
 import (
-	protos "github.com/pixlise/core/v3/generated-protos"
-	"github.com/olahol/melody"
-	"github.com/pixlise/core/v3/api/services"
 	"errors"
+	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 )
 
-func HandleRunTestReq(req *protos.RunTestReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.RunTestResp, error) {
+func HandleRunTestReq(req *protos.RunTestReq, hctx wsHelpers.HandlerContext) (*protos.RunTestResp, error) {
     return nil, errors.New("HandleRunTestReq not implemented yet")
 }

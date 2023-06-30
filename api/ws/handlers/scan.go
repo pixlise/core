@@ -4,18 +4,17 @@ import (
 	"context"
 	"errors"
 
-	"github.com/olahol/melody"
 	"github.com/pixlise/core/v3/api/dbCollections"
-	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleScanListReq(req *protos.ScanListReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ScanListResp, error) {
+func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) (*protos.ScanListResp, error) {
 	filter := bson.D{}
 	opts := options.Find()
-	cursor, err := svcs.MongoDB.Collection(dbCollections.ScansName).Find(context.TODO(), filter, opts)
+	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.ScansName).Find(context.TODO(), filter, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -31,18 +30,18 @@ func HandleScanListReq(req *protos.ScanListReq, s *melody.Session, m *melody.Mel
 	}, nil
 }
 
-func HandleScanMetaLabelsReq(req *protos.ScanMetaLabelsReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ScanMetaLabelsResp, error) {
+func HandleScanMetaLabelsReq(req *protos.ScanMetaLabelsReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaLabelsResp, error) {
 	return nil, errors.New("HandleScanMetaLabelsReq not implemented yet")
 }
 
-func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ScanMetaWriteResp, error) {
-	return nil, errors.New("HandleScanMetaWriteReq not implemented yet")
+func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaWriteResp, error) {
+	return nil, errors.New("HandleScanMetaLabelsReq not implemented yet")
 }
 
-func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ScanTriggerReImportResp, error) {
-	return nil, errors.New("HandleScanTriggerReImportReq not implemented yet")
+func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHelpers.HandlerContext) (*protos.ScanTriggerReImportResp, error) {
+	return nil, errors.New("HandleScanMetaLabelsReq not implemented yet")
 }
 
-func HandleScanUploadReq(req *protos.ScanUploadReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.ScanUploadResp, error) {
-	return nil, errors.New("HandleScanUploadReq not implemented yet")
+func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContext) (*protos.ScanUploadResp, error) {
+	return nil, errors.New("HandleScanMetaLabelsReq not implemented yet")
 }

@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/olahol/melody"
 	"github.com/pixlise/core/v3/api/dbCollections"
-	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -25,23 +23,18 @@ func MakeOwnerForWrite(writable HasOwnerField, s *melody.Session, svcs *services
 	if writable.Owner != nil {
 */
 
-func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, s *melody.Session, svcs *services.APIServices) (*protos.OwnershipItem, error) {
-	sessUser, err := GetSessionUser(s)
-	if err != nil {
-		return nil, err
-	}
+func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, hctx HandlerContext) (*protos.OwnershipItem, error) {
+	ts := uint64(hctx.Svcs.TimeStamper.GetTimeNowSec())
 
-	ts := uint64(svcs.TimeStamper.GetTimeNowSec())
-
-	ownerId := svcs.IDGen.GenObjectID()
+	ownerId := hctx.Svcs.IDGen.GenObjectID()
 	ownerItem := &protos.OwnershipItem{
 		Id:             ownerId,
 		ObjectType:     objectType,
-		CreatorUserId:  sessUser.User.Id,
+		CreatorUserId:  hctx.SessUser.User.Id,
 		CreatedUnixSec: ts,
 		//Viewers: ,
 		Editors: &protos.UserGroupList{
-			UserIds: []string{sessUser.User.Id},
+			UserIds: []string{hctx.SessUser.User.Id},
 		},
 	}
 
@@ -51,8 +44,8 @@ func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, s *melody.
 // Checks object access - if requireEdit is true, it checks for edit access
 // otherwise just checks for view access. Returns an error if it failed to determine
 // or if access is not granted, returns error formed with MakeUnauthorisedError
-func CheckObjectAccess(requireEdit bool, objectId string, objectType protos.ObjectType, s *melody.Session, db *mongo.Database) (*protos.OwnershipItem, error) {
-	result := db.Collection(dbCollections.OwnershipName).FindOne(context.TODO(), bson.M{"_id": objectId})
+func CheckObjectAccess(requireEdit bool, objectId string, objectType protos.ObjectType, hctx HandlerContext) (*protos.OwnershipItem, error) {
+	result := hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).FindOne(context.TODO(), bson.M{"_id": objectId})
 	if result.Err() != nil {
 		return nil, fmt.Errorf("Failed to determine object access permissions for id: %v, type: %v. Error was: %v", objectId, objectType.String(), result.Err())
 	}
@@ -65,11 +58,6 @@ func CheckObjectAccess(requireEdit bool, objectId string, objectType protos.Obje
 	}
 
 	// Now check permissions
-	connectingUser, err := GetSessionUser(s)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get session user permissions for id: %v, type: %v. Error was: %v", objectId, objectType.String(), err)
-	}
-
 	// For editing, we only look at the editor list
 	accessType := "Edit"
 	toCheck := []*protos.UserGroupList{ownership.Editors}
@@ -82,11 +70,11 @@ func CheckObjectAccess(requireEdit bool, objectId string, objectType protos.Obje
 
 	for _, toCheckItem := range toCheck {
 		// First check user id
-		if utils.StringInSlice(connectingUser.User.Id, toCheckItem.UserIds) {
+		if utils.StringInSlice(hctx.SessUser.User.Id, toCheckItem.UserIds) {
 			return ownership, nil // User has access
 		} else {
 			// Check groups
-			for _, groupId := range connectingUser.MemberOfGroupIds {
+			for _, groupId := range hctx.SessUser.MemberOfGroupIds {
 				if utils.StringInSlice(groupId, toCheckItem.GroupIds) {
 					return ownership, nil // User has access via group it belongs to
 				}
@@ -101,18 +89,35 @@ func CheckObjectAccess(requireEdit bool, objectId string, objectType protos.Obje
 // Gets all object IDs which the user has access to - if requireEdit is true, it checks for edit access
 // otherwise just checks for view access
 // Returns a map of object id->creator user id
-func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, s *melody.Session, db *mongo.Database) (map[string]string, error) {
-	filter := bson.D{
-		{"$and", []interface{}{
-			bson.D{{"objecttype", 2}},
-			bson.D{{"editors.userids", "auth0|5de45d85ca40070f421a3a34"}},
-		}},
+func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, hctx HandlerContext) (map[string]*protos.OwnershipItem, error) {
+	idLookups := []interface{}{
+		bson.D{{"editors.userids", hctx.SessUser.User.Id}},
+	}
+	if !requireEdit {
+		idLookups = append(idLookups, bson.D{{"viewers.userids", hctx.SessUser.User.Id}})
 	}
 
-	result := map[string]string{}
+	// Add the group IDs
+	for _, groupId := range hctx.SessUser.MemberOfGroupIds {
+		idLookups = append(idLookups, bson.D{{"editors.groupids", groupId}})
+		if !requireEdit {
+			idLookups = append(idLookups, bson.D{{"viewers.groupids", groupId}})
+		}
+	}
+
+	filter := bson.D{
+		{
+			"$and", []interface{}{
+				bson.D{{"objecttype", objectType}},
+				bson.M{"$or": idLookups},
+			},
+		},
+	}
+
+	result := map[string]*protos.OwnershipItem{}
 
 	opts := options.Find() //.SetProjection(bson.D{{"_id", true}})
-	cursor, err := db.Collection(dbCollections.OwnershipName).Find(context.TODO(), filter, opts)
+	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).Find(context.TODO(), filter, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +130,7 @@ func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, s *melody
 	}
 
 	for _, item := range items {
-		result[item.Id] = item.CreatorUserId
+		result[item.Id] = item
 	}
 
 	return result, nil

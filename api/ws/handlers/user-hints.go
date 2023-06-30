@@ -1,18 +1,17 @@
 package wsHandler
 
 import (
-	protos "github.com/pixlise/core/v3/generated-protos"
-	"github.com/olahol/melody"
-	"github.com/pixlise/core/v3/api/services"
 	"errors"
+	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 )
 
-func HandleUserDismissHintReq(req *protos.UserDismissHintReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.UserDismissHintResp, error) {
+func HandleUserDismissHintReq(req *protos.UserDismissHintReq, hctx wsHelpers.HandlerContext) (*protos.UserDismissHintResp, error) {
     return nil, errors.New("HandleUserDismissHintReq not implemented yet")
 }
-func HandleUserHintsReq(req *protos.UserHintsReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.UserHintsResp, error) {
+func HandleUserHintsReq(req *protos.UserHintsReq, hctx wsHelpers.HandlerContext) (*protos.UserHintsResp, error) {
     return nil, errors.New("HandleUserHintsReq not implemented yet")
 }
-func HandleUserHintsToggleReq(req *protos.UserHintsToggleReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.UserHintsToggleResp, error) {
+func HandleUserHintsToggleReq(req *protos.UserHintsToggleReq, hctx wsHelpers.HandlerContext) (*protos.UserHintsToggleResp, error) {
     return nil, errors.New("HandleUserHintsToggleReq not implemented yet")
 }

@@ -4,29 +4,22 @@ import (
 	"context"
 	"errors"
 
-	"github.com/olahol/melody"
 	"github.com/pixlise/core/v3/api/dbCollections"
-	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func HandleUserDetailsReq(req *protos.UserDetailsReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.UserDetailsResp, error) {
-	user, err := wsHelpers.GetSessionUser(s)
-	if err != nil {
-		return nil, err
-	}
-
+func HandleUserDetailsReq(req *protos.UserDetailsReq, hctx wsHelpers.HandlerContext) (*protos.UserDetailsResp, error) {
 	// Read from DB too
-	result := svcs.MongoDB.Collection(dbCollections.UsersName).FindOne(context.TODO(), bson.M{"_id": user.User.Id})
+	result := hctx.Svcs.MongoDB.Collection(dbCollections.UsersName).FindOne(context.TODO(), bson.M{"_id": hctx.SessUser.User.Id})
 	if result.Err() != nil {
 		return nil, result.Err()
 	}
 
 	userDBItem := protos.UserDBItem{}
-	err = result.Decode(&userDBItem)
+	err := result.Decode(&userDBItem)
 	if err != nil {
 		return nil, err
 	}
@@ -35,11 +28,11 @@ func HandleUserDetailsReq(req *protos.UserDetailsReq, s *melody.Session, m *melo
 		Details: &protos.UserDetails{
 			Info:                  userDBItem.Info,
 			DataCollectionVersion: userDBItem.DataCollectionVersion,
-			Permissions:           utils.GetStringMapKeys(user.Permissions),
+			Permissions:           utils.GetStringMapKeys(hctx.SessUser.Permissions),
 		},
 	}, nil
 }
 
-func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, s *melody.Session, m *melody.Melody, svcs *services.APIServices) (*protos.UserDetailsWriteResp, error) {
+func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, hctx wsHelpers.HandlerContext) (*protos.UserDetailsWriteResp, error) {
 	return nil, errors.New("HandleUserDetailsWriteReq not implemented yet")
 }

@@ -173,7 +173,14 @@ func (ws *WSHandler) HandleMessage(s *melody.Session, msg []byte) {
 		return
 	}
 
-	resp, err := ws.dispatchWSMessage(&wsmsg, s, user.Permissions)
+	ctx := wsHelpers.HandlerContext{
+		Session:  s,
+		SessUser: user,
+		Melody:   ws.melody,
+		Svcs:     ws.svcs,
+	}
+
+	resp, err := ws.dispatchWSMessage(&wsmsg, ctx)
 	if err != nil {
 		fmt.Printf("HandleMessage: %v\n", err)
 	}
