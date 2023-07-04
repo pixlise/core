@@ -26,9 +26,8 @@ func MakeOwnerForWrite(writable HasOwnerField, s *melody.Session, svcs *services
 func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, hctx HandlerContext) (*protos.OwnershipItem, error) {
 	ts := uint64(hctx.Svcs.TimeStamper.GetTimeNowSec())
 
-	ownerId := hctx.Svcs.IDGen.GenObjectID()
 	ownerItem := &protos.OwnershipItem{
-		Id:             ownerId,
+		Id:             objectId,
 		ObjectType:     objectType,
 		CreatorUserId:  hctx.SessUser.User.Id,
 		CreatedUnixSec: ts,
@@ -47,6 +46,12 @@ func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, hctx Handl
 func CheckObjectAccess(requireEdit bool, objectId string, objectType protos.ObjectType, hctx HandlerContext) (*protos.OwnershipItem, error) {
 	result := hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).FindOne(context.TODO(), bson.M{"_id": objectId})
 	if result.Err() != nil {
+		// If the error is due to the item not existing, this isn't a permissions error, but likely the object doesn't
+		// exist at all. No point going further, report this as a bad request right here
+		if result.Err() == mongo.ErrNoDocuments {
+			return nil, errorwithstatus.MakeNotFoundError(objectId)
+		}
+
 		return nil, fmt.Errorf("Failed to determine object access permissions for id: %v, type: %v. Error was: %v", objectId, objectType.String(), result.Err())
 	}
 
@@ -69,14 +74,20 @@ func CheckObjectAccess(requireEdit bool, objectId string, objectType protos.Obje
 	}
 
 	for _, toCheckItem := range toCheck {
+		if toCheckItem == nil {
+			continue
+		}
+
 		// First check user id
-		if utils.StringInSlice(hctx.SessUser.User.Id, toCheckItem.UserIds) {
+		if toCheckItem.UserIds != nil && utils.StringInSlice(hctx.SessUser.User.Id, toCheckItem.UserIds) {
 			return ownership, nil // User has access
 		} else {
 			// Check groups
-			for _, groupId := range hctx.SessUser.MemberOfGroupIds {
-				if utils.StringInSlice(groupId, toCheckItem.GroupIds) {
-					return ownership, nil // User has access via group it belongs to
+			if toCheckItem.GroupIds != nil {
+				for _, groupId := range hctx.SessUser.MemberOfGroupIds {
+					if utils.StringInSlice(groupId, toCheckItem.GroupIds) {
+						return ownership, nil // User has access via group it belongs to
+					}
 				}
 			}
 		}

@@ -1,14 +1,136 @@
 package wsHandler
 
 import (
-	"errors"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"context"
+
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
+	"github.com/pixlise/core/v3/core/utils"
+	protos "github.com/pixlise/core/v3/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func HandleGetOwnershipReq(req *protos.GetOwnershipReq, hctx wsHelpers.HandlerContext) (*protos.GetOwnershipResp, error) {
-    return nil, errors.New("HandleGetOwnershipReq not implemented yet")
+	owner, err := wsHelpers.CheckObjectAccess(false, req.ObjectId, req.ObjectType, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.GetOwnershipResp{
+		Ownership: owner,
+	}, nil
 }
+
+func readToMap(ids []string, theMap *map[string]bool) {
+	if ids == nil {
+		return
+	}
+
+	for _, id := range ids {
+		(*theMap)[id] = true
+	}
+}
+
+func deleteFromMap(ids []string, theMap *map[string]bool) {
+	if ids == nil {
+		return
+	}
+
+	for _, id := range ids {
+		delete(*theMap, id)
+	}
+}
+
 func HandleObjectEditAccessReq(req *protos.ObjectEditAccessReq, hctx wsHelpers.HandlerContext) (*protos.ObjectEditAccessResp, error) {
-    return nil, errors.New("HandleObjectEditAccessReq not implemented yet")
+	ctx := context.TODO()
+
+	// Determine if we have edit access to the object
+	owner, err := wsHelpers.CheckObjectAccess(true, req.ObjectId, req.ObjectType, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	viewerUsers := map[string]bool{}
+	viewerGroups := map[string]bool{}
+	editorUsers := map[string]bool{}
+	editorGroups := map[string]bool{}
+
+	// Read what's there now
+	if owner.Editors != nil {
+		readToMap(owner.Editors.UserIds, &editorUsers)
+		readToMap(owner.Editors.GroupIds, &editorGroups)
+	}
+	if owner.Viewers != nil {
+		readToMap(owner.Viewers.UserIds, &viewerUsers)
+		readToMap(owner.Viewers.GroupIds, &viewerGroups)
+	}
+
+	// Add new ones
+	if req.AddEditors != nil {
+		readToMap(req.AddEditors.UserIds, &editorUsers)
+		readToMap(req.AddEditors.GroupIds, &editorGroups)
+	}
+	if req.AddViewers != nil {
+		readToMap(req.AddViewers.UserIds, &viewerUsers)
+		readToMap(req.AddViewers.GroupIds, &viewerGroups)
+	}
+
+	// Delete ones that need to be deleted
+	if req.DeleteEditors != nil {
+		deleteFromMap(req.DeleteEditors.UserIds, &editorUsers)
+		deleteFromMap(req.DeleteEditors.GroupIds, &editorGroups)
+	}
+
+	if req.DeleteViewers != nil {
+		deleteFromMap(req.DeleteViewers.UserIds, &viewerUsers)
+		deleteFromMap(req.DeleteViewers.GroupIds, &viewerGroups)
+	}
+
+	// Put them back into arrays
+	viewerUserIds := utils.GetStringMapKeys(viewerUsers)
+	viewerGroupsIds := utils.GetStringMapKeys(viewerGroups)
+	editorUsersIds := utils.GetStringMapKeys(editorUsers)
+	editorGroupsIds := utils.GetStringMapKeys(editorGroups)
+
+	// Form DB update
+	update := bson.D{
+		{"viewers", bson.D{
+			{"userids", viewerUserIds},
+			{"groupids", viewerGroupsIds},
+		}},
+		{"editors", bson.D{
+			{"userids", editorUsersIds},
+			{"groupids", editorGroupsIds},
+		}},
+	}
+
+	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).UpdateByID(ctx, req.ObjectId, bson.D{{Key: "$set", Value: update}})
+	if err != nil {
+		return nil, err
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if result.MatchedCount != 1 {
+		hctx.Svcs.Log.Errorf("Ownership UpdateByID result had unexpected counts %+v id: %v, type: %v", result, req.ObjectId, req.ObjectType.String())
+	}
+
+	if owner.Editors == nil {
+		owner.Editors = &protos.UserGroupList{}
+	}
+
+	if owner.Viewers == nil {
+		owner.Viewers = &protos.UserGroupList{}
+	}
+
+	owner.Editors.UserIds = editorUsersIds
+	owner.Editors.GroupIds = editorGroupsIds
+	owner.Viewers.UserIds = viewerUserIds
+	owner.Viewers.GroupIds = viewerGroupsIds
+
+	return &protos.ObjectEditAccessResp{
+		Ownership: owner,
+	}, nil
 }

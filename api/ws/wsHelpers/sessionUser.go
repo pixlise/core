@@ -104,3 +104,36 @@ func ReadUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, 
 		MemberOfGroupIds: utils.GetStringMapKeys(ourGroups),
 	}, nil
 }
+
+// If we have a successful login and the user is not in our DB, we write a default record
+// for them, so if they change their details we have a spot to save it already
+func WriteUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, error) {
+	if !strings.HasPrefix(jwtUser.UserID, "auth0|") {
+		jwtUser.UserID = "auth0|" + jwtUser.UserID
+	}
+
+	userDBItem := &protos.UserDBItem{
+		Id: jwtUser.UserID,
+		Info: &protos.UserInfo{
+			Id:    jwtUser.UserID,
+			Name:  jwtUser.Name,
+			Email: jwtUser.Email,
+		},
+		DataCollectionVersion: "",
+		//Hints
+		//NotificationSettings
+	}
+
+	_, err := db.Collection(dbCollections.UsersName).InsertOne(context.TODO(), userDBItem)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: do we insert it in any groups?
+
+	return &SessionUser{
+		User:             userDBItem.Info,
+		Permissions:      jwtUser.Permissions,
+		MemberOfGroupIds: []string{},
+	}, nil
+}

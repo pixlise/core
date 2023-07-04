@@ -8,6 +8,10 @@ generated-protos/
 api/ws/wsMessage.go
 /OLDCODE
 auth0dummy.go
+/local-mongo/dbseed/migrated/
+/local-mongo/dbseed/old/
+/local-mongo/dbseed/*.json
+/local-mongo/3repl/
 
 # temp files that get generated for tests
 diffraction-detector/test-files/dataset-diffraction.bin

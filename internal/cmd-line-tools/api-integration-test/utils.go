@@ -18,13 +18,8 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"time"
-
-	"github.com/pixlise/core/v3/core/pixlUser"
 )
 
 func generateURL(environment string) string {
@@ -78,34 +73,4 @@ func printTestResult(err error, name string) {
 		failedTestNames = append(failedTestNames, lastStartedTestName)
 	}
 	fmt.Println("")
-}
-
-func getAlerts(JWT string, environment string) ([]pixlUser.UINotificationItem, error) {
-	getReq, err := http.NewRequest("GET", generateURL(environment)+"/notification/alerts", nil)
-	if err != nil {
-		return nil, err
-	}
-	getReq.Header.Set("Authorization", "Bearer "+JWT)
-
-	getResp, err := http.DefaultClient.Do(getReq)
-	if err != nil {
-		return nil, err
-	}
-	defer getResp.Body.Close()
-	body, err := ioutil.ReadAll(getResp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if getResp.Status != "200 OK" {
-		return nil, fmt.Errorf("Alerts status fail: %v, response: %v", getResp.Status, string(body))
-	}
-
-	var alerts []pixlUser.UINotificationItem
-	err = json.Unmarshal(body, &alerts)
-	if err != nil {
-		return nil, err
-	}
-
-	return alerts, nil
 }

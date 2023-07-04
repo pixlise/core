@@ -11,6 +11,7 @@ import (
 	"github.com/pixlise/core/v3/core/jwtparser"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -121,7 +122,14 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	// Look up user info
 	sessionUser, err := wsHelpers.ReadUser(connectingUser, ws.svcs.MongoDB)
 	if err != nil {
-		s.CloseWithMsg([]byte("Failed to validate session user"))
+		// If we have no record of this user, add it
+		if err == mongo.ErrNoDocuments {
+			sessionUser, err = wsHelpers.WriteUser(connectingUser, ws.svcs.MongoDB)
+			if err != nil {
+				s.CloseWithMsg([]byte("Failed to validate session user"))
+				return
+			}
+		}
 	}
 
 	// Store the connection info!

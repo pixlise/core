@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"math/rand"
@@ -46,6 +47,7 @@ func main() {
 
 	////////////////////////////////////////////////////
 	// Set up WebSocket server
+	// Looks like the default config for melody is to expect a ping at least every 54seconds
 	m := melody.New()
 	ws := ws.MakeWSHandler(m, svcs)
 
