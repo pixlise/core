@@ -66,19 +66,19 @@ If you're wondering what the Gitpod button above is and would like to get a deve
 ## Debugging in VS Code
 
 - Download the source.
-- Configure your .vscode/launch.json file to supply the following to start debugger:
+- Add a new configuration to your `.vscode/launch.json` file with `program` set to `internal/api`, which supplies the following to start debugger:
 ```
     "env": {
         "AWS_ACCESS_KEY_ID":"<<< LOOK THIS UP! >>>",
         "AWS_SECRET_ACCESS_KEY":"<<< LOOK THIS UP! >>>",
         "AWS_DEFAULT_REGION":"us-east-1",
         "AWS_S3_US_EAST_1_REGIONAL_ENDPOINT":"regional",
+        ... Any other env variables as needed
     },
-    "args": ["-quantExecutor", "docker"]
 ```
-- Start a local mongo DB in docker: `docker run -d  --name mongo-on-docker  -p 27888:27017 -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=secret mongo`. This container can be stopped, deleted and recreated as needed.
-- Open any file in the main package (`internal/pixlise-api/*.go`)
-- Hit F5 to start debugging
+
+- Start a local mongo DB in docker: run `local-mongo/startdb.sh`. On startup the DB is seeded with data from JSON files. This container can be stopped and will be deleted at that point.
+- Hit debug for the config in VS Code
 
 You may encounter errors related to having an old Go version. At time of writing PIXLISE Core requires Go version 1.18. VS Code may also want to install some plugins for Go development.
 

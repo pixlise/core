@@ -168,6 +168,12 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 	dbName := mongoDBConnection.GetDatabaseName("pixlise", cfg.EnvironmentName)
 	db := mongoClient.Database(dbName)
 
+	// If we're in the unit test environment, drop the database so we start from scratch each time
+	if cfg.EnvironmentName == "unittest" {
+		log.Printf("NOTE: Environment is \"%v\", so dropping database to start fresh\n", cfg.EnvironmentName)
+		db.Drop(context.TODO())
+	}
+
 	// Authenticaton for endpoints
 	jwtValidator, err := jwtparser.InitJWTValidator(
 		cfg.Auth0Domain,
