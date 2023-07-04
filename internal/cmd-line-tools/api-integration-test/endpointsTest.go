@@ -96,6 +96,10 @@ func testElementSets(apiHost string) {
 		}}`,
 	})
 
+	u1.addAction("Delete non-existant item", actionItem{
+		sendReq: `{"elementSetDeleteReq": { "id": "non-existant-id" }}`,
+	})
+
 	u1.addAction("Edit non-existant item", actionItem{
 		sendReq: `{"elementSetWriteReq": {
 			"elementSet": {
@@ -143,8 +147,9 @@ func testElementSets(apiHost string) {
 		`{"msgId":1,"status":"WS_OK","elementSetListResp":{}}`,
 		`{"msgId":2, "status":"WS_NOT_FOUND", "errorText": "non-existant-id not found", "elementSetGetResp":{}}`,
 		`{"msgId":3, "status":"WS_BAD_REQUEST", "errorText": "Lines length is invalid", "elementSetWriteResp":{}}`,
-		`{"msgId":4, "status":"WS_NOT_FOUND", "errorText": "non-existant-id not found", "elementSetWriteResp":{}}`,
-		`{"msgId":5, "status":"WS_OK", "elementSetWriteResp":{
+		`{"msgId":4, "status":"WS_NOT_FOUND", "errorText": "non-existant-id not found", "elementSetDeleteResp":{}}`,
+		`{"msgId":5, "status":"WS_NOT_FOUND", "errorText": "non-existant-id not found", "elementSetWriteResp":{}}`,
+		`{"msgId":6, "status":"WS_OK", "elementSetWriteResp":{
 			"elementSet":{
 				"id":"$ID=elem1$",
 				"name":"User1 ElementSet1",
@@ -263,7 +268,7 @@ func testElementSets(apiHost string) {
 	})
 
 	u1.addExpectedMessages([]string{
-		fmt.Sprintf(`{"msgId":6, "status":"WS_OK", "elementSetGetResp":{
+		fmt.Sprintf(`{"msgId":7, "status":"WS_OK", "elementSetGetResp":{
 			"elementSet": {
 				"id": "%v",
 				"name": "User1 ElementSet1",
@@ -289,13 +294,13 @@ func testElementSets(apiHost string) {
 		}}`, u1CreatedElementSetId1),
 
 		`{
-			"msgId": 7,
+			"msgId": 8,
 			"status": "WS_BAD_REQUEST",
 			"errorText": "Name length is invalid",
 			"elementSetWriteResp": {}
 		}`,
 
-		fmt.Sprintf(`{"msgId":8, "status":"WS_OK", "elementSetWriteResp":{
+		fmt.Sprintf(`{"msgId":9, "status":"WS_OK", "elementSetWriteResp":{
 			"elementSet": {
 				"id": "%v",
 				"name": "User1 ElementSet1-Edited",
@@ -316,7 +321,7 @@ func testElementSets(apiHost string) {
 			}
 		}}`, u1CreatedElementSetId1),
 
-		fmt.Sprintf(`{"msgId":9, "status":"WS_OK", "elementSetGetResp":{
+		fmt.Sprintf(`{"msgId":10, "status":"WS_OK", "elementSetGetResp":{
 			"elementSet": {
 				"id": "%v",
 				"name": "User1 ElementSet1-Edited",
@@ -339,7 +344,7 @@ func testElementSets(apiHost string) {
 		}}`, u1CreatedElementSetId1),
 
 		fmt.Sprintf(`{
-			"msgId": 10,
+			"msgId": 11,
 			"status": "WS_OK",
 			"elementSetListResp": {
 				"elementSets": {
@@ -387,7 +392,7 @@ func testElementSets(apiHost string) {
 
 	u1.addExpectedMessages([]string{
 		fmt.Sprintf(`{
-			"msgId": 11,
+			"msgId": 12,
 			"status": "WS_OK",
 			"getOwnershipResp": {
 				"ownership": {
@@ -403,7 +408,7 @@ func testElementSets(apiHost string) {
 		}`, u1CreatedElementSetId1, u1.user.userId),
 
 		fmt.Sprintf(`{
-			"msgId": 12,
+			"msgId": 13,
 			"status": "WS_OK",
 			"objectEditAccessResp": {
 				"ownership": {
@@ -421,7 +426,7 @@ func testElementSets(apiHost string) {
 			}
 		}`, u1CreatedElementSetId1, u2.user.userId, u1.user.userId),
 
-		fmt.Sprintf(`{"msgId":13, "status":"WS_OK", "elementSetGetResp":{
+		fmt.Sprintf(`{"msgId":14, "status":"WS_OK", "elementSetGetResp":{
 			"elementSet": {
 				"id": "%v",
 				"name": "User1 ElementSet1-Edited",
@@ -444,7 +449,7 @@ func testElementSets(apiHost string) {
 		}}`, u1CreatedElementSetId1),
 
 		fmt.Sprintf(`{
-			"msgId": 14,
+			"msgId": 15,
 			"status": "WS_OK",
 			"elementSetListResp": {
 				"elementSets": {
@@ -480,6 +485,24 @@ func testElementSets(apiHost string) {
 
 	u2.addAction("Get shared item", actionItem{
 		sendReq: fmt.Sprintf(`{"elementSetGetReq": { "id": "%v"}}`, u1CreatedElementSetId1),
+	})
+
+	u2.addAction("Edit created item, should fail, user2 is a viewer", actionItem{
+		sendReq: fmt.Sprintf(`{"elementSetWriteReq": {
+			"elementSet": {
+				"id": "%v",
+				"name": "User1 ElementSet1-Edited by User2",
+				"lines": [
+					{
+						"Z":   19,
+						"K":   false,
+						"L":   false,
+						"M":   true,
+						"Esc": false
+					}
+				]
+			}
+		}}`, u1CreatedElementSetId1),
 	})
 
 	u2.addExpectedMessages([]string{
@@ -529,9 +552,30 @@ func testElementSets(apiHost string) {
 				}
 			}
 		}}`, u1CreatedElementSetId1, u1.user.userId),
+
+		fmt.Sprintf(`{"msgId":7, "status":"WS_NO_PERMISSION", "errorText": "Edit access denied for: %v", "elementSetWriteResp":{}}`, u1CreatedElementSetId1),
 	}, 60000)
 
 	execQueuedActions(&u2)
+
+	// Back to user 1 - delete the element set
+	u1.clearActions()
+
+	u1.addAction("Delete created item", actionItem{
+		sendReq: fmt.Sprintf(`{"elementSetDeleteReq": { "id": "%v" }}`, u1CreatedElementSetId1),
+	})
+
+	u1.addAction("List", actionItem{
+		sendReq: `{"elementSetListReq":{}}`,
+	})
+
+	// Verify the above
+	u1.addExpectedMessages([]string{
+		`{"msgId":16,"status":"WS_OK","elementSetDeleteResp":{}}`,
+		`{"msgId":17,"status":"WS_OK","elementSetListResp":{}}`,
+	}, 60000)
+
+	execQueuedActions(&u1)
 }
 
 func execQueuedActions(u *scriptedTestUser) {

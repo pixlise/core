@@ -16,18 +16,51 @@ import (
 )
 
 func HandleElementSetDeleteReq(req *protos.ElementSetDeleteReq, hctx wsHelpers.HandlerContext) (*protos.ElementSetDeleteResp, error) {
+	ctx := context.TODO()
+
 	_, err := wsHelpers.CheckObjectAccess(true, req.Id, protos.ObjectType_OT_ELEMENT_SET, hctx)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.ElementSetsName).DeleteOne(context.TODO(), bson.M{"_id": req.Id})
+	// Delete element set AND corresponding ownership item
+	wc := writeconcern.New(writeconcern.WMajority())
+	rc := readconcern.Snapshot()
+	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
+
+	sess, err := hctx.Svcs.MongoDB.Client().StartSession()
 	if err != nil {
-		return nil, errorwithstatus.MakeBadRequestError(err)
+		return nil, err
+	}
+	defer sess.EndSession(ctx)
+
+	// Write the 2 items in a single transaction
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		result, err := hctx.Svcs.MongoDB.Collection(dbCollections.ElementSetsName).DeleteOne(context.TODO(), bson.M{"_id": req.Id})
+		if err != nil {
+			return nil, errorwithstatus.MakeBadRequestError(err)
+		}
+
+		if result.DeletedCount != 1 {
+			return nil, errorwithstatus.MakeNotFoundError(req.Id)
+		}
+
+		result, err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteOne(context.TODO(), bson.M{"_id": req.Id})
+		if err != nil {
+			return nil, errorwithstatus.MakeBadRequestError(err)
+		}
+
+		if result.DeletedCount != 1 {
+			return nil, errorwithstatus.MakeNotFoundError(req.Id)
+		}
+
+		return nil, nil
 	}
 
-	if result.DeletedCount != 1 {
-		return nil, errorwithstatus.MakeNotFoundError(req.Id)
+	_, err = sess.WithTransaction(ctx, callback, txnOpts)
+
+	if err != nil {
+		return nil, err
 	}
 
 	return &protos.ElementSetDeleteResp{}, nil
