@@ -8,8 +8,8 @@ import (
 )
 
 func runEndpointTests(apiHost string) {
-	//testUserDetails(apiHost)
-	testElementSets(apiHost)
+	testUserDetails(apiHost)
+	//testElementSets(apiHost)
 }
 
 func testUserDetails(apiHost string) {
@@ -26,46 +26,187 @@ func testUserDetails(apiHost string) {
 		sendReq: `{"userDetailsReq":{}}`,
 	})
 
+	u1.addAction("Edit details", actionItem{
+		sendReq: `{"userDetailsWriteReq":{ "name": "Test 1 User", "email": "test1-2@pixlise.org", "dataCollectionVersion": "1.2.3" }}`,
+	})
+
+	u1.addAction("Request details again", actionItem{
+		sendReq: `{"userDetailsReq":{}}`,
+	})
+
+	u1.addAction("Edit data collection version only", actionItem{
+		sendReq: `{"userDetailsWriteReq":{ "dataCollectionVersion": "1.2.4" }}`,
+	})
+
+	u1.addAction("Request details again", actionItem{
+		sendReq: `{"userDetailsReq":{}}`,
+	})
+
+	u1.addAction("Send blank data collection version", actionItem{
+		sendReq: `{"userDetailsWriteReq":{ "dataCollectionVersion": "" }}`,
+	})
+
+	u1.addAction("Request details again", actionItem{
+		sendReq: `{"userDetailsReq":{}}`,
+	})
+
+	u1.addAction("Edit but with invalid fields", actionItem{
+		sendReq: `{"userDetailsWriteReq":{ "name": "one ridiculously long name that can't be possibly ever be valid" }}`,
+	})
+
+	u1.addAction("Request details again", actionItem{
+		sendReq: `{"userDetailsReq":{}}`,
+	})
+
 	u1.addExpectedMessages([]string{
 		`{"msgId":1,"status":"WS_OK","userDetailsResp":{
-			"details":{"info":{"id":"auth0|649e54491154cac52ec21718","name":"test1@pixlise.org - WS Integration Test","email":"test1@pixlise.org"}}}}`,
-	}, 1000)
+			"details":{"info":{"id":"$USERID$","name":"test1@pixlise.org - WS Integration Test","email":"test1@pixlise.org"},
+            "permissions": [
+                "EDIT_ELEMENT_SET",
+                "EDIT_OWN_USER",
+                "SHARE"
+            ]}}}`,
+		`{"msgId":2,"status":"WS_OK","userDetailsWriteResp":{}}`,
+		`{"msgId":3,"status":"WS_OK","userDetailsResp":{
+			"details":{"info":{"id":"$USERID$","name":"Test 1 User","email":"test1-2@pixlise.org"},
+			"dataCollectionVersion": "1.2.3",
+            "permissions": [
+                "EDIT_ELEMENT_SET",
+                "EDIT_OWN_USER",
+                "SHARE"
+            ]}}}`,
+		`{"msgId":4,"status":"WS_OK","userDetailsWriteResp":{}}`,
+		`{"msgId":5,"status":"WS_OK","userDetailsResp":{
+			"details":{"info":{"id":"$USERID$","name":"Test 1 User","email":"test1-2@pixlise.org"},
+			"dataCollectionVersion": "1.2.4",
+            "permissions": [
+                "EDIT_ELEMENT_SET",
+                "EDIT_OWN_USER",
+                "SHARE"
+            ]}}}`,
+		`{"msgId":6,"status":"WS_BAD_REQUEST", "errorText": "DataCollectionVersion is too short", "userDetailsWriteResp":{}}`,
+		`{"msgId":7,"status":"WS_OK","userDetailsResp":{
+			"details":{"info":{"id":"$USERID$","name":"Test 1 User","email":"test1-2@pixlise.org"},
+			"dataCollectionVersion": "1.2.4",
+            "permissions": [
+                "EDIT_ELEMENT_SET",
+                "EDIT_OWN_USER",
+                "SHARE"
+            ]}}}`,
+		`{"msgId":8,"status":"WS_BAD_REQUEST", "errorText": "Name is too long", "userDetailsWriteResp":{}}`,
+		`{"msgId":9,"status":"WS_OK","userDetailsResp":{
+			"details":{"info":{"id":"$USERID$","name":"Test 1 User","email":"test1-2@pixlise.org"},
+			"dataCollectionVersion": "1.2.4",
+            "permissions": [
+                "EDIT_ELEMENT_SET",
+                "EDIT_OWN_USER",
+                "SHARE"
+            ]}}}`,
+	}, 5000)
 
 	// Run the test
 	execQueuedActions(&u1)
 
-	/*
-	   // Connect each user to a web socket
-	   user1 := socketConn{}
+	// Editing notification settings
+	u1.clearActions()
 
-	   err := user1.connect(apiHost, test1Username, test1Password)
+	u1.addAction("Request notification settings", actionItem{
+		sendReq: `{"userNotificationSettingsReq":{}}`,
+	})
 
-	   	if err != nil {
-	   		log.Fatalln(err)
-	   	}
+	u1.addAction("Add a few notification subscriptions", actionItem{
+		sendReq: `{"userNotificationSettingsWriteReq":{
+			"notifications":{
+				"topicSettings":{
+					"new-dataset": 1,
+					"shared-item": 2
+				}
+			}
+		}}`,
+	})
 
-	   // We're connected, send request
-	   user1.sendMessage(&protos.WSMessage{Contents: &protos.WSMessage_UserDetailsReq{UserDetailsReq: &protos.UserDetailsReq{}}})
+	u1.addAction("Request notification settings", actionItem{
+		sendReq: `{"userNotificationSettingsReq":{}}`,
+	})
 
-	   resp := user1.waitReceive(protos.ResponseStatus_WS_OK, 2000)
+	u1.addAction("Remove a notification, while changing another", actionItem{
+		sendReq: `{"userNotificationSettingsWriteReq":{
+			"notifications":{
+				"topicSettings":{
+					"new-dataset": 3
+				}
+			}
+		}}`,
+	})
 
-	   // TODO:
-	   // May be able to specify sends in JSON
-	   // May be able to write waitReceive to take expected response as JSON string
-	   // Comparing resp vs expected needs to be smarter than before, ignore whitespace, ability to ignore or regex match fields
-	   // Need to be able to insert JSON into mongo DB to seed tests
-	   // Need to be able to read and compare expected JSON from db to verify writes at the end of test
-	   str, err := protojson.Marshal(resp)
+	u1.addAction("Request notification settings", actionItem{
+		sendReq: `{"userNotificationSettingsReq":{}}`,
+	})
 
-	   	if err != nil {
-	   		log.Fatalln(err)
-	   	}
+	u1.addExpectedMessages([]string{
+		`{"msgId":10,"status":"WS_OK","userNotificationSettingsResp":{
+			"notifications":{}}}`,
+		`{"msgId":11,"status":"WS_OK","userNotificationSettingsWriteResp":{}}`,
+		`{"msgId":12,"status":"WS_OK","userNotificationSettingsResp":{
+			"notifications":{
+				"topicSettings": {
+					"new-dataset": "NOTIF_EMAIL",
+					"shared-item": "NOTIF_UI"
+				}}}}`,
+		`{"msgId":13,"status":"WS_OK","userNotificationSettingsWriteResp":{}}`,
+		`{"msgId":14,"status":"WS_OK","userNotificationSettingsResp":{
+			"notifications":{
+				"topicSettings": {
+					"new-dataset": "NOTIF_BOTH"
+				}}}}`,
+	}, 5000)
 
-	   log.Println(string(str))
-	   log.Println(resp.String())
-	   log.Println(resp.GetContents())
-	   log.Println(resp.GetUserDetailsResp().String())
-	*/
+	// Run the test
+	execQueuedActions(&u1)
+
+	// Editing hints
+	u1.clearActions()
+
+	u1.addAction("Request hints", actionItem{
+		sendReq: `{"userHintsReq":{}}`,
+	})
+
+	u1.addAction("Add hint", actionItem{
+		sendReq: `{"userDismissHintReq":{"hint":"context-zoom"}}`,
+	})
+
+	u1.addAction("Request hints again", actionItem{
+		sendReq: `{"userHintsReq":{}}`,
+	})
+
+	u1.addAction("Add another hint", actionItem{
+		sendReq: `{"userDismissHintReq":{"hint":"spectrum-pan"}}`,
+	})
+
+	u1.addAction("Request hints again", actionItem{
+		sendReq: `{"userHintsReq":{}}`,
+	})
+
+	u1.addAction("Disable all hints", actionItem{
+		sendReq: `{"userHintsToggleReq":{"enabled":false}}`,
+	})
+
+	u1.addAction("Request hints again", actionItem{
+		sendReq: `{"userHintsReq":{}}`,
+	})
+
+	u1.addExpectedMessages([]string{
+		`{"msgId":15,"status":"WS_OK","userHintsResp":{"hints":{"enabled": true}}}`, // note, dismissedHints is empty, so 0-value sent is nothing...
+		`{"msgId":16,"status":"WS_OK","userDismissHintResp":{}}`,
+		`{"msgId":17,"status":"WS_OK","userHintsResp":{"hints":{"dismissedHints": ["context-zoom"], "enabled": true}}}`,
+		`{"msgId":18,"status":"WS_OK","userDismissHintResp":{}}`,
+		`{"msgId":19,"status":"WS_OK","userHintsResp":{"hints":{"dismissedHints": ["context-zoom", "spectrum-pan"], "enabled": true}}}`,
+		`{"msgId":20,"status":"WS_OK","userHintsToggleResp":{}}`,
+		`{"msgId":21,"status":"WS_OK","userHintsResp":{"hints":{"dismissedHints": ["context-zoom", "spectrum-pan"]}}}`, // note, enabled is false, so 0-value sent is nothing...
+	}, 5000)
+
+	// Run the test
+	execQueuedActions(&u1)
 }
 
 func testElementSets(apiHost string) {

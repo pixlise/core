@@ -35,7 +35,7 @@ func HandleUserNotificationSettingsWriteReq(req *protos.UserNotificationSettings
 
 	// Overwrite DB field with incoming one
 	userId := hctx.SessUser.User.Id
-	update := bson.D{{"notifications", req.Notifications}}
+	update := bson.D{{"notificationsettings", req.Notifications}}
 	_ /*result*/, err := hctx.Svcs.MongoDB.Collection(dbCollections.UsersName).UpdateByID(context.TODO(), userId, bson.D{{Key: "$set", Value: update}})
 	if err != nil {
 		return nil, err
