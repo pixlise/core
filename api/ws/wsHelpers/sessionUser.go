@@ -47,7 +47,7 @@ func GetSessionUser(s *melody.Session) (SessionUser, error) {
 // JWT user has the user ID and permissions that we get from Auth0. The rest is handled
 // within PIXLISE, so lets read our DB to see if this user exists and get their
 // user name, email, icon, etc
-func ReadUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, error) {
+func MakeSessionUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, error) {
 	// Ensure we have the full user ID, as our system was previously cutting the prefix
 	// off of Auth0 user ids
 	userId := jwtUser.UserID
@@ -55,13 +55,7 @@ func ReadUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, 
 		userId = "auth0|" + userId
 	}
 
-	userResult := db.Collection(dbCollections.UsersName).FindOne(context.TODO(), bson.M{"_id": userId})
-	if userResult.Err() != nil {
-		return nil, userResult.Err()
-	}
-
-	userDBItem := protos.UserDBItem{}
-	err := userResult.Decode(&userDBItem)
+	userDBItem, err := GetDBUser(userId, db)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +77,7 @@ func ReadUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, 
 	}
 
 	for _, userGroup := range userGroups {
-		if utils.StringInSlice(userId, userGroup.Members.UserIds) {
+		if utils.ItemInSlice(userId, userGroup.Members.UserIds) {
 			ourGroups[userGroup.Id] = true
 		}
 	}
@@ -92,7 +86,7 @@ func ReadUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, 
 	// TODO: This may not detect outside of 2 levels deep grouping, we may want more...
 	for _, userGroup := range userGroups {
 		for groupToCheck, _ := range ourGroups {
-			if utils.StringInSlice(groupToCheck, userGroup.Members.GroupIds) {
+			if utils.ItemInSlice(groupToCheck, userGroup.Members.GroupIds) {
 				ourGroups[userGroup.Id] = true
 			}
 		}
@@ -101,13 +95,14 @@ func ReadUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, 
 	return &SessionUser{
 		User:             userDBItem.Info,
 		Permissions:      jwtUser.Permissions,
-		MemberOfGroupIds: utils.GetStringMapKeys(ourGroups),
+		MemberOfGroupIds: utils.GetMapKeys(ourGroups),
 	}, nil
 }
 
 // If we have a successful login and the user is not in our DB, we write a default record
 // for them, so if they change their details we have a spot to save it already
-func WriteUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, error) {
+// NOTE: This is (at time of writing) the only way to add a user to the DB
+func CreateDBUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, error) {
 	if !strings.HasPrefix(jwtUser.UserID, "auth0|") {
 		jwtUser.UserID = "auth0|" + jwtUser.UserID
 	}
@@ -118,6 +113,7 @@ func WriteUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser,
 			Id:    jwtUser.UserID,
 			Name:  jwtUser.Name,
 			Email: jwtUser.Email,
+			// IconURL
 		},
 		DataCollectionVersion: "",
 		//Hints

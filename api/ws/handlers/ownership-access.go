@@ -87,10 +87,10 @@ func HandleObjectEditAccessReq(req *protos.ObjectEditAccessReq, hctx wsHelpers.H
 	}
 
 	// Put them back into arrays
-	viewerUserIds := utils.GetStringMapKeys(viewerUsers)
-	viewerGroupsIds := utils.GetStringMapKeys(viewerGroups)
-	editorUsersIds := utils.GetStringMapKeys(editorUsers)
-	editorGroupsIds := utils.GetStringMapKeys(editorGroups)
+	viewerUserIds := utils.GetMapKeys(viewerUsers)
+	viewerGroupsIds := utils.GetMapKeys(viewerGroups)
+	editorUsersIds := utils.GetMapKeys(editorUsers)
+	editorGroupsIds := utils.GetMapKeys(editorGroups)
 
 	// Form DB update
 	update := bson.D{

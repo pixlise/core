@@ -19,9 +19,31 @@
 // and random ID strings, zipping files/directories, reading/writing images
 package utils
 
-func AbsI64(x int64) int64 {
-	if x < 0 {
-		return -x
+// Simple Go helper functions
+// stuff that you'd expect to be part of the std lib but aren't, eg functions to search for strings
+// in string arrays...
+
+func ItemInSlice[T comparable](a T, list []T) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
 	}
-	return x
+	return false
+}
+
+func AddItemsToSet[K comparable](keys []K, theSet map[K]bool) {
+	for _, key := range keys {
+		theSet[key] = true
+	}
+}
+
+func GetMapKeys[K comparable, V any](theMap map[K]V) []K {
+	result := []K{}
+
+	for key := range theMap {
+		result = append(result, key)
+	}
+
+	return result
 }

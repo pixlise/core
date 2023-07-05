@@ -31,7 +31,7 @@ func migrateAuth0UserGroups(auth0Domain string, auth0ClientId string, auth0Secre
 
 		// Run through all users, and add the ones that are in this group
 		for user, groups := range userToGroup {
-			if utils.StringInSlice(group, groups) {
+			if utils.ItemInSlice(group, groups) {
 				groupMembers = append(groupMembers, user)
 			}
 		}

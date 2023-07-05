@@ -14,6 +14,7 @@ import (
 )
 
 // TODO: maybe we can pass in some generic thing that has an owner field?
+// NO: we cannot. https://github.com/golang/go/issues/51259
 /*
 
 type HasOwnerField interface {
@@ -79,13 +80,13 @@ func CheckObjectAccess(requireEdit bool, objectId string, objectType protos.Obje
 		}
 
 		// First check user id
-		if toCheckItem.UserIds != nil && utils.StringInSlice(hctx.SessUser.User.Id, toCheckItem.UserIds) {
+		if toCheckItem.UserIds != nil && utils.ItemInSlice(hctx.SessUser.User.Id, toCheckItem.UserIds) {
 			return ownership, nil // User has access
 		} else {
 			// Check groups
 			if toCheckItem.GroupIds != nil {
 				for _, groupId := range hctx.SessUser.MemberOfGroupIds {
-					if utils.StringInSlice(groupId, toCheckItem.GroupIds) {
+					if utils.ItemInSlice(groupId, toCheckItem.GroupIds) {
 						return ownership, nil // User has access via group it belongs to
 					}
 				}
@@ -148,7 +149,7 @@ func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, hctx Hand
 }
 
 func MakeOwnerSummary(ownership *protos.OwnershipItem, db *mongo.Database) *protos.OwnershipSummary {
-	user, err := getUser(ownership.CreatorUserId, db)
+	user, err := getUserInfo(ownership.CreatorUserId, db)
 	result := &protos.OwnershipSummary{
 		CreatedUnixSec: ownership.CreatedUnixSec,
 	}
@@ -160,21 +161,4 @@ func MakeOwnerSummary(ownership *protos.OwnershipItem, db *mongo.Database) *prot
 		}
 	}
 	return result
-}
-
-func getUser(userId string, db *mongo.Database) (*protos.UserInfo, error) {
-	filter := bson.M{"_id": userId}
-	opts := options.FindOne().SetProjection(bson.D{{"info", true}})
-	result := db.Collection(dbCollections.UsersName).FindOne(context.TODO(), filter, opts)
-	if result.Err() != nil {
-		return nil, result.Err()
-	}
-
-	userDBItem := protos.UserDBItem{}
-	err := result.Decode(&userDBItem)
-	if err != nil {
-		return nil, err
-	}
-
-	return userDBItem.Info, nil
 }

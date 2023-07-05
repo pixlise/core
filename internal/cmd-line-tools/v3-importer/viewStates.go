@@ -213,67 +213,67 @@ func filterUnusedWidgetStates(state *wholeViewState) {
 	}
 
 	for widgetIdentifier := range state.ContextImages {
-		if !utils.StringInSlice("contextImage-"+widgetIdentifier, allowedItems) {
+		if !utils.ItemInSlice("contextImage-"+widgetIdentifier, allowedItems) {
 			delete(state.ContextImages, widgetIdentifier)
 		}
 	}
 	for widgetIdentifier := range state.Histograms {
-		if !utils.StringInSlice("histogram-"+widgetIdentifier, allowedItems) {
+		if !utils.ItemInSlice("histogram-"+widgetIdentifier, allowedItems) {
 			delete(state.Histograms, widgetIdentifier)
 		}
 	}
 	for widgetIdentifier := range state.ChordDiagrams {
-		if !utils.StringInSlice("chord-"+widgetIdentifier, allowedItems) {
+		if !utils.ItemInSlice("chord-"+widgetIdentifier, allowedItems) {
 			delete(state.ChordDiagrams, widgetIdentifier)
 		}
 	}
 	for widgetIdentifier := range state.BinaryPlots {
-		if !utils.StringInSlice("binary-"+widgetIdentifier, allowedItems) {
+		if !utils.ItemInSlice("binary-"+widgetIdentifier, allowedItems) {
 			delete(state.BinaryPlots, widgetIdentifier)
 		}
 	}
 	for widgetIdentifier := range state.TernaryPlots {
-		if !utils.StringInSlice("ternary-"+widgetIdentifier, allowedItems) {
+		if !utils.ItemInSlice("ternary-"+widgetIdentifier, allowedItems) {
 			delete(state.TernaryPlots, widgetIdentifier)
 		}
 	}
 	for widgetIdentifier := range state.Tables {
-		if !utils.StringInSlice("table-"+widgetIdentifier, allowedItems) {
+		if !utils.ItemInSlice("table-"+widgetIdentifier, allowedItems) {
 			delete(state.Tables, widgetIdentifier)
 		}
 	}
 	for widgetIdentifier := range state.ROIQuantTables {
-		if !utils.StringInSlice("roiQuantTable-"+widgetIdentifier, allowedItems) {
+		if !utils.ItemInSlice("roiQuantTable-"+widgetIdentifier, allowedItems) {
 			delete(state.ROIQuantTables, widgetIdentifier)
 		}
 	}
 	for widgetIdentifier := range state.Variograms {
-		if !utils.StringInSlice("variogram-"+widgetIdentifier, allowedItems) {
+		if !utils.ItemInSlice("variogram-"+widgetIdentifier, allowedItems) {
 			delete(state.Variograms, widgetIdentifier)
 		}
 	}
 	for widgetIdentifier := range state.RGBUPlots {
-		if !utils.StringInSlice("rgbuPlot-"+widgetIdentifier, allowedItems) {
+		if !utils.ItemInSlice("rgbuPlot-"+widgetIdentifier, allowedItems) {
 			delete(state.RGBUPlots, widgetIdentifier)
 		}
 	}
 	for widgetIdentifier := range state.SingleAxisRGBU {
-		if !utils.StringInSlice("singleAxisRGBU-"+widgetIdentifier, allowedItems) {
+		if !utils.ItemInSlice("singleAxisRGBU-"+widgetIdentifier, allowedItems) {
 			delete(state.SingleAxisRGBU, widgetIdentifier)
 		}
 	}
 	for widgetIdentifier := range state.RGBUImageViews {
-		if !utils.StringInSlice("rgbuImages-"+widgetIdentifier, allowedItems) {
+		if !utils.ItemInSlice("rgbuImages-"+widgetIdentifier, allowedItems) {
 			delete(state.RGBUImageViews, widgetIdentifier)
 		}
 	}
 	for widgetIdentifier := range state.Parallelograms {
-		if !utils.StringInSlice("parallelogram-"+widgetIdentifier, allowedItems) {
+		if !utils.ItemInSlice("parallelogram-"+widgetIdentifier, allowedItems) {
 			delete(state.Parallelograms, widgetIdentifier)
 		}
 	}
 	for widgetIdentifier := range state.Spectrums {
-		if !utils.StringInSlice("spectrum-"+widgetIdentifier, allowedItems) {
+		if !utils.ItemInSlice("spectrum-"+widgetIdentifier, allowedItems) {
 			delete(state.Spectrums, widgetIdentifier)
 		}
 	}

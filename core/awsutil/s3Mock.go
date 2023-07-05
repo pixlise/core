@@ -340,7 +340,7 @@ func (m *MockS3Client) PutObject(input *s3.PutObjectInput) (*s3.PutObjectOutput,
 		return nil, fmt.Errorf("%v %v - key\nexpected: \"%v\"\nS3 recvd: \"%v\"\n", ErrWrongInput, name, *input.Key, *expItem.Key)
 	}
 
-	if !utils.StringInSlice(*input.Key, m.SkipPutCheckNames) {
+	if !utils.ItemInSlice(*input.Key, m.SkipPutCheckNames) {
 		inpBody := getAsStr(input.Body)
 		expBody := getAsStr(expItem.Body)
 		if inpBody != expBody {

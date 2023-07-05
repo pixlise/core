@@ -7,6 +7,7 @@ import (
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
+	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,63 +17,11 @@ import (
 )
 
 func HandleElementSetDeleteReq(req *protos.ElementSetDeleteReq, hctx wsHelpers.HandlerContext) (*protos.ElementSetDeleteResp, error) {
-	ctx := context.TODO()
-
-	_, err := wsHelpers.CheckObjectAccess(true, req.Id, protos.ObjectType_OT_ELEMENT_SET, hctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Delete element set AND corresponding ownership item
-	wc := writeconcern.New(writeconcern.WMajority())
-	rc := readconcern.Snapshot()
-	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
-
-	sess, err := hctx.Svcs.MongoDB.Client().StartSession()
-	if err != nil {
-		return nil, err
-	}
-	defer sess.EndSession(ctx)
-
-	// Write the 2 items in a single transaction
-	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		result, err := hctx.Svcs.MongoDB.Collection(dbCollections.ElementSetsName).DeleteOne(context.TODO(), bson.M{"_id": req.Id})
-		if err != nil {
-			return nil, errorwithstatus.MakeBadRequestError(err)
-		}
-
-		if result.DeletedCount != 1 {
-			return nil, errorwithstatus.MakeNotFoundError(req.Id)
-		}
-
-		result, err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteOne(context.TODO(), bson.M{"_id": req.Id})
-		if err != nil {
-			return nil, errorwithstatus.MakeBadRequestError(err)
-		}
-
-		if result.DeletedCount != 1 {
-			return nil, errorwithstatus.MakeNotFoundError(req.Id)
-		}
-
-		return nil, nil
-	}
-
-	_, err = sess.WithTransaction(ctx, callback, txnOpts)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &protos.ElementSetDeleteResp{}, nil
+	return wsHelpers.DeleteUserObject[protos.ElementSetDeleteResp](req.Id, protos.ObjectType_OT_ELEMENT_SET, dbCollections.ElementSetsName, hctx)
 }
 
 func HandleElementSetGetReq(req *protos.ElementSetGetReq, hctx wsHelpers.HandlerContext) (*protos.ElementSetGetResp, error) {
-	owner, err := wsHelpers.CheckObjectAccess(false, req.Id, protos.ObjectType_OT_ELEMENT_SET, hctx)
-	if err != nil {
-		return nil, err
-	}
-
-	dbItem, err := getElementSet(req.Id, hctx.Svcs.MongoDB)
+	dbItem, owner, err := wsHelpers.GetUserObjectById[protos.ElementSet](false, req.Id, protos.ObjectType_OT_ELEMENT_SET, dbCollections.ElementSetsName, hctx)
 	if err != nil {
 		return nil, err
 	}
@@ -89,10 +38,7 @@ func HandleElementSetListReq(req *protos.ElementSetListReq, hctx wsHelpers.Handl
 		return nil, err
 	}
 
-	ids := []string{}
-	for id := range idToOwner {
-		ids = append(ids, id)
-	}
+	ids := utils.GetMapKeys(idToOwner)
 
 	filter := bson.M{"_id": bson.M{"$in": ids}}
 	opts := options.Find()
@@ -136,17 +82,6 @@ func validateElementSet(elementSet *protos.ElementSet) error {
 		return errors.New("Lines length is invalid")
 	}
 	return nil
-}
-
-func getElementSet(id string, db *mongo.Database) (*protos.ElementSet, error) {
-	result := db.Collection(dbCollections.ElementSetsName).FindOne(context.TODO(), bson.M{"_id": id})
-	if result.Err() != nil {
-		return nil, result.Err()
-	}
-
-	dbItem := &protos.ElementSet{}
-	err := result.Decode(dbItem)
-	return dbItem, err
 }
 
 func createElementSet(elementSet *protos.ElementSet, hctx wsHelpers.HandlerContext) (*protos.ElementSet, error) {
@@ -204,15 +139,9 @@ func createElementSet(elementSet *protos.ElementSet, hctx wsHelpers.HandlerConte
 func updateElementSet(elementSet *protos.ElementSet, hctx wsHelpers.HandlerContext) (*protos.ElementSet, error) {
 	ctx := context.TODO()
 
-	owner, err := wsHelpers.CheckObjectAccess(true, elementSet.Id, protos.ObjectType_OT_ELEMENT_SET, hctx)
+	dbItem, owner, err := wsHelpers.GetUserObjectById[protos.ElementSet](true, elementSet.Id, protos.ObjectType_OT_ELEMENT_SET, dbCollections.ElementSetsName, hctx)
 	if err != nil {
 		return nil, err
-	}
-
-	// First, we read the existing object, so we can validate it together
-	dbItem, err := getElementSet(elementSet.Id, hctx.Svcs.MongoDB)
-	if err != nil {
-		return nil, errorwithstatus.MakeNotFoundError(elementSet.Id)
 	}
 
 	// Update fields
