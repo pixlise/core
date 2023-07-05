@@ -3,9 +3,9 @@ package wsHandler
 import (
 	"context"
 
-	"github.com/pixlise/core/v3/OLDCODE/core/utils"
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
+	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -52,7 +52,7 @@ func HandleUserDismissHintReq(req *protos.UserDismissHintReq, hctx wsHelpers.Han
 	}
 
 	// Don't care if duplicate, just return OK
-	if !utils.StringInSlice(req.Hint, hints.DismissedHints) {
+	if !utils.ItemInSlice(req.Hint, hints.DismissedHints) {
 		hints.DismissedHints = append(hints.DismissedHints, req.Hint)
 	}
 
