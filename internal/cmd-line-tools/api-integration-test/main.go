@@ -24,9 +24,11 @@ import (
 	"math/rand"
 	"os"
 	"time"
+
+	"github.com/pixlise/core/v3/core/wstestlib"
 )
 
-var auth0Domain, auth0ClientId, auth0Secret, auth0Audience string
+var auth0Params wstestlib.Auth0Info
 
 var test1Username, test1Password, test2Username, test2Password string
 
@@ -41,10 +43,10 @@ func main() {
 
 	flag.StringVar(&apiHost, "apiHost", "", "Host name of API we're testing. Eg: localhost:8080 or something.review.pixlise.org")
 	flag.StringVar(&apiDBSecret, "apiDBSecret", "", "Mongo secret of the DB the API is connected")
-	flag.StringVar(&auth0Domain, "auth0Domain", "", "Auth0 domain for management API")
-	flag.StringVar(&auth0ClientId, "auth0ClientId", "", "Auth0 client id for management API")
-	flag.StringVar(&auth0Secret, "auth0Secret", "", "Auth0 secret for management API")
-	flag.StringVar(&auth0Audience, "auth0Audience", "", "Auth0 audience")
+	flag.StringVar(&auth0Params.Domain, "auth0Domain", "", "Auth0 domain for management API")
+	flag.StringVar(&auth0Params.ClientId, "auth0ClientId", "", "Auth0 client id for management API")
+	flag.StringVar(&auth0Params.Secret, "auth0Secret", "", "Auth0 secret for management API")
+	flag.StringVar(&auth0Params.Audience, "auth0Audience", "", "Auth0 audience")
 	flag.StringVar(&expectedAPIVersion, "expectedAPIVersion", "", "Expected API version (version not checked if blank)")
 	flag.StringVar(&testType, "testType", "endpoints", "Test type to run: endpoints, short")
 
@@ -71,7 +73,7 @@ func main() {
 		log.Fatal("Unexpected test type: " + testType)
 	}
 
-	runEndpointTests(apiHost)
+	runTests(apiHost)
 
 	fmt.Println("\n==============================")
 
@@ -85,4 +87,9 @@ func main() {
 		fmt.Printf("- %v\n", name)
 	}
 	os.Exit(1)
+}
+
+func runTests(apiHost string) {
+	testUserDetails(apiHost)
+	testElementSets(apiHost)
 }

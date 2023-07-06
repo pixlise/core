@@ -1,4 +1,4 @@
-package main
+package wstestlib
 
 import (
 	"fmt"
@@ -17,6 +17,19 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
+type ConnectInfo struct {
+	Host string
+	User string
+	Pass string
+}
+
+type Auth0Info struct {
+	ClientId string
+	Secret   string
+	Domain   string
+	Audience string
+}
+
 type socketConn struct {
 	JWT       string
 	userId    string
@@ -31,8 +44,8 @@ type socketConn struct {
 const maxResponsesBuffered = 100
 
 // Inspired by: https://tradermade.com/tutorials/golang-websocket-client
-func (s *socketConn) connect(apiHost string, user string, pass string) error {
-	token, err := s.getWSConnectToken(apiHost, user, pass)
+func (s *socketConn) connect(connectParams ConnectInfo, auth0Params Auth0Info) error {
+	token, err := s.getWSConnectToken(connectParams, auth0Params)
 	if err != nil {
 		return err
 	}
@@ -43,7 +56,7 @@ func (s *socketConn) connect(apiHost string, user string, pass string) error {
 	signal.Notify(s.interrupt, os.Interrupt)
 
 	// NOTE: not using wss for local...
-	wsUrl := url.URL{Scheme: "ws", Host: apiHost, Path: "/ws", RawQuery: "token=" + token}
+	wsUrl := url.URL{Scheme: "ws", Host: connectParams.Host, Path: "/ws", RawQuery: "token=" + token}
 	ws, resp, err := websocket.DefaultDialer.Dial(wsUrl.String(), nil)
 	if err != nil {
 		log.Fatalln("WS connection failed:", err)
@@ -131,9 +144,10 @@ func (s *socketConn) disconnect() error {
 	return nil
 }
 
-func (s *socketConn) getWSConnectToken(apiHost string, user string, pass string) (string, error) {
+func (s *socketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Auth0Info) (string, error) {
 	var err error
-	s.JWT, err = auth0login.GetJWT(user, pass, auth0ClientId, auth0Secret, auth0Domain, "http://localhost:4200/authenticate", auth0Audience, "openid profile email")
+	s.JWT, err = auth0login.GetJWT(connectParams.User, connectParams.Pass,
+		auth0Params.ClientId, auth0Params.Secret, auth0Params.Domain, "http://localhost:4200/authenticate", auth0Params.Audience, "openid profile email")
 	if err != nil {
 		return "", err
 	}
@@ -153,7 +167,7 @@ func (s *socketConn) getWSConnectToken(apiHost string, user string, pass string)
 
 	// Get WS connection token
 	// NOTE: not using https for local...
-	wsConnectUrl := url.URL{Scheme: "http", Host: apiHost, Path: "/ws-connect"}
+	wsConnectUrl := url.URL{Scheme: "http", Host: connectParams.Host, Path: "/ws-connect"}
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", wsConnectUrl.String(), nil)
