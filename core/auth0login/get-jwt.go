@@ -28,6 +28,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/pixlise/core/v3/api/config"
+	"gopkg.in/auth0.v4/management"
 )
 
 // Auth0TokenResponse - The token response type
@@ -67,4 +70,9 @@ func GetJWT(username string, password string, clientID string, clientSecret stri
 	}
 
 	return bodyData.AccessToken, nil
+}
+
+func InitAuth0ManagementAPI(cfg config.APIConfig) (*management.Management, error) {
+	api, err := management.New(cfg.Auth0Domain, cfg.Auth0ManagementClientID, cfg.Auth0ManagementSecret)
+	return api, err
 }

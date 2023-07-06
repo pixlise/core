@@ -92,4 +92,5 @@ func main() {
 func runTests(apiHost string) {
 	testUserDetails(apiHost)
 	testElementSets(apiHost)
+	testUserManagement(apiHost)
 }
