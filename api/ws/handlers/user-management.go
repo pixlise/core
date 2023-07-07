@@ -46,6 +46,10 @@ func HandleUserListReq(req *protos.UserListReq, hctx wsHelpers.HandlerContext) (
 // /////////////////////////////////////////////////////////////////////
 // Getting a users roles
 func HandleUserRolesListReq(req *protos.UserRolesListReq, hctx wsHelpers.HandlerContext) (*protos.UserRolesListResp, error) {
+	if err := wsHelpers.CheckStringField(&req.UserId, "UserId", 5, 32); err != nil {
+		return nil, err
+	}
+
 	auth0API, err := auth0login.InitAuth0ManagementAPI(hctx.Svcs.Config)
 	if err != nil {
 		return nil, err
@@ -64,6 +68,13 @@ func HandleUserRolesListReq(req *protos.UserRolesListReq, hctx wsHelpers.Handler
 // /////////////////////////////////////////////////////////////////////
 // Managing a users roles
 func HandleUserAddRoleReq(req *protos.UserAddRoleReq, hctx wsHelpers.HandlerContext) (*protos.UserAddRoleResp, error) {
+	if err := wsHelpers.CheckStringField(&req.UserId, "UserId", 5, 32); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&req.RoleId, "RoleId", 5, 32); err != nil {
+		return nil, err
+	}
+
 	auth0API, err := auth0login.InitAuth0ManagementAPI(hctx.Svcs.Config)
 	if err != nil {
 		return nil, err
@@ -112,6 +123,13 @@ func HandleUserAddRoleReq(req *protos.UserAddRoleReq, hctx wsHelpers.HandlerCont
 }
 
 func HandleUserDeleteRoleReq(req *protos.UserDeleteRoleReq, hctx wsHelpers.HandlerContext) (*protos.UserDeleteRoleResp, error) {
+	if err := wsHelpers.CheckStringField(&req.UserId, "UserId", 5, 32); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&req.RoleId, "RoleId", 5, 32); err != nil {
+		return nil, err
+	}
+
 	auth0API, err := auth0login.InitAuth0ManagementAPI(hctx.Svcs.Config)
 	if err != nil {
 		return nil, err
