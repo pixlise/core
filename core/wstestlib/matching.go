@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -120,8 +121,13 @@ func compare(received any, expected any, userId string, idsCreated map[string]st
 		}
 	case string:
 		const SECAGO_START = "$SECAGO="
+		const SECAFTER_START = "$SECAFTER="
+		const REGEXMATCH_START = "$REGEXMATCH="
 
 		secondsAgoCheck := 0
+		secondsAfterCheck := -1
+		regexMatch := ""
+
 		if expVal == "$IGNORE$" {
 			// We're choosing to deliberately ignore the received value here
 			return nil
@@ -134,6 +140,17 @@ func compare(received any, expected any, userId string, idsCreated map[string]st
 			}
 
 			secondsAgoCheck = int(time.Now().Unix()) - seconds
+		} else if strings.HasPrefix(expVal, SECAFTER_START) && strings.HasSuffix(expVal, "$") {
+			// Work out what time stamp to compare
+			secondsStr := expVal[len(SECAFTER_START) : len(expVal)-1]
+			var _err error
+			secondsAfterCheck, _err = strconv.Atoi(secondsStr)
+			if _err != nil {
+				return fmt.Errorf("failed to read defined seconds after: %v", secondsStr)
+			}
+		} else if strings.HasPrefix(expVal, REGEXMATCH_START) && strings.HasSuffix(expVal, "$") {
+			// Work out what time stamp to compare
+			regexMatch = expVal[len(REGEXMATCH_START) : len(expVal)-1]
 		}
 
 		switch recVal := received.(type) {
@@ -144,7 +161,11 @@ func compare(received any, expected any, userId string, idsCreated map[string]st
 
 			// If we had a string specified, the only way the received thing having a number
 			// is valid is if it's a timestamp comparison
-			if secondsAgoCheck <= 0 {
+			if len(regexMatch) > 0 {
+				return fmt.Errorf(`cannot regex match "%v", for received number %v`, regexMatch, recVal)
+
+			}
+			if secondsAgoCheck <= 0 && secondsAfterCheck <= 0 {
 				return fmt.Errorf(`expected "%v", received "%v"`, expVal, recVal)
 			}
 
@@ -168,26 +189,53 @@ func compare(received any, expected any, userId string, idsCreated map[string]st
 
 				// Otherwise, we're happy wit it
 				return nil
+			} else if secondsAfterCheck > -1 {
+				// We're checking that this timestamp is after specified...
+				seconds, _err := strconv.Atoi(recVal)
+				if _err != nil {
+					return fmt.Errorf("failed to read timestamp from string value: %v. Error was: %v", recVal, _err)
+				}
+
+				if seconds < secondsAfterCheck {
+					return fmt.Errorf(`received time stamp %v is before expected %v`, seconds, secondsAfterCheck)
+				}
+
+				// Otherwise, we're happy with it
+				return nil
 			}
 
-			const ID_START = "$ID="
-
-			// Check values, there may be some specific overrides here...
-			if expVal == "$USERID$" {
-				// We just want to see if the response has the user id
-				if recVal != userId {
-					return fmt.Errorf(`expected user id "%v", received "%v"`, userId, recVal)
+			if len(regexMatch) > 0 {
+				// Regex match the received value string
+				match, err := regexp.Match(regexMatch, []byte(recVal))
+				if err != nil {
+					return fmt.Errorf(`regex match "%v" failed on received "%v". Error: %v`, regexMatch, recVal, err)
 				}
-			} else if strings.HasPrefix(expVal, ID_START) && strings.HasSuffix(expVal, "$") {
-				idName := expVal[len(ID_START) : len(expVal)-1]
-				if len(idName) <= 0 {
-					return fmt.Errorf("failed to read defined id name to save: %v", expVal)
+				if !match {
+					return fmt.Errorf(`received "%v" did not match regex "%v"`, recVal, regexMatch)
 				}
 
-				// Save the ID
-				idsCreated[idName] = recVal
-			} else if recVal != expVal {
-				return fmt.Errorf(`expected "%v", received "%v"`, expVal, recVal)
+				// Otherwise, we matched, all good!
+				return nil
+			} else {
+				const ID_START = "$ID="
+
+				// Check values, there may be some specific overrides here...
+				if expVal == "$USERID$" {
+					// We just want to see if the response has the user id
+					if recVal != userId {
+						return fmt.Errorf(`expected user id "%v", received "%v"`, userId, recVal)
+					}
+				} else if strings.HasPrefix(expVal, ID_START) && strings.HasSuffix(expVal, "$") {
+					idName := expVal[len(ID_START) : len(expVal)-1]
+					if len(idName) <= 0 {
+						return fmt.Errorf("failed to read defined id name to save: %v", expVal)
+					}
+
+					// Save the ID
+					idsCreated[idName] = recVal
+				} else if recVal != expVal {
+					return fmt.Errorf(`expected "%v", received "%v"`, expVal, recVal)
+				}
 			}
 
 			// If we got this far, they are considered a match
@@ -239,7 +287,7 @@ func compare(received any, expected any, userId string, idsCreated map[string]st
 					}
 
 					if specParams[0] == "LIST" {
-						keyErr = compareList(specParams[1:], recVal[recKey], expVal[expKey])
+						keyErr = compareList(specParams[1:], recVal[recKey], expVal[expKey], userId, idsCreated)
 					}
 				} else {
 					keyErr = compare(recVal[recKey], expVal[expKey], userId, idsCreated)
@@ -269,7 +317,7 @@ func compare(received any, expected any, userId string, idsCreated map[string]st
 	return nil
 }
 
-func compareList(params []string, received any, expected any) error {
+func compareList(params []string, received any, expected any, userId string, idsCreated map[string]string) error {
 	paramsForErr := strings.Join(params, ",")
 
 	// Check params
@@ -313,7 +361,9 @@ func compareList(params []string, received any, expected any) error {
 				for _, expItem := range expVal {
 					found := false
 					for _, recItem := range recVal {
-						if expItem == recItem {
+						// We compare what we have to anything that came in, errors don't matter, we just want to find a match
+						err := compare(recItem, expItem, userId, idsCreated)
+						if err == nil {
 							found = true
 							break
 						}

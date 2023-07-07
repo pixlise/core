@@ -1,6 +1,10 @@
 package main
 
-import "github.com/pixlise/core/v3/core/wstestlib"
+import (
+	"fmt"
+
+	"github.com/pixlise/core/v3/core/wstestlib"
+)
 
 // Using a known user & role:
 // User is: test@pixlise.org
@@ -10,11 +14,11 @@ import "github.com/pixlise/core/v3/core/wstestlib"
 //const knownTestRoleID = "rol_KdjHrTCteclbY7om"
 
 func testUserManagement(apiHost string) {
-	testUserManagementPermission(apiHost)
-	testUserManagementFunctionality(apiHost)
+	nonPermissionedUserId := testUserManagementPermission(apiHost)
+	testUserManagementFunctionality(apiHost, nonPermissionedUserId)
 }
 
-func testUserManagementFunctionality(apiHost string) {
+func testUserManagementFunctionality(apiHost string, userIdToEdit string) {
 	// User 2 has access
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
 	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
@@ -23,19 +27,137 @@ func testUserManagementFunctionality(apiHost string) {
 		Pass: test2Password,
 	})
 
+	const knownRoleNoPermissions = "No Permissions"
+	const knownRoleUnassignedUser = "Unassigned New User"
+
 	u2.AddSendReqAction("List all roles",
 		`{"userRoleListReq":{}}`,
-		`{"msgId":1, "status": "WS_OK",
+		fmt.Sprintf(`{"msgId":1, "status": "WS_OK",
 			"userRoleListResp":{
-				"roles#LIST,MODE=LENGTH,MINLENGTH=1#": []
-			}}`,
+				"roles#LIST,MODE=CONTAINS,MINLENGTH=2#": [
+					{
+						"id": "$ID=noPermissionRoleId$",
+						"name": "%v",
+						"description": "$IGNORE$"
+					},
+					{
+						"id": "$ID=unassignedRoleId$",
+						"name": "%v",
+						"description": "$IGNORE$"
+					}
+				]
+			}}`, knownRoleNoPermissions, knownRoleUnassignedUser),
 	)
 
-	// List roles
-	// List users
-	// List roles for a user
-	// Add role to user
-	// Delete role from  user
+	u2.AddSendReqAction("List all users",
+		`{"userListReq":{}}`,
+		`{"msgId":2, "status": "WS_OK",
+			"userListResp": {
+				"details#LIST,MODE=CONTAINS,MINLENGTH=1#": [
+					{
+						"auth0User": {
+							"id": "$USERID$",
+							"name": "$REGEXMATCH=test$",
+							"email": "$REGEXMATCH=.+@pixlise\\.org$",
+							"iconURL": "$REGEXMATCH=^https://.*$"
+						},
+						"pixliseUser": {
+							"id": "$USERID$",
+							"name": "$REGEXMATCH=test$",
+							"email": "$REGEXMATCH=.+@pixlise\\.org$"
+						},
+						"createdUnixSec": "$SECAFTER=1688083200$",
+						"lastLoginUnixSec": "$SECAGO=10$"
+					}
+				]
+			}
+		}`,
+	)
+
+	u2.CloseActionGroup([]string{}, 5000)
+
+	// Run the test
+	wstestlib.ExecQueuedActions(&u2)
+
+	u2.AddSendReqAction("Invalid list roles for a user",
+		`{"userRolesListReq":{}}`,
+		`{"msgId":3, 
+			"status": "WS_BAD_REQUEST",
+			"errorText": "UserId is too short",
+			"userRolesListResp": {} }`,
+	)
+
+	u2.AddSendReqAction("List roles for a non-existant user",
+		`{"userRolesListReq":{"userId": "auth0|non-existant-user-id-999"}}`,
+		`{"msgId":4, 
+			"status": "WS_NOT_FOUND",
+			"errorText": "404 Not Found: The user does not exist.",
+			"userRolesListResp": {} }`,
+	)
+
+	u2.AddSendReqAction("List roles for a user",
+		fmt.Sprintf(`{"userRolesListReq":{"userId": "%v"}}`, userIdToEdit), //u2.GetUserId()),
+		fmt.Sprintf(`{"msgId":5, "status": "WS_OK",
+			"userRolesListResp": {
+				"roles": [
+					{
+						"id": "%v",
+						"name": "%v",
+						"description": "$IGNORE$"
+					}
+				]
+			}
+		}`, u2.GetIdCreated("unassignedRoleId"), knownRoleUnassignedUser),
+	)
+
+	u2.AddSendReqAction("Add role to user",
+		fmt.Sprintf(`{"userAddRoleReq":{"userId": "%v", "roleId": "%v"}}`, userIdToEdit, u2.GetIdCreated("noPermissionRoleId")), //u2.GetUserId()),
+		`{"msgId":6, "status": "WS_OK",
+			"userAddRoleResp": {}
+		}`,
+	)
+
+	u2.AddSendReqAction("List roles for edited user",
+		fmt.Sprintf(`{"userRolesListReq":{"userId": "%v"}}`, userIdToEdit), //u2.GetUserId()),
+		fmt.Sprintf(`{"msgId":7, "status": "WS_OK",
+			"userRolesListResp": {
+				"roles#LIST,MODE=CONTAINS#": [
+					{
+						"id": "%v",
+						"name": "%v",
+						"description": "$IGNORE$"
+					},
+					{
+						"id": "%v",
+						"name": "%v",
+						"description": "$IGNORE$"
+					}
+				]
+			}
+		}`, u2.GetIdCreated("unassignedRoleId"), knownRoleUnassignedUser, u2.GetIdCreated("noPermissionRoleId"), knownRoleNoPermissions),
+	)
+
+	u2.AddSendReqAction("Delete role from user",
+		fmt.Sprintf(`{"userDeleteRoleReq":{"userId": "%v", "roleId": "%v"}}`, userIdToEdit, u2.GetIdCreated("noPermissionRoleId")), //u2.GetUserId()),
+		`{"msgId":8, "status": "WS_OK",
+			"userDeleteRoleResp": {}
+		}`,
+	)
+
+	u2.AddSendReqAction("List roles for a user",
+		fmt.Sprintf(`{"userRolesListReq":{"userId": "%v"}}`, userIdToEdit), //u2.GetUserId()),
+		fmt.Sprintf(`{"msgId":9, "status": "WS_OK",
+			"userRolesListResp": {
+				"roles": [
+					{
+						"id": "%v",
+						"name": "%v",
+						"description": "$IGNORE$"
+					}
+				]
+			}
+		}`, u2.GetIdCreated("unassignedRoleId"), knownRoleUnassignedUser),
+	)
 
 	u2.CloseActionGroup([]string{}, 5000)
 
@@ -43,7 +165,8 @@ func testUserManagementFunctionality(apiHost string) {
 	wstestlib.ExecQueuedActions(&u2)
 }
 
-func testUserManagementPermission(apiHost string) {
+// Return the users id used for this test...
+func testUserManagementPermission(apiHost string) string {
 	// User 1 doesn't have the right to do anything user management-wise, check that we do prevent it
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
 	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
@@ -74,6 +197,8 @@ func testUserManagementPermission(apiHost string) {
 
 	// Run the test
 	wstestlib.ExecQueuedActions(&u1)
+
+	return u1.GetUserId()
 }
 
 /*
