@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/pixlise/core/v3/core/logger"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -43,6 +44,13 @@ func connectToLocalMongoDB(log logger.ILogger) (*mongo.Client, error) {
 
 	ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
 	err = client.Connect(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Try to ping the DB to confirm connection
+	var result bson.M
+	err = client.Database("admin").RunCommand(context.TODO(), bson.D{{"ping", 1}}).Decode(&result)
 	if err != nil {
 		return nil, err
 	}
