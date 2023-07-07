@@ -308,6 +308,17 @@ func compare(received any, expected any, userId string, idsCreated map[string]st
 			if len(recVal) != len(expVal) {
 				return fmt.Errorf("expected %v list items, received %v", len(expVal), len(recVal))
 			}
+
+			// Lengths are equal, compare each
+			for c, expItem := range expVal {
+				recItem := recVal[c]
+				keyErr := compare(recItem, expItem, userId, idsCreated)
+
+				if keyErr != nil {
+					// Stop here
+					return fmt.Errorf("\"%v\": %v", expItem, keyErr)
+				}
+			}
 		default:
 			return fmt.Errorf(`expected "%v", received "%v"`, expVal, recVal)
 		}
