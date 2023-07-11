@@ -239,7 +239,7 @@ func modifyGroupAdminList(groupId string, adminUserId string, add bool, hctx wsH
 }
 
 func HandleUserGroupAddMemberReq(req *protos.UserGroupAddMemberReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupAddMemberResp, error) {
-	group, err := modifyGroupMemberList(req.GroupId, req.GetGroupMemberId(), req.GetUserMemberId(), false, hctx)
+	group, err := modifyGroupMemberList(req.GroupId, req.GetGroupMemberId(), req.GetUserMemberId(), true, hctx)
 	if err != nil {
 		return nil, err
 	}
@@ -270,13 +270,13 @@ func modifyGroupMemberList(groupId string, memberGroupId string, memberUserId st
 	idMaxLen := wsHelpers.IdFieldMaxLength
 	idName := "GroupMemberId"
 	isGroup := true
-	dbField := "members.groupIds"
+	dbField := "members.groupids"
 	if len(checkId) <= 0 {
 		checkId = memberUserId
 		idMaxLen = wsHelpers.Auth0UserIdFieldMaxLength
 		idName = "UserMemberId"
 		isGroup = false
-		dbField = "members.userIds"
+		dbField = "members.userids"
 	}
 
 	if err := wsHelpers.CheckStringField(&checkId, idName, 1, idMaxLen); err != nil {
@@ -296,15 +296,37 @@ func modifyGroupMemberList(groupId string, memberGroupId string, memberUserId st
 		memberIds = group.Members.UserIds
 	}
 
-	dbOp := "$delete"
+	dbOp := "$pull"
 	if add {
 		if utils.StringInSlice(checkId, memberIds) {
 			return nil, errorwithstatus.MakeBadRequestError(errors.New(checkId + " is already a " + idName))
 		}
 		dbOp = "$addToSet"
+		if isGroup {
+			group.Members.GroupIds = append(group.Members.GroupIds, checkId)
+		} else {
+			group.Members.UserIds = append(group.Members.UserIds, checkId)
+		}
 	} else {
-		if !utils.StringInSlice(checkId, memberIds) {
+		// Find the index
+		idx := -1
+		for c, id := range memberIds {
+			if checkId == id {
+				// Found it!
+				idx = c
+				break
+			}
+		}
+
+		if idx == -1 {
 			return nil, errorwithstatus.MakeBadRequestError(errors.New(checkId + " is not a " + idName))
+		}
+
+		// Delete from our group that we're returning too
+		if isGroup {
+			group.Members.GroupIds = append(group.Members.GroupIds[0:idx], group.Members.GroupIds[idx+1:]...)
+		} else {
+			group.Members.UserIds = append(group.Members.UserIds[0:idx], group.Members.UserIds[idx+1:]...)
 		}
 	}
 
