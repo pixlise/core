@@ -94,4 +94,5 @@ func runTests(apiHost string) {
 	testElementSets(apiHost)
 	testUserManagement(apiHost)
 	testUserGroups(apiHost)
+	testLogMsgs(apiHost)
 }
