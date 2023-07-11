@@ -13,7 +13,7 @@ func testUserDetails(apiHost string) {
 	u1.AddSendReqAction("Request details",
 		`{"userDetailsReq":{}}`,
 		`{"msgId":1,"status":"WS_OK","userDetailsResp":{
-				"details":{"info":{"id":"$USERID$","name":"test1@pixlise.org - WS Integration Test","email":"test1@pixlise.org"},
+				"details":{"info":{"id":"${USERID}","name":"test1@pixlise.org - WS Integration Test","email":"test1@pixlise.org"},
 				"permissions": [
 					"EDIT_ELEMENT_SET",
 					"EDIT_OWN_USER",
@@ -29,7 +29,7 @@ func testUserDetails(apiHost string) {
 	u1.AddSendReqAction("Request details again",
 		`{"userDetailsReq":{}}`,
 		`{"msgId":3,"status":"WS_OK","userDetailsResp":{
-			"details":{"info":{"id":"$USERID$","name":"Test 1 User","email":"test1-2@pixlise.org"},
+			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
 			"dataCollectionVersion": "1.2.3",
             "permissions": [
                 "EDIT_ELEMENT_SET",
@@ -46,7 +46,7 @@ func testUserDetails(apiHost string) {
 	u1.AddSendReqAction("Request details again",
 		`{"userDetailsReq":{}}`,
 		`{"msgId":5,"status":"WS_OK","userDetailsResp":{
-			"details":{"info":{"id":"$USERID$","name":"Test 1 User","email":"test1-2@pixlise.org"},
+			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
 			"dataCollectionVersion": "1.2.4",
             "permissions": [
                 "EDIT_ELEMENT_SET",
@@ -63,7 +63,7 @@ func testUserDetails(apiHost string) {
 	u1.AddSendReqAction("Request details again",
 		`{"userDetailsReq":{}}`,
 		`{"msgId":7,"status":"WS_OK","userDetailsResp":{
-			"details":{"info":{"id":"$USERID$","name":"Test 1 User","email":"test1-2@pixlise.org"},
+			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
 			"dataCollectionVersion": "1.2.4",
             "permissions": [
                 "EDIT_ELEMENT_SET",
@@ -80,7 +80,7 @@ func testUserDetails(apiHost string) {
 	u1.AddSendReqAction("Request details again",
 		`{"userDetailsReq":{}}`,
 		`{"msgId":9,"status":"WS_OK","userDetailsResp":{
-			"details":{"info":{"id":"$USERID$","name":"Test 1 User","email":"test1-2@pixlise.org"},
+			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
 			"dataCollectionVersion": "1.2.4",
             "permissions": [
                 "EDIT_ELEMENT_SET",

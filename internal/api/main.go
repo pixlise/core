@@ -168,6 +168,10 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 
 	// Get handle to the DB
 	dbName := mongoDBConnection.GetDatabaseName("pixlise", cfg.EnvironmentName)
+	if dbName == "pixlise-local" {
+		// Temporary override hack
+		dbName = "pixlise-prodMigrated"
+	}
 	db := mongoClient.Database(dbName)
 
 	// If we're in the unit test environment, drop the database so we start from scratch each time

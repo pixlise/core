@@ -58,8 +58,11 @@ func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.Han
 		Id:             groupId,
 		Name:           req.Name,
 		CreatedUnixSec: uint64(hctx.Svcs.TimeStamper.GetTimeNowSec()),
-		Members:        &protos.UserGroupList{},
-		AdminUserIds:   []string{
+		Members: &protos.UserGroupList{
+			UserIds:  []string{},
+			GroupIds: []string{},
+		},
+		AdminUserIds: []string{
 			// Creator is an admin user who can create items, but
 			// this list is for non-admin users who can be given
 			// admin rights over a group (just to add/remove members)
@@ -77,7 +80,7 @@ func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.Han
 
 func HandleUserGroupDeleteReq(req *protos.UserGroupDeleteReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupDeleteResp, error) {
 	// Should only be called if we have admin rights, so other permission issues here
-	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, 50); err != nil {
+	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
 
@@ -101,7 +104,7 @@ func HandleUserGroupDeleteReq(req *protos.UserGroupDeleteReq, hctx wsHelpers.Han
 
 func HandleUserGroupSetNameReq(req *protos.UserGroupSetNameReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupSetNameResp, error) {
 	// Should only be called if we have admin rights, so other permission issues here
-	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, 50); err != nil {
+	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
 	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 50); err != nil {
@@ -158,33 +161,9 @@ func checkUserGroupNameExists(name string, ctx context.Context, coll *mongo.Coll
 }
 
 func HandleUserGroupAddAdminReq(req *protos.UserGroupAddAdminReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupAddAdminResp, error) {
-	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, 50); err != nil {
-		return nil, err
-	}
-	if err := wsHelpers.CheckStringField(&req.AdminUserId, "AdminUserId", 1, 50); err != nil {
-		return nil, err
-	}
-
-	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
-
-	group, err := getGroupAndCheckPermission(req.GroupId, hctx.SessUser.User.Id, hctx.SessUser.Permissions, ctx, coll)
+	group, err := modifyGroupAdminList(req.GroupId, req.AdminUserId, true, hctx)
 	if err != nil {
 		return nil, err
-	}
-
-	if utils.StringInSlice(req.AdminUserId, group.AdminUserIds) {
-		return nil, errorwithstatus.MakeBadRequestError(errors.New(req.AdminUserId + " is already an admin"))
-	}
-
-	// We're allowed to edit, so do it
-	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.ElementSetsName).UpdateByID(ctx, req.GroupId, bson.D{{Key: "$add", Value: bson.D{{"adminuserids", req.AdminUserId}}}})
-	if err != nil {
-		return nil, err
-	}
-
-	if result.MatchedCount != 1 {
-		hctx.Svcs.Log.Errorf("UserGroup Add Admin result had unexpected counts %+v id: %v", result, group.Id)
 	}
 
 	return &protos.UserGroupAddAdminResp{
@@ -193,33 +172,9 @@ func HandleUserGroupAddAdminReq(req *protos.UserGroupAddAdminReq, hctx wsHelpers
 }
 
 func HandleUserGroupDeleteAdminReq(req *protos.UserGroupDeleteAdminReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupDeleteAdminResp, error) {
-	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, 50); err != nil {
-		return nil, err
-	}
-	if err := wsHelpers.CheckStringField(&req.AdminUserId, "AdminUserId", 1, 50); err != nil {
-		return nil, err
-	}
-
-	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
-
-	group, err := getGroupAndCheckPermission(req.GroupId, hctx.SessUser.User.Id, hctx.SessUser.Permissions, ctx, coll)
+	group, err := modifyGroupAdminList(req.GroupId, req.AdminUserId, false, hctx)
 	if err != nil {
 		return nil, err
-	}
-
-	if !utils.StringInSlice(req.AdminUserId, group.AdminUserIds) {
-		return nil, errorwithstatus.MakeBadRequestError(errors.New(req.AdminUserId + " is not an admin"))
-	}
-
-	// We're allowed to edit, so do it
-	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.ElementSetsName).UpdateByID(ctx, req.GroupId, bson.D{{Key: "$delete", Value: bson.D{{"adminuserids", req.AdminUserId}}}})
-	if err != nil {
-		return nil, err
-	}
-
-	if result.MatchedCount != 1 {
-		hctx.Svcs.Log.Errorf("UserGroup Delete Admin result had unexpected counts %+v id: %v", result, group.Id)
 	}
 
 	return &protos.UserGroupDeleteAdminResp{
@@ -227,17 +182,148 @@ func HandleUserGroupDeleteAdminReq(req *protos.UserGroupDeleteAdminReq, hctx wsH
 	}, nil
 }
 
+func modifyGroupAdminList(groupId string, adminUserId string, add bool, hctx wsHelpers.HandlerContext) (*protos.UserGroup, error) {
+	if err := wsHelpers.CheckStringField(&groupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&adminUserId, "AdminUserId", 1, wsHelpers.Auth0UserIdFieldMaxLength); err != nil {
+		return nil, err
+	}
+
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
+
+	group, err := getGroupAndCheckPermission(groupId, hctx.SessUser.User.Id, hctx.SessUser.Permissions, ctx, coll)
+	if err != nil {
+		return nil, err
+	}
+
+	dbOp := "$pull"
+	if add {
+		// Check if already in there
+		if utils.StringInSlice(adminUserId, group.AdminUserIds) {
+			return nil, errorwithstatus.MakeBadRequestError(errors.New(adminUserId + " is already an admin"))
+		}
+		dbOp = "$addToSet"
+		// Add to result already, if we fail to write to db, result wont be sent
+		group.AdminUserIds = append(group.AdminUserIds, adminUserId)
+	} else {
+		// Check that it's actually there
+		idx := -1
+		for c, id := range group.AdminUserIds {
+			if adminUserId == id {
+				// Found it!
+				idx = c
+				break
+			}
+		}
+		if idx == -1 {
+			return nil, errorwithstatus.MakeBadRequestError(errors.New(adminUserId + " is not an admin"))
+		}
+
+		// Delete from result already, if we fail to write to db, result wont be sent
+		group.AdminUserIds = append(group.AdminUserIds[0:idx], group.AdminUserIds[idx+1:]...)
+	}
+
+	// We're allowed to edit, so do it
+	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName).UpdateByID(ctx, groupId, bson.M{dbOp: bson.M{"adminuserids": adminUserId}})
+	if err != nil {
+		return nil, err
+	}
+
+	if result.ModifiedCount != 1 {
+		hctx.Svcs.Log.Errorf("UserGroup Admin %v result had unexpected counts %+v id: %v", dbOp, result, group.Id)
+	}
+
+	return group, nil
+}
+
 func HandleUserGroupAddMemberReq(req *protos.UserGroupAddMemberReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupAddMemberResp, error) {
-	return nil, errors.New("HandleUserGroupAddMemberReq not implemented yet")
+	group, err := modifyGroupMemberList(req.GroupId, req.GetGroupMemberId(), req.GetUserMemberId(), false, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.UserGroupAddMemberResp{
+		Group: group,
+	}, nil
 }
 
 func HandleUserGroupDeleteMemberReq(req *protos.UserGroupDeleteMemberReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupDeleteMemberResp, error) {
-	return nil, errors.New("HandleUserGroupDeleteMemberReq not implemented yet")
+	group, err := modifyGroupMemberList(req.GroupId, req.GetGroupMemberId(), req.GetUserMemberId(), false, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.UserGroupDeleteMemberResp{
+		Group: group,
+	}, nil
+}
+
+func modifyGroupMemberList(groupId string, memberGroupId string, memberUserId string, add bool, hctx wsHelpers.HandlerContext) (*protos.UserGroup, error) {
+	if err := wsHelpers.CheckStringField(&groupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+
+	// Must have one of these...
+	checkId := memberGroupId
+	idMaxLen := wsHelpers.IdFieldMaxLength
+	idName := "GroupMemberId"
+	isGroup := true
+	dbField := "members.groupIds"
+	if len(checkId) <= 0 {
+		checkId = memberUserId
+		idMaxLen = wsHelpers.Auth0UserIdFieldMaxLength
+		idName = "UserMemberId"
+		isGroup = false
+		dbField = "members.userIds"
+	}
+
+	if err := wsHelpers.CheckStringField(&checkId, idName, 1, idMaxLen); err != nil {
+		return nil, err
+	}
+
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
+
+	group, err := getGroupAndCheckPermission(groupId, hctx.SessUser.User.Id, hctx.SessUser.Permissions, ctx, coll)
+	if err != nil {
+		return nil, err
+	}
+
+	memberIds := group.Members.GroupIds
+	if !isGroup {
+		memberIds = group.Members.UserIds
+	}
+
+	dbOp := "$delete"
+	if add {
+		if utils.StringInSlice(checkId, memberIds) {
+			return nil, errorwithstatus.MakeBadRequestError(errors.New(checkId + " is already a " + idName))
+		}
+		dbOp = "$addToSet"
+	} else {
+		if !utils.StringInSlice(checkId, memberIds) {
+			return nil, errorwithstatus.MakeBadRequestError(errors.New(checkId + " is not a " + idName))
+		}
+	}
+
+	// We're allowed to edit, so do it
+	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName).UpdateByID(ctx, groupId, bson.D{{Key: dbOp, Value: bson.D{{dbField, checkId}}}})
+	if err != nil {
+		return nil, err
+	}
+
+	if result.MatchedCount != 1 {
+		hctx.Svcs.Log.Errorf("UserGroup %v %v result had unexpected counts %+v id: %v", dbOp, dbField, result, checkId)
+	}
+
+	return group, nil
 }
 
 func getGroupAndCheckPermission(groupId string, requestingUser string, requestingUserPermission map[string]bool, ctx context.Context, coll *mongo.Collection) (*protos.UserGroup, error) {
 	// First read the group in question
-	groupRes := coll.FindOne(ctx, bson.M{"id": groupId})
+	groupRes := coll.FindOne(ctx, bson.M{"_id": groupId})
 	if groupRes.Err() != nil {
 		if groupRes.Err() == mongo.ErrNoDocuments {
 			return nil, errorwithstatus.MakeNotFoundError(groupId)

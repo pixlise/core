@@ -7,11 +7,13 @@ import (
 )
 
 func testUserGroups(apiHost string) {
-	testUserGroupsPermission(apiHost)
-	testUserGroupsFunctionality(apiHost)
+	u1 := testUserGroupsPermission(apiHost)
+	testUserGroupsFunctionality(apiHost, u1)
 }
 
-func testUserGroupsFunctionality(apiHost string) {
+func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTestUser) {
+	nonAdminUserId := u1NonAdmin.GetUserId()
+
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
 	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
 		Host: apiHost,
@@ -33,9 +35,9 @@ func testUserGroupsFunctionality(apiHost string) {
 		`{"userGroupCreateReq":{"name": "M2020"}}`,
 		`{"msgId":3,"status":"WS_OK","userGroupCreateResp":{
 			"group": {
-				"id": "$ID=createdGroupId$",
+				"id": "${IDSAVE=createdGroupId}",
 				"name": "M2020",
-				"createdUnixSec": "$SECAGO=5$",
+				"createdUnixSec": "${SECAGO=5}",
 				"members": {}
 			}
 		}}`,
@@ -46,62 +48,261 @@ func testUserGroupsFunctionality(apiHost string) {
 	// Run the test
 	wstestlib.ExecQueuedActions(&u2)
 
-	createdGroupId := u2.GetIdCreated("createdGroupId")
-
 	u2.AddSendReqAction("List user groups again",
 		`{"userGroupListReq":{}}`,
-		fmt.Sprintf(`{"msgId":4,"status":"WS_OK","userGroupListResp":{
+		`{"msgId":4,"status":"WS_OK","userGroupListResp":{
 			"groups": [
 				{
-					"id": "%v",
+					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020",
-					"createdUnixSec": "$SECAGO=5$",
+					"createdUnixSec": "${SECAGO=5}",
 					"members": {}
 				}
 			]
-		}}`, createdGroupId),
+		}}`,
 	)
 
 	u2.AddSendReqAction("Rename user group",
-		fmt.Sprintf(`{"userGroupSetNameReq":{"name": "M2020 Scientists", "groupId": "%v"}}`, createdGroupId),
-		fmt.Sprintf(`{"msgId":5,"status":"WS_OK","userGroupSetNameResp":{
+		`{"userGroupSetNameReq":{"name": "M2020 Scientists", "groupId": "${IDLOAD=createdGroupId}"}}`,
+		`{"msgId":5,"status":"WS_OK","userGroupSetNameResp":{
 			"group": {
-				"id": "%v",
+				"id": "${IDCHK=createdGroupId}",
 				"name": "M2020 Scientists",
-				"createdUnixSec": "$SECAGO=5$",
+				"createdUnixSec": "${SECAGO=5}",
 				"members": {}
 			}
-		}}`, createdGroupId),
+		}}`,
 	)
 
 	u2.AddSendReqAction("List user groups again",
 		`{"userGroupListReq":{}}`,
-		fmt.Sprintf(`{"msgId":6,"status":"WS_OK","userGroupListResp":{
+		`{"msgId":6,"status":"WS_OK","userGroupListResp":{
 			"groups": [
 				{
-					"id": "%v",
+					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "$SECAGO=5$",
+					"createdUnixSec": "${SECAGO=5}",
 					"members": {}
 				}
 			]
-		}}`, createdGroupId),
+		}}`,
 	)
-	/*
-		u1.AddSendReqAction("Add admin user",
-			fmt.Sprintf(`{"userGroupAddAdminReq":{"groupId": "%v", "userId": "%v"}}`, ,),
-			`{"msgId":5,"status":"WS_OK","userGroupSetNameResp":{}}`,
-		)
 
-	*/
+	u2.CloseActionGroup([]string{}, 50000)
+	wstestlib.ExecQueuedActions(&u2)
+
+	// Try non-admin user editing the new group
+	u1NonAdmin.AddSendReqAction("Add admin to user group",
+		`{"userGroupAddAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "abc123"}}`,
+		`{"msgId":5,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "Not allowed to edit user group",
+			"userGroupAddAdminResp":{}}`,
+	)
+
+	u1NonAdmin.AddSendReqAction("Delete admin from user group",
+		`{"userGroupDeleteAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "abc123"}}`,
+		`{"msgId":6,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "Not allowed to edit user group",
+			"userGroupDeleteAdminResp":{}}`,
+	)
+
+	u1NonAdmin.AddSendReqAction("Add member to user group",
+		`{"userGroupAddMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "groupMemberId": "abc123"}}`,
+		`{"msgId":7,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "Not allowed to edit user group",
+			"userGroupAddMemberResp":{}}`,
+	)
+
+	u1NonAdmin.AddSendReqAction("Delete member from user group",
+		`{"userGroupDeleteMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "groupMemberId": "abc123"}}`,
+		`{"msgId":8,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "Not allowed to edit user group",
+			"userGroupDeleteMemberResp":{}}`,
+	)
+
+	u1NonAdmin.CloseActionGroup([]string{}, 50000)
+	wstestlib.ExecQueuedActions(&u1NonAdmin)
+
+	// Edits by admin of group
+	u2.AddSendReqAction("Add admin user to bad group id",
+		`{"userGroupAddAdminReq":{"groupId": "way-too-long-group-id", "adminUserId": "u123"}}`,
+		`{"msgId":7,"status":"WS_BAD_REQUEST","errorText": "GroupId is too long","userGroupAddAdminResp":{}}`,
+	)
+
+	u2.AddSendReqAction("Add bad admin user id to group id",
+		`{"userGroupAddAdminReq":{"groupId": "non-existant", "adminUserId": "admin-user-id-that-is-way-too-long even-for-auth0"}}`,
+		`{"msgId":8,"status":"WS_BAD_REQUEST","errorText": "AdminUserId is too long","userGroupAddAdminResp":{}}`,
+	)
+
+	u2.AddSendReqAction("Add admin user to non-existant group",
+		`{"userGroupAddAdminReq":{"groupId": "non-existant", "adminUserId": "u123"}}`,
+		`{"msgId":9, "status": "WS_NOT_FOUND",
+			"errorText": "non-existant not found","userGroupAddAdminResp":{}}`,
+	)
+
+	u2.AddSendReqAction("Add admin user to non-existant group",
+		`{"userGroupAddAdminReq":{"groupId": "non-existant", "adminUserId": "u123"}}`,
+		`{"msgId":10, "status": "WS_NOT_FOUND",
+			"errorText": "non-existant not found","userGroupAddAdminResp":{}}`,
+	)
+
+	u2.AddSendReqAction("Add admin user to created group",
+		fmt.Sprintf(`{"userGroupAddAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "%v"}}`, nonAdminUserId),
+		fmt.Sprintf(`{"msgId":11, "status": "WS_OK","userGroupAddAdminResp":{
+			"group": {
+				"id": "${IDCHK=createdGroupId}",
+				"name": "M2020 Scientists",
+				"createdUnixSec": "${SECAGO=5}",
+				"members": {},
+				"adminUserIds": ["%v"]
+			}
+		}}`, nonAdminUserId),
+	)
+
+	u2.CloseActionGroup([]string{}, 50000)
+	wstestlib.ExecQueuedActions(&u2)
+
+	// Check using the other user that they now can list and see this group
+	u1NonAdmin.AddSendReqAction("List user groups for non-admin user",
+		`{"userGroupListReq":{}}`,
+		fmt.Sprintf(`{"msgId":9,"status":"WS_OK","userGroupListResp":{
+			"groups": [
+				{
+					"id": "${IDCHK=createdGroupId}",
+					"name": "M2020 Scientists",
+					"createdUnixSec": "${SECAGO=5}",
+					"members": {},
+					"adminUserIds": ["%v"]
+				}
+			]
+		}}`, nonAdminUserId),
+	)
+
+	u1NonAdmin.CloseActionGroup([]string{}, 5000)
+	wstestlib.ExecQueuedActions(&u1NonAdmin)
+
+	u2.AddSendReqAction("Add another admin user to created group",
+		fmt.Sprintf(`{"userGroupAddAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "123"}}`),
+		fmt.Sprintf(`{"msgId":12, "status": "WS_OK","userGroupAddAdminResp":{
+			"group": {
+				"id": "${IDCHK=createdGroupId}",
+				"name": "M2020 Scientists",
+				"createdUnixSec": "${SECAGO=5}",
+				"members": {},
+				"adminUserIds": ["%v", "123"]
+			}
+		}}`, nonAdminUserId),
+	)
+
+	u2.AddSendReqAction("Delete test admin user from created group",
+		fmt.Sprintf(`{"userGroupDeleteAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "123"}}`),
+		fmt.Sprintf(`{"msgId":13, "status": "WS_OK","userGroupDeleteAdminResp":{
+			"group": {
+				"id": "${IDCHK=createdGroupId}",
+				"name": "M2020 Scientists",
+				"createdUnixSec": "${SECAGO=5}",
+				"members": {},
+				"adminUserIds": ["%v"]
+			}
+		}}`, nonAdminUserId),
+	)
+
+	u2.AddSendReqAction("Delete non-existant admin user from created group",
+		fmt.Sprintf(`{"userGroupDeleteAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "non-existant"}}`),
+		`{"msgId":14, "status": "WS_BAD_REQUEST",
+			"errorText": "non-existant is not an admin","userGroupDeleteAdminResp":{}}`,
+	)
+
+	u2.AddSendReqAction("List user groups again",
+		`{"userGroupListReq":{}}`,
+		fmt.Sprintf(`{"msgId":15,"status":"WS_OK","userGroupListResp":{
+			"groups": [
+				{
+					"id": "${IDCHK=createdGroupId}",
+					"name": "M2020 Scientists",
+					"createdUnixSec": "${SECAGO=5}",
+					"members": {},
+					"adminUserIds": ["%v"]
+				}
+			]
+		}}`, nonAdminUserId),
+	)
 
 	u2.CloseActionGroup([]string{}, 50000)
 
 	// Run the test
 	wstestlib.ExecQueuedActions(&u2)
+
+	// Testing that the newly added user has admin rights now to edit the admins list
+	u1NonAdmin.AddSendReqAction("Add another admin user from the user that was just added as an admin",
+		`{"userGroupAddAdminReq":{
+			"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "user1-added-admin"
+		}}`,
+		fmt.Sprintf(`{"msgId":10, "status": "WS_OK","userGroupAddAdminResp":{
+			"group": {
+				"id": "${IDCHK=createdGroupId}",
+				"name": "M2020 Scientists",
+				"createdUnixSec": "${SECAGO=5}",
+				"members": {},
+				"adminUserIds": ["%v", "user1-added-admin"]
+			}
+		}}`, nonAdminUserId),
+	)
+
+	u1NonAdmin.AddSendReqAction("List user groups for non-admin user",
+		`{"userGroupListReq":{}}`,
+		fmt.Sprintf(`{"msgId":11,"status":"WS_OK","userGroupListResp":{
+			"groups": [
+				{
+					"id": "${IDCHK=createdGroupId}",
+					"name": "M2020 Scientists",
+					"createdUnixSec": "${SECAGO=5}",
+					"members": {},
+					"adminUserIds": ["%v", "user1-added-admin"]
+				}
+			]
+		}}`, nonAdminUserId),
+	)
+
+	u1NonAdmin.AddSendReqAction("Delete test admin user from created group",
+		`{"userGroupDeleteAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "user1-added-admin"}}`,
+		fmt.Sprintf(`{"msgId":12, "status": "WS_OK","userGroupDeleteAdminResp":{
+			"group": {
+				"id": "${IDCHK=createdGroupId}",
+				"name": "M2020 Scientists",
+				"createdUnixSec": "${SECAGO=5}",
+				"members": {},
+				"adminUserIds": ["%v"]
+			}
+		}}`, nonAdminUserId),
+	)
+
+	u1NonAdmin.AddSendReqAction("List user groups for non-admin user again",
+		`{"userGroupListReq":{}}`,
+		fmt.Sprintf(`{"msgId":13,"status":"WS_OK","userGroupListResp":{
+			"groups": [
+				{
+					"id": "${IDCHK=createdGroupId}",
+					"name": "M2020 Scientists",
+					"createdUnixSec": "${SECAGO=5}",
+					"members": {},
+					"adminUserIds": ["%v"]
+				}
+			]
+		}}`, nonAdminUserId),
+	)
+
+	u1NonAdmin.CloseActionGroup([]string{}, 50000)
+
+	// Run the test
+	wstestlib.ExecQueuedActions(&u1NonAdmin)
 }
 
-func testUserGroupsPermission(apiHost string) {
+func testUserGroupsPermission(apiHost string) wstestlib.ScriptedTestUser {
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
 	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
 		Host: apiHost,
@@ -109,11 +310,10 @@ func testUserGroupsPermission(apiHost string) {
 		Pass: test1Password,
 	})
 
-	u1.AddSendReqAction("List user groups (no perm)",
+	u1.AddSendReqAction("List user groups",
 		`{"userGroupListReq":{}}`,
 		`{"msgId":1,
-			"status": "WS_NO_PERMISSION",
-			"errorText": "UserGroupListReq not allowed",
+			"status": "WS_OK",
 			"userGroupListResp":{}}`,
 	)
 
@@ -140,41 +340,11 @@ func testUserGroupsPermission(apiHost string) {
 			"errorText": "UserGroupSetNameReq not allowed",
 			"userGroupSetNameResp":{}}`,
 	)
-	/* Cant do these, they request the item from DB first
-	u1.AddSendReqAction("Add admin to user group (no perm)",
-		`{"userGroupAddAdminReq":{"groupId": "123", "adminUserId": "abc123"}}`,
-		`{"msgId":5,
-			"status": "WS_NO_PERMISSION",
-			"errorText": "UserGroupAddAdminReq not allowed",
-			"userGroupAddAdminResp":{}}`,
-	)
 
-	u1.AddSendReqAction("Delete admin from user group (no perm)",
-		`{"userGroupDeleteAdminReq":{"groupId": "123", "adminUserId": "abc123"}}`,
-		`{"msgId":6,
-			"status": "WS_NO_PERMISSION",
-			"errorText": "UserGroupDeleteAdminReq not allowed",
-			"userGroupDeleteAdminResp":{}}`,
-	)
-
-	u1.AddSendReqAction("Add member to user group (no perm)",
-		`{"userGroupAddMemberReq":{"groupId": "123", "groupMemberId": "abc123"}}`,
-		`{"msgId":7,
-			"status": "WS_NO_PERMISSION",
-			"errorText": "UserGroupAddMemberReq not allowed",
-			"userGroupAddMemberResp":{}}`,
-	)
-
-	u1.AddSendReqAction("Delete member from user group (no perm)",
-		`{"userGroupDeleteMemberReq":{"groupId": "123", "groupMemberId": "abc123"}}`,
-		`{"msgId":8,
-			"status": "WS_NO_PERMISSION",
-			"errorText": "UserGroupDeleteMemberReq not allowed",
-			"userGroupDeleteMemberResp":{}}`,
-	)
-	*/
 	u1.CloseActionGroup([]string{}, 5000)
 
 	// Run the test
 	wstestlib.ExecQueuedActions(&u1)
+
+	return u1
 }

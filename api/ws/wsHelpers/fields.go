@@ -6,6 +6,9 @@ import (
 	"github.com/pixlise/core/v3/core/errorwithstatus"
 )
 
+const IdFieldMaxLength = 16
+const Auth0UserIdFieldMaxLength = 32
+
 func CheckStringField(field *string, fieldName string, minLength int, maxLength int) error {
 	if field != nil {
 		if len(*field) < minLength {

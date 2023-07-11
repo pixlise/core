@@ -34,16 +34,16 @@ func testUserManagementFunctionality(apiHost string, userIdToEdit string) {
 		`{"userRoleListReq":{}}`,
 		fmt.Sprintf(`{"msgId":1, "status": "WS_OK",
 			"userRoleListResp":{
-				"roles#LIST,MODE=CONTAINS,MINLENGTH=2#": [
+				"roles${LIST,MODE=CONTAINS,MINLENGTH=2}": [
 					{
-						"id": "$ID=noPermissionRoleId$",
+						"id": "${IDSAVE=noPermissionRoleId}",
 						"name": "%v",
-						"description": "$IGNORE$"
+						"description": "${IGNORE}"
 					},
 					{
-						"id": "$ID=unassignedRoleId$",
+						"id": "${IDSAVE=unassignedRoleId}",
 						"name": "%v",
-						"description": "$IGNORE$"
+						"description": "${IGNORE}"
 					}
 				]
 			}}`, knownRoleNoPermissions, knownRoleUnassignedUser),
@@ -53,21 +53,21 @@ func testUserManagementFunctionality(apiHost string, userIdToEdit string) {
 		`{"userListReq":{}}`,
 		`{"msgId":2, "status": "WS_OK",
 			"userListResp": {
-				"details#LIST,MODE=CONTAINS,MINLENGTH=1#": [
+				"details${LIST,MODE=CONTAINS,MINLENGTH=1}": [
 					{
 						"auth0User": {
-							"id": "$USERID$",
-							"name": "$REGEXMATCH=test$",
-							"email": "$REGEXMATCH=.+@pixlise\\.org$",
-							"iconURL": "$REGEXMATCH=^https://.*$"
+							"id": "${USERID}",
+							"name": "${REGEXMATCH=test}",
+							"email": "${REGEXMATCH=.+@pixlise\\.org}",
+							"iconURL": "${REGEXMATCH=^https://.*}"
 						},
 						"pixliseUser": {
-							"id": "$USERID$",
-							"name": "$REGEXMATCH=test$",
-							"email": "$REGEXMATCH=.+@pixlise\\.org$"
+							"id": "${USERID}",
+							"name": "${REGEXMATCH=test}",
+							"email": "${REGEXMATCH=.+@pixlise\\.org}"
 						},
-						"createdUnixSec": "$SECAFTER=1688083200$",
-						"lastLoginUnixSec": "$SECAGO=10$"
+						"createdUnixSec": "${SECAFTER=1688083200}",
+						"lastLoginUnixSec": "${SECAGO=10}"
 					}
 				]
 			}
@@ -101,17 +101,17 @@ func testUserManagementFunctionality(apiHost string, userIdToEdit string) {
 			"userRolesListResp": {
 				"roles": [
 					{
-						"id": "%v",
+						"id": "${IDCHK=unassignedRoleId}",
 						"name": "%v",
-						"description": "$IGNORE$"
+						"description": "${IGNORE}"
 					}
 				]
 			}
-		}`, u2.GetIdCreated("unassignedRoleId"), knownRoleUnassignedUser),
+		}`, knownRoleUnassignedUser),
 	)
 
 	u2.AddSendReqAction("Add role to user",
-		fmt.Sprintf(`{"userAddRoleReq":{"userId": "%v", "roleId": "%v"}}`, userIdToEdit, u2.GetIdCreated("noPermissionRoleId")), //u2.GetUserId()),
+		fmt.Sprintf(`{"userAddRoleReq":{"userId": "%v", "roleId": "${IDLOAD=noPermissionRoleId}"}}`, userIdToEdit), //u2.GetUserId()),
 		`{"msgId":6, "status": "WS_OK",
 			"userAddRoleResp": {}
 		}`,
@@ -121,24 +121,24 @@ func testUserManagementFunctionality(apiHost string, userIdToEdit string) {
 		fmt.Sprintf(`{"userRolesListReq":{"userId": "%v"}}`, userIdToEdit), //u2.GetUserId()),
 		fmt.Sprintf(`{"msgId":7, "status": "WS_OK",
 			"userRolesListResp": {
-				"roles#LIST,MODE=CONTAINS#": [
+				"roles${LIST,MODE=CONTAINS}": [
 					{
-						"id": "%v",
+						"id": "${IDCHK=unassignedRoleId}",
 						"name": "%v",
-						"description": "$IGNORE$"
+						"description": "${IGNORE}"
 					},
 					{
-						"id": "%v",
+						"id": "${IDCHK=noPermissionRoleId}",
 						"name": "%v",
-						"description": "$IGNORE$"
+						"description": "${IGNORE}"
 					}
 				]
 			}
-		}`, u2.GetIdCreated("unassignedRoleId"), knownRoleUnassignedUser, u2.GetIdCreated("noPermissionRoleId"), knownRoleNoPermissions),
+		}`, knownRoleUnassignedUser, knownRoleNoPermissions),
 	)
 
 	u2.AddSendReqAction("Delete role from user",
-		fmt.Sprintf(`{"userDeleteRoleReq":{"userId": "%v", "roleId": "%v"}}`, userIdToEdit, u2.GetIdCreated("noPermissionRoleId")), //u2.GetUserId()),
+		fmt.Sprintf(`{"userDeleteRoleReq":{"userId": "%v", "roleId": "${IDLOAD=noPermissionRoleId}"}}`, userIdToEdit), //u2.GetUserId()),
 		`{"msgId":8, "status": "WS_OK",
 			"userDeleteRoleResp": {}
 		}`,
@@ -150,13 +150,13 @@ func testUserManagementFunctionality(apiHost string, userIdToEdit string) {
 			"userRolesListResp": {
 				"roles": [
 					{
-						"id": "%v",
+						"id": "${IDCHK=unassignedRoleId}",
 						"name": "%v",
-						"description": "$IGNORE$"
+						"description": "${IGNORE}"
 					}
 				]
 			}
-		}`, u2.GetIdCreated("unassignedRoleId"), knownRoleUnassignedUser),
+		}`, knownRoleUnassignedUser),
 	)
 
 	u2.CloseActionGroup([]string{}, 5000)

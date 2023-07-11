@@ -15,6 +15,7 @@ import (
 // NOTE: one of these fields must be set
 type actionItem struct {
 	annotation string // Purely for logging of test
+	defLine    string // source file+line that created this action
 
 	// Individual actions that can happen:
 	connect *ConnectInfo
@@ -51,15 +52,15 @@ type ScriptedTestUser struct {
 	actionIdx int
 
 	userNameConnected string
-	idsCreated        map[string]string
 }
+
+var savedItems = map[string]string{}
 
 func MakeScriptedTestUser(auth0Params Auth0Info) ScriptedTestUser {
 	return ScriptedTestUser{
 		auth0Params:  auth0Params,
 		user:         &socketConn{},
 		actionGroups: []actionGroup{},
-		idsCreated:   map[string]string{},
 	}
 }
 func (s *ScriptedTestUser) GetUserId() string {
@@ -101,6 +102,10 @@ func (s *ScriptedTestUser) AddSleepAction(annotation string, sleepMs uint32) {
 }
 
 func (s *ScriptedTestUser) addAction(action actionItem) {
+	// NOTE: at this point we assume we're called from 1 public function of this package, which itself
+	// is called from somewhere important that we need to remember...
+	action.defLine = getCaller(3)
+
 	if s.tempGroup == nil {
 		s.tempGroup = &actionGroup{
 			actions:          []actionItem{},
@@ -139,8 +144,8 @@ func (s *ScriptedTestUser) CloseActionGroup(expectedMsgs []string, timeoutMs int
 	s.tempGroup = nil
 }
 
-func (s *ScriptedTestUser) GetIdCreated(name string) string {
-	if val, ok := s.idsCreated[name]; ok {
+func GetIdCreated(name string) string {
+	if val, ok := savedItems[name]; ok {
 		return val
 	}
 	log.Fatalf("Failed to find saved ID named: %v", name)
@@ -176,6 +181,8 @@ func (s *ScriptedTestUser) RunNextAction() (bool, error) {
 }
 
 func (s *ScriptedTestUser) runSpecificAction(action actionItem, which string) error {
+	which = action.defLine + " " + which
+
 	if action.connect != nil {
 		s.printAction(which, action.annotation, fmt.Sprintf("Connecting to host: %v as user %v", action.connect.Host, action.connect.User))
 		s.userNameConnected = action.connect.User
@@ -194,8 +201,13 @@ func (s *ScriptedTestUser) runSpecificAction(action actionItem, which string) er
 	}
 
 	if len(action.sendReq) > 0 {
+		// Replace anything we need to before marshalling into proto bytes
+		sendReqReplaced, err := doReqReplacements(action.sendReq, savedItems)
+		if err != nil {
+			log.Fatalln(err)
+		}
 		// Snip out the first line to send
-		sendSnippet := action.sendReq
+		sendSnippet := sendReqReplaced
 		linePos := strings.Index(sendSnippet, "\n")
 		if linePos > 0 {
 			sendSnippet = sendSnippet[0:linePos]
@@ -203,9 +215,9 @@ func (s *ScriptedTestUser) runSpecificAction(action actionItem, which string) er
 		s.printAction(which, action.annotation, fmt.Sprintf("Sending req %v", sendSnippet))
 
 		wsmsg := protos.WSMessage{}
-		err := protojson.Unmarshal([]byte(action.sendReq), &wsmsg)
+		err = protojson.Unmarshal([]byte(sendReqReplaced), &wsmsg)
 		if err != nil {
-			log.Fatalln(fmt.Errorf("Failed to parse request to be sent: %v.\nAction: %v\nRequest was: %v", err, action.annotation, action.sendReq))
+			log.Fatalln(fmt.Errorf("Failed to parse request to be sent: %v.\nAction: %v\nRequest was: %v", err, action.annotation, sendReqReplaced))
 		}
 		return s.user.sendMessage(&wsmsg)
 	}
@@ -249,20 +261,11 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 		var matched bool
 		var prettyReceivedMsgStr string
 		var idMatched bool
-		var ids map[string]string
 
 		matchErrors := []error{}
 
 		for c, expStr := range group.expectedMessages {
-			ids, prettyReceivedMsgStr, err, idMatched = checkMatch(expStr, msgStr, s.user.userId)
-
-			// Save the ids it may have found
-			for k, v := range ids {
-				if _, exists := s.idsCreated[k]; exists {
-					return fmt.Errorf("Already have a saved value for id name: %v. Existing value: %v, new value: %v", k, s.idsCreated[k], v)
-				}
-				s.idsCreated[k] = v
-			}
+			prettyReceivedMsgStr, err, idMatched = checkMatch(expStr, msgStr, s.user.userId, savedItems)
 
 			if err != nil {
 				// If ids were matched, we know not to scan any further
