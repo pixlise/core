@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/pixlise/core/v3/OLDCODE/core/utils"
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
+	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -201,7 +201,7 @@ func modifyGroupAdminList(groupId string, adminUserId string, add bool, hctx wsH
 	dbOp := "$pull"
 	if add {
 		// Check if already in there
-		if utils.StringInSlice(adminUserId, group.AdminUserIds) {
+		if utils.ItemInSlice(adminUserId, group.AdminUserIds) {
 			return nil, errorwithstatus.MakeBadRequestError(errors.New(adminUserId + " is already an admin"))
 		}
 		dbOp = "$addToSet"
@@ -298,7 +298,7 @@ func modifyGroupMemberList(groupId string, memberGroupId string, memberUserId st
 
 	dbOp := "$pull"
 	if add {
-		if utils.StringInSlice(checkId, memberIds) {
+		if utils.ItemInSlice(checkId, memberIds) {
 			return nil, errorwithstatus.MakeBadRequestError(errors.New(checkId + " is already a " + idName))
 		}
 		dbOp = "$addToSet"
@@ -363,7 +363,7 @@ func getGroupAndCheckPermission(groupId string, requestingUser string, requestin
 	isAllowed := wsHelpers.HasPermission(requestingUserPermission, protos.Permission_PERM_PIXLISE_ADMIN)
 	if !isAllowed {
 		// Check if it's a member of the group admins
-		if utils.StringInSlice(requestingUser, group.AdminUserIds) {
+		if utils.ItemInSlice(requestingUser, group.AdminUserIds) {
 			isAllowed = true
 		}
 	}
