@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/core/timestamper"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -26,11 +27,25 @@ func GetDBUser(userId string, db *mongo.Database) (*protos.UserDBItem, error) {
 
 // This uses a cache as it may be reading the same thing many times in bursts.
 // Cache is updated upon user info change though
-var userInfoCache = map[string]*protos.UserInfo{}
+type userCacheItem struct {
+	cachedInfo       *protos.UserInfo
+	timestampUnixSec int64
+}
 
-func getUserInfo(userId string, db *mongo.Database) (*protos.UserInfo, error) {
+var userInfoCache = map[string]userCacheItem{}
+
+const maxUserCacheAgeSec = 60 * 5
+
+func getUserInfo(userId string, db *mongo.Database, ts timestamper.ITimeStamper) (*protos.UserInfo, error) {
+	now := ts.GetTimeNowSec()
+
 	if user, ok := userInfoCache[userId]; ok {
-		return user, nil
+		// We found cached item, use if not too old
+		if user.timestampUnixSec > now-maxUserCacheAgeSec {
+			return user.cachedInfo, nil
+		}
+
+		// Otherwise, do a DB read again and overwrite our cached item
 	}
 
 	userDBItem, err := GetDBUser(userId, db)
@@ -39,7 +54,10 @@ func getUserInfo(userId string, db *mongo.Database) (*protos.UserInfo, error) {
 	}
 
 	// Cache this for future
-	userInfoCache[userId] = userDBItem.Info
+	userInfoCache[userId] = userCacheItem{
+		cachedInfo:       userDBItem.Info,
+		timestampUnixSec: ts.GetTimeNowSec(),
+	}
 
 	return userDBItem.Info, nil
 }
