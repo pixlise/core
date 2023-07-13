@@ -11,6 +11,10 @@ import (
 )
 
 func HandleGetOwnershipReq(req *protos.GetOwnershipReq, hctx wsHelpers.HandlerContext) (*protos.GetOwnershipResp, error) {
+	if err := wsHelpers.CheckStringField(&req.ObjectId, "ObjectId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+
 	owner, err := wsHelpers.CheckObjectAccess(false, req.ObjectId, req.ObjectType, hctx)
 	if err != nil {
 		return nil, err
@@ -42,6 +46,10 @@ func deleteFromMap(ids []string, theMap *map[string]bool) {
 }
 
 func HandleObjectEditAccessReq(req *protos.ObjectEditAccessReq, hctx wsHelpers.HandlerContext) (*protos.ObjectEditAccessResp, error) {
+	if err := wsHelpers.CheckStringField(&req.ObjectId, "ObjectId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+
 	ctx := context.TODO()
 
 	// Determine if we have edit access to the object
