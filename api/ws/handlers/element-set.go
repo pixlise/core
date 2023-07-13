@@ -26,7 +26,7 @@ func HandleElementSetGetReq(req *protos.ElementSetGetReq, hctx wsHelpers.Handler
 		return nil, err
 	}
 
-	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB)
+	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 	return &protos.ElementSetGetResp{
 		ElementSet: dbItem,
 	}, nil
@@ -65,7 +65,7 @@ func HandleElementSetListReq(req *protos.ElementSetListReq, hctx wsHelpers.Handl
 			Name:           item.Name,
 			AtomicNumbers:  z,
 			ModifedUnixSec: item.ModifedUnixSec,
-			Owner:          wsHelpers.MakeOwnerSummary(idToOwner[item.Id], hctx.Svcs.MongoDB),
+			Owner:          wsHelpers.MakeOwnerSummary(idToOwner[item.Id], hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper),
 		}
 	}
 
@@ -132,7 +132,7 @@ func createElementSet(elementSet *protos.ElementSet, hctx wsHelpers.HandlerConte
 		return nil, err
 	}
 
-	elementSet.Owner = wsHelpers.MakeOwnerSummary(ownerItem, hctx.Svcs.MongoDB)
+	elementSet.Owner = wsHelpers.MakeOwnerSummary(ownerItem, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 	return elementSet, nil
 }
 
@@ -176,7 +176,7 @@ func updateElementSet(elementSet *protos.ElementSet, hctx wsHelpers.HandlerConte
 	}
 
 	// Return the merged item we validated, which in theory is in the DB now
-	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB)
+	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 	return dbItem, nil
 }
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
+	"github.com/pixlise/core/v3/core/timestamper"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
@@ -148,8 +149,8 @@ func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, hctx Hand
 	return result, nil
 }
 
-func MakeOwnerSummary(ownership *protos.OwnershipItem, db *mongo.Database) *protos.OwnershipSummary {
-	user, err := getUserInfo(ownership.CreatorUserId, db)
+func MakeOwnerSummary(ownership *protos.OwnershipItem, db *mongo.Database, ts timestamper.ITimeStamper) *protos.OwnershipSummary {
+	user, err := getUserInfo(ownership.CreatorUserId, db, ts)
 	result := &protos.OwnershipSummary{
 		CreatedUnixSec: ownership.CreatedUnixSec,
 	}

@@ -26,7 +26,8 @@ func GetDBUser(userId string, db *mongo.Database) (*protos.UserDBItem, error) {
 }
 
 // This uses a cache as it may be reading the same thing many times in bursts.
-// Cache is updated upon user info change though
+// Cache is told when user info changes, and also has a time stamp so we don't
+// keep reading from cache forever
 type userCacheItem struct {
 	cachedInfo       *protos.UserInfo
 	timestampUnixSec int64
