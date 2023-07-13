@@ -98,7 +98,14 @@ func ImportDataset(
 		}
 	}
 
-	localRangesPath, err := archive.DownloadPseudoIntensityRangesFile(configBucket, localDownloadPath)
+	// No obvious place to make this change right now, but pseudo-intensities have changed in flight software
+	// and this is likely to go live in late 2023.
+	pseudoVersion := ""
+	/*if datasetID > ... {
+		pseudoVersion = "-2023"
+	}*/
+
+	localRangesPath, err := archive.DownloadPseudoIntensityRangesFile(configBucket, localDownloadPath, pseudoVersion)
 	if err != nil {
 		return workingDir, savedSummary, "", false, err
 	}
