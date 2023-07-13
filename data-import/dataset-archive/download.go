@@ -90,12 +90,13 @@ func (dl *DatasetArchiveDownloader) DownloadFromDatasetArchive(datasetID string,
 	return downloadPath, unzippedPath, zipCount, nil
 }
 
-func (dl *DatasetArchiveDownloader) DownloadPseudoIntensityRangesFile(configBucket string, downloadPath string) (string, error) {
+func (dl *DatasetArchiveDownloader) DownloadPseudoIntensityRangesFile(configBucket string, downloadPath string, version string) (string, error) {
 	// Download the ranges file
 	dl.log.Debugf("Downloading pseudo-intensity ranges...")
 
-	localRangesPath := filepath.Join(downloadPath, "StandardPseudoIntensities.csv")
-	err := dl.fetchFile(configBucket, path.Join(filepaths.RootDatasetConfig, "StandardPseudoIntensities.csv"), localRangesPath)
+	fileName := "StandardPseudoIntensities" + version + ".csv"
+	localRangesPath := filepath.Join(downloadPath, fileName)
+	err := dl.fetchFile(configBucket, path.Join(filepaths.RootDatasetConfig, fileName), localRangesPath)
 	if err != nil {
 		dl.log.Errorf("%v", err)
 		return "", err
