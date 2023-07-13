@@ -20,7 +20,6 @@ package endpoints
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -59,6 +58,10 @@ func (m MockJWTReader) GetUserInfo(*http.Request) (jwtparser.JWTUserInfo, error)
 			"read:data-analysis": true,
 		},
 	}, nil
+}
+
+func (m MockJWTReader) GetValidator() jwtparser.JWTInterface {
+	return nil
 }
 
 type MockExporter struct {
@@ -133,42 +136,6 @@ func makeNotFoundMongoResponse() []primitive.D {
 			mtest.NextBatch,
 		),
 	}
-}
-
-func runOneURLCallTest(t *testing.T, method string, url string, requestPayload io.Reader, expectedStatusCode int, expectedResult string, mongoMockedResponses []primitive.D, endCallback func()) {
-	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mt.Close()
-
-	mt.Run("success", func(mt *mtest.T) {
-		mt.AddMockResponses(mongoMockedResponses...)
-
-		var mockS3 awsutil.MockS3Client
-		defer mockS3.FinishTest()
-
-		svcs := MakeMockSvcs(&mockS3, nil, nil)
-		/*
-			setTestAuth0Config(svcs)
-			notifications, err := notifications.MakeNotificationStack(mt.Client, "unit_test", nil, &logger.StdOutLoggerForTest{}, []string{})
-			if err != nil {
-				t.Error(err)
-			}
-
-			svcs.Notifications = notifications
-
-			svcs.Users = pixlUser.MakeUserDetailsLookup(mt.Client, "unit_test")
-		*/
-		apiRouter := MakeRouter(&svcs)
-
-		req, _ := http.NewRequest(method, url, requestPayload)
-		resp := executeRequest(req, apiRouter.Router)
-
-		checkResult(t, resp, expectedStatusCode, expectedResult)
-
-		// When we're done, call end callback in case caller has anything else to verify
-		if endCallback != nil {
-			endCallback()
-		}
-	})
 }
 
 func checkResult(t *testing.T, resp *httptest.ResponseRecorder, expectedStatus int, expectedBody string) {

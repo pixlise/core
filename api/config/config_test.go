@@ -26,7 +26,7 @@ import (
 // Check the summary filename gets created correctly
 func Test_InitializeConfigWithFile(t *testing.T) {
 	want := "buildsBucket"
-	cfg, err := NewConfigFromFile("./example_config.json")
+	cfg, err := NewConfigFromFile("./test-data/example_config.json")
 	if err != nil {
 		t.Fatalf("Error initializing config: %v", err)
 	}
@@ -52,7 +52,7 @@ func Test_InitializeConfigWithJsonString(t *testing.T) {
 func Test_OverrideConfigWithEnvVars(t *testing.T) {
 	want := "ENV-SET-BuildsBucket"
 	os.Setenv("PIXLISE_CONFIG_BuildsBucket", want)
-	cfg, err := NewConfigFromFile("./example_config.json")
+	cfg, err := NewConfigFromFile("./test-data/example_config.json")
 	if err != nil {
 		t.Fatalf("Error initializing config: %v", err)
 	}
