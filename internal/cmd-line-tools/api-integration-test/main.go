@@ -18,6 +18,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -73,6 +74,13 @@ func main() {
 		log.Fatal("Unexpected test type: " + testType)
 	}
 
+	// Connect to DB and drop the unit test database
+	db := wstestlib.GetDB()
+	err := db.Drop(context.TODO())
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	runTests(apiHost)
 
 	fmt.Println("\n==============================")
@@ -95,4 +103,5 @@ func runTests(apiHost string) {
 	testUserManagement(apiHost)
 	testUserGroups(apiHost)
 	testLogMsgs(apiHost)
+	testScanData(apiHost)
 }

@@ -77,8 +77,14 @@ func MakeSessionUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*Sessio
 	}
 
 	for _, userGroup := range userGroups {
-		if utils.ItemInSlice(userId, userGroup.Members.UserIds) {
-			ourGroups[userGroup.Id] = true
+		if userGroup.Members != nil {
+			if utils.ItemInSlice(userId, userGroup.Members.UserIds) {
+				ourGroups[userGroup.Id] = true
+			}
+		} else if userGroup.Viewers != nil {
+			if utils.ItemInSlice(userId, userGroup.Viewers.UserIds) {
+				ourGroups[userGroup.Id] = true
+			}
 		}
 	}
 
@@ -86,8 +92,14 @@ func MakeSessionUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*Sessio
 	// TODO: This may not detect outside of 2 levels deep grouping, we may want more...
 	for _, userGroup := range userGroups {
 		for groupToCheck, _ := range ourGroups {
-			if utils.ItemInSlice(groupToCheck, userGroup.Members.GroupIds) {
-				ourGroups[userGroup.Id] = true
+			if userGroup.Members != nil {
+				if utils.ItemInSlice(groupToCheck, userGroup.Members.GroupIds) {
+					ourGroups[userGroup.Id] = true
+				}
+			} else if userGroup.Viewers != nil {
+				if utils.ItemInSlice(groupToCheck, userGroup.Viewers.GroupIds) {
+					ourGroups[userGroup.Id] = true
+				}
 			}
 		}
 	}

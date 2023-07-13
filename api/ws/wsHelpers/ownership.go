@@ -46,7 +46,12 @@ func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, hctx Handl
 // otherwise just checks for view access. Returns an error if it failed to determine
 // or if access is not granted, returns error formed with MakeUnauthorisedError
 func CheckObjectAccess(requireEdit bool, objectId string, objectType protos.ObjectType, hctx HandlerContext) (*protos.OwnershipItem, error) {
-	result := hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).FindOne(context.TODO(), bson.M{"_id": objectId})
+	ownerCollectionId := objectId
+	if objectType == protos.ObjectType_OT_SCAN {
+		ownerCollectionId = "scan_" + objectId
+	}
+
+	result := hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).FindOne(context.TODO(), bson.M{"_id": ownerCollectionId})
 	if result.Err() != nil {
 		// If the error is due to the item not existing, this isn't a permissions error, but likely the object doesn't
 		// exist at all. No point going further, report this as a bad request right here

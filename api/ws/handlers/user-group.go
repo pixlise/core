@@ -62,6 +62,10 @@ func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.Han
 			UserIds:  []string{},
 			GroupIds: []string{},
 		},
+		Viewers: &protos.UserGroupList{
+			UserIds:  []string{},
+			GroupIds: []string{},
+		},
 		AdminUserIds: []string{
 			// Creator is an admin user who can create items, but
 			// this list is for non-admin users who can be given
@@ -238,8 +242,30 @@ func modifyGroupAdminList(groupId string, adminUserId string, add bool, hctx wsH
 	return group, nil
 }
 
+func HandleUserGroupAddViewerReq(req *protos.UserGroupAddViewerReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupAddViewerResp, error) {
+	group, err := modifyGroupMembershipList(req.GroupId, req.GetGroupViewerId(), req.GetUserViewerId(), true, true, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.UserGroupAddViewerResp{
+		Group: group,
+	}, nil
+}
+
+func HandleUserGroupDeleteViewerReq(req *protos.UserGroupDeleteViewerReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupDeleteViewerResp, error) {
+	group, err := modifyGroupMembershipList(req.GroupId, req.GetGroupViewerId(), req.GetUserViewerId(), true, false, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.UserGroupDeleteViewerResp{
+		Group: group,
+	}, nil
+}
+
 func HandleUserGroupAddMemberReq(req *protos.UserGroupAddMemberReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupAddMemberResp, error) {
-	group, err := modifyGroupMemberList(req.GroupId, req.GetGroupMemberId(), req.GetUserMemberId(), true, hctx)
+	group, err := modifyGroupMembershipList(req.GroupId, req.GetGroupMemberId(), req.GetUserMemberId(), false, true, hctx)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +276,7 @@ func HandleUserGroupAddMemberReq(req *protos.UserGroupAddMemberReq, hctx wsHelpe
 }
 
 func HandleUserGroupDeleteMemberReq(req *protos.UserGroupDeleteMemberReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupDeleteMemberResp, error) {
-	group, err := modifyGroupMemberList(req.GroupId, req.GetGroupMemberId(), req.GetUserMemberId(), false, hctx)
+	group, err := modifyGroupMembershipList(req.GroupId, req.GetGroupMemberId(), req.GetUserMemberId(), false, false, hctx)
 	if err != nil {
 		return nil, err
 	}
@@ -260,24 +286,33 @@ func HandleUserGroupDeleteMemberReq(req *protos.UserGroupDeleteMemberReq, hctx w
 	}, nil
 }
 
-func modifyGroupMemberList(groupId string, memberGroupId string, memberUserId string, add bool, hctx wsHelpers.HandlerContext) (*protos.UserGroup, error) {
+// Does the job of the above...
+// viewer=true means editing group viewers, viewer=false means editing group members
+// add=true means adding, add=false means deleting
+func modifyGroupMembershipList(groupId string, opGroupId string, opUserId string, viewer bool, add bool, hctx wsHelpers.HandlerContext) (*protos.UserGroup, error) {
 	if err := wsHelpers.CheckStringField(&groupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
 
-	// Must have one of these...
-	checkId := memberGroupId
-	idMaxLen := wsHelpers.IdFieldMaxLength
-	idName := "GroupMemberId"
-	isGroup := true
-	dbField := "members.groupids"
-	if len(checkId) <= 0 {
-		checkId = memberUserId
-		idMaxLen = wsHelpers.Auth0UserIdFieldMaxLength
-		idName = "UserMemberId"
-		isGroup = false
-		dbField = "members.userids"
+	fieldStart := "members"
+	if viewer {
+		fieldStart = "viewers"
 	}
+
+	// Must have one of these...
+	checkId := opGroupId
+	idMaxLen := wsHelpers.IdFieldMaxLength
+	idName := "GroupId"
+	isGroup := true
+	dbField := fieldStart + ".groupids"
+	if len(checkId) <= 0 {
+		checkId = opUserId
+		idMaxLen = wsHelpers.Auth0UserIdFieldMaxLength
+		idName = "UserId"
+		isGroup = false
+		dbField = fieldStart + ".userids"
+	}
+	idName = fieldStart + "." + idName
 
 	if err := wsHelpers.CheckStringField(&checkId, idName, 1, idMaxLen); err != nil {
 		return nil, err
@@ -291,26 +326,31 @@ func modifyGroupMemberList(groupId string, memberGroupId string, memberUserId st
 		return nil, err
 	}
 
-	memberIds := group.Members.GroupIds
+	groupList := group.Members
+	if viewer {
+		groupList = group.Viewers
+	}
+
+	editIds := groupList.GroupIds
 	if !isGroup {
-		memberIds = group.Members.UserIds
+		editIds = groupList.UserIds
 	}
 
 	dbOp := "$pull"
 	if add {
-		if utils.ItemInSlice(checkId, memberIds) {
+		if utils.ItemInSlice(checkId, editIds) {
 			return nil, errorwithstatus.MakeBadRequestError(errors.New(checkId + " is already a " + idName))
 		}
 		dbOp = "$addToSet"
 		if isGroup {
-			group.Members.GroupIds = append(group.Members.GroupIds, checkId)
+			groupList.GroupIds = append(groupList.GroupIds, checkId)
 		} else {
-			group.Members.UserIds = append(group.Members.UserIds, checkId)
+			groupList.UserIds = append(groupList.UserIds, checkId)
 		}
 	} else {
 		// Find the index
 		idx := -1
-		for c, id := range memberIds {
+		for c, id := range editIds {
 			if checkId == id {
 				// Found it!
 				idx = c
@@ -324,9 +364,9 @@ func modifyGroupMemberList(groupId string, memberGroupId string, memberUserId st
 
 		// Delete from our group that we're returning too
 		if isGroup {
-			group.Members.GroupIds = append(group.Members.GroupIds[0:idx], group.Members.GroupIds[idx+1:]...)
+			groupList.GroupIds = append(groupList.GroupIds[0:idx], groupList.GroupIds[idx+1:]...)
 		} else {
-			group.Members.UserIds = append(group.Members.UserIds[0:idx], group.Members.UserIds[idx+1:]...)
+			groupList.UserIds = append(groupList.UserIds[0:idx], groupList.UserIds[idx+1:]...)
 		}
 	}
 

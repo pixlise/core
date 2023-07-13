@@ -171,6 +171,14 @@ func migrateDatasets(configBucket string, dataBucket string, fs fileaccess.FileA
 		}
 
 		destItems = append(destItems, destItem)
+
+		// Each scan needs an ownership item to define who can view/edit it
+		// Prefix the ID with "scan_" because the dataset IDs are likely not that long, and we also want them
+		// to differ from our random ones
+		err = saveOwnershipItem("scan_"+dataset.DatasetID, protos.ObjectType_OT_SCAN, "", uint64(dataset.CreationUnixTimeSec), dest)
+		if err != nil {
+			return err
+		}
 	}
 
 	result, err := coll.InsertMany(context.TODO(), destItems)

@@ -12,7 +12,7 @@ import (
 )
 
 func fixUserId(userId string) string {
-	if !strings.HasPrefix(userId, "auth0|") {
+	if len(userId) > 0 && !strings.HasPrefix(userId, "auth0|") {
 		return "auth0|" + userId
 	}
 	return userId
