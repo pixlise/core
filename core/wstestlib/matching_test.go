@@ -270,6 +270,14 @@ func Example_compareMapsOfLists() {
 
 	// Order shouldn't matter for list comparison
 	fmt.Println(compare(map[string]interface{}{"zztop": 17.2, "hello": []interface{}{2.2, 4.2, 1.2, 3.2}}, map[string]interface{}{"hello${LIST,MODE=CONTAINS,MINLENGTH=4}": []interface{}{1.2, 3.2}, "zztop": 17.2}, ctx))
+	// Checking with LENGTH not MINLENGTH
+	fmt.Println(compare(map[string]interface{}{"zztop": 17.2, "hello": []interface{}{2.2, 4.2, 1.2, 3.2}}, map[string]interface{}{"hello${LIST,MODE=CONTAINS,LENGTH=4}": []interface{}{1.2, 3.2}, "zztop": 17.2}, ctx))
+	fmt.Println(compare(map[string]interface{}{"zztop": 17.2, "hello": []interface{}{2.2, 4.2, 1.2, 3.2}}, map[string]interface{}{"hello${LIST,MODE=CONTAINS,LENGTH=3}": []interface{}{1.2, 3.2}, "zztop": 17.2}, ctx))
+	fmt.Println(compare(map[string]interface{}{"zztop": 17.2, "hello": []interface{}{2.2, 4.2, 1.2, 3.2}}, map[string]interface{}{"hello${LIST,MODE=LENGTH,LENGTH=4}": []interface{}{}, "zztop": 17.2}, ctx))
+	fmt.Println(compare(map[string]interface{}{"zztop": 17.2, "hello": []interface{}{2.2, 4.2, 1.2, 3.2}}, map[string]interface{}{"hello${LIST,MODE=LENGTH}": []interface{}{3.3}, "zztop": 17.2}, ctx))
+
+	// Checking with unrecognised list specification
+	fmt.Println(compare(map[string]interface{}{"zztop": 17.2, "hello": []interface{}{2.2, 4.2, 1.2, 3.2}}, map[string]interface{}{"hello${LIST,MODE=CONTAINS,NICENESS=4}": []interface{}{1.2, 3.2}, "zztop": 17.2}, ctx))
 
 	// Output:
 	// expected key: "helloo", received key: "hello"
@@ -284,6 +292,11 @@ func Example_compareMapsOfLists() {
 	// <nil>
 	// "hello${LIST,MODE=CONTAINS,MINLENGTH=4}": expected list to contain item "7.2"
 	// <nil>
+	// <nil>
+	// "hello${LIST,MODE=CONTAINS,LENGTH=3}": expected exactly 3 list items, received 4
+	// <nil>
+	// "hello${LIST,MODE=LENGTH}": expected 1 list items, received 4
+	// "hello${LIST,MODE=CONTAINS,NICENESS=4}": unrecognised list spec: NICENESS
 }
 
 func Example_compareMapWithKeyDef() {

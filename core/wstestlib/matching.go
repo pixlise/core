@@ -213,7 +213,11 @@ func compare(received any, expected any, ctx compareParams) error {
 
 				var keyErr error
 				if len(defMap) <= 0 {
-					// Just a straight comparison
+					// Just a straight comparison, first compare the field names
+					if expKeyCompare != recKey {
+						return fmt.Errorf(`expected key: "%v", received key: "%v"`, expKeyCompare, recKey)
+					}
+
 					keyErr = compare(recVal[recKey], expVal[expKey], ctx)
 				} else if len(expKeyCompare) > 0 && len(defMap) > 0 {
 					// Second style, first compare the field names
@@ -456,17 +460,38 @@ func compareList(defMap map[string]string, received any, expected any, ctx compa
 	// Check params
 	var mode string
 	minLength := -1
+	expLength := -1
 
-	if _mode, ok := defMap["MODE"]; ok {
+	const def_Mode = "MODE"
+	const def_MinLength = "MINLENGTH"
+	const def_Length = "LENGTH"
+
+	allDefs := []string{def_MinLength, def_Length, def_Mode}
+	for key := range defMap {
+		if !utils.ItemInSlice(key, allDefs) {
+			return fmt.Errorf("unrecognised list spec: %v", key)
+		}
+	}
+
+	if _mode, ok := defMap[def_Mode]; ok {
 		mode = strings.ToLower(_mode)
 	}
-	if _minLen, ok := defMap["MINLENGTH"]; ok {
+	if _minLen, ok := defMap[def_MinLength]; ok {
 		var err error
 		minLength, err = strconv.Atoi(_minLen)
 		if err != nil || minLength < 1 {
 			return fmt.Errorf("minimum length invalid in list compare specifications: %v", _minLen)
 		}
 	}
+	if _len, ok := defMap[def_Length]; ok {
+		var err error
+		expLength, err = strconv.Atoi(_len)
+		if err != nil || expLength < 1 {
+			return fmt.Errorf("length invalid in list compare specifications: %v", expLength)
+		}
+	}
+
+	// If we have unrecognised items, stop here
 
 	switch expVal := expected.(type) {
 	case []any:
@@ -475,11 +500,14 @@ func compareList(defMap map[string]string, received any, expected any, ctx compa
 			if minLength > -1 && len(recVal) < minLength {
 				return fmt.Errorf("expected at least %v list items, received %v", minLength, len(recVal))
 			}
+			if expLength > -1 && len(recVal) != expLength {
+				return fmt.Errorf("expected exactly %v list items, received %v", expLength, len(recVal))
+			}
 
 			// Compare based on what was asked
 			if mode == "length" {
 				// We're only comparing lengths, if we have a min length specified too, we use that
-				if minLength < 0 && len(recVal) != len(expVal) {
+				if minLength < 0 && expLength < 0 && len(recVal) != len(expVal) {
 					return fmt.Errorf("expected %v list items, received %v", len(expVal), len(recVal))
 				}
 			} else if mode == "contains" {
