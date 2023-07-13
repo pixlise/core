@@ -127,9 +127,9 @@ func MakeFMDatasetOutput(
 	// Ensure it matches what we're expecting
 	// We allow for missing 0's at the start because for a while we imported RTTs as ints, so older dataset RTTs
 	// were coming in as eg 76481028, while we now read them as 076481028
-	// NOTE: it looks like EM datasets are generated with the RTT: 000000453
+	// NOTE: it looks like EM datasets are generated with the RTT: 000000453, 000000454
 	// so if this is the RTT we don't do the check
-	if meta.RTT == "000000453" {
+	if meta.RTT == "000000453" || meta.RTT == "000000454" {
 		isEM = true
 		if datasetIDExpected == meta.RTT {
 			return nil, fmt.Errorf("Read RTT %v, need expected dataset ID to be different", meta.RTT)

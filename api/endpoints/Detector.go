@@ -40,7 +40,7 @@ type detectorConfigWire struct {
 func registerDetectorConfigHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "detector-config"
 
-	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermReadPiquantConfig), detectorConfigGet)
+	router.AddJSONHandler(handlers.MakeEndpointPath(pathPrefix, idIdentifier), apiRouter.MakeMethodPermission("GET", permission.PermPublic /* WAS PermReadPiquantConfig*/), detectorConfigGet)
 }
 
 func detectorConfigGet(params handlers.ApiHandlerParams) (interface{}, error) {
