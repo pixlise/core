@@ -321,7 +321,7 @@ func printManualOKLogOutput(log *logger.StdOutLoggerForTest, datasetBucket strin
 		"Downloading archived zip files...",
 		"Downloaded 0 zip files, unzipped 0 files",
 		"No zip files found in archive, dataset may have been manually uploaded. Trying to download...",
-		"Dataset test1234 downloaded from manual upload area",
+		"Dataset test1234 downloaded 3 files from manual upload area",
 		"Downloading pseudo-intensity ranges...",
 		"Downloading user customisation files...",
 		"Reading 1261 files from spectrum directory...",
@@ -366,7 +366,7 @@ func Example_ImportForTrigger_Manual() {
 	// Logged "Downloading archived zip files...": true
 	// Logged "Downloaded 0 zip files, unzipped 0 files": true
 	// Logged "No zip files found in archive, dataset may have been manually uploaded. Trying to download...": true
-	// Logged "Dataset test1234 downloaded from manual upload area": true
+	// Logged "Dataset test1234 downloaded 3 files from manual upload area": true
 	// Logged "Downloading pseudo-intensity ranges...": true
 	// Logged "Downloading user customisation files...": true
 	// Logged "Reading 1261 files from spectrum directory...": true
