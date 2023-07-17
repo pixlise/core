@@ -1,23 +1,12 @@
 package wsHandler
 
 import (
-	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
 func HandlePseudoIntensityReq(req *protos.PseudoIntensityReq, hctx wsHelpers.HandlerContext) (*protos.PseudoIntensityResp, error) {
-	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, 50); err != nil {
-		return nil, err
-	}
-
-	_, _, err := wsHelpers.GetUserObjectById[protos.ScanItem](false, req.ScanId, protos.ObjectType_OT_SCAN, dbCollections.ScansName, hctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// We've come this far, we have access to the scan, so read it
-	exprPB, err := wsHelpers.ReadDatasetFile(req.ScanId, hctx.Svcs)
+	exprPB, startLocIdx, endLocIdx, err := beginDatasetFileReq(req.ScanId, req.StartingLocation, req.LocationCount, hctx)
 	if err != nil {
 		return nil, err
 	}
@@ -28,16 +17,9 @@ func HandlePseudoIntensityReq(req *protos.PseudoIntensityReq, hctx wsHelpers.Han
 		labels = append(labels, item.Name)
 	}
 
-	// Read the pseudo-intensities for the requested PMCs
-	// NOTE: req.LocationCount == 0 is interpreted as ALL
-	locLast := uint32(len(exprPB.Locations))
-	if req.LocationCount > 0 {
-		locLast = req.StartingLocation + req.LocationCount
-	}
-
 	tooManyPseudosLocations := 0
 	pseudoIntensities := []*protos.PseudoIntensityData{}
-	for c := req.StartingLocation; c < locLast; c++ {
+	for c := startLocIdx; c < endLocIdx; c++ {
 		pseudos := exprPB.Locations[c].PseudoIntensities
 
 		// There really should only be one item!

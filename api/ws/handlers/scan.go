@@ -3,6 +3,7 @@ package wsHandler
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
@@ -39,7 +40,49 @@ func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) (
 }
 
 func HandleScanMetaLabelsReq(req *protos.ScanMetaLabelsReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaLabelsResp, error) {
-	return nil, errors.New("HandleScanMetaLabelsReq not implemented yet")
+	exprPB, _, _, err := beginDatasetFileReq(req.ScanId, 0, 0, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.ScanMetaLabelsResp{
+		MetaLabels: exprPB.MetaLabels,
+	}, nil
+}
+
+// Utility to call for any Req message that involves serving data out of a dataset.bin file
+// scanId is mandatory, but startIdx and locCount may not exist in all requests, can be set to 0 if unused/not relevant
+func beginDatasetFileReq(scanId string, startIdx uint32, locCount uint32, hctx wsHelpers.HandlerContext) (*protos.Experiment, uint32, uint32, error) {
+	if err := wsHelpers.CheckStringField(&scanId, "ScanId", 1, 50); err != nil {
+		return nil, 0, 0, err
+	}
+
+	_, _, err := wsHelpers.GetUserObjectById[protos.ScanItem](false, scanId, protos.ObjectType_OT_SCAN, dbCollections.ScansName, hctx)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	// We've come this far, we have access to the scan, so read it
+	exprPB, err := wsHelpers.ReadDatasetFile(scanId, hctx.Svcs)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	// Check that the start index is valid
+	if startIdx >= uint32(len(exprPB.Locations)) {
+		return nil, 0, 0, fmt.Errorf("ScanId %v request had invalid startLocation: %v", scanId, startIdx)
+	}
+
+	// Work out the end index from request params - mainly here to standardise
+	// NOTE: locCount == 0 is interpreted as ALL
+	locLast := uint32(len(exprPB.Locations))
+	if locCount > 0 {
+		locLast = startIdx + locCount
+	}
+
+	if err != nil {
+		return nil, startIdx, locLast, err
+	}
 }
 
 func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaWriteResp, error) {

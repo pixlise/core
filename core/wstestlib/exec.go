@@ -8,7 +8,7 @@ import (
 )
 
 func ExecQueuedActions(u *ScriptedTestUser) {
-	caller := getCaller(1)
+	caller := getCaller(2)
 
 	// Run the actions
 	fmt.Printf("Running actions [%v]\n", caller)

@@ -9,181 +9,41 @@ import (
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
+func testScanData(apiHost string) {
+	scanId := seedDBScanData()
+	// Prepend the special bit required for ownership table scan storage
+	scanId = "scan_" + scanId
+
+	// Dataset - bad dataset id
+	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, nil, nil)
+	userId := testScanDataBadId(apiHost, "Pseudo: ")
+
+	noAccessTest := func(apiHost string) {
+		// No viewers or editors on the item
+		seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, nil, nil)
+		// Clear user groups
+		seedDBUserGroups(nil)
+
+		// Run test expecting to get a no permission error
+		testScanDataNoPermission(apiHost)
+	}
+
+	accessTest := func(apiHost string, comment string, ownershipViewers *protos.UserGroupList, ownershipEditors *protos.UserGroupList, userGroups []*protos.UserGroup) {
+		// Set the viewers and editors
+		seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, ownershipViewers, ownershipEditors)
+		// Set user groups created
+		seedDBUserGroups(userGroups)
+
+		// Run test expecting to get
+		testScanDataHasPermission(apiHost, comment)
+	}
+
+	wstestlib.RunFullAccessTest(apiHost, userId, 1 /*3 for proper testing*/, noAccessTest, accessTest)
+}
+
 const scanWaitTime = 60 * 1000 * 10
 
-func testScanData(apiHost string) {
-	// Dataset - no permissions
-	seedDBForScanData(nil, nil)
-	userId := testScanDataBadId(apiHost, "Pseudo: ")
-	testScanDataNoPermission(apiHost, "Pseudo: No permissions")
-
-	// Dataset - user has userid viewer permissions
-	seedDBForScanData(&protos.UserGroupList{
-		UserIds:  []string{userId},
-		GroupIds: []string{},
-	}, nil)
-	testScanDataHasPermission(apiHost, "Pseudo: UserId is scan viewer")
-
-	// Dataset - no permissions (ensure above doesn't leak into the next test...)
-	seedDBForScanData(nil, nil)
-	testScanDataNoPermission(apiHost, "Pseudo: No permissions")
-
-	// Dataset - user has groupid member permissions
-	seedDBForScanData(&protos.UserGroupList{
-		UserIds:  []string{},
-		GroupIds: []string{"user-group-1"},
-	}, nil)
-	// Add the group id too!
-	seedDBUserGroup(&protos.UserGroup{
-		Id:             "user-group-1",
-		Name:           "M2020 Scientists",
-		CreatedUnixSec: 1234567890,
-		Members: &protos.UserGroupList{
-			UserIds: []string{userId},
-		},
-	})
-	testScanDataHasPermission(apiHost, "Pseudo: UserId is member in UserGroup which is scan viewer")
-
-	// Dataset - no permissions (ensure above doesn't leak into the next test...)
-	seedDBForScanData(nil, nil)
-	testScanDataNoPermission(apiHost, "Pseudo: No permissions")
-
-	// Dataset - user has groupid viewer permissions
-	seedDBForScanData(&protos.UserGroupList{
-		UserIds:  []string{},
-		GroupIds: []string{"user-group-1"},
-	}, nil)
-	// Add the group id too!
-	seedDBUserGroup(&protos.UserGroup{
-		Id:             "user-group-1",
-		Name:           "M2020 Scientists",
-		CreatedUnixSec: 1234567890,
-		Viewers: &protos.UserGroupList{
-			UserIds: []string{userId},
-		},
-	})
-	testScanDataHasPermission(apiHost, "Pseudo: UserId is viewer in UserGroup which is scan viewer")
-}
-
-func testScanDataBadId(apiHost string, actionMsg string) string {
-	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
-		Host: apiHost,
-		User: test1Username,
-		Pass: test1Password,
-	})
-
-	u1.AddSendReqAction(actionMsg+" (not found)",
-		`{"pseudoIntensityReq":{"scanId": "non-existant-scan"}}`,
-		`{"msgId":1, "status": "WS_NOT_FOUND",
-			"errorText": "non-existant-scan not found",
-			"pseudoIntensityResp":{}
-		}`,
-	)
-
-	u1.CloseActionGroup([]string{}, scanWaitTime)
-	wstestlib.ExecQueuedActions(&u1)
-	return u1.GetUserId()
-}
-
-func testScanDataNoPermission(apiHost string, actionMsg string) {
-	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
-		Host: apiHost,
-		User: test1Username,
-		Pass: test1Password,
-	})
-
-	// Using Naltsos: 048300551
-	// First scan from Mars, should be in all environments, total size is only 800kb, 121 PMCs
-	// NOTES: - Intensity label order matters, should be returned as defined here
-	//        - We only need to know that we get the right number of locations, and that
-	//          an individual item has the right length of intensities...
-	u1.AddSendReqAction(actionMsg+" (expect no permission)",
-		`{"pseudoIntensityReq":{"scanId": "048300551", "startingLocation": 100, "locationCount": 5}}`,
-		`{
-			"msgId": 1,
-			"status": "WS_NO_PERMISSION",
-			"errorText": "View access denied for: 048300551",
-			"pseudoIntensityResp": {}
-		}`,
-	)
-
-	u1.CloseActionGroup([]string{}, scanWaitTime)
-	wstestlib.ExecQueuedActions(&u1)
-}
-
-func testScanDataHasPermission(apiHost string, actionMsg string) {
-	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
-		Host: apiHost,
-		User: test1Username,
-		Pass: test1Password,
-	})
-
-	// Using Naltsos: 048300551
-	// First scan from Mars, should be in all environments, total size is only 800kb, 121 PMCs
-	// NOTES: - Intensity label order matters, should be returned as defined here
-	//        - We only need to know that we get the right number of locations, and that
-	//          an individual item has the right length of intensities...
-	u1.AddSendReqAction(actionMsg+" (should work)",
-		`{"pseudoIntensityReq":{"scanId": "048300551", "startingLocation": 100, "locationCount": 5}}`,
-		`{"msgId":1, "status": "WS_OK",
-			"pseudoIntensityResp":{
-				"intensityLabels": [
-					"Na",
-					"Mg",
-					"Al",
-					"Si",
-					"P",
-					"S",
-					"Cl",
-					"K",
-					"Ca",
-					"Ti",
-					"Ce",
-					"Cr",
-					"Mn",
-					"Fe",
-					"Ni",
-					"Ge",
-					"As",
-					"Zn",
-					"Sr",
-					"Y",
-					"Zr",
-					"Ba"
-				],
-				"data${LIST,MODE=CONTAINS,MINLENGTH=4}": [
-					{
-						"intensities${LIST,MODE=LENGTH,LENGTH=32}": []
-					}
-				]
-			}
-		}`,
-	)
-
-	u1.CloseActionGroup([]string{}, scanWaitTime)
-	wstestlib.ExecQueuedActions(&u1)
-}
-
-func seedDBForScanData(viewers *protos.UserGroupList, editors *protos.UserGroupList) {
-	// Insert a scan item into DB for this
-	scanOwnerItem := protos.OwnershipItem{
-		Id:             "scan_048300551",
-		ObjectType:     protos.ObjectType_OT_SCAN,
-		CreatorUserId:  "",
-		CreatedUnixSec: 1646262426,
-	}
-
-	if viewers != nil {
-		scanOwnerItem.Viewers = viewers
-	}
-
-	if editors != nil {
-		scanOwnerItem.Editors = editors
-	}
-
+func seedDBScanData() string {
 	scanItem := protos.ScanItem{
 		Id:    "048300551",
 		Title: "Naltsos",
@@ -221,6 +81,39 @@ func seedDBForScanData(viewers *protos.UserGroupList, editors *protos.UserGroupL
 	}
 
 	db := wstestlib.GetDB()
+	coll := db.Collection(dbCollections.ScansName)
+	ctx := context.TODO()
+	err := coll.Drop(ctx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	_, err = coll.InsertOne(ctx, &scanItem)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return scanItem.Id
+}
+
+func seedDBOwnership(objectId string, objectType protos.ObjectType, viewers *protos.UserGroupList, editors *protos.UserGroupList) {
+	// Insert a scan item into DB for this
+	scanOwnerItem := protos.OwnershipItem{
+		Id:             objectId,
+		ObjectType:     objectType,
+		CreatorUserId:  "",
+		CreatedUnixSec: 1646262426,
+	}
+
+	if viewers != nil {
+		scanOwnerItem.Viewers = viewers
+	}
+
+	if editors != nil {
+		scanOwnerItem.Editors = editors
+	}
+
+	db := wstestlib.GetDB()
 	coll := db.Collection(dbCollections.OwnershipName)
 	ctx := context.TODO()
 	err := coll.Drop(ctx)
@@ -232,20 +125,9 @@ func seedDBForScanData(viewers *protos.UserGroupList, editors *protos.UserGroupL
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	coll = db.Collection(dbCollections.ScansName)
-	err = coll.Drop(ctx)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	_, err = coll.InsertOne(ctx, &scanItem)
-	if err != nil {
-		log.Fatalln(err)
-	}
 }
 
-func seedDBUserGroup(group *protos.UserGroup) {
+func seedDBUserGroups(groups []*protos.UserGroup) {
 	db := wstestlib.GetDB()
 	coll := db.Collection(dbCollections.UserGroupsName)
 	ctx := context.TODO()
@@ -254,8 +136,567 @@ func seedDBUserGroup(group *protos.UserGroup) {
 		log.Fatalln(err)
 	}
 
-	_, err = coll.InsertOne(ctx, group)
-	if err != nil {
-		log.Fatalln(err)
+	if len(groups) > 0 {
+		items := []interface{}{}
+		for _, g := range groups {
+			items = append(items, g)
+		}
+		_, err = coll.InsertMany(ctx, items, nil)
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
+}
+
+func testScanDataBadId(apiHost string, actionMsg string) string {
+	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test1Username,
+		Pass: test1Password,
+	})
+
+	u1.AddSendReqAction(actionMsg+" (not found)",
+		`{"pseudoIntensityReq":{"scanId": "non-existant-scan"}}`,
+		`{"msgId":1, "status": "WS_NOT_FOUND",
+			"errorText": "non-existant-scan not found",
+			"pseudoIntensityResp":{}
+		}`,
+	)
+
+	u1.AddSendReqAction(actionMsg+" (not found)",
+		`{"spectrumReq":{"scanId": "non-existant-scan"}}`,
+		`{"msgId":2, "status": "WS_NOT_FOUND",
+			"errorText": "non-existant-scan not found",
+			"spectrumResp":{}
+		}`,
+	)
+
+	u1.CloseActionGroup([]string{}, scanWaitTime)
+	wstestlib.ExecQueuedActions(&u1)
+	return u1.GetUserId()
+}
+
+func testScanDataNoPermission(apiHost string) {
+	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test1Username,
+		Pass: test1Password,
+	})
+
+	// Using Naltsos: 048300551
+	// First scan from Mars, should be in all environments, total size is only 800kb, 121 PMCs
+	// NOTES: - Intensity label order matters, should be returned as defined here
+	//        - We only need to know that we get the right number of locations, and that
+	//          an individual item has the right length of intensities...
+	u1.AddSendReqAction("pseudo (expect no permission)",
+		`{"pseudoIntensityReq":{"scanId": "048300551", "startingLocation": 100, "locationCount": 5}}`,
+		`{
+			"msgId": 1,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "View access denied for: 048300551",
+			"pseudoIntensityResp": {}
+		}`,
+	)
+
+	u1.AddSendReqAction("spectrum (expect no permission)",
+		`{"spectrumReq":{"scanId": "048300551", "startingLocation": 128, "locationCount": 4}}`,
+		`{
+			"msgId": 2,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "View access denied for: 048300551",
+			"spectrumResp": {}
+		}`,
+	)
+
+	u1.AddSendReqAction("metaLabels (expect no permission)",
+		`{"scanMetaLabelsReq":{"scanId": "048300551"}}`,
+		`{"msgId":3,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "View access denied for: 048300551",
+			"scanMetaLabelsResp":{}
+		}`,
+	)
+
+	u1.CloseActionGroup([]string{}, scanWaitTime)
+	wstestlib.ExecQueuedActions(&u1)
+}
+
+func testScanDataHasPermission(apiHost string, actionMsg string) {
+	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test1Username,
+		Pass: test1Password,
+	})
+
+	// Using Naltsos: 048300551
+	// First scan from Mars, should be in all environments, total size is only 800kb, 121 PMCs
+	// NOTES: - Intensity label order matters, should be returned as defined here
+	//        - We only need to know that we get the right number of locations, and that
+	//          an individual item has the right length of intensities...
+	u1.AddSendReqAction("Pseudo: "+actionMsg+" (should work)",
+		`{"pseudoIntensityReq":{"scanId": "048300551", "startingLocation": 100, "locationCount": 5}}`,
+		`{"msgId":1, "status": "WS_OK",
+			"pseudoIntensityResp":{
+				"intensityLabels": [
+					"Na",
+					"Mg",
+					"Al",
+					"Si",
+					"P",
+					"S",
+					"Cl",
+					"K",
+					"Ca",
+					"Ti",
+					"Ce",
+					"Cr",
+					"Mn",
+					"Fe",
+					"Ni",
+					"Ge",
+					"As",
+					"Zn",
+					"Sr",
+					"Y",
+					"Zr",
+					"Ba"
+				],
+				"data${LIST,MODE=CONTAINS,MINLENGTH=4}": [
+					{
+						"intensities${LIST,MODE=LENGTH,LENGTH=32}": []
+					}
+				]
+			}
+		}`,
+	)
+
+	u1.AddSendReqAction("Spectra: "+actionMsg+" (should work)",
+		`{"spectrumReq":{"scanId": "048300551", "startingLocation": 128, "locationCount": 4}}`,
+		`{"msgId":2, "status": "WS_OK",
+			"spectrumResp":{
+				"spectraPerLocation": [
+					{
+						"spectra": [
+							{
+								"detector": "A",
+								"type": "SPECTRUM_NORMAL",
+								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
+								"maxCount": "3096",
+								"meta": {
+									"0": {
+										"ivalue": 678034825
+									},
+									"119": {
+										"fvalue": 13.879905
+									},
+									"120": {
+										"fvalue": -18.5
+									},
+									"123": {
+										"fvalue": 15
+									},
+									"124": {
+										"fvalue": 7.862
+									}
+								}
+							},
+							{
+								"detector": "B",
+								"type": "SPECTRUM_NORMAL",
+								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
+								"maxCount": "2855",
+								"meta": {
+									"0": {
+										"ivalue": 678034826
+									},
+									"119": {
+										"fvalue": 13.893265
+									},
+									"120": {
+										"fvalue": -22.4
+									},
+									"123": {
+										"fvalue": 15
+									},
+									"124": {
+										"fvalue": 7.881
+									}
+								}
+							}
+						]
+					},
+					{},
+					{
+						"spectra": [
+							{
+								"detector": "A",
+								"type": "SPECTRUM_BULK",
+								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
+								"maxCount": "367901",
+								"meta": {
+									"119": {
+										"fvalue": 1712.4017
+									},
+									"120": {
+										"fvalue": -11.8
+									},
+									"123": {
+										"fvalue": 1815
+									},
+									"124": {
+										"fvalue": 7.9226
+									},
+									"125": {
+										"svalue": "YY"
+									},
+									"126": {
+										"svalue": "EMSA/MAS spectral data file"
+									},
+									"127": {
+										"svalue": "2"
+									},
+									"128": {
+										"svalue": "4096"
+									},
+									"129": {
+										"svalue": "PIXL Flight Model"
+									},
+									"130": {
+										"svalue": "XRF"
+									},
+									"131": {
+										"svalue": "N/A"
+									},
+									"132": {
+										"svalue": "TC202v2.0 PIXL"
+									},
+									"133": {
+										"svalue": "eV"
+									},
+									"134": {
+										"svalue": "-1.032"
+									},
+									"135": {
+										"svalue": "COUNTS"
+									}
+								}
+							},
+							{
+								"detector": "B",
+								"type": "SPECTRUM_BULK",
+								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
+								"maxCount": "353738",
+								"meta": {
+									"119": {
+										"fvalue": 1712.503
+									},
+									"120": {
+										"fvalue": -13.2
+									},
+									"123": {
+										"fvalue": 1815
+									},
+									"124": {
+										"fvalue": 7.9273
+									},
+									"125": {
+										"svalue": "YY"
+									},
+									"126": {
+										"svalue": "EMSA/MAS spectral data file"
+									},
+									"127": {
+										"svalue": "2"
+									},
+									"128": {
+										"svalue": "4096"
+									},
+									"129": {
+										"svalue": "PIXL Flight Model"
+									},
+									"130": {
+										"svalue": "XRF"
+									},
+									"131": {
+										"svalue": "N/A"
+									},
+									"132": {
+										"svalue": "TC202v2.0 PIXL"
+									},
+									"133": {
+										"svalue": "eV"
+									},
+									"134": {
+										"svalue": "-1.032"
+									},
+									"135": {
+										"svalue": "COUNTS"
+									}
+								}
+							},
+							{
+								"detector": "A",
+								"type": "SPECTRUM_MAX",
+								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
+								"maxCount": "7017",
+								"meta": {
+									"119": {
+										"fvalue": 14.293016
+									},
+									"120": {
+										"fvalue": -11.8
+									},
+									"123": {
+										"fvalue": 15
+									},
+									"124": {
+										"fvalue": 7.9226
+									},
+									"125": {
+										"svalue": "YY"
+									},
+									"126": {
+										"svalue": "EMSA/MAS spectral data file"
+									},
+									"127": {
+										"svalue": "2"
+									},
+									"128": {
+										"svalue": "4096"
+									},
+									"129": {
+										"svalue": "PIXL Flight Model"
+									},
+									"130": {
+										"svalue": "XRF"
+									},
+									"131": {
+										"svalue": "N/A"
+									},
+									"132": {
+										"svalue": "TC202v2.0 PIXL"
+									},
+									"133": {
+										"svalue": "eV"
+									},
+									"134": {
+										"svalue": "-1.032"
+									},
+									"135": {
+										"svalue": "COUNTS"
+									}
+								}
+							},
+							{
+								"detector": "B",
+								"type": "SPECTRUM_MAX",
+								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
+								"maxCount": "6786",
+								"meta": {
+									"119": {
+										"fvalue": 14.27207
+									},
+									"120": {
+										"fvalue": -13.2
+									},
+									"123": {
+										"fvalue": 15
+									},
+									"124": {
+										"fvalue": 7.9273
+									},
+									"125": {
+										"svalue": "YY"
+									},
+									"126": {
+										"svalue": "EMSA/MAS spectral data file"
+									},
+									"127": {
+										"svalue": "2"
+									},
+									"128": {
+										"svalue": "4096"
+									},
+									"129": {
+										"svalue": "PIXL Flight Model"
+									},
+									"130": {
+										"svalue": "XRF"
+									},
+									"131": {
+										"svalue": "N/A"
+									},
+									"132": {
+										"svalue": "TC202v2.0 PIXL"
+									},
+									"133": {
+										"svalue": "eV"
+									},
+									"134": {
+										"svalue": "-1.032"
+									},
+									"135": {
+										"svalue": "COUNTS"
+									}
+								}
+							}
+						]
+					},
+					{}
+				]
+			}
+		}`,
+	)
+
+	u1.AddSendReqAction("MetaLabels: "+actionMsg+" (should work)",
+		`{"scanMetaLabelsReq":{"scanId": "048300551"}}`,
+		`{"msgId":3, "status": "WS_OK",
+			"scanMetaLabelsResp":{
+				"metaLabels": [
+				"SCLK",
+				"hk_fcnt",
+				"f_pixl_analog_fpga",
+				"f_pixl_chassis_top",
+				"f_pixl_chassis_bottom",
+				"f_pixl_aft_low_cal",
+				"f_pixl_aft_high_cal",
+				"f_pixl_motor_v_plus",
+				"f_pixl_motor_v_minus",
+				"f_pixl_sdd_1",
+				"f_pixl_sdd_2",
+				"f_pixl_3_3_volt",
+				"f_pixl_1_8_volt",
+				"f_pixl_dspc_v_plus",
+				"f_pixl_dspc_v_minus",
+				"f_pixl_prt_curr",
+				"f_pixl_arm_resist",
+				"f_head_sdd_1",
+				"f_head_sdd_2",
+				"f_head_afe",
+				"f_head_lvcm",
+				"f_head_hvmm",
+				"f_head_bipod1",
+				"f_head_bipod2",
+				"f_head_bipod3",
+				"f_head_cover",
+				"f_head_hop",
+				"f_head_flie",
+				"f_head_tec1",
+				"f_head_tec2",
+				"f_head_xray",
+				"f_head_yellow_piece",
+				"f_head_mcc",
+				"f_hvps_fvmon",
+				"f_hvps_fimon",
+				"f_hvps_hvmon",
+				"f_hvps_himon",
+				"f_hvps_13v_plus",
+				"f_hvps_13v_minus",
+				"f_hvps_5v_plus",
+				"f_hvps_lvcm",
+				"i_valid_cmds",
+				"i_crf_retry",
+				"i_sdf_retry",
+				"i_rejected_cmds",
+				"i_hk_side",
+				"i_motor_1",
+				"i_motor_2",
+				"i_motor_3",
+				"i_motor_4",
+				"i_motor_5",
+				"i_motor_6",
+				"i_motor_cover",
+				"i_hes_sense",
+				"i_flash_status",
+				"u_hk_version",
+				"u_hk_time",
+				"u_hk_power",
+				"u_fsw_0",
+				"u_fsw_1",
+				"u_fsw_2",
+				"u_fsw_3",
+				"u_fsw_4",
+				"u_fsw_5",
+				"f_pixl_analog_fpga_conv",
+				"f_pixl_chassis_top_conv",
+				"f_pixl_chassis_bottom_conv",
+				"f_pixl_aft_low_cal_conv",
+				"f_pixl_aft_high_cal_conv",
+				"f_pixl_motor_v_plus_conv",
+				"f_pixl_motor_v_minus_conv",
+				"f_pixl_sdd_1_conv",
+				"f_pixl_sdd_2_conv",
+				"f_pixl_3_3_volt_conv",
+				"f_pixl_1_8_volt_conv",
+				"f_pixl_dspc_v_plus_conv",
+				"f_pixl_dspc_v_minus_conv",
+				"f_pixl_prt_curr_conv",
+				"f_pixl_arm_resist_conv",
+				"f_head_sdd_1_conv",
+				"f_head_sdd_2_conv",
+				"f_head_afe_conv",
+				"f_head_lvcm_conv",
+				"f_head_hvmm_conv",
+				"f_head_bipod1_conv",
+				"f_head_bipod2_conv",
+				"f_head_bipod3_conv",
+				"f_head_cover_conv",
+				"f_head_hop_conv",
+				"f_head_flie_conv",
+				"f_head_tec1_conv",
+				"f_head_tec2_conv",
+				"f_head_xray_conv",
+				"f_head_yellow_piece_conv",
+				"f_head_mcc_conv",
+				"f_hvps_fvmon_conv",
+				"f_hvps_fimon_conv",
+				"f_hvps_hvmon_conv",
+				"f_hvps_himon_conv",
+				"f_hvps_13v_plus_conv",
+				"f_hvps_13v_minus_conv",
+				"f_hvps_5v_plus_conv",
+				"f_hvps_lvcm_conv",
+				"i_valid_cmds_conv",
+				"i_crf_retry_conv",
+				"i_sdf_retry_conv",
+				"i_rejected_cmds_conv",
+				"i_hk_side_conv",
+				"i_motor_1_conv",
+				"i_motor_2_conv",
+				"i_motor_3_conv",
+				"i_motor_4_conv",
+				"i_motor_5_conv",
+				"i_motor_6_conv",
+				"i_motor_cover_conv",
+				"i_hes_sense_conv",
+				"i_flash_status_conv",
+				"RTT",
+				"DETECTOR_ID",
+				"LIVETIME",
+				"OFFSET",
+				"PMC",
+				"READTYPE",
+				"REALTIME",
+				"XPERCHAN",
+				"DATATYPE",
+				"FORMAT",
+				"NCOLUMNS",
+				"NPOINTS",
+				"OWNER",
+				"SIGNALTYPE",
+				"TITLE",
+				"VERSION",
+				"XUNITS",
+				"YP_TEMP",
+				"YUNITS"
+				]
+			}
+		}`,
+	)
+
+	u1.CloseActionGroup([]string{}, scanWaitTime)
+	wstestlib.ExecQueuedActions(&u1)
 }

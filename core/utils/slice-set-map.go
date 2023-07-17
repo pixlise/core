@@ -19,6 +19,8 @@
 // and random ID strings, zipping files/directories, reading/writing images
 package utils
 
+import "golang.org/x/exp/constraints"
+
 // Simple Go helper functions
 // stuff that you'd expect to be part of the std lib but aren't, eg functions to search for strings
 // in string arrays...
@@ -46,4 +48,12 @@ func GetMapKeys[K comparable, V any](theMap map[K]V) []K {
 	}
 
 	return result
+}
+
+func ConvertIntSlice[T constraints.Integer, F constraints.Integer](from []F) []T {
+	res := make([]T, len(from))
+	for i, e := range from {
+		res[i] = T(e)
+	}
+	return res
 }
