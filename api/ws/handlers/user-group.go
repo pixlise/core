@@ -91,7 +91,7 @@ func HandleUserGroupDeleteReq(req *protos.UserGroupDeleteReq, hctx wsHelpers.Han
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
 
-	result, err := coll.DeleteOne(ctx, bson.M{"id": req.GroupId})
+	result, err := coll.DeleteOne(ctx, bson.M{"_id": req.GroupId})
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, errorwithstatus.MakeNotFoundError(req.GroupId)
