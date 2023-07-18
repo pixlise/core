@@ -81,8 +81,10 @@ func beginDatasetFileReq(scanId string, startIdx uint32, locCount uint32, hctx w
 	}
 
 	if err != nil {
-		return nil, startIdx, locLast, err
+		return nil, 0, 0, err
 	}
+
+	return exprPB, startIdx, locLast, nil
 }
 
 func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaWriteResp, error) {

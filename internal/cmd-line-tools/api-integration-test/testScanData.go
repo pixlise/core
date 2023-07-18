@@ -219,6 +219,15 @@ func testScanDataNoPermission(apiHost string) {
 		}`,
 	)
 
+	u1.AddSendReqAction("scanLocation (expect no permission)",
+		`{"scanLocationReq":{"scanId": "048300551"}}`,
+		`{"msgId":4,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "View access denied for: 048300551",
+			"scanLocationResp":{}
+		}`,
+	)
+
 	u1.CloseActionGroup([]string{}, scanWaitTime)
 	wstestlib.ExecQueuedActions(&u1)
 }
@@ -286,21 +295,11 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
 								"maxCount": "3096",
 								"meta": {
-									"0": {
-										"ivalue": 678034825
-									},
-									"119": {
-										"fvalue": 13.879905
-									},
-									"120": {
-										"fvalue": -18.5
-									},
-									"123": {
-										"fvalue": 15
-									},
-									"124": {
-										"fvalue": 7.862
-									}
+									"0": {"ivalue": 678034825},
+									"119": {"fvalue": 13.879905},
+									"120": {"fvalue": -18.5},
+									"123": {"fvalue": 15},
+									"124": {"fvalue": 7.862}
 								}
 							},
 							{
@@ -309,21 +308,11 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
 								"maxCount": "2855",
 								"meta": {
-									"0": {
-										"ivalue": 678034826
-									},
-									"119": {
-										"fvalue": 13.893265
-									},
-									"120": {
-										"fvalue": -22.4
-									},
-									"123": {
-										"fvalue": 15
-									},
-									"124": {
-										"fvalue": 7.881
-									}
+									"0": {"ivalue": 678034826},
+									"119": {"fvalue": 13.893265},
+									"120": {"fvalue": -22.4},
+									"123": {"fvalue": 15},
+									"124": {"fvalue": 7.881}
 								}
 							}
 						]
@@ -337,51 +326,21 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
 								"maxCount": "367901",
 								"meta": {
-									"119": {
-										"fvalue": 1712.4017
-									},
-									"120": {
-										"fvalue": -11.8
-									},
-									"123": {
-										"fvalue": 1815
-									},
-									"124": {
-										"fvalue": 7.9226
-									},
-									"125": {
-										"svalue": "YY"
-									},
-									"126": {
-										"svalue": "EMSA/MAS spectral data file"
-									},
-									"127": {
-										"svalue": "2"
-									},
-									"128": {
-										"svalue": "4096"
-									},
-									"129": {
-										"svalue": "PIXL Flight Model"
-									},
-									"130": {
-										"svalue": "XRF"
-									},
-									"131": {
-										"svalue": "N/A"
-									},
-									"132": {
-										"svalue": "TC202v2.0 PIXL"
-									},
-									"133": {
-										"svalue": "eV"
-									},
-									"134": {
-										"svalue": "-1.032"
-									},
-									"135": {
-										"svalue": "COUNTS"
-									}
+									"119": {"fvalue": 1712.4017},
+									"120": {"fvalue": -11.8},
+									"123": {"fvalue": 1815},
+									"124": {"fvalue": 7.9226},
+									"125": {"svalue": "YY"},
+									"126": {"svalue": "EMSA/MAS spectral data file"},
+									"127": {"svalue": "2"},
+									"128": {"svalue": "4096"},
+									"129": {"svalue": "PIXL Flight Model"},
+									"130": {"svalue": "XRF"},
+									"131": {"svalue": "N/A"},
+									"132": {"svalue": "TC202v2.0 PIXL"},
+									"133": {"svalue": "eV"},
+									"134": {"svalue": "-1.032"},
+									"135": {"svalue": "COUNTS"}
 								}
 							},
 							{
@@ -390,51 +349,21 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
 								"maxCount": "353738",
 								"meta": {
-									"119": {
-										"fvalue": 1712.503
-									},
-									"120": {
-										"fvalue": -13.2
-									},
-									"123": {
-										"fvalue": 1815
-									},
-									"124": {
-										"fvalue": 7.9273
-									},
-									"125": {
-										"svalue": "YY"
-									},
-									"126": {
-										"svalue": "EMSA/MAS spectral data file"
-									},
-									"127": {
-										"svalue": "2"
-									},
-									"128": {
-										"svalue": "4096"
-									},
-									"129": {
-										"svalue": "PIXL Flight Model"
-									},
-									"130": {
-										"svalue": "XRF"
-									},
-									"131": {
-										"svalue": "N/A"
-									},
-									"132": {
-										"svalue": "TC202v2.0 PIXL"
-									},
-									"133": {
-										"svalue": "eV"
-									},
-									"134": {
-										"svalue": "-1.032"
-									},
-									"135": {
-										"svalue": "COUNTS"
-									}
+									"119": {"fvalue": 1712.503},
+									"120": {"fvalue": -13.2},
+									"123": {"fvalue": 1815},
+									"124": {"fvalue": 7.9273},
+									"125": {"svalue": "YY"},
+									"126": {"svalue": "EMSA/MAS spectral data file"},
+									"127": {"svalue": "2"},
+									"128": {"svalue": "4096"},
+									"129": {"svalue": "PIXL Flight Model"},
+									"130": {"svalue": "XRF"},
+									"131": {"svalue": "N/A"},
+									"132": {"svalue": "TC202v2.0 PIXL"},
+									"133": {"svalue": "eV"},
+									"134": {"svalue": "-1.032"},
+									"135": {"svalue": "COUNTS"}
 								}
 							},
 							{
@@ -443,51 +372,21 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
 								"maxCount": "7017",
 								"meta": {
-									"119": {
-										"fvalue": 14.293016
-									},
-									"120": {
-										"fvalue": -11.8
-									},
-									"123": {
-										"fvalue": 15
-									},
-									"124": {
-										"fvalue": 7.9226
-									},
-									"125": {
-										"svalue": "YY"
-									},
-									"126": {
-										"svalue": "EMSA/MAS spectral data file"
-									},
-									"127": {
-										"svalue": "2"
-									},
-									"128": {
-										"svalue": "4096"
-									},
-									"129": {
-										"svalue": "PIXL Flight Model"
-									},
-									"130": {
-										"svalue": "XRF"
-									},
-									"131": {
-										"svalue": "N/A"
-									},
-									"132": {
-										"svalue": "TC202v2.0 PIXL"
-									},
-									"133": {
-										"svalue": "eV"
-									},
-									"134": {
-										"svalue": "-1.032"
-									},
-									"135": {
-										"svalue": "COUNTS"
-									}
+									"119": {"fvalue": 14.293016},
+									"120": {"fvalue": -11.8},
+									"123": {"fvalue": 15},
+									"124": {"fvalue": 7.9226},
+									"125": {"svalue": "YY"},
+									"126": {"svalue": "EMSA/MAS spectral data file"},
+									"127": {"svalue": "2"},
+									"128": {"svalue": "4096"},
+									"129": {"svalue": "PIXL Flight Model"},
+									"130": {"svalue": "XRF"},
+									"131": {"svalue": "N/A"},
+									"132": {"svalue": "TC202v2.0 PIXL"},
+									"133": {"svalue": "eV"},
+									"134": {"svalue": "-1.032"},
+									"135": {"svalue": "COUNTS"}
 								}
 							},
 							{
@@ -496,51 +395,21 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
 								"maxCount": "6786",
 								"meta": {
-									"119": {
-										"fvalue": 14.27207
-									},
-									"120": {
-										"fvalue": -13.2
-									},
-									"123": {
-										"fvalue": 15
-									},
-									"124": {
-										"fvalue": 7.9273
-									},
-									"125": {
-										"svalue": "YY"
-									},
-									"126": {
-										"svalue": "EMSA/MAS spectral data file"
-									},
-									"127": {
-										"svalue": "2"
-									},
-									"128": {
-										"svalue": "4096"
-									},
-									"129": {
-										"svalue": "PIXL Flight Model"
-									},
-									"130": {
-										"svalue": "XRF"
-									},
-									"131": {
-										"svalue": "N/A"
-									},
-									"132": {
-										"svalue": "TC202v2.0 PIXL"
-									},
-									"133": {
-										"svalue": "eV"
-									},
-									"134": {
-										"svalue": "-1.032"
-									},
-									"135": {
-										"svalue": "COUNTS"
-									}
+									"119": {"fvalue": 14.27207},
+									"120": {"fvalue": -13.2},
+									"123": {"fvalue": 15},
+									"124": {"fvalue": 7.9273},
+									"125": {"svalue": "YY"},
+									"126": {"svalue": "EMSA/MAS spectral data file"},
+									"127": {"svalue": "2"},
+									"128": {"svalue": "4096"},
+									"129": {"svalue": "PIXL Flight Model"},
+									"130": {"svalue": "XRF"},
+									"131": {"svalue": "N/A"},
+									"132": {"svalue": "TC202v2.0 PIXL"},
+									"133": {"svalue": "eV"},
+									"134": {"svalue": "-1.032"},
+									"135": {"svalue": "COUNTS"}
 								}
 							}
 						]
@@ -692,6 +561,139 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 				"XUNITS",
 				"YP_TEMP",
 				"YUNITS"
+				]
+			}
+		}`,
+	)
+
+	u1.AddSendReqAction("scanLocation (should work)",
+		`{"scanLocationReq":{"scanId": "048300551", "startingLocation": 128, "locationCount": 4}}`,
+		`{"msgId":4, "status": "WS_OK",
+			"scanLocationResp":{
+				"locations${LIST,MODE=CONTAINS,LENGTH=4}": [
+					{
+						"id": 217,
+						"meta": {
+							"0": {"ivalue": 678034966},
+							"1": {"ivalue": 1442},
+							"2": {"ivalue": 9143},
+							"3": {"ivalue": 8931},
+							"4": {"ivalue": 8934},
+							"5": {"ivalue": 6823},
+							"6": {"ivalue": 9488},
+							"7": {"ivalue": 4928},
+							"8": {"ivalue": 59998},
+							"9": {"ivalue": 58757},
+							"10": {"ivalue": 58756},
+							"11": {"ivalue": 3167},
+							"12": {"ivalue": 1778},
+							"13": {"ivalue": 8944},
+							"14": {"ivalue": 56064},
+							"15": {"ivalue": 3101},
+							"16": {"ivalue": 11122},
+							"17": {"ivalue": 2411},
+							"18": {"ivalue": 2407},
+							"19": {"ivalue": 8603},
+							"20": {"ivalue": 8170},
+							"21": {"ivalue": 8073},
+							"22": {"ivalue": 7702},
+							"23": {"ivalue": 7713},
+							"24": {"ivalue": 7666},
+							"25": {"ivalue": 7485},
+							"26": {"ivalue": 7434},
+							"27": {"ivalue": 7497},
+							"28": {"ivalue": 8097},
+							"29": {"ivalue": 8080},
+							"30": {"ivalue": 8036},
+							"31": {"ivalue": 8201},
+							"32": {"ivalue": 8055},
+							"33": {"ivalue": 3221},
+							"34": {"ivalue": 595},
+							"35": {"ivalue": 3449},
+							"36": {"ivalue": 3293},
+							"37": {"ivalue": 3590},
+							"38": {"ivalue": 61931},
+							"39": {"ivalue": 1365},
+							"40": {"ivalue": 1802},
+							"41": {"ivalue": 221},
+							"42": {"ivalue": 0},
+							"43": {"ivalue": 0},
+							"44": {"ivalue": 0},
+							"45": {"ivalue": 0},
+							"46": {"ivalue": 1965},
+							"47": {"ivalue": 1974},
+							"48": {"ivalue": 2047},
+							"49": {"ivalue": 1964},
+							"50": {"ivalue": 1972},
+							"51": {"ivalue": 2104},
+							"52": {"ivalue": 864},
+							"53": {"ivalue": 1088},
+							"54": {"ivalue": 0},
+							"55": {"svalue": "0x190425F4"},
+							"56": {"ivalue": 678034966},
+							"57": {"svalue": "0x99800668"},
+							"58": {"svalue": "0xF800392C"},
+							"59": {"svalue": "0x00238D00"},
+							"60": {"svalue": "0x0C04000D"},
+							"61": {"svalue": "0x25000001"},
+							"62": {"svalue": "0x000C8AA3"},
+							"63": {"svalue": "0x4AE4F2CA"},
+							"64": {"fvalue": 30.7794},
+							"65": {"fvalue": 23.9801},
+							"66": {"fvalue": 24.0764},
+							"67": {"fvalue": -43.6274},
+							"68": {"fvalue": 41.8442},
+							"69": {"fvalue": 4.928},
+							"70": {"fvalue": -4.90153},
+							"71": {"fvalue": -146.561},
+							"72": {"fvalue": -146.545},
+							"73": {"fvalue": 3.167},
+							"74": {"fvalue": 1.778},
+							"75": {"fvalue": 8.944},
+							"76": {"fvalue": -8.86726},
+							"77": {"fvalue": 3.101},
+							"78": {"fvalue": 11.22},
+							"79": {"fvalue": -30.0218},
+							"80": {"fvalue": -29.9951},
+							"81": {"fvalue": 13.4605},
+							"82": {"fvalue": -0.426605},
+							"83": {"fvalue": -3.53757},
+							"84": {"fvalue": -15.4362},
+							"85": {"fvalue": -15.0835},
+							"86": {"fvalue": -16.5908},
+							"87": {"fvalue": -22.3958},
+							"88": {"fvalue": -24.0315},
+							"89": {"fvalue": -22.011},
+							"90": {"fvalue": -2.76785},
+							"91": {"fvalue": -3.31305},
+							"92": {"fvalue": -4.72421},
+							"93": {"fvalue": 0.567627},
+							"94": {"fvalue": -4.11487},
+							"95": {"fvalue": 3.93285},
+							"96": {"fvalue": 0.726496},
+							"97": {"fvalue": 27.7941},
+							"98": {"fvalue": 20.1038},
+							"99": {"fvalue": 13.1502},
+							"100": {"fvalue": -13.2051},
+							"101": {"fvalue": 5},
+							"102": {"fvalue": 5.35852},
+							"103": {"ivalue": 221},
+							"104": {"ivalue": 0},
+							"105": {"ivalue": 0},
+							"106": {"ivalue": 0},
+							"107": {"ivalue": 0},
+							"108": {"ivalue": 1965},
+							"109": {"ivalue": 1974},
+							"110": {"ivalue": 2047},
+							"111": {"ivalue": 1964},
+							"112": {"ivalue": 1972},
+							"113": {"ivalue": 2104},
+							"114": {"ivalue": 864},
+							"115": {"ivalue": 1088},
+							"116": {"ivalue": 0},
+							"117": {"ivalue": 48300551}
+						}
+					}
 				]
 			}
 		}`,
