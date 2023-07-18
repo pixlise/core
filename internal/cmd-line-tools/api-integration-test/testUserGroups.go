@@ -45,8 +45,6 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 	)
 
 	u2.CloseActionGroup([]string{}, 5000)
-
-	// Run the test
 	wstestlib.ExecQueuedActions(&u2)
 
 	u2.AddSendReqAction("List user groups again",
@@ -242,8 +240,6 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 	)
 
 	u2.CloseActionGroup([]string{}, 50000)
-
-	// Run the test
 	wstestlib.ExecQueuedActions(&u2)
 
 	// Testing that the newly added user has admin rights now to edit the admins list
@@ -535,9 +531,18 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 		}}`,
 	)
 
+	// Ensure this group admin still cant delete the group
+	u1NonAdmin.AddSendReqAction("Delete user group (no perm)",
+		`{"userGroupDeleteReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
+		`{"msgId":31,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "UserGroupDeleteReq not allowed",
+			"userGroupDeleteResp":{}}`,
+	)
+
 	u1NonAdmin.AddSendReqAction("List user groups for non-admin user again",
 		`{"userGroupListReq":{}}`,
-		fmt.Sprintf(`{"msgId":31,"status":"WS_OK","userGroupListResp":{
+		fmt.Sprintf(`{"msgId":32,"status":"WS_OK","userGroupListResp":{
 			"groups": [
 				{
 					"id": "${IDCHK=createdGroupId}",
@@ -552,8 +557,6 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 	)
 
 	u1NonAdmin.CloseActionGroup([]string{}, 50000)
-
-	// Run the test
 	wstestlib.ExecQueuedActions(&u1NonAdmin)
 
 	// Add a member with u2 too to test that admins can do it
@@ -573,9 +576,21 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 				}
 		}}`, nonAdminUserId),
 	)
-	u2.CloseActionGroup([]string{}, 50000)
 
-	// Run the test
+	// Finally, delete the group
+	u2.AddSendReqAction("Delete user group (no perm)",
+		`{"userGroupDeleteReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
+		`{"msgId":17,
+			"status": "WS_OK",
+			"userGroupDeleteResp":{}}`,
+	)
+
+	u2.AddSendReqAction("List user groups again",
+		`{"userGroupListReq":{}}`,
+		`{"msgId":18,"status":"WS_OK","userGroupListResp":{}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, 50000)
 	wstestlib.ExecQueuedActions(&u2)
 }
 
@@ -619,8 +634,6 @@ func testUserGroupsPermission(apiHost string) wstestlib.ScriptedTestUser {
 	)
 
 	u1.CloseActionGroup([]string{}, 5000)
-
-	// Run the test
 	wstestlib.ExecQueuedActions(&u1)
 
 	return u1
