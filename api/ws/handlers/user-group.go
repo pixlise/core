@@ -470,7 +470,7 @@ func decorateUserGroup(dbGroup *protos.UserGroupDB, db *mongo.Database, logger l
 	readFromLists := [][]string{
 		dbGroup.AdminUserIds,
 		dbGroup.Viewers.UserIds,
-		dbGroup.Members.GroupIds,
+		dbGroup.Members.UserIds,
 	}
 
 	listName := []string{"Admin", "Viewers", "Members"}

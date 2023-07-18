@@ -173,7 +173,7 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 				},
 				"viewers": {},
 				"members": {},
-				"adminUserIds": ["%v"]
+				"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 			}
 		}}`, nonAdminUserId),
 	)
@@ -194,7 +194,7 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 					},
 					"viewers": {},
 					"members": {},
-					"adminUserIds": ["%v"]
+					"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 				}
 			]
 		}}`, nonAdminUserId),
@@ -214,7 +214,10 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 				},
 				"viewers": {},
 				"members": {},
-				"adminUserIds": ["%v", "123"]
+				"adminUsers": [
+					{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"},
+					{"id": "123"}
+				]
 			}
 		}}`, nonAdminUserId),
 	)
@@ -230,7 +233,7 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 				},
 				"viewers": {},
 				"members": {},
-				"adminUserIds": ["%v"]
+				"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 			}
 		}}`, nonAdminUserId),
 	)
@@ -253,7 +256,7 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 					},
 					"viewers": {},
 					"members": {},
-					"adminUserIds": ["%v"]
+					"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 				}
 			]
 		}}`, nonAdminUserId),
@@ -276,7 +279,10 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 				},
 				"viewers": {},
 				"members": {},
-				"adminUserIds": ["%v", "user1-added-admin"]
+				"adminUsers": [
+					{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"},
+					{"id": "user1-added-admin"}
+				]
 			}
 		}}`, nonAdminUserId),
 	)
@@ -293,7 +299,10 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 					},
 					"viewers": {},
 					"members": {},
-					"adminUserIds": ["%v", "user1-added-admin"]
+					"adminUsers": [
+						{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"},
+						{"id": "user1-added-admin"}
+					]
 				}
 			]
 		}}`, nonAdminUserId),
@@ -310,7 +319,7 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 				},
 				"viewers": {},
 				"members": {},
-				"adminUserIds": ["%v"]
+				"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 			}
 		}}`, nonAdminUserId),
 	)
@@ -327,7 +336,7 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 					},
 					"viewers": {},
 					"members": {},
-					"adminUserIds": ["%v"]
+					"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 				}
 			]
 		}}`, nonAdminUserId),
@@ -347,8 +356,8 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 							"createdUnixSec": "${SECAGO=5}"	
 						},
 						"viewers": {},
-						"members": { "groupIds": ["group-abc123"] },
-						"adminUserIds": ["%v"]
+						"members": { "groups": [{"id": "group-abc123"}] },
+						"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 					}
 		}}`, nonAdminUserId),
 	)
@@ -375,8 +384,8 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 						"createdUnixSec": "${SECAGO=5}"
 					},
 					"viewers": {},
-					"members": { "groupIds": ["group-abc123"], "userIds": ["user-abc123"] },
-					"adminUserIds": ["%v"]
+					"members": { "groups": [{"id": "group-abc123"}], "users": [{"id": "user-abc123"}] },
+					"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 				}
 		}}`, nonAdminUserId),
 	)
@@ -403,9 +412,9 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 							"name": "M2020 Scientists",
 							"createdUnixSec": "${SECAGO=5}"
 						},
-						"viewers": { "groupIds": ["group-viewabc123"] },
-						"members": { "groupIds": ["group-abc123"], "userIds": ["user-abc123"] },
-						"adminUserIds": ["%v"]
+						"viewers": { "groups": [{"id": "group-viewabc123"}] },
+						"members": { "groups": [{"id": "group-abc123"}], "users": [{"id": "user-abc123"}] },
+						"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 					}
 		}}`, nonAdminUserId),
 	)
@@ -431,9 +440,9 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 						"name": "M2020 Scientists",
 						"createdUnixSec": "${SECAGO=5}"
 					},
-					"viewers": { "groupIds": ["group-viewabc123"], "userIds": ["user-viewerabc123"] },
-					"members": { "groupIds": ["group-abc123"], "userIds": ["user-abc123"] },
-					"adminUserIds": ["%v"]
+					"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
+					"members": { "groups": [{"id": "group-abc123"}], "users": [{"id": "user-abc123"}] },
+					"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 				}
 		}}`, nonAdminUserId),
 	)
@@ -457,9 +466,9 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 						"name": "M2020 Scientists",
 						"createdUnixSec": "${SECAGO=5}"
 					},
-					"viewers": { "groupIds": ["group-viewabc123"], "userIds": ["user-viewerabc123"] },
-					"members": { "groupIds": ["group-abc123"], "userIds": ["user-abc123"] },
-					"adminUserIds": ["%v"]
+					"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
+					"members": { "groups": [{"id": "group-abc123"}], "users": [{"id": "user-abc123"}] },
+					"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 				}
 			]
 		}}`, nonAdminUserId),
@@ -477,9 +486,9 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 							"name": "M2020 Scientists",
 							"createdUnixSec": "${SECAGO=5}"
 						},
-						"viewers": { "groupIds": ["group-viewabc123"], "userIds": ["user-viewerabc123"] },
-						"members": { "userIds": ["user-abc123"] },
-						"adminUserIds": ["%v"]
+						"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
+						"members": { "users": [{"id": "user-abc123"}] },
+						"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 					}
 		}}`, nonAdminUserId),
 	)
@@ -496,9 +505,9 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 							"name": "M2020 Scientists",
 							"createdUnixSec": "${SECAGO=5}"
 						},
-						"viewers": { "groupIds": ["group-viewabc123"], "userIds": ["user-viewerabc123"] },
+						"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
 						"members": {},
-						"adminUserIds": ["%v"]
+						"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 					}
 		}}`, nonAdminUserId),
 	)
@@ -515,9 +524,9 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 							"name": "M2020 Scientists",
 							"createdUnixSec": "${SECAGO=5}"
 						},
-						"viewers": { "userIds": ["user-viewerabc123"] },
+						"viewers": { "users": [{"id": "user-viewerabc123"}] },
 						"members": {},
-						"adminUserIds": ["%v"]
+						"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 					}
 		}}`, nonAdminUserId),
 	)
@@ -536,7 +545,7 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 						},
 						"viewers": {},
 						"members": {},
-						"adminUserIds": ["%v"]
+						"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 					}
 		}}`, nonAdminUserId),
 	)
@@ -598,7 +607,7 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 					},
 					"viewers": {},
 					"members": {},
-					"adminUserIds": ["%v"]
+					"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 				}
 			]
 		}}`, nonAdminUserId),
@@ -621,8 +630,8 @@ func testUserGroupsFunctionality(apiHost string, u1NonAdmin wstestlib.ScriptedTe
 						"createdUnixSec": "${SECAGO=5}"
 					},
 					"viewers": {},
-					"members": { "userIds": ["user-abc999"] },
-					"adminUserIds": ["%v"]
+					"members": { "users": [{"id": "user-abc999"}] },
+					"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 				}
 		}}`, nonAdminUserId),
 	)
