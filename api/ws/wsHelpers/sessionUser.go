@@ -70,7 +70,7 @@ func MakeSessionUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*Sessio
 		return nil, err
 	}
 
-	userGroups := []*protos.UserGroup{}
+	userGroups := []*protos.UserGroupDB{}
 	err = cursor.All(context.TODO(), &userGroups)
 	if err != nil {
 		return nil, err

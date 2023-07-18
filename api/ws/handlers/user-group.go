@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
+	"github.com/pixlise/core/v3/core/logger"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
@@ -24,14 +26,23 @@ func HandleUserGroupListReq(req *protos.UserGroupListReq, hctx wsHelpers.Handler
 	opts := options.Find()
 	cursor, err := coll.Find(ctx, filter, opts)
 
-	groups := []*protos.UserGroup{}
+	groups := []*protos.UserGroupDB{}
 	err = cursor.All(context.TODO(), &groups)
 	if err != nil {
 		return nil, err
 	}
 
+	groupsForSend := []*protos.UserGroup{}
+	for _, group := range groups {
+		groupSend, err := decorateUserGroup(group, hctx.Svcs.MongoDB, hctx.Svcs.Log)
+		if err != nil {
+			return nil, err
+		}
+		groupsForSend = append(groupsForSend, groupSend)
+	}
+
 	return &protos.UserGroupListResp{
-		Groups: groups,
+		Groups: groupsForSend,
 	}, nil
 }
 
@@ -54,7 +65,7 @@ func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.Han
 	// At this point we should know that the name is not taken
 	groupId := hctx.Svcs.IDGen.GenObjectID()
 
-	group := &protos.UserGroup{
+	group := &protos.UserGroupDB{
 		Id:             groupId,
 		Name:           req.Name,
 		CreatedUnixSec: uint64(hctx.Svcs.TimeStamper.GetTimeNowSec()),
@@ -79,7 +90,12 @@ func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.Han
 		return nil, _err
 	}
 
-	return &protos.UserGroupCreateResp{Group: group}, nil
+	groupSend, err := decorateUserGroup(group, hctx.Svcs.MongoDB, hctx.Svcs.Log)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.UserGroupCreateResp{Group: groupSend}, nil
 }
 
 func HandleUserGroupDeleteReq(req *protos.UserGroupDeleteReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupDeleteResp, error) {
@@ -127,7 +143,7 @@ func HandleUserGroupSetNameReq(req *protos.UserGroupSetNameReq, hctx wsHelpers.H
 	}
 
 	// Read existing group (so we can return it)
-	group := protos.UserGroup{}
+	group := protos.UserGroupDB{}
 	err := groupResult.Decode(&group)
 	if err != nil {
 		return nil, err
@@ -144,7 +160,12 @@ func HandleUserGroupSetNameReq(req *protos.UserGroupSetNameReq, hctx wsHelpers.H
 	}
 
 	group.Name = req.Name
-	return &protos.UserGroupSetNameResp{Group: &group}, nil
+	groupSend, err := decorateUserGroup(&group, hctx.Svcs.MongoDB, hctx.Svcs.Log)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.UserGroupSetNameResp{Group: groupSend}, nil
 }
 
 func checkUserGroupNameExists(name string, ctx context.Context, coll *mongo.Collection) (bool, error, *mongo.SingleResult) {
@@ -239,7 +260,12 @@ func modifyGroupAdminList(groupId string, adminUserId string, add bool, hctx wsH
 		hctx.Svcs.Log.Errorf("UserGroup Admin %v result had unexpected counts %+v id: %v", dbOp, result, group.Id)
 	}
 
-	return group, nil
+	groupSend, err := decorateUserGroup(group, hctx.Svcs.MongoDB, hctx.Svcs.Log)
+	if err != nil {
+		return nil, err
+	}
+
+	return groupSend, nil
 }
 
 func HandleUserGroupAddViewerReq(req *protos.UserGroupAddViewerReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupAddViewerResp, error) {
@@ -380,10 +406,15 @@ func modifyGroupMembershipList(groupId string, opGroupId string, opUserId string
 		hctx.Svcs.Log.Errorf("UserGroup %v %v result had unexpected counts %+v id: %v", dbOp, dbField, result, checkId)
 	}
 
-	return group, nil
+	groupSend, err := decorateUserGroup(group, hctx.Svcs.MongoDB, hctx.Svcs.Log)
+	if err != nil {
+		return nil, err
+	}
+
+	return groupSend, nil
 }
 
-func getGroupAndCheckPermission(groupId string, requestingUser string, requestingUserPermission map[string]bool, ctx context.Context, coll *mongo.Collection) (*protos.UserGroup, error) {
+func getGroupAndCheckPermission(groupId string, requestingUser string, requestingUserPermission map[string]bool, ctx context.Context, coll *mongo.Collection) (*protos.UserGroupDB, error) {
 	// First read the group in question
 	groupRes := coll.FindOne(ctx, bson.M{"_id": groupId})
 	if groupRes.Err() != nil {
@@ -393,7 +424,7 @@ func getGroupAndCheckPermission(groupId string, requestingUser string, requestin
 		return nil, groupRes.Err()
 	}
 
-	group := protos.UserGroup{}
+	group := protos.UserGroupDB{}
 	err := groupRes.Decode(&group)
 	if err != nil {
 		return nil, err
@@ -413,4 +444,123 @@ func getGroupAndCheckPermission(groupId string, requestingUser string, requestin
 	}
 
 	return &group, nil
+}
+
+// Take the DB-based usergroup passed in and form a user group that can be returned in responses
+// These contain all the "aux" user/group fields like names, icons etc
+func decorateUserGroup(dbGroup *protos.UserGroupDB, db *mongo.Database, logger logger.ILogger) (*protos.UserGroup, error) {
+	result := &protos.UserGroup{
+		Info: &protos.UserGroupInfo{
+			Id:             dbGroup.Id,
+			Name:           dbGroup.Name,
+			CreatedUnixSec: dbGroup.CreatedUnixSec,
+		},
+		Viewers:    &protos.UserGroupInfoList{},
+		Members:    &protos.UserGroupInfoList{},
+		AdminUsers: []*protos.UserInfo{},
+	}
+
+	// All the user lists (GetDBUser has local caching so it's not all bad...)
+	writeToLists := []*[]*protos.UserInfo{
+		&result.AdminUsers,
+		&result.Viewers.Users,
+		&result.Members.Users,
+	}
+
+	readFromLists := [][]string{
+		dbGroup.AdminUserIds,
+		dbGroup.Viewers.UserIds,
+		dbGroup.Members.GroupIds,
+	}
+
+	listName := []string{"Admin", "Viewers", "Members"}
+
+	for c, writeToList := range writeToLists {
+		readFromList := readFromLists[c]
+
+		for _, userId := range readFromList {
+			var user *protos.UserInfo
+
+			if item, err := wsHelpers.GetDBUser(userId, db); err != nil {
+				// Print an error but return an empty user struct
+				logger.Errorf("Failed to find user info for user-group %v %v user ID %v", listName[c], dbGroup.Id, userId)
+				user = &protos.UserInfo{
+					Id: userId,
+				}
+			} else {
+				user = item.Info
+			}
+
+			*writeToList = append(*writeToList, user)
+		}
+	}
+
+	// Now read all the groups we're interested in into a map, form where we
+	// can pick them out and form our return lists
+	groupIds := append(dbGroup.Viewers.GroupIds, dbGroup.Members.GroupIds...)
+	groupLookup, err := getUserGroupInfos(groupIds, db)
+	if err != nil {
+		logger.Errorf("Error reading groups: %v. Error was: %v", strings.Join(groupIds, ","), err)
+	}
+
+	readGroupFromLists := [][]string{
+		dbGroup.Viewers.GroupIds, dbGroup.Members.GroupIds,
+	}
+	listName = []string{"Viewers", "Members"}
+	writeToGroupLists := []*[]*protos.UserGroupInfo{
+		&result.Viewers.Groups, &result.Members.Groups,
+	}
+
+	for c, writeToList := range writeToGroupLists {
+		readFromList := readGroupFromLists[c]
+
+		for _, groupId := range readFromList {
+			var group *protos.UserGroupInfo
+			if groupFound, ok := groupLookup[groupId]; ok {
+				group = groupFound
+			} else {
+				logger.Errorf("Failed to find group info for user-group %v %v groupId %v", listName[c], dbGroup.Id, groupId)
+				group = &protos.UserGroupInfo{
+					Id: groupId,
+				}
+			}
+
+			*writeToList = append(*writeToList, group)
+		}
+	}
+
+	return result, nil
+}
+
+func getUserGroupInfos(userGroupIds []string, db *mongo.Database) (map[string]*protos.UserGroupInfo, error) {
+	result := map[string]*protos.UserGroupInfo{}
+
+	ctx := context.TODO()
+	coll := db.Collection(dbCollections.UserGroupsName)
+
+	// Read the requested items from DB, but only reading the fields we're interested in!
+	filter := bson.M{"_id": bson.M{"$in": userGroupIds}}
+	opts := options.Find().SetProjection(bson.D{{"info", true}})
+	cursor, err := coll.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	items := []*protos.UserGroup{}
+	err = cursor.All(ctx, &items)
+	if err != nil {
+		return nil, err
+	}
+
+	// Form the map and we're done
+	for _, item := range items {
+		result[item.Info.Id] = &protos.UserGroupInfo{
+			// NOTE: only item.Info is valid, the rest hasn't been read due to the DB Find() call
+			Id:             item.Info.Id,
+			Name:           item.Info.Name,
+			CreatedUnixSec: item.Info.CreatedUnixSec,
+		}
+	}
+
+	return result, nil
 }

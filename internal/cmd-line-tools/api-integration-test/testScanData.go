@@ -28,7 +28,7 @@ func testScanData(apiHost string) {
 		testScanDataNoPermission(apiHost)
 	}
 
-	accessTest := func(apiHost string, comment string, ownershipViewers *protos.UserGroupList, ownershipEditors *protos.UserGroupList, userGroups []*protos.UserGroup) {
+	accessTest := func(apiHost string, comment string, ownershipViewers *protos.UserGroupList, ownershipEditors *protos.UserGroupList, userGroups []*protos.UserGroupDB) {
 		// Set the viewers and editors
 		seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, ownershipViewers, ownershipEditors)
 		// Set user groups created
@@ -127,7 +127,7 @@ func seedDBOwnership(objectId string, objectType protos.ObjectType, viewers *pro
 	}
 }
 
-func seedDBUserGroups(groups []*protos.UserGroup) {
+func seedDBUserGroups(groups []*protos.UserGroupDB) {
 	db := wstestlib.GetDB()
 	coll := db.Collection(dbCollections.UserGroupsName)
 	ctx := context.TODO()

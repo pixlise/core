@@ -40,7 +40,7 @@ func migrateAuth0UserGroups(auth0Domain string, auth0ClientId string, auth0Secre
 			group = group[len("access:"):]
 		}
 
-		dbGroup := &protos.UserGroup{
+		dbGroup := &protos.UserGroupDB{
 			Id:   makeID(),
 			Name: group,
 			//CreatedUnixSec: ,

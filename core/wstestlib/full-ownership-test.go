@@ -10,7 +10,7 @@ import (
 )
 
 type NoAccessTestccessCallbackFunc func(string)
-type AccessTestccessCallbackFunc func(string, string, *protos.UserGroupList, *protos.UserGroupList, []*protos.UserGroup)
+type AccessTestccessCallbackFunc func(string, string, *protos.UserGroupList, *protos.UserGroupList, []*protos.UserGroupDB)
 
 // Sets up users/groups for different scenarios and calls the callback function for each iteration. Note: noAccessCallback can be nil if not required
 // Group depth defines the max number of groups chained together as part of the tests
@@ -46,7 +46,7 @@ func RunFullAccessTest(apiHost string, userId string, groupDepth int, noAccessCa
 			ownershipListToEdit := ownership[ownerViewOrEdit]
 			what += fmt.Sprintf("(%v)", viewEditTxt[ownerViewOrEdit])
 
-			groups := []*protos.UserGroup{}
+			groups := []*protos.UserGroupDB{}
 			switch groupLevel {
 			case 0:
 				what = "owner" + what + ".user"
@@ -56,7 +56,7 @@ func RunFullAccessTest(apiHost string, userId string, groupDepth int, noAccessCa
 				trace := []string{}
 				lastGroupId := ""
 				for g := 0; g < groupLevel; g++ {
-					group := &protos.UserGroup{
+					group := &protos.UserGroupDB{
 						Id:             fmt.Sprintf("user-group-%v", g),
 						Name:           fmt.Sprintf("Group-%v", g),
 						CreatedUnixSec: uint64(1234567890 + g),
