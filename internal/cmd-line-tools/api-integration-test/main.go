@@ -104,4 +104,5 @@ func runTests(apiHost string) {
 	testUserGroups(apiHost)
 	testLogMsgs(apiHost)
 	testScanData(apiHost)
+	testDetectorConfig(apiHost)
 }
