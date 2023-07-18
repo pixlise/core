@@ -212,7 +212,7 @@ func (s *ScriptedTestUser) runSpecificAction(action actionItem, which string) er
 		if linePos > 0 {
 			sendSnippet = sendSnippet[0:linePos]
 		}
-		s.printAction(which, action.annotation, fmt.Sprintf("Sending req %v", sendSnippet))
+		s.printAction(which, action.annotation, "" /*fmt.Sprintf("Sending req %v", sendSnippet)*/)
 
 		wsmsg := protos.WSMessage{}
 		err = protojson.Unmarshal([]byte(sendReqReplaced), &wsmsg)
@@ -226,7 +226,10 @@ func (s *ScriptedTestUser) runSpecificAction(action actionItem, which string) er
 }
 
 func (s *ScriptedTestUser) printAction(which string, annotation string, desc string) {
-	fmt.Printf("   - [%v] %v (%v)...\n", which, annotation, desc)
+	if len(desc) > 0 {
+		desc = "(" + desc + ")"
+	}
+	fmt.Printf("   - [%v] %v%v...\n", which, annotation, desc)
 }
 
 func (s *ScriptedTestUser) printGroup(desc string) {

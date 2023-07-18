@@ -184,7 +184,7 @@ func compare(received any, expected any, ctx compareParams) error {
 			sort.Strings(expKeys)
 
 			if len(recKeys) != len(expKeys) {
-				return fmt.Errorf("mismatch in structure, expected %v fields, received %v", len(expKeys), len(recKeys))
+				return fmt.Errorf("mismatch in structure, expected %v fields, received %v. Expected keys: [%v]", len(expKeys), len(recKeys), strings.Join(expKeys, ", "))
 			}
 
 			for c, expKey := range expKeys {
