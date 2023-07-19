@@ -1,7 +1,7 @@
 package wsHelpers
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/pixlise/core/v3/core/errorwithstatus"
 )
@@ -12,10 +12,10 @@ const Auth0UserIdFieldMaxLength = 32
 func CheckStringField(field *string, fieldName string, minLength int, maxLength int) error {
 	if field != nil {
 		if len(*field) < minLength {
-			return errorwithstatus.MakeBadRequestError(errors.New(fieldName + " is too short"))
+			return errorwithstatus.MakeBadRequestError(fmt.Errorf(`%v is too short`, fieldName))
 		}
 		if len(*field) > maxLength {
-			return errorwithstatus.MakeBadRequestError(errors.New(fieldName + " is too long"))
+			return errorwithstatus.MakeBadRequestError(fmt.Errorf(`%v is too long`, fieldName))
 		}
 	}
 
