@@ -149,47 +149,4 @@ func testUserDetails(apiHost string) {
 
 	// Run the test
 	wstestlib.ExecQueuedActions(&u1)
-
-	// Editing hints
-	u1.ClearActions()
-
-	u1.AddSendReqAction("Request hints",
-		`{"userHintsReq":{}}`,
-		`{"msgId":15,"status":"WS_OK","userHintsResp":{"hints":{"enabled": true}}}`, // note, dismissedHints is empty, so 0-value sent is nothing...
-	)
-
-	u1.AddSendReqAction("Add hint",
-		`{"userDismissHintReq":{"hint":"context-zoom"}}`,
-		`{"msgId":16,"status":"WS_OK","userDismissHintResp":{}}`,
-	)
-
-	u1.AddSendReqAction("Request hints again",
-		`{"userHintsReq":{}}`,
-		`{"msgId":17,"status":"WS_OK","userHintsResp":{"hints":{"dismissedHints": ["context-zoom"], "enabled": true}}}`,
-	)
-
-	u1.AddSendReqAction("Add another hint",
-		`{"userDismissHintReq":{"hint":"spectrum-pan"}}`,
-		`{"msgId":18,"status":"WS_OK","userDismissHintResp":{}}`,
-	)
-
-	u1.AddSendReqAction("Request hints again",
-		`{"userHintsReq":{}}`,
-		`{"msgId":19,"status":"WS_OK","userHintsResp":{"hints":{"dismissedHints": ["context-zoom", "spectrum-pan"], "enabled": true}}}`,
-	)
-
-	u1.AddSendReqAction("Disable all hints",
-		`{"userHintsToggleReq":{"enabled":false}}`,
-		`{"msgId":20,"status":"WS_OK","userHintsToggleResp":{}}`,
-	)
-
-	u1.AddSendReqAction("Request hints again",
-		`{"userHintsReq":{}}`,
-		`{"msgId":21,"status":"WS_OK","userHintsResp":{"hints":{"dismissedHints": ["context-zoom", "spectrum-pan"]}}}`, // note, enabled is false, so 0-value sent is nothing...
-	)
-
-	u1.CloseActionGroup([]string{}, 5000)
-
-	// Run the test
-	wstestlib.ExecQueuedActions(&u1)
 }

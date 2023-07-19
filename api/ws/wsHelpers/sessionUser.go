@@ -130,7 +130,6 @@ func CreateDBUser(jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUs
 			// IconURL
 		},
 		DataCollectionVersion: "",
-		//Hints
 		//NotificationSettings
 	}
 

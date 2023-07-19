@@ -35,8 +35,9 @@ type SrcTopics struct {
 }
 
 type SrcNotifications struct {
-	Topics          []SrcTopics             `json:"topics"`
-	Hints           []string                `json:"hints"`
+	Topics []SrcTopics `json:"topics"`
+	// Not importing into new version:
+	// Hints           []string                `json:"hints"`
 	UINotifications []SrcUINotificationItem `json:"uinotifications"`
 }
 
@@ -102,9 +103,6 @@ func migrateUsersDBUsers(src *mongo.Database, dest *mongo.Database) error {
 				Id:    saveUserId,
 				Name:  usr.Config.Name,
 				Email: usr.Config.Email,
-			},
-			Hints: &protos.UserHints{
-				DismissedHints: usr.Notifications.Hints,
 			},
 			NotificationSettings: &protos.UserNotificationSettings{
 				TopicSettings: map[string]protos.NotificationMethod{},

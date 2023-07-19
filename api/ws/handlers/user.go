@@ -43,7 +43,8 @@ func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, hctx wsHelpers.H
 		return nil, err
 	}
 
-	if err := wsHelpers.CheckStringField(req.IconURL, "IconURL", 0, 2000); err != nil {
+	// Limit to 30kb because it can be a URL or a data://<base64 image>
+	if err := wsHelpers.CheckStringField(req.IconURL, "IconURL", 0, 30000); err != nil {
 		return nil, err
 	}
 
