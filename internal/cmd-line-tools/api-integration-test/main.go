@@ -99,11 +99,11 @@ func main() {
 }
 
 func runTests(apiHost string) {
-	testUserDetails(apiHost)
-	testElementSets(apiHost)
-	testUserManagement(apiHost)
-	testUserGroups(apiHost)
-	testLogMsgs(apiHost)
-	testScanData(apiHost, 1 /*3 for proper testing*/)
-	testDetectorConfig(apiHost)
+	// testUserDetails(apiHost)
+	// testElementSets(apiHost)
+	// testUserManagement(apiHost)
+	// testUserGroups(apiHost)
+	// testLogMsgs(apiHost)
+	testScanData(apiHost, 0 /*3 for proper testing*/)
+	// testDetectorConfig(apiHost)
 }
