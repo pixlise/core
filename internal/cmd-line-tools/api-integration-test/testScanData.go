@@ -157,7 +157,7 @@ func testScanDataBadId(apiHost string, actionMsg string) string {
 	})
 
 	u1.AddSendReqAction(actionMsg+" (not found)",
-		`{"pseudoIntensityReq":{"scanId": "non-existant-scan"}}`,
+		`{"pseudoIntensityReq":{"scanId": "non-existant-scan", "entries": {"firstEntryIndex": 100, "entryCount": 5}}}`,
 		`{"msgId":1, "status": "WS_NOT_FOUND",
 			"errorText": "non-existant-scan not found",
 			"pseudoIntensityResp":{}
@@ -165,7 +165,7 @@ func testScanDataBadId(apiHost string, actionMsg string) string {
 	)
 
 	u1.AddSendReqAction(actionMsg+" (not found)",
-		`{"spectrumReq":{"scanId": "non-existant-scan"}}`,
+		`{"spectrumReq":{"scanId": "non-existant-scan", "entries": {"firstEntryIndex": 100, "entryCount": 5}}}`,
 		`{"msgId":2, "status": "WS_NOT_FOUND",
 			"errorText": "non-existant-scan not found",
 			"spectrumResp":{}
@@ -191,7 +191,7 @@ func testScanDataNoPermission(apiHost string) {
 	//        - We only need to know that we get the right number of locations, and that
 	//          an individual item has the right length of intensities...
 	u1.AddSendReqAction("pseudo (expect no permission)",
-		`{"pseudoIntensityReq":{"scanId": "048300551", "startingLocation": 100, "locationCount": 5}}`,
+		`{"pseudoIntensityReq":{"scanId": "048300551", "entries": {"firstEntryIndex": 100, "entryCount": 5}}}`,
 		`{
 			"msgId": 1,
 			"status": "WS_NO_PERMISSION",
@@ -201,7 +201,7 @@ func testScanDataNoPermission(apiHost string) {
 	)
 
 	u1.AddSendReqAction("spectrum (expect no permission)",
-		`{"spectrumReq":{"scanId": "048300551", "startingLocation": 128, "locationCount": 4}}`,
+		`{"spectrumReq":{"scanId": "048300551", "entries": {"firstEntryIndex": 128, "entryCount": 4}}}`,
 		`{
 			"msgId": 2,
 			"status": "WS_NO_PERMISSION",
@@ -219,12 +219,30 @@ func testScanDataNoPermission(apiHost string) {
 		}`,
 	)
 
-	u1.AddSendReqAction("scanLocation (expect no permission)",
-		`{"scanLocationReq":{"scanId": "048300551"}}`,
+	u1.AddSendReqAction("scanEntry (expect no permission)",
+		`{"scanEntryReq":{"scanId": "048300551", "entries": {"firstEntryIndex": 128, "entryCount": 4}}}`,
 		`{"msgId":4,
 			"status": "WS_NO_PERMISSION",
 			"errorText": "View access denied for: 048300551",
-			"scanLocationResp":{}
+			"scanEntryResp":{}
+		}`,
+	)
+
+	u1.AddSendReqAction("scanEntryMetadata (expect no permission)",
+		`{"scanEntryMetadataReq":{"scanId": "048300551", "entries": {"firstEntryIndex": 128, "entryCount": 4}}}`,
+		`{"msgId":5,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "View access denied for: 048300551",
+			"scanEntryMetadataResp":{}
+		}`,
+	)
+
+	u1.AddSendReqAction("scanBeamLocations (expect no permission)",
+		`{"scanBeamLocationsReq":{"scanId": "048300551", "entries": {"firstEntryIndex": 128, "entryCount": 4}}}`,
+		`{"msgId":6,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "View access denied for: 048300551",
+			"scanBeamLocationsResp":{}
 		}`,
 	)
 
@@ -246,7 +264,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 	//        - We only need to know that we get the right number of locations, and that
 	//          an individual item has the right length of intensities...
 	u1.AddSendReqAction("Pseudo: "+actionMsg+" (should work)",
-		`{"pseudoIntensityReq":{"scanId": "048300551", "startingLocation": 100, "locationCount": 5}}`,
+		`{"pseudoIntensityReq":{"scanId": "048300551", "entries": {"firstEntryIndex": 100, "entryCount": 5}}}`,
 		`{"msgId":1, "status": "WS_OK",
 			"pseudoIntensityResp":{
 				"intensityLabels": [
@@ -283,7 +301,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 	)
 
 	u1.AddSendReqAction("Spectra: "+actionMsg+" (should work)",
-		`{"spectrumReq":{"scanId": "048300551", "startingLocation": 128, "locationCount": 4}}`,
+		`{"spectrumReq":{"scanId": "048300551", "entries": {"firstEntryIndex": 128, "entryCount": 4}}}`,
 		`{"msgId":2, "status": "WS_OK",
 			"spectrumResp":{
 				"spectraPerLocation": [
@@ -566,13 +584,49 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 		}`,
 	)
 
-	u1.AddSendReqAction("scanLocation (should work)",
-		`{"scanLocationReq":{"scanId": "048300551", "startingLocation": 128, "locationCount": 4}}`,
+	u1.AddSendReqAction("scanEntry (should work)",
+		`{"scanEntryReq":{"scanId": "048300551", "entries": {"firstEntryIndex": 128, "entryCount": 4}}}`,
 		`{"msgId":4, "status": "WS_OK",
-			"scanLocationResp":{
-				"locations${LIST,MODE=CONTAINS,LENGTH=4}": [
+			"scanEntryResp":{
+				"entries${LIST,MODE=CONTAINS,LENGTH=4}": [
+					{
+						"id": 216,
+						"timestamp": 678034827,
+						"images": 1,
+						"spectra": 2,
+						"meta": true,
+						"location": true,
+						"pseudoIntensities": true
+					},
 					{
 						"id": 217,
+						"timestamp": 678034966,
+						"meta": true
+					},
+					{
+						"id": 218,
+						"timestamp": 678035193,
+						"images": 1,
+						"spectra": 4,
+						"meta": true,
+						"location": true
+					},
+					{
+						"id": 219,
+						"timestamp": 678035443,
+						"meta": true
+					}
+				]
+			}
+		}`,
+	)
+
+	u1.AddSendReqAction("scanEntryMetadata (should work)",
+		`{"scanEntryMetadataReq":{"scanId": "048300551", "entries": {"firstEntryIndex": 128, "entryCount": 4}}}`,
+		`{"msgId":5, "status": "WS_OK",
+			"scanEntryMetadataResp":{
+				"entries${LIST,MODE=CONTAINS,LENGTH=4}": [
+					{
 						"meta": {
 							"0": {"ivalue": 678034966},
 							"1": {"ivalue": 1442},
@@ -694,6 +748,28 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 							"117": {"ivalue": 48300551}
 						}
 					}
+				]
+			}
+		}`,
+	)
+
+	u1.AddSendReqAction("scanBeamLocationsReq (should work)",
+		`{"scanBeamLocationsReq":{"scanId": "048300551", "entries": {"firstEntryIndex": 128, "entryCount": 4}}}`,
+		`{"msgId":6, "status": "WS_OK",
+			"scanBeamLocationsResp":{
+				"beamLocations": [
+					{
+						"x": -0.151088,
+						"y": 0.131007,
+						"z": 0.246569
+					},
+					{},
+					{
+						"x": -0.135994,
+						"y": 0.131017,
+						"z": 0.249705
+					},
+					{}
 				]
 			}
 		}`,

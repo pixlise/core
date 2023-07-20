@@ -52,6 +52,14 @@ func HandleScanMetaLabelsReq(req *protos.ScanMetaLabelsReq, hctx wsHelpers.Handl
 
 // Utility to call for any Req message that involves serving data out of a dataset.bin file
 // scanId is mandatory, but startIdx and locCount may not exist in all requests, can be set to 0 if unused/not relevant
+func beginDatasetFileReqForRange(scanId string, entryRange *protos.ScanEntryRange, hctx wsHelpers.HandlerContext) (*protos.Experiment, uint32, uint32, error) {
+	if entryRange == nil {
+		return nil, 0, 0, fmt.Errorf("no entry range specified for scan %v", scanId)
+	}
+
+	return beginDatasetFileReq(scanId, entryRange.FirstEntryIndex, entryRange.EntryCount, hctx)
+}
+
 func beginDatasetFileReq(scanId string, startIdx uint32, locCount uint32, hctx wsHelpers.HandlerContext) (*protos.Experiment, uint32, uint32, error) {
 	if err := wsHelpers.CheckStringField(&scanId, "ScanId", 1, 50); err != nil {
 		return nil, 0, 0, err
