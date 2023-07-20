@@ -56,6 +56,12 @@ func testUserGroups(apiHost string) {
 
 	// Finally, delete the group
 	testUserGroupAdminDeleteGroup(u2)
+
+	// Testing admin user ignoring join request
+	testAdminUserIgnoreGroupJoin(apiHost)
+
+	// Testing user group viewer leave group
+	testUserGroupViewerLeavingGroup(apiHost)
 }
 
 func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
@@ -848,6 +854,167 @@ func testUserGroupsNoPermission(apiHost string) wstestlib.ScriptedTestUser {
 	wstestlib.ExecQueuedActions(&u1)
 
 	return u1
+}
+
+func testAdminUserIgnoreGroupJoin(apiHost string) {
+	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test2Username,
+		Pass: test2Password,
+	})
+
+	u2.AddSendReqAction("Create valid user group 2",
+		`{"userGroupCreateReq":{"name": "M2020 Users"}}`,
+		`{"msgId":1,"status":"WS_OK","userGroupCreateResp":{
+			"group": {
+				"info": {
+					"id": "${IDSAVE=createdGroupId2}",
+					"name": "M2020 Users",
+					"createdUnixSec": "${SECAGO=5}"
+				},
+				"viewers": {},
+				"members": {}
+			}
+		}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test1Username,
+		Pass: test1Password,
+	})
+
+	u1.AddSendReqAction("Request to join created group 2 id",
+		`{"userGroupJoinReq":{"groupId": "${IDLOAD=createdGroupId2}"}}`,
+		`{"msgId":1,"status":"WS_OK","userGroupJoinResp":{}}`,
+	)
+
+	u1.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u1)
+
+	u2.AddSendReqAction("Ensure admin got join request",
+		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId2}"}}`,
+		fmt.Sprintf(`{"msgId":2,
+			"status":"WS_OK",
+			"userGroupJoinListResp":{
+				"requests": [
+				{
+					"id": "${IDSAVE=createdJoinReqId2}",
+					"userId": "%v",
+					"joinGroupId": "${IDCHK=createdGroupId2}",
+					"createdUnixSec": "${SECAGO=5}"
+				}
+			]
+		}}`, u1.GetUserId()),
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	u2.AddSendReqAction("Request to join created group 2 id",
+		`{"userGroupIgnoreJoinReq":{"groupId": "${IDLOAD=createdGroupId2}", "requestId": "${IDLOAD=createdJoinReqId2}"}}`,
+		`{"msgId":3,"status":"WS_OK","userGroupIgnoreJoinResp":{}}`,
+	)
+
+	u2.AddSendReqAction("Ensure admin has no join requests",
+		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId2}"}}`,
+		`{"msgId":4,
+			"status":"WS_OK",
+			"userGroupJoinListResp":{}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+}
+
+func testUserGroupViewerLeavingGroup(apiHost string) {
+	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test1Username,
+		Pass: test1Password,
+	})
+
+	u1.CloseActionGroup([]string{}, 10)
+	wstestlib.ExecQueuedActions(&u1)
+
+	nonAdminUserId := u1.GetUserId()
+
+	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test2Username,
+		Pass: test2Password,
+	})
+
+	u2.AddSendReqAction("Create valid user group 3",
+		`{"userGroupCreateReq":{"name": "PIXL Scientists"}}`,
+		`{"msgId":1,"status":"WS_OK","userGroupCreateResp":{
+			"group": {
+				"info": {
+					"id": "${IDSAVE=createdGroupId3}",
+					"name": "PIXL Scientists",
+					"createdUnixSec": "${SECAGO=5}"
+				},
+				"viewers": {},
+				"members": {}
+			}
+		}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	// Add non-admin user to this group
+	u2.AddSendReqAction("Add non-admin user as viewer of group",
+		fmt.Sprintf(`{"userGroupAddViewerReq":{"groupId": "${IDLOAD=createdGroupId3}", "userViewerId": "%v"}}`, nonAdminUserId),
+		fmt.Sprintf(`{"msgId":2,
+			"status": "WS_OK",
+				"userGroupAddViewerResp":{
+					"group": 
+					{
+						"info": {
+							"id": "${IDCHK=createdGroupId3}",
+							"name": "PIXL Scientists",
+							"createdUnixSec": "${SECAGO=5}"
+						},
+						"viewers": { "users": [{"id": "%v", "name":"${REGEXMATCH=Test}","email":"${REGEXMATCH=.+@pixlise\\.org}"}] },
+						"members": {}
+					}
+		}}`, nonAdminUserId),
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	u1.AddSendReqAction("Group viewer leaves group",
+		fmt.Sprintf(`{"userGroupDeleteViewerReq":{
+			"groupId": "${IDLOAD=createdGroupId3}",
+			"userViewerId": "%v"
+		}}`, nonAdminUserId /*Can't use: u1.GetUserId() - not connected yet*/),
+		`{"msgId":1,
+			"status": "WS_OK",
+				"userGroupDeleteViewerResp":{
+					"group": 
+					{
+						"info": {
+							"id": "${IDCHK=createdGroupId3}",
+							"name": "PIXL Scientists",
+							"createdUnixSec": "${SECAGO=5}"
+						},
+						"viewers": {},
+						"members": {}
+					}
+		}}`,
+	)
+
+	u1.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u1)
 }
 
 func addDBUsers(user *protos.UserDBItem) {

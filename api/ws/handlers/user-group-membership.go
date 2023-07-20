@@ -96,7 +96,16 @@ func modifyGroupMembershipList(groupId string, opGroupId string, opUserId string
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
 
 	// NOTE: If member/viewer delete message has userid==sessionid, allow the person to leave a group
-	group, err := getGroupAndCheckPermission(groupId, hctx.SessUser.User.Id, hctx.SessUser.Permissions, ctx, coll)
+	var group *protos.UserGroupDB
+	var err error
+
+	if !add && !isGroup && checkId == hctx.SessUser.User.Id {
+		// User is trying to leave a group they're in, allow this!
+		group, err = getGroup(groupId, ctx, coll)
+	} else {
+		group, err = getGroupAndCheckPermission(groupId, hctx.SessUser.User.Id, hctx.SessUser.Permissions, ctx, coll)
+	}
+
 	if err != nil {
 		return nil, err
 	}

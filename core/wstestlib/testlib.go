@@ -242,7 +242,7 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 	// Check that the expected msgs match
 	msgs := s.user.waitForMessages(len(group.expectedMessages), time.Duration(group.timeoutMs)*time.Millisecond)
 
-	if len(msgs) <= 0 {
+	if len(group.expectedMessages) > 0 && len(msgs) <= 0 {
 		return errors.New("No messages received")
 	} else {
 		// In case we got something more than the expected count of messages, put in a small wait here

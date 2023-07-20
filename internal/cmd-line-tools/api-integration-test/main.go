@@ -81,16 +81,17 @@ func main() {
 		log.Fatal(err)
 	}
 
+	startTime := time.Now()
 	runTests(apiHost)
 
 	fmt.Println("\n==============================")
 
 	if len(failedTestNames) == 0 {
-		fmt.Println("PASSED All Tests!")
+		fmt.Printf("PASSED All Tests in %vsec!\n", time.Since(startTime).Seconds())
 		os.Exit(0)
 	}
 
-	fmt.Println("FAILED One or more tests:")
+	fmt.Printf("FAILED One or more tests at %vsec:\n", time.Since(startTime).Seconds())
 	for _, name := range failedTestNames {
 		fmt.Printf("- %v\n", name)
 	}
@@ -103,6 +104,6 @@ func runTests(apiHost string) {
 	testUserManagement(apiHost)
 	testUserGroups(apiHost)
 	testLogMsgs(apiHost)
-	testScanData(apiHost)
+	testScanData(apiHost, 1 /*3 for proper testing*/)
 	testDetectorConfig(apiHost)
 }

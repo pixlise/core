@@ -9,7 +9,7 @@ import (
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
-func testScanData(apiHost string) {
+func testScanData(apiHost string, groupDepth int) {
 	scanId := seedDBScanData()
 	// Prepend the special bit required for ownership table scan storage
 	scanId = "scan_" + scanId
@@ -38,7 +38,7 @@ func testScanData(apiHost string) {
 		testScanDataHasPermission(apiHost, comment)
 	}
 
-	wstestlib.RunFullAccessTest(apiHost, userId, 1 /*3 for proper testing*/, noAccessTest, accessTest)
+	wstestlib.RunFullAccessTest(apiHost, userId, groupDepth, noAccessTest, accessTest)
 }
 
 const scanWaitTime = 60 * 1000 * 10
