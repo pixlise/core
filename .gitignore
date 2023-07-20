@@ -13,6 +13,8 @@ auth0dummy.go
 /local-mongo/dbseed/*.json
 /local-mongo/3repl/
 
+local-api-config.json
+
 # temp files that get generated for tests
 diffraction-detector/test-files/dataset-diffraction.bin
 core/fileaccess/test-output/

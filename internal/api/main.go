@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -48,6 +49,25 @@ func main() {
 	// Set up WebSocket server
 	// Looks like the default config for melody is to expect a ping at least every 54seconds
 	m := melody.New()
+
+	// Set web socket configs
+	if cfg.WSWriteWaitMs > 0 {
+		m.Config.WriteWait = time.Duration(cfg.WSWriteWaitMs) * time.Millisecond
+	}
+	if cfg.WSPongWaitMs > 0 {
+		m.Config.PongWait = time.Duration(cfg.WSPongWaitMs) * time.Millisecond
+	}
+	if cfg.WSPingPeriodMs > 0 {
+		m.Config.PingPeriod = time.Duration(cfg.WSPingPeriodMs) * time.Millisecond
+	}
+	if cfg.WSMaxMessageSize > 0 {
+		m.Config.MaxMessageSize = int64(cfg.WSMaxMessageSize)
+	}
+	if cfg.WSMessageBufferSize > 0 {
+		m.Config.MessageBufferSize = int(cfg.WSMessageBufferSize)
+	}
+
+	fmt.Printf("Web socket config: %+v\n", m.Config)
 	ws := ws.MakeWSHandler(m, svcs)
 
 	// Create event handlers for websocket

@@ -34,19 +34,9 @@ By default we build for Mac, Linux and Windows.
 
 ## Run-time Configuration
 
-Executing the API requires several environment variables to be set. These include ones related to AWS (see below), but we also supply a JSON configuration string in a single environment variable called CUSTOM_CONFIG. This specifies buckets and other configuration parameters to allow the API to execute containers and log errors, etc.
+Executing the API requires several environment variables to be set. These include ones related to AWS (see below). A config file is also read. It's path can be specified with a command line argument: customConfigPath. This config specifies buckets and other configuration parameters to allow the API to execute containers and log errors, etc.
 
-Full Example:
-
-```
-CUSTOM_CONFIG='{"AWSBucketRegion":"us-east-1","AWSCloudwatchRegion":"us-east-1","AdminEmails":["someemail@myemail.com"],"ArtifactsBucket":"xxx-artifacts-s3-bucket","Auth0Domain":"xxx.auth0.com","Auth0ManagementClientID":"xxx","Auth0ManagementSecret":"xxx","BuildsBucket":"xxx-builds-s3-bucket","ConfigBucket":"xxx-config-s3-bucket","CoresPerNode":4,"DataBucket":"xxx-data-bucket","DataSourceSNSTopic":"xxx-sns-topic","DatasetsBucket":"xxx-datasets-bucket","DockerLoginString":"xxx-docker-login","MongoSecret":"xxx-mongo-secret","MongoEndpoint":"xxx-mongo-endpoint","MongoUsername":"mongo-user","EnvironmentName":"xxx-envname","HotQuantNamespace":"piquant-fit","JobBucket":"xxx-job-bucket","KubernetesLocation":"internal","LogLevel":1,"ManualUploadBucket":"xxx-manual-upload","PiquantDockerImage":"xxx-piquant-image","PiquantJobsBucket":"xxx-job-bucket","PosterImage":"xxx-poster-image","QuantDestinationPackage":"xxx-destination-package","QuantExecutor":"kubernetes","QuantNamespace":"xxx-namespace","QuantObjectType":"xxx-quant-object-type","SentryEndpoint":"xxx-sentry-endpoint","UserDbSecretName":"xxx-docdb-secret","UsersBucket":"xxx-users-bucket"}'
-```
-
-Minimal Example:
-
-`TODO`
-
-Then execute the binary file and your API should come to life.
+To see the configuration JSON structure, look at the `APIConfig` structure in `/api/config/config.go`
 
 ### Docker / Kubernetes
 
@@ -57,7 +47,6 @@ Then execute the binary file and your API should come to life.
 - AWS_ACCESS_KEY_ID
 - AWS_SECRET_ACCESS_KEY
 - AWS_REGION=us-west-1
-- CUSTOM_CONFIG
 
 ## Developing in Gitpod
 

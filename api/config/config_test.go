@@ -18,7 +18,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"testing"
 )
@@ -27,19 +26,6 @@ import (
 func Test_InitializeConfigWithFile(t *testing.T) {
 	want := "buildsBucket"
 	cfg, err := NewConfigFromFile("./test-data/example_config.json")
-	if err != nil {
-		t.Fatalf("Error initializing config: %v", err)
-	}
-	if cfg.BuildsBucket != want {
-		t.Errorf("cfg.BuildsBucket got %q; want: %q", cfg.BuildsBucket, want)
-	}
-}
-
-// Check the quant path is calculated correctly
-func Test_InitializeConfigWithJsonString(t *testing.T) {
-	want := "buildsBucketCustomConfig"
-	configStr := fmt.Sprintf(`{"BuildsBucket": "%s"}`, want)
-	cfg, err := NewConfigFromJsonString(configStr)
 	if err != nil {
 		t.Fatalf("Error initializing config: %v", err)
 	}
@@ -59,5 +45,4 @@ func Test_OverrideConfigWithEnvVars(t *testing.T) {
 	if cfg.BuildsBucket != want {
 		t.Errorf("cfg.BuildsBucket got %q; want: %q", cfg.BuildsBucket, want)
 	}
-
 }

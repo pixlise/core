@@ -81,13 +81,20 @@ type APIConfig struct {
 
 	UsersBucket string
 
-	ZenodoURI string
+	ZenodoURI         string
 	ZenodoAccessToken string
 
 	// Vars not set by environment
 	NodeCountOverride int32
 	MaxQuantNodes     int32
 	KubeConfig        string // Env sets this via command line parameter
+
+	// Web Socket config
+	WSWriteWaitMs       uint
+	WSPongWaitMs        uint
+	WSPingPeriodMs      uint
+	WSMaxMessageSize    uint
+	WSMessageBufferSize uint
 }
 
 func homeDir() string {
@@ -105,12 +112,6 @@ func NewConfigFromFile(configFilePath string) (APIConfig, error) {
 	if err != nil {
 		return cfg, fmt.Errorf("could not read config file at %s", configFilePath)
 	}
-	return buildConfig(customConfig)
-}
-
-func NewConfigFromJsonString(customConfigStr string) (APIConfig, error) {
-	customConfig := []byte(customConfigStr)
-	fmt.Printf("WARNING: Passing json string via CUSTOM_CONFIG is deprecated and will soon be removed")
 	return buildConfig(customConfig)
 }
 
@@ -163,11 +164,12 @@ func Init() (APIConfig, error) {
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
-	configFilePath := flag.String("customConfigPath", "", "(optional) path to the json file holding a set of custom config for the Pixlise API")
+	configFilePath := flag.String("customConfigPath", "", "Path to the json file holding a set of custom config for the Pixlise API")
 	flag.Parse()
 
 	// Now that we have that, construct the Config from the possible sources
 	var cfg APIConfig
+	cfg.WSMaxMessageSize = 40000 // 40kb, so we can be sent a 30kb icon image+overhead. Likely needs to be larger for file uploads in time
 	var err error
 
 	// Populate API Config with contents of config.json or CUSTOM_CONFIG if supplied
@@ -175,13 +177,7 @@ func Init() (APIConfig, error) {
 		// Load config from a referenced json file
 		cfg, err = NewConfigFromFile(*configFilePath)
 	} else {
-		// Load config from a jsonString in environment variable
-		customConfigStr, ok := os.LookupEnv("CUSTOM_CONFIG")
-		if !ok || len(customConfigStr) <= 0 {
-			return cfg, errors.New("no CUSTOM_CONFIG environment variable provided")
-		} else {
-			cfg, err = NewConfigFromJsonString(customConfigStr)
-		}
+		err = errors.New("no configuration provided")
 	}
 	if err != nil {
 		return cfg, err
