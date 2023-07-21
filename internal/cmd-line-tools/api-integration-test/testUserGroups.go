@@ -341,7 +341,8 @@ func testUserCanSeeGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 			"groupInfos": [{
 				"id": "${IDCHK=createdGroupId}",
 				"name": "M2020 Scientists",
-				"createdUnixSec": "${SECAGO=5}"
+				"createdUnixSec": "${SECAGO=5}",
+				"relationshipToUser": "UGR_ADMIN"
 			}]
 		}}`,
 	)

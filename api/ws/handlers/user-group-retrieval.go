@@ -6,6 +6,7 @@ import (
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
+	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -30,10 +31,20 @@ func HandleUserGroupListReq(req *protos.UserGroupListReq, hctx wsHelpers.Handler
 	// Just sending back the "info" part
 	groupInfos := []*protos.UserGroupInfo{}
 	for _, group := range groups {
+		userRship := protos.UserGroupRelationship_UGR_UNKNOWN
+		if utils.ItemInSlice(hctx.SessUser.User.Id, group.AdminUserIds) {
+			userRship = protos.UserGroupRelationship_UGR_ADMIN
+		} else if utils.ItemInSlice(hctx.SessUser.User.Id, group.Members.UserIds) {
+			userRship = protos.UserGroupRelationship_UGR_MEMBER
+		} else if utils.ItemInSlice(hctx.SessUser.User.Id, group.Viewers.UserIds) {
+			userRship = protos.UserGroupRelationship_UGR_VIEWER
+		}
+
 		groupInfos = append(groupInfos, &protos.UserGroupInfo{
-			Id:             group.Id,
-			Name:           group.Name,
-			CreatedUnixSec: group.CreatedUnixSec,
+			Id:                 group.Id,
+			Name:               group.Name,
+			CreatedUnixSec:     group.CreatedUnixSec,
+			RelationshipToUser: userRship,
 		})
 	}
 
