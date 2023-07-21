@@ -9,7 +9,7 @@ import (
 )
 
 func HandleScanEntryReq(req *protos.ScanEntryReq, hctx wsHelpers.HandlerContext) (*protos.ScanEntryResp, error) {
-	exprPB, startLocIdx, endLocIdx, err := beginDatasetFileReq(req.ScanId, req.Entries.FirstEntryIndex, req.Entries.EntryCount, hctx)
+	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +23,7 @@ func HandleScanEntryReq(req *protos.ScanEntryReq, hctx wsHelpers.HandlerContext)
 	}
 
 	entries := []*protos.ScanEntry{}
-	for c := startLocIdx; c < endLocIdx; c++ {
+	for _, c := range indexes {
 		loc := exprPB.Locations[c]
 
 		pmc, err := strconv.Atoi(loc.Id)

@@ -10,7 +10,7 @@ import (
 )
 
 func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumResp, error) {
-	exprPB, startLocIdx, endLocIdx, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
+	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (
 
 	spectra := []*protos.Spectra{}
 
-	for c := startLocIdx; c < endLocIdx; c++ {
+	for _, c := range indexes {
 		detectorSpectra := []*protos.Spectrum{}
 		for _, detector := range exprPB.Locations[c].Detectors {
 			spectrum, err := convertSpectrum(detector, exprPB.MetaLabels, exprPB.MetaTypes, detectorIdIdx, readtypeIdx)

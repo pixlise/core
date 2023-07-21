@@ -40,7 +40,7 @@ func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) (
 }
 
 func HandleScanMetaLabelsReq(req *protos.ScanMetaLabelsReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaLabelsResp, error) {
-	exprPB, _, _, err := beginDatasetFileReq(req.ScanId, 0, 0, hctx)
+	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
 	if err != nil {
 		return nil, err
 	}
@@ -52,47 +52,42 @@ func HandleScanMetaLabelsReq(req *protos.ScanMetaLabelsReq, hctx wsHelpers.Handl
 
 // Utility to call for any Req message that involves serving data out of a dataset.bin file
 // scanId is mandatory, but startIdx and locCount may not exist in all requests, can be set to 0 if unused/not relevant
-func beginDatasetFileReqForRange(scanId string, entryRange *protos.ScanEntryRange, hctx wsHelpers.HandlerContext) (*protos.Experiment, uint32, uint32, error) {
+func beginDatasetFileReqForRange(scanId string, entryRange *protos.ScanEntryRange, hctx wsHelpers.HandlerContext) (*protos.Experiment, []uint32, error) {
 	if entryRange == nil {
-		return nil, 0, 0, fmt.Errorf("no entry range specified for scan %v", scanId)
+		return nil, []uint32{}, fmt.Errorf("no entry range specified for scan %v", scanId)
 	}
 
-	return beginDatasetFileReq(scanId, entryRange.FirstEntryIndex, entryRange.EntryCount, hctx)
+	exprPB, err := beginDatasetFileReq(scanId, hctx)
+	if err != nil {
+		return nil, []uint32{}, err
+	}
+
+	// Decode the range
+	indexes, err := wsHelpers.MakeIndexList(entryRange.Indexes, len(exprPB.Locations))
+	if err != nil {
+		return nil, []uint32{}, err
+	}
+
+	return exprPB, indexes, nil
 }
 
-func beginDatasetFileReq(scanId string, startIdx uint32, locCount uint32, hctx wsHelpers.HandlerContext) (*protos.Experiment, uint32, uint32, error) {
+func beginDatasetFileReq(scanId string, hctx wsHelpers.HandlerContext) (*protos.Experiment, error) {
 	if err := wsHelpers.CheckStringField(&scanId, "ScanId", 1, 50); err != nil {
-		return nil, 0, 0, err
+		return nil, err
 	}
 
 	_, _, err := wsHelpers.GetUserObjectById[protos.ScanItem](false, scanId, protos.ObjectType_OT_SCAN, dbCollections.ScansName, hctx)
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, err
 	}
 
 	// We've come this far, we have access to the scan, so read it
 	exprPB, err := wsHelpers.ReadDatasetFile(scanId, hctx.Svcs)
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, err
 	}
 
-	// Check that the start index is valid
-	if startIdx >= uint32(len(exprPB.Locations)) {
-		return nil, 0, 0, fmt.Errorf("ScanId %v request had invalid startLocation: %v", scanId, startIdx)
-	}
-
-	// Work out the end index from request params - mainly here to standardise
-	// NOTE: locCount == 0 is interpreted as ALL
-	locLast := uint32(len(exprPB.Locations))
-	if locCount > 0 {
-		locLast = startIdx + locCount
-	}
-
-	if err != nil {
-		return nil, 0, 0, err
-	}
-
-	return exprPB, startIdx, locLast, nil
+	return exprPB, nil
 }
 
 func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaWriteResp, error) {

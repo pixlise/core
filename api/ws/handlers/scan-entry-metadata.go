@@ -8,7 +8,7 @@ import (
 )
 
 func HandleScanEntryMetadataReq(req *protos.ScanEntryMetadataReq, hctx wsHelpers.HandlerContext) (*protos.ScanEntryMetadataResp, error) {
-	exprPB, startLocIdx, endLocIdx, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
+	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +22,7 @@ func HandleScanEntryMetadataReq(req *protos.ScanEntryMetadataReq, hctx wsHelpers
 		}
 	*/
 	entryMetas := []*protos.ScanEntryMetadata{}
-	for c := startLocIdx; c < endLocIdx; c++ {
+	for _, c := range indexes {
 		loc := exprPB.Locations[c]
 		metaSave := &protos.ScanEntryMetadata{Meta: map[int32]*protos.ScanMetaDataItem{}}
 

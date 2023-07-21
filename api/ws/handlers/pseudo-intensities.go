@@ -6,7 +6,7 @@ import (
 )
 
 func HandlePseudoIntensityReq(req *protos.PseudoIntensityReq, hctx wsHelpers.HandlerContext) (*protos.PseudoIntensityResp, error) {
-	exprPB, startLocIdx, endLocIdx, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
+	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
 	if err != nil {
 		return nil, err
 	}
@@ -19,7 +19,7 @@ func HandlePseudoIntensityReq(req *protos.PseudoIntensityReq, hctx wsHelpers.Han
 
 	tooManyPseudosLocations := 0
 	pseudoIntensities := []*protos.PseudoIntensityData{}
-	for c := startLocIdx; c < endLocIdx; c++ {
+	for _, c := range indexes {
 		pseudos := exprPB.Locations[c].PseudoIntensities
 
 		// There really should only be one item!
