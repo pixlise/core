@@ -2,6 +2,7 @@ package wsHandler
 
 import (
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
+	"github.com/pixlise/core/v3/core/errorwithstatus"
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
@@ -17,20 +18,25 @@ func HandleScanBeamImageLocationsReq(req *protos.ScanBeamImageLocationsReq, hctx
 
 	// Find the coordinates for this image
 	ijs := []*protos.Coordinate2D{}
+	imgFound := false
 
 	for imgIdx, img := range exprPB.AlignedContextImages {
 		if img.Image == req.Image {
+			imgFound = true
 			// Found the image, return coordinates for this
 			for _, c := range indexes {
 				loc := exprPB.Locations[c]
 
-				ij := &protos.Coordinate2D{}
-				if imgIdx == 0 {
-					ij.I = loc.Beam.ImageI
-					ij.J = loc.Beam.ImageJ
-				} else {
-					ij.I = loc.Beam.ContextLocations[imgIdx-1].I
-					ij.J = loc.Beam.ContextLocations[imgIdx-1].J
+				var ij *protos.Coordinate2D
+				if loc.Beam != nil {
+					ij = &protos.Coordinate2D{}
+					if imgIdx == 0 {
+						ij.I = loc.Beam.ImageI
+						ij.J = loc.Beam.ImageJ
+					} else {
+						ij.I = loc.Beam.ContextLocations[imgIdx-1].I
+						ij.J = loc.Beam.ContextLocations[imgIdx-1].J
+					}
 				}
 
 				ijs = append(ijs, ij)
@@ -38,6 +44,10 @@ func HandleScanBeamImageLocationsReq(req *protos.ScanBeamImageLocationsReq, hctx
 
 			break
 		}
+	}
+
+	if !imgFound {
+		return nil, errorwithstatus.MakeNotFoundError(req.Image)
 	}
 
 	return &protos.ScanBeamImageLocationsResp{

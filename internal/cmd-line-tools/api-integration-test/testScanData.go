@@ -172,6 +172,14 @@ func testScanDataBadId(apiHost string, actionMsg string) string {
 		}`,
 	)
 
+	u1.AddSendReqAction(actionMsg+" (not found)",
+		`{"spectrumReq":{"scanId": "non-existant-scan", "bulkSum": true, "maxValue": true}}`,
+		`{"msgId":3, "status": "WS_NOT_FOUND",
+			"errorText": "non-existant-scan not found",
+			"spectrumResp":{}
+		}`,
+	)
+
 	u1.CloseActionGroup([]string{}, scanWaitTime)
 	wstestlib.ExecQueuedActions(&u1)
 	return u1.GetUserId()
@@ -210,9 +218,19 @@ func testScanDataNoPermission(apiHost string) {
 		}`,
 	)
 
+	u1.AddSendReqAction("spectrum bulk/max (expect no permission)",
+		`{"spectrumReq":{"scanId": "048300551", "bulkSum": true, "maxValue": true}}`,
+		`{
+			"msgId": 3,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "View access denied for: 048300551",
+			"spectrumResp": {}
+		}`,
+	)
+
 	u1.AddSendReqAction("metaLabels (expect no permission)",
 		`{"scanMetaLabelsReq":{"scanId": "048300551"}}`,
-		`{"msgId":3,
+		`{"msgId":4,
 			"status": "WS_NO_PERMISSION",
 			"errorText": "View access denied for: 048300551",
 			"scanMetaLabelsResp":{}
@@ -221,7 +239,7 @@ func testScanDataNoPermission(apiHost string) {
 
 	u1.AddSendReqAction("scanEntry (expect no permission)",
 		`{"scanEntryReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
-		`{"msgId":4,
+		`{"msgId":5,
 			"status": "WS_NO_PERMISSION",
 			"errorText": "View access denied for: 048300551",
 			"scanEntryResp":{}
@@ -230,7 +248,7 @@ func testScanDataNoPermission(apiHost string) {
 
 	u1.AddSendReqAction("scanEntryMetadata (expect no permission)",
 		`{"scanEntryMetadataReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
-		`{"msgId":5,
+		`{"msgId":6,
 			"status": "WS_NO_PERMISSION",
 			"errorText": "View access denied for: 048300551",
 			"scanEntryMetadataResp":{}
@@ -239,10 +257,19 @@ func testScanDataNoPermission(apiHost string) {
 
 	u1.AddSendReqAction("scanBeamLocations (expect no permission)",
 		`{"scanBeamLocationsReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
-		`{"msgId":6,
+		`{"msgId":7,
 			"status": "WS_NO_PERMISSION",
 			"errorText": "View access denied for: 048300551",
 			"scanBeamLocationsResp":{}
+		}`,
+	)
+
+	u1.AddSendReqAction("scanBeamImageLocationsReq (expect no permission)",
+		`{"scanBeamImageLocationsReq":{"scanId": "048300551", "image": "something.jpg", "entries": {"indexes": [128,-1,131]}}}`,
+		`{"msgId":8,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "View access denied for: 048300551",
+			"scanBeamImageLocationsResp":{}
 		}`,
 	)
 
@@ -311,7 +338,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 								"detector": "A",
 								"type": "SPECTRUM_NORMAL",
 								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
-								"maxCount": "3096",
+								"maxCount": 3096,
 								"meta": {
 									"0": {"ivalue": 678034825},
 									"119": {"fvalue": 13.879905},
@@ -324,7 +351,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 								"detector": "B",
 								"type": "SPECTRUM_NORMAL",
 								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
-								"maxCount": "2855",
+								"maxCount": 2855,
 								"meta": {
 									"0": {"ivalue": 678034826},
 									"119": {"fvalue": 13.893265},
@@ -342,7 +369,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 								"detector": "A",
 								"type": "SPECTRUM_BULK",
 								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
-								"maxCount": "367901",
+								"maxCount": 367901,
 								"meta": {
 									"119": {"fvalue": 1712.4017},
 									"120": {"fvalue": -11.8},
@@ -365,7 +392,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 								"detector": "B",
 								"type": "SPECTRUM_BULK",
 								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
-								"maxCount": "353738",
+								"maxCount": 353738,
 								"meta": {
 									"119": {"fvalue": 1712.503},
 									"120": {"fvalue": -13.2},
@@ -388,7 +415,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 								"detector": "A",
 								"type": "SPECTRUM_MAX",
 								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
-								"maxCount": "7017",
+								"maxCount": 7017,
 								"meta": {
 									"119": {"fvalue": 14.293016},
 									"120": {"fvalue": -11.8},
@@ -411,7 +438,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 								"detector": "B",
 								"type": "SPECTRUM_MAX",
 								"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
-								"maxCount": "6786",
+								"maxCount": 6786,
 								"meta": {
 									"119": {"fvalue": 14.27207},
 									"120": {"fvalue": -13.2},
@@ -438,9 +465,95 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 		}`,
 	)
 
+	u1.AddSendReqAction("Spectra: "+actionMsg+" (should work)",
+		`{"spectrumReq":{"scanId": "048300551", "bulkSum": true, "maxValue": true}}`,
+		`{"msgId":3, "status": "WS_OK",
+			"spectrumResp":{
+				"bulkSpectra": [
+					{
+						"detector": "A",
+						"type": "SPECTRUM_BULK",
+						"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
+						"maxCount": 367901,
+						"meta": "${IGNORE}"
+					},
+					{
+						"detector": "B",
+						"type": "SPECTRUM_BULK",
+						"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
+						"maxCount": 353738,
+						"meta": "${IGNORE}"
+					}
+				],
+				"maxSpectra": [
+					{
+						"detector": "A",
+						"type": "SPECTRUM_MAX",
+						"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
+						"maxCount": 7017,
+						"meta": {
+							"119": {
+								"fvalue": 14.293016
+							},
+							"120": {
+								"fvalue": -11.8
+							},
+							"123": {
+								"fvalue": 15
+							},
+							"124": {
+								"fvalue": 7.9226
+							},
+							"125": {
+								"svalue": "YY"
+							},
+							"126": {
+								"svalue": "EMSA/MAS spectral data file"
+							},
+							"127": {
+								"svalue": "2"
+							},
+							"128": {
+								"svalue": "4096"
+							},
+							"129": {
+								"svalue": "PIXL Flight Model"
+							},
+							"130": {
+								"svalue": "XRF"
+							},
+							"131": {
+								"svalue": "N/A"
+							},
+							"132": {
+								"svalue": "TC202v2.0 PIXL"
+							},
+							"133": {
+								"svalue": "eV"
+							},
+							"134": {
+								"svalue": "-1.032"
+							},
+							"135": {
+								"svalue": "COUNTS"
+							}
+						}
+					},
+					{
+						"detector": "B",
+						"type": "SPECTRUM_MAX",
+						"counts${LIST,MODE=LENGTH,MINLENGTH=2000}": [],
+						"maxCount": 6786,
+						"meta": "${IGNORE}"
+					}
+				]
+			}
+		}`,
+	)
+
 	u1.AddSendReqAction("MetaLabels: "+actionMsg+" (should work)",
 		`{"scanMetaLabelsReq":{"scanId": "048300551"}}`,
-		`{"msgId":3, "status": "WS_OK",
+		`{"msgId":4, "status": "WS_OK",
 			"scanMetaLabelsResp":{
 				"metaLabels": [
 				"SCLK",
@@ -586,7 +699,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 
 	u1.AddSendReqAction("scanEntry (should work)",
 		`{"scanEntryReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
-		`{"msgId":4, "status": "WS_OK",
+		`{"msgId":5, "status": "WS_OK",
 			"scanEntryResp":{
 				"entries${LIST,MODE=CONTAINS,LENGTH=4}": [
 					{
@@ -623,7 +736,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 
 	u1.AddSendReqAction("scanEntryMetadata (should work)",
 		`{"scanEntryMetadataReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
-		`{"msgId":5, "status": "WS_OK",
+		`{"msgId":6, "status": "WS_OK",
 			"scanEntryMetadataResp":{
 				"entries${LIST,MODE=CONTAINS,LENGTH=4}": [
 					{
@@ -755,7 +868,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 
 	u1.AddSendReqAction("scanBeamLocationsReq (should work)",
 		`{"scanBeamLocationsReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
-		`{"msgId":6, "status": "WS_OK",
+		`{"msgId":7, "status": "WS_OK",
 			"scanBeamLocationsResp":{
 				"beamLocations": [
 					{
@@ -771,6 +884,43 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 					},
 					{}
 				]
+			}
+		}`,
+	)
+
+	u1.AddSendReqAction("scanBeamImageLocationsReq (bad image name)",
+		`{"scanBeamImageLocationsReq":{"scanId": "048300551", "image": "non-existant.jpg", "entries": {"indexes": [128,-1,131]}}}`,
+		`{
+			"msgId": 8,
+			"status": "WS_NOT_FOUND",
+			"errorText": "non-existant.jpg not found",
+			"scanBeamImageLocationsResp": {}
+		}`,
+	)
+
+	u1.AddSendReqAction("scanBeamImageLocationsReq (should work)",
+		`{"scanBeamImageLocationsReq":{
+			"scanId": "048300551",
+			"image": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+			"entries": {"indexes": [128,-1,131]}}
+		}`,
+		`{"msgId":9, "status": "WS_OK",
+			"scanBeamImageLocationsResp":{
+				"beamImageLocations": {
+					"imageFileName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+					"locations": [
+						{
+							"i": 681.1369,
+							"j": 268.89786
+						},
+						{},
+						{
+							"i": 361.19315,
+							"j": 293.538
+						},
+						{}
+					]
+				}
 			}
 		}`,
 	)
