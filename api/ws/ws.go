@@ -72,22 +72,6 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	// calls to /ws-connect. If token isn't valid, we reject
 	// To know user info, we can use the token to look it up. We then store
 	// it in the session for the life of this session
-	// NOTE2: also s.Request is saved, can be accessed later too!
-	/*ss, _ := m.Sessions()
-
-	for _, o := range ss {
-		value, exists := o.Get("info")
-
-		if !exists {
-			continue
-		}
-
-		fmt.Printf("Existing user: %v\n", value)
-
-		//info := value.(*GopherInfo)
-		//s.Write([]byte("set " + info.ID + " " + info.X + " " + info.Y))
-	}*/
-
 	var connectingUser jwtparser.JWTUserInfo
 
 	queryParams := s.Request.URL.Query()
@@ -120,11 +104,13 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	}
 
 	// Look up user info
-	sessionUser, err := wsHelpers.MakeSessionUser(connectingUser, ws.svcs.MongoDB)
+	sessId := utils.RandStringBytesMaskImpr(32)
+
+	sessionUser, err := wsHelpers.MakeSessionUser(sessId, connectingUser, ws.svcs.MongoDB)
 	if err != nil {
 		// If we have no record of this user, add it
 		if err == mongo.ErrNoDocuments {
-			sessionUser, err = wsHelpers.CreateDBUser(connectingUser, ws.svcs.MongoDB)
+			sessionUser, err = wsHelpers.CreateDBUser(sessId, connectingUser, ws.svcs.MongoDB)
 			if err != nil {
 				s.CloseWithMsg([]byte("Failed to validate session user"))
 				return
@@ -135,35 +121,19 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	// Store the connection info!
 	s.Set("user", *sessionUser)
 
-	sessId := utils.RandStringBytesMaskImpr(32)
-	s.Set("id", sessId)
-
 	fmt.Printf("Connect user: %v, session: %v\n", connectingUser.UserID, sessId)
 
 	// And we're connected, nothing more to do but wait for requests!
 }
 
 func (ws *WSHandler) HandleDisconnect(s *melody.Session) {
-	var id string
-
-	if _id, ok := s.Get("id"); !ok {
-		fmt.Println("Disconnect MISSING SESSION ID")
-		return
-	} else {
-		id, ok = _id.(string)
-		if !ok {
-			fmt.Println("Disconnect INVALID SESSION ID TYPE")
-			return
-		}
-	}
-
 	connectingUser, err := wsHelpers.GetSessionUser(s)
 	if err != nil {
-		fmt.Printf("Disconnect %v\n", err)
+		fmt.Printf("Disconnect failed to get session info: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Disconnect user: %v, session: %v\n", connectingUser.User.Id, id)
+	fmt.Printf("Disconnect user: %v, session: %v\n", connectingUser.User.Id, connectingUser.SessionId)
 }
 
 func (ws *WSHandler) HandleMessage(s *melody.Session, msg []byte) {

@@ -62,6 +62,11 @@ func testUserGroups(apiHost string) {
 
 	// Testing user group viewer leave group
 	testUserGroupViewerLeavingGroup(apiHost)
+
+	// Testing that notifications are sent out to group admins for join requests
+	// Both live (via Upd message) and after admin user connects and requests notifications
+	testJoinRequestNotificationLive(apiHost)
+	testJoinRequestNotificationAfterConnect(apiHost)
 }
 
 func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
@@ -1015,6 +1020,251 @@ func testUserGroupViewerLeavingGroup(apiHost string) {
 
 	u1.CloseActionGroup([]string{}, userGroupWaitTime)
 	wstestlib.ExecQueuedActions(&u1)
+}
+
+func testJoinRequestNotificationLive(apiHost string) {
+	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test2Username,
+		Pass: test2Password,
+	})
+
+	u2.AddSendReqAction("Create valid user group 4",
+		`{"userGroupCreateReq":{"name": "M2020 Science"}}`,
+		`{"msgId":1,"status":"WS_OK","userGroupCreateResp":{
+			"group": {
+				"info": {
+					"id": "${IDSAVE=createdGroupId4}",
+					"name": "M2020 Science",
+					"createdUnixSec": "${SECAGO=5}"
+				},
+				"viewers": {},
+				"members": {}
+			}
+		}}`,
+	)
+
+	// Subscribe for notifications too
+	u2.AddSendReqAction("Subscribe to notifications for u2",
+		`{"userNotificationReq":{}}`,
+		`{"msgId":2,"status":"WS_OK","userNotificationResp":{}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	// Add u2 as admin of the group to ensure they get the notification
+	// TODO: they should also get it if they have the PIXLISE_ADMIN role
+	// but for now that doesn't work
+
+	u2.AddSendReqAction("Add user2 as group admin",
+		fmt.Sprintf(`{"userGroupAddAdminReq":{"groupId": "${IDLOAD=createdGroupId4}", "adminUserId": "%v"}}`, u2.GetUserId()),
+		`{"msgId":3, "status": "WS_OK","userGroupAddAdminResp":{
+			"group": {
+				"info": {
+					"id": "${IDCHK=createdGroupId4}",
+					"name": "M2020 Science",
+					"createdUnixSec": "${SECAGO=5}"
+				},
+				"viewers": {},
+				"members": {},
+				"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
+			}
+		}}`,
+	)
+
+	u2.AddSleepAction("Wait after subscribe", 1000)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test1Username,
+		Pass: test1Password,
+	})
+
+	u1.AddSendReqAction("Request to join created group 4 id",
+		`{"userGroupJoinReq":{"groupId": "${IDLOAD=createdGroupId4}"}}`,
+		`{"msgId":1,"status":"WS_OK","userGroupJoinResp":{}}`,
+	)
+
+	u1.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u1)
+
+	u2.AddSendReqAction("Ensure admin got join request",
+		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId4}"}}`,
+		fmt.Sprintf(`{"msgId": 4,
+			"status":"WS_OK",
+			"userGroupJoinListResp":{
+				"requests": [
+				{
+					"id": "${IDSAVE=createdJoinReqId4}",
+					"userId": "%v",
+					"joinGroupId": "${IDCHK=createdGroupId4}",
+					"createdUnixSec": "${SECAGO=5}"
+				}
+			]
+		}}`, u1.GetUserId()),
+	)
+
+	// Expecting to see an update here...
+	u2.CloseActionGroup([]string{
+		fmt.Sprintf(`{
+		"userNotificationUpd": {
+			"notification": {
+				"subject": "${REGEXMATCH=.+has requested to join group M2020 Science}",
+				"contents": "${REGEXMATCH=You are being sent this because you are an administrator of PIXLISE user group M2020 Science.+}",
+				"from": "PIXLISE API",
+				"timeStampUnixSec": "${SECAGO=5}",
+				"actionLink": "/user-group/join-requests",
+				"meta": {
+					"requestorId": "%v",
+					"type": "join-group-request"
+				}
+			}
+		}
+	}`, u1.GetUserId())}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	u2.AddSendReqAction("Request to join created group 4 id",
+		`{"userGroupIgnoreJoinReq":{"groupId": "${IDLOAD=createdGroupId4}", "requestId": "${IDLOAD=createdJoinReqId4}"}}`,
+		`{"msgId":5,"status":"WS_OK","userGroupIgnoreJoinResp":{}}`,
+	)
+
+	u2.AddSendReqAction("Ensure admin has no join requests",
+		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId4}"}}`,
+		`{"msgId":6,
+			"status":"WS_OK",
+			"userGroupJoinListResp":{}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+}
+
+func testJoinRequestNotificationAfterConnect(apiHost string) {
+	setupGroup5(apiHost)
+
+	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test1Username,
+		Pass: test1Password,
+	})
+
+	u1.AddSendReqAction("Request to join created group 5 id",
+		`{"userGroupJoinReq":{"groupId": "${IDLOAD=createdGroupId5}"}}`,
+		`{"msgId":1,"status":"WS_OK","userGroupJoinResp":{}}`,
+	)
+
+	u1.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u1)
+
+	// Connect user 2 again
+	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test2Username,
+		Pass: test2Password,
+	})
+
+	u2.AddSendReqAction("Ensure admin got join request",
+		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId5}"}}`,
+		fmt.Sprintf(`{"msgId": 1,
+			"status":"WS_OK",
+			"userGroupJoinListResp":{
+				"requests": [
+				{
+					"id": "${IDSAVE=createdJoinReqId5}",
+					"userId": "%v",
+					"joinGroupId": "${IDCHK=createdGroupId5}",
+					"createdUnixSec": "${SECAGO=5}"
+				}
+			]
+		}}`, u1.GetUserId()),
+	)
+
+	// Not expecting to see an update here...
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	// Request notifications, which should deliver the notification from DB
+	u2.AddSendReqAction("Subscribe to notifications for u2",
+		`{"userNotificationReq":{}}`,
+		`{"msgId":2,"status":"WS_OK","userNotificationResp":{}}`,
+	)
+
+	u2.AddSendReqAction("Request to join created group 5 id",
+		`{"userGroupIgnoreJoinReq":{"groupId": "${IDLOAD=createdGroupId5}", "requestId": "${IDLOAD=createdJoinReqId5}"}}`,
+		`{"msgId":3,"status":"WS_OK","userGroupIgnoreJoinResp":{}}`,
+	)
+
+	u2.AddSendReqAction("Ensure admin has no join requests",
+		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId5}"}}`,
+		`{"msgId":4,
+			"status":"WS_OK",
+			"userGroupJoinListResp":{}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+}
+
+func setupGroup5(apiHost string) {
+	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test2Username,
+		Pass: test2Password,
+	})
+
+	u2.AddSendReqAction("Create valid user group 5",
+		`{"userGroupCreateReq":{"name": "M2020 Engineers"}}`,
+		`{"msgId":1,"status":"WS_OK","userGroupCreateResp":{
+			"group": {
+				"info": {
+					"id": "${IDSAVE=createdGroupId5}",
+					"name": "M2020 Engineers",
+					"createdUnixSec": "${SECAGO=5}"
+				},
+				"viewers": {},
+				"members": {}
+			}
+		}}`,
+	)
+
+	// In this scenario we DON'T subscribe for notifications, so it should go to DB...
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	// Add u2 as admin of the group to ensure they get the notification
+	// TODO: they should also get it if they have the PIXLISE_ADMIN role
+	// but for now that doesn't work
+
+	u2.AddSendReqAction("Add user2 as group admin",
+		fmt.Sprintf(`{"userGroupAddAdminReq":{"groupId": "${IDLOAD=createdGroupId5}", "adminUserId": "%v"}}`, u2.GetUserId()),
+		`{"msgId":2, "status": "WS_OK","userGroupAddAdminResp":{
+			"group": {
+				"info": {
+					"id": "${IDCHK=createdGroupId5}",
+					"name": "M2020 Engineers",
+					"createdUnixSec": "${SECAGO=5}"
+				},
+				"viewers": {},
+				"members": {},
+				"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
+			}
+		}}`,
+	)
+
+	//u2.AddDisonnectAction("Disconnect after u2 becomes admin")
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
 }
 
 func addDBUsers(user *protos.UserDBItem) {
