@@ -6,7 +6,15 @@ import (
 )
 
 func HandlePseudoIntensityReq(req *protos.PseudoIntensityReq, hctx wsHelpers.HandlerContext) (*protos.PseudoIntensityResp, error) {
-	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
+	var exprPB *protos.Experiment
+	var indexes []uint32
+	var err error
+
+	if req.Entries == nil {
+		exprPB, err = beginDatasetFileReq(req.ScanId, hctx)
+	} else {
+		exprPB, indexes, err = beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -17,6 +25,7 @@ func HandlePseudoIntensityReq(req *protos.PseudoIntensityReq, hctx wsHelpers.Han
 		labels = append(labels, item.Name)
 	}
 
+	// Send back pseudo-intensities for the indexes requested
 	tooManyPseudosLocations := 0
 	pseudoIntensities := []*protos.PseudoIntensityData{}
 	for _, c := range indexes {

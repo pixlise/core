@@ -327,9 +327,41 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 		}`,
 	)
 
+	u1.AddSendReqAction("Pseudo: "+actionMsg+" no indexes (should work)",
+		`{"pseudoIntensityReq":{"scanId": "048300551"}}`,
+		`{"msgId":2, "status": "WS_OK",
+			"pseudoIntensityResp":{
+				"intensityLabels": [
+					"Na",
+					"Mg",
+					"Al",
+					"Si",
+					"P",
+					"S",
+					"Cl",
+					"K",
+					"Ca",
+					"Ti",
+					"Ce",
+					"Cr",
+					"Mn",
+					"Fe",
+					"Ni",
+					"Ge",
+					"As",
+					"Zn",
+					"Sr",
+					"Y",
+					"Zr",
+					"Ba"
+				]
+			}
+		}`,
+	)
+
 	u1.AddSendReqAction("Spectra: "+actionMsg+" (should work)",
 		`{"spectrumReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
-		`{"msgId":2, "status": "WS_OK",
+		`{"msgId":3, "status": "WS_OK",
 			"spectrumResp":{
 				"spectraPerLocation": [
 					{
@@ -467,7 +499,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 
 	u1.AddSendReqAction("Spectra: "+actionMsg+" (should work)",
 		`{"spectrumReq":{"scanId": "048300551", "bulkSum": true, "maxValue": true}}`,
-		`{"msgId":3, "status": "WS_OK",
+		`{"msgId":4, "status": "WS_OK",
 			"spectrumResp":{
 				"bulkSpectra": [
 					{
@@ -553,7 +585,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 
 	u1.AddSendReqAction("MetaLabels: "+actionMsg+" (should work)",
 		`{"scanMetaLabelsReq":{"scanId": "048300551"}}`,
-		`{"msgId":4, "status": "WS_OK",
+		`{"msgId":5, "status": "WS_OK",
 			"scanMetaLabelsResp":{
 				"metaLabels": [
 				"SCLK",
@@ -699,7 +731,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 
 	u1.AddSendReqAction("scanEntry (should work)",
 		`{"scanEntryReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
-		`{"msgId":5, "status": "WS_OK",
+		`{"msgId":6, "status": "WS_OK",
 			"scanEntryResp":{
 				"entries${LIST,MODE=CONTAINS,LENGTH=4}": [
 					{
@@ -736,7 +768,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 
 	u1.AddSendReqAction("scanEntryMetadata (should work)",
 		`{"scanEntryMetadataReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
-		`{"msgId":6, "status": "WS_OK",
+		`{"msgId":7, "status": "WS_OK",
 			"scanEntryMetadataResp":{
 				"entries${LIST,MODE=CONTAINS,LENGTH=4}": [
 					{
@@ -868,7 +900,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 
 	u1.AddSendReqAction("scanBeamLocationsReq (should work)",
 		`{"scanBeamLocationsReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
-		`{"msgId":7, "status": "WS_OK",
+		`{"msgId":8, "status": "WS_OK",
 			"scanBeamLocationsResp":{
 				"beamLocations": [
 					{
@@ -891,7 +923,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 	u1.AddSendReqAction("scanBeamImageLocationsReq (bad image name)",
 		`{"scanBeamImageLocationsReq":{"scanId": "048300551", "image": "non-existant.jpg", "entries": {"indexes": [128,-1,131]}}}`,
 		`{
-			"msgId": 8,
+			"msgId": 9,
 			"status": "WS_NOT_FOUND",
 			"errorText": "non-existant.jpg not found",
 			"scanBeamImageLocationsResp": {}
@@ -904,7 +936,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 			"image": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 			"entries": {"indexes": [128,-1,131]}}
 		}`,
-		`{"msgId":9, "status": "WS_OK",
+		`{"msgId":10, "status": "WS_OK",
 			"scanBeamImageLocationsResp":{
 				"beamImageLocations": {
 					"imageFileName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
