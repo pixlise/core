@@ -94,9 +94,24 @@ type SrcDatasetConfig struct {
 	Datasets []SrcSummaryFileData `json:"datasets"`
 }
 
-func migrateDatasets(configBucket string, dataBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
-	coll := dest.Collection(dbCollections.ScansName)
+func migrateDatasets(configBucket string, dataBucket string, destDataBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
+	// Drop images collection
+	coll := dest.Collection(dbCollections.ImagesName)
 	err := coll.Drop(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	// And beam locations
+	coll = dest.Collection(dbCollections.ImageBeamLocationsName)
+	err = coll.Drop(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	// Also drop scan collection
+	coll = dest.Collection(dbCollections.ScansName)
+	err = coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -176,6 +191,11 @@ func migrateDatasets(configBucket string, dataBucket string, fs fileaccess.FileA
 		// Prefix the ID with "scan_" because the dataset IDs are likely not that long, and we also want them
 		// to differ from our random ones
 		err = saveOwnershipItem("scan_"+dataset.DatasetID, protos.ObjectType_OT_SCAN, "", uint64(dataset.CreationUnixTimeSec), dest)
+		if err != nil {
+			return err
+		}
+
+		err = importImagesForDataset(dataset.DatasetID, dataBucket, destDataBucket, fs, dest)
 		if err != nil {
 			return err
 		}

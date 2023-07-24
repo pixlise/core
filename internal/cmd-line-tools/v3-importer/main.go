@@ -24,6 +24,7 @@ func main() {
 	var sourceMongoSecret string
 	var destMongoSecret string
 	var dataBucket string
+	var destDataBucket string
 	var configBucket string
 	var userContentBucket string
 	var srcEnvName string
@@ -33,6 +34,7 @@ func main() {
 	flag.StringVar(&sourceMongoSecret, "sourceMongoSecret", "", "Source mongo DB secret")
 	flag.StringVar(&destMongoSecret, "destMongoSecret", "", "Destination mongo DB secret")
 	flag.StringVar(&dataBucket, "dataBucket", "", "Data bucket")
+	flag.StringVar(&destDataBucket, "destDataBucket", "", "Destination data bucket")
 	flag.StringVar(&userContentBucket, "userContentBucket", "", "User content bucket")
 	flag.StringVar(&configBucket, "configBucket", "", "Config bucket")
 	flag.StringVar(&srcEnvName, "srcEnvName", "", "Source Environment Name")
@@ -186,6 +188,7 @@ func main() {
 
 	fmt.Println("Datasets...")
 	err = migrateDatasets(configBucket, dataBucket, fs, destDB)
+	err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB)
 	if err != nil {
 		log.Fatal(err)
 	}
