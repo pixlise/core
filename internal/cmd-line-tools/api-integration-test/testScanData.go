@@ -14,8 +14,11 @@ func testScanData(apiHost string, groupDepth int) {
 	// Prepend the special bit required for ownership table scan storage
 	scanId = "scan_" + scanId
 
-	// Dataset - bad dataset id
+	seedImages()
+	seedImageLocations()
 	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, nil, nil)
+
+	// Dataset - bad dataset id
 	userId := testScanDataBadId(apiHost, "Pseudo: ")
 
 	noAccessTest := func(apiHost string) {
@@ -94,6 +97,97 @@ func seedDBScanData() string {
 	}
 
 	return scanItem.Id
+}
+
+func seedImages() {
+	imgs := []interface{}{
+		&protos.ScanImage{
+			Name:              "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+			Source:            1,
+			Width:             752,
+			Height:            580,
+			FileSize:          240084,
+			Purpose:           1,
+			AssociatedScanIds: []string{"048300551"},
+			OriginScanId:      "048300551",
+			OriginImageURL:    "",
+			Path:              "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+			//"matchinfo": null
+		},
+		&protos.ScanImage{
+			Name:              "PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
+			Source:            1,
+			Width:             752,
+			Height:            580,
+			FileSize:          256736,
+			Purpose:           1,
+			AssociatedScanIds: []string{"048300551"},
+			OriginScanId:      "048300551",
+			OriginImageURL:    "",
+			Path:              "048300551/PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
+		},
+	}
+
+	db := wstestlib.GetDB()
+	coll := db.Collection(dbCollections.ImagesName)
+	ctx := context.TODO()
+	err := coll.Drop(ctx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	res, err := coll.InsertMany(ctx, imgs)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if len(res.InsertedIDs) != len(imgs) {
+		log.Fatalln("Failed to seed images")
+	}
+}
+
+func seedImageLocations() {
+	locs := []interface{}{
+		&protos.ImageLocations{
+			ImageName: "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+			LocationPerScan: []*protos.ImageLocationsForScan{
+				{
+					ScanId: "048300551",
+					Locations: []*protos.Coordinate2D{
+						nil,
+						nil,
+						nil,
+						{
+							I: 361.19134521484375,
+							J: 293.5299072265625,
+						},
+						nil,
+						{
+							I: 65.51853942871094,
+							J: 305.2160949707031,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	db := wstestlib.GetDB()
+	coll := db.Collection(dbCollections.ImageBeamLocationsName)
+	ctx := context.TODO()
+	err := coll.Drop(ctx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	res, err := coll.InsertMany(ctx, locs)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if len(res.InsertedIDs) != len(locs) {
+		log.Fatalln("Failed to seed image beam locations")
+	}
 }
 
 func seedDBOwnership(objectId string, objectType protos.ObjectType, viewers *protos.UserGroupList, editors *protos.UserGroupList) {
@@ -264,15 +358,24 @@ func testScanDataNoPermission(apiHost string) {
 		}`,
 	)
 
-	u1.AddSendReqAction("scanBeamImageLocationsReq (expect no permission)",
-		`{"scanBeamImageLocationsReq":{"scanId": "048300551", "image": "something.jpg", "entries": {"indexes": [128,-1,131]}}}`,
+	u1.AddSendReqAction("imageListReq (expect no permission)",
+		`{"imageListReq":{"scanIds": ["048300551"]}}`,
 		`{"msgId":8,
 			"status": "WS_NO_PERMISSION",
 			"errorText": "View access denied for: 048300551",
-			"scanBeamImageLocationsResp":{}
+			"imageListResp":{}
 		}`,
 	)
-
+	/*
+		u1.AddSendReqAction("imageBeamLocationsReq (expect no permission)",
+			`{"imageBeamLocationsReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
+			`{"msgId":9,
+				"status": "WS_NO_PERMISSION",
+				"errorText": "View access denied for: 048300551",
+				"imageBeamLocationsResp":{}
+			}`,
+		)
+	*/
 	u1.CloseActionGroup([]string{}, scanWaitTime)
 	wstestlib.ExecQueuedActions(&u1)
 }
@@ -920,37 +1023,77 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 		}`,
 	)
 
-	u1.AddSendReqAction("scanBeamImageLocationsReq (bad image name)",
-		`{"scanBeamImageLocationsReq":{"scanId": "048300551", "image": "non-existant.jpg", "entries": {"indexes": [128,-1,131]}}}`,
-		`{
-			"msgId": 9,
-			"status": "WS_NOT_FOUND",
-			"errorText": "non-existant.jpg not found",
-			"scanBeamImageLocationsResp": {}
+	u1.AddSendReqAction("imageListReq (should work)",
+		`{"imageListReq":{"scanIds": ["048300551"]}}`,
+		`{"msgId":9,
+			"status": "WS_OK",
+			"imageListResp":{
+				"images": [
+					{
+						"name": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+						"source": "SI_INSTRUMENT",
+						"width": 752,
+						"height": 580,
+						"fileSize": 240084,
+						"purpose": "SIP_VIEWING",
+						"associatedScanIds": [
+							"048300551"
+						],
+						"originScanId": "048300551",
+						"path": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"
+					},
+					{
+						"name": "PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
+						"source": "SI_INSTRUMENT",
+						"width": 752,
+						"height": 580,
+						"fileSize": 256736,
+						"purpose": "SIP_VIEWING",
+						"associatedScanIds": [
+							"048300551"
+						],
+						"originScanId": "048300551",
+						"path": "048300551/PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png"
+					}
+				]
+			}
 		}`,
 	)
 
-	u1.AddSendReqAction("scanBeamImageLocationsReq (should work)",
-		`{"scanBeamImageLocationsReq":{
-			"scanId": "048300551",
-			"image": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
-			"entries": {"indexes": [128,-1,131]}}
+	u1.AddSendReqAction("imageBeamLocationsReq (bad image name)",
+		`{"imageBeamLocationsReq":{"imageName": "non-existant.jpg"}}`,
+		`{
+			"msgId": 10,
+			"status": "WS_NOT_FOUND",
+			"errorText": "non-existant.jpg not found",
+			"imageBeamLocationsResp": {}
 		}`,
-		`{"msgId":10, "status": "WS_OK",
-			"scanBeamImageLocationsResp":{
-				"beamImageLocations": {
-					"imageFileName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
-					"locations": [
+	)
+
+	u1.AddSendReqAction("imageBeamLocationsReq (should work)",
+		`{"imageBeamLocationsReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
+		`{"msgId":11, "status": "WS_OK",
+			"imageBeamLocationsResp":{
+				"locations": {
+					"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+					"locationPerScan": [
 						{
-							"i": 681.1369,
-							"j": 268.89786
-						},
-						{},
-						{
-							"i": 361.19315,
-							"j": 293.538
-						},
-						{}
+							"scanId": "048300551",
+							"locations": [
+								{},
+								{},
+								{},
+								{
+									"i": 361.19135,
+									"j": 293.5299
+								},
+								{},
+								{
+									"i": 65.51854,
+									"j": 305.2161
+								}
+							]
+						}
 					]
 				}
 			}

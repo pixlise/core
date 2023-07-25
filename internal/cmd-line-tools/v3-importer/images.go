@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"path"
 	"strings"
 
@@ -35,31 +37,36 @@ func importImagesForDataset(datasetID string, dataBucket string, destDataBucket 
 	}
 
 	// Read all images and save an image record, while also saving location info if there is any...
+	alignedImageSizes := map[string][]uint32{}
 	for alignedIdx, img := range exprPB.AlignedContextImages {
 		// Image itself
-		if err := importAlignedImage(img, exprPB, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
+		if savedName, w, h, err := importAlignedImage(img, exprPB, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
 			return err
-		}
+		} else {
+			// Import coordinates
+			if err := importImageLocations(savedName, datasetID, alignedIdx, exprPB, dest); err != nil {
+				return err
+			}
 
-		// Import coordinates
-		if err := importImageLocations(img.Image, datasetID, alignedIdx, exprPB, dest); err != nil {
-			return err
+			alignedImageSizes[savedName] = []uint32{w, h, uint32(alignedIdx)}
 		}
 	}
 
 	for _, img := range exprPB.MatchedAlignedContextImages {
-		if err := importMatchedImage(img, exprPB, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
+		if _, err := importMatchedImage(img, alignedImageSizes, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
 			return err
 		}
 	}
 
 	for _, img := range exprPB.UnalignedContextImages {
-		if err := importUnalignedImage(img, exprPB, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
+		if _, err := importUnalignedImage(img, exprPB, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
 			return err
 		}
 	}
 
-	return nil
+	// Write the dataset file out to destination
+	s3Path = path.Join(filepaths.DatasetScansRoot, datasetID, filepaths.DatasetFileName)
+	return fs.WriteObject(destDataBucket, s3Path, fileBytes)
 }
 
 func importAlignedImage(
@@ -70,16 +77,16 @@ func importAlignedImage(
 	destDataBucket string,
 	fs fileaccess.FileAccess,
 	imagesColl *mongo.Collection,
-) error {
+) (string, uint32, uint32, error) {
 	// Expecting only PNGs here
 	imgExt := strings.ToLower(path.Ext(img.Image))
 	if imgExt != ".png" && imgExt != ".jpg" {
-		return fmt.Errorf("Expected only PNG or JPG image for Aligned image, got: %v", img.Image)
+		return "", 0, 0, fmt.Errorf("Expected only PNG or JPG image for Aligned image, got: %v", img.Image)
 	}
 
-	imgSave, imgBytes, err := getImportImage(img.Image, datasetID, dataBucket, fs)
+	imgSave, imgBytes, err := getImportImage(img.Image, datasetID, dataBucket, fs, 0, 0)
 	if err != nil {
-		return err
+		return "", 0, 0, err
 	}
 
 	// Work out all scans this image is associated with and that we have coordinates for
@@ -108,38 +115,64 @@ func importAlignedImage(
 		}
 	}
 
-	return saveImage(imgSave, imagesColl, imgBytes, fs, destDataBucket, datasetID)
+	return imgSave.Name, imgSave.Width, imgSave.Height, saveImage(imgSave, imagesColl, imgBytes, fs, destDataBucket, datasetID)
 }
 
 func importMatchedImage(
 	img *protos.Experiment_MatchedContextImageInfo,
-	exprPB *protos.Experiment,
+	alignedImageSizes map[string][]uint32,
 	datasetID string,
 	dataBucket string,
 	destDataBucket string,
 	fs fileaccess.FileAccess,
 	imagesColl *mongo.Collection,
-) error {
-	imgSave, imgBytes, err := getImportImage(img.Image, datasetID, dataBucket, fs)
-	if err != nil {
-		return err
+) (string, error) {
+	// Look up the matched image name and size info
+	var alignedImageName string
+	var alignedImageW uint32
+	var alignedImageH uint32
+	for name, info := range alignedImageSizes {
+		if info[2] == uint32(img.AlignedIndex) {
+			alignedImageName = name
+			alignedImageW = info[0]
+			alignedImageH = info[1]
+			break
+		}
 	}
 
-	// Save match info
+	// If reading a TIF we use the aligned image width+height because Go tif importer fails with floating point sample
+	// types. Otherwise get image size from downloaded data
+	var imageW, imageH uint32
+	if isExt(img.Image, "tif") {
+		imageW = alignedImageW
+		imageH = alignedImageH
+	}
+
+	imgSave, imgBytes, err := getImportImage(img.Image, datasetID, dataBucket, fs, imageW, imageH)
+	if err != nil {
+		return "", err
+	}
+
 	imgSave.MatchInfo = &protos.ImageMatchTransform{
-		BeamImageFileName: img.Image,
+		BeamImageFileName: alignedImageName,
 		XOffset:           img.XOffset,
 		YOffset:           img.YOffset,
 		XScale:            img.XScale,
 		YScale:            img.YScale,
 	}
 
+	imgSave.AssociatedScanIds = []string{datasetID}
+
 	// Refine the image purpose - Tif files are for RGBU analysis
-	if strings.ToLower(path.Ext(img.Image)) == ".tif" {
+	if isExt(img.Image, "tif") {
 		imgSave.Purpose = protos.ScanImagePurpose_SIP_MULTICHANNEL
 	}
 
-	return saveImage(imgSave, imagesColl, imgBytes, fs, destDataBucket, datasetID)
+	return imgSave.Name, saveImage(imgSave, imagesColl, imgBytes, fs, destDataBucket, datasetID)
+}
+
+func isExt(fileName string, extNoDot string) bool {
+	return strings.ToLower(path.Ext(fileName)) == "."+extNoDot
 }
 
 func importUnalignedImage(
@@ -150,18 +183,21 @@ func importUnalignedImage(
 	destDataBucket string,
 	fs fileaccess.FileAccess,
 	imagesColl *mongo.Collection,
-) error {
-	imgSave, imgBytes, err := getImportImage(imgName, datasetID, dataBucket, fs)
+) (string, error) {
+	imgSave, imgBytes, err := getImportImage(imgName, datasetID, dataBucket, fs, 0, 0)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	// Nothing to customise
+	imgSave.AssociatedScanIds = []string{datasetID}
 
-	return saveImage(imgSave, imagesColl, imgBytes, fs, destDataBucket, datasetID)
+	return imgSave.Name, saveImage(imgSave, imagesColl, imgBytes, fs, destDataBucket, datasetID)
 }
 
-func getImportImage(imageName string, datasetID string, dataBucket string, fs fileaccess.FileAccess) (*protos.ScanImage, []byte, error) {
+// Downloads the image and determines the size if passed in imageW==imageH==0
+func getImportImage(imageName string, datasetID string, dataBucket string, fs fileaccess.FileAccess, imageW uint32, imageH uint32) (*protos.ScanImage, []byte, error) {
+	fmt.Printf("Importing scan: %v image: %v...\n", datasetID, imageName)
+
 	// Read the image file itself
 	s3Path := filepaths.GetDatasetFilePath(datasetID, imageName)
 	imgBytes, err := fs.ReadObject(dataBucket, s3Path)
@@ -170,22 +206,34 @@ func getImportImage(imageName string, datasetID string, dataBucket string, fs fi
 	}
 
 	// Open the image to determine the size
-	theImage, _, err := image.Decode(bytes.NewReader(imgBytes))
-	if err != nil {
-		return nil, imgBytes, err
+	if imageW == 0 && imageH == 0 {
+		theImage, _, err := image.Decode(bytes.NewReader(imgBytes))
+		if err != nil {
+			return nil, imgBytes, fmt.Errorf("Failed to read image: %v. Error: %v", imageName, err)
+		}
+
+		imageW = uint32(theImage.Bounds().Dx())
+		imageH = uint32(theImage.Bounds().Dy())
+	}
+
+	// If the image name can't be parsed as a gds filename, we prepend the dataset ID to make it more unique. This is not done
+	// on GDS filenames because they would already contain the RTT making them unique, and we also want to keep those
+	// searchable/equivalent to names in Mars Viewer
+	if _, err := gdsfilename.ParseFileName(imageName); err != nil {
+		imageName = datasetID + "-" + imageName
 	}
 
 	imgSave := &protos.ScanImage{
 		Name:              imageName,
 		Source:            protos.ScanImageSource_SI_UPLOAD,
-		Width:             uint32(theImage.Bounds().Dx()),
-		Height:            uint32(theImage.Bounds().Dy()),
+		Width:             imageW,
+		Height:            imageH,
 		FileSize:          uint32(len(imgBytes)),
 		Purpose:           protos.ScanImagePurpose_SIP_VIEWING,
 		AssociatedScanIds: []string{},
 		//OriginScanId: ,
 		//OriginImageURL: originURL,
-		//Url: imgGetURL,
+		//Path: ,
 		//MatchInfo: ,
 	}
 
@@ -200,6 +248,10 @@ func saveImage(
 	destDataBucket string,
 	datasetID string,
 ) error {
+	// Work out where we'll save it
+	savePath := path.Join(datasetID, imgSave.Name)
+	imgSave.Path = savePath
+
 	// Write the new image record to DB
 	result, err := imagesColl.InsertOne(context.TODO(), imgSave)
 	if err != nil {
@@ -210,7 +262,7 @@ func saveImage(
 	}
 
 	// Also write the image file to S3 destination
-	writePath := path.Join("images", datasetID, imgSave.Name)
+	writePath := path.Join(filepaths.DatasetImagesRoot, savePath)
 	return fs.WriteObject(destDataBucket, writePath, imgBytes)
 }
 

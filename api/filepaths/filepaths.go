@@ -35,15 +35,20 @@ import (
 ////////////////////////////////////////////////////////////////////////////////////
 // Data Bucket
 ////////////////////////////////////////////////////////////////////////////////////
+
+// Paths for v4 API:
+const DatasetImagesRoot = "Images"
+const DatasetScansRoot = "Scans"
+
 /*
 Root directory containing our dataset files
-	- Datasets/
-	----<dataset-id>/
-	--------dataset.bin
-	--------Context image files (.png or .jpg)
-	--------RGBU multi-spectral files (.tif)
-	--------diffraction-db.bin
-	--------summary.json
+  - Datasets/
+    ----<dataset-id>/
+    --------dataset.bin
+    --------Context image files (.png or .jpg)
+    --------RGBU multi-spectral files (.tif)
+    --------diffraction-db.bin
+    --------summary.json
 */
 const RootDatasets = "Datasets"
 

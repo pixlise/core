@@ -187,7 +187,6 @@ func main() {
 	fmt.Println("==========================================")
 
 	fmt.Println("Datasets...")
-	err = migrateDatasets(configBucket, dataBucket, fs, destDB)
 	err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB)
 	if err != nil {
 		log.Fatal(err)

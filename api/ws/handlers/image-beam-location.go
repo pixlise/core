@@ -2,6 +2,7 @@ package wsHandler
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
@@ -12,12 +13,12 @@ import (
 )
 
 func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpers.HandlerContext) (*protos.ImageBeamLocationsResp, error) {
-	if err := wsHelpers.CheckStringField(&req.ImageName, "Image", 1, 255); err != nil {
+	if err := wsHelpers.CheckStringField(&req.ImageName, "ImageName", 1, 255); err != nil {
 		return nil, err
 	}
 
 	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 
 	// Read the image and check that the user has access to all scans associated with it
 	result := coll.FindOne(ctx, bson.M{"_id": req.ImageName})
@@ -32,6 +33,10 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 	err := result.Decode(&locs)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(locs.LocationPerScan) <= 0 {
+		return nil, fmt.Errorf("No beams defined for image: %v", req.ImageName)
 	}
 
 	for _, scanLocs := range locs.LocationPerScan {

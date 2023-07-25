@@ -33,7 +33,7 @@ func HandleImageListReq(req *protos.ImageListReq, hctx wsHelpers.HandlerContext)
 		criteria = "$all"
 	}
 
-	filter := bson.M{"associatedScanIds": bson.M{criteria: req.ScanIds}}
+	filter := bson.M{"associatedscanids": bson.M{criteria: req.ScanIds}}
 	opts := options.Find()
 	cursor, err := coll.Find(ctx, filter, opts)
 	if err != nil {

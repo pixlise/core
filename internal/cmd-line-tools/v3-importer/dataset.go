@@ -125,6 +125,8 @@ func migrateDatasets(configBucket string, dataBucket string, destDataBucket stri
 
 	destItems := []interface{}{}
 	for _, dataset := range summaries.Datasets {
+		fmt.Printf("Importing scan: %v...\n", dataset.DatasetID)
+
 		instrument := protos.ScanInstrument_PIXL_FM
 		if dataset.Group == "PIXL_EM" {
 			instrument = protos.ScanInstrument_PIXL_EM
