@@ -40,7 +40,7 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 	}
 
 	for _, scanLocs := range locs.LocationPerScan {
-		_, _, err := wsHelpers.GetUserObjectById[protos.ScanItem](false, scanLocs.ScanId, protos.ObjectType_OT_SCAN, dbCollections.ScansName, hctx)
+		_, err := wsHelpers.CheckObjectAccess(false, scanLocs.ScanId, protos.ObjectType_OT_SCAN, hctx)
 		if err != nil {
 			return nil, err
 		}

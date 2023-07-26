@@ -8,7 +8,7 @@ import (
 )
 
 func ExecQueuedActions(u *ScriptedTestUser) {
-	caller := getCaller(2)
+	caller := GetCaller(2)
 
 	// Run the actions
 	fmt.Printf("Running actions [%v]\n", caller)
@@ -27,7 +27,7 @@ func ExecQueuedActions(u *ScriptedTestUser) {
 	}
 }
 
-func getCaller(skip int) string {
+func GetCaller(skip int) string {
 	// Program counter doesn't seem useful right now
 	_, file, line, ok := runtime.Caller(skip)
 	if ok {

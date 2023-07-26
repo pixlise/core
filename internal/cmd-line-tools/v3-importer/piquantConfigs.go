@@ -7,6 +7,7 @@ import (
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -34,7 +35,7 @@ func migratePiquantVersion(configBucket string, fs fileaccess.FileAccess, dest *
 		Id:              "current",
 		Version:         ver.Version,
 		ModifiedUnixSec: uint64(ver.ChangedUnixTimeSec),
-		ModifierUserId:  fixUserId(ver.Creator.UserID),
+		ModifierUserId:  utils.FixUserId(ver.Creator.UserID),
 	}
 	_, err = coll.InsertOne(context.TODO(), outVer)
 	if err != nil {

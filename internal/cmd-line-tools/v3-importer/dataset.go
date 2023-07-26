@@ -125,6 +125,13 @@ func migrateDatasets(configBucket string, dataBucket string, destDataBucket stri
 
 	destItems := []interface{}{}
 	for _, dataset := range summaries.Datasets {
+		/*if
+			dataset.DatasetID != "012121_83_loose_powder" &&
+			dataset.DatasetID != "048300551" &&
+			dataset.DatasetID != "089063943" &&
+			dataset.DatasetID != "combined253" {
+			continue
+		}*/
 		fmt.Printf("Importing scan: %v...\n", dataset.DatasetID)
 
 		instrument := protos.ScanInstrument_PIXL_FM

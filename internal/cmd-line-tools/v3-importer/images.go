@@ -65,7 +65,7 @@ func importImagesForDataset(datasetID string, dataBucket string, destDataBucket 
 	}
 
 	// Write the dataset file out to destination
-	s3Path = path.Join(filepaths.DatasetScansRoot, datasetID, filepaths.DatasetFileName)
+	s3Path = filepaths.GetScanFilePath(datasetID, filepaths.DatasetFileName)
 	return fs.WriteObject(destDataBucket, s3Path, fileBytes)
 }
 
@@ -262,7 +262,7 @@ func saveImage(
 	}
 
 	// Also write the image file to S3 destination
-	writePath := path.Join(filepaths.DatasetImagesRoot, savePath)
+	writePath := filepaths.GetImageFilePath(savePath)
 	return fs.WriteObject(destDataBucket, writePath, imgBytes)
 }
 

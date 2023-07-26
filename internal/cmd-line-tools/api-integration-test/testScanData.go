@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
@@ -1102,4 +1103,22 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 
 	u1.CloseActionGroup([]string{}, scanWaitTime)
 	wstestlib.ExecQueuedActions(&u1)
+
+	// Test the GET HTTP endpoint, this has nothing to do with users/websockets above
+	testImageGet_OK(apiHost, imageGetJWT)
+
+	// Delete cached images from S3
+	err := apiStorageFileAccess.DeleteObject(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-thumbnail.png")
+	failIf(err != nil && !apiStorageFileAccess.IsNotFoundError(err), fmt.Errorf("Failed to delete previous cached image for GET thumbnail test: %v", err))
+
+	// Do the GET call, which should generate the image
+	testImageGetThumbnail_OK(apiHost, imageGetJWT)
+
+	// Check that the file was created
+	exists, err := apiStorageFileAccess.ObjectExists(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-thumbnail.png")
+	failIf(err != nil, fmt.Errorf("Failed to check generated GET thumbnail exists: %v", err))
+	failIf(!exists, fmt.Errorf("generated GET thumbnail not found in Image-Cache/"))
+
+	// Now run it again, because this time it should be using the cached copy
+	testImageGetThumbnail_OK(apiHost, imageGetJWT)
 }

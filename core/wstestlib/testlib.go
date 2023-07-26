@@ -104,7 +104,7 @@ func (s *ScriptedTestUser) AddSleepAction(annotation string, sleepMs uint32) {
 func (s *ScriptedTestUser) addAction(action actionItem) {
 	// NOTE: at this point we assume we're called from 1 public function of this package, which itself
 	// is called from somewhere important that we need to remember...
-	action.defLine = getCaller(3)
+	action.defLine = GetCaller(3)
 
 	if s.tempGroup == nil {
 		s.tempGroup = &actionGroup{

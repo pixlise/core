@@ -76,7 +76,7 @@ func beginDatasetFileReq(scanId string, hctx wsHelpers.HandlerContext) (*protos.
 		return nil, err
 	}
 
-	_, _, err := wsHelpers.GetUserObjectById[protos.ScanItem](false, scanId, protos.ObjectType_OT_SCAN, dbCollections.ScansName, hctx)
+	_, err := wsHelpers.CheckObjectAccess(false, scanId, protos.ObjectType_OT_SCAN, hctx)
 	if err != nil {
 		return nil, err
 	}

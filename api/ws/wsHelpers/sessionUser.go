@@ -3,7 +3,6 @@ package wsHelpers
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v3/api/dbCollections"
@@ -38,22 +37,53 @@ func GetSessionUser(s *melody.Session) (SessionUser, error) {
 	return connectingUser, nil
 }
 
+var cachedUserGroupMembership = map[string][]string{}
+
 // JWT user has the user ID and permissions that we get from Auth0. The rest is handled
 // within PIXLISE, so lets read our DB to see if this user exists and get their
 // user name, email, icon, etc
 func MakeSessionUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, error) {
 	// Ensure we have the full user ID, as our system was previously cutting the prefix
 	// off of Auth0 user ids
-	userId := jwtUser.UserID
-	if !strings.HasPrefix(userId, "auth0|") {
-		userId = "auth0|" + userId
-	}
+	userId := utils.FixUserId(jwtUser.UserID)
 
 	userDBItem, err := GetDBUser(userId, db)
 	if err != nil {
 		return nil, err
 	}
 
+	return makeSessionUser(userId, sessionId, jwtUser.Permissions, userDBItem, db)
+}
+
+// If we have a successful login and the user is not in our DB, we write a default record
+// for them, so if they change their details we have a spot to save it already
+// NOTE: This is (at time of writing) the only way to add a user to the DB
+func CreateDBUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, error) {
+	userId := utils.FixUserId(jwtUser.UserID)
+
+	userDBItem := &protos.UserDBItem{
+		Id: userId,
+		Info: &protos.UserInfo{
+			Id:    userId,
+			Name:  jwtUser.Name,
+			Email: jwtUser.Email,
+			// IconURL
+		},
+		DataCollectionVersion: "",
+		//NotificationSettings
+	}
+
+	_, err := db.Collection(dbCollections.UsersName).InsertOne(context.TODO(), userDBItem)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: do we insert it in any groups?
+
+	return makeSessionUser(userId, sessionId, jwtUser.Permissions, userDBItem, db)
+}
+
+func makeSessionUser(userId string, sessionId string, permissions map[string]bool, userDBItem *protos.UserDBItem, db *mongo.Database) (*SessionUser, error) {
 	ourGroups := map[string]bool{}
 
 	// Now we read all the groups and find which ones we are members of
@@ -100,45 +130,21 @@ func MakeSessionUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.
 		}
 	}
 
+	memberOfGroups := utils.GetMapKeys(ourGroups)
+
+	// Any time we create a session user, we cache the list of groups it's a member of
+	// so that HTTP endpoints can also access this and determine permissions properly
+	cachedUserGroupMembership[userId] = memberOfGroups
+
 	return &SessionUser{
 		SessionId:        sessionId,
 		User:             userDBItem.Info,
-		Permissions:      jwtUser.Permissions,
-		MemberOfGroupIds: utils.GetMapKeys(ourGroups),
+		Permissions:      permissions,
+		MemberOfGroupIds: memberOfGroups,
 	}, nil
 }
 
-// If we have a successful login and the user is not in our DB, we write a default record
-// for them, so if they change their details we have a spot to save it already
-// NOTE: This is (at time of writing) the only way to add a user to the DB
-func CreateDBUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, error) {
-	if !strings.HasPrefix(jwtUser.UserID, "auth0|") {
-		jwtUser.UserID = "auth0|" + jwtUser.UserID
-	}
-
-	userDBItem := &protos.UserDBItem{
-		Id: jwtUser.UserID,
-		Info: &protos.UserInfo{
-			Id:    jwtUser.UserID,
-			Name:  jwtUser.Name,
-			Email: jwtUser.Email,
-			// IconURL
-		},
-		DataCollectionVersion: "",
-		//NotificationSettings
-	}
-
-	_, err := db.Collection(dbCollections.UsersName).InsertOne(context.TODO(), userDBItem)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: do we insert it in any groups?
-
-	return &SessionUser{
-		SessionId:        sessionId,
-		User:             userDBItem.Info,
-		Permissions:      jwtUser.Permissions,
-		MemberOfGroupIds: []string{},
-	}, nil
+func GetCachedUserGroupMembership(userId string) ([]string, bool) {
+	membership, ok := cachedUserGroupMembership[userId]
+	return membership, ok
 }

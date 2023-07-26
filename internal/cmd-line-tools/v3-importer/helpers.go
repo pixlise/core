@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/utils"
@@ -11,15 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func fixUserId(userId string) string {
-	if len(userId) > 0 && !strings.HasPrefix(userId, "auth0|") {
-		return "auth0|" + userId
-	}
-	return userId
-}
-
 func saveOwnershipItem(objectId string, objectType protos.ObjectType, userId string, timeStampUnixSec uint64, dest *mongo.Database) error {
-	userId = fixUserId(userId)
+	userId = utils.FixUserId(userId)
 
 	ownerItem := &protos.OwnershipItem{
 		Id:             objectId,

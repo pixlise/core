@@ -309,7 +309,7 @@ func migrateViewStates(userContentBucket string, userContentFiles []string, fs f
 				return fmt.Errorf("Unexpected view state path: %v\n", p)
 			} else {
 				datasetId := filepath.Base(filepath.Dir(filepath.Dir(p)))
-				userId := fixUserId(filepath.Base(filepath.Dir(filepath.Dir(filepath.Dir(p)))))
+				userId := utils.FixUserId(filepath.Base(filepath.Dir(filepath.Dir(filepath.Dir(p)))))
 
 				// Form an id that should make a scan unique
 				id := userId + "_" + datasetId

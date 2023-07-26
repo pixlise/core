@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -95,7 +96,7 @@ func migrateUsersDBUsers(src *mongo.Database, dest *mongo.Database) error {
 
 		// We add back the auth0| to the start of user id, which we stripped in past. This should allow us flexibility
 		// in future to introduce auth0 users via google or other single sign-on services
-		saveUserId := fixUserId(usr.Userid)
+		saveUserId := utils.FixUserId(usr.Userid)
 		destUser := protos.UserDBItem{
 			Id:                    saveUserId,
 			DataCollectionVersion: usr.Config.DataCollection,

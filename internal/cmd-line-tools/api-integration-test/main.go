@@ -26,12 +26,27 @@ import (
 	"os"
 	"time"
 
+	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/wstestlib"
 )
 
 var auth0Params wstestlib.Auth0Info
 
 var test1Username, test1Password, test2Username, test2Password string
+
+// This is our complete integration test for the PIXLISE API
+//
+// It is intended to be run either locally on a dev laptop or in a test environment. It has several pre-requisites:
+// - Running MongoDB where API is configured to talk to a database whose content we can wipe on integration test start
+// - S3 buckets that API is configured to use, where we can wipe/replace files on integration test start
+// - API, freshly started (so no cached things in memory yet)
+// - 2 user accounts whose user/password is passed into here as arguments
+//
+// Integration test can then be started
+
+var apiStorageFileAccess fileaccess.FileAccess
+var apiDatasetBucket string
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
@@ -44,6 +59,7 @@ func main() {
 
 	flag.StringVar(&apiHost, "apiHost", "", "Host name of API we're testing. Eg: localhost:8080 or something.review.pixlise.org")
 	flag.StringVar(&apiDBSecret, "apiDBSecret", "", "Mongo secret of the DB the API is connected")
+	flag.StringVar(&apiDatasetBucket, "datasetBucket", "", "Dataset bucket the API is using")
 	flag.StringVar(&auth0Params.Domain, "auth0Domain", "", "Auth0 domain for management API")
 	flag.StringVar(&auth0Params.ClientId, "auth0ClientId", "", "Auth0 client id for management API")
 	flag.StringVar(&auth0Params.Secret, "auth0Secret", "", "Auth0 secret for management API")
@@ -59,6 +75,19 @@ func main() {
 	flag.Parse()
 
 	fmt.Printf("Running integration test %v for %v\n", testType, apiHost)
+
+	// Get a session for the bucket region
+	sess, err := awsutil.GetSession()
+	if err != nil {
+		log.Fatalf("Failed to create AWS session. Error: %v", err)
+	}
+
+	s3svc, err := awsutil.GetS3(sess)
+	if err != nil {
+		log.Fatalf("Failed to create AWS S3 service. Error: %v", err)
+	}
+
+	apiStorageFileAccess = fileaccess.MakeS3Access(s3svc)
 
 	if len(expectedAPIVersion) > 0 {
 		printTestStart("API Version")
@@ -76,7 +105,7 @@ func main() {
 
 	// Connect to DB and drop the unit test database
 	db := wstestlib.GetDB()
-	err := db.Drop(context.TODO())
+	err = db.Drop(context.TODO())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -99,6 +128,8 @@ func main() {
 }
 
 func runTests(apiHost string) {
+	testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
+
 	// testUserDetails(apiHost)
 	// testElementSets(apiHost)
 	// testUserManagement(apiHost)
@@ -106,4 +137,6 @@ func runTests(apiHost string) {
 	// testLogMsgs(apiHost)
 	testScanData(apiHost, 0 /*3 for proper testing*/)
 	// testDetectorConfig(apiHost)
+
+	//testImageGet_PostWS(apiHost) // Must be run after testScanData
 }

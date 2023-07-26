@@ -38,7 +38,20 @@ import (
 
 // Paths for v4 API:
 const DatasetImagesRoot = "Images"
+const DatasetImageCacheRoot = "Image-Cache"
 const DatasetScansRoot = "Scans"
+
+func GetScanFilePath(scanID string, fileName string) string {
+	return path.Join(DatasetScansRoot, scanID, fileName)
+}
+
+func GetImageFilePath(imagePath string) string {
+	return path.Join(DatasetImagesRoot, imagePath)
+}
+
+func GetImageCacheFilePath(imagePath string) string {
+	return path.Join(DatasetImageCacheRoot, imagePath)
+}
 
 /*
 Root directory containing our dataset files

@@ -118,10 +118,6 @@ func (j RealJWTReader) GetUserInfo(r *http.Request) (JWTUserInfo, error) {
 	}
 
 	result.UserID = userIDObj.(string)
-	pipePos := strings.Index(result.UserID, "|")
-	if pipePos > -1 {
-		result.UserID = result.UserID[pipePos+1:]
-	}
 
 	// Also get permissions
 	result.Permissions, err = ReadPermissions(claims)

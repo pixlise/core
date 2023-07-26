@@ -46,12 +46,16 @@ func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, hctx Handl
 // otherwise just checks for view access. Returns an error if it failed to determine
 // or if access is not granted, returns error formed with MakeUnauthorisedError
 func CheckObjectAccess(requireEdit bool, objectId string, objectType protos.ObjectType, hctx HandlerContext) (*protos.OwnershipItem, error) {
+	return CheckObjectAccessForUser(requireEdit, objectId, objectType, hctx.SessUser.User.Id, hctx.SessUser.MemberOfGroupIds, hctx.Svcs.MongoDB)
+}
+
+func CheckObjectAccessForUser(requireEdit bool, objectId string, objectType protos.ObjectType, userId string, memberOfGroupIds []string, db *mongo.Database) (*protos.OwnershipItem, error) {
 	ownerCollectionId := objectId
 	if objectType == protos.ObjectType_OT_SCAN {
 		ownerCollectionId = "scan_" + objectId
 	}
 
-	result := hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).FindOne(context.TODO(), bson.M{"_id": ownerCollectionId})
+	result := db.Collection(dbCollections.OwnershipName).FindOne(context.TODO(), bson.M{"_id": ownerCollectionId})
 	if result.Err() != nil {
 		// If the error is due to the item not existing, this isn't a permissions error, but likely the object doesn't
 		// exist at all. No point going further, report this as a bad request right here
@@ -86,12 +90,12 @@ func CheckObjectAccess(requireEdit bool, objectId string, objectType protos.Obje
 		}
 
 		// First check user id
-		if toCheckItem.UserIds != nil && utils.ItemInSlice(hctx.SessUser.User.Id, toCheckItem.UserIds) {
+		if toCheckItem.UserIds != nil && utils.ItemInSlice(userId, toCheckItem.UserIds) {
 			return ownership, nil // User has access
 		} else {
 			// Check groups
 			if toCheckItem.GroupIds != nil {
-				for _, groupId := range hctx.SessUser.MemberOfGroupIds {
+				for _, groupId := range memberOfGroupIds {
 					if utils.ItemInSlice(groupId, toCheckItem.GroupIds) {
 						return ownership, nil // User has access via group it belongs to
 					}

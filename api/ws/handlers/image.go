@@ -18,7 +18,7 @@ func HandleImageListReq(req *protos.ImageListReq, hctx wsHelpers.HandlerContext)
 
 	// Check that the user has access to all the scans in question
 	for _, scanId := range req.ScanIds {
-		_, _, err := wsHelpers.GetUserObjectById[protos.ScanItem](false, scanId, protos.ObjectType_OT_SCAN, dbCollections.ScansName, hctx)
+		_, err := wsHelpers.CheckObjectAccess(false, scanId, protos.ObjectType_OT_SCAN, hctx)
 		if err != nil {
 			return nil, err
 		}
