@@ -50,6 +50,7 @@ func modifyGroupAdminList(groupId string, adminUserId string, add bool, hctx wsH
 		return nil, err
 	}
 
+	addMember := false
 	dbOp := "$pull"
 	if add {
 		// Check if already in there
@@ -59,6 +60,12 @@ func modifyGroupAdminList(groupId string, adminUserId string, add bool, hctx wsH
 		dbOp = "$addToSet"
 		// Add to result already, if we fail to write to db, result wont be sent
 		group.AdminUserIds = append(group.AdminUserIds, adminUserId)
+
+		// If someone becomes an admin, add them as a member automatically
+		if !utils.ItemInSlice(adminUserId, group.Members.UserIds) {
+			group.Members.UserIds = append(group.Members.UserIds, adminUserId)
+			addMember = true
+		}
 	} else {
 		// Check that it's actually there
 		idx := -1
@@ -77,8 +84,13 @@ func modifyGroupAdminList(groupId string, adminUserId string, add bool, hctx wsH
 		group.AdminUserIds = append(group.AdminUserIds[0:idx], group.AdminUserIds[idx+1:]...)
 	}
 
+	upd := bson.M{dbOp: bson.M{"adminuserids": adminUserId}}
+	if addMember {
+		upd = bson.M{dbOp: bson.M{"adminuserids": adminUserId, "members.userids": adminUserId}}
+	}
+
 	// We're allowed to edit, so do it
-	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName).UpdateByID(ctx, groupId, bson.M{dbOp: bson.M{"adminuserids": adminUserId}})
+	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName).UpdateByID(ctx, groupId, upd)
 	if err != nil {
 		return nil, err
 	}

@@ -10,10 +10,11 @@ import (
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupCreateResp, error) {
-	// Should only be called if we have admin rights, so other permission issues here
+	// Should only be called if we have admin rights, no other permission issues here
 	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 50); err != nil {
 		return nil, err
 	}
@@ -65,13 +66,36 @@ func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.Han
 }
 
 func HandleUserGroupDeleteReq(req *protos.UserGroupDeleteReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupDeleteResp, error) {
-	// Should only be called if we have admin rights, so other permission issues here
+	// Should only be called if we have admin rights, no other permission issues here
 	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
 
 	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
+
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName)
+	filter := bson.M{"$or": []interface{}{bson.D{{"viewers.groupids", req.GroupId}}, bson.D{{"members.groupids", req.GroupId}}}}
+	opts := options.Find()
+	cursor, err := coll.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	items := []*protos.OwnershipItem{}
+	err = cursor.All(context.TODO(), &items)
+	if err != nil {
+		return nil, err
+	}
+
+	// If we have 1 or more items, this means we're viewers or editors of the said groups. We can't delete
+	// the group because we'd end up with dangling references (and potentially orphaned items, because
+	// there may not be another viewer/editor in there). Therefore we stop the user from deleting here. If
+	// they have some special case where this is needed, we can reach into the DB and do it by hand or something
+	if len(items) > 0 {
+		return nil, fmt.Errorf("Cannot delete user group because it is a member/viewer of %v items", len(items))
+	}
+
+	coll = hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
 
 	result, err := coll.DeleteOne(ctx, bson.M{"_id": req.GroupId})
 	if err != nil {
@@ -89,7 +113,7 @@ func HandleUserGroupDeleteReq(req *protos.UserGroupDeleteReq, hctx wsHelpers.Han
 }
 
 func HandleUserGroupSetNameReq(req *protos.UserGroupSetNameReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupSetNameResp, error) {
-	// Should only be called if we have admin rights, so other permission issues here
+	// Should only be called if we have admin rights, no other permission issues here
 	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}

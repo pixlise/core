@@ -130,13 +130,11 @@ func main() {
 func runTests(apiHost string) {
 	testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
-	// testUserDetails(apiHost)
-	// testElementSets(apiHost)
-	// testUserManagement(apiHost)
-	// testUserGroups(apiHost)
-	// testLogMsgs(apiHost)
+	testUserDetails(apiHost)
+	testElementSets(apiHost)
+	testUserManagement(apiHost)
+	testUserGroups(apiHost)
+	testLogMsgs(apiHost)
 	testScanData(apiHost, 0 /*3 for proper testing*/)
-	// testDetectorConfig(apiHost)
-
-	//testImageGet_PostWS(apiHost) // Must be run after testScanData
+	testDetectorConfig(apiHost)
 }

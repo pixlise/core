@@ -63,6 +63,9 @@ func testUserGroups(apiHost string) {
 	// Testing user group viewer leave group
 	testUserGroupViewerLeavingGroup(apiHost)
 
+	// Testing user group add member deletes viewer entry, add viewer deletes member entry
+	testUserGroupAccessPromotionDemotion(apiHost)
+
 	// Testing that notifications are sent out to group admins for join requests
 	// Both live (via Upd message) and after admin user connects and requests notifications
 	testJoinRequestNotificationLive(apiHost)
@@ -323,10 +326,10 @@ func testUserGroupAdminAdd(u2 wstestlib.ScriptedTestUser, nonAdminUserId string)
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": {},
-				"members": {},
+				"members": { "users": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}] },
 				"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 			}
-		}}`, nonAdminUserId),
+		}}`, nonAdminUserId, nonAdminUserId),
 	)
 
 	u2.CloseActionGroup([]string{}, userGroupWaitTime)
@@ -357,7 +360,7 @@ func testUserCanSeeGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": {},
-				"members": {},
+				"members": { "users": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}] },
 				"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
 			}
 		}}`,
@@ -378,13 +381,16 @@ func testUserGroupsAddDeleteAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId 
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": {},
-				"members": {},
+				"members": {"users": [
+					{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"},
+					{"id": "123"}
+				]},
 				"adminUsers": [
 					{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"},
 					{"id": "123"}
 				]
 			}
-		}}`, nonAdminUserId),
+		}}`, nonAdminUserId, nonAdminUserId),
 	)
 
 	u2.AddSendReqAction("Delete test admin user from created group",
@@ -397,10 +403,13 @@ func testUserGroupsAddDeleteAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId 
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": {},
-				"members": {},
+				"members": {"users": [
+					{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"},
+					{"id": "123"}
+				]},
 				"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 			}
-		}}`, nonAdminUserId),
+		}}`, nonAdminUserId, nonAdminUserId),
 	)
 
 	u2.AddSendReqAction("Delete non-existant admin user from created group",
@@ -419,10 +428,13 @@ func testUserGroupsAddDeleteAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId 
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": {},
-				"members": {},
+				"members": {"users": [
+					{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"},
+					{"id": "123"}
+				]},
 				"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 			}
-		}}`, nonAdminUserId),
+		}}`, nonAdminUserId, nonAdminUserId),
 	)
 
 	u2.CloseActionGroup([]string{}, userGroupWaitTime)
@@ -430,13 +442,11 @@ func testUserGroupsAddDeleteAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId 
 }
 
 func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
-	nonAdminUserId := u1NonAdmin.GetUserId()
-
 	u1NonAdmin.AddSendReqAction("Add another admin user from the user that was just added as an admin",
 		`{"userGroupAddAdminReq":{
 			"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "user1-added-admin"
 		}}`,
-		fmt.Sprintf(`{"msgId":15, "status": "WS_OK","userGroupAddAdminResp":{
+		`{"msgId":15, "status": "WS_OK","userGroupAddAdminResp":{
 			"group": {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
@@ -444,18 +454,22 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": {},
-				"members": {},
+				"members": {"users": [
+					{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
+					{"id": "123"},
+					{"id": "user1-added-admin"}
+				]},
 				"adminUsers": [
-					{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"},
+					{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
 					{"id": "user1-added-admin"}
 				]
 			}
-		}}`, nonAdminUserId),
+		}}`,
 	)
 
 	u1NonAdmin.AddSendReqAction("List user groups for non-admin user",
 		`{"userGroupReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		fmt.Sprintf(`{"msgId":16,"status":"WS_OK","userGroupResp":{
+		`{"msgId":16,"status":"WS_OK","userGroupResp":{
 			"group": {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
@@ -463,18 +477,22 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": {},
-				"members": {},
+				"members": {"users": [
+					{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
+					{"id": "123"},
+					{"id": "user1-added-admin"}
+				]},
 				"adminUsers": [
-					{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"},
+					{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
 					{"id": "user1-added-admin"}
 				]
 			}
-		}}`, nonAdminUserId),
+		}}`,
 	)
 
 	u1NonAdmin.AddSendReqAction("Delete test admin user from created group",
 		`{"userGroupDeleteAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "user1-added-admin"}}`,
-		fmt.Sprintf(`{"msgId":17, "status": "WS_OK","userGroupDeleteAdminResp":{
+		`{"msgId":17, "status": "WS_OK","userGroupDeleteAdminResp":{
 			"group": {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
@@ -482,15 +500,19 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": {},
-				"members": {},
-				"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
+				"members": {"users": [
+					{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
+					{"id": "123"},
+					{"id": "user1-added-admin"}
+				]},
+				"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
 			}
-		}}`, nonAdminUserId),
+		}}`,
 	)
 
 	u1NonAdmin.AddSendReqAction("Get user group for non-admin user again",
 		`{"userGroupReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		fmt.Sprintf(`{"msgId":18,"status":"WS_OK","userGroupResp":{
+		`{"msgId":18,"status":"WS_OK","userGroupResp":{
 			"group":{
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
@@ -498,30 +520,42 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": {},
-				"members": {},
-				"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
+				"members": {"users": [
+					{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
+					{"id": "123"},
+					{"id": "user1-added-admin"}
+				]},
+				"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
 			}
-		}}`, nonAdminUserId),
+		}}`,
 	)
 
 	// Test adding members (user ids and group ids)
 	u1NonAdmin.AddSendReqAction("Add member group to user group",
 		`{"userGroupAddMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "groupMemberId": "group-abc123"}}`,
-		fmt.Sprintf(`{"msgId":19,
+		`{"msgId":19,
 			"status": "WS_OK",
-				"userGroupAddMemberResp":{
-					"group": 
-					{
-						"info": {
-							"id": "${IDCHK=createdGroupId}",
-							"name": "M2020 Scientists",
-							"createdUnixSec": "${SECAGO=5}"	
-						},
-						"viewers": {},
-						"members": { "groups": [{"id": "group-abc123"}] },
-						"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
-					}
-		}}`, nonAdminUserId),
+			"userGroupAddMemberResp":{
+				"group": 
+				{
+					"info": {
+						"id": "${IDCHK=createdGroupId}",
+						"name": "M2020 Scientists",
+						"createdUnixSec": "${SECAGO=5}"	
+					},
+					"viewers": {},
+					"members": {
+						"users": [
+							{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
+							{"id": "123"},
+							{"id": "user1-added-admin"}
+						],
+						"groups": [{"id": "group-abc123"}]
+					},
+					"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
+				}
+			}
+		}`,
 	)
 
 	u1NonAdmin.AddSendReqAction("Add member group to user group again",
@@ -535,7 +569,7 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 
 	u1NonAdmin.AddSendReqAction("Add member user to user group",
 		`{"userGroupAddMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "userMemberId": "user-abc123"}}`,
-		fmt.Sprintf(`{"msgId":21,
+		`{"msgId":21,
 			"status": "WS_OK",
 			"userGroupAddMemberResp":{
 				"group": 
@@ -546,10 +580,18 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 						"createdUnixSec": "${SECAGO=5}"
 					},
 					"viewers": {},
-					"members": { "groups": [{"id": "group-abc123"}], "users": [{"id": "user-abc123", "name": "User ABC 123", "email": "user@abc123.com" }] },
-					"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
+					"members": {
+						"users": [
+							{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
+							{"id": "123"},
+							{"id": "user1-added-admin"},
+							{"id": "user-abc123", "name": "User ABC 123", "email": "user@abc123.com" }
+						],
+						"groups": [{"id": "group-abc123"}]
+					},
+					"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
 				}
-		}}`, nonAdminUserId),
+		}}`,
 	)
 
 	u1NonAdmin.AddSendReqAction("Add member user to user group again",
@@ -564,7 +606,7 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 	// Test adding viewers (user ids and group ids)
 	u1NonAdmin.AddSendReqAction("Add viewer group to user group",
 		`{"userGroupAddViewerReq":{"groupId": "${IDLOAD=createdGroupId}", "groupViewerId": "group-viewabc123"}}`,
-		fmt.Sprintf(`{"msgId":23,
+		`{"msgId":23,
 			"status": "WS_OK",
 				"userGroupAddViewerResp":{
 					"group": 
@@ -575,10 +617,18 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 							"createdUnixSec": "${SECAGO=5}"
 						},
 						"viewers": { "groups": [{"id": "group-viewabc123"}] },
-						"members": { "groups": [{"id": "group-abc123"}], "users": [{"id": "user-abc123", "name": "User ABC 123", "email": "user@abc123.com" }] },
-						"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
+						"members": {
+							"users": [
+								{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
+								{"id": "123"},
+								{"id": "user1-added-admin"},
+								{"id": "user-abc123", "name": "User ABC 123", "email": "user@abc123.com" }
+							],
+							"groups": [{"id": "group-abc123"}]
+						},
+						"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
 					}
-		}}`, nonAdminUserId),
+		}}`,
 	)
 
 	u1NonAdmin.AddSendReqAction("Add viewer group to user group again",
@@ -592,7 +642,7 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 
 	u1NonAdmin.AddSendReqAction("Add viewer user to user group",
 		`{"userGroupAddViewerReq":{"groupId": "${IDLOAD=createdGroupId}", "userViewerId": "user-viewerabc123"}}`,
-		fmt.Sprintf(`{"msgId":25,
+		`{"msgId":25,
 			"status": "WS_OK",
 			"userGroupAddViewerResp":{
 				"group": 
@@ -603,10 +653,18 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 						"createdUnixSec": "${SECAGO=5}"
 					},
 					"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
-					"members": { "groups": [{"id": "group-abc123"}], "users": [{"id": "user-abc123", "name": "User ABC 123", "email": "user@abc123.com" }] },
-					"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
+					"members": {
+						"users": [
+							{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
+							{"id": "123"},
+							{"id": "user1-added-admin"},
+							{"id": "user-abc123", "name": "User ABC 123", "email": "user@abc123.com" }
+						],
+						"groups": [{"id": "group-abc123"}]
+					},
+					"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
 				}
-		}}`, nonAdminUserId),
+		}}`,
 	)
 
 	u1NonAdmin.AddSendReqAction("Add viewer user to user group again",
@@ -620,7 +678,7 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 
 	u1NonAdmin.AddSendReqAction("Get user group for non-admin user again",
 		`{"userGroupReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		fmt.Sprintf(`{"msgId":27,"status":"WS_OK","userGroupResp":{
+		`{"msgId":27,"status":"WS_OK","userGroupResp":{
 			"group":{
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
@@ -628,91 +686,173 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
-				"members": { "groups": [{"id": "group-abc123"}], "users": [{"id": "user-abc123", "name": "User ABC 123", "email": "user@abc123.com" }] },
-				"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
+				"members": {
+					"users": [
+						{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
+						{"id": "123"},
+						{"id": "user1-added-admin"},
+						{"id": "user-abc123", "name": "User ABC 123", "email": "user@abc123.com" }
+					],
+					"groups": [{"id": "group-abc123"}]
+				},
+				"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
 			}
-		}}`, nonAdminUserId),
+		}}`,
 	)
 
 	u1NonAdmin.AddSendReqAction("Delete member group from user group",
 		`{"userGroupDeleteMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "groupMemberId": "group-abc123"}}`,
-		fmt.Sprintf(`{"msgId":28,
+		`{"msgId":28,
 			"status": "WS_OK",
-				"userGroupDeleteMemberResp":{
-					"group": 
-					{
-						"info": {
-							"id": "${IDCHK=createdGroupId}",
-							"name": "M2020 Scientists",
-							"createdUnixSec": "${SECAGO=5}"
-						},
-						"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
-						"members": { "users": [{"id": "user-abc123", "name": "User ABC 123", "email": "user@abc123.com" }] },
-						"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
-					}
-		}}`, nonAdminUserId),
+			"userGroupDeleteMemberResp":{
+				"group": 
+				{
+					"info": {
+						"id": "${IDCHK=createdGroupId}",
+						"name": "M2020 Scientists",
+						"createdUnixSec": "${SECAGO=5}"
+					},
+					"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
+					"members": {
+						"users": [
+							{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
+							{"id": "123"},
+							{"id": "user1-added-admin"},
+							{"id": "user-abc123", "name": "User ABC 123", "email": "user@abc123.com" }
+						]
+					},
+					"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
+				}
+			}
+		}`,
 	)
 
 	u1NonAdmin.AddSendReqAction("Delete member user from user group",
 		`{"userGroupDeleteMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "userMemberId": "user-abc123"}}`,
-		fmt.Sprintf(`{"msgId":29,
+		`{"msgId":29,
 			"status": "WS_OK",
-				"userGroupDeleteMemberResp":{
-					"group": 
-					{
-						"info": {
-							"id": "${IDCHK=createdGroupId}",
-							"name": "M2020 Scientists",
-							"createdUnixSec": "${SECAGO=5}"
-						},
-						"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
-						"members": {},
-						"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
-					}
-		}}`, nonAdminUserId),
+			"userGroupDeleteMemberResp":{
+				"group": 
+				{
+					"info": {
+						"id": "${IDCHK=createdGroupId}",
+						"name": "M2020 Scientists",
+						"createdUnixSec": "${SECAGO=5}"
+					},
+					"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
+					"members": {
+						"users": [
+							{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
+							{"id": "123"},
+							{"id": "user1-added-admin"}
+						]
+					},
+					"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
+				}
+			}
+		}`,
+	)
+
+	u1NonAdmin.AddSendReqAction("Delete auto-added member user from user group",
+		`{"userGroupDeleteMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "userMemberId": "123"}}`,
+		`{"msgId":30,
+			"status": "WS_OK",
+			"userGroupDeleteMemberResp":{
+				"group": 
+				{
+					"info": {
+						"id": "${IDCHK=createdGroupId}",
+						"name": "M2020 Scientists",
+						"createdUnixSec": "${SECAGO=5}"
+					},
+					"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
+					"members": {
+						"users": [
+							{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"},
+							{"id": "user1-added-admin"}
+						]
+					},
+					"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
+				}
+			}
+		}`,
+	)
+
+	u1NonAdmin.AddSendReqAction("Delete auto-added member 2 user from user group",
+		`{"userGroupDeleteMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "userMemberId": "user1-added-admin"}}`,
+		`{"msgId":31,
+			"status": "WS_OK",
+			"userGroupDeleteMemberResp":{
+				"group": 
+				{
+					"info": {
+						"id": "${IDCHK=createdGroupId}",
+						"name": "M2020 Scientists",
+						"createdUnixSec": "${SECAGO=5}"
+					},
+					"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
+					"members": {
+						"users": [
+							{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}
+						]
+					},
+					"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
+				}
+			}
+		}`,
 	)
 
 	u1NonAdmin.AddSendReqAction("Delete viewer group from user group",
 		`{"userGroupDeleteViewerReq":{"groupId": "${IDLOAD=createdGroupId}", "groupViewerId": "group-viewabc123"}}`,
-		fmt.Sprintf(`{"msgId":30,
+		`{"msgId":32,
 			"status": "WS_OK",
-				"userGroupDeleteViewerResp":{
-					"group": 
-					{
-						"info": {
-							"id": "${IDCHK=createdGroupId}",
-							"name": "M2020 Scientists",
-							"createdUnixSec": "${SECAGO=5}"
-						},
-						"viewers": { "users": [{"id": "user-viewerabc123"}] },
-						"members": {},
-						"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
-					}
-		}}`, nonAdminUserId),
+			"userGroupDeleteViewerResp":{
+				"group": 
+				{
+					"info": {
+						"id": "${IDCHK=createdGroupId}",
+						"name": "M2020 Scientists",
+						"createdUnixSec": "${SECAGO=5}"
+					},
+					"viewers": { "users": [{"id": "user-viewerabc123"}] },
+					"members": {
+						"users": [
+							{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}
+						]
+					},
+					"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
+				}
+			}
+		}`,
 	)
 
 	u1NonAdmin.AddSendReqAction("Delete viewer user from user group",
 		`{"userGroupDeleteViewerReq":{"groupId": "${IDLOAD=createdGroupId}", "userViewerId": "user-viewerabc123"}}`,
-		fmt.Sprintf(`{"msgId":31,
+		`{"msgId":33,
 			"status": "WS_OK",
-				"userGroupDeleteViewerResp":{
-					"group": 
-					{
-						"info": {
-							"id": "${IDCHK=createdGroupId}",
-							"name": "M2020 Scientists",
-							"createdUnixSec": "${SECAGO=5}"
-						},
-						"viewers": {},
-						"members": {},
-						"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
-					}
-		}}`, nonAdminUserId),
+			"userGroupDeleteViewerResp":{
+				"group": 
+				{
+					"info": {
+						"id": "${IDCHK=createdGroupId}",
+						"name": "M2020 Scientists",
+						"createdUnixSec": "${SECAGO=5}"
+					},
+					"viewers": {},
+					"members": {
+						"users": [
+							{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}
+						]
+					},
+					"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
+				}
+			}
+		}`,
 	)
 
 	u1NonAdmin.AddSendReqAction("Delete non-existant viewer user from user group",
 		`{"userGroupDeleteViewerReq":{"groupId": "${IDLOAD=createdGroupId}", "userViewerId": "user-viewerabc123"}}`,
-		`{"msgId":32,
+		`{"msgId":34,
 			"status": "WS_BAD_REQUEST",
 			"errorText": "user-viewerabc123 is not a viewers.UserId",
 			"userGroupDeleteViewerResp":{
@@ -721,7 +861,7 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 
 	u1NonAdmin.AddSendReqAction("Delete non-existant viewer group from user group",
 		`{"userGroupDeleteViewerReq":{"groupId": "${IDLOAD=createdGroupId}", "groupViewerId": "group-viewabc123"}}`,
-		`{"msgId":33,
+		`{"msgId":35,
 			"status": "WS_BAD_REQUEST",
 			"errorText": "group-viewabc123 is not a viewers.GroupId",
 			"userGroupDeleteViewerResp":{
@@ -730,7 +870,7 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 
 	u1NonAdmin.AddSendReqAction("Delete non-existant member user from user group",
 		`{"userGroupDeleteMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "userMemberId": "user-abc123"}}`,
-		`{"msgId":34,
+		`{"msgId":36,
 			"status": "WS_BAD_REQUEST",
 			"errorText": "user-abc123 is not a members.UserId",
 			"userGroupDeleteMemberResp":{
@@ -739,7 +879,7 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 
 	u1NonAdmin.AddSendReqAction("Delete non-existant member group from user group",
 		`{"userGroupDeleteMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "groupMemberId": "group-abc123"}}`,
-		`{"msgId":35,
+		`{"msgId":37,
 			"status": "WS_BAD_REQUEST",
 			"errorText": "group-abc123 is not a members.GroupId",
 			"userGroupDeleteMemberResp":{
@@ -749,7 +889,7 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 	// Ensure this group admin still cant delete the group
 	u1NonAdmin.AddSendReqAction("Delete user group (no perm)",
 		`{"userGroupDeleteReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		`{"msgId":36,
+		`{"msgId":38,
 			"status": "WS_NO_PERMISSION",
 			"errorText": "UserGroupDeleteReq not allowed",
 			"userGroupDeleteResp":{}}`,
@@ -757,7 +897,7 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 
 	u1NonAdmin.AddSendReqAction("Get user groups for non-admin user again",
 		`{"userGroupReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		fmt.Sprintf(`{"msgId":37,"status":"WS_OK","userGroupResp":{
+		`{"msgId":39,"status":"WS_OK","userGroupResp":{
 			"group":{
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
@@ -765,10 +905,14 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": {},
-				"members": {},
-				"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
+				"members": {
+					"users": [
+						{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}
+					]
+				},
+				"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
 			}
-		}}`, nonAdminUserId),
+		}}`,
 	)
 
 	u1NonAdmin.CloseActionGroup([]string{}, userGroupWaitTime)
@@ -789,10 +933,15 @@ func testUserGroupAdminAddAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId st
 						"createdUnixSec": "${SECAGO=5}"
 					},
 					"viewers": {},
-					"members": { "users": [{"id": "user-abc999"}] },
+					"members": {
+						"users": [
+							{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"},
+							{"id": "user-abc999"}
+						]
+					},
 					"adminUsers": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}]
 				}
-		}}`, nonAdminUserId),
+		}}`, nonAdminUserId, nonAdminUserId),
 	)
 
 	u2.CloseActionGroup([]string{}, userGroupWaitTime)
@@ -800,17 +949,102 @@ func testUserGroupAdminAddAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId st
 }
 
 func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
-	// Finally, delete the group
-	u2.AddSendReqAction("Delete user group (no perm)",
+	// Add the group as a viewer of something...
+	u2.AddSendReqAction("Create element set so we can reference group",
+		`{"elementSetWriteReq": {
+			"elementSet": {
+				"name": "User2 ElementSet",
+				"lines": [
+					{
+						"Z":   14,
+						"M":   true
+					}
+				]
+			}
+		}}`,
+		`{"msgId":21, "status":"WS_OK", "elementSetWriteResp":{
+			"elementSet":{
+				"id":"${IDSAVE=u2CreatedElementSetId}",
+				"name":"User2 ElementSet",
+				"lines":[{"Z":14, "M":true}],
+				"owner": {
+					"creatorUser": {
+						"id": "${USERID}",
+						"name": "${IGNORE}",
+						"email": "${IGNORE}"
+					},
+					"createdUnixSec": "${SECAGO=3}"
+				}
+			}
+		}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	u2.AddSendReqAction("Add created group as viewer of an object",
+		`{"objectEditAccessReq": { "objectId": "${IDLOAD=u2CreatedElementSetId}", "objectType": 2, "addViewers": { "groupIds": [ "${IDLOAD=createdGroupId}" ] }}}`,
+		`{"msgId":22,"status":"WS_OK",
+			"objectEditAccessResp": {
+				"ownership": {
+					"id": "${IDCHK=u2CreatedElementSetId}",
+					"objectType": "OT_ELEMENT_SET",
+					"creatorUserId": "${USERID}",
+					"createdUnixSec": "${SECAGO=5}",
+					"viewers": {
+						"groupIds": [
+							"${IDCHK=createdGroupId}"
+						]
+					},
+					"editors": {
+						"userIds": [
+							"${USERID}"
+						]
+					}
+				}
+			}
+		}`,
+	)
+
+	u2.AddSendReqAction("Delete user group (should fail due to reference)",
 		`{"userGroupDeleteReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		`{"msgId":21,
+		`{"msgId":23,
+			"status": "WS_SERVER_ERROR",
+			"errorText": "Cannot delete user group because it is a member/viewer of 1 items",
+			"userGroupDeleteResp":{}}`,
+	)
+
+	//
+	u2.AddSendReqAction("Remove the group as a viewer of object",
+		`{"objectEditAccessReq": { "objectId": "${IDLOAD=u2CreatedElementSetId}", "objectType": 2, "deleteViewers": { "groupIds": [ "${IDLOAD=createdGroupId}" ] }}}`,
+		`{"msgId":24,"status":"WS_OK",
+			"objectEditAccessResp": {
+				"ownership": {
+					"id": "${IDCHK=u2CreatedElementSetId}",
+					"objectType": "OT_ELEMENT_SET",
+					"creatorUserId": "${USERID}",
+					"createdUnixSec": "${SECAGO=5}",
+					"viewers": {},
+					"editors": {
+						"userIds": [
+							"${USERID}"
+						]
+					}
+				}
+			}
+		}`,
+	)
+
+	u2.AddSendReqAction("Delete user group (expect success)",
+		`{"userGroupDeleteReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
+		`{"msgId":25,
 			"status": "WS_OK",
 			"userGroupDeleteResp":{}}`,
 	)
 
 	u2.AddSendReqAction("List user groups again",
 		`{"userGroupListReq":{}}`,
-		`{"msgId":22,"status":"WS_OK","userGroupListResp":{}}`,
+		`{"msgId":26,"status":"WS_OK","userGroupListResp":{}}`,
 	)
 
 	u2.CloseActionGroup([]string{}, userGroupWaitTime)
@@ -1023,6 +1257,103 @@ func testUserGroupViewerLeavingGroup(apiHost string) {
 	wstestlib.ExecQueuedActions(&u1)
 }
 
+func testUserGroupAccessPromotionDemotion(apiHost string) {
+	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test1Username,
+		Pass: test1Password,
+	})
+
+	u1.CloseActionGroup([]string{}, 10)
+	wstestlib.ExecQueuedActions(&u1)
+
+	nonAdminUserId := u1.GetUserId()
+
+	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test2Username,
+		Pass: test2Password,
+	})
+
+	u2.AddSendReqAction("Create valid user group 4",
+		`{"userGroupCreateReq":{"name": "PIXL Sci"}}`,
+		`{"msgId":1,"status":"WS_OK","userGroupCreateResp":{
+			"group": {
+				"info": {
+					"id": "${IDSAVE=createdGroupId4}",
+					"name": "PIXL Sci",
+					"createdUnixSec": "${SECAGO=5}"
+				},
+				"viewers": {},
+				"members": {}
+			}
+		}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	// Add non-admin user to this group
+	u2.AddSendReqAction("Add non-admin user as viewer of group",
+		fmt.Sprintf(`{"userGroupAddViewerReq":{"groupId": "${IDLOAD=createdGroupId4}", "userViewerId": "%v"}}`, nonAdminUserId),
+		fmt.Sprintf(`{"msgId":2,
+			"status": "WS_OK",
+				"userGroupAddViewerResp":{
+					"group": 
+					{
+						"info": {
+							"id": "${IDCHK=createdGroupId4}",
+							"name": "PIXL Scientists",
+							"createdUnixSec": "${SECAGO=5}"
+						},
+						"viewers": { "users": [{"id": "%v", "name":"${REGEXMATCH=Test}","email":"${REGEXMATCH=.+@pixlise\\.org}"}] },
+						"members": {}
+					}
+		}}`, nonAdminUserId),
+	)
+
+	u2.AddSendReqAction("Add non-admin user as member of group, expecting remove from viewers",
+		fmt.Sprintf(`{"userGroupAddMemberReq":{"groupId": "${IDLOAD=createdGroupId4}", "userMemberId": "%v"}}`, nonAdminUserId),
+		fmt.Sprintf(`{"msgId":3,
+			"status": "WS_OK",
+				"userGroupAddMemberResp":{
+					"group": 
+					{
+						"info": {
+							"id": "${IDCHK=createdGroupId4}",
+							"name": "PIXL Scientists",
+							"createdUnixSec": "${SECAGO=5}"
+						},
+						"viewers": {},
+						"members": { "users": [{"id": "%v", "name":"${REGEXMATCH=Test}","email":"${REGEXMATCH=.+@pixlise\\.org}"}] }
+					}
+		}}`, nonAdminUserId),
+	)
+
+	u2.AddSendReqAction("Add non-admin user as viewer of group, expecting remove from members",
+		fmt.Sprintf(`{"userGroupAddViewerReq":{"groupId": "${IDLOAD=createdGroupId4}", "userViewerId": "%v"}}`, nonAdminUserId),
+		fmt.Sprintf(`{"msgId":4,
+			"status": "WS_OK",
+				"userGroupAddViewerResp":{
+					"group": 
+					{
+						"info": {
+							"id": "${IDCHK=createdGroupId4}",
+							"name": "PIXL Scientists",
+							"createdUnixSec": "${SECAGO=5}"
+						},
+						"viewers": { "users": [{"id": "%v", "name":"${REGEXMATCH=Test}","email":"${REGEXMATCH=.+@pixlise\\.org}"}] },
+						"members": {}
+					}
+		}}`, nonAdminUserId),
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+}
+
 func testJoinRequestNotificationLive(apiHost string) {
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
 	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
@@ -1069,7 +1400,7 @@ func testJoinRequestNotificationLive(apiHost string) {
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": {},
-				"members": {},
+				"members": { "users": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}] },
 				"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
 			}
 		}}`,
@@ -1256,7 +1587,7 @@ func setupGroup5(apiHost string) {
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": {},
-				"members": {},
+				"members": { "users": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}] },
 				"adminUsers": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}]
 			}
 		}}`,
