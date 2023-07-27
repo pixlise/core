@@ -136,13 +136,18 @@ func testImageGet_OK(apiHost string, jwt string) {
 	status, body, err := doGet("http", apiHost, imagePath, "", jwt)
 	failIf(err != nil, err)
 	img, format, err := image.Decode(bytes.NewReader(body))
-	failIf(err != nil || format != "png" || img.Bounds().Max.X != 752 || img.Bounds().Max.Y != 580 || status != 200,
-		fmt.Errorf("Bad image response! Status %v, body %v image: %vx%v. Error: %v", status, format, img.Bounds().Max.X, img.Bounds().Max.Y, err),
+	var imgW, imgH int
+	if img != nil {
+		imgW = img.Bounds().Max.X
+		imgH = img.Bounds().Max.Y
+	}
+	failIf(err != nil || format != "png" || status != 200 || imgW != 752 || imgH != 580,
+		fmt.Errorf("Bad image response! Status %v, format %v image: %vx%v. Error: %v", status, format, imgW, imgH, err),
 	)
 }
 
-func testImageGetThumbnail_OK(apiHost string, jwt string) {
-	status, body, err := doGet("http", apiHost, imagePath, "thumbnail=true", jwt)
+func testImageGetScaled_OK(apiHost string, jwt string, minWidthPx int, minWidthPxExpected int, minHeightPxExpected int) {
+	status, body, err := doGet("http", apiHost, imagePath, fmt.Sprintf("minwidth=%v", minWidthPx), jwt)
 	failIf(err != nil, err)
 	failIf(status != 200, fmt.Errorf("Unexpected status: %v. Body: %v", status, string(body)))
 	/*
@@ -152,7 +157,7 @@ func testImageGetThumbnail_OK(apiHost string, jwt string) {
 	img, format, err := image.Decode(bytes.NewReader(body))
 	failIf(err != nil, err)
 
-	failIf(format != "png" || img.Bounds().Max.X != 200 || img.Bounds().Max.Y != 154,
-		fmt.Errorf("Bad image response! Status %v, body %v image: %vx%v. Error: %v", status, format, img.Bounds().Max.X, img.Bounds().Max.Y, err),
+	failIf(format != "png" || img.Bounds().Max.X != minWidthPxExpected || img.Bounds().Max.Y != minHeightPxExpected,
+		fmt.Errorf("Bad image response! Expected %vx%v, got: status %v, body %v image: %vx%v. Error: %v", minWidthPxExpected, minHeightPxExpected, status, format, img.Bounds().Max.X, img.Bounds().Max.Y, err),
 	)
 }

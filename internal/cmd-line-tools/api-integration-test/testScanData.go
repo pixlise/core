@@ -1108,17 +1108,51 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 	testImageGet_OK(apiHost, imageGetJWT)
 
 	// Delete cached images from S3
-	err := apiStorageFileAccess.DeleteObject(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-thumbnail.png")
+	err := apiStorageFileAccess.DeleteObject(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-width200.png")
+	failIf(err != nil && !apiStorageFileAccess.IsNotFoundError(err), fmt.Errorf("Failed to delete previous cached image for GET thumbnail test: %v", err))
+	err = apiStorageFileAccess.DeleteObject(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-width400.png")
+	failIf(err != nil && !apiStorageFileAccess.IsNotFoundError(err), fmt.Errorf("Failed to delete previous cached image for GET thumbnail test: %v", err))
+	err = apiStorageFileAccess.DeleteObject(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-width1000.png")
+	failIf(err != nil && !apiStorageFileAccess.IsNotFoundError(err), fmt.Errorf("Failed to delete previous cached image for GET thumbnail test: %v", err))
+	err = apiStorageFileAccess.DeleteObject(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-width1200.png")
 	failIf(err != nil && !apiStorageFileAccess.IsNotFoundError(err), fmt.Errorf("Failed to delete previous cached image for GET thumbnail test: %v", err))
 
+	////////////////////////////////
+	// Generate small thumbnail!
+
 	// Do the GET call, which should generate the image
-	testImageGetThumbnail_OK(apiHost, imageGetJWT)
+	testImageGetScaled_OK(apiHost, imageGetJWT, 12, 200, 154)
 
 	// Check that the file was created
-	exists, err := apiStorageFileAccess.ObjectExists(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-thumbnail.png")
+	exists, err := apiStorageFileAccess.ObjectExists(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-width200.png")
 	failIf(err != nil, fmt.Errorf("Failed to check generated GET thumbnail exists: %v", err))
 	failIf(!exists, fmt.Errorf("generated GET thumbnail not found in Image-Cache/"))
 
 	// Now run it again, because this time it should be using the cached copy
-	testImageGetThumbnail_OK(apiHost, imageGetJWT)
+	testImageGetScaled_OK(apiHost, imageGetJWT, 12, 200, 154)
+
+	////////////////////////////////
+	// Now try larger image!
+
+	// Do the GET call, which should generate the image
+	testImageGetScaled_OK(apiHost, imageGetJWT, 450, 400, 308)
+
+	// Check that the file was created
+	exists, err = apiStorageFileAccess.ObjectExists(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-width400.png")
+	failIf(err != nil, fmt.Errorf("Failed to check generated GET thumbnail exists: %v", err))
+	failIf(!exists, fmt.Errorf("generated GET thumbnail not found in Image-Cache/"))
+
+	// Now run it again, because this time it should be using the cached copy
+	testImageGetScaled_OK(apiHost, imageGetJWT, 450, 400, 308)
+
+	////////////////////////////////
+	// Check that we don't scale up!
+	testImageGetScaled_OK(apiHost, imageGetJWT, 1050, 752, 580)
+
+	// Check that the file was NOT created
+	exists, err = apiStorageFileAccess.ObjectExists(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-width1000.png")
+	failIf(err == nil && exists, fmt.Errorf("unexpected 1000 sized GET thumbnail not found in Image-Cache/. Error was: %v", err))
+
+	exists, err = apiStorageFileAccess.ObjectExists(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-width1200.png")
+	failIf(err == nil && exists, fmt.Errorf("unexpected 1200 sized GET thumbnail not found in Image-Cache/. Error was: %v", err))
 }

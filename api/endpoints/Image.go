@@ -26,6 +26,7 @@ import (
 	"image/color"
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -117,11 +118,32 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 		finalFileName = addFileNameSuffix(finalFileName, "-withloc")
 	}
 
-	isThumb, err := getBoolValue(params.PathParams["thumbnail"])
-	if err != nil {
-		return nil, "", "", "", 0, err
-	} else if isThumb {
-		finalFileName = addFileNameSuffix(finalFileName, "-thumbnail")
+	var minWidthPx = 0
+	if minWStr, ok := params.PathParams["minwidth"]; ok {
+		// We DO have a value set for this, read it
+		minWidthPx, err = strconv.Atoi(minWStr)
+		if err != nil {
+			return nil, "", "", "", 0, err
+		} else {
+			// We got a min width, round it to our step size
+			if minWidthPx < 0 {
+				minWidthPx = 0
+			}
+			step := minWidthPx / imageSizeStepPx
+
+			if step <= 0 {
+				step = 1
+			}
+
+			minWidthPx = imageSizeStepPx * step
+
+			// Only do this if we're not scaling it up!
+			if minWidthPx < int(dbImage.Width) {
+				finalFileName = addFileNameSuffix(finalFileName, fmt.Sprintf("-width%v", minWidthPx))
+			} else {
+				minWidthPx = 0 // pretend user didn't ask to scale it
+			}
+		}
 	}
 
 	statuscode := 200
@@ -131,7 +153,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 
 	// Check if the file exists, as we may be able to generate a version of the underlying file to satisfy the request
 	var s3Path string
-	if isThumb || showLocations {
+	if minWidthPx > 0 || showLocations {
 		s3Path = filepaths.GetImageCacheFilePath(path.Join(scanID, finalFileName))
 	} else {
 		s3Path = filepaths.GetImageFilePath(path.Join(scanID, finalFileName))
@@ -142,14 +164,14 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 		Key:    aws.String(s3Path),
 	})
 	if err != nil {
-		if isThumb || showLocations {
+		if minWidthPx > 0 || showLocations {
 			// If the file doesn't exist, check if the base file name exists, because we may just need to generate
 			// a modified version of it
 			genS3Path := filepaths.GetImageFilePath(path.Join(scanID, requestedFileName))
 
 			// Original file exists, generate this modified copy and cache it back in S3 for the rest of this
 			// function to find!
-			err = generateImageVersion(genS3Path, isThumb, showLocations, s3Path, params.Svcs)
+			err = generateImageVersion(genS3Path, minWidthPx, showLocations, s3Path, params.Svcs)
 		}
 
 		if err != nil {
@@ -211,7 +233,12 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 	return result, requestedFileName, etag, lm.String(), 0, err
 }
 
-func generateImageVersion(s3Path string, thumbnail bool, showLocations bool, finalFilePath string, svcs *services.APIServices) error {
+const imageSizeStepPx = 200
+
+func generateImageVersion(s3Path string, minWidthPx int, showLocations bool, finalFilePath string, svcs *services.APIServices) error {
+	if minWidthPx <= 0 {
+		return fmt.Errorf("generateImageVersion minWidthPx too small: %v", minWidthPx)
+	}
 	imgBytes, err := svcs.FS.ReadObject(svcs.Config.DatasetsBucket, s3Path)
 	if err != nil {
 		return err
@@ -251,9 +278,8 @@ func generateImageVersion(s3Path string, thumbnail bool, showLocations bool, fin
 		}
 	}
 
-	if thumbnail {
-		// We want it to be a max of 200px across
-		img = imageedit.ScaleImage(img, 200)
+	if minWidthPx > 0 {
+		img = imageedit.ScaleImage(img, minWidthPx)
 	}
 
 	// Now we're done, read the bytes out in the right format
