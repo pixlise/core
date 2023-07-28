@@ -60,13 +60,19 @@ func HandleElementSetListReq(req *protos.ElementSetListReq, hctx wsHelpers.Handl
 		for _, l := range item.Lines {
 			z = append(z, l.Z)
 		}
-		itemMap[item.Id] = &protos.ElementSetSummary{
+
+		summary := &protos.ElementSetSummary{
 			Id:              item.Id,
 			Name:            item.Name,
 			AtomicNumbers:   z,
 			ModifiedUnixSec: item.ModifiedUnixSec,
-			Owner:           wsHelpers.MakeOwnerSummary(idToOwner[item.Id], hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper),
 		}
+
+		if owner, ok := idToOwner[item.Id]; ok {
+			summary.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+		}
+
+		itemMap[item.Id] = summary
 	}
 
 	return &protos.ElementSetListResp{
