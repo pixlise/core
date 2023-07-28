@@ -137,4 +137,5 @@ func runTests(apiHost string) {
 	testLogMsgs(apiHost)
 	testScanData(apiHost, 0 /*3 for proper testing*/)
 	testDetectorConfig(apiHost)
+	testROI(apiHost)
 }

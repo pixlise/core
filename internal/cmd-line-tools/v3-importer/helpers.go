@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func saveOwnershipItem(objectId string, objectType protos.ObjectType, userId string, timeStampUnixSec uint64, dest *mongo.Database) error {
+func saveOwnershipItem(objectId string, objectType protos.ObjectType, userId string, timeStampUnixSec uint32, dest *mongo.Database) error {
 	userId = utils.FixUserId(userId)
 
 	ownerItem := &protos.OwnershipItem{

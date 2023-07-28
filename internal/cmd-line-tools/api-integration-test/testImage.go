@@ -13,6 +13,7 @@ import (
 
 	"github.com/pixlise/core/v3/core/auth0login"
 	"github.com/pixlise/core/v3/core/wstestlib"
+	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
 const imagePath = "images/download/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"
@@ -31,7 +32,8 @@ func testImageGet_PreWS(apiHost string) {
 	testImageGet_NoJWT(apiHost)
 	testImageGet_BadPath(apiHost, imageGetJWT)
 
-	seedDBScanData()
+	scanId := seedDBScanData()
+	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, nil, nil)
 	seedImages()
 	seedImageLocations()
 

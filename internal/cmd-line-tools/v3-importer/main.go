@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
@@ -30,6 +31,7 @@ func main() {
 	var srcEnvName string
 	var destEnvName string
 	var auth0Domain, auth0ClientId, auth0Secret string
+	var limitToDatasetIDs string
 
 	flag.StringVar(&sourceMongoSecret, "sourceMongoSecret", "", "Source mongo DB secret")
 	flag.StringVar(&destMongoSecret, "destMongoSecret", "", "Destination mongo DB secret")
@@ -43,6 +45,7 @@ func main() {
 	flag.StringVar(&auth0Domain, "auth0Domain", "", "Auth0 domain for management API")
 	flag.StringVar(&auth0ClientId, "auth0ClientId", "", "Auth0 client id for management API")
 	flag.StringVar(&auth0Secret, "auth0Secret", "", "Auth0 secret for management API")
+	flag.StringVar(&limitToDatasetIDs, "limitToDatasetIDs", "", "Comma-separated dataset IDs to limit import to (for speed/testing)")
 
 	flag.Parse()
 
@@ -187,7 +190,7 @@ func main() {
 	fmt.Println("==========================================")
 
 	fmt.Println("Datasets...")
-	err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB)
+	err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB, strings.Split(limitToDatasetIDs, ","))
 	if err != nil {
 		log.Fatal(err)
 	}

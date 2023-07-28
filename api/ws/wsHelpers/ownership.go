@@ -26,7 +26,7 @@ func MakeOwnerForWrite(writable HasOwnerField, s *melody.Session, svcs *services
 */
 
 func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, hctx HandlerContext) (*protos.OwnershipItem, error) {
-	ts := uint64(hctx.Svcs.TimeStamper.GetTimeNowSec())
+	ts := uint32(hctx.Svcs.TimeStamper.GetTimeNowSec())
 
 	ownerItem := &protos.OwnershipItem{
 		Id:             objectId,

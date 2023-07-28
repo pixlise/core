@@ -122,7 +122,7 @@ func migrateRGBMixes(userContentBucket string, userContentFiles []string, fs fil
 						},
 					}
 
-					err = saveOwnershipItem(destGroup.Id, protos.ObjectType_OT_EXPRESSION_GROUP, item.Creator.UserID, uint64(item.CreatedUnixTimeSec), dest)
+					err = saveOwnershipItem(destGroup.Id, protos.ObjectType_OT_EXPRESSION_GROUP, item.Creator.UserID, uint32(item.CreatedUnixTimeSec), dest)
 					if err != nil {
 						return err
 					}

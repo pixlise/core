@@ -18,7 +18,7 @@ func SendNotification(userIds []string, notification *protos.UserNotification, h
 	}
 
 	// Set some basic fields
-	notification.TimeStampUnixSec = uint64(hctx.Svcs.TimeStamper.GetTimeNowSec())
+	notification.TimeStampUnixSec = uint32(hctx.Svcs.TimeStamper.GetTimeNowSec())
 
 	// Create an update message to send
 	wsMsg := protos.WSMessage{

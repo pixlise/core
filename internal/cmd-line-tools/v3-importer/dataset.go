@@ -6,6 +6,7 @@ import (
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -94,7 +95,7 @@ type SrcDatasetConfig struct {
 	Datasets []SrcSummaryFileData `json:"datasets"`
 }
 
-func migrateDatasets(configBucket string, dataBucket string, destDataBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
+func migrateDatasets(configBucket string, dataBucket string, destDataBucket string, fs fileaccess.FileAccess, dest *mongo.Database, limitToDatasetIds []string) error {
 	// Drop images collection
 	coll := dest.Collection(dbCollections.ImagesName)
 	err := coll.Drop(context.TODO())
@@ -125,13 +126,11 @@ func migrateDatasets(configBucket string, dataBucket string, destDataBucket stri
 
 	destItems := []interface{}{}
 	for _, dataset := range summaries.Datasets {
-		/*if
-			dataset.DatasetID != "012121_83_loose_powder" &&
-			dataset.DatasetID != "048300551" &&
-			dataset.DatasetID != "089063943" &&
-			dataset.DatasetID != "combined253" {
+		if len(limitToDatasetIds) > 0 && !utils.ItemInSlice(dataset.DatasetID, limitToDatasetIds) {
+			fmt.Printf("Skipping scan: %v...\n", dataset.DatasetID)
 			continue
-		}*/
+		}
+
 		fmt.Printf("Importing scan: %v...\n", dataset.DatasetID)
 
 		instrument := protos.ScanInstrument_PIXL_FM
@@ -165,7 +164,7 @@ func migrateDatasets(configBucket string, dataBucket string, destDataBucket stri
 			Id:               dataset.DatasetID,
 			Title:            dataset.Title,
 			Description:      "",
-			TimestampUnixSec: uint64(dataset.CreationUnixTimeSec),
+			TimestampUnixSec: uint32(dataset.CreationUnixTimeSec),
 			Instrument:       instrument,
 			InstrumentConfig: dataset.DetectorConfig,
 			DataTypes:        []*protos.ScanItem_ScanTypeCount{},
@@ -199,7 +198,7 @@ func migrateDatasets(configBucket string, dataBucket string, destDataBucket stri
 		// Each scan needs an ownership item to define who can view/edit it
 		// Prefix the ID with "scan_" because the dataset IDs are likely not that long, and we also want them
 		// to differ from our random ones
-		err = saveOwnershipItem("scan_"+dataset.DatasetID, protos.ObjectType_OT_SCAN, "", uint64(dataset.CreationUnixTimeSec), dest)
+		err = saveOwnershipItem("scan_"+dataset.DatasetID, protos.ObjectType_OT_SCAN, "", uint32(dataset.CreationUnixTimeSec), dest)
 		if err != nil {
 			return err
 		}

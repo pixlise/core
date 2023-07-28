@@ -30,6 +30,8 @@ func CheckFieldLength[T any](field []T, fieldName string, minLength int, maxLeng
 		if len(field) > maxLength {
 			return errorwithstatus.MakeBadRequestError(fmt.Errorf(`%v is too long`, fieldName))
 		}
+	} else if minLength > 0 {
+		return errorwithstatus.MakeBadRequestError(fmt.Errorf(`%v must contain at least %v items`, fieldName, minLength))
 	}
 
 	return nil

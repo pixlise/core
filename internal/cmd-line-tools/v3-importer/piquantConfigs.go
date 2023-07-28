@@ -34,7 +34,7 @@ func migratePiquantVersion(configBucket string, fs fileaccess.FileAccess, dest *
 	outVer := &protos.PiquantVersion{
 		Id:              "current",
 		Version:         ver.Version,
-		ModifiedUnixSec: uint64(ver.ChangedUnixTimeSec),
+		ModifiedUnixSec: uint32(ver.ChangedUnixTimeSec),
 		ModifierUserId:  utils.FixUserId(ver.Creator.UserID),
 	}
 	_, err = coll.InsertOne(context.TODO(), outVer)

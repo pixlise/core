@@ -203,10 +203,10 @@ func makeUser(from *management.User, db *mongo.Database) *protos.Auth0UserDetail
 
 	// These may not be there...
 	if from.CreatedAt != nil {
-		user.CreatedUnixSec = uint64(from.GetCreatedAt().Unix())
+		user.CreatedUnixSec = uint32(from.GetCreatedAt().Unix())
 	}
 	if from.LastLogin != nil {
-		user.LastLoginUnixSec = uint64(from.GetLastLogin().Unix())
+		user.LastLoginUnixSec = uint32(from.GetLastLogin().Unix())
 	}
 
 	userDBItem, err := wsHelpers.GetDBUser(userID, db)

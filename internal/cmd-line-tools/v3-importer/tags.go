@@ -66,7 +66,7 @@ func migrateTags(userContentBucket string, userContentFiles []string, fs fileacc
 						DatasetID: item.DatasetID,
 					}
 
-					err = saveOwnershipItem(destTag.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, uint64(item.DateCreated), dest)
+					err = saveOwnershipItem(destTag.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, uint32(item.DateCreated), dest)
 					if err != nil {
 						return err
 					}

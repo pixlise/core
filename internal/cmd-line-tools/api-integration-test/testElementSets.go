@@ -31,7 +31,7 @@ func testElementSets(apiHost string) {
 				"lines": []
 			}
 		}}`,
-		`{"msgId":3, "status":"WS_BAD_REQUEST", "errorText": "Lines length is invalid", "elementSetWriteResp":{}}`,
+		`{"msgId":3, "status":"WS_BAD_REQUEST", "errorText": "Lines must contain at least 1 items", "elementSetWriteResp":{}}`,
 	)
 
 	u1.AddSendReqAction("Delete non-existant item",
@@ -85,6 +85,7 @@ func testElementSets(apiHost string) {
 				"id":"${IDSAVE=u1CreatedElementSetId1}",
 				"name":"User1 ElementSet1",
 				"lines":[{"Z":14, "M":true}, {"Z":16, "M":true}],
+				"modifiedUnixSec": "${SECAGO=3}",
 				"owner": {
 					"creatorUser": {
 						"id": "${USERID}",
@@ -167,6 +168,7 @@ func testElementSets(apiHost string) {
 						"M":   true
 					}
 				],
+				"modifiedUnixSec": "${SECAGO=3}",
 				"owner": {
 					"creatorUser": {
 						"id": "${USERID}",
@@ -197,7 +199,7 @@ func testElementSets(apiHost string) {
 		`{
 			"msgId": 8,
 			"status": "WS_BAD_REQUEST",
-			"errorText": "Name length is invalid",
+			"errorText": "Name is too long",
 			"elementSetWriteResp": {}
 		}`,
 	)
@@ -227,6 +229,7 @@ func testElementSets(apiHost string) {
 						"M":   true
 					}
 				],
+				"modifiedUnixSec": "${SECAGO=3}",
 				"owner": {
 					"creatorUser": {
 						"id": "${USERID}",
@@ -251,7 +254,7 @@ func testElementSets(apiHost string) {
 						"M":   true
 					}
 				],
-				"modifedUnixSec": "${SECAGO=3}",
+				"modifiedUnixSec": "${SECAGO=3}",
 				"owner": {
 					"creatorUser": {
 						"id": "${USERID}",
@@ -277,7 +280,7 @@ func testElementSets(apiHost string) {
 						"atomicNumbers": [
 							17
 						],
-						"modifedUnixSec": "${SECAGO=3}",
+						"modifiedUnixSec": "${SECAGO=3}",
 						"owner": {
 							"creatorUser": {
 								"id": "${USERID}",
@@ -352,7 +355,7 @@ func testElementSets(apiHost string) {
 						"M":   true
 					}
 				],
-				"modifedUnixSec": "${SECAGO=6}",
+				"modifiedUnixSec": "${SECAGO=6}",
 				"owner": {
 					"creatorUser": {
 						"id": "${USERID}",
@@ -378,7 +381,7 @@ func testElementSets(apiHost string) {
 						"atomicNumbers": [
 							17
 						],
-						"modifedUnixSec": "${SECAGO=6}",
+						"modifiedUnixSec": "${SECAGO=6}",
 						"owner": {
 							"creatorUser": {
 								"id": "${USERID}",
@@ -413,7 +416,7 @@ func testElementSets(apiHost string) {
 						"atomicNumbers": [
 							17
 						],
-						"modifedUnixSec": "${SECAGO=6}",
+						"modifiedUnixSec": "${SECAGO=6}",
 						"owner": {
 							"creatorUser": {
 								"id": "%v",
@@ -440,7 +443,7 @@ func testElementSets(apiHost string) {
 						"M":   true
 					}
 				],
-				"modifedUnixSec": "${SECAGO=6}",
+				"modifiedUnixSec": "${SECAGO=6}",
 				"owner": {
 					"creatorUser": {
 						"id": "%v",

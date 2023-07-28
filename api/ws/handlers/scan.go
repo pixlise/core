@@ -7,6 +7,7 @@ import (
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
+	"github.com/pixlise/core/v3/core/indexcompression"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
@@ -63,7 +64,7 @@ func beginDatasetFileReqForRange(scanId string, entryRange *protos.ScanEntryRang
 	}
 
 	// Decode the range
-	indexes, err := wsHelpers.MakeIndexList(entryRange.Indexes, len(exprPB.Locations))
+	indexes, err := indexcompression.DecodeIndexList(entryRange.Indexes, len(exprPB.Locations))
 	if err != nil {
 		return nil, []uint32{}, err
 	}

@@ -146,32 +146,43 @@ func compare(received any, expected any, ctx compareParams) error {
 			}
 		}
 
+		expToCompare := ""
+		recValAsStr := ""
 		switch recVal := received.(type) {
-		// NOTE: it looks like time stamps (which are uint64) get converted to string instead of int
-		// because that wouldn't fit into a javascript "number" (aka float64). So we don't check this
-		// case right now, could add it on as needed basis
-		//case float64:
+		case float64:
+			// NOTE: timestamps were uint64 but because the JS proto serialiser creates strings from them
+			// (since float64 doesn't have enough precision to store it...) we were handling time as strings
+			// for a while, but now switched all our timestamps to uint32 because who knows who will be around
+			// in 2106. Sorry! Maybe JS will support an integer type by then? :)
+			if strings.Contains(expVal, "SECAGO") || strings.Contains(expVal, "SECAFTER") {
+				recValAsStr = fmt.Sprintf("%d", int64(recVal))
+				expToCompare, err = compareExpectedString(expVal, recValAsStr, ctx)
+				if err != nil {
+					return err
+				}
+			}
 		case string:
-			expToCompare, err := compareExpectedString(expVal, recVal, ctx)
+			recValAsStr = recVal
+			expToCompare, err = compareExpectedString(expVal, recVal, ctx)
 			if err != nil {
 				return err
 			}
-
-			if expToCompare != recVal {
-				// They don't match!
-				if expToCompare == expVal {
-					return fmt.Errorf(`expected "%v", received "%v"`, expToCompare, recVal)
-				} else {
-					// The expected string has changed while being processed
-					return fmt.Errorf(`expected "%v" (raw string: "%v"), received "%v"`, expToCompare, expVal, recVal)
-				}
-			}
-
-			// If we got this far, they are considered a match
-			return nil
 		default:
 			return fmt.Errorf(`expected "%v", received "%v"`, expVal, recVal)
 		}
+
+		if expToCompare != recValAsStr {
+			// They don't match!
+			if expToCompare == expVal {
+				return fmt.Errorf(`expected "%v", received "%v"`, expToCompare, recValAsStr)
+			} else {
+				// The expected string has changed while being processed
+				return fmt.Errorf(`expected "%v" (raw string: "%v"), received "%v"`, expToCompare, expVal, recValAsStr)
+			}
+		}
+
+		// If we got this far, they are considered a match
+		return nil
 	case map[string]any:
 		switch recVal := received.(type) {
 		case map[string]any:

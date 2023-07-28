@@ -59,7 +59,7 @@ func RunFullAccessTest(apiHost string, userId string, groupDepth int, noAccessCa
 					group := &protos.UserGroupDB{
 						Id:             fmt.Sprintf("user-group-%v", g),
 						Name:           fmt.Sprintf("Group-%v", g),
-						CreatedUnixSec: uint64(1234567890 + g),
+						CreatedUnixSec: uint32(1234567890 + g),
 					}
 
 					groupList := &protos.UserGroupList{

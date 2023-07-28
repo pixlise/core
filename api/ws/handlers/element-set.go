@@ -61,11 +61,11 @@ func HandleElementSetListReq(req *protos.ElementSetListReq, hctx wsHelpers.Handl
 			z = append(z, l.Z)
 		}
 		itemMap[item.Id] = &protos.ElementSetSummary{
-			Id:             item.Id,
-			Name:           item.Name,
-			AtomicNumbers:  z,
-			ModifedUnixSec: item.ModifedUnixSec,
-			Owner:          wsHelpers.MakeOwnerSummary(idToOwner[item.Id], hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper),
+			Id:              item.Id,
+			Name:            item.Name,
+			AtomicNumbers:   z,
+			ModifiedUnixSec: item.ModifiedUnixSec,
+			Owner:           wsHelpers.MakeOwnerSummary(idToOwner[item.Id], hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper),
 		}
 	}
 
@@ -75,13 +75,10 @@ func HandleElementSetListReq(req *protos.ElementSetListReq, hctx wsHelpers.Handl
 }
 
 func validateElementSet(elementSet *protos.ElementSet) error {
-	if len(elementSet.Name) <= 0 || len(elementSet.Name) > 50 {
-		return errors.New("Name length is invalid")
+	if err := wsHelpers.CheckStringField(&elementSet.Name, "Name", 1, 50); err != nil {
+		return err
 	}
-	if len(elementSet.Lines) <= 0 || len(elementSet.Lines) > 118 /*Max Z*/ {
-		return errors.New("Lines length is invalid")
-	}
-	return nil
+	return wsHelpers.CheckFieldLength(elementSet.Lines, "Lines", 1, 118 /*Max Z*/)
 }
 
 func createElementSet(elementSet *protos.ElementSet, hctx wsHelpers.HandlerContext) (*protos.ElementSet, error) {
@@ -102,6 +99,7 @@ func createElementSet(elementSet *protos.ElementSet, hctx wsHelpers.HandlerConte
 	if err != nil {
 		return nil, err
 	}
+	elementSet.ModifiedUnixSec = ownerItem.CreatedUnixSec
 
 	wc := writeconcern.New(writeconcern.WMajority())
 	rc := readconcern.Snapshot()
@@ -163,7 +161,8 @@ func updateElementSet(elementSet *protos.ElementSet, hctx wsHelpers.HandlerConte
 	}
 
 	// Update modified time
-	update = append(update, bson.E{Key: "modifedUnixSec", Value: hctx.Svcs.TimeStamper.GetTimeNowSec()})
+	dbItem.ModifiedUnixSec = uint32(hctx.Svcs.TimeStamper.GetTimeNowSec())
+	update = append(update, bson.E{Key: "modifiedUnixSec", Value: dbItem.ModifiedUnixSec})
 
 	// It's valid, update the DB
 	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.ElementSetsName).UpdateByID(ctx, elementSet.Id, bson.D{{Key: "$set", Value: update}})

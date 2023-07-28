@@ -8,6 +8,7 @@ import (
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/indexcompression"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -84,32 +85,34 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 
 					allItems[saveId] = item
 
-					locIdxs := []uint32{}
-					for _, i := range item.LocationIndexes {
-						locIdxs = append(locIdxs, uint32(i))
-					}
-
-					pixelIdxs := []uint32{}
-					for _, i := range item.PixelIndexes {
-						pixelIdxs = append(pixelIdxs, uint32(i))
-					}
 					tags := item.Tags
 					if tags == nil {
 						tags = []string{}
 					}
+
+					locIdxs, err := indexcompression.EncodeIndexList(item.LocationIndexes)
+					if err != nil {
+						return fmt.Errorf("ROI %v: location list error: %v", saveId, err)
+					}
+					pixIdxs, err := indexcompression.EncodeIndexList(item.PixelIndexes)
+					if err != nil {
+						return fmt.Errorf("ROI %v: pixel list error: %v", saveId, err)
+					}
+
 					destROI := protos.ROIItem{
-						Id:              saveId,
-						ScanId:          scanId,
-						Name:            item.Name,
-						Description:     item.Description,
-						Tags:            tags,
-						LocationIndexes: locIdxs,
-						ImageName:       item.ImageName,
-						PixelIndexes:    pixelIdxs,
+						Id:                     saveId,
+						ScanId:                 scanId,
+						Name:                   item.Name,
+						Description:            item.Description,
+						Tags:                   tags,
+						LocationIndexesEncoded: locIdxs,
+						ImageName:              item.ImageName,
+						PixelIndexesEncoded:    pixIdxs,
+						ModifiedUnixSec:        uint32(item.CreatedUnixTimeSec),
 						// MistROIItem
 					}
 
-					err = saveOwnershipItem(destROI.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, uint64(item.CreatedUnixTimeSec), dest)
+					err = saveOwnershipItem(destROI.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, uint32(item.CreatedUnixTimeSec), dest)
 					if err != nil {
 						return err
 					}

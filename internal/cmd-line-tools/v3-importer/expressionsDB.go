@@ -145,7 +145,7 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database) 
 			Tags:           tags,
 		}
 
-		err = saveOwnershipItem(destExpr.Id, protos.ObjectType_OT_ROI, expr.Origin.Creator.UserID, uint64(expr.Origin.CreatedUnixTimeSec), dest)
+		err = saveOwnershipItem(destExpr.Id, protos.ObjectType_OT_ROI, expr.Origin.Creator.UserID, uint32(expr.Origin.CreatedUnixTimeSec), dest)
 		if err != nil {
 			return err
 		}
@@ -154,7 +154,7 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database) 
 			destExpr.RecentExecStats = &protos.DataExpressionExecStats{
 				DataRequired:     expr.RecentExecStats.DataRequired,
 				RuntimeMs:        expr.RecentExecStats.RuntimeMS,
-				TimeStampUnixSec: uint64(expr.RecentExecStats.RuntimeMS),
+				TimeStampUnixSec: uint32(expr.RecentExecStats.RuntimeMS),
 			}
 		}
 
@@ -215,7 +215,7 @@ func migrateExpressionsDBModules(src *mongo.Database, dest *mongo.Database) erro
 			Comments: mod.Comments,
 		}
 
-		err = saveOwnershipItem(destMod.Id, protos.ObjectType_OT_ROI, mod.Origin.Creator.UserID, uint64(mod.Origin.CreatedUnixTimeSec), dest)
+		err = saveOwnershipItem(destMod.Id, protos.ObjectType_OT_ROI, mod.Origin.Creator.UserID, uint32(mod.Origin.CreatedUnixTimeSec), dest)
 		if err != nil {
 			return err
 		}
@@ -287,7 +287,7 @@ func migrateExpressionsDBModuleVersions(src *mongo.Database, dest *mongo.Databas
 			},
 			Tags:             tags,
 			Comments:         modVer.Comments,
-			TimeStampUnixSec: uint64(modVer.TimeStampUnixSec),
+			TimeStampUnixSec: uint32(modVer.TimeStampUnixSec),
 			SourceCode:       modVer.SourceCode,
 		}
 

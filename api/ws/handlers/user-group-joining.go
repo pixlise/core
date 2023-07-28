@@ -40,7 +40,7 @@ func HandleUserGroupJoinReq(req *protos.UserGroupJoinReq, hctx wsHelpers.Handler
 		Id:             reqId,
 		UserId:         hctx.SessUser.User.Id,
 		JoinGroupId:    req.GroupId,
-		CreatedUnixSec: uint64(hctx.Svcs.TimeStamper.GetTimeNowSec()),
+		CreatedUnixSec: uint32(hctx.Svcs.TimeStamper.GetTimeNowSec()),
 		AsMember:       req.AsMember,
 	}
 
