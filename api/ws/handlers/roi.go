@@ -95,7 +95,7 @@ func validateROI(roi *protos.ROIItem) error {
 	if err := wsHelpers.CheckStringField(&roi.ImageName, "ImageName", 0, 255); err != nil {
 		return err
 	}
-	if err := wsHelpers.CheckFieldLength(roi.LocationIndexesEncoded, "LocationIndexesEncoded", 0, 100000); err != nil {
+	if err := wsHelpers.CheckFieldLength(roi.ScanEntryIndexesEncoded, "ScanEntryIndexesEncoded", 0, 100000); err != nil {
 		return err
 	}
 	if err := wsHelpers.CheckFieldLength(roi.PixelIndexesEncoded, "PixelIndexesEncoded", 0, 100000); err != nil {
@@ -103,7 +103,7 @@ func validateROI(roi *protos.ROIItem) error {
 	}
 
 	// Can't both be empty!
-	if len(roi.LocationIndexesEncoded) <= 0 && len(roi.PixelIndexesEncoded) <= 0 {
+	if len(roi.ScanEntryIndexesEncoded) <= 0 && len(roi.PixelIndexesEncoded) <= 0 {
 		return errors.New("ROI must have location or pixel indexes defined")
 	}
 
@@ -203,9 +203,9 @@ func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROII
 		update = append(update, bson.E{Key: "imagename", Value: roi.ImageName})
 	}
 
-	if len(roi.LocationIndexesEncoded) > 0 {
-		dbItem.LocationIndexesEncoded = roi.LocationIndexesEncoded
-		update = append(update, bson.E{Key: "locationindexesencoded", Value: roi.LocationIndexesEncoded})
+	if len(roi.ScanEntryIndexesEncoded) > 0 {
+		dbItem.ScanEntryIndexesEncoded = roi.ScanEntryIndexesEncoded
+		update = append(update, bson.E{Key: "ScanEntryIndexesEncoded", Value: roi.ScanEntryIndexesEncoded})
 	}
 
 	if len(roi.PixelIndexesEncoded) > 0 {

@@ -90,7 +90,7 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 						tags = []string{}
 					}
 
-					locIdxs, err := indexcompression.EncodeIndexList(item.LocationIndexes)
+					scanIdxs, err := indexcompression.EncodeIndexList(item.LocationIndexes)
 					if err != nil {
 						return fmt.Errorf("ROI %v: location list error: %v", saveId, err)
 					}
@@ -100,15 +100,15 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 					}
 
 					destROI := protos.ROIItem{
-						Id:                     saveId,
-						ScanId:                 scanId,
-						Name:                   item.Name,
-						Description:            item.Description,
-						Tags:                   tags,
-						LocationIndexesEncoded: locIdxs,
-						ImageName:              item.ImageName,
-						PixelIndexesEncoded:    pixIdxs,
-						ModifiedUnixSec:        uint32(item.CreatedUnixTimeSec),
+						Id:                      saveId,
+						ScanId:                  scanId,
+						Name:                    item.Name,
+						Description:             item.Description,
+						Tags:                    tags,
+						ScanEntryIndexesEncoded: scanIdxs,
+						ImageName:               item.ImageName,
+						PixelIndexesEncoded:     pixIdxs,
+						ModifiedUnixSec:         uint32(item.CreatedUnixTimeSec),
 						// MistROIItem
 					}
 
