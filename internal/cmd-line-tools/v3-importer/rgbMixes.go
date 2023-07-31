@@ -105,17 +105,17 @@ func migrateRGBMixes(userContentBucket string, userContentFiles []string, fs fil
 						Tags: tags,
 						GroupItems: []*protos.ExpressionGroupItem{
 							{
-								ExpressionID: item.Red.ExpressionID,
+								ExpressionId: item.Red.ExpressionID,
 								RangeMin:     item.Red.RangeMin,
 								RangeMax:     item.Red.RangeMax,
 							},
 							{
-								ExpressionID: item.Green.ExpressionID,
+								ExpressionId: item.Green.ExpressionID,
 								RangeMin:     item.Green.RangeMin,
 								RangeMax:     item.Green.RangeMax,
 							},
 							{
-								ExpressionID: item.Blue.ExpressionID,
+								ExpressionId: item.Blue.ExpressionID,
 								RangeMin:     item.Blue.RangeMin,
 								RangeMax:     item.Blue.RangeMax,
 							},

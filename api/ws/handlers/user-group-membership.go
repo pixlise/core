@@ -69,8 +69,10 @@ func modifyGroupMembershipList(groupId string, opGroupId string, opUserId string
 	}
 
 	fieldStart := "members"
+	otherFieldStart := "viewers"
 	if viewer {
 		fieldStart = "viewers"
+		otherFieldStart = "members"
 	}
 
 	// Must have one of these...
@@ -86,6 +88,7 @@ func modifyGroupMembershipList(groupId string, opGroupId string, opUserId string
 		isGroup = false
 		dbField = fieldStart + ".userids"
 	}
+	otherIdName := otherFieldStart + "." + idName
 	idName = fieldStart + "." + idName
 
 	if err := wsHelpers.CheckStringField(&checkId, idName, 1, idMaxLen); err != nil {
@@ -111,13 +114,17 @@ func modifyGroupMembershipList(groupId string, opGroupId string, opUserId string
 	}
 
 	groupList := group.Members
+	otherGroupList := group.Viewers
 	if viewer {
 		groupList = group.Viewers
+		otherGroupList = group.Members
 	}
 
 	editIds := groupList.GroupIds
+	otherEditIds := otherGroupList.GroupIds
 	if !isGroup {
 		editIds = groupList.UserIds
+		otherEditIds = otherGroupList.UserIds
 	}
 
 	dbOp := "$pull"
@@ -125,6 +132,11 @@ func modifyGroupMembershipList(groupId string, opGroupId string, opUserId string
 		if utils.ItemInSlice(checkId, editIds) {
 			return nil, errorwithstatus.MakeBadRequestError(errors.New(checkId + " is already a " + idName))
 		}
+		// Check the "other" list too (eg if we're adding to Viewer, check that not already Member, vice versa)
+		if utils.ItemInSlice(checkId, otherEditIds) {
+			return nil, errorwithstatus.MakeBadRequestError(errors.New(checkId + " is already a " + otherIdName))
+		}
+
 		dbOp = "$addToSet"
 		if isGroup {
 			groupList.GroupIds = append(groupList.GroupIds, checkId)

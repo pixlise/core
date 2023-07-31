@@ -168,7 +168,7 @@ func updateElementSet(elementSet *protos.ElementSet, hctx wsHelpers.HandlerConte
 
 	// Update modified time
 	dbItem.ModifiedUnixSec = uint32(hctx.Svcs.TimeStamper.GetTimeNowSec())
-	update = append(update, bson.E{Key: "modifiedUnixSec", Value: dbItem.ModifiedUnixSec})
+	update = append(update, bson.E{Key: "modifiedunixsec", Value: dbItem.ModifiedUnixSec})
 
 	// It's valid, update the DB
 	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.ElementSetsName).UpdateByID(ctx, elementSet.Id, bson.D{{Key: "$set", Value: update}})

@@ -16,7 +16,10 @@ func testUserDetails(apiHost string) {
 				"details":{"info":{"id":"${USERID}","name":"test1@pixlise.org - WS Integration Test","email":"test1@pixlise.org"},
 				"permissions": [
 					"EDIT_ELEMENT_SET",
+					"EDIT_EXPRESSION",
+					"EDIT_EXPRESSION_GROUP",
 					"EDIT_OWN_USER",
+					"EDIT_ROI",
 					"SHARE"
 				]}}}`,
 	)
@@ -33,7 +36,10 @@ func testUserDetails(apiHost string) {
 			"dataCollectionVersion": "1.2.3",
             "permissions": [
                 "EDIT_ELEMENT_SET",
+                "EDIT_EXPRESSION",
+                "EDIT_EXPRESSION_GROUP",
                 "EDIT_OWN_USER",
+                "EDIT_ROI",
                 "SHARE"
             ]}}}`,
 	)
@@ -50,7 +56,10 @@ func testUserDetails(apiHost string) {
 			"dataCollectionVersion": "1.2.4",
             "permissions": [
                 "EDIT_ELEMENT_SET",
+                "EDIT_EXPRESSION",
+                "EDIT_EXPRESSION_GROUP",
                 "EDIT_OWN_USER",
+                "EDIT_ROI",
                 "SHARE"
             ]}}}`,
 	)
@@ -67,7 +76,10 @@ func testUserDetails(apiHost string) {
 			"dataCollectionVersion": "1.2.4",
             "permissions": [
                 "EDIT_ELEMENT_SET",
+                "EDIT_EXPRESSION",
+                "EDIT_EXPRESSION_GROUP",
                 "EDIT_OWN_USER",
+                "EDIT_ROI",
                 "SHARE"
             ]}}}`,
 	)
@@ -84,7 +96,10 @@ func testUserDetails(apiHost string) {
 			"dataCollectionVersion": "1.2.4",
             "permissions": [
                 "EDIT_ELEMENT_SET",
+                "EDIT_EXPRESSION",
+                "EDIT_EXPRESSION_GROUP",
                 "EDIT_OWN_USER",
+                "EDIT_ROI",
                 "SHARE"
             ]}}}`,
 	)

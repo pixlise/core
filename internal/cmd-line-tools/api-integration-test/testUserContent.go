@@ -292,7 +292,7 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 							"createdUnixSec": "${SECAGO=3}"
 						}
 					}
-				}}`, u1ExpectedRespSeqNo, msgName, msgName, msgContents.itemName, u1ItemsForGet[msgName][0]),
+				}}`, u1ExpectedRespSeqNo, msgName, msgContents.itemName, msgName, u1ItemsForGet[msgName][0]),
 			)
 			u1ExpectedRespSeqNo++
 

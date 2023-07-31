@@ -168,7 +168,7 @@ func testROI(apiHost string) {
 		`{
 			"msgId": 8,
 			"status": "WS_BAD_REQUEST",
-			"errorText": "ROI must have location or pixel indexes defined",
+			"errorText": "ROI image and pixel indexes must both be defined",
 			"regionOfInterestWriteResp": {}
 		}`,
 	)

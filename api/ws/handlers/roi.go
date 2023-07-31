@@ -89,7 +89,7 @@ func validateROI(roi *protos.ROIItem) error {
 	if err := wsHelpers.CheckStringField(&roi.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return err
 	}
-	if err := wsHelpers.CheckStringField(&roi.Description, "Description", 0, 300); err != nil {
+	if err := wsHelpers.CheckStringField(&roi.Description, "Description", 0, wsHelpers.DescriptionFieldMaxLength); err != nil {
 		return err
 	}
 	if err := wsHelpers.CheckStringField(&roi.ImageName, "ImageName", 0, 255); err != nil {
@@ -219,14 +219,14 @@ func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROII
 	}
 
 	// Validate it
-	err = validateROI(roi)
+	err = validateROI(dbItem)
 	if err != nil {
 		return nil, errorwithstatus.MakeBadRequestError(err)
 	}
 
 	// Update modified time
 	dbItem.ModifiedUnixSec = uint32(hctx.Svcs.TimeStamper.GetTimeNowSec())
-	update = append(update, bson.E{Key: "modifiedUnixSec", Value: dbItem.ModifiedUnixSec})
+	update = append(update, bson.E{Key: "modifiedunixsec", Value: dbItem.ModifiedUnixSec})
 
 	// It's valid, update the DB
 	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName).UpdateByID(ctx, roi.Id, bson.D{{Key: "$set", Value: update}})

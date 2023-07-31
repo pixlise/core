@@ -63,8 +63,9 @@ func testUserGroups(apiHost string) {
 	// Testing user group viewer leave group
 	testUserGroupViewerLeavingGroup(apiHost)
 
-	// Testing user group add member deletes viewer entry, add viewer deletes member entry
-	testUserGroupAccessPromotionDemotion(apiHost)
+	// Testing user group add member checks viewer entry already, and vice-versa
+	testUserGroupAccessDemotion(apiHost)
+	testUserGroupAccessPromotionAndDuplicateGroupName(apiHost)
 
 	// Testing that notifications are sent out to group admins for join requests
 	// Both live (via Upd message) and after admin user connects and requests notifications
@@ -967,6 +968,7 @@ func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
 				"id":"${IDSAVE=u2CreatedElementSetId}",
 				"name":"User2 ElementSet",
 				"lines":[{"Z":14, "M":true}],
+				"modifiedUnixSec": "${SECAGO=3}",
 				"owner": {
 					"creatorUser": {
 						"id": "${USERID}",
@@ -1257,7 +1259,7 @@ func testUserGroupViewerLeavingGroup(apiHost string) {
 	wstestlib.ExecQueuedActions(&u1)
 }
 
-func testUserGroupAccessPromotionDemotion(apiHost string) {
+func testUserGroupAccessDemotion(apiHost string) {
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
 	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
 		Host: apiHost,
@@ -1305,7 +1307,7 @@ func testUserGroupAccessPromotionDemotion(apiHost string) {
 					{
 						"info": {
 							"id": "${IDCHK=createdGroupId4}",
-							"name": "PIXL Scientists",
+							"name": "PIXL Sci",
 							"createdUnixSec": "${SECAGO=5}"
 						},
 						"viewers": { "users": [{"id": "%v", "name":"${REGEXMATCH=Test}","email":"${REGEXMATCH=.+@pixlise\\.org}"}] },
@@ -1314,16 +1316,76 @@ func testUserGroupAccessPromotionDemotion(apiHost string) {
 		}}`, nonAdminUserId),
 	)
 
-	u2.AddSendReqAction("Add non-admin user as member of group, expecting remove from viewers",
+	u2.AddSendReqAction("Add non-admin user as member of group  (fail cos already viewer)",
 		fmt.Sprintf(`{"userGroupAddMemberReq":{"groupId": "${IDLOAD=createdGroupId4}", "userMemberId": "%v"}}`, nonAdminUserId),
+		fmt.Sprintf(`{"msgId":3,
+			"status": "WS_BAD_REQUEST",
+			"errorText": "%v is already a viewers.UserId",
+			"userGroupAddMemberResp": {}}`, nonAdminUserId),
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+}
+
+func testUserGroupAccessPromotionAndDuplicateGroupName(apiHost string) {
+	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test1Username,
+		Pass: test1Password,
+	})
+
+	u1.CloseActionGroup([]string{}, 10)
+	wstestlib.ExecQueuedActions(&u1)
+
+	nonAdminUserId := u1.GetUserId()
+
+	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test2Username,
+		Pass: test2Password,
+	})
+
+	u2.AddSendReqAction("Create valid user group 7",
+		`{"userGroupCreateReq":{"name": "PIXL Sci2"}}`,
+		`{"msgId":1,"status":"WS_OK","userGroupCreateResp":{
+			"group": {
+				"info": {
+					"id": "${IDSAVE=createdGroupId7}",
+					"name": "PIXL Sci2",
+					"createdUnixSec": "${SECAGO=5}"
+				},
+				"viewers": {},
+				"members": {}
+			}
+		}}`,
+	)
+
+	u2.AddSendReqAction("Create valid user group 7 (Fail to create duplicate name!)",
+		`{"userGroupCreateReq":{"name": "PIXL Sci2"}}`,
+		`{"msgId":2,
+			"status": "WS_BAD_REQUEST",
+			"errorText": "Name: \"PIXL Sci2\" already exists",
+			"userGroupCreateResp": {}
+		}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	// Add non-admin user to this group
+	u2.AddSendReqAction("Add non-admin user as member of group",
+		fmt.Sprintf(`{"userGroupAddMemberReq":{"groupId": "${IDLOAD=createdGroupId7}", "userMemberId": "%v"}}`, nonAdminUserId),
 		fmt.Sprintf(`{"msgId":3,
 			"status": "WS_OK",
 				"userGroupAddMemberResp":{
 					"group": 
 					{
 						"info": {
-							"id": "${IDCHK=createdGroupId4}",
-							"name": "PIXL Scientists",
+							"id": "${IDCHK=createdGroupId7}",
+							"name": "PIXL Sci2",
 							"createdUnixSec": "${SECAGO=5}"
 						},
 						"viewers": {},
@@ -1332,22 +1394,12 @@ func testUserGroupAccessPromotionDemotion(apiHost string) {
 		}}`, nonAdminUserId),
 	)
 
-	u2.AddSendReqAction("Add non-admin user as viewer of group, expecting remove from members",
-		fmt.Sprintf(`{"userGroupAddViewerReq":{"groupId": "${IDLOAD=createdGroupId4}", "userViewerId": "%v"}}`, nonAdminUserId),
+	u2.AddSendReqAction("Add non-admin user as viewer of group  (fail cos already member)",
+		fmt.Sprintf(`{"userGroupAddViewerReq":{"groupId": "${IDLOAD=createdGroupId7}", "userViewerId": "%v"}}`, nonAdminUserId),
 		fmt.Sprintf(`{"msgId":4,
-			"status": "WS_OK",
-				"userGroupAddViewerResp":{
-					"group": 
-					{
-						"info": {
-							"id": "${IDCHK=createdGroupId4}",
-							"name": "PIXL Scientists",
-							"createdUnixSec": "${SECAGO=5}"
-						},
-						"viewers": { "users": [{"id": "%v", "name":"${REGEXMATCH=Test}","email":"${REGEXMATCH=.+@pixlise\\.org}"}] },
-						"members": {}
-					}
-		}}`, nonAdminUserId),
+			"status": "WS_BAD_REQUEST",
+			"errorText": "%v is already a members.UserId",
+			"userGroupAddViewerResp": {}}`, nonAdminUserId),
 	)
 
 	u2.CloseActionGroup([]string{}, userGroupWaitTime)
@@ -1362,12 +1414,12 @@ func testJoinRequestNotificationLive(apiHost string) {
 		Pass: test2Password,
 	})
 
-	u2.AddSendReqAction("Create valid user group 4",
+	u2.AddSendReqAction("Create valid user group 6",
 		`{"userGroupCreateReq":{"name": "M2020 Science"}}`,
 		`{"msgId":1,"status":"WS_OK","userGroupCreateResp":{
 			"group": {
 				"info": {
-					"id": "${IDSAVE=createdGroupId4}",
+					"id": "${IDSAVE=createdGroupId6}",
 					"name": "M2020 Science",
 					"createdUnixSec": "${SECAGO=5}"
 				},
@@ -1391,11 +1443,11 @@ func testJoinRequestNotificationLive(apiHost string) {
 	// but for now that doesn't work
 
 	u2.AddSendReqAction("Add user2 as group admin",
-		fmt.Sprintf(`{"userGroupAddAdminReq":{"groupId": "${IDLOAD=createdGroupId4}", "adminUserId": "%v"}}`, u2.GetUserId()),
+		fmt.Sprintf(`{"userGroupAddAdminReq":{"groupId": "${IDLOAD=createdGroupId6}", "adminUserId": "%v"}}`, u2.GetUserId()),
 		`{"msgId":3, "status": "WS_OK","userGroupAddAdminResp":{
 			"group": {
 				"info": {
-					"id": "${IDCHK=createdGroupId4}",
+					"id": "${IDCHK=createdGroupId6}",
 					"name": "M2020 Science",
 					"createdUnixSec": "${SECAGO=5}"
 				},
@@ -1418,8 +1470,8 @@ func testJoinRequestNotificationLive(apiHost string) {
 		Pass: test1Password,
 	})
 
-	u1.AddSendReqAction("Request to join created group 4 id",
-		`{"userGroupJoinReq":{"groupId": "${IDLOAD=createdGroupId4}"}}`,
+	u1.AddSendReqAction("Request to join created group 6 id",
+		`{"userGroupJoinReq":{"groupId": "${IDLOAD=createdGroupId6}"}}`,
 		`{"msgId":1,"status":"WS_OK","userGroupJoinResp":{}}`,
 	)
 
@@ -1427,15 +1479,15 @@ func testJoinRequestNotificationLive(apiHost string) {
 	wstestlib.ExecQueuedActions(&u1)
 
 	u2.AddSendReqAction("Ensure admin got join request",
-		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId4}"}}`,
+		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId6}"}}`,
 		fmt.Sprintf(`{"msgId": 4,
 			"status":"WS_OK",
 			"userGroupJoinListResp":{
 				"requests": [
 				{
-					"id": "${IDSAVE=createdJoinReqId4}",
+					"id": "${IDSAVE=createdJoinReqId6}",
 					"userId": "%v",
-					"joinGroupId": "${IDCHK=createdGroupId4}",
+					"joinGroupId": "${IDCHK=createdGroupId6}",
 					"createdUnixSec": "${SECAGO=5}"
 				}
 			]
@@ -1462,12 +1514,12 @@ func testJoinRequestNotificationLive(apiHost string) {
 	wstestlib.ExecQueuedActions(&u2)
 
 	u2.AddSendReqAction("Request to join created group 4 id",
-		`{"userGroupIgnoreJoinReq":{"groupId": "${IDLOAD=createdGroupId4}", "requestId": "${IDLOAD=createdJoinReqId4}"}}`,
+		`{"userGroupIgnoreJoinReq":{"groupId": "${IDLOAD=createdGroupId6}", "requestId": "${IDLOAD=createdJoinReqId6}"}}`,
 		`{"msgId":5,"status":"WS_OK","userGroupIgnoreJoinResp":{}}`,
 	)
 
 	u2.AddSendReqAction("Ensure admin has no join requests",
-		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId4}"}}`,
+		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId6}"}}`,
 		`{"msgId":6,
 			"status":"WS_OK",
 			"userGroupJoinListResp":{}}`,
