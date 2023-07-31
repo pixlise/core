@@ -58,7 +58,7 @@ func testROI(apiHost string) {
 				"name": "User1 ROI1",
 				"description": "User1 ROI1",
 				"scanId": "048300551",
-				"ScanEntryIndexesEncoded": [14, 123, -1, 126, 98]
+				"scanEntryIndexesEncoded": [14, 123, -1, 126, 98]
 			}
 		}}`,
 		`{"msgId":6, "status":"WS_OK", "regionOfInterestWriteResp":{
@@ -67,7 +67,7 @@ func testROI(apiHost string) {
 				"name": "User1 ROI1",
 				"description": "User1 ROI1",
 				"scanId": "048300551",
-				"ScanEntryIndexesEncoded": [14, 123, -1, 126, 98],
+				"scanEntryIndexesEncoded": [14, 123, -1, 126, 98],
 				"modifiedUnixSec": "${SECAGO=3}",
 				"owner": {
 					"creatorUser": {
@@ -143,7 +143,7 @@ func testROI(apiHost string) {
 				"name": "User1 ROI1",
 				"description": "User1 ROI1",
 				"scanId": "048300551",
-				"ScanEntryIndexesEncoded": [14, 123, -1, 126, 98],
+				"scanEntryIndexesEncoded": [14, 123, -1, 126, 98],
 				"modifiedUnixSec": "${SECAGO=3}",
 				"owner": {
 					"creatorUser": {
@@ -178,7 +178,7 @@ func testROI(apiHost string) {
 				"id": "${IDLOAD=u1CreatedROIId1}",
 				"scanId": "048300551",
 				"name": "The ROI",
-				"ScanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88]
+				"scanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88]
 			}
 		}}`,
 		`{"msgId":9, "status":"WS_OK", "regionOfInterestWriteResp":{
@@ -187,7 +187,7 @@ func testROI(apiHost string) {
 				"name": "The ROI",
 				"description": "User1 ROI1",
 				"scanId": "048300551",
-				"ScanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88],
+				"scanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88],
 				"modifiedUnixSec": "${SECAGO=3}",
 				"owner": {
 					"creatorUser": {
@@ -209,7 +209,7 @@ func testROI(apiHost string) {
 				"name": "The ROI",
 				"description": "User1 ROI1",
 				"scanId": "048300551",
-				"ScanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88],
+				"scanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88],
 				"modifiedUnixSec": "${SECAGO=3}",
 				"owner": {
 					"creatorUser": {
@@ -306,7 +306,7 @@ func testROI(apiHost string) {
 				"name": "The ROI",
 				"description": "User1 ROI1",
 				"scanId": "048300551",
-				"ScanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88],
+				"scanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88],
 				"modifiedUnixSec": "${SECAGO=3}",
 				"owner": {
 					"creatorUser": {
@@ -389,7 +389,7 @@ func testROI(apiHost string) {
 				"name": "The ROI",
 				"description": "User1 ROI1",
 				"scanId": "048300551",
-				"ScanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88],
+				"scanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88],
 				"modifiedUnixSec": "${SECAGO=3}",
 				"owner": {
 					"creatorUser": {

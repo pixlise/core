@@ -130,14 +130,156 @@ func main() {
 func runTests(apiHost string) {
 	// testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
-	// testUserDetails(apiHost)
 	testElementSets(apiHost)
+	testROI(apiHost)
+	testUserContent(apiHost, map[string]contentMessaging{
+		"elementSet": {
+			itemName: "elementSet",
+			listName: "elementSets",
+			invalidItemsToCreate: [][]string{
+				{
+					`"name": "User1 ElementSet1",
+					"lines": []`,
+					"Lines must contain at least 1 items",
+				},
+			},
+			validItemsToCreate: [][]string{
+				{
+					`"name": "User1 ElementSet1",
+					"lines": [
+						{
+							"Z":   14,
+							"K":   false,
+							"L":   false,
+							"M":   true,
+							"Esc": false
+						},
+						{
+							"Z":   16,
+							"K":   false,
+							"L":   true,
+							"M":   false,
+							"Esc": true
+						}
+					]`,
+					`"name": "User1 ElementSet1",
+					"lines": [
+						{
+							"Z":   14,
+							"M":   true
+						},
+						{
+							"Z":   16,
+							"L":   true,
+							"Esc":   true
+						}
+					]`,
+					`"name": "User1 ElementSet1",
+					"atomicNumbers": [
+						14, 16
+					]`,
+				},
+			},
+			invalidItemsToEdit: [][]string{
+				{
+					`"name": "This name is way way too long for any element set to seriously be named this way",
+					"lines": [
+						{
+							"Z":   17,
+							"K":   false,
+							"L":   false,
+							"M":   true,
+							"Esc": false
+						}
+					]`,
+					"Name is too long",
+				},
+			},
+			validItemsToEdit: [][]string{
+				{
+					`"name": "User1 ElementSet1-Edited",
+					"lines": [
+						{
+							"Z":   17,
+							"K":   false,
+							"L":   false,
+							"M":   true,
+							"Esc": false
+						}
+					]`,
+					`"name": "User1 ElementSet1-Edited",
+					"lines": [
+						{
+							"Z":   17,
+							"M":   true
+						}
+					]`,
+					`"name": "User1 ElementSet1-Edited",
+					"atomicNumbers": [
+						17
+					]`,
+				},
+			},
+			objectType: "OT_ELEMENT_SET",
+		},
+		"regionOfInterest": {
+			itemName: "regionOfInterest",
+			listName: "regionsOfInterest",
+			invalidItemsToCreate: [][]string{
+				{
+					`"name": "Invalid ROI",
+					"description": "Ye Invalid ROIe",
+					"scanId": "048300551"`,
+					"ROI must have location or pixel indexes defined",
+				},
+			},
+			validItemsToCreate: [][]string{
+				{
+					`"name": "User1 ROI1",
+					"description": "User1 ROI1",
+					"scanId": "048300551",
+					"scanEntryIndexesEncoded": [14, 123, -1, 126, 98]`,
+					`"name": "User1 ROI1",
+					"description": "User1 ROI1",
+					"scanId": "048300551",
+					"scanEntryIndexesEncoded": [14, 123, -1, 126, 98]`,
+					`"name": "User1 ROI1",
+					"description": "User1 ROI1",
+					"scanId": "048300551"`,
+				},
+			},
+			invalidItemsToEdit: [][]string{
+				{
+					`"scanId": "048300551",
+					"name": "The ROI",
+					"imageName": "WhatsAnImageDoingHere.png"`,
+					"ROI must have location or pixel indexes defined",
+				},
+			},
+			validItemsToEdit: [][]string{
+				{
+					`"scanId": "048300551",
+					"name": "The ROI",
+					"scanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88]`,
+					`"scanId": "048300551",
+					"name": "The ROI",
+					"description": "User1 ROI1",
+					"scanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88]`,
+					`"scanId": "048300551",
+					"description": "User1 ROI1",
+					"name": "The ROI"`,
+				},
+			},
+			objectType: "OT_ROI",
+		},
+	})
+
+	// testUserDetails(apiHost)
 	// testUserManagement(apiHost)
 	// testUserGroups(apiHost)
 	// testLogMsgs(apiHost)
 	// testScanData(apiHost, 0 /*3 for proper testing*/)
 	// testDetectorConfig(apiHost)
-	testROI(apiHost)
 	/*testExpressions(apiHost)
 	testExpressionGroups(apiHost)
 	testDataModules(apiHost)*/
