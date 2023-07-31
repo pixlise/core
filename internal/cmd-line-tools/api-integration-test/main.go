@@ -130,8 +130,6 @@ func main() {
 func runTests(apiHost string) {
 	testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
-	testElementSets(apiHost)
-	testROI(apiHost)
 	testUserContent(apiHost, map[string]contentMessaging{
 		"elementSet": {
 			itemName: "elementSet",
