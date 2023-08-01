@@ -9,6 +9,8 @@ import (
 const IdFieldMaxLength = 16
 const Auth0UserIdFieldMaxLength = 32
 const DescriptionFieldMaxLength = 300
+const SourceCodeMaxLength = 1024 * 1024 * 5 // Trying to be very generous here, but maybe this is not enough?
+const TagListMaxLength = 10
 
 func CheckStringField(field *string, fieldName string, minLength int, maxLength int) error {
 	if field != nil {

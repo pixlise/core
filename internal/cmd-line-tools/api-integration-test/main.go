@@ -24,6 +24,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pixlise/core/v3/core/awsutil"
@@ -73,6 +74,11 @@ func main() {
 	flag.StringVar(&test2Password, "test2Password", "", "Password of test account 2")
 
 	flag.Parse()
+
+	if strings.Contains(apiHost, "pixlise.org") {
+		fmt.Printf("Can't connect to an env for now: %v\n", apiHost)
+		return
+	}
 
 	fmt.Printf("Running integration test %v for %v\n", testType, apiHost)
 
@@ -130,6 +136,7 @@ func main() {
 func runTests(apiHost string) {
 	testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
+	testDataModules(apiHost)
 	testUserContent(apiHost, map[string]contentMessaging{
 		"elementSet": {
 			itemName: "elementSet",

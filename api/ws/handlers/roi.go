@@ -112,7 +112,7 @@ func validateROI(roi *protos.ROIItem) error {
 		return errors.New("ROI image and pixel indexes must both be defined")
 	}
 
-	if err := wsHelpers.CheckFieldLength(roi.Tags, "Tags", 0, 10); err != nil {
+	if err := wsHelpers.CheckFieldLength(roi.Tags, "Tags", 0, wsHelpers.TagListMaxLength); err != nil {
 		return err
 	}
 

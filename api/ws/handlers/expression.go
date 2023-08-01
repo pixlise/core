@@ -84,16 +84,13 @@ func validateExpression(expr *protos.DataExpression) error {
 	if err := wsHelpers.CheckStringField(&expr.Comments, "Comments", 0, wsHelpers.DescriptionFieldMaxLength); err != nil {
 		return err
 	}
-	if err := wsHelpers.CheckStringField(&expr.SourceCode, "SourceCode", 1, 1024*1024*5); err != nil {
+	if err := wsHelpers.CheckStringField(&expr.SourceCode, "SourceCode", 1, wsHelpers.SourceCodeMaxLength); err != nil {
 		return err
 	}
 	if expr.SourceLanguage != "LUA" && expr.SourceLanguage != "PIXLANG" {
 		return errors.New("Invalid source language: " + expr.SourceLanguage)
 	}
-	if err := wsHelpers.CheckStringField(&expr.SourceLanguage, "SourceCode", 1, 1024*1024*5); err != nil {
-		return err
-	}
-	if err := wsHelpers.CheckFieldLength(expr.Tags, "Tags", 0, 10); err != nil {
+	if err := wsHelpers.CheckFieldLength(expr.Tags, "Tags", 0, wsHelpers.TagListMaxLength); err != nil {
 		return err
 	}
 	if err := wsHelpers.CheckFieldLength(expr.ModuleReferences, "ModuleReferences", 0, 10); err != nil {
