@@ -277,7 +277,7 @@ func migrateExpressionsDBModuleVersions(src *mongo.Database, dest *mongo.Databas
 			tags = []string{}
 		}
 
-		destModVer := protos.DataModuleVersion{
+		destModVer := protos.DataModuleVersionDB{
 			Id:       modVer.ID,
 			ModuleId: modVer.ModuleID,
 			Version: &protos.SemanticVersion{

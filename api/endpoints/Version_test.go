@@ -60,5 +60,5 @@ func Example_version() {
 	// true
 	// true
 	// 200
-	// {"versions":[{"component":"API","version":"(Local build)"}]}
+	// {"versions":[{"component":"API", "version":"(Local build)"}]}
 }
