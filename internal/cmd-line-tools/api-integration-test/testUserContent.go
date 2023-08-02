@@ -385,7 +385,9 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 							"name": "${REGEXMATCH=test}",
 							"email": "${REGEXMATCH=.+@pixlise\\.org}"
 						},
-						"createdUnixSec": "${SECAGO=3}"
+						"createdUnixSec": "${SECAGO=3}",
+						"sharedViewerUserCount": 1,
+						"sharedWithOthers": true
 					}
 				}
 			}}`, u1ExpectedRespSeqNo, msgName, msgContents.itemName, msgName, u1ItemsForGet[msgName][0]),
@@ -406,7 +408,9 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 									"name": "${REGEXMATCH=test}",
 									"email": "${REGEXMATCH=.+@pixlise\\.org}"
 								},
-								"createdUnixSec": "${SECAGO=3}"
+								"createdUnixSec": "${SECAGO=3}",
+								"sharedViewerUserCount": 1,
+								"sharedWithOthers": true
 							}
 						}
 					}
@@ -439,7 +443,9 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 									"name": "${REGEXMATCH=test}",
 									"email": "${REGEXMATCH=.+@pixlise\\.org}"
 								},
-								"createdUnixSec": "${SECAGO=3}"
+								"createdUnixSec": "${SECAGO=3}",
+								"sharedViewerUserCount": 1,
+								"sharedWithOthers": true
 							}
 						}
 					}
@@ -461,7 +467,9 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 							"name": "${IGNORE}",
 							"email": "${IGNORE}"
 						},
-						"createdUnixSec": "${SECAGO=3}"
+						"createdUnixSec": "${SECAGO=3}",
+						"sharedViewerUserCount": 1,
+						"sharedWithOthers": true
 					}
 				}
 			}}`, u2ExpectedRespSeqNo, msgName, msgContents.itemName, msgName, u2ItemsForGet[msgName][0], u1.GetUserId()),
@@ -484,6 +492,8 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 	u2.CloseActionGroup([]string{}, 60000)
 
 	wstestlib.ExecQueuedActions(&u2)
+
+	// TODO: Share with a group, check: "sharedViewerUserCount" "sharedWithOthers" changes. Unshare group, unshare viewer, check again
 
 	// Back to user 1 - delete the item
 	u1.ClearActions()

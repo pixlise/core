@@ -170,5 +170,28 @@ func MakeOwnerSummary(ownership *protos.OwnershipItem, db *mongo.Database, ts ti
 			Id: ownership.CreatorUserId,
 		}
 	}
+
+	if ownership.Viewers != nil {
+		result.SharedViewerUserCount = uint32(len(ownership.Viewers.UserIds))
+
+		// NOTE: if we're a viewer, subtract one!
+		if utils.ItemInSlice(ownership.CreatorUserId, ownership.Viewers.UserIds) && result.SharedViewerUserCount > 0 {
+			result.SharedViewerUserCount--
+		}
+
+		result.SharedViewerGroupCount = uint32(len(ownership.Viewers.GroupIds))
+	}
+	if ownership.Editors != nil {
+		result.SharedEditorUserCount = uint32(len(ownership.Editors.UserIds))
+
+		// NOTE: if we're a viewer, subtract one!
+		if utils.ItemInSlice(ownership.CreatorUserId, ownership.Editors.UserIds) && result.SharedEditorUserCount > 0 {
+			result.SharedEditorUserCount--
+		}
+
+		result.SharedEditorGroupCount = uint32(len(ownership.Editors.GroupIds))
+	}
+
+	result.SharedWithOthers = result.SharedViewerUserCount > 0 || result.SharedViewerGroupCount > 0 || result.SharedEditorUserCount > 0 || result.SharedEditorGroupCount > 0
 	return result
 }
