@@ -19,7 +19,7 @@ metadata:
     github.com/project-slug: pixlise/core/internal/pixlise-api
     backstage.io/techdocs-ref: dir:.
     sentry.io/project-slug: pixl-api
-    oargocd/app-name: backstage
+    oargocd/app-name: pixlise
 spec:
   type: service
   owner: default/developers
