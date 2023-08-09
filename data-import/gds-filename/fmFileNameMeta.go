@@ -259,6 +259,21 @@ func GetLatestFileVersions(fileNames []string, jobLog logger.ILogger) map[string
 	return result
 }
 
+func GetByLowestSCLK(fileNames map[string]FileNameMeta) string {
+	chosenFile := ""
+	var chosenSCLK int32
+	for name, meta := range fileNames {
+		sclk, err := meta.SCLK()
+
+		if len(chosenFile) == 0 || (err == nil && sclk < chosenSCLK) {
+			chosenFile = name
+			chosenSCLK = sclk
+		}
+	}
+
+	return chosenFile
+}
+
 func stringToIDSimpleCase(str string) (int32, bool) {
 	if !isAllDigits(str) {
 		return 0, false
