@@ -40,7 +40,6 @@ import (
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/notifications"
 	"github.com/pixlise/core/v3/core/timestamper"
-	"github.com/pixlise/core/v3/core/utils"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/pixlise/core/v3/core/pixlUser"
@@ -153,10 +152,10 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 	// a log group for the API for this environment, and other parts of the code that deal with logging will write
 	// there also
 	var ourLogger logger.ILogger
-	if cfg.EnvironmentName == "local" {
-		ourLogger = &logger.StdOutLogger{}
-		ourLogger.SetLogLevel(cfg.LogLevel)
-	} else {
+	//if cfg.EnvironmentName == "local" {
+	ourLogger = &logger.StdOutLogger{}
+	ourLogger.SetLogLevel(cfg.LogLevel)
+	/*} else {
 		ourLogger, err = logger.InitCloudWatchLogger(
 			sess,
 			"/api/"+cfg.EnvironmentName,
@@ -170,7 +169,7 @@ func InitAPIServices(cfg config.APIConfig, jwtReader IJWTReader, idGen IDGenerat
 		if err != nil {
 			log.Fatalf("Failed to initialise API logger: %v", err)
 		}
-	}
+	}*/
 
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:         cfg.SentryEndpoint,
