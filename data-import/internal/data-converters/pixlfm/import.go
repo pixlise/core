@@ -165,6 +165,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		}
 
 		// Check we got the right amount of files
+
 		if subdir.expectedFileCount > 0 {
 			expVsFoundPathsCount := subdir.expectedFileCount - numFoundPaths
 			if expVsFoundPathsCount > 0 {
@@ -177,6 +178,24 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		// To aid debugging, print out the file names we DO consider current version, and will present to be processed
 		for file := range latestVersionFoundPaths {
 			log.Infof("  FOUND: \"%v\"", file)
+		}
+
+		if subdir.expectedFileCount == 1 && numFoundPaths > 1 {
+			// We expected 1 file, but somehow got more
+
+			// NOTE: Early August 2023 we had a case where GDS provided spectrum CSV file names which changed
+			//       as later downlinks happened. This meant we had 2 spectrum CSVs, and the code here didn't
+			//       reliably pick one, due to reading from a Go map. So we now select the file with the
+			//       lower SCLK value because if GDS receives files from later parts of a scan first they will
+			//       eventually generate a file with the lower SCLK that contains all points.
+
+			chosenSingleFile := gdsfilename.GetByLowestSCLK(latestVersionFoundPaths)
+			chosenMeta := latestVersionFoundPaths[chosenSingleFile]
+
+			log.Infof("  CHOOSING: \"%v\"", chosenSingleFile)
+
+			// Overwrite so we only have this choice...
+			latestVersionFoundPaths = map[string]gdsfilename.FileNameMeta{chosenSingleFile: chosenMeta}
 		}
 
 		// OK we have the paths, now read this type
