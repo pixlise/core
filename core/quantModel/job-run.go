@@ -78,9 +78,9 @@ func CreateJob(svcs *services.APIServices, createParams JobCreateParams, wg *syn
 	var err error
 
 	// Init a logger for this job
-	if svcs.Config.EnvironmentName == "local" {
-		jobLog = &logger.StdOutLogger{}
-	} else {
+	//if svcs.Config.EnvironmentName == "local" {
+	jobLog = &logger.StdOutLogger{}
+	/*} else {
 		jobLog, err = logger.InitCloudWatchLogger(
 			svcs.AWSSessionCW,
 			"/api/"+svcs.Config.EnvironmentName,
@@ -92,7 +92,7 @@ func CreateJob(svcs *services.APIServices, createParams JobCreateParams, wg *syn
 		if err != nil {
 			svcs.Log.Errorf("Failed to create logger for Job ID: %v", jobID)
 		}
-	}
+	}*/
 
 	jobLog.Infof(createMsg)
 
