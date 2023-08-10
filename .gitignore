@@ -4,7 +4,7 @@ __debug_bin.exe
 
 # Build output from make for exes, coverage reports, etc
 /_out/
-generated-protos/
+#generated-protos/
 api/ws/wsMessage.go
 /OLDCODE
 auth0dummy.go
