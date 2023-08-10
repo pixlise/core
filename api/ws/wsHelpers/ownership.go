@@ -172,26 +172,26 @@ func MakeOwnerSummary(ownership *protos.OwnershipItem, db *mongo.Database, ts ti
 	}
 
 	if ownership.Viewers != nil {
-		result.SharedViewerUserCount = uint32(len(ownership.Viewers.UserIds))
+		result.ViewerUserCount = uint32(len(ownership.Viewers.UserIds))
 
 		// NOTE: if we're a viewer, subtract one!
-		if utils.ItemInSlice(ownership.CreatorUserId, ownership.Viewers.UserIds) && result.SharedViewerUserCount > 0 {
-			result.SharedViewerUserCount--
+		if utils.ItemInSlice(ownership.CreatorUserId, ownership.Viewers.UserIds) && result.ViewerUserCount > 0 {
+			result.ViewerUserCount--
 		}
 
-		result.SharedViewerGroupCount = uint32(len(ownership.Viewers.GroupIds))
+		result.ViewerGroupCount = uint32(len(ownership.Viewers.GroupIds))
 	}
 	if ownership.Editors != nil {
-		result.SharedEditorUserCount = uint32(len(ownership.Editors.UserIds))
+		result.EditorUserCount = uint32(len(ownership.Editors.UserIds))
 
 		// NOTE: if we're a viewer, subtract one!
-		if utils.ItemInSlice(ownership.CreatorUserId, ownership.Editors.UserIds) && result.SharedEditorUserCount > 0 {
-			result.SharedEditorUserCount--
+		if utils.ItemInSlice(ownership.CreatorUserId, ownership.Editors.UserIds) && result.EditorUserCount > 0 {
+			result.EditorUserCount--
 		}
 
-		result.SharedEditorGroupCount = uint32(len(ownership.Editors.GroupIds))
+		result.EditorGroupCount = uint32(len(ownership.Editors.GroupIds))
 	}
 
-	result.SharedWithOthers = result.SharedViewerUserCount > 0 || result.SharedViewerGroupCount > 0 || result.SharedEditorUserCount > 0 || result.SharedEditorGroupCount > 0
+	result.SharedWithOthers = result.ViewerUserCount > 0 || result.ViewerGroupCount > 0 || result.EditorUserCount > 0 || result.EditorGroupCount > 0
 	return result
 }
