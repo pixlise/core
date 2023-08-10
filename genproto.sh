@@ -20,7 +20,7 @@ mkdir -p ./generated-protos
 # Since Go 1.17, thi should get it ready:
 # go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 protoc --go_out=./generated-protos/ ./data-formats/file-formats/experiment.proto
-protoc --go_out=./generated-protos/ ./data-formats/file-formats/quantification.proto
+#protoc --go_out=./generated-protos/ ./data-formats/file-formats/quantification.proto
 protoc --go_out=./generated-protos/ ./data-formats/file-formats/diffraction.proto
 
 # Compare, if they changed, fail this script, because we're now in the habit of checking

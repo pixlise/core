@@ -7,7 +7,6 @@ import (
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
-	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -33,14 +32,11 @@ func HandleExpressionDeleteReq(req *protos.ExpressionDeleteReq, hctx wsHelpers.H
 }
 
 func HandleExpressionListReq(req *protos.ExpressionListReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionListResp, error) {
-	idToOwner, err := wsHelpers.ListAccessibleIDs(false, protos.ObjectType_OT_EXPRESSION, hctx)
+	filter, idToOwner, err := wsHelpers.MakeFilter(req.SearchParams, false, protos.ObjectType_OT_EXPRESSION, hctx)
 	if err != nil {
 		return nil, err
 	}
 
-	ids := utils.GetMapKeys(idToOwner)
-
-	filter := bson.M{"_id": bson.M{"$in": ids}}
 	// Since we want only summary data, specify less fields to retrieve
 	opts := options.Find().SetProjection(bson.D{
 		{"_id", true},

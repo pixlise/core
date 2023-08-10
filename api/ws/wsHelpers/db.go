@@ -5,6 +5,7 @@ import (
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
+	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -79,4 +80,45 @@ func GetUserObjectById[T any](forEditing bool, objectId string, objectType proto
 	var dbItem T
 	err = result.Decode(&dbItem)
 	return &dbItem, owner, err
+}
+
+func MakeFilter(
+	searchParams *protos.SearchParams,
+	requireEdit bool,
+	objectType protos.ObjectType,
+	hctx HandlerContext) (bson.M, map[string]*protos.OwnershipItem, error) {
+
+	// Firstly, get the list of ids that are accessible to this user, based on ownership
+	idToOwner, err := ListAccessibleIDs(false, objectType, hctx)
+	if err != nil {
+		return nil, idToOwner, err
+	}
+
+	if searchParams != nil && len(searchParams.CreatorUserId) > 0 {
+		// Filter any out which are not by the requested creator
+		for id, owner := range idToOwner {
+			if owner.CreatorUserId != searchParams.CreatorUserId {
+				delete(idToOwner, id)
+			}
+		}
+	}
+
+	ids := utils.GetMapKeys(idToOwner)
+
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+
+	// Now apply any search params to it
+	if searchParams != nil {
+		if len(searchParams.ScanId) > 0 {
+			filter["scanid"] = searchParams.ScanId
+		}
+		if len(searchParams.NameSearch) > 0 {
+			filter["name"] = bson.M{"$regex": searchParams.NameSearch}
+		}
+		if len(searchParams.TagId) > 0 {
+			filter["tags"] = searchParams.TagId
+		}
+	}
+
+	return filter, idToOwner, nil
 }

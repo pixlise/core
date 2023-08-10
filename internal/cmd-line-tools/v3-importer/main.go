@@ -28,6 +28,7 @@ func main() {
 	var destDataBucket string
 	var configBucket string
 	var userContentBucket string
+	var destUserContentBucket string
 	var srcEnvName string
 	var destEnvName string
 	var auth0Domain, auth0ClientId, auth0Secret string
@@ -38,6 +39,7 @@ func main() {
 	flag.StringVar(&dataBucket, "dataBucket", "", "Data bucket")
 	flag.StringVar(&destDataBucket, "destDataBucket", "", "Destination data bucket")
 	flag.StringVar(&userContentBucket, "userContentBucket", "", "User content bucket")
+	flag.StringVar(&destUserContentBucket, "destUserContentBucket", "", "Destination user content bucket")
 	flag.StringVar(&configBucket, "configBucket", "", "Config bucket")
 	flag.StringVar(&srcEnvName, "srcEnvName", "", "Source Environment Name")
 	flag.StringVar(&destEnvName, "destEnvName", "", "Destination Environment Name")
@@ -48,6 +50,8 @@ func main() {
 	flag.StringVar(&limitToDatasetIDs, "limitToDatasetIDs", "", "Comma-separated dataset IDs to limit import to (for speed/testing)")
 
 	flag.Parse()
+
+	limitToDatasetIDsList := strings.Split(limitToDatasetIDs, ",")
 
 	// Get a session for the bucket region
 	sess, err := awsutil.GetSession()
@@ -149,6 +153,19 @@ func main() {
 	fmt.Println("Migrating data from user content bucket...")
 	fmt.Println("==========================================")
 
+	fmt.Println("Quant Z-stacks...")
+	err = migrateMultiQuants(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Quants...")
+	err = migrateQuants(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB, destUserContentBucket)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+
 	fmt.Println("Element Sets...")
 	err = migrateElementSets(userContentBucket, userContentPaths, fs, destDB)
 	if err != nil {
@@ -190,10 +207,8 @@ func main() {
 	fmt.Println("==========================================")
 
 	fmt.Println("Datasets...")
-	err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB, strings.Split(limitToDatasetIDs, ","))
+	err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB, limitToDatasetIDsList)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// TODO: Quants
 }

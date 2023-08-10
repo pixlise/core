@@ -89,3 +89,7 @@ func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, hctx wsHelpers.H
 
 	return &protos.UserDetailsWriteResp{}, nil
 }
+
+func HandleUserSearchReq(req *protos.UserSearchReq, hctx wsHelpers.HandlerContext) (*protos.UserSearchResp, error) {
+	return nil, errors.New("HandleUserSearchReq not implemented yet")
+}
