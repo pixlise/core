@@ -62,7 +62,7 @@ jobs:
         with:
           go-version: '1.18.0'
       - name: Test
-        run: echo $PIXLISE_API_TEST_ZENODO_URI && make test
+        run: echo $PIXLISE_API_TEST_ZENODO_URI && make codegen && make test
         env:
           PIXLISE_API_TEST_AUTH0_CLIENT_ID: ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }}
           PIXLISE_API_TEST_AUTH0_DOMAIN: ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }}
