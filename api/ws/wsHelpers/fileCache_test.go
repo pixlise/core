@@ -3,7 +3,7 @@ package wsHelpers
 import "fmt"
 
 func Example_orderCacheItems() {
-	items := map[string]datasetCacheItem{
+	items := map[string]fileCacheItem{
 		"one": {
 			localPath:        "path/one.bin",
 			fileSize:         10 * 1024 * 1024,
