@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -51,12 +52,18 @@ func HandleQuantGetReq(req *protos.QuantGetReq, hctx wsHelpers.HandlerContext) (
 	// TODO: something with owner? Should we add it to the outgoing item?
 
 	// If they want data too, retrieve it
+	var quant *protos.Quantification
 	if !req.SummaryOnly {
-
+		quantPath := filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.Params.Params.DatasetID, req.QuantId+".bin")
+		quant, err = wsHelpers.ReadQuantificationFile(req.QuantId, quantPath, hctx.Svcs)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &protos.QuantGetResp{
 		Summary: dbItem,
+		Data:    quant,
 	}, nil
 }
 

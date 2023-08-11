@@ -28,15 +28,3 @@ func Example_MakeQuantSummaryFileName() {
 	// Output:
 	// summary-myquantid.json
 }
-
-// Check the quant path is calculated correctly
-func Example_GetUserQuantPath() {
-	path := GetUserQuantPath("myuserid", "mydatasetid", "")
-	fmt.Printf("%v\n", path)
-	path = GetUserQuantPath("myuserid", "mydatasetid", "file")
-	fmt.Printf("%v\n", path)
-
-	// Output:
-	// UserContent/myuserid/mydatasetid/Quantifications
-	// UserContent/myuserid/mydatasetid/Quantifications/file
-}

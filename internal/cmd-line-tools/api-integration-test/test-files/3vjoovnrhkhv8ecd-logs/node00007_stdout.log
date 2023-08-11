@@ -1,0 +1,235 @@
+-----------------------------------------------------------------
+PIQUANT   Quantitative X-ray Fluorescence Analysis
+Written for PIXL, the Planetary Instrument for X-ray Lithochemistry
+3.2.8-master   W. T. Elam   APL/UW
+Local time:  2022-05-17 18:50:55
+
+Configuration read from file /tmp/3vjoovnrhkhv8ecd/config/Config_PIXL_FM_SurfaceOps_Rev2_Sept2021.msa
+
+Element list: CO3,Rh,Na,Mg,Al,Si,P,S,Cl,K,Ca,Ti,Cr,Mn,Fe
+
+Read PIXLISE dataset binary file name: /tmp/3vjoovnrhkhv8ecd/dataset.bin
+Using 4 threads to process maps.
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3045|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3045|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3046|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3046|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3217|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3217|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3218|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3218|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3219|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3219|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3230|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3230|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3231|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3231|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3232|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3232|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3233|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3233|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3245|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3245|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3246|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3246|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3247|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3247|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3248|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3248|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3249|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3249|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3255|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3255|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3261|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3261|Normal|B"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3030|Normal|A"
+Queued: "/tmp/3vjoovnrhkhv8ecd/dataset.bin", pmc spec: "3030|Normal|B"
+Waiting for process threads to finish...
+140633313330944 processMapJob start
+140633313330944 Dequeued map job: 34
+140633323820800 processMapJob start
+140633323820800 Dequeued map job: 33
+140633334310656 processMapJob start
+140633334310656 Dequeued map job: 32
+140633344800512 processMapJob start
+140633344800512 Dequeued map job: 31
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633344800512 Job ran: 31
+140633344800512 Output saved for job: 31
+140633344800512 Dequeued map job: 30
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633323820800 Job ran: 33
+140633323820800 Output saved for job: 33
+140633323820800 Dequeued map job: 29
+140633313330944 Job ran: 34
+140633313330944 Output saved for job: 34
+140633313330944 Dequeued map job: 28
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633334310656 Job ran: 32
+140633334310656 Output saved for job: 32
+140633334310656 Dequeued map job: 27
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633323820800 Job ran: 29
+140633323820800 Output saved for job: 29
+140633323820800 Dequeued map job: 26
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+140633344800512 Job ran: 30
+140633344800512 Output saved for job: 30
+140633344800512 Dequeued map job: 25
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633313330944 Job ran: 28
+140633313330944 Output saved for job: 28
+140633313330944 Dequeued map job: 24
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633334310656 Job ran: 27
+140633334310656 Output saved for job: 27
+140633334310656 Dequeued map job: 23
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633313330944 Job ran: 24
+140633313330944 Output saved for job: 24
+140633313330944 Dequeued map job: 22
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633344800512 Job ran: 25
+140633344800512 Output saved for job: 25
+140633344800512 Dequeued map job: 21
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633323820800 Job ran: 26
+140633323820800 Output saved for job: 26
+140633323820800 Dequeued map job: 20
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633313330944 Job ran: 22
+140633313330944 Output saved for job: 22
+140633313330944 Dequeued map job: 19
+140633334310656 Job ran: 23
+140633334310656 Output saved for job: 23
+140633334310656 Dequeued map job: 18
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633344800512 Job ran: 21
+140633344800512 Output saved for job: 21
+140633344800512 Dequeued map job: 17
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633323820800 Job ran: 20
+140633323820800 Output saved for job: 20
+140633323820800 Dequeued map job: 16
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633313330944 Job ran: 19
+140633313330944 Output saved for job: 19
+140633313330944 Dequeued map job: 15
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633334310656 Job ran: 18
+140633334310656 Output saved for job: 18
+140633334310656 Dequeued map job: 14
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633344800512 Job ran: 17
+140633344800512 Output saved for job: 17
+140633344800512 Dequeued map job: 13
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633323820800 Job ran: 16
+140633323820800 Output saved for job: 16
+140633323820800 Dequeued map job: 12
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633313330944 Job ran: 15
+140633313330944 Output saved for job: 15
+140633313330944 Dequeued map job: 11
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633344800512 Job ran: 13
+140633344800512 Output saved for job: 13
+140633344800512 Dequeued map job: 10
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633323820800 Job ran: 12
+140633323820800 Output saved for job: 12
+140633323820800 Dequeued map job: 9
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+140633334310656 Job ran: 14
+140633334310656 Output saved for job: 14
+140633334310656 Dequeued map job: 8
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633313330944 Job ran: 11
+140633313330944 Output saved for job: 11
+140633313330944 Dequeued map job: 7
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633344800512 Job ran: 10
+140633344800512 Output saved for job: 10
+140633344800512 Dequeued map job: 6
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633334310656 Job ran: 8
+140633334310656 Output saved for job: 8
+140633334310656 Dequeued map job: 5
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+140633323820800 Job ran: 9
+140633323820800 Output saved for job: 9
+140633323820800 Dequeued map job: 4
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633344800512 Job ran: 6
+140633344800512 Output saved for job: 6
+140633344800512 Dequeued map job: 3
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633313330944 Job ran: 7
+140633313330944 Output saved for job: 7
+140633313330944 Dequeued map job: 2
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633334310656 Job ran: 5
+140633334310656 Output saved for job: 5
+140633334310656 Dequeued map job: 1
+Reading standard information from file /tmp/3vjoovnrhkhv8ecd/config/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
+*** Warning - calculated intensity is zero (or negative or nan) for component Fe_L (it is being disabled).   0.0000
+140633323820800 Job ran: 4
+140633323820800 Output saved for job: 4
+140633323820800 processMapJob end
+140633344800512 Job ran: 3
+140633344800512 Output saved for job: 3
+140633344800512 processMapJob end
+140633334310656 Job ran: 1
+140633334310656 Output saved for job: 1
+140633334310656 processMapJob end
+140633313330944 Job ran: 2
+140633313330944 Output saved for job: 2
+140633313330944 processMapJob end
+Threads finished, outputting...
+
+
+Map file written to /tmp/3vjoovnrhkhv8ecd/output.csv
+          map quantitative output options pPIETVXCRNFetsr
+
+Execution finished, CPU time 352.6394 secs.
+
+====================================
+PIQUANT(RUN) took: 96.0027 sec

@@ -8,9 +8,11 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 
+	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/auth0login"
 	"github.com/pixlise/core/v3/core/wstestlib"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -36,8 +38,23 @@ func testImageGet_PreWS(apiHost string) {
 	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, nil, nil)
 	seedImages()
 	seedImageLocations()
+	seedImageFile(path.Base(imagePath), scanId, apiDatasetBucket)
 
 	testImageGet_NoMembership(apiHost, imageGetJWT)
+}
+
+func seedImageFile(fileName string, scanId string, bucket string) {
+	data, err := os.ReadFile("./test-files/" + fileName)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// Upload it where we need it for the test
+	s3Path := filepaths.GetImageFilePath(path.Join(scanId, fileName))
+	err = apiStorageFileAccess.WriteObject(bucket, s3Path, data)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 /*

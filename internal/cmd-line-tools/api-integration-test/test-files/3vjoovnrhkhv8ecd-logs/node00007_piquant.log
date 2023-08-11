@@ -1,0 +1,2652 @@
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 16.1sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3045|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3045|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3045|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3045|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.99    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 133933
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 40 iterations, reduced chi sq = 0.90         live time 8.99 sec.
+Final energy calibration (eV):   eV start = -21.7  eV/ch = 7.8817  detector resolution (eV): 167  (at 5984 eV)  fano = 0.130
+      Energy correction offset 0.67 eV   slope change 0.01 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14456 cps (correct energy range)
+  L5-XRS-10    Si intensity = 5866, Fe intensity = 100810,   Si/Fe ratio = 0.06
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      3.9  coeff   0.7542   not included
+   MgCO3     35.96 %      Mg_K   int    673.3  coeff   0.9782   re_c      4.1%   abs_err(1s)   2.3390%
+   Al2O3      0.20 %      Al_K   int     22.1  coeff   0.9946   re_c     49.0%   abs_err(1s)   0.2164%
+    SiO2     20.83 %      Si_K   int   5866.0  coeff   1.0232   re_c      1.3%   abs_err(1s)   1.0793%
+    P2O5      0.02 %       P_K   int      9.1  coeff   1.0855   re_c    138.2%   abs_err(1s)   0.0517%
+     SO3      1.11 %       S_K   int   1044.6  coeff   1.1328   re_c      3.6%   abs_err(1s)   0.3560%
+      Cl    0.4884 %      Cl_K   int    937.8  coeff   1.0332   re_c      6.2%   abs_err(1s)   0.1896%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      4.69 %      Ca_K   int   4351.8  coeff   1.0129   re_c      1.7%   abs_err(1s)   0.3436%
+    TiO2      0.01 %      Ti_K   int     24.5  coeff   0.9933   re_c    123.5%   abs_err(1s)   0.0324%
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.19 %      Mn_K   int   2425.4  coeff   0.9821   re_c      2.8%   abs_err(1s)   0.3740%
+ FeCO3-T     55.33 %      Fe_K   int 100809.8  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.7720%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   59.6751 %     (59.68 % from stoichiometry)
+    C   11.5462 %     (11.55 % from stoichiometry)
+
+    Element sum 128.64 %
+
+Other spectrum components
+   0     DetCE  int      8.8  coeff   1.0000   not fit
+   1      Rh_K  int     28.0  coeff   1.0000   not fit
+   8      Rh_L  int   4071.4  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -23.2  coeff  -3.4087   not included
+   18  Rh_L_coh  int  -1838.1  coeff  -0.5931   not included
+   19  Rh_K_inc  int     31.2  coeff   1.6808   re_c    69.79%
+   20    Pileup  int    269.8  coeff   1.7025   re_c    10.65%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -320.0  coeff  -0.2958   not included
+   23  calc bkg0  int  11456.7  coeff   1.8023   not fit
+   24  SNIP bkg  int   2527.3  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 7.59sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3045|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3045|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3045|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3045|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 9.01    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 123584
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 19 iterations, reduced chi sq = 0.78         live time 9.01 sec.
+Final energy calibration (eV):   eV start = -18.0  eV/ch = 7.8648  detector resolution (eV): 166  (at 5984 eV)  fano = 0.138
+      Energy correction offset 0.47 eV   slope change 0.04 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 13300 cps (correct energy range)
+  L5-XRS-10    Si intensity = 5208, Fe intensity = 92563,   Si/Fe ratio = 0.06
+
+Fitted elements
+    Na2O      0.56 %      Na_K   int      3.3  coeff   0.7548   re_c    271.8%   abs_err(1s)   1.5309%
+   MgCO3     35.88 %      Mg_K   int    675.1  coeff   0.9783   re_c      4.1%   abs_err(1s)   2.3229%
+   Al2O3      0.19 %      Al_K   int     21.1  coeff   0.9914   re_c     48.8%   abs_err(1s)   0.2096%
+    SiO2     18.53 %      Si_K   int   5207.8  coeff   1.0233   re_c      1.4%   abs_err(1s)   0.9642%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.82 %       S_K   int    780.3  coeff   1.1330   re_c      4.3%   abs_err(1s)   0.2812%
+      Cl    0.5557 %      Cl_K   int   1073.0  coeff   1.0329   re_c      5.3%   abs_err(1s)   0.2001%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      4.07 %      Ca_K   int   3725.4  coeff   1.0129   re_c      1.8%   abs_err(1s)   0.4708%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.05 %      Mn_K   int   2130.1  coeff   0.9821   re_c      3.0%   abs_err(1s)   0.3393%
+ FeCO3-T     50.45 %      Fe_K   int  92562.8  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.5283%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   55.9809 %     (55.98 % from stoichiometry)
+    C   10.9398 %     (10.94 % from stoichiometry)
+
+    Element sum 120.92 %
+
+Other spectrum components
+   0     DetCE  int      7.9  coeff   1.0000   not fit
+   1      Rh_K  int     28.1  coeff   1.0000   not fit
+   8      Rh_L  int   4078.1  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -22.9  coeff  -3.3027   not included
+   18  Rh_L_coh  int  -1255.1  coeff  -0.4016   not included
+   19  Rh_K_inc  int     23.9  coeff   1.2626   re_c    90.35%
+   20    Pileup  int    208.3  coeff   1.5624   re_c    12.93%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -404.3  coeff  -0.3711   not included
+   23  calc bkg0  int  10770.1  coeff   1.6976   not fit
+   24  SNIP bkg  int   2478.1  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 10.1sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3046|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3046|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3046|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3046|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 9.00    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 130300
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 19 iterations, reduced chi sq = 0.84         live time 9.00 sec.
+Final energy calibration (eV):   eV start = -15.1  eV/ch = 7.8615  detector resolution (eV): 167  (at 5984 eV)  fano = 0.143
+      Energy correction offset 3.41 eV   slope change -0.01 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14039 cps (correct energy range)
+  L5-XRS-10    Si intensity = 2457, Fe intensity = 98941,   Si/Fe ratio = 0.02
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     13.5%   abs_err(1s)   0.0000%
+   MgCO3     49.85 %      Mg_K   int    947.5  coeff   0.9783   re_c      3.4%   abs_err(1s)   3.0276%
+   Al2O3      0.05 %      Al_K   int      5.8  coeff   0.9920   re_c    147.7%   abs_err(1s)   0.1048%
+    SiO2      8.87 %      Si_K   int   2457.0  coeff   1.0232   re_c      2.1%   abs_err(1s)   0.4809%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      1.62 %       S_K   int   1629.9  coeff   1.1330   re_c      2.8%   abs_err(1s)   0.4611%
+      Cl    0.2101 %      Cl_K   int    430.6  coeff   1.0332   re_c     11.9%   abs_err(1s)   0.1990%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      5.12 %      Ca_K   int   4997.3  coeff   1.0129   re_c      1.6%   abs_err(1s)   0.2686%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.28 %      Mn_K   int   2728.0  coeff   0.9821   re_c      2.5%   abs_err(1s)   0.3933%
+ FeCO3-T     51.64 %      Fe_K   int  98940.5  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.5873%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   60.1494 %     (60.15 % from stoichiometry)
+    C   13.2030 %     (13.20 % from stoichiometry)
+
+    Element sum 127.45 %
+
+Other spectrum components
+   0     DetCE  int     10.3  coeff   1.0000   not fit
+   1      Rh_K  int     29.2  coeff   1.0000   not fit
+   8      Rh_L  int   4332.2  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -20.8  coeff  -2.9770   not included
+   18  Rh_L_coh  int  -1248.8  coeff  -0.3864   not included
+   19  Rh_K_inc  int     41.9  coeff   2.1311   re_c    52.89%
+   20    Pileup  int    205.3  coeff   1.3856   re_c    12.87%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -490.9  coeff  -0.4332   not included
+   23  calc bkg0  int  11386.0  coeff   1.7516   not fit
+   24  SNIP bkg  int   2607.6  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 10.3sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3046|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3046|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3046|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3046|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 9.02    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 120511
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 20 iterations, reduced chi sq = 1.02         live time 9.02 sec.
+Final energy calibration (eV):   eV start = -20.0  eV/ch = 7.8799  detector resolution (eV): 165  (at 5984 eV)  fano = 0.148
+      Energy correction offset 2.41 eV   slope change -0.01 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 12965 cps (correct energy range)
+  L5-XRS-10    Si intensity = 2425, Fe intensity = 92027,   Si/Fe ratio = 0.03
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     13.2%   abs_err(1s)   0.0000%
+   MgCO3     39.07 %      Mg_K   int    723.3  coeff   0.9783   re_c      3.9%   abs_err(1s)   2.4923%
+   Al2O3      0.16 %      Al_K   int     17.2  coeff   0.9913   re_c     52.8%   abs_err(1s)   0.1881%
+    SiO2      8.78 %      Si_K   int   2425.4  coeff   1.0233   re_c      2.1%   abs_err(1s)   0.4762%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      1.39 %       S_K   int   1387.0  coeff   1.1329   re_c      3.0%   abs_err(1s)   0.4180%
+      Cl    0.1285 %      Cl_K   int    260.7  coeff   1.0337   re_c     18.8%   abs_err(1s)   0.1438%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      4.77 %      Ca_K   int   4484.3  coeff   1.0129   re_c      1.6%   abs_err(1s)   0.3247%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.21 %      Mn_K   int   2458.4  coeff   0.9821   re_c      2.7%   abs_err(1s)   0.3772%
+ FeCO3-T     50.47 %      Fe_K   int  92027.3  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.5292%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   53.1916 %     (53.19 % from stoichiometry)
+    C   11.4964 %     (11.50 % from stoichiometry)
+
+    Element sum 114.78 %
+
+Other spectrum components
+   0     DetCE  int      9.1  coeff   1.0000   not fit
+   1      Rh_K  int     27.2  coeff   1.0000   not fit
+   8      Rh_L  int   4265.2  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -15.4  coeff  -2.2267   not included
+   18  Rh_L_coh  int  -1663.0  coeff  -0.4991   not included
+   19  Rh_K_inc  int     33.0  coeff   1.8025   re_c    66.61%
+   20    Pileup  int    273.3  coeff   2.1267   re_c     9.98%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -506.3  coeff  -0.4326   not included
+   23  calc bkg0  int  10805.7  coeff   1.6542   not fit
+   24  SNIP bkg  int   2316.2  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 7.33sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3217|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3217|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3217|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3217|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.97    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 145295
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 14 iterations, reduced chi sq = 2.23         live time 8.97 sec.
+Final energy calibration (eV):   eV start = -17.5  eV/ch = 7.8660  detector resolution (eV): 164  (at 5984 eV)  fano = 0.142
+      Energy correction offset 1.04 eV   slope change 0.05 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 15800 cps (correct energy range)
+  L5-XRS-10    Si intensity = 4739, Fe intensity = 100628,   Si/Fe ratio = 0.05
+
+Fitted elements
+    Na2O      7.27 %      Na_K   int     45.0  coeff   0.7541   re_c     27.0%   abs_err(1s)   1.9976%
+   MgCO3     42.50 %      Mg_K   int    784.3  coeff   0.9781   re_c      3.8%   abs_err(1s)   2.6779%
+   Al2O3      0.25 %      Al_K   int     27.0  coeff   0.9918   re_c     38.5%   abs_err(1s)   0.2367%
+    SiO2     17.27 %      Si_K   int   4739.0  coeff   1.0231   re_c      1.5%   abs_err(1s)   0.9017%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      1.59 %       S_K   int   1507.1  coeff   1.1330   re_c      3.0%   abs_err(1s)   0.4568%
+      Cl    2.9721 %      Cl_K   int   5657.7  coeff   1.0332   re_c      1.8%   abs_err(1s)   0.5666%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      3.36 %      Ca_K   int   3060.6  coeff   1.0129   re_c      2.0%   abs_err(1s)   0.5523%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.03 %      Mn_K   int   2130.1  coeff   0.9822   re_c      3.0%   abs_err(1s)   0.3342%
+ FeCO3-T     53.51 %      Fe_K   int 100627.6  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.6810%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   62.2158 %     (62.22 % from stoichiometry)
+    C   12.1122 %     (12.11 % from stoichiometry)
+
+    Element sum 138.56 %
+
+Other spectrum components
+   0     DetCE  int      8.4  coeff   1.0000   not fit
+   1      Rh_K  int     29.9  coeff   1.0000   not fit
+   8      Rh_L  int   4026.1  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -21.6  coeff  -3.1255   not included
+   18  Rh_L_coh  int   3959.5  coeff   1.3162   re_c     3.12%
+   19  Rh_K_inc  int     29.2  coeff   1.4673   re_c    74.94%
+   20    Pileup  int    273.5  coeff   1.6881   re_c    10.05%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -808.5  coeff  -0.8029   not included
+   23  calc bkg0  int  10379.0  coeff   1.6830   not fit
+   24  SNIP bkg  int   2026.7  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 11.9sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3218|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3218|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3218|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3218|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.99    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 137766
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 23 iterations, reduced chi sq = 1.43         live time 8.99 sec.
+Final energy calibration (eV):   eV start = -18.5  eV/ch = 7.8678  detector resolution (eV): 165  (at 5984 eV)  fano = 0.130
+      Energy correction offset 0.02 eV   slope change 0.07 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14942 cps (correct energy range)
+  L5-XRS-10    Si intensity = 2650, Fe intensity = 102897,   Si/Fe ratio = 0.03
+
+Fitted elements
+    Na2O      5.44 %      Na_K   int     32.8  coeff   0.7541   re_c     35.1%   abs_err(1s)   1.9303%
+   MgCO3     44.87 %      Mg_K   int    817.1  coeff   0.9785   re_c      3.7%   abs_err(1s)   2.8031%
+   Al2O3      0.21 %      Al_K   int     21.6  coeff   0.9906   re_c     45.6%   abs_err(1s)   0.2170%
+    SiO2      9.77 %      Si_K   int   2650.0  coeff   1.0233   re_c      2.0%   abs_err(1s)   0.5265%
+    P2O5      0.05 %       P_K   int     22.8  coeff   1.0773   re_c     58.1%   abs_err(1s)   0.0696%
+     SO3      0.50 %       S_K   int    493.3  coeff   1.1330   re_c      6.1%   abs_err(1s)   0.1834%
+      Cl    1.7839 %      Cl_K   int   3562.4  coeff   1.0327   re_c      2.5%   abs_err(1s)   0.4865%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      3.88 %      Ca_K   int   3673.4  coeff   1.0129   re_c      1.9%   abs_err(1s)   0.4990%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.05 %      Mn_K   int   2206.7  coeff   0.9820   re_c      2.9%   abs_err(1s)   0.3405%
+ FeCO3-T     54.85 %      Fe_K   int 102897.5  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.7481%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   59.2631 %     (59.26 % from stoichiometry)
+    C   12.6537 %     (12.65 % from stoichiometry)
+
+    Element sum 131.21 %
+
+Other spectrum components
+   0     DetCE  int      9.0  coeff   1.0000   not fit
+   1      Rh_K  int     28.7  coeff   1.0000   not fit
+   8      Rh_L  int   4216.8  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -19.1  coeff  -2.7795   not included
+   18  Rh_L_coh  int   1294.8  coeff   0.4048   re_c     8.44%
+   19  Rh_K_inc  int     35.2  coeff   1.8387   re_c    62.67%
+   20    Pileup  int    263.2  coeff   1.6469   re_c    10.31%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -715.4  coeff  -0.6566   not included
+   23  calc bkg0  int  11365.6  coeff   1.7644   not fit
+   24  SNIP bkg  int   2034.4  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 7.88sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3217|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3217|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3217|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3217|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 9.00    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 130946
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 15 iterations, reduced chi sq = 0.84         live time 9.00 sec.
+Final energy calibration (eV):   eV start = -21.8  eV/ch = 7.8835  detector resolution (eV): 164  (at 5984 eV)  fano = 0.142
+      Energy correction offset 0.57 eV   slope change 0.03 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14182 cps (correct energy range)
+  L5-XRS-10    Si intensity = 4388, Fe intensity = 100097,   Si/Fe ratio = 0.04
+
+Fitted elements
+    Na2O      2.53 %      Na_K   int     15.3  coeff   0.7546   re_c     65.0%   abs_err(1s)   1.7388%
+   MgCO3     43.21 %      Mg_K   int    809.0  coeff   0.9784   re_c      3.7%   abs_err(1s)   2.6989%
+   Al2O3      0.21 %      Al_K   int     22.1  coeff   0.9912   re_c     45.5%   abs_err(1s)   0.2162%
+    SiO2     15.89 %      Si_K   int   4388.3  coeff   1.0233   re_c      1.5%   abs_err(1s)   0.8324%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      1.65 %       S_K   int   1574.0  coeff   1.1330   re_c      2.8%   abs_err(1s)   0.4657%
+      Cl    0.9195 %      Cl_K   int   1786.5  coeff   1.0328   re_c      3.5%   abs_err(1s)   0.3062%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      3.11 %      Ca_K   int   2917.2  coeff   1.0129   re_c      2.1%   abs_err(1s)   0.5643%
+    TiO2      0.06 %      Ti_K   int    135.7  coeff   0.9901   re_c     22.7%   abs_err(1s)   0.0768%
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.05 %      Mn_K   int   2211.3  coeff   0.9825   re_c      2.9%   abs_err(1s)   0.3405%
+ FeCO3-T     52.99 %      Fe_K   int 100097.0  coeff   0.9793   re_c      0.3%   abs_err(1s)   2.6552%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   60.3756 %     (60.38 % from stoichiometry)
+    C   12.1334 %     (12.13 % from stoichiometry)
+
+    Element sum 130.43 %
+
+Other spectrum components
+   0     DetCE  int      7.8  coeff   1.0000   not fit
+   1      Rh_K  int     29.1  coeff   1.0000   not fit
+   8      Rh_L  int   4120.1  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9793   not included
+   17  Rh_K_coh  int    -22.3  coeff  -3.2249   not included
+   18  Rh_L_coh  int   -499.7  coeff  -0.1623   not included
+   19  Rh_K_inc  int     24.3  coeff   1.2471   re_c    89.11%
+   20    Pileup  int    175.9  coeff   1.1689   re_c    13.81%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -536.4  coeff  -0.5032   not included
+   23  calc bkg0  int  10263.5  coeff   1.6088   not fit
+   24  SNIP bkg  int   2127.6  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 9.9sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3219|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3219|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3219|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3219|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.96    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 151024
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 19 iterations, reduced chi sq = 3.55         live time 8.96 sec.
+Final energy calibration (eV):   eV start = -17.6  eV/ch = 7.8664  detector resolution (eV): 167  (at 5984 eV)  fano = 0.133
+      Energy correction offset 0.88 eV   slope change 0.06 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 16459 cps (correct energy range)
+  L5-XRS-10    Si intensity = 5463, Fe intensity = 98591,   Si/Fe ratio = 0.06
+
+Fitted elements
+    Na2O     11.23 %      Na_K   int     71.9  coeff   0.7547   re_c     19.3%   abs_err(1s)   2.2399%
+   MgCO3     43.26 %      Mg_K   int    801.0  coeff   0.9783   re_c      3.8%   abs_err(1s)   2.7227%
+   Al2O3      0.30 %      Al_K   int     31.7  coeff   0.9913   re_c     35.5%   abs_err(1s)   0.2502%
+    SiO2     19.87 %      Si_K   int   5463.3  coeff   1.0232   re_c      1.4%   abs_err(1s)   1.0322%
+    P2O5      0.03 %       P_K   int     16.5  coeff   1.0791   re_c     78.2%   abs_err(1s)   0.0678%
+     SO3      1.94 %       S_K   int   1813.2  coeff   1.1330   re_c      2.7%   abs_err(1s)   0.5094%
+      Cl    4.2137 %      Cl_K   int   7887.2  coeff   1.0319   re_c      1.5%   abs_err(1s)   0.4434%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      3.03 %      Ca_K   int   2719.9  coeff   1.0128   re_c      2.2%   abs_err(1s)   0.5667%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      0.97 %      Mn_K   int   2026.4  coeff   0.9818   re_c      3.0%   abs_err(1s)   0.3198%
+ FeCO3-T     51.50 %      Fe_K   int  98591.3  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.5804%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   64.2859 %     (64.29 % from stoichiometry)
+    C   11.9663 %     (11.97 % from stoichiometry)
+
+    Element sum 145.15 %
+
+Other spectrum components
+   0     DetCE  int      9.5  coeff   1.0000   not fit
+   1      Rh_K  int     31.5  coeff   1.0000   not fit
+   8      Rh_L  int   3958.5  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -20.6  coeff  -2.9448   not included
+   18  Rh_L_coh  int   4069.3  coeff   1.3950   re_c     3.04%
+   19  Rh_K_inc  int     35.2  coeff   1.6767   re_c    62.69%
+   20    Pileup  int    253.4  coeff   1.5603   re_c    10.80%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -864.8  coeff  -0.9008   not included
+   23  calc bkg0  int   9796.4  coeff   1.6289   not fit
+   24  SNIP bkg  int   1727.0  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 9.32sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3218|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3218|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3218|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3218|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 9.00    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 131405
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 18 iterations, reduced chi sq = 1.04         live time 9.00 sec.
+Final energy calibration (eV):   eV start = -21.8  eV/ch = 7.8833  detector resolution (eV): 164  (at 5984 eV)  fano = 0.150
+      Energy correction offset 0.64 eV   slope change 0.03 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14219 cps (correct energy range)
+  L5-XRS-10    Si intensity = 2715, Fe intensity = 102406,   Si/Fe ratio = 0.03
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      7.4  coeff   0.7542   not included
+   MgCO3     41.66 %      Mg_K   int    763.5  coeff   0.9778   re_c      3.8%   abs_err(1s)   2.6267%
+   Al2O3      0.20 %      Al_K   int     21.3  coeff   0.9911   re_c     43.5%   abs_err(1s)   0.2120%
+    SiO2      9.91 %      Si_K   int   2715.2  coeff   1.0230   re_c      2.0%   abs_err(1s)   0.5333%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.63 %       S_K   int    618.8  coeff   1.1327   re_c      5.0%   abs_err(1s)   0.2228%
+      Cl    0.7091 %      Cl_K   int   1427.7  coeff   1.0330   re_c      4.2%   abs_err(1s)   0.2469%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      3.81 %      Ca_K   int   3617.0  coeff   1.0129   re_c      1.9%   abs_err(1s)   0.5084%
+    TiO2      0.03 %      Ti_K   int     63.7  coeff   0.9914   re_c     47.1%   abs_err(1s)   0.0587%
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.14 %      Mn_K   int   2356.8  coeff   0.9822   re_c      2.8%   abs_err(1s)   0.3625%
+ FeCO3-T     56.16 %      Fe_K   int 102405.8  coeff   0.9793   re_c      0.3%   abs_err(1s)   2.8137%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   56.7148 %     (56.71 % from stoichiometry)
+    C   12.3334 %     (12.33 % from stoichiometry)
+
+    Element sum 123.06 %
+
+Other spectrum components
+   0     DetCE  int      7.7  coeff   1.0000   not fit
+   1      Rh_K  int     27.1  coeff   1.0000   not fit
+   8      Rh_L  int   4250.5  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9793   not included
+   17  Rh_K_coh  int    -18.4  coeff  -2.7167   not included
+   18  Rh_L_coh  int  -1010.9  coeff  -0.3069   not included
+   19  Rh_K_inc  int     24.5  coeff   1.3614   re_c    88.54%
+   20    Pileup  int    283.7  coeff   1.8424   re_c     9.32%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -483.0  coeff  -0.4223   not included
+   23  calc bkg0  int  11203.6  coeff   1.6998   not fit
+   24  SNIP bkg  int   2111.9  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 7.42sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3219|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3219|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3219|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3219|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.98    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 137219
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 14 iterations, reduced chi sq = 1.01         live time 8.98 sec.
+Final energy calibration (eV):   eV start = -21.1  eV/ch = 7.8824  detector resolution (eV): 164  (at 5984 eV)  fano = 0.127
+      Energy correction offset 1.27 eV   slope change 0.02 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14894 cps (correct energy range)
+  L5-XRS-10    Si intensity = 5995, Fe intensity = 105149,   Si/Fe ratio = 0.06
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     13.7%   abs_err(1s)   0.0000%
+   MgCO3     44.37 %      Mg_K   int    847.7  coeff   0.9784   re_c      3.6%   abs_err(1s)   2.7529%
+   Al2O3      0.13 %      Al_K   int     14.5  coeff   0.9915   re_c     70.6%   abs_err(1s)   0.1728%
+    SiO2     21.35 %      Si_K   int   5994.6  coeff   1.0233   re_c      1.3%   abs_err(1s)   1.1053%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      2.28 %       S_K   int   2144.9  coeff   1.1330   re_c      2.4%   abs_err(1s)   0.5452%
+      Cl    0.6437 %      Cl_K   int   1232.0  coeff   1.0329   re_c      4.8%   abs_err(1s)   0.2274%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      2.92 %      Ca_K   int   2749.5  coeff   1.0129   re_c      2.2%   abs_err(1s)   0.5681%
+    TiO2      0.10 %      Ti_K   int    220.3  coeff   0.9906   re_c     14.8%   abs_err(1s)   0.1151%
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.09 %      Mn_K   int   2308.0  coeff   0.9821   re_c      2.8%   abs_err(1s)   0.3496%
+ FeCO3-T     55.29 %      Fe_K   int 105148.9  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.7700%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   64.5212 %     (64.52 % from stoichiometry)
+    C   12.5169 %     (12.52 % from stoichiometry)
+
+    Element sum 136.98 %
+
+Other spectrum components
+   0     DetCE  int      8.0  coeff   1.0000   not fit
+   1      Rh_K  int     29.5  coeff   1.0000   not fit
+   8      Rh_L  int   4077.1  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -20.9  coeff  -3.0413   not included
+   18  Rh_L_coh  int  -1177.6  coeff  -0.3929   not included
+   19  Rh_K_inc  int     23.7  coeff   1.2035   re_c    91.05%
+   20    Pileup  int    252.6  coeff   1.4978   re_c    10.64%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -386.6  coeff  -0.3706   not included
+   23  calc bkg0  int   9929.0  coeff   1.5612   not fit
+   24  SNIP bkg  int   2122.9  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 10.5sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3230|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3230|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3230|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3230|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.97    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 140740
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 20 iterations, reduced chi sq = 0.75         live time 8.97 sec.
+Final energy calibration (eV):   eV start = -17.9  eV/ch = 7.8664  detector resolution (eV): 167  (at 5984 eV)  fano = 0.141
+      Energy correction offset 0.59 eV   slope change 0.06 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 15265 cps (correct energy range)
+  L5-XRS-10    Si intensity = 5507, Fe intensity = 107911,   Si/Fe ratio = 0.05
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      4.0  coeff   0.7542   not included
+   MgCO3     42.62 %      Mg_K   int    804.8  coeff   0.9783   re_c      3.7%   abs_err(1s)   2.6669%
+   Al2O3      0.10 %      Al_K   int     10.6  coeff   0.9919   re_c     91.1%   abs_err(1s)   0.1440%
+    SiO2     19.64 %      Si_K   int   5506.9  coeff   1.0233   re_c      1.4%   abs_err(1s)   1.0200%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.20 %       S_K   int    190.8  coeff   1.1330   re_c     11.6%   abs_err(1s)   0.1936%
+      Cl    0.9462 %      Cl_K   int   1847.7  coeff   1.0328   re_c      3.5%   abs_err(1s)   0.3133%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      3.91 %      Ca_K   int   3720.5  coeff   1.0129   re_c      1.8%   abs_err(1s)   0.4941%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.37 %      Mn_K   int   2872.5  coeff   0.9821   re_c      2.5%   abs_err(1s)   0.4131%
+ FeCO3-T     57.82 %      Fe_K   int 107910.7  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.8965%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   62.9580 %     (62.96 % from stoichiometry)
+    C   12.6785 %     (12.68 % from stoichiometry)
+
+    Element sum 135.42 %
+
+Other spectrum components
+   0     DetCE  int      9.1  coeff   1.0000   not fit
+   1      Rh_K  int     28.6  coeff   1.0000   not fit
+   8      Rh_L  int   4147.7  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -20.0  coeff  -2.9361   not included
+   18  Rh_L_coh  int   -574.7  coeff  -0.1847   not included
+   19  Rh_K_inc  int     35.8  coeff   1.8936   re_c    61.31%
+   20    Pileup  int    294.9  coeff   1.6483   re_c     9.82%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -409.3  coeff  -0.3798   not included
+   23  calc bkg0  int  10990.1  coeff   1.7033   not fit
+   24  SNIP bkg  int   2330.1  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 17.1sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3231|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3231|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3231|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3231|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.97    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 132530
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 34 iterations, reduced chi sq = 1.15         live time 8.97 sec.
+Final energy calibration (eV):   eV start = -20.6  eV/ch = 7.8819  detector resolution (eV): 164  (at 5984 eV)  fano = 0.159
+      Energy correction offset 1.84 eV   slope change 0.01 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14401 cps (correct energy range)
+  L5-XRS-10    Si intensity = 1044, Fe intensity = 104703,   Si/Fe ratio = 0.01
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      7.7  coeff   0.7542   not included
+   MgCO3     40.82 %      Mg_K   int    732.6  coeff   0.9783   re_c      3.9%   abs_err(1s)   2.5912%
+   Al2O3      0.15 %      Al_K   int     15.4  coeff   0.9911   re_c     54.6%   abs_err(1s)   0.1776%
+    SiO2      3.86 %      Si_K   int   1044.4  coeff   1.0232   re_c      3.2%   abs_err(1s)   0.5120%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.02 %       S_K   int     17.6  coeff   1.1341   re_c    101.6%   abs_err(1s)   0.0447%
+      Cl    0.0979 %      Cl_K   int    205.7  coeff   1.0337   re_c     22.8%   abs_err(1s)   0.1162%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      5.74 %      Ca_K   int   5605.8  coeff   1.0129   re_c      1.4%   abs_err(1s)   0.2992%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.54 %      Mn_K   int   3137.4  coeff   0.9821   re_c      2.3%   abs_err(1s)   0.4458%
+ FeCO3-T     58.79 %      Fe_K   int 104702.7  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.9455%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   54.7922 %     (54.79 % from stoichiometry)
+    C   12.7601 %     (12.76 % from stoichiometry)
+
+    Element sum 119.82 %
+
+Other spectrum components
+   0     DetCE  int      9.1  coeff   1.0000   not fit
+   1      Rh_K  int     25.8  coeff   1.0000   not fit
+   8      Rh_L  int   4420.4  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -19.9  coeff  -2.9747   not included
+   18  Rh_L_coh  int  -1637.7  coeff  -0.4669   not included
+   19  Rh_K_inc  int     42.4  coeff   2.4886   re_c    52.62%
+   20    Pileup  int    185.9  coeff   1.1363   re_c    13.69%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -580.1  coeff  -0.4703   not included
+   23  calc bkg0  int  11325.8  coeff   1.6752   not fit
+   24  SNIP bkg  int   2069.3  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 8.87sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3230|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3230|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3230|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3230|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.97    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 135666
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 17 iterations, reduced chi sq = 0.85         live time 8.97 sec.
+Final energy calibration (eV):   eV start = -21.4  eV/ch = 7.8825  detector resolution (eV): 164  (at 5984 eV)  fano = 0.143
+      Energy correction offset 0.96 eV   slope change 0.02 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14728 cps (correct energy range)
+  L5-XRS-10    Si intensity = 4765, Fe intensity = 104883,   Si/Fe ratio = 0.05
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     14.0%   abs_err(1s)   0.0000%
+   MgCO3     35.05 %      Mg_K   int    642.8  coeff   0.9780   re_c      4.2%   abs_err(1s)   2.2938%
+   Al2O3      0.16 %      Al_K   int     17.1  coeff   0.9920   re_c     56.5%   abs_err(1s)   0.1877%
+    SiO2     17.13 %      Si_K   int   4765.1  coeff   1.0231   re_c      1.5%   abs_err(1s)   0.8943%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.14 %       S_K   int    134.2  coeff   1.1333   re_c     15.5%   abs_err(1s)   0.1534%
+      Cl    0.8413 %      Cl_K   int   1641.4  coeff   1.0330   re_c      3.8%   abs_err(1s)   0.2849%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      3.76 %      Ca_K   int   3503.6  coeff   1.0129   re_c      1.9%   abs_err(1s)   0.5147%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.37 %      Mn_K   int   2770.6  coeff   0.9822   re_c      2.5%   abs_err(1s)   0.4123%
+ FeCO3-T     58.59 %      Fe_K   int 104882.7  coeff   0.9793   re_c      0.3%   abs_err(1s)   2.9352%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   57.5444 %     (57.54 % from stoichiometry)
+    C   11.6606 %     (11.66 % from stoichiometry)
+
+    Element sum 125.84 %
+
+Other spectrum components
+   0     DetCE  int      8.4  coeff   1.0000   not fit
+   1      Rh_K  int     26.8  coeff   1.0000   not fit
+   8      Rh_L  int   4129.8  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9793   not included
+   17  Rh_K_coh  int    -14.1  coeff  -2.1097   not included
+   18  Rh_L_coh  int   -769.6  coeff  -0.2392   not included
+   19  Rh_K_inc  int     31.8  coeff   1.8027   re_c    68.90%
+   20    Pileup  int    312.1  coeff   1.8649   re_c     9.05%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -364.9  coeff  -0.3272   not included
+   23  calc bkg0  int  10826.4  coeff   1.6588   not fit
+   24  SNIP bkg  int   2132.7  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 10.5sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3231|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3231|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3231|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3231|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.97    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 140856
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 20 iterations, reduced chi sq = 0.93         live time 8.97 sec.
+Final energy calibration (eV):   eV start = -15.7  eV/ch = 7.8645  detector resolution (eV): 166  (at 5984 eV)  fano = 0.144
+      Energy correction offset 2.83 eV   slope change 0.03 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 15313 cps (correct energy range)
+  L5-XRS-10    Si intensity = 1233, Fe intensity = 110806,   Si/Fe ratio = 0.01
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      1.7  coeff   0.7542   not included
+   MgCO3     48.02 %      Mg_K   int    878.8  coeff   0.9783   re_c      3.5%   abs_err(1s)   2.9554%
+   Al2O3      0.33 %      Al_K   int     34.8  coeff   0.9911   re_c     28.5%   abs_err(1s)   0.2500%
+    SiO2      4.54 %      Si_K   int   1233.0  coeff   1.0232   re_c      3.0%   abs_err(1s)   0.3949%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.07 %       S_K   int     75.4  coeff   1.1330   re_c     26.2%   abs_err(1s)   0.0913%
+      Cl    0.1095 %      Cl_K   int    230.6  coeff   1.0338   re_c     20.6%   abs_err(1s)   0.1269%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      6.11 %      Ca_K   int   6120.4  coeff   1.0129   re_c      1.4%   abs_err(1s)   0.3175%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.62 %      Mn_K   int   3408.5  coeff   0.9821   re_c      2.2%   abs_err(1s)   0.4601%
+ FeCO3-T     60.10 %      Fe_K   int 110806.4  coeff   0.9792   re_c      0.3%   abs_err(1s)   3.0109%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   60.1278 %     (60.13 % from stoichiometry)
+    C   13.9741 %     (13.97 % from stoichiometry)
+
+    Element sum 129.72 %
+
+Other spectrum components
+   0     DetCE  int      9.3  coeff   1.0000   not fit
+   1      Rh_K  int     27.2  coeff   1.0000   not fit
+   8      Rh_L  int   4452.0  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -17.4  coeff  -2.5830   not included
+   18  Rh_L_coh  int  -1168.4  coeff  -0.3423   not included
+   19  Rh_K_inc  int     36.7  coeff   2.0487   re_c    60.04%
+   20    Pileup  int    287.8  coeff   1.5751   re_c     9.79%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -476.6  coeff  -0.3973   not included
+   23  calc bkg0  int  11888.1  coeff   1.7677   not fit
+   24  SNIP bkg  int   2272.1  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 10.9sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3232|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3232|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3232|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3232|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.98    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 135473
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 21 iterations, reduced chi sq = 1.00         live time 8.98 sec.
+Final energy calibration (eV):   eV start = -16.4  eV/ch = 7.8654  detector resolution (eV): 164  (at 5984 eV)  fano = 0.158
+      Energy correction offset 2.10 eV   slope change 0.04 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14675 cps (correct energy range)
+  L5-XRS-10    Si intensity = 1521, Fe intensity = 104164,   Si/Fe ratio = 0.01
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     13.3%   abs_err(1s)   0.0000%
+   MgCO3     40.46 %      Mg_K   int    729.8  coeff   0.9784   re_c      3.9%   abs_err(1s)   2.5723%
+   Al2O3      0.18 %      Al_K   int     18.5  coeff   0.9910   re_c     46.9%   abs_err(1s)   0.1969%
+    SiO2      5.59 %      Si_K   int   1520.7  coeff   1.0233   re_c      2.6%   abs_err(1s)   0.3166%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.30 %       S_K   int    306.6  coeff   1.1329   re_c      8.3%   abs_err(1s)   0.2298%
+      Cl    0.6730 %      Cl_K   int   1392.5  coeff   1.0335   re_c      4.8%   abs_err(1s)   0.2364%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      5.61 %      Ca_K   int   5391.8  coeff   1.0129   re_c      1.5%   abs_err(1s)   0.2928%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.31 %      Mn_K   int   2646.4  coeff   0.9822   re_c      2.6%   abs_err(1s)   0.3994%
+ FeCO3-T     58.55 %      Fe_K   int 104163.6  coeff   0.9793   re_c      0.3%   abs_err(1s)   2.9332%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   55.4304 %     (55.43 % from stoichiometry)
+    C   12.6432 %     (12.64 % from stoichiometry)
+
+    Element sum 121.47 %
+
+Other spectrum components
+   0     DetCE  int      8.1  coeff   1.0000   not fit
+   1      Rh_K  int     26.1  coeff   1.0000   not fit
+   8      Rh_L  int   4352.1  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9793   not included
+   17  Rh_K_coh  int    -16.6  coeff  -2.4759   not included
+   18  Rh_L_coh  int     67.8  coeff   0.0197   re_c   136.94%
+   19  Rh_K_inc  int     28.9  coeff   1.6741   re_c    75.53%
+   20    Pileup  int    340.1  coeff   2.1136   re_c     8.39%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -611.8  coeff  -0.5110   not included
+   23  calc bkg0  int  11778.7  coeff   1.7671   not fit
+   24  SNIP bkg  int   2131.7  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 10.3sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3232|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3232|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3232|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3232|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.98    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 132420
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 20 iterations, reduced chi sq = 0.91         live time 8.98 sec.
+Final energy calibration (eV):   eV start = -17.3  eV/ch = 7.8780  detector resolution (eV): 163  (at 5984 eV)  fano = 0.164
+      Energy correction offset 5.08 eV   slope change -0.04 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14346 cps (correct energy range)
+  L5-XRS-10    Si intensity = 1656, Fe intensity = 103436,   Si/Fe ratio = 0.02
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      6.4  coeff   0.7542   not included
+   MgCO3     37.34 %      Mg_K   int    667.0  coeff   0.9777   re_c      4.1%   abs_err(1s)   2.4170%
+   Al2O3      0.19 %      Al_K   int     19.6  coeff   0.9903   re_c     44.2%   abs_err(1s)   0.2029%
+    SiO2      6.09 %      Si_K   int   1655.9  coeff   1.0227   re_c      2.5%   abs_err(1s)   0.3419%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.42 %       S_K   int    420.2  coeff   1.1329   re_c      6.5%   abs_err(1s)   0.2211%
+      Cl    0.3511 %      Cl_K   int    723.2  coeff   1.0335   re_c      7.1%   abs_err(1s)   0.2323%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      5.45 %      Ca_K   int   5210.5  coeff   1.0129   re_c      1.5%   abs_err(1s)   0.2849%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.27 %      Mn_K   int   2538.5  coeff   0.9827   re_c      2.7%   abs_err(1s)   0.3903%
+ FeCO3-T     58.84 %      Fe_K   int 103436.5  coeff   0.9796   re_c      0.3%   abs_err(1s)   2.9480%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   54.0240 %     (54.02 % from stoichiometry)
+    C   12.2054 %     (12.21 % from stoichiometry)
+
+    Element sum 118.75 %
+
+Other spectrum components
+   0     DetCE  int      9.0  coeff   1.0000   not fit
+   1      Rh_K  int     25.6  coeff   1.0000   not fit
+   8      Rh_L  int   4331.9  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9796   not included
+   17  Rh_K_coh  int    -16.9  coeff  -2.5419   not included
+   18  Rh_L_coh  int   -688.7  coeff  -0.1989   not included
+   19  Rh_K_inc  int     37.6  coeff   2.2293   re_c    58.76%
+   20    Pileup  int    298.9  coeff   1.8854   re_c     9.15%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -604.8  coeff  -0.4993   not included
+   23  calc bkg0  int  11236.4  coeff   1.6778   not fit
+   24  SNIP bkg  int   2231.9  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 11sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3233|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3233|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3233|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3233|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 9.00    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 126269
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 21 iterations, reduced chi sq = 0.83         live time 9.00 sec.
+Final energy calibration (eV):   eV start = -19.2  eV/ch = 7.8685  detector resolution (eV): 167  (at 5984 eV)  fano = 0.148
+      Energy correction offset -0.72 eV   slope change 0.08 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 13655 cps (correct energy range)
+  L5-XRS-10    Si intensity = 3248, Fe intensity = 94050,   Si/Fe ratio = 0.03
+
+Fitted elements
+    Na2O      0.96 %      Na_K   int      5.6  coeff   0.7548   re_c    164.5%   abs_err(1s)   1.6025%
+   MgCO3     34.82 %      Mg_K   int    637.1  coeff   0.9781   re_c      4.2%   abs_err(1s)   2.2860%
+   Al2O3      0.24 %      Al_K   int     25.4  coeff   0.9919   re_c     39.6%   abs_err(1s)   0.2299%
+    SiO2     11.75 %      Si_K   int   3247.5  coeff   1.0231   re_c      1.8%   abs_err(1s)   0.6250%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      1.58 %       S_K   int   1536.0  coeff   1.1330   re_c      2.9%   abs_err(1s)   0.4536%
+      Cl    1.2271 %      Cl_K   int   2413.8  coeff   1.0328   re_c      3.3%   abs_err(1s)   0.3825%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      4.73 %      Ca_K   int   4312.9  coeff   1.0129   re_c      1.7%   abs_err(1s)   0.3335%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.08 %      Mn_K   int   2135.8  coeff   0.9821   re_c      3.0%   abs_err(1s)   0.3466%
+ FeCO3-T     53.01 %      Fe_K   int  94050.5  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.6565%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   53.7312 %     (53.73 % from stoichiometry)
+    C   11.1369 %     (11.14 % from stoichiometry)
+
+    Element sum 118.20 %
+
+Other spectrum components
+   0     DetCE  int      7.8  coeff   1.0000   not fit
+   1      Rh_K  int     26.8  coeff   1.0000   not fit
+   8      Rh_L  int   4132.1  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -18.5  coeff  -2.7185   not included
+   18  Rh_L_coh  int    176.9  coeff   0.0542   re_c    55.98%
+   19  Rh_K_inc  int     26.5  coeff   1.4818   re_c    82.29%
+   20    Pileup  int    213.2  coeff   1.5593   re_c    12.46%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -488.6  coeff  -0.4355   not included
+   23  calc bkg0  int  10638.6  coeff   1.6648   not fit
+   24  SNIP bkg  int   2132.3  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 8.89sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3233|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3233|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3233|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3233|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.98    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 139306
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 17 iterations, reduced chi sq = 0.81         live time 8.98 sec.
+Final energy calibration (eV):   eV start = -22.4  eV/ch = 7.8843  detector resolution (eV): 164  (at 5984 eV)  fano = 0.156
+      Energy correction offset 0.04 eV   slope change 0.04 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 15081 cps (correct energy range)
+  L5-XRS-10    Si intensity = 3988, Fe intensity = 104041,   Si/Fe ratio = 0.04
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     14.9%   abs_err(1s)   0.0000%
+   MgCO3     36.09 %      Mg_K   int    661.1  coeff   0.9782   re_c      4.1%   abs_err(1s)   2.3452%
+   Al2O3      0.38 %      Al_K   int     40.6  coeff   0.9914   re_c     26.9%   abs_err(1s)   0.2499%
+    SiO2     14.37 %      Si_K   int   3987.7  coeff   1.0232   re_c      1.6%   abs_err(1s)   0.7561%
+    P2O5      0.04 %       P_K   int     19.1  coeff   1.0789   re_c     66.4%   abs_err(1s)   0.0690%
+     SO3      1.94 %       S_K   int   1878.3  coeff   1.1330   re_c      2.6%   abs_err(1s)   0.5099%
+      Cl    1.3399 %      Cl_K   int   2615.1  coeff   1.0328   re_c      2.7%   abs_err(1s)   0.4064%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      5.26 %      Ca_K   int   4866.0  coeff   1.0129   re_c      1.6%   abs_err(1s)   0.2761%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.23 %      Mn_K   int   2453.8  coeff   0.9821   re_c      2.7%   abs_err(1s)   0.3826%
+ FeCO3-T     58.71 %      Fe_K   int 104041.0  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.9412%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   58.5837 %     (58.58 % from stoichiometry)
+    C   11.9871 %     (11.99 % from stoichiometry)
+
+    Element sum 128.16 %
+
+Other spectrum components
+   0     DetCE  int      8.0  coeff   1.0000   not fit
+   1      Rh_K  int     26.9  coeff   1.0000   not fit
+   8      Rh_L  int   4120.7  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -20.8  coeff  -3.1164   not included
+   18  Rh_L_coh  int   -346.3  coeff  -0.1077   not included
+   19  Rh_K_inc  int     23.7  coeff   1.3411   re_c    91.25%
+   20    Pileup  int    282.8  coeff   1.6882   re_c    10.16%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -495.6  coeff  -0.4491   not included
+   23  calc bkg0  int  11534.5  coeff   1.8051   not fit
+   24  SNIP bkg  int   2561.8  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 8.55sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3245|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3245|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3245|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3245|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 9.01    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 125605
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 16 iterations, reduced chi sq = 0.83         live time 9.01 sec.
+Final energy calibration (eV):   eV start = -17.3  eV/ch = 7.8665  detector resolution (eV): 166  (at 5984 eV)  fano = 0.159
+      Energy correction offset 1.20 eV   slope change 0.06 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 13546 cps (correct energy range)
+  L5-XRS-10    Si intensity = 5036, Fe intensity = 93381,   Si/Fe ratio = 0.05
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      3.6  coeff   0.7542   not included
+   MgCO3     32.02 %      Mg_K   int    592.1  coeff   0.9777   re_c      4.4%   abs_err(1s)   2.1326%
+   Al2O3      0.62 %      Al_K   int     67.2  coeff   0.9908   re_c     18.0%   abs_err(1s)   0.2437%
+    SiO2     18.06 %      Si_K   int   5036.1  coeff   1.0229   re_c      1.4%   abs_err(1s)   0.9406%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.41 %       S_K   int    384.3  coeff   1.1328   re_c      7.0%   abs_err(1s)   0.2235%
+      Cl    0.8836 %      Cl_K   int   1692.0  coeff   1.0330   re_c      3.7%   abs_err(1s)   0.2965%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      3.09 %      Ca_K   int   2783.0  coeff   1.0128   re_c      2.2%   abs_err(1s)   0.5653%
+    TiO2      0.18 %      Ti_K   int    388.6  coeff   0.9906   re_c     10.0%   abs_err(1s)   0.1831%
+   Cr2O3      0.06 %      Cr_K   int    199.9  coeff   0.9857   re_c     20.8%   abs_err(1s)   0.0716%
+   MnCO3      0.85 %      Mn_K   int   1680.1  coeff   0.9823   re_c      3.7%   abs_err(1s)   0.2858%
+ FeCO3-T     52.46 %      Fe_K   int  93380.6  coeff   0.9794   re_c      0.3%   abs_err(1s)   2.6289%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   53.7046 %     (53.70 % from stoichiometry)
+    C   10.4589 %     (10.46 % from stoichiometry)
+
+    Element sum 117.43 %
+
+Other spectrum components
+   0     DetCE  int      8.6  coeff   1.0000   not fit
+   1      Rh_K  int     26.9  coeff   1.0000   not fit
+   8      Rh_L  int   4038.6  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9794   not included
+   17  Rh_K_coh  int    -21.5  coeff  -3.1516   not included
+   18  Rh_L_coh  int   -633.0  coeff  -0.1997   not included
+   19  Rh_K_inc  int     31.8  coeff   1.7711   re_c    69.25%
+   20    Pileup  int    194.8  coeff   1.4636   re_c    13.29%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -369.1  coeff  -0.3364   not included
+   23  calc bkg0  int  13025.8  coeff   2.0369   not fit
+   24  SNIP bkg  int   2352.0  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 10.6sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3245|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3245|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3245|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3245|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 9.00    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 133142
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 20 iterations, reduced chi sq = 0.88         live time 9.00 sec.
+Final energy calibration (eV):   eV start = -24.6  eV/ch = 7.8866  detector resolution (eV): 164  (at 5984 eV)  fano = 0.145
+      Energy correction offset -2.17 eV   slope change 0.07 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14382 cps (correct energy range)
+  L5-XRS-10    Si intensity = 5455, Fe intensity = 96832,   Si/Fe ratio = 0.06
+
+Fitted elements
+    Na2O      1.24 %      Na_K   int      7.2  coeff   0.7548   re_c    129.2%   abs_err(1s)   1.6421%
+   MgCO3     30.52 %      Mg_K   int    558.1  coeff   0.9782   re_c      4.5%   abs_err(1s)   2.0693%
+   Al2O3      0.24 %      Al_K   int     25.7  coeff   0.9911   re_c     39.9%   abs_err(1s)   0.2293%
+    SiO2     19.54 %      Si_K   int   5455.2  coeff   1.0232   re_c      1.4%   abs_err(1s)   1.0150%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.61 %       S_K   int    570.0  coeff   1.1330   re_c      5.5%   abs_err(1s)   0.2181%
+      Cl    1.5280 %      Cl_K   int   2898.1  coeff   1.0328   re_c      2.9%   abs_err(1s)   0.4442%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      3.50 %      Ca_K   int   3132.5  coeff   1.0129   re_c      2.1%   abs_err(1s)   0.5414%
+    TiO2      0.18 %      Ti_K   int    369.6  coeff   0.9908   re_c     10.5%   abs_err(1s)   0.1783%
+   Cr2O3      0.05 %      Cr_K   int    159.0  coeff   0.9854   re_c     25.3%   abs_err(1s)   0.0654%
+   MnCO3      1.00 %      Mn_K   int   1971.7  coeff   0.9821   re_c      3.3%   abs_err(1s)   0.3276%
+ FeCO3-T     54.97 %      Fe_K   int  96831.9  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.7546%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   55.1990 %     (55.20 % from stoichiometry)
+    C   10.5717 %     (10.57 % from stoichiometry)
+
+    Element sum 122.18 %
+
+Other spectrum components
+   0     DetCE  int      7.8  coeff   1.0000   not fit
+   1      Rh_K  int     26.8  coeff   1.0000   not fit
+   8      Rh_L  int   4000.3  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -16.4  coeff  -2.4267   not included
+   18  Rh_L_coh  int   1150.3  coeff   0.3655   re_c     9.20%
+   19  Rh_K_inc  int     26.3  coeff   1.4761   re_c    82.82%
+   20    Pileup  int    224.8  coeff   1.5293   re_c    12.05%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -526.7  coeff  -0.4891   not included
+   23  calc bkg0  int  12871.4  coeff   2.0346   not fit
+   24  SNIP bkg  int   2546.7  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 9.45sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3246|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3246|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3246|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3246|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.99    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 133769
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 18 iterations, reduced chi sq = 0.98         live time 8.99 sec.
+Final energy calibration (eV):   eV start = -18.4  eV/ch = 7.8677  detector resolution (eV): 166  (at 5984 eV)  fano = 0.152
+      Energy correction offset 0.07 eV   slope change 0.07 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14464 cps (correct energy range)
+  L5-XRS-10    Si intensity = 1098, Fe intensity = 103709,   Si/Fe ratio = 0.01
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     14.3%   abs_err(1s)   0.0000%
+   MgCO3     47.05 %      Mg_K   int    866.8  coeff   0.9778   re_c      3.5%   abs_err(1s)   2.8995%
+   Al2O3      0.31 %      Al_K   int     32.2  coeff   0.9906   re_c     29.6%   abs_err(1s)   0.2469%
+    SiO2      4.04 %      Si_K   int   1097.5  coeff   1.0229   re_c      3.2%   abs_err(1s)   0.4863%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.07 %       S_K   int     75.5  coeff   1.1338   re_c     26.4%   abs_err(1s)   0.0914%
+      Cl    0.5506 %      Cl_K   int   1156.3  coeff   1.0334   re_c      5.0%   abs_err(1s)   0.1982%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      5.35 %      Ca_K   int   5243.8  coeff   1.0128   re_c      1.5%   abs_err(1s)   0.2798%
+    TiO2      0.03 %      Ti_K   int     63.5  coeff   0.9916   re_c     50.1%   abs_err(1s)   0.0583%
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.20 %      Mn_K   int   2512.9  coeff   0.9822   re_c      2.7%   abs_err(1s)   0.3766%
+ FeCO3-T     56.27 %      Fe_K   int 103709.2  coeff   0.9793   re_c      0.3%   abs_err(1s)   2.8189%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   57.1796 %     (57.18 % from stoichiometry)
+    C   13.3030 %     (13.30 % from stoichiometry)
+
+    Element sum 123.68 %
+
+Other spectrum components
+   0     DetCE  int      8.1  coeff   1.0000   not fit
+   1      Rh_K  int     27.2  coeff   1.0000   not fit
+   8      Rh_L  int   4421.3  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9793   not included
+   17  Rh_K_coh  int    -17.7  coeff  -2.6003   not included
+   18  Rh_L_coh  int   -870.6  coeff  -0.2546   not included
+   19  Rh_K_inc  int     26.5  coeff   1.4641   re_c    81.67%
+   20    Pileup  int    236.6  coeff   1.4970   re_c    11.39%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -676.8  coeff  -0.5682   not included
+   23  calc bkg0  int  11774.3  coeff   1.7641   not fit
+   24  SNIP bkg  int   2376.5  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 17.2sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3247|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3247|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3247|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3247|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.97    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 139307
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 33 iterations, reduced chi sq = 1.02         live time 8.97 sec.
+Final energy calibration (eV):   eV start = -14.1  eV/ch = 7.8624  detector resolution (eV): 168  (at 5984 eV)  fano = 0.204
+      Energy correction offset 4.42 eV   slope change 0.01 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 15138 cps (correct energy range)
+  L5-XRS-10    Si intensity = 679, Fe intensity = 109235,   Si/Fe ratio = 0.01
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     13.6%   abs_err(1s)   0.0000%
+   MgCO3     41.20 %      Mg_K   int    733.3  coeff   0.9775   re_c      3.8%   abs_err(1s)   2.6071%
+   Al2O3      0.13 %      Al_K   int     13.8  coeff   0.9901   re_c     55.8%   abs_err(1s)   0.1639%
+    SiO2      2.52 %      Si_K   int    678.9  coeff   1.0228   re_c      4.0%   abs_err(1s)   0.5657%
+    P2O5      0.02 %       P_K   int     11.4  coeff   1.0779   re_c    102.5%   abs_err(1s)   0.0539%
+     SO3      0.00 %       S_K   int      0.0  coeff   0.0000   not included
+      Cl    0.3499 %      Cl_K   int    739.3  coeff   1.0333   re_c      6.8%   abs_err(1s)   0.2322%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      6.23 %      Ca_K   int   6128.5  coeff   1.0129   re_c      1.4%   abs_err(1s)   0.3238%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.55 %      Mn_K   int   3147.0  coeff   0.9822   re_c      2.3%   abs_err(1s)   0.4478%
+ FeCO3-T     61.92 %      Fe_K   int 109234.9  coeff   0.9794   re_c      0.3%   abs_err(1s)   3.1020%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   55.8289 %     (55.83 % from stoichiometry)
+    C   13.1993 %     (13.20 % from stoichiometry)
+
+    Element sum 122.74 %
+
+Other spectrum components
+   0     DetCE  int      8.1  coeff   1.0000   not fit
+   1      Rh_K  int     25.5  coeff   1.0000   not fit
+   8      Rh_L  int   4445.4  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9794   not included
+   17  Rh_K_coh  int    -17.7  coeff  -2.6800   not included
+   18  Rh_L_coh  int   -570.3  coeff  -0.1609   not included
+   19  Rh_K_inc  int     32.4  coeff   1.9397   re_c    67.95%
+   20    Pileup  int    293.9  coeff   1.6535   re_c     9.62%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -583.3  coeff  -0.4707   not included
+   23  calc bkg0  int  12097.2  coeff   1.7818   not fit
+   24  SNIP bkg  int   2173.0  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 8.26sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3246|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3246|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3246|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3246|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.98    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 135096
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 16 iterations, reduced chi sq = 0.94         live time 8.98 sec.
+Final energy calibration (eV):   eV start = -18.4  eV/ch = 7.8795  detector resolution (eV): 164  (at 5984 eV)  fano = 0.142
+      Energy correction offset 4.00 eV   slope change -0.02 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14640 cps (correct energy range)
+  L5-XRS-10    Si intensity = 1128, Fe intensity = 101925,   Si/Fe ratio = 0.01
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     15.1%   abs_err(1s)   0.0000%
+   MgCO3     40.97 %      Mg_K   int    739.3  coeff   0.9781   re_c      3.9%   abs_err(1s)   2.6093%
+   Al2O3      0.39 %      Al_K   int     40.7  coeff   0.9906   re_c     24.7%   abs_err(1s)   0.2457%
+    SiO2      4.16 %      Si_K   int   1128.1  coeff   1.0231   re_c      3.1%   abs_err(1s)   0.4666%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.06 %       S_K   int     64.3  coeff   1.1340   re_c     31.6%   abs_err(1s)   0.0804%
+      Cl    0.8465 %      Cl_K   int   1761.1  coeff   1.0333   re_c      4.3%   abs_err(1s)   0.2869%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      5.51 %      Ca_K   int   5281.5  coeff   1.0129   re_c      1.5%   abs_err(1s)   0.2883%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.33 %      Mn_K   int   2687.2  coeff   0.9822   re_c      2.6%   abs_err(1s)   0.4045%
+ FeCO3-T     57.37 %      Fe_K   int 101925.3  coeff   0.9793   re_c      0.3%   abs_err(1s)   2.8745%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   54.4002 %     (54.40 % from stoichiometry)
+    C   12.5858 %     (12.59 % from stoichiometry)
+
+    Element sum 119.47 %
+
+Other spectrum components
+   0     DetCE  int      8.4  coeff   1.0000   not fit
+   1      Rh_K  int     26.0  coeff   1.0000   not fit
+   8      Rh_L  int   4366.4  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9793   not included
+   17  Rh_K_coh  int    -14.9  coeff  -2.2216   not included
+   18  Rh_L_coh  int   2361.2  coeff   0.6795   re_c     4.72%
+   19  Rh_K_inc  int     32.2  coeff   1.8667   re_c    67.93%
+   20    Pileup  int    242.8  coeff   1.5664   re_c    10.86%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -846.8  coeff  -0.7044   not included
+   23  calc bkg0  int  11480.2  coeff   1.7262   not fit
+   24  SNIP bkg  int   2256.2  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 15.9sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3248|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3248|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3248|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3248|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.96    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 140945
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 31 iterations, reduced chi sq = 0.87         live time 8.96 sec.
+Final energy calibration (eV):   eV start = -21.6  eV/ch = 7.8833  detector resolution (eV): 164  (at 5984 eV)  fano = 0.170
+      Energy correction offset 0.80 eV   slope change 0.03 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 15352 cps (correct energy range)
+  L5-XRS-10    Si intensity = 1873, Fe intensity = 110141,   Si/Fe ratio = 0.02
+
+Fitted elements
+    Na2O      1.23 %      Na_K   int      7.0  coeff   0.7549   re_c    123.7%   abs_err(1s)   1.5668%
+   MgCO3     38.40 %      Mg_K   int    681.1  coeff   0.9783   re_c      4.0%   abs_err(1s)   2.4712%
+   Al2O3      0.24 %      Al_K   int     25.2  coeff   0.9912   re_c     35.4%   abs_err(1s)   0.2288%
+    SiO2      6.91 %      Si_K   int   1873.1  coeff   1.0233   re_c      2.4%   abs_err(1s)   0.3832%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.05 %       S_K   int     54.9  coeff   1.1326   re_c     33.2%   abs_err(1s)   0.0710%
+      Cl    0.9500 %      Cl_K   int   1943.0  coeff   1.0329   re_c      3.3%   abs_err(1s)   0.3141%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      5.10 %      Ca_K   int   4898.8  coeff   1.0130   re_c      1.6%   abs_err(1s)   0.2674%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.49 %      Mn_K   int   3012.4  coeff   0.9825   re_c      2.4%   abs_err(1s)   0.4364%
+ FeCO3-T     62.45 %      Fe_K   int 110140.7  coeff   0.9794   re_c      0.3%   abs_err(1s)   3.1283%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   56.6091 %     (56.61 % from stoichiometry)
+    C   12.7113 %     (12.71 % from stoichiometry)
+
+    Element sum 125.63 %
+
+Other spectrum components
+   0     DetCE  int      8.3  coeff   1.0000   not fit
+   1      Rh_K  int     25.8  coeff   1.0000   not fit
+   8      Rh_L  int   4313.0  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9794   not included
+   17  Rh_K_coh  int    -19.6  coeff  -2.9646   not included
+   18  Rh_L_coh  int   -339.5  coeff  -0.0991   not included
+   19  Rh_K_inc  int     32.7  coeff   1.9387   re_c    67.24%
+   20    Pileup  int    248.4  coeff   1.3800   re_c    10.87%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -552.4  coeff  -0.4668   not included
+   23  calc bkg0  int  11755.3  coeff   1.7557   not fit
+   24  SNIP bkg  int   2199.6  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 13.4sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3248|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3248|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3248|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3248|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.98    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 142072
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 26 iterations, reduced chi sq = 0.90         live time 8.98 sec.
+Final energy calibration (eV):   eV start = -16.8  eV/ch = 7.8659  detector resolution (eV): 166  (at 5984 eV)  fano = 0.154
+      Energy correction offset 1.74 eV   slope change 0.05 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 15434 cps (correct energy range)
+  L5-XRS-10    Si intensity = 2185, Fe intensity = 110658,   Si/Fe ratio = 0.02
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     13.5%   abs_err(1s)   0.0000%
+   MgCO3     41.05 %      Mg_K   int    740.7  coeff   0.9783   re_c      3.9%   abs_err(1s)   2.6060%
+   Al2O3      0.21 %      Al_K   int     22.5  coeff   0.9912   re_c     41.3%   abs_err(1s)   0.2187%
+    SiO2      8.00 %      Si_K   int   2184.8  coeff   1.0232   re_c      2.2%   abs_err(1s)   0.4374%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.02 %       S_K   int     23.7  coeff   1.1340   re_c     75.3%   abs_err(1s)   0.0543%
+      Cl    0.7769 %      Cl_K   int   1593.9  coeff   1.0328   re_c      3.9%   abs_err(1s)   0.2666%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      5.16 %      Ca_K   int   5011.4  coeff   1.0129   re_c      1.6%   abs_err(1s)   0.2709%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.50 %      Mn_K   int   3065.6  coeff   0.9821   re_c      2.4%   abs_err(1s)   0.4378%
+ FeCO3-T     61.82 %      Fe_K   int 110657.9  coeff   0.9792   re_c      0.3%   abs_err(1s)   3.0966%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   58.1230 %     (58.12 % from stoichiometry)
+    C   13.0331 %     (13.03 % from stoichiometry)
+
+    Element sum 127.35 %
+
+Other spectrum components
+   0     DetCE  int      8.6  coeff   1.0000   not fit
+   1      Rh_K  int     26.3  coeff   1.0000   not fit
+   8      Rh_L  int   4332.1  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -18.4  coeff  -2.7753   not included
+   18  Rh_L_coh  int   -725.0  coeff  -0.2134   not included
+   19  Rh_K_inc  int     28.5  coeff   1.6497   re_c    76.45%
+   20    Pileup  int    270.0  coeff   1.4871   re_c    10.12%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -484.7  coeff  -0.4113   not included
+   23  calc bkg0  int  12263.5  coeff   1.8304   not fit
+   24  SNIP bkg  int   2318.8  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 9.81sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3247|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3247|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3247|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3247|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.97    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 142528
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 19 iterations, reduced chi sq = 1.14         live time 8.97 sec.
+Final energy calibration (eV):   eV start = -16.7  eV/ch = 7.8765  detector resolution (eV): 165  (at 5984 eV)  fano = 0.162
+      Energy correction offset 5.75 eV   slope change -0.06 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 15486 cps (correct energy range)
+  L5-XRS-10    Si intensity = 648, Fe intensity = 107942,   Si/Fe ratio = 0.01
+
+Fitted elements
+    Na2O      2.76 %      Na_K   int     15.8  coeff   0.7545   re_c     61.1%   abs_err(1s)   1.7764%
+   MgCO3     42.61 %      Mg_K   int    757.5  coeff   0.9781   re_c      3.8%   abs_err(1s)   2.6946%
+   Al2O3      0.19 %      Al_K   int     20.0  coeff   0.9908   re_c     43.5%   abs_err(1s)   0.2064%
+    SiO2      2.41 %      Si_K   int    648.2  coeff   1.0230   re_c      4.2%   abs_err(1s)   0.5600%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.00 %       S_K   int      0.0  coeff   0.0000   not included
+      Cl    0.9264 %      Cl_K   int   1943.7  coeff   1.0337   re_c      3.9%   abs_err(1s)   0.3084%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      6.21 %      Ca_K   int   6067.5  coeff   1.0129   re_c      1.4%   abs_err(1s)   0.3229%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.61 %      Mn_K   int   3281.9  coeff   0.9821   re_c      2.3%   abs_err(1s)   0.4576%
+ FeCO3-T     60.29 %      Fe_K   int 107941.7  coeff   0.9793   re_c      0.3%   abs_err(1s)   3.0201%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   56.6392 %     (56.64 % from stoichiometry)
+    C   13.2336 %     (13.23 % from stoichiometry)
+
+    Element sum 125.82 %
+
+Other spectrum components
+   0     DetCE  int      8.3  coeff   1.0000   not fit
+   1      Rh_K  int     26.3  coeff   1.0000   not fit
+   8      Rh_L  int   4412.3  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9793   not included
+   17  Rh_K_coh  int    -14.9  coeff  -2.2360   not included
+   18  Rh_L_coh  int   1995.5  coeff   0.5734   re_c     5.46%
+   19  Rh_K_inc  int     33.5  coeff   1.9367   re_c    65.55%
+   20    Pileup  int    361.7  coeff   2.0601   re_c     8.19%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -931.2  coeff  -0.7741   not included
+   23  calc bkg0  int  11983.6  coeff   1.7933   not fit
+   24  SNIP bkg  int   2153.2  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 9.46sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3249|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3249|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3249|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3249|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.97    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 146347
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 18 iterations, reduced chi sq = 0.73         live time 8.97 sec.
+Final energy calibration (eV):   eV start = -20.9  eV/ch = 7.8702  detector resolution (eV): 167  (at 5984 eV)  fano = 0.126
+      Energy correction offset -2.44 eV   slope change 0.10 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 15885 cps (correct energy range)
+  L5-XRS-10    Si intensity = 7203, Fe intensity = 110781,   Si/Fe ratio = 0.07
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     13.9%   abs_err(1s)   0.0000%
+   MgCO3     40.09 %      Mg_K   int    760.0  coeff   0.9784   re_c      3.8%   abs_err(1s)   2.5420%
+   Al2O3      0.37 %      Al_K   int     41.3  coeff   0.9914   re_c     29.4%   abs_err(1s)   0.2539%
+    SiO2     25.50 %      Si_K   int   7202.6  coeff   1.0233   re_c      1.2%   abs_err(1s)   1.3132%
+    P2O5      0.03 %       P_K   int     15.2  coeff   1.0791   re_c     83.0%   abs_err(1s)   0.0662%
+     SO3      0.16 %       S_K   int    152.5  coeff   1.1330   re_c     14.1%   abs_err(1s)   0.1712%
+      Cl    1.5038 %      Cl_K   int   2856.4  coeff   1.0328   re_c      3.0%   abs_err(1s)   0.4398%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      2.89 %      Ca_K   int   2698.7  coeff   1.0129   re_c      2.2%   abs_err(1s)   0.5683%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.40 %      Mn_K   int   2924.2  coeff   0.9821   re_c      2.4%   abs_err(1s)   0.4191%
+ FeCO3-T     59.51 %      Fe_K   int 110781.3  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.9809%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   64.9802 %     (64.98 % from stoichiometry)
+    C   12.3726 %     (12.37 % from stoichiometry)
+
+    Element sum 140.26 %
+
+Other spectrum components
+   0     DetCE  int     10.2  coeff   1.0000   not fit
+   1      Rh_K  int     28.8  coeff   1.0000   not fit
+   8      Rh_L  int   4044.3  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -16.9  coeff  -2.4923   not included
+   18  Rh_L_coh  int     26.9  coeff   0.0089   re_c   378.70%
+   19  Rh_K_inc  int     41.4  coeff   2.1813   re_c    53.72%
+   20    Pileup  int    329.9  coeff   1.7195   re_c     9.08%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -391.8  coeff  -0.3777   not included
+   23  calc bkg0  int  11177.8  coeff   1.7510   not fit
+   24  SNIP bkg  int   2465.9  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 10.4sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3249|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3249|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3249|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3249|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.98    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 133072
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 20 iterations, reduced chi sq = 0.71         live time 8.98 sec.
+Final energy calibration (eV):   eV start = -23.3  eV/ch = 7.8850  detector resolution (eV): 164  (at 5984 eV)  fano = 0.143
+      Energy correction offset -0.87 eV   slope change 0.05 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14442 cps (correct energy range)
+  L5-XRS-10    Si intensity = 6319, Fe intensity = 101510,   Si/Fe ratio = 0.06
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     14.3%   abs_err(1s)   0.0000%
+   MgCO3     31.39 %      Mg_K   int    580.3  coeff   0.9782   re_c      4.4%   abs_err(1s)   2.1044%
+   Al2O3      0.11 %      Al_K   int     12.6  coeff   0.9920   re_c     78.0%   abs_err(1s)   0.1572%
+    SiO2     22.45 %      Si_K   int   6319.4  coeff   1.0232   re_c      1.3%   abs_err(1s)   1.1605%
+    P2O5      0.06 %       P_K   int     27.9  coeff   1.0785   re_c     43.5%   abs_err(1s)   0.0784%
+     SO3      0.11 %       S_K   int    100.8  coeff   1.1332   re_c     19.3%   abs_err(1s)   0.1262%
+      Cl    1.2624 %      Cl_K   int   2388.5  coeff   1.0328   re_c      2.8%   abs_err(1s)   0.3898%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      2.66 %      Ca_K   int   2413.8  coeff   1.0129   re_c      2.4%   abs_err(1s)   0.5654%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.32 %      Mn_K   int   2643.4  coeff   0.9821   re_c      2.6%   abs_err(1s)   0.4017%
+ FeCO3-T     56.85 %      Fe_K   int 101510.0  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.8484%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   57.0270 %     (57.03 % from stoichiometry)
+    C   10.8234 %     (10.82 % from stoichiometry)
+
+    Element sum 125.03 %
+
+Other spectrum components
+   0     DetCE  int      8.5  coeff   1.0000   not fit
+   1      Rh_K  int     27.0  coeff   1.0000   not fit
+   8      Rh_L  int   4006.9  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -20.6  coeff  -3.0548   not included
+   18  Rh_L_coh  int   -347.9  coeff  -0.1115   not included
+   19  Rh_K_inc  int     31.7  coeff   1.7749   re_c    69.26%
+   20    Pileup  int    246.8  coeff   1.5365   re_c    10.92%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -403.5  coeff  -0.3756   not included
+   23  calc bkg0  int  10430.1  coeff   1.6244   not fit
+   24  SNIP bkg  int   2126.7  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 9.98sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3255|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3255|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3255|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3255|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 9.01    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 122417
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 19 iterations, reduced chi sq = 0.81         live time 9.01 sec.
+Final energy calibration (eV):   eV start = -21.9  eV/ch = 7.8835  detector resolution (eV): 165  (at 5984 eV)  fano = 0.139
+      Energy correction offset 0.49 eV   slope change 0.03 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 13206 cps (correct energy range)
+  L5-XRS-10    Si intensity = 5681, Fe intensity = 92592,   Si/Fe ratio = 0.06
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     13.6%   abs_err(1s)   0.0000%
+   MgCO3     37.81 %      Mg_K   int    724.1  coeff   0.9784   re_c      3.9%   abs_err(1s)   2.4157%
+   Al2O3      0.54 %      Al_K   int     59.8  coeff   0.9912   re_c     20.4%   abs_err(1s)   0.2218%
+    SiO2     20.07 %      Si_K   int   5681.4  coeff   1.0233   re_c      1.3%   abs_err(1s)   1.0409%
+    P2O5      0.01 %       P_K   int      6.1  coeff   1.0791   re_c    189.4%   abs_err(1s)   0.0407%
+     SO3      0.25 %       S_K   int    240.2  coeff   1.1330   re_c      9.7%   abs_err(1s)   0.2179%
+      Cl    0.2661 %      Cl_K   int    516.4  coeff   1.0330   re_c      9.7%   abs_err(1s)   0.2218%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      4.28 %      Ca_K   int   3975.0  coeff   1.0129   re_c      1.7%   abs_err(1s)   0.4322%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.18 %      Mn_K   int   2436.5  coeff   0.9821   re_c      2.7%   abs_err(1s)   0.3711%
+ FeCO3-T     49.54 %      Fe_K   int  92592.5  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.4826%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   57.3641 %     (57.36 % from stoichiometry)
+    C   11.1602 %     (11.16 % from stoichiometry)
+
+    Element sum 122.77 %
+
+Other spectrum components
+   0     DetCE  int      9.4  coeff   1.0000   not fit
+   1      Rh_K  int     28.9  coeff   1.0000   not fit
+   8      Rh_L  int   4106.0  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -17.1  coeff  -2.4419   not included
+   18  Rh_L_coh  int   -878.2  coeff  -0.2829   not included
+   19  Rh_K_inc  int     37.7  coeff   1.9351   re_c    58.54%
+   20    Pileup  int    218.0  coeff   1.6068   re_c    12.31%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -453.7  coeff  -0.4169   not included
+   23  calc bkg0  int  10140.8  coeff   1.5975   not fit
+   24  SNIP bkg  int   2183.7  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 8.86sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3255|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3255|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3255|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3255|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 9.00    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 134784
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 17 iterations, reduced chi sq = 0.90         live time 9.00 sec.
+Final energy calibration (eV):   eV start = -17.6  eV/ch = 7.8668  detector resolution (eV): 166  (at 5984 eV)  fano = 0.143
+      Energy correction offset 0.93 eV   slope change 0.06 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14569 cps (correct energy range)
+  L5-XRS-10    Si intensity = 5891, Fe intensity = 101986,   Si/Fe ratio = 0.06
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      5.6  coeff   0.7542   not included
+   MgCO3     41.45 %      Mg_K   int    793.9  coeff   0.9782   re_c      3.7%   abs_err(1s)   2.6002%
+   Al2O3      0.62 %      Al_K   int     68.3  coeff   0.9915   re_c     18.6%   abs_err(1s)   0.2458%
+    SiO2     20.83 %      Si_K   int   5890.7  coeff   1.0232   re_c      1.3%   abs_err(1s)   1.0793%
+    P2O5      0.05 %       P_K   int     24.4  coeff   1.0791   re_c     52.3%   abs_err(1s)   0.0695%
+     SO3      0.50 %       S_K   int    474.2  coeff   1.1330   re_c      6.1%   abs_err(1s)   0.1832%
+      Cl    0.3871 %      Cl_K   int    754.4  coeff   1.0335   re_c      7.0%   abs_err(1s)   0.2284%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      4.87 %      Ca_K   int   4623.3  coeff   1.0129   re_c      1.6%   abs_err(1s)   0.2976%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.31 %      Mn_K   int   2750.8  coeff   0.9821   re_c      2.5%   abs_err(1s)   0.4009%
+ FeCO3-T     54.12 %      Fe_K   int 101986.0  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.7115%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   62.2816 %     (62.28 % from stoichiometry)
+    C   12.2375 %     (12.24 % from stoichiometry)
+
+    Element sum 132.95 %
+
+Other spectrum components
+   0     DetCE  int      9.1  coeff   1.0000   not fit
+   1      Rh_K  int     29.2  coeff   1.0000   not fit
+   8      Rh_L  int   4138.7  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -22.6  coeff  -3.2611   not included
+   18  Rh_L_coh  int   -926.6  coeff  -0.3007   not included
+   19  Rh_K_inc  int     33.0  coeff   1.6902   re_c    66.69%
+   20    Pileup  int    267.9  coeff   1.6434   re_c    10.51%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -452.4  coeff  -0.4197   not included
+   23  calc bkg0  int  10922.9  coeff   1.7127   not fit
+   24  SNIP bkg  int   2291.5  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 11.6sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3261|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3261|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3261|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3261|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.98    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 131700
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 21 iterations, reduced chi sq = 0.97         live time 8.98 sec.
+Final energy calibration (eV):   eV start = -20.8  eV/ch = 7.8821  detector resolution (eV): 165  (at 5984 eV)  fano = 0.140
+      Energy correction offset 1.59 eV   slope change 0.01 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14260 cps (correct energy range)
+  L5-XRS-10    Si intensity = 4955, Fe intensity = 99780,   Si/Fe ratio = 0.05
+
+Fitted elements
+    Na2O      0.48 %      Na_K   int      2.9  coeff   0.7548   re_c    317.6%   abs_err(1s)   1.5232%
+   MgCO3     41.53 %      Mg_K   int    784.7  coeff   0.9784   re_c      3.8%   abs_err(1s)   2.6115%
+   Al2O3      0.19 %      Al_K   int     20.2  coeff   0.9913   re_c     50.5%   abs_err(1s)   0.2059%
+    SiO2     17.76 %      Si_K   int   4954.6  coeff   1.0233   re_c      1.4%   abs_err(1s)   0.9258%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      3.90 %       S_K   int   3695.7  coeff   1.1330   re_c      1.7%   abs_err(1s)   0.5004%
+      Cl    0.7509 %      Cl_K   int   1430.7  coeff   1.0328   re_c      4.3%   abs_err(1s)   0.2593%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      2.18 %      Ca_K   int   2017.1  coeff   1.0129   re_c      2.6%   abs_err(1s)   0.5355%
+    TiO2      0.09 %      Ti_K   int    201.1  coeff   0.9906   re_c     16.4%   abs_err(1s)   0.1081%
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.06 %      Mn_K   int   2218.7  coeff   0.9821   re_c      2.8%   abs_err(1s)   0.3426%
+ FeCO3-T     53.09 %      Fe_K   int  99780.2  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.6602%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   60.8303 %     (60.83 % from stoichiometry)
+    C   11.7924 %     (11.79 % from stoichiometry)
+
+    Element sum 129.83 %
+
+Other spectrum components
+   0     DetCE  int      8.6  coeff   1.0000   not fit
+   1      Rh_K  int     29.0  coeff   1.0000   not fit
+   8      Rh_L  int   4047.8  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -20.8  coeff  -3.0137   not included
+   18  Rh_L_coh  int  -1110.0  coeff  -0.3673   not included
+   19  Rh_K_inc  int     29.6  coeff   1.5270   re_c    73.40%
+   20    Pileup  int    285.6  coeff   1.8686   re_c     9.64%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -399.4  coeff  -0.3807   not included
+   23  calc bkg0  int   9908.9  coeff   1.5584   not fit
+   24  SNIP bkg  int   2225.7  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 9.57sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3030|Normal|B
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3030|Normal|B with 1 entries. Overall file name column: Normal_B
+Read spectrum for selector: 3030|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3030|Normal|B from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.97    energy calibration   eV start = -22.4  eV/ch = 7.8810    total counts = 138197
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 17 iterations, reduced chi sq = 0.99         live time 8.97 sec.
+Final energy calibration (eV):   eV start = -20.7  eV/ch = 7.8805  detector resolution (eV): 165  (at 5984 eV)  fano = 0.138
+      Energy correction offset 1.67 eV   slope change -0.01 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 14984 cps (correct energy range)
+  L5-XRS-10    Si intensity = 5305, Fe intensity = 105534,   Si/Fe ratio = 0.05
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      0.0  coeff   0.7542   re_c     13.1%   abs_err(1s)   0.0000%
+   MgCO3     36.57 %      Mg_K   int    675.5  coeff   0.9783   re_c      4.1%   abs_err(1s)   2.3717%
+   Al2O3      0.21 %      Al_K   int     23.2  coeff   0.9914   re_c     44.7%   abs_err(1s)   0.2205%
+    SiO2     19.00 %      Si_K   int   5304.7  coeff   1.0233   re_c      1.4%   abs_err(1s)   0.9880%
+    P2O5      0.03 %       P_K   int     15.2  coeff   1.0790   re_c     83.3%   abs_err(1s)   0.0656%
+     SO3      0.63 %       S_K   int    596.1  coeff   1.1330   re_c      5.2%   abs_err(1s)   0.2236%
+      Cl    0.4332 %      Cl_K   int    841.0  coeff   1.0330   re_c      6.6%   abs_err(1s)   0.2157%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      5.17 %      Ca_K   int   4856.1  coeff   1.0129   re_c      1.6%   abs_err(1s)   0.2715%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.41 %      Mn_K   int   2864.7  coeff   0.9821   re_c      2.5%   abs_err(1s)   0.4211%
+ FeCO3-T     58.50 %      Fe_K   int 105533.9  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.9308%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   60.4031 %     (60.40 % from stoichiometry)
+    C   12.0422 %     (12.04 % from stoichiometry)
+
+    Element sum 130.77 %
+
+Other spectrum components
+   0     DetCE  int      9.2  coeff   1.0000   not fit
+   1      Rh_K  int     27.4  coeff   1.0000   not fit
+   8      Rh_L  int   4117.6  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -22.0  coeff  -3.2759   not included
+   18  Rh_L_coh  int  -1686.6  coeff  -0.5353   not included
+   19  Rh_K_inc  int     34.9  coeff   1.9295   re_c    63.03%
+   20    Pileup  int    295.8  coeff   1.7107   re_c     9.89%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -377.3  coeff  -0.3427   not included
+   23  calc bkg0  int  11318.2  coeff   1.7620   not fit
+   24  SNIP bkg  int   2398.0  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 9.51sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3030|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3030|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3030|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3030|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.99    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 128536
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 17 iterations, reduced chi sq = 1.08         live time 8.99 sec.
+Final energy calibration (eV):   eV start = -18.8  eV/ch = 7.8665  detector resolution (eV): 167  (at 5984 eV)  fano = 0.138
+      Energy correction offset -0.28 eV   slope change 0.06 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 13911 cps (correct energy range)
+  L5-XRS-10    Si intensity = 5540, Fe intensity = 97499,   Si/Fe ratio = 0.06
+
+Fitted elements
+    Na2O      0.00 %      Na_K   int      2.6  coeff   0.7542   not included
+   MgCO3     37.41 %      Mg_K   int    703.6  coeff   0.9783   re_c      4.0%   abs_err(1s)   2.4052%
+   Al2O3      0.31 %      Al_K   int     33.7  coeff   0.9919   re_c     33.2%   abs_err(1s)   0.2507%
+    SiO2     19.74 %      Si_K   int   5539.5  coeff   1.0232   re_c      1.4%   abs_err(1s)   1.0247%
+    P2O5      0.00 %       P_K   int      0.0  coeff   0.0000   not included
+     SO3      0.47 %       S_K   int    446.0  coeff   1.1329   re_c      6.2%   abs_err(1s)   0.1982%
+      Cl    0.2351 %      Cl_K   int    454.9  coeff   1.0334   re_c     11.6%   abs_err(1s)   0.2110%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      4.58 %      Ca_K   int   4266.8  coeff   1.0129   re_c      1.7%   abs_err(1s)   0.3690%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.22 %      Mn_K   int   2502.1  coeff   0.9821   re_c      2.7%   abs_err(1s)   0.3809%
+ FeCO3-T     53.03 %      Fe_K   int  97498.8  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.6570%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   58.5790 %     (58.58 % from stoichiometry)
+    C   11.5045 %     (11.50 % from stoichiometry)
+
+    Element sum 125.80 %
+
+Other spectrum components
+   0     DetCE  int      8.5  coeff   1.0000   not fit
+   1      Rh_K  int     28.2  coeff   1.0000   not fit
+   8      Rh_L  int   4098.7  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -17.5  coeff  -2.5510   not included
+   18  Rh_L_coh  int  -2063.4  coeff  -0.6634   not included
+   19  Rh_K_inc  int     30.4  coeff   1.6144   re_c    71.87%
+   20    Pileup  int    241.3  coeff   1.6196   re_c    11.23%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int   -416.1  coeff  -0.3813   not included
+   23  calc bkg0  int  11114.1  coeff   1.7451   not fit
+   24  SNIP bkg  int   2117.8  coeff   1.0000   not fit
+
+
+
+
+=================================================================
+= /tmp/3vjoovnrhkhv8ecd/dataset.bin error=false result=0 runtime: 8.64sec
+=================================================================
+Reading spectrum from file: /tmp/3vjoovnrhkhv8ecd/dataset.bin with selector: 3261|Normal|A
+Parsed /tmp/3vjoovnrhkhv8ecd/dataset.bin, created selector matcher: 3261|Normal|A with 1 entries. Overall file name column: Normal_A
+Read spectrum for selector: 3261|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin"
+Read 1 spectra specified by: 3261|Normal|A from: "/tmp/3vjoovnrhkhv8ecd/dataset.bin" successfully
+Spectrum read OK, 1 detector
+Detector 0  live time 8.93    energy calibration   eV start = -18.5  eV/ch = 7.8620    total counts = 168254
+
+Calibration file read OK, entries for 20 standards read in.
+
+Final element calibration factors and uncertainties for this unknown (overall ECF is 0.9990, overall ECF relative error is 1.1 %)
+     Element       , ECF, Total weight, ECF uncertainty (relative percent)
+          Rh,         0.9792,           0.00,            0.0
+          Na,         0.7542,           1.00,            0.9
+          Mg,         0.9784,           1.00,            0.6
+          Al,         0.9911,           1.00,            0.3
+          Si,         1.0233,           1.00,            0.3
+           P,         1.0782,           0.00,            1.0
+           S,         1.1330,           2.00,            1.7
+          Cl,         1.0328,           1.00,            0.3
+           K,         0.9798,           2.00,            1.8
+          Ca,         1.0129,           1.00,            0.3
+          Ti,         0.9906,           1.00,            0.0
+          Cr,         0.9849,           0.00,            0.0
+          Mn,         0.9821,           0.00,            0.0
+          Fe,         0.9792,           1.00,            0.0
+    ECF uncertainty is included in total quant error and includes standard fitting errors and certificate uncertainties
+
+
+
+Fit results after 15 iterations, reduced chi sq = 5.45         live time 8.93 sec.
+Final energy calibration (eV):   eV start = -16.7  eV/ch = 7.8657  detector resolution (eV): 166  (at 5984 eV)  fano = 0.133
+      Energy correction offset 1.80 eV   slope change 0.05 %
+
+XRS L5 requirements info: 
+  L5-XRS-03    total count rate (1.00 keV to 7.25 keV) = 18392 cps (correct energy range)
+  L5-XRS-10    Si intensity = 4945, Fe intensity = 99490,   Si/Fe ratio = 0.05
+
+Fitted elements
+    Na2O     17.48 %      Na_K   int    115.3  coeff   0.7542   re_c     14.0%   abs_err(1s)   2.6031%
+   MgCO3     45.70 %      Mg_K   int    836.5  coeff   0.9782   re_c      3.7%   abs_err(1s)   2.8566%
+   Al2O3      0.22 %      Al_K   int     22.9  coeff   0.9920   re_c     46.4%   abs_err(1s)   0.2238%
+    SiO2     18.13 %      Si_K   int   4944.7  coeff   1.0231   re_c      1.4%   abs_err(1s)   0.9453%
+    P2O5      0.05 %       P_K   int     25.9  coeff   1.0787   re_c     50.4%   abs_err(1s)   0.0732%
+     SO3      3.65 %       S_K   int   3444.1  coeff   1.1330   re_c      1.9%   abs_err(1s)   0.5303%
+      Cl    6.4362 %      Cl_K   int  11860.4  coeff   1.0333   re_c      1.2%   abs_err(1s)   0.3312%
+     K2O      0.00 %       K_K   int      0.0  coeff   0.0000   not included
+   CaCO3      2.13 %      Ca_K   int   1876.4  coeff   1.0129   re_c      2.7%   abs_err(1s)   0.5306%
+    TiO2      0.00 %      Ti_K   int      0.0  coeff   0.0000   not included
+   Cr2O3      0.00 %      Cr_K   int      0.0  coeff   0.0000   not included
+   MnCO3      1.02 %      Mn_K   int   2121.7  coeff   0.9822   re_c      3.0%   abs_err(1s)   0.3312%
+ FeCO3-T     51.49 %      Fe_K   int  99489.6  coeff   0.9792   re_c      0.3%   abs_err(1s)   2.5797%
+Matrix elements
+   Rh2O3    8.8087 %     (7.1429 % Rh)
+    O   66.9433 %     (66.94 % from stoichiometry)
+    C   12.2091 %     (12.21 % from stoichiometry)
+
+    Element sum 155.10 %
+
+Other spectrum components
+   0     DetCE  int      8.8  coeff   1.0000   not fit
+   1      Rh_K  int     32.7  coeff   1.0000   not fit
+   8      Rh_L  int   3895.3  coeff   1.0000   not fit (tracks quant component)
+   16      Fe_L  int      0.0  coeff   0.9792   not included
+   17  Rh_K_coh  int    -22.6  coeff  -3.2152   not included
+   18  Rh_L_coh  int   8079.2  coeff   2.8364   re_c     1.82%
+   19  Rh_K_inc  int     26.1  coeff   1.2012   re_c    83.30%
+   20    Pileup  int    320.5  coeff   1.8314   re_c     9.54%
+   21    Pileup  int      0.0  coeff   1.0000   re_c     0.00%
+   22  Rh_L_coh_Lb1  int  -1123.0  coeff  -1.2327   not included
+   23  calc bkg0  int  10062.9  coeff   1.7161   not fit
+   24  SNIP bkg  int   2159.2  coeff   1.0000   not fit
+
+
+
+

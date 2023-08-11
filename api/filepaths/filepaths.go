@@ -238,12 +238,11 @@ const MultiQuantZStackFile = "multi-quant-z-stack.json"
 const annotationFile = "SpectrumAnnotation.json"
 const quantificationSubPath = "Quantifications"
 
-// Retrieves files for a user and dataset ID. If fileName is blank, it only returns the directory path
-func GetUserQuantPath(userID string, datasetID string, fileName string) string {
+func GetQuantPath(userId string, scanId string, fileName string) string {
 	if len(fileName) > 0 {
-		return path.Join(RootUserContent, userID, datasetID, quantificationSubPath, fileName)
+		return path.Join("Quantifications", scanId, userId, fileName)
 	}
-	return path.Join(RootUserContent, userID, datasetID, quantificationSubPath)
+	return path.Join("Quantifications", scanId, userId)
 }
 
 const quantLastOutputSubPath = "LastPiquantOutput"
@@ -291,17 +290,6 @@ const DiffractionPeakManualFileName = "manual-diffraction-peaks.json"
 // OTE: this file only exists as a shared file!
 const DiffractionPeakStatusFileName = "diffraction-peak-statuses.json"
 
-/*
-// Same as GetUserContentDatasetPath() but for shared user
-func GetSharedContentDatasetPath(datasetID string, fileName string) string {
-	return path.Join(RootUserContent, pixlUser.ShareUserID, datasetID, fileName)
-}
-
-// Same as GetUserQuantPath() but for shared user
-func GetSharedQuantPath(datasetID string, fileName string) string {
-	return GetUserQuantPath(pixlUser.ShareUserID, datasetID, fileName)
-}
-*/
 /*
 Root directory containing all user activity stored, to track clicks and user flows for research purposes
   - Activity/

@@ -48,6 +48,7 @@ var test1Username, test1Password, test2Username, test2Password string
 
 var apiStorageFileAccess fileaccess.FileAccess
 var apiDatasetBucket string
+var apiUsersBucket string
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
@@ -61,6 +62,7 @@ func main() {
 	flag.StringVar(&apiHost, "apiHost", "", "Host name of API we're testing. Eg: localhost:8080 or something.review.pixlise.org")
 	flag.StringVar(&apiDBSecret, "apiDBSecret", "", "Mongo secret of the DB the API is connected")
 	flag.StringVar(&apiDatasetBucket, "datasetBucket", "", "Dataset bucket the API is using")
+	flag.StringVar(&apiUsersBucket, "usersBucket", "", "User Data bucket the API is using")
 	flag.StringVar(&auth0Params.Domain, "auth0Domain", "", "Auth0 domain for management API")
 	flag.StringVar(&auth0Params.ClientId, "auth0ClientId", "", "Auth0 client id for management API")
 	flag.StringVar(&auth0Params.Secret, "auth0Secret", "", "Auth0 secret for management API")

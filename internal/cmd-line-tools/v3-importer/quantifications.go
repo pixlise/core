@@ -239,16 +239,27 @@ func migrateQuants(userContentBucket string, userContentFiles []string, limitToD
 	return nil
 }
 
+const quantificationSubPath = "Quantifications"
+
+// TODO: REMOVE THIS - it's the old path!! Once we no longer need the migration tool it can go
+// Retrieves files for a user and dataset ID. If fileName is blank, it only returns the directory path
+func SrcGetUserQuantPath(userID string, datasetID string, fileName string) string {
+	if len(fileName) > 0 {
+		return path.Join(filepaths.RootUserContent, userID, datasetID, quantificationSubPath, fileName)
+	}
+	return path.Join(filepaths.RootUserContent, userID, datasetID, quantificationSubPath)
+}
+
 func saveQuantFiles(datasetId string, userId string, quantId string, userContentBucket string, destUserContentBucket string, fs fileaccess.FileAccess) error {
 	// Expecting a quant bin file
-	s3Path := filepaths.GetUserQuantPath(userId, datasetId, quantId+".bin")
+	s3Path := SrcGetUserQuantPath(userId, datasetId, quantId+".bin")
 	bytes, err := fs.ReadObject(userContentBucket, s3Path)
 	if err != nil {
 		return err
 	}
 
 	// Write to new location
-	s3Path = path.Join("Quantifications", datasetId, utils.FixUserId(userId), quantId+".bin")
+	s3Path = filepaths.GetQuantPath(utils.FixUserId(userId), datasetId, quantId+".bin")
 	err = fs.WriteObject(destUserContentBucket, s3Path, bytes)
 	if err != nil {
 		return err
@@ -256,14 +267,14 @@ func saveQuantFiles(datasetId string, userId string, quantId string, userContent
 	fmt.Printf("  Wrote: %v\n", s3Path)
 
 	// Optional quant CSV file, warn if not found though
-	s3Path = filepaths.GetUserQuantPath(userId, datasetId, quantId+".csv")
+	s3Path = SrcGetUserQuantPath(userId, datasetId, quantId+".csv")
 	bytes, err = fs.ReadObject(userContentBucket, s3Path)
 	if err != nil {
 		// We just warn here
 		log.Printf("Failed to find quant CSV file: %v. Skipping...", s3Path)
 	} else {
 		// Worked, so save
-		s3Path = path.Join("Quantifications", datasetId, utils.FixUserId(userId), quantId+".csv")
+		s3Path = filepaths.GetQuantPath(utils.FixUserId(userId), datasetId, quantId+".csv")
 		err = fs.WriteObject(destUserContentBucket, s3Path, bytes)
 		if err != nil {
 			return err
@@ -272,7 +283,7 @@ func saveQuantFiles(datasetId string, userId string, quantId string, userContent
 	}
 
 	// Quant log files, we need a listing of these
-	s3Path = filepaths.GetUserQuantPath(userId, datasetId, filepaths.MakeQuantLogDirName(quantId))
+	s3Path = SrcGetUserQuantPath(userId, datasetId, filepaths.MakeQuantLogDirName(quantId))
 	logFiles, err := fs.ListObjects(userContentBucket, s3Path)
 	if err != nil {
 		// We just warn here
@@ -284,7 +295,7 @@ func saveQuantFiles(datasetId string, userId string, quantId string, userContent
 				return err
 			}
 
-			s3Path = path.Join("Quantifications", datasetId, utils.FixUserId(userId), quantId+"-logs", path.Base(logPath))
+			s3Path = filepaths.GetQuantPath(utils.FixUserId(userId), datasetId, path.Join(quantId+"-logs", path.Base(logPath)))
 			err = fs.WriteObject(destUserContentBucket, s3Path, bytes)
 			if err != nil {
 				return err

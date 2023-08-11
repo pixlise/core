@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/wstestlib"
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
@@ -13,6 +16,23 @@ import (
 func testQuants(apiHost string) {
 	scanId := "the-scan-id"
 	quantId := "3vjoovnrhkhv8ecd"
+
+	quantLogs := []string{
+		"node00001_piquant.log",
+		"node00001_stdout.log",
+		"node00002_piquant.log",
+		"node00002_stdout.log",
+		"node00003_piquant.log",
+		"node00003_stdout.log",
+		"node00004_piquant.log",
+		"node00004_stdout.log",
+		"node00005_piquant.log",
+		"node00005_stdout.log",
+		"node00006_piquant.log",
+		"node00006_stdout.log",
+		"node00007_piquant.log",
+		"node00007_stdout.log",
+	}
 
 	seedDBQuants([]*protos.QuantificationSummary{
 		{
@@ -79,22 +99,7 @@ func testQuants(apiHost string) {
 				Message:        "Nodes ran: 7",
 				EndUnixTimeSec: 1652813627,
 				OutputFilePath: "UserContent/5df311ed8a0b5d0ebf5fb476/089063943/Quantifications",
-				PiquantLogs: []string{
-					"node00001_piquant.log",
-					"node00001_stdout.log",
-					"node00002_piquant.log",
-					"node00002_stdout.log",
-					"node00003_piquant.log",
-					"node00003_stdout.log",
-					"node00004_piquant.log",
-					"node00004_stdout.log",
-					"node00005_piquant.log",
-					"node00005_stdout.log",
-					"node00006_piquant.log",
-					"node00006_stdout.log",
-					"node00007_piquant.log",
-					"node00007_stdout.log",
-				},
+				PiquantLogs:    quantLogs,
 			},
 		},
 	})
@@ -132,6 +137,12 @@ func testQuants(apiHost string) {
 
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
+
+	// Ensure files aren't there in S3 at this point
+	err := apiStorageFileAccess.DeleteObject(apiUsersBucket, filepaths.GetQuantPath(u1.GetUserId(), scanId, quantId+".bin"))
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	// Now add u1 as a viewer
 	seedDBOwnership(quantId, protos.ObjectType_OT_QUANTIFICATION, &protos.UserGroupList{UserIds: []string{u1.GetUserId()}}, nil)
@@ -172,12 +183,11 @@ func testQuants(apiHost string) {
 		}}`, quantId, quantId),
 	)
 
-	u1.AddSendReqAction("Get quant (should work)",
-		fmt.Sprintf(`{"quantGetReq":{"quantId": "%v"}}`, quantId),
-		fmt.Sprintf(`{"msgId":6,"status":"WS_OK",
-			"quantGetResp":{
-				"summary": {
-					"id": "%v",
+	u1.AddSendReqAction("Get quant summary only (should work)",
+		fmt.Sprintf(`{"quantGetReq":{"quantId": "%v", "summaryOnly": true }}`, quantId),
+		fmt.Sprintf(`{"msgId":6,"status":"WS_OK", "quantGetResp":{
+			"summary": {
+				"id": "%v",
 				"params": {
 					"params": {
 						"name": "Trial quant with Rh",
@@ -209,8 +219,343 @@ func testQuants(apiHost string) {
 		}}`, quantId, quantId),
 	)
 
+	u1.AddSendReqAction("Get quant summary+data (should fail, no file in S3)",
+		fmt.Sprintf(`{"quantGetReq":{"quantId": "%v" }}`, quantId),
+		fmt.Sprintf(`{"msgId":7,"status":"WS_NOT_FOUND", "errorText": "%v not found", "quantGetResp":{}}`, quantId),
+	)
+
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
+
+	seedQuantFile(quantId+".bin", u1.GetUserId(), scanId, apiUsersBucket)
+	seedQuantFile(quantId+".csv", u1.GetUserId(), scanId, apiUsersBucket)
+	for _, logFile := range quantLogs {
+		seedQuantFile("./"+quantId+"-logs/"+logFile, u1.GetUserId(), scanId, apiUsersBucket)
+	}
+
+	u1.AddSendReqAction("Get quant summary+data (should work)",
+		fmt.Sprintf(`{"quantGetReq":{"quantId": "%v" }}`, quantId),
+		fmt.Sprintf(`{"msgId":8,"status":"WS_OK", "quantGetResp":{
+			"summary": {
+				"id": "%v",
+				"params": {
+					"params": {
+						"name": "Trial quant with Rh",
+						"dataBucket": "databucket",
+						"datasetPath": "Datasets/the-scan-id/dataset.bin",
+						"datasetID": "the-scan-id",
+						"piquantJobsBucket": "piquantbucket",
+						"detectorConfig": "PIXL/PiquantConfigs/v7",
+						"elements": ["CO3","Rh","Na","Mg","Al","Si","P","S","Cl","K","Ca","Ti","Cr","Mn","Fe"],
+						"runTimeSec": 60,
+						"coresPerNode": 4,
+						"startUnixTimeSec": 1652813392,
+						"requestorUserId": "auth0|5df311ed8a0b5d0ebf5fb476",
+						"roiID": "wob0wm8cogiot1rp",
+						"PIQUANTVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8",
+						"quantMode": "AB"
+					}
+				},
+				"elements": ["Rh2O3","Na2O","MgCO3","Al2O3","SiO2","P2O5","SO3","Cl","K2O","CaCO3","TiO2","Cr2O3","MnCO3","FeCO3-T"],
+				"status": {
+					"jobID": "%v",
+					"status": "COMPLETE",
+					"message": "Nodes ran: 7",
+					"endUnixTimeSec": 1652813627,
+					"outputFilePath": "UserContent/5df311ed8a0b5d0ebf5fb476/089063943/Quantifications",
+					"piquantLogs": ["node00001_piquant.log","node00001_stdout.log","node00002_piquant.log","node00002_stdout.log","node00003_piquant.log","node00003_stdout.log","node00004_piquant.log","node00004_stdout.log","node00005_piquant.log","node00005_stdout.log","node00006_piquant.log","node00006_stdout.log","node00007_piquant.log","node00007_stdout.log"]
+				}
+			},
+			"data": {
+				"labels": [
+					"Rh2O3_%%",
+					"Na2O_%%",
+					"MgCO3_%%",
+					"Al2O3_%%",
+					"SiO2_%%",
+					"P2O5_%%",
+					"SO3_%%",
+					"Cl_%%",
+					"K2O_%%",
+					"CaCO3_%%",
+					"TiO2_%%",
+					"Cr2O3_%%",
+					"MnCO3_%%",
+					"FeCO3-T_%%",
+					"Rh2O3_int",
+					"Na2O_int",
+					"MgCO3_int",
+					"Al2O3_int",
+					"SiO2_int",
+					"P2O5_int",
+					"SO3_int",
+					"Cl_int",
+					"K2O_int",
+					"CaCO3_int",
+					"TiO2_int",
+					"Cr2O3_int",
+					"MnCO3_int",
+					"FeCO3-T_int",
+					"Rh2O3_err",
+					"Na2O_err",
+					"MgCO3_err",
+					"Al2O3_err",
+					"SiO2_err",
+					"P2O5_err",
+					"SO3_err",
+					"Cl_err",
+					"K2O_err",
+					"CaCO3_err",
+					"TiO2_err",
+					"Cr2O3_err",
+					"MnCO3_err",
+					"FeCO3-T_err",
+					"total_counts",
+					"livetime",
+					"chisq",
+					"eVstart",
+					"eV/ch",
+					"res",
+					"iter",
+					"Events",
+					"Triggers"
+				],
+				"types": [
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_INT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_FLOAT",
+					"QT_INT",
+					"QT_INT",
+					"QT_INT",
+					"QT_INT"
+				],
+				"locationSet": [
+					{
+						"detector": "A",
+						"location${LIST,MODE=CONTAINS,LENGTH=143}": [
+							{
+								"pmc": 86,
+								"values": [
+									{
+										"fvalue": -1
+									},
+									{
+										"fvalue": 1.0083
+									},
+									{
+										"fvalue": 37.8801
+									},
+									{
+										"fvalue": 0.5924
+									},
+									{
+										"fvalue": 14.7764
+									},
+									{
+										"fvalue": 0.0129
+									},
+									{
+										"fvalue": 0.6127
+									},
+									{
+										"fvalue": 0.9561
+									},
+									{},
+									{
+										"fvalue": 3.9732
+									},
+									{},
+									{},
+									{
+										"fvalue": 1.1172
+									},
+									{
+										"fvalue": 41.825
+									},
+									{},
+									{
+										"fvalue": 6.3
+									},
+									{
+										"fvalue": 745.5
+									},
+									{
+										"fvalue": 66.5
+									},
+									{
+										"fvalue": 4243.8
+									},
+									{
+										"fvalue": 6.4
+									},
+									{
+										"fvalue": 602.8
+									},
+									{
+										"fvalue": 1911.1
+									},
+									{},
+									{
+										"fvalue": 3643.5
+									},
+									{},
+									{},
+									{
+										"fvalue": 2318.3
+									},
+									{
+										"fvalue": 79901.1
+									},
+									{},
+									{
+										"fvalue": 1.6
+									},
+									{
+										"fvalue": 2.4
+									},
+									{
+										"fvalue": 0.2
+									},
+									{
+										"fvalue": 0.8
+									},
+									{},
+									{
+										"fvalue": 0.2
+									},
+									{
+										"fvalue": 0.3
+									},
+									{},
+									{
+										"fvalue": 0.5
+									},
+									{},
+									{},
+									{
+										"fvalue": 0.4
+									},
+									{
+										"fvalue": 2.1
+									},
+									{
+										"ivalue": 109490
+									},
+									{
+										"fvalue": 9.12
+									},
+									{
+										"fvalue": 0.64
+									},
+									{
+										"fvalue": -24.4
+									},
+									{
+										"fvalue": 7.8811
+									},
+									{
+										"ivalue": 178
+									},
+									{
+										"ivalue": 23
+									},
+									{},
+									{}
+								]
+							}
+						]
+					},
+					{
+						"detector": "B",
+						"location${LIST,MODE=LENGTH,LENGTH=143}": []
+					}
+				]
+			}
+		}}`, quantId, quantId),
+	)
+
+	u1.AddSendReqAction("Delete non-existant quant (should fail)",
+		`{"quantDeleteReq":{"quantId": "non-existant-quant" }}`,
+		`{"msgId":9,"status":"WS_NOT_FOUND", "errorText": "non-existant-quant not found", "quantDeleteResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Delete quant (should fail, we're viewers!)",
+		fmt.Sprintf(`{"quantDeleteReq":{"quantId": "%v" }}`, quantId),
+		fmt.Sprintf(`{"msgId":10,"status":"WS_NO_PERMISSION", "errorText": "Edit access denied for: %v", "quantDeleteResp":{}}`, quantId),
+	)
+
+	u1.CloseActionGroup([]string{}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
+
+	// Set as editor
+	seedDBOwnership(quantId, protos.ObjectType_OT_QUANTIFICATION, nil, &protos.UserGroupList{UserIds: []string{u1.GetUserId()}})
+
+	u1.AddSendReqAction("Delete quant (should work)",
+		fmt.Sprintf(`{"quantDeleteReq":{"quantId": "%v" }}`, quantId),
+		`{"msgId":11,"status":"WS_OK", "quantDeleteResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Get quant (should fail, not in db)",
+		fmt.Sprintf(`{"quantGetReq":{"quantId": "%v" }}`, quantId),
+		fmt.Sprintf(`{"msgId":12,"status":"WS_NOT_FOUND", "errorText": "%v not found", "quantGetResp":{}}`, quantId),
+	)
+
+	u1.CloseActionGroup([]string{}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
+
+	// Check that the files have been deleted
+	items, err := apiStorageFileAccess.ListObjects(apiUsersBucket, "Quantification/"+scanId+"/")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if len(items) > 0 {
+		log.Fatalf("Failed to delete all quant files. Remaining: %v\n", strings.Join(items, ", "))
+	}
 }
 
 func seedDBQuants(quants []*protos.QuantificationSummary) {
@@ -231,5 +576,19 @@ func seedDBQuants(quants []*protos.QuantificationSummary) {
 		if err != nil {
 			log.Fatalln(err)
 		}
+	}
+}
+
+func seedQuantFile(fileName string, userId string, scanId string, bucket string) {
+	data, err := os.ReadFile("./test-files/" + fileName)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// Upload it where we need it for the test
+	s3Path := filepaths.GetQuantPath(userId, scanId, fileName)
+	err = apiStorageFileAccess.WriteObject(bucket, s3Path, data)
+	if err != nil {
+		log.Fatalln(err)
 	}
 }
