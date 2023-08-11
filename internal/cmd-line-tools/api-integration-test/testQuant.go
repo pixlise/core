@@ -531,6 +531,29 @@ func testQuants(apiHost string) {
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 
+	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
+
+	u2.AddConnectAction("Connect user 2", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test2Username,
+		Pass: test2Password,
+	})
+
+	u2.AddSendReqAction("User2: List quants",
+		`{"quantListReq":{}}`,
+		`{"msgId":1,"status":"WS_OK","quantListResp":{}}`,
+	)
+
+	u2.AddSendReqAction("User2: Get quant from db (should fail, permissions dont allow)",
+		fmt.Sprintf(`{"quantGetReq":{"quantId": "%v"}}`, quantId),
+		fmt.Sprintf(`{
+			"msgId":2,"status":"WS_NO_PERMISSION",
+			"errorText": "View access denied for: %v", "quantGetResp":{}}`, quantId),
+	)
+
+	u2.CloseActionGroup([]string{}, 5000)
+	wstestlib.ExecQueuedActions(&u2)
+
 	// Set as editor
 	seedDBOwnership(quantId, protos.ObjectType_OT_QUANTIFICATION, nil, &protos.UserGroupList{UserIds: []string{u1.GetUserId()}})
 
