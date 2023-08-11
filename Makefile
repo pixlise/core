@@ -15,6 +15,7 @@ lint: ## Lint the files
 
 test: ## Run unittests
 	pwd
+	cd ..
 	mkdir -p _out
 	go install github.com/favadi/protoc-go-inject-tag@latest
 	go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
