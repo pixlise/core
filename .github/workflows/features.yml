@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 1
       - name: GitHub Slug Action
         uses: rlespinasse/github-slug-action@v4.4.0
   feature:
