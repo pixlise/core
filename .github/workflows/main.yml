@@ -56,7 +56,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 1
+          fetch-depth: 0
+          submodules: true
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -84,7 +85,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 1
+          fetch-depth: 0
+          submodules: true
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
