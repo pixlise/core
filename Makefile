@@ -15,6 +15,8 @@ lint: ## Lint the files
 
 test: ## Run unittests
 	mkdir -p _out
+	go run data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
+	protoc-go-inject-tag -remove_tag_comment -input="./generated-protos/*.pb.go"
 	go test -p 1 -v ./...
 
 codegen:
