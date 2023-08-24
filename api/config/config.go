@@ -97,35 +97,31 @@ func homeDir() string {
 	return os.Getenv("USERPROFILE") // windows
 }
 
-func NewConfigFromFile(configFilePath string) (APIConfig, error) {
-	var cfg APIConfig
-
+func NewConfigFromFile[T any](configFilePath string, config T) (T, error) {
 	fmt.Printf("Loading custom config from: %s\n", configFilePath)
 	customConfig, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
-		return cfg, fmt.Errorf("could not read config file at %s", configFilePath)
+		return config, fmt.Errorf("could not read config file at %s", configFilePath)
 	}
-	return buildConfig(customConfig)
+	return buildConfig(customConfig, config)
 }
 
-func NewConfigFromJsonString(customConfigStr string) (APIConfig, error) {
+func NewConfigFromJsonString[T any](customConfigStr string, config T) (T, error) {
 	customConfig := []byte(customConfigStr)
 	fmt.Printf("WARNING: Passing json string via CUSTOM_CONFIG is deprecated and will soon be removed")
-	return buildConfig(customConfig)
+	return buildConfig(customConfig, config)
 }
 
-func buildConfig(configJson []byte) (APIConfig, error) {
-	var cfg APIConfig
-
-	err := json.Unmarshal(configJson, &cfg)
+func buildConfig[T any](configJson []byte, config T) (T, error) {
+	err := json.Unmarshal(configJson, &config)
 	if err != nil {
-		return cfg, fmt.Errorf("failed to parse custom config: %v", err)
+		return config, fmt.Errorf("failed to parse custom config: %v", err)
 	}
 
 	// Override Config with any values explicitly set in Env Vars (PIXLISE_CONFIG_*)
 	// NOTE: For []string slices, pass in a comma-separated string to the corresponding PIXLISE_CONFIG_ var
 	// 			Ex: export PIXLISE_CONFIG_AdminEmails="me@example.com,you@example.com"
-	reflection := reflect.ValueOf(&cfg).Elem()
+	reflection := reflect.ValueOf(&config).Elem()
 	for i := 0; i < reflection.NumField(); i++ {
 		fieldName := reflection.Type().Field(i).Name
 		field := reflection.Field(i)
@@ -150,7 +146,7 @@ func buildConfig(configJson []byte) (APIConfig, error) {
 			}
 		}
 	}
-	return cfg, nil
+	return config, nil
 }
 
 // Init config, loads config params
@@ -173,14 +169,14 @@ func Init() (APIConfig, error) {
 	// Populate API Config with contents of config.json or CUSTOM_CONFIG if supplied
 	if configFilePath != nil && *configFilePath != "" {
 		// Load config from a referenced json file
-		cfg, err = NewConfigFromFile(*configFilePath)
+		cfg, err = NewConfigFromFile(*configFilePath, cfg)
 	} else {
 		// Load config from a jsonString in environment variable
 		customConfigStr, ok := os.LookupEnv("CUSTOM_CONFIG")
 		if !ok || len(customConfigStr) <= 0 {
 			return cfg, errors.New("no CUSTOM_CONFIG environment variable provided")
 		} else {
-			cfg, err = NewConfigFromJsonString(customConfigStr)
+			cfg, err = NewConfigFromJsonString(customConfigStr, cfg)
 		}
 	}
 	if err != nil {
