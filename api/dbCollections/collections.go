@@ -3,7 +3,7 @@ package dbCollections
 // All the DB collection names, so there's no confusion among all our code, also one place to rename
 const DetectorConfigsName = "detectorConfigs"
 const DiffractionDetectedPeakStatusesName = "diffractionDetectedPeakStatuses"
-const DiffractionUserPeaksName = "diffractionUserPeaks"
+const DiffractionManualPeaksName = "diffractionManualPeaks"
 const ElementSetsName = "elementSets"
 const ExpressionGroupsName = "expressionGroups"
 const ExpressionsName = "expressions"

@@ -31,7 +31,7 @@ type SrcUserDiffractionPeakFileContents struct {
 }
 
 func migrateManualDiffractionPeaks(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database) error {
-	coll := dest.Collection(dbCollections.DiffractionUserPeaksName)
+	coll := dest.Collection(dbCollections.DiffractionManualPeaksName)
 	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err

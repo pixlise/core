@@ -17,6 +17,8 @@ func HandleDiffractionPeakStatusListReq(req *protos.DiffractionPeakStatusListReq
 		return nil, err
 	}
 
+	// TODO: Check if user has access to this scan id?
+
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.DiffractionDetectedPeakStatusesName)
 
@@ -46,6 +48,8 @@ func HandleDiffractionPeakStatusListReq(req *protos.DiffractionPeakStatusListReq
 		PeakStatuses: &result,
 	}, nil
 }
+
+// NOTE: ScanId isn't checked to see if it's a real scan upon insertion!
 
 func HandleDiffractionPeakStatusWriteReq(req *protos.DiffractionPeakStatusWriteReq, hctx wsHelpers.HandlerContext) (*protos.DiffractionPeakStatusWriteResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
