@@ -207,7 +207,7 @@ func updateExpression(expr *protos.DataExpression, hctx wsHelpers.HandlerContext
 	}
 
 	if result.MatchedCount != 1 {
-		hctx.Svcs.Log.Errorf("DataExpresssion UpdateByID result had unexpected counts %+v id: %v", result, expr.Id)
+		hctx.Svcs.Log.Errorf("DataExpression UpdateByID result had unexpected counts %+v id: %v", result, expr.Id)
 	}
 
 	// Return the merged item we validated, which in theory is in the DB now
@@ -239,8 +239,45 @@ func HandleExpressionWriteReq(req *protos.ExpressionWriteReq, hctx wsHelpers.Han
 }
 
 func HandleExpressionWriteExecStatReq(req *protos.ExpressionWriteExecStatReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionWriteExecStatResp, error) {
-	return nil, errors.New("HandleExpressionWriteExecStatReq not implemented yet")
+	// Validate request
+	if err := wsHelpers.CheckStringField(&req.Id, "Id", 0, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+
+	if req.Stats == nil || len(req.Stats.DataRequired) <= 0 || req.Stats.RuntimeMs <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Invalid stats in request"))
+	}
+
+	ctx := context.TODO()
+
+	// Find the expression
+	_, _, err := wsHelpers.GetUserObjectById[protos.DataExpression](true, req.Id, protos.ObjectType_OT_EXPRESSION, dbCollections.ExpressionsName, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Replace its recent exec stats with the one given to us
+	req.Stats.TimeStampUnixSec = uint32(hctx.Svcs.TimeStamper.GetTimeNowSec())
+	update := bson.D{
+		{"$set", bson.D{
+			{"recentExecStats", req.Stats},
+		}},
+	}
+
+	// It's valid, update the DB
+	filter := bson.D{{"_id", req.Id}}
+	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.ExpressionsName).UpdateOne(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	if result.MatchedCount != 1 {
+		hctx.Svcs.Log.Errorf("DataExpression ExecStatWrite UpdateByID result had unexpected counts %+v id: %v", result, req.Id)
+	}
+
+	return &protos.ExpressionWriteExecStatResp{}, nil
 }
+
 func HandleExpressionWriteResultReq(req *protos.ExpressionWriteResultReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionWriteResultResp, error) {
 	return nil, errors.New("HandleExpressionWriteResultReq not implemented yet")
 }
