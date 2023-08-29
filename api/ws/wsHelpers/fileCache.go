@@ -28,7 +28,8 @@ const maxFileCacheAgeSec = 60 * 5
 const maxFileCacheSizeBytes = 200 * 1024 * 1024
 
 func ReadDatasetFile(scanId string, svcs *services.APIServices) (*protos.Experiment, error) {
-	fileBytes := checkCache(scanId, "scan", svcs)
+	cacheId := "scan-" + scanId
+	fileBytes := checkCache(cacheId, "scan", svcs)
 
 	// If we don't have data by now, download it and add to our cache
 	var err error
@@ -46,7 +47,7 @@ func ReadDatasetFile(scanId string, svcs *services.APIServices) (*protos.Experim
 		}
 
 		// Write locally
-		addToCache(scanId, "-dataset.bin", fmt.Sprintf("s3://%v/%v", svcs.Config.DatasetsBucket, s3Path), fileBytes, svcs)
+		addToCache(cacheId, "-dataset.bin", fmt.Sprintf("s3://%v/%v", svcs.Config.DatasetsBucket, s3Path), fileBytes, svcs)
 	}
 
 	// Now decode the data & return it
@@ -61,7 +62,8 @@ func ReadDatasetFile(scanId string, svcs *services.APIServices) (*protos.Experim
 }
 
 func ReadQuantificationFile(quantId string, quantPath string, svcs *services.APIServices) (*protos.Quantification, error) {
-	fileBytes := checkCache(quantId, "quant", svcs)
+	cacheId := "quant-" + quantId
+	fileBytes := checkCache(cacheId, "quant", svcs)
 
 	// If we don't have data by now, download it and add to our cache
 	var err error
@@ -78,7 +80,7 @@ func ReadQuantificationFile(quantId string, quantPath string, svcs *services.API
 		}
 
 		// Write locally
-		addToCache(quantId, "-quant.bin", fmt.Sprintf("s3://%v/%v", svcs.Config.UsersBucket, quantPath), fileBytes, svcs)
+		addToCache(cacheId, "-quant.bin", fmt.Sprintf("s3://%v/%v", svcs.Config.UsersBucket, quantPath), fileBytes, svcs)
 	}
 
 	// Now decode the data & return it
@@ -90,6 +92,40 @@ func ReadQuantificationFile(quantId string, quantPath string, svcs *services.API
 	}
 
 	return quantPB, nil
+}
+
+func ReadDiffractionFile(scanId string, svcs *services.APIServices) (*protos.Diffraction, error) {
+	cacheId := "diffraction-" + scanId
+	fileBytes := checkCache(cacheId, "diffraction", svcs)
+
+	// If we don't have data by now, download it and add to our cache
+	var err error
+	if fileBytes == nil {
+		s3Path := filepaths.GetDatasetFilePath(scanId, filepaths.DiffractionDBFileName)
+		fileBytes, err = svcs.FS.ReadObject(svcs.Config.DatasetsBucket, s3Path)
+		if err != nil {
+			// Doesn't seem to exist?
+			if svcs.FS.IsNotFoundError(err) {
+				return nil, errorwithstatus.MakeNotFoundError(scanId)
+			}
+
+			svcs.Log.Errorf("Failed to load diffraction data for %v, from: s3://%v/%v, error was: %v.", scanId, svcs.Config.DatasetsBucket, s3Path, err)
+			return nil, err
+		}
+
+		// Write locally
+		addToCache(cacheId, "-diffraction.bin", fmt.Sprintf("s3://%v/%v", svcs.Config.DatasetsBucket, s3Path), fileBytes, svcs)
+	}
+
+	// Now decode the data & return it
+	diffPB := &protos.Diffraction{}
+	err = proto.Unmarshal(fileBytes, diffPB)
+	if err != nil {
+		svcs.Log.Errorf("Failed to decode diffraction data for scan: %v. Error: %v", scanId, err)
+		return nil, err
+	}
+
+	return diffPB, nil
 }
 
 func checkCache(id string, fileTypeName string, svcs *services.APIServices) []byte {

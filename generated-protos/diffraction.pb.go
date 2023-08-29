@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.30.0
 // 	protoc        v3.19.4
-// source: diffraction.proto
+// source: data-formats/file-formats/diffraction.proto
 
 package protos
 
@@ -20,37 +20,40 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ManualDiffractionPeak struct {
+type Diffraction struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// ID could be composed of scanId+pmc+userId+energy (?)
-	Id             string  `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" bson:"_id,omitempty"`  
-	ScanId         string  `protobuf:"bytes,2,opt,name=scanId,proto3" json:"scanId,omitempty"`
-	Pmc            int32   `protobuf:"varint,3,opt,name=pmc,proto3" json:"pmc,omitempty"`
-	EnergykeV      float32 `protobuf:"fixed32,4,opt,name=energykeV,proto3" json:"energykeV,omitempty"`
-	CreatedUnixSec uint32  `protobuf:"varint,5,opt,name=createdUnixSec,proto3" json:"createdUnixSec,omitempty"`
-	CreatorUserId  string  `protobuf:"bytes,6,opt,name=creatorUserId,proto3" json:"creatorUserId,omitempty"`
+	TargetId  string                  `protobuf:"bytes,1,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
+	DriveId   int32                   `protobuf:"varint,2,opt,name=drive_id,json=driveId,proto3" json:"drive_id,omitempty"`
+	SiteId    int32                   `protobuf:"varint,3,opt,name=site_id,json=siteId,proto3" json:"site_id,omitempty"`
+	Target    string                  `protobuf:"bytes,4,opt,name=target,proto3" json:"target,omitempty"`
+	Site      string                  `protobuf:"bytes,5,opt,name=site,proto3" json:"site,omitempty"`
+	Title     string                  `protobuf:"bytes,6,opt,name=title,proto3" json:"title,omitempty"`
+	Sol       string                  `protobuf:"bytes,7,opt,name=sol,proto3" json:"sol,omitempty"`
+	Rtt       int32                   `protobuf:"varint,8,opt,name=rtt,proto3" json:"rtt,omitempty"`
+	Sclk      int32                   `protobuf:"varint,9,opt,name=sclk,proto3" json:"sclk,omitempty"`
+	Locations []*Diffraction_Location `protobuf:"bytes,10,rep,name=locations,proto3" json:"locations,omitempty"`
 }
 
-func (x *ManualDiffractionPeak) Reset() {
-	*x = ManualDiffractionPeak{}
+func (x *Diffraction) Reset() {
+	*x = Diffraction{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_diffraction_proto_msgTypes[0]
+		mi := &file_data_formats_file_formats_diffraction_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *ManualDiffractionPeak) String() string {
+func (x *Diffraction) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ManualDiffractionPeak) ProtoMessage() {}
+func (*Diffraction) ProtoMessage() {}
 
-func (x *ManualDiffractionPeak) ProtoReflect() protoreflect.Message {
-	mi := &file_diffraction_proto_msgTypes[0]
+func (x *Diffraction) ProtoReflect() protoreflect.Message {
+	mi := &file_data_formats_file_formats_diffraction_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -61,143 +64,107 @@ func (x *ManualDiffractionPeak) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ManualDiffractionPeak.ProtoReflect.Descriptor instead.
-func (*ManualDiffractionPeak) Descriptor() ([]byte, []int) {
-	return file_diffraction_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use Diffraction.ProtoReflect.Descriptor instead.
+func (*Diffraction) Descriptor() ([]byte, []int) {
+	return file_data_formats_file_formats_diffraction_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ManualDiffractionPeak) GetId() string {
+func (x *Diffraction) GetTargetId() string {
 	if x != nil {
-		return x.Id
+		return x.TargetId
 	}
 	return ""
 }
 
-func (x *ManualDiffractionPeak) GetScanId() string {
+func (x *Diffraction) GetDriveId() int32 {
 	if x != nil {
-		return x.ScanId
-	}
-	return ""
-}
-
-func (x *ManualDiffractionPeak) GetPmc() int32 {
-	if x != nil {
-		return x.Pmc
+		return x.DriveId
 	}
 	return 0
 }
 
-func (x *ManualDiffractionPeak) GetEnergykeV() float32 {
+func (x *Diffraction) GetSiteId() int32 {
 	if x != nil {
-		return x.EnergykeV
+		return x.SiteId
 	}
 	return 0
 }
 
-func (x *ManualDiffractionPeak) GetCreatedUnixSec() uint32 {
+func (x *Diffraction) GetTarget() string {
 	if x != nil {
-		return x.CreatedUnixSec
+		return x.Target
+	}
+	return ""
+}
+
+func (x *Diffraction) GetSite() string {
+	if x != nil {
+		return x.Site
+	}
+	return ""
+}
+
+func (x *Diffraction) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *Diffraction) GetSol() string {
+	if x != nil {
+		return x.Sol
+	}
+	return ""
+}
+
+func (x *Diffraction) GetRtt() int32 {
+	if x != nil {
+		return x.Rtt
 	}
 	return 0
 }
 
-func (x *ManualDiffractionPeak) GetCreatorUserId() string {
+func (x *Diffraction) GetSclk() int32 {
 	if x != nil {
-		return x.CreatorUserId
+		return x.Sclk
 	}
-	return ""
+	return 0
 }
 
-type DetectedDiffractionPeakStatuses struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Id       string                                                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" bson:"_id,omitempty"`  
-	ScanId   string                                                 `protobuf:"bytes,2,opt,name=scanId,proto3" json:"scanId,omitempty"`
-	Statuses map[string]*DetectedDiffractionPeakStatuses_PeakStatus `protobuf:"bytes,3,rep,name=statuses,proto3" json:"statuses,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-}
-
-func (x *DetectedDiffractionPeakStatuses) Reset() {
-	*x = DetectedDiffractionPeakStatuses{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_diffraction_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DetectedDiffractionPeakStatuses) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DetectedDiffractionPeakStatuses) ProtoMessage() {}
-
-func (x *DetectedDiffractionPeakStatuses) ProtoReflect() protoreflect.Message {
-	mi := &file_diffraction_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DetectedDiffractionPeakStatuses.ProtoReflect.Descriptor instead.
-func (*DetectedDiffractionPeakStatuses) Descriptor() ([]byte, []int) {
-	return file_diffraction_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *DetectedDiffractionPeakStatuses) GetId() string {
+func (x *Diffraction) GetLocations() []*Diffraction_Location {
 	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *DetectedDiffractionPeakStatuses) GetScanId() string {
-	if x != nil {
-		return x.ScanId
-	}
-	return ""
-}
-
-func (x *DetectedDiffractionPeakStatuses) GetStatuses() map[string]*DetectedDiffractionPeakStatuses_PeakStatus {
-	if x != nil {
-		return x.Statuses
+		return x.Locations
 	}
 	return nil
 }
 
-type DetectedDiffractionPeakStatuses_PeakStatus struct {
+type Diffraction_Location struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Status         string `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	CreatedUnixSec uint32 `protobuf:"varint,2,opt,name=createdUnixSec,proto3" json:"createdUnixSec,omitempty"`
-	CreatorUserId  string `protobuf:"bytes,3,opt,name=creatorUserId,proto3" json:"creatorUserId,omitempty"`
+	Id    string                       `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Peaks []*Diffraction_Location_Peak `protobuf:"bytes,2,rep,name=peaks,proto3" json:"peaks,omitempty"`
 }
 
-func (x *DetectedDiffractionPeakStatuses_PeakStatus) Reset() {
-	*x = DetectedDiffractionPeakStatuses_PeakStatus{}
+func (x *Diffraction_Location) Reset() {
+	*x = Diffraction_Location{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_diffraction_proto_msgTypes[2]
+		mi := &file_data_formats_file_formats_diffraction_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *DetectedDiffractionPeakStatuses_PeakStatus) String() string {
+func (x *Diffraction_Location) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DetectedDiffractionPeakStatuses_PeakStatus) ProtoMessage() {}
+func (*Diffraction_Location) ProtoMessage() {}
 
-func (x *DetectedDiffractionPeakStatuses_PeakStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_diffraction_proto_msgTypes[2]
+func (x *Diffraction_Location) ProtoReflect() protoreflect.Message {
+	mi := &file_data_formats_file_formats_diffraction_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -208,97 +175,190 @@ func (x *DetectedDiffractionPeakStatuses_PeakStatus) ProtoReflect() protoreflect
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DetectedDiffractionPeakStatuses_PeakStatus.ProtoReflect.Descriptor instead.
-func (*DetectedDiffractionPeakStatuses_PeakStatus) Descriptor() ([]byte, []int) {
-	return file_diffraction_proto_rawDescGZIP(), []int{1, 0}
+// Deprecated: Use Diffraction_Location.ProtoReflect.Descriptor instead.
+func (*Diffraction_Location) Descriptor() ([]byte, []int) {
+	return file_data_formats_file_formats_diffraction_proto_rawDescGZIP(), []int{0, 0}
 }
 
-func (x *DetectedDiffractionPeakStatuses_PeakStatus) GetStatus() string {
+func (x *Diffraction_Location) GetId() string {
 	if x != nil {
-		return x.Status
+		return x.Id
 	}
 	return ""
 }
 
-func (x *DetectedDiffractionPeakStatuses_PeakStatus) GetCreatedUnixSec() uint32 {
+func (x *Diffraction_Location) GetPeaks() []*Diffraction_Location_Peak {
 	if x != nil {
-		return x.CreatedUnixSec
+		return x.Peaks
+	}
+	return nil
+}
+
+type Diffraction_Location_Peak struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	PeakChannel       int32   `protobuf:"varint,1,opt,name=peak_channel,json=peakChannel,proto3" json:"peak_channel,omitempty"`
+	EffectSize        float32 `protobuf:"fixed32,2,opt,name=effect_size,json=effectSize,proto3" json:"effect_size,omitempty"`
+	BaselineVariation float32 `protobuf:"fixed32,3,opt,name=baseline_variation,json=baselineVariation,proto3" json:"baseline_variation,omitempty"`
+	GlobalDifference  float32 `protobuf:"fixed32,4,opt,name=global_difference,json=globalDifference,proto3" json:"global_difference,omitempty"`
+	DifferenceSigma   float32 `protobuf:"fixed32,5,opt,name=difference_sigma,json=differenceSigma,proto3" json:"difference_sigma,omitempty"`
+	PeakHeight        float32 `protobuf:"fixed32,6,opt,name=peak_height,json=peakHeight,proto3" json:"peak_height,omitempty"`
+	Detector          string  `protobuf:"bytes,7,opt,name=detector,proto3" json:"detector,omitempty"`
+}
+
+func (x *Diffraction_Location_Peak) Reset() {
+	*x = Diffraction_Location_Peak{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_data_formats_file_formats_diffraction_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Diffraction_Location_Peak) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Diffraction_Location_Peak) ProtoMessage() {}
+
+func (x *Diffraction_Location_Peak) ProtoReflect() protoreflect.Message {
+	mi := &file_data_formats_file_formats_diffraction_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Diffraction_Location_Peak.ProtoReflect.Descriptor instead.
+func (*Diffraction_Location_Peak) Descriptor() ([]byte, []int) {
+	return file_data_formats_file_formats_diffraction_proto_rawDescGZIP(), []int{0, 0, 0}
+}
+
+func (x *Diffraction_Location_Peak) GetPeakChannel() int32 {
+	if x != nil {
+		return x.PeakChannel
 	}
 	return 0
 }
 
-func (x *DetectedDiffractionPeakStatuses_PeakStatus) GetCreatorUserId() string {
+func (x *Diffraction_Location_Peak) GetEffectSize() float32 {
 	if x != nil {
-		return x.CreatorUserId
+		return x.EffectSize
+	}
+	return 0
+}
+
+func (x *Diffraction_Location_Peak) GetBaselineVariation() float32 {
+	if x != nil {
+		return x.BaselineVariation
+	}
+	return 0
+}
+
+func (x *Diffraction_Location_Peak) GetGlobalDifference() float32 {
+	if x != nil {
+		return x.GlobalDifference
+	}
+	return 0
+}
+
+func (x *Diffraction_Location_Peak) GetDifferenceSigma() float32 {
+	if x != nil {
+		return x.DifferenceSigma
+	}
+	return 0
+}
+
+func (x *Diffraction_Location_Peak) GetPeakHeight() float32 {
+	if x != nil {
+		return x.PeakHeight
+	}
+	return 0
+}
+
+func (x *Diffraction_Location_Peak) GetDetector() string {
+	if x != nil {
+		return x.Detector
 	}
 	return ""
 }
 
-var File_diffraction_proto protoreflect.FileDescriptor
+var File_data_formats_file_formats_diffraction_proto protoreflect.FileDescriptor
 
-var file_diffraction_proto_rawDesc = []byte{
-	0x0a, 0x11, 0x64, 0x69, 0x66, 0x66, 0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x22, 0xbd, 0x01, 0x0a, 0x15, 0x4d, 0x61, 0x6e, 0x75, 0x61, 0x6c, 0x44, 0x69,
-	0x66, 0x66, 0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x65, 0x61, 0x6b, 0x12, 0x0e, 0x0a,
-	0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x16, 0x0a,
-	0x06, 0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73,
-	0x63, 0x61, 0x6e, 0x49, 0x64, 0x12, 0x10, 0x0a, 0x03, 0x70, 0x6d, 0x63, 0x18, 0x03, 0x20, 0x01,
-	0x28, 0x05, 0x52, 0x03, 0x70, 0x6d, 0x63, 0x12, 0x1c, 0x0a, 0x09, 0x65, 0x6e, 0x65, 0x72, 0x67,
-	0x79, 0x6b, 0x65, 0x56, 0x18, 0x04, 0x20, 0x01, 0x28, 0x02, 0x52, 0x09, 0x65, 0x6e, 0x65, 0x72,
-	0x67, 0x79, 0x6b, 0x65, 0x56, 0x12, 0x26, 0x0a, 0x0e, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64,
-	0x55, 0x6e, 0x69, 0x78, 0x53, 0x65, 0x63, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0e, 0x63,
-	0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x55, 0x6e, 0x69, 0x78, 0x53, 0x65, 0x63, 0x12, 0x24, 0x0a,
-	0x0d, 0x63, 0x72, 0x65, 0x61, 0x74, 0x6f, 0x72, 0x55, 0x73, 0x65, 0x72, 0x49, 0x64, 0x18, 0x06,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x63, 0x72, 0x65, 0x61, 0x74, 0x6f, 0x72, 0x55, 0x73, 0x65,
-	0x72, 0x49, 0x64, 0x22, 0xf3, 0x02, 0x0a, 0x1f, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x65, 0x64,
-	0x44, 0x69, 0x66, 0x66, 0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x65, 0x61, 0x6b, 0x53,
-	0x74, 0x61, 0x74, 0x75, 0x73, 0x65, 0x73, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x63, 0x61, 0x6e, 0x49,
-	0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x12,
-	0x4a, 0x0a, 0x08, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x65, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28,
-	0x0b, 0x32, 0x2e, 0x2e, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x65, 0x64, 0x44, 0x69, 0x66, 0x66,
-	0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x65, 0x61, 0x6b, 0x53, 0x74, 0x61, 0x74, 0x75,
-	0x73, 0x65, 0x73, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x65, 0x73, 0x45, 0x6e, 0x74, 0x72,
-	0x79, 0x52, 0x08, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x65, 0x73, 0x1a, 0x72, 0x0a, 0x0a, 0x50,
-	0x65, 0x61, 0x6b, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x74, 0x61,
-	0x74, 0x75, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75,
-	0x73, 0x12, 0x26, 0x0a, 0x0e, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x55, 0x6e, 0x69, 0x78,
-	0x53, 0x65, 0x63, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0e, 0x63, 0x72, 0x65, 0x61, 0x74,
-	0x65, 0x64, 0x55, 0x6e, 0x69, 0x78, 0x53, 0x65, 0x63, 0x12, 0x24, 0x0a, 0x0d, 0x63, 0x72, 0x65,
-	0x61, 0x74, 0x6f, 0x72, 0x55, 0x73, 0x65, 0x72, 0x49, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x0d, 0x63, 0x72, 0x65, 0x61, 0x74, 0x6f, 0x72, 0x55, 0x73, 0x65, 0x72, 0x49, 0x64, 0x1a,
-	0x68, 0x0a, 0x0d, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x65, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79,
-	0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b,
-	0x65, 0x79, 0x12, 0x41, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x0b, 0x32, 0x2b, 0x2e, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x65, 0x64, 0x44, 0x69, 0x66, 0x66,
-	0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x65, 0x61, 0x6b, 0x53, 0x74, 0x61, 0x74, 0x75,
-	0x73, 0x65, 0x73, 0x2e, 0x50, 0x65, 0x61, 0x6b, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x05,
-	0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+var file_data_formats_file_formats_diffraction_proto_rawDesc = []byte{
+	0x0a, 0x2b, 0x64, 0x61, 0x74, 0x61, 0x2d, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x73, 0x2f, 0x66,
+	0x69, 0x6c, 0x65, 0x2d, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x73, 0x2f, 0x64, 0x69, 0x66, 0x66,
+	0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xed, 0x04,
+	0x0a, 0x0b, 0x44, 0x69, 0x66, 0x66, 0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1b, 0x0a,
+	0x09, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x08, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x49, 0x64, 0x12, 0x19, 0x0a, 0x08, 0x64, 0x72,
+	0x69, 0x76, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x07, 0x64, 0x72,
+	0x69, 0x76, 0x65, 0x49, 0x64, 0x12, 0x17, 0x0a, 0x07, 0x73, 0x69, 0x74, 0x65, 0x5f, 0x69, 0x64,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x73, 0x69, 0x74, 0x65, 0x49, 0x64, 0x12, 0x16,
+	0x0a, 0x06, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06,
+	0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x69, 0x74, 0x65, 0x18, 0x05,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x73, 0x69, 0x74, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69,
+	0x74, 0x6c, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65,
+	0x12, 0x10, 0x0a, 0x03, 0x73, 0x6f, 0x6c, 0x18, 0x07, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x73,
+	0x6f, 0x6c, 0x12, 0x10, 0x0a, 0x03, 0x72, 0x74, 0x74, 0x18, 0x08, 0x20, 0x01, 0x28, 0x05, 0x52,
+	0x03, 0x72, 0x74, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x63, 0x6c, 0x6b, 0x18, 0x09, 0x20, 0x01,
+	0x28, 0x05, 0x52, 0x04, 0x73, 0x63, 0x6c, 0x6b, 0x12, 0x33, 0x0a, 0x09, 0x6c, 0x6f, 0x63, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x0a, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x44, 0x69,
+	0x66, 0x66, 0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x4c, 0x6f, 0x63, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x52, 0x09, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x1a, 0xdd, 0x02,
+	0x0a, 0x08, 0x4c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x30, 0x0a, 0x05, 0x70, 0x65,
+	0x61, 0x6b, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x44, 0x69, 0x66, 0x66,
+	0x72, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x4c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x2e, 0x50, 0x65, 0x61, 0x6b, 0x52, 0x05, 0x70, 0x65, 0x61, 0x6b, 0x73, 0x1a, 0x8e, 0x02, 0x0a,
+	0x04, 0x50, 0x65, 0x61, 0x6b, 0x12, 0x21, 0x0a, 0x0c, 0x70, 0x65, 0x61, 0x6b, 0x5f, 0x63, 0x68,
+	0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0b, 0x70, 0x65, 0x61,
+	0x6b, 0x43, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x12, 0x1f, 0x0a, 0x0b, 0x65, 0x66, 0x66, 0x65,
+	0x63, 0x74, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x02, 0x52, 0x0a, 0x65,
+	0x66, 0x66, 0x65, 0x63, 0x74, 0x53, 0x69, 0x7a, 0x65, 0x12, 0x2d, 0x0a, 0x12, 0x62, 0x61, 0x73,
+	0x65, 0x6c, 0x69, 0x6e, 0x65, 0x5f, 0x76, 0x61, 0x72, 0x69, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18,
+	0x03, 0x20, 0x01, 0x28, 0x02, 0x52, 0x11, 0x62, 0x61, 0x73, 0x65, 0x6c, 0x69, 0x6e, 0x65, 0x56,
+	0x61, 0x72, 0x69, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x2b, 0x0a, 0x11, 0x67, 0x6c, 0x6f, 0x62,
+	0x61, 0x6c, 0x5f, 0x64, 0x69, 0x66, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x02, 0x52, 0x10, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x44, 0x69, 0x66, 0x66, 0x65,
+	0x72, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x29, 0x0a, 0x10, 0x64, 0x69, 0x66, 0x66, 0x65, 0x72, 0x65,
+	0x6e, 0x63, 0x65, 0x5f, 0x73, 0x69, 0x67, 0x6d, 0x61, 0x18, 0x05, 0x20, 0x01, 0x28, 0x02, 0x52,
+	0x0f, 0x64, 0x69, 0x66, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x53, 0x69, 0x67, 0x6d, 0x61,
+	0x12, 0x1f, 0x0a, 0x0b, 0x70, 0x65, 0x61, 0x6b, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18,
+	0x06, 0x20, 0x01, 0x28, 0x02, 0x52, 0x0a, 0x70, 0x65, 0x61, 0x6b, 0x48, 0x65, 0x69, 0x67, 0x68,
+	0x74, 0x12, 0x1a, 0x0a, 0x08, 0x64, 0x65, 0x74, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x18, 0x07, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x08, 0x64, 0x65, 0x74, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x42, 0x0b, 0x5a,
+	0x09, 0x2e, 0x2f, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 }
 
 var (
-	file_diffraction_proto_rawDescOnce sync.Once
-	file_diffraction_proto_rawDescData = file_diffraction_proto_rawDesc
+	file_data_formats_file_formats_diffraction_proto_rawDescOnce sync.Once
+	file_data_formats_file_formats_diffraction_proto_rawDescData = file_data_formats_file_formats_diffraction_proto_rawDesc
 )
 
-func file_diffraction_proto_rawDescGZIP() []byte {
-	file_diffraction_proto_rawDescOnce.Do(func() {
-		file_diffraction_proto_rawDescData = protoimpl.X.CompressGZIP(file_diffraction_proto_rawDescData)
+func file_data_formats_file_formats_diffraction_proto_rawDescGZIP() []byte {
+	file_data_formats_file_formats_diffraction_proto_rawDescOnce.Do(func() {
+		file_data_formats_file_formats_diffraction_proto_rawDescData = protoimpl.X.CompressGZIP(file_data_formats_file_formats_diffraction_proto_rawDescData)
 	})
-	return file_diffraction_proto_rawDescData
+	return file_data_formats_file_formats_diffraction_proto_rawDescData
 }
 
-var file_diffraction_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
-var file_diffraction_proto_goTypes = []interface{}{
-	(*ManualDiffractionPeak)(nil),                      // 0: ManualDiffractionPeak
-	(*DetectedDiffractionPeakStatuses)(nil),            // 1: DetectedDiffractionPeakStatuses
-	(*DetectedDiffractionPeakStatuses_PeakStatus)(nil), // 2: DetectedDiffractionPeakStatuses.PeakStatus
-	nil, // 3: DetectedDiffractionPeakStatuses.StatusesEntry
+var file_data_formats_file_formats_diffraction_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_data_formats_file_formats_diffraction_proto_goTypes = []interface{}{
+	(*Diffraction)(nil),               // 0: Diffraction
+	(*Diffraction_Location)(nil),      // 1: Diffraction.Location
+	(*Diffraction_Location_Peak)(nil), // 2: Diffraction.Location.Peak
 }
-var file_diffraction_proto_depIdxs = []int32{
-	3, // 0: DetectedDiffractionPeakStatuses.statuses:type_name -> DetectedDiffractionPeakStatuses.StatusesEntry
-	2, // 1: DetectedDiffractionPeakStatuses.StatusesEntry.value:type_name -> DetectedDiffractionPeakStatuses.PeakStatus
+var file_data_formats_file_formats_diffraction_proto_depIdxs = []int32{
+	1, // 0: Diffraction.locations:type_name -> Diffraction.Location
+	2, // 1: Diffraction.Location.peaks:type_name -> Diffraction.Location.Peak
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -306,14 +366,14 @@ var file_diffraction_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_diffraction_proto_init() }
-func file_diffraction_proto_init() {
-	if File_diffraction_proto != nil {
+func init() { file_data_formats_file_formats_diffraction_proto_init() }
+func file_data_formats_file_formats_diffraction_proto_init() {
+	if File_data_formats_file_formats_diffraction_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_diffraction_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ManualDiffractionPeak); i {
+		file_data_formats_file_formats_diffraction_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Diffraction); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -324,8 +384,8 @@ func file_diffraction_proto_init() {
 				return nil
 			}
 		}
-		file_diffraction_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DetectedDiffractionPeakStatuses); i {
+		file_data_formats_file_formats_diffraction_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Diffraction_Location); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -336,8 +396,8 @@ func file_diffraction_proto_init() {
 				return nil
 			}
 		}
-		file_diffraction_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DetectedDiffractionPeakStatuses_PeakStatus); i {
+		file_data_formats_file_formats_diffraction_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Diffraction_Location_Peak); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -353,18 +413,18 @@ func file_diffraction_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_diffraction_proto_rawDesc,
+			RawDescriptor: file_data_formats_file_formats_diffraction_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_diffraction_proto_goTypes,
-		DependencyIndexes: file_diffraction_proto_depIdxs,
-		MessageInfos:      file_diffraction_proto_msgTypes,
+		GoTypes:           file_data_formats_file_formats_diffraction_proto_goTypes,
+		DependencyIndexes: file_data_formats_file_formats_diffraction_proto_depIdxs,
+		MessageInfos:      file_data_formats_file_formats_diffraction_proto_msgTypes,
 	}.Build()
-	File_diffraction_proto = out.File
-	file_diffraction_proto_rawDesc = nil
-	file_diffraction_proto_goTypes = nil
-	file_diffraction_proto_depIdxs = nil
+	File_data_formats_file_formats_diffraction_proto = out.File
+	file_data_formats_file_formats_diffraction_proto_rawDesc = nil
+	file_data_formats_file_formats_diffraction_proto_goTypes = nil
+	file_data_formats_file_formats_diffraction_proto_depIdxs = nil
 }

@@ -15,6 +15,7 @@ func testUserDetails(apiHost string) {
 		`{"msgId":1,"status":"WS_OK","userDetailsResp":{
 				"details":{"info":{"id":"${USERID}","name":"test1@pixlise.org - WS Integration Test","email":"test1@pixlise.org"},
 				"permissions": [
+					"EDIT_DIFFRACTION",
 					"EDIT_ELEMENT_SET",
 					"EDIT_EXPRESSION",
 					"EDIT_EXPRESSION_GROUP",
@@ -36,6 +37,7 @@ func testUserDetails(apiHost string) {
 			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
 			"dataCollectionVersion": "1.2.3",
             "permissions": [
+                "EDIT_DIFFRACTION",
                 "EDIT_ELEMENT_SET",
                 "EDIT_EXPRESSION",
                 "EDIT_EXPRESSION_GROUP",
@@ -57,6 +59,7 @@ func testUserDetails(apiHost string) {
 			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
 			"dataCollectionVersion": "1.2.4",
             "permissions": [
+                "EDIT_DIFFRACTION",
                 "EDIT_ELEMENT_SET",
                 "EDIT_EXPRESSION",
                 "EDIT_EXPRESSION_GROUP",
@@ -78,6 +81,7 @@ func testUserDetails(apiHost string) {
 			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
 			"dataCollectionVersion": "1.2.4",
             "permissions": [
+                "EDIT_DIFFRACTION",
                 "EDIT_ELEMENT_SET",
                 "EDIT_EXPRESSION",
                 "EDIT_EXPRESSION_GROUP",
@@ -99,6 +103,7 @@ func testUserDetails(apiHost string) {
 			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
 			"dataCollectionVersion": "1.2.4",
             "permissions": [
+                "EDIT_DIFFRACTION",
                 "EDIT_ELEMENT_SET",
                 "EDIT_EXPRESSION",
                 "EDIT_EXPRESSION_GROUP",

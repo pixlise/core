@@ -367,6 +367,15 @@ func testScanDataNoPermission(apiHost string) {
 			"imageListResp":{}
 		}`,
 	)
+
+	u1.AddSendReqAction("detectedDiffractionPeaksReq (expect no permission)",
+		`{"detectedDiffractionPeaksReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
+		`{"msgId":9,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "View access denied for: 048300551",
+			"detectedDiffractionPeaksResp":{}
+		}`,
+	)
 	/*
 		u1.AddSendReqAction("imageBeamLocationsReq (expect no permission)",
 			`{"imageBeamLocationsReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
@@ -1024,9 +1033,85 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 		}`,
 	)
 
+	u1.AddSendReqAction("detectedDiffractionPeaksReq (expect no permission)",
+		`{"detectedDiffractionPeaksReq":{"scanId": "048300551", "entries": {"indexes": [100,-1,104]}}}`,
+		`{"msgId": 9,
+			"status": "WS_OK",
+			"detectedDiffractionPeaksResp": {
+				"peaksPerLocation": [
+					{
+						"id": "188",
+						"peaks${LIST,MODE=CONTAINS,LENGTH=3}": [
+							{
+								"peakChannel": 204,
+								"effectSize": 6.0991945,
+								"baselineVariation": 0.19179639,
+								"globalDifference": 0.06739717,
+								"differenceSigma": 0.16368404,
+								"peakHeight": 0.3579455
+							}
+						]
+					},
+					{
+						"id": "189",
+						"peaks${LIST,MODE=CONTAINS,LENGTH=5}": [
+							{
+								"peakChannel": 832,
+								"effectSize": 10.04235,
+								"baselineVariation": 0.24875456,
+								"globalDifference": 0.06951845,
+								"differenceSigma": 0.15115373,
+								"peakHeight": 0.22210322
+							}
+						]
+					},
+					{
+						"id": "190",
+						"peaks${LIST,MODE=CONTAINS,LENGTH=3}": [
+							{
+								"peakChannel": 483,
+								"effectSize": 6.8425426,
+								"baselineVariation": 0.22377764,
+								"globalDifference": 0.08196892,
+								"differenceSigma": 0.1122962,
+								"peakHeight": 0.2930711
+							}
+						]
+					},
+					{
+						"id": "191",
+						"peaks${LIST,MODE=CONTAINS,LENGTH=4}": [
+							{
+								"peakChannel": 833,
+								"effectSize": 11.62446,
+								"baselineVariation": 0.25955257,
+								"globalDifference": 0.08716079,
+								"differenceSigma": 0.12355343,
+								"peakHeight": 0.38338855
+							}
+						]
+					},
+					{
+						"id": "192",
+						"peaks${LIST,MODE=CONTAINS,LENGTH=9}": [
+							{
+								"peakChannel": 230,
+								"effectSize": 7.650696,
+								"baselineVariation": 0.15942448,
+								"globalDifference": 0.097010836,
+								"differenceSigma": 0.099084,
+								"peakHeight": 0.15445672
+							}
+						]
+					}
+				]
+			}
+		}`,
+	)
+
 	u1.AddSendReqAction("imageListReq (should work)",
 		`{"imageListReq":{"scanIds": ["048300551"]}}`,
-		`{"msgId":9,
+		`{"msgId":10,
 			"status": "WS_OK",
 			"imageListResp":{
 				"images": [
@@ -1064,7 +1149,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 	u1.AddSendReqAction("imageBeamLocationsReq (bad image name)",
 		`{"imageBeamLocationsReq":{"imageName": "non-existant.jpg"}}`,
 		`{
-			"msgId": 10,
+			"msgId": 11,
 			"status": "WS_NOT_FOUND",
 			"errorText": "non-existant.jpg not found",
 			"imageBeamLocationsResp": {}
@@ -1073,7 +1158,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 
 	u1.AddSendReqAction("imageBeamLocationsReq (should work)",
 		`{"imageBeamLocationsReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
-		`{"msgId":11, "status": "WS_OK",
+		`{"msgId":12, "status": "WS_OK",
 			"imageBeamLocationsResp":{
 				"locations": {
 					"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
