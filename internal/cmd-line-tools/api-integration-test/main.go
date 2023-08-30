@@ -408,6 +408,7 @@ func runTests(apiHost string) {
 		},
 	})
 
+	testUserSearch(apiHost)
 	testUserDetails(apiHost)
 	testUserManagement(apiHost)
 	testUserGroups(apiHost)

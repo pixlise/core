@@ -11,6 +11,7 @@ import (
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func HandleUserDetailsReq(req *protos.UserDetailsReq, hctx wsHelpers.HandlerContext) (*protos.UserDetailsResp, error) {
@@ -91,5 +92,43 @@ func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, hctx wsHelpers.H
 }
 
 func HandleUserSearchReq(req *protos.UserSearchReq, hctx wsHelpers.HandlerContext) (*protos.UserSearchResp, error) {
-	return nil, errors.New("HandleUserSearchReq not implemented yet")
+	if err := wsHelpers.CheckStringField(&req.SearchString, "SearchString", 1, 30); err != nil {
+		return nil, err
+	}
+
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UsersName)
+
+	filter := bson.M{"$or": []interface{}{
+		bson.M{"info.name": bson.M{"$regex": req.SearchString}},
+		bson.M{"info.email": bson.M{"$regex": req.SearchString}},
+	}}
+
+	//opts := options.Find()
+	cursor, err := coll.Find(ctx, filter) //, opts)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			// Silent error, just return empty
+			return &protos.UserSearchResp{
+				Users: []*protos.UserInfo{},
+			}, nil
+		}
+
+		return nil, err
+	}
+
+	result := []*protos.UserDetails{}
+	err = cursor.All(ctx, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	users := []*protos.UserInfo{}
+	for _, user := range result {
+		users = append(users, user.Info)
+	}
+
+	return &protos.UserSearchResp{
+		Users: users,
+	}, nil
 }

@@ -92,13 +92,13 @@ func beginDatasetFileReq(scanId string, hctx wsHelpers.HandlerContext) (*protos.
 }
 
 func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaWriteResp, error) {
-	return nil, errors.New("HandleScanMetaLabelsReq not implemented yet")
+	return nil, errors.New("HandleScanMetaWriteReq not implemented yet")
 }
 
 func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHelpers.HandlerContext) (*protos.ScanTriggerReImportResp, error) {
-	return nil, errors.New("HandleScanMetaLabelsReq not implemented yet")
+	return nil, errors.New("HandleScanTriggerReImportReq not implemented yet")
 }
 
 func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContext) (*protos.ScanUploadResp, error) {
-	return nil, errors.New("HandleScanMetaLabelsReq not implemented yet")
+	return nil, errors.New("HandleScanUploadReq not implemented yet")
 }
