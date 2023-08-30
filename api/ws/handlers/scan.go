@@ -7,6 +7,7 @@ import (
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
+	"github.com/pixlise/core/v3/core/errorwithstatus"
 	"github.com/pixlise/core/v3/core/indexcompression"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -92,7 +93,35 @@ func beginDatasetFileReq(scanId string, hctx wsHelpers.HandlerContext) (*protos.
 }
 
 func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaWriteResp, error) {
-	return nil, errors.New("HandleScanMetaWriteReq not implemented yet")
+	if err := wsHelpers.CheckStringField(&req.Title, "Title", 1, 100); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&req.Description, "Description", 1, 600); err != nil {
+		return nil, err
+	}
+
+	_, err := wsHelpers.CheckObjectAccess(true, req.ScanId, protos.ObjectType_OT_SCAN, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Overwrites some metadata fields to allow them to be more descriptive to users. Requires permission EDIT_SCAN
+	// so only admins can do this
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ScansName)
+
+	update := bson.D{bson.E{Key: "title", Value: req.Title}, bson.E{Key: "description", Value: req.Description}}
+
+	result, err := coll.UpdateByID(ctx, req.ScanId, bson.D{{Key: "$set", Value: update}})
+	if err != nil {
+		return nil, err
+	}
+
+	if result.MatchedCount != 1 {
+		return nil, errorwithstatus.MakeNotFoundError(req.ScanId)
+	}
+
+	return &protos.ScanMetaWriteResp{}, nil
 }
 
 func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHelpers.HandlerContext) (*protos.ScanTriggerReImportResp, error) {

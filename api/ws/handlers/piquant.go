@@ -8,9 +8,9 @@ import (
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/piquant"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
-	"github.com/pixlise/core/v3/core/piquant"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"

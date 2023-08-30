@@ -133,7 +133,7 @@ func (x *ImageListResp) GetDefaultImageIdx() uint32 {
 	return 0
 }
 
-// requires(SCAN_EDIT)
+// requires(EDIT_SCAN)
 type ImageSetDefaultReq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -227,7 +227,7 @@ func (*ImageSetDefaultResp) Descriptor() ([]byte, []int) {
 	return file_image_msgs_proto_rawDescGZIP(), []int{3}
 }
 
-// requires(SCAN_EDIT)
+// requires(EDIT_SCAN)
 type ImageUploadReq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -367,7 +367,7 @@ func (*ImageUploadResp) Descriptor() ([]byte, []int) {
 	return file_image_msgs_proto_rawDescGZIP(), []int{5}
 }
 
-// requires(SCAN_EDIT)
+// requires(EDIT_SCAN)
 type ImageDeleteReq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

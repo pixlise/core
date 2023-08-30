@@ -567,6 +567,17 @@ func testQuants(apiHost string) {
 		fmt.Sprintf(`{"msgId":12,"status":"WS_NOT_FOUND", "errorText": "%v not found", "quantGetResp":{}}`, quantId),
 	)
 
+	// Upload a quant, check that it worked, delete it
+	u1.AddSendReqAction("Upload quant CSV (should work)",
+		fmt.Sprintf(`{"quantUploadReq":{
+			"scanId": "%v",
+			"name": "uploaded Quant",
+			"comments": "This was just uploaded from CSV",
+			"csvData": "Header line\nPMC,Ca_%%,livetime,RTT,SCLK,filename\n1,5.3,9.9,98765,1234567890,Normal_A"
+		}}`, scanId),
+		`{"msgId":13,"status":"WS_OK", "quantUploadResp":{"createdQuantId": "${IDSAVE=uploadedQuantId}"}}`,
+	)
+
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 
@@ -577,7 +588,101 @@ func testQuants(apiHost string) {
 	}
 
 	if len(items) > 0 {
-		log.Fatalf("Failed to delete all quant files. Remaining: %v\n", strings.Join(items, ", "))
+		log.Fatalf("Failed to delete all quant file. Remaining: %v\n", strings.Join(items, ", "))
+	}
+
+	// Now create a quant by uploading a CSV
+	u1.AddSendReqAction("Get quant summary+data (should work)",
+		`{"quantGetReq":{"quantId": "${IDLOAD=uploadedQuantId}"}}`,
+		fmt.Sprintf(`{
+			"msgId": 14,
+			"status": "WS_OK",
+			"quantGetResp": {
+				"summary": {
+					"id": "${IDCHK=uploadedQuantId}",
+					"params": {
+						"params": {
+							"name": "uploaded Quant",
+							"dataBucket": "devpixlise-datasets0030ee04-ox1crk4uej2x",
+							"datasetPath": "Datasets/the-scan-id/dataset.bin",
+							"datasetID": "%v",
+							"piquantJobsBucket": "devpixlise-piquantjobs2a7b0239-wcx2ijxt49jc",
+							"elements": [
+								"Ca"
+							],
+							"startUnixTimeSec": "${SECAGO=3}",
+							"requestorUserId": "${USERID}",
+							"PIQUANTVersion": "N/A",
+							"quantMode": "ABManual",
+							"comments": "This was just uploaded from CSV",
+							"command": "map"
+						}
+					},
+					"elements": [
+						"Ca"
+					],
+					"status": {
+						"jobID": "${IDCHK=uploadedQuantId}",
+						"status": "COMPLETE",
+						"message": "user-supplied quantification processed",
+						"endUnixTimeSec": "${SECAGO=3}",
+						"outputFilePath": "Quantifications/the-scan-id/auth0|649e54491154cac52ec21718"
+					}
+				},
+				"data": {
+					"labels": [
+						"Ca_%%",
+						"livetime"
+					],
+					"types": [
+						"QT_FLOAT",
+						"QT_FLOAT"
+					],
+					"locationSet": [
+						{
+							"detector": "A",
+							"location": [
+								{
+									"pmc": 1,
+									"rtt": 98765,
+									"sclk": 1234567890,
+									"values": [
+										{
+											"fvalue": 5.3
+										},
+										{
+											"fvalue": 9.9
+										}
+									]
+								}
+							]
+						}
+					]
+				}
+			}
+		}`, scanId),
+	)
+
+	u1.AddSendReqAction("Delete uploaded quant (should work)",
+		`{"quantDeleteReq":{"quantId": "${IDLOAD=uploadedQuantId}"}}`,
+		`{"msgId":15,"status":"WS_OK", "quantDeleteResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Get quant (should fail, not in db)",
+		`{"quantGetReq":{"quantId": "${IDLOAD=uploadedQuantId}"}}`,
+		fmt.Sprintf(`{"msgId":16,"status":"WS_NOT_FOUND", "errorText": "%v not found", "quantGetResp":{}}`, wstestlib.GetIdCreated("uploadedQuantId")),
+	)
+
+	u1.CloseActionGroup([]string{}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
+
+	items, err = apiStorageFileAccess.ListObjects(apiUsersBucket, "Quantification/"+scanId+"/")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if len(items) > 0 {
+		log.Fatalf("Failed to delete all uploaded quant files. Remaining: %v\n", strings.Join(items, ", "))
 	}
 }
 

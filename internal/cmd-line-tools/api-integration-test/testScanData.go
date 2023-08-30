@@ -12,6 +12,7 @@ import (
 
 func testScanData(apiHost string, groupDepth int) {
 	scanId := seedDBScanData()
+
 	// Prepend the special bit required for ownership table scan storage
 	scanId = "scan_" + scanId
 
@@ -32,14 +33,14 @@ func testScanData(apiHost string, groupDepth int) {
 		testScanDataNoPermission(apiHost)
 	}
 
-	accessTest := func(apiHost string, comment string, ownershipViewers *protos.UserGroupList, ownershipEditors *protos.UserGroupList, userGroups []*protos.UserGroupDB) {
+	accessTest := func(apiHost string, comment string, ownershipViewers *protos.UserGroupList, ownershipEditors *protos.UserGroupList, userGroups []*protos.UserGroupDB, editAllowed bool) {
 		// Set the viewers and editors
 		seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, ownershipViewers, ownershipEditors)
 		// Set user groups created
 		seedDBUserGroups(userGroups)
 
 		// Run test expecting to get
-		testScanDataHasPermission(apiHost, comment)
+		testScanDataHasPermission(apiHost, comment, editAllowed)
 	}
 
 	wstestlib.RunFullAccessTest(apiHost, userId, groupDepth, noAccessTest, accessTest)
@@ -50,7 +51,7 @@ const scanWaitTime = 60 * 1000 * 10
 func seedDBScanData() string {
 	scanItem := protos.ScanItem{
 		Id:    "048300551",
-		Title: "Naltsos",
+		Title: "",
 		DataTypes: []*protos.ScanItem_ScanTypeCount{
 			{
 				DataType: protos.ScanDataType_SD_XRF,
@@ -275,6 +276,15 @@ func testScanDataBadId(apiHost string, actionMsg string) string {
 		}`,
 	)
 
+	u1.AddSendReqAction("scan meta write (not found)",
+		`{"scanMetaWriteReq":{"scanId": "non-existant-scan", "title": "Something", "description": "The blah"}}`,
+		`{"msgId":4,
+			"status": "WS_NOT_FOUND",
+			"errorText": "non-existant-scan not found",
+			"scanMetaWriteResp": {}
+		}`,
+	)
+
 	u1.CloseActionGroup([]string{}, scanWaitTime)
 	wstestlib.ExecQueuedActions(&u1)
 	return u1.GetUserId()
@@ -376,6 +386,16 @@ func testScanDataNoPermission(apiHost string) {
 			"detectedDiffractionPeaksResp":{}
 		}`,
 	)
+
+	u1.AddSendReqAction("scan meta write (not found)",
+		`{"scanMetaWriteReq":{"scanId": "048300551", "title": "Something", "description": "The blah"}}`,
+		`{"msgId":10,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "Edit access denied for: 048300551",
+			"scanMetaWriteResp": {}
+		}`,
+	)
+
 	/*
 		u1.AddSendReqAction("imageBeamLocationsReq (expect no permission)",
 			`{"imageBeamLocationsReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
@@ -390,7 +410,7 @@ func testScanDataNoPermission(apiHost string) {
 	wstestlib.ExecQueuedActions(&u1)
 }
 
-func testScanDataHasPermission(apiHost string, actionMsg string) {
+func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed bool) {
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
 	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
 		Host: apiHost,
@@ -1185,6 +1205,25 @@ func testScanDataHasPermission(apiHost string, actionMsg string) {
 			}
 		}`,
 	)
+
+	if editAllowed {
+		u1.AddSendReqAction("scan meta write (should work)",
+			`{"scanMetaWriteReq":{"scanId": "048300551", "title": "Naltsos", "description": "The first scan on Mars"}}`,
+			`{"msgId":13,
+				"status": "WS_OK",
+				"scanMetaWriteResp":{}
+			}`,
+		)
+	} else {
+		u1.AddSendReqAction("scan meta write (not found)",
+			`{"scanMetaWriteReq":{"scanId": "048300551", "title": "Something", "description": "The blah"}}`,
+			`{"msgId":13,
+				"status": "WS_NO_PERMISSION",
+				"errorText": "Edit access denied for: 048300551",
+				"scanMetaWriteResp": {}
+			}`,
+		)
+	}
 
 	u1.CloseActionGroup([]string{}, scanWaitTime)
 	wstestlib.ExecQueuedActions(&u1)

@@ -1,8 +1,8 @@
 package wsHandler
 
 import (
+	"github.com/pixlise/core/v3/api/piquant"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	"github.com/pixlise/core/v3/core/piquant"
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
 

@@ -10,7 +10,7 @@ import (
 )
 
 type NoAccessTestccessCallbackFunc func(string)
-type AccessTestccessCallbackFunc func(string, string, *protos.UserGroupList, *protos.UserGroupList, []*protos.UserGroupDB)
+type AccessTestccessCallbackFunc func(string, string, *protos.UserGroupList, *protos.UserGroupList, []*protos.UserGroupDB, bool)
 
 // Sets up users/groups for different scenarios and calls the callback function for each iteration. Note: noAccessCallback can be nil if not required
 // Group depth defines the max number of groups chained together as part of the tests
@@ -100,7 +100,7 @@ func RunFullAccessTest(apiHost string, userId string, groupDepth int, noAccessCa
 			}
 
 			// Call back for the actual access test
-			accessCheckCallback(apiHost, what, ownership[0], ownership[1], groups)
+			accessCheckCallback(apiHost, what, ownership[0], ownership[1], groups, ownerViewOrEdit == 1)
 
 			// Occasionally pause to not trip auth0 login frequency
 			if loginCount > 9 {

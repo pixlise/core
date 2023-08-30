@@ -21,6 +21,7 @@ func testUserDetails(apiHost string) {
 					"EDIT_EXPRESSION_GROUP",
 					"EDIT_OWN_USER",
 					"EDIT_ROI",
+					"EDIT_SCAN",
 					"QUANTIFY",
 					"SHARE"
 				]}}}`,
@@ -43,6 +44,7 @@ func testUserDetails(apiHost string) {
                 "EDIT_EXPRESSION_GROUP",
                 "EDIT_OWN_USER",
                 "EDIT_ROI",
+                "EDIT_SCAN",
 				"QUANTIFY",
                 "SHARE"
             ]}}}`,
@@ -65,6 +67,7 @@ func testUserDetails(apiHost string) {
                 "EDIT_EXPRESSION_GROUP",
                 "EDIT_OWN_USER",
                 "EDIT_ROI",
+                "EDIT_SCAN",
 				"QUANTIFY",
                 "SHARE"
             ]}}}`,
@@ -87,6 +90,7 @@ func testUserDetails(apiHost string) {
                 "EDIT_EXPRESSION_GROUP",
                 "EDIT_OWN_USER",
                 "EDIT_ROI",
+                "EDIT_SCAN",
 				"QUANTIFY",
                 "SHARE"
             ]}}}`,
@@ -109,6 +113,7 @@ func testUserDetails(apiHost string) {
                 "EDIT_EXPRESSION_GROUP",
                 "EDIT_OWN_USER",
                 "EDIT_ROI",
+                "EDIT_SCAN",
 				"QUANTIFY",
                 "SHARE"
             ]}}}`,

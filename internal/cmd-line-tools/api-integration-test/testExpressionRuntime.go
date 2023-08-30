@@ -14,7 +14,7 @@ func testExpressionRuntimeMsgs(apiHost string) {
 		`{"expressionWriteReq":{
 			"expression": {
 				"name": "User1 Expression",
-				"comments": "User1 Expression",
+				"comments": "FOR RUNTIME STAT SAVE checking",
 				"sourceLanguage": "LUA",
 				"sourceCode": "element(\"Ca\")"
 			}
@@ -26,7 +26,7 @@ func testExpressionRuntimeMsgs(apiHost string) {
 					"name": "User1 Expression",
 					"sourceCode": "element(\"Ca\")",
 					"sourceLanguage": "LUA",
-					"comments": "User1 Expression",
+					"comments": "FOR RUNTIME STAT SAVE checking",
 					"modifiedUnixSec": "${SECAGO=3}",
 					"owner": {
 						"creatorUser": {
@@ -82,7 +82,7 @@ func testExpressionRuntimeMsgs(apiHost string) {
 					"name": "User1 Expression",
 					"sourceCode": "element(\"Ca\")",
 					"sourceLanguage": "LUA",
-					"comments": "User1 Expression",
+					"comments": "FOR RUNTIME STAT SAVE checking",
 					"modifiedUnixSec": "${SECAGO=3}",
 					"owner": {
 						"creatorUser": {
@@ -103,6 +103,11 @@ func testExpressionRuntimeMsgs(apiHost string) {
 				}
 			}
 		}`,
+	)
+
+	u1.AddSendReqAction("Delete this expression so we don't mess up listings for the user content one",
+		`{"expressionDeleteReq":{"id": "${IDLOAD=CreatedForStat1}"}}`,
+		`{"msgId":5,"status":"WS_OK", "expressionDeleteResp":{}}`,
 	)
 
 	u1.CloseActionGroup([]string{}, 5000)
