@@ -12,11 +12,12 @@ import (
 	"gopkg.in/auth0.v4/management"
 )
 
-func migrateAuth0UserGroups(auth0Domain string, auth0ClientId string, auth0Secret string, dest *mongo.Database) error {
+func migrateAuth0UserGroups(auth0Domain string, auth0ClientId string, auth0Secret string, dest *mongo.Database) (map[string]string, error) {
+	result := map[string]string{}
 	coll := dest.Collection(dbCollections.UserGroupsName)
 	err := coll.Drop(context.TODO())
 	if err != nil {
-		return err
+		return result, err
 	}
 
 	/*roleToGroup, allGroups, userToGroup, err := readFromAuth0(auth0Domain, auth0ClientId, auth0Secret)
@@ -53,13 +54,16 @@ func migrateAuth0UserGroups(auth0Domain string, auth0ClientId string, auth0Secre
 
 		_, err := coll.InsertOne(context.TODO(), dbGroup)
 		if err != nil {
-			return err
+			return result, err
 		}
+
+		// Remember this group
+		result[group] = dbGroup.Id
 	}
 
 	fmt.Printf("Created %v user groups\n", len(allGroups))
 
-	return nil
+	return result, nil
 }
 
 func readFromAuth0(auth0Domain string, auth0ClientId string, auth0Secret string) (map[string][]string, map[string]bool, map[string][]string, error) {

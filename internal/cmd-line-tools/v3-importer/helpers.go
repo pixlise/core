@@ -10,19 +10,25 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func saveOwnershipItem(objectId string, objectType protos.ObjectType, userId string, timeStampUnixSec uint32, dest *mongo.Database) error {
-	userId = utils.FixUserId(userId)
+func saveOwnershipItem(objectId string, objectType protos.ObjectType, editorUserId string, editorGroupId string, timeStampUnixSec uint32, dest *mongo.Database) error {
+	editorUserId = utils.FixUserId(editorUserId)
 
 	ownerItem := &protos.OwnershipItem{
 		Id:             objectId,
 		ObjectType:     objectType,
-		CreatorUserId:  userId,
+		CreatorUserId:  editorUserId,
 		CreatedUnixSec: timeStampUnixSec,
 		//Viewers: ,
-		Editors: &protos.UserGroupList{
-			UserIds: []string{userId},
-		},
+		Editors: &protos.UserGroupList{},
 	}
+
+	if len(editorUserId) > 0 {
+		ownerItem.Editors.UserIds = []string{editorUserId}
+	}
+	if len(editorGroupId) > 0 {
+		ownerItem.Editors.GroupIds = []string{editorGroupId}
+	}
+
 	result, err := dest.Collection(dbCollections.OwnershipName).InsertOne(context.TODO(), ownerItem)
 	if err != nil {
 		return err

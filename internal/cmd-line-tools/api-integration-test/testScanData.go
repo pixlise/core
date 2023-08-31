@@ -14,7 +14,7 @@ func testScanData(apiHost string, groupDepth int) {
 	scanId := seedDBScanData()
 
 	// Prepend the special bit required for ownership table scan storage
-	scanId = "scan_" + scanId
+	//scanId = "scan_" + scanId
 
 	seedImages()
 	seedImageLocations()

@@ -95,7 +95,14 @@ type SrcDatasetConfig struct {
 	Datasets []SrcSummaryFileData `json:"datasets"`
 }
 
-func migrateDatasets(configBucket string, dataBucket string, destDataBucket string, fs fileaccess.FileAccess, dest *mongo.Database, limitToDatasetIds []string) error {
+func migrateDatasets(
+	configBucket string,
+	dataBucket string,
+	destDataBucket string,
+	fs fileaccess.FileAccess,
+	dest *mongo.Database,
+	limitToDatasetIds []string,
+	userGroups map[string]string) error {
 	// Drop images collection
 	coll := dest.Collection(dbCollections.ImagesName)
 	err := coll.Drop(context.TODO())
@@ -195,10 +202,18 @@ func migrateDatasets(configBucket string, dataBucket string, destDataBucket stri
 
 		destItems = append(destItems, destItem)
 
+		// Decide which group to link this scan to
+		memberGroup := userGroups["PIXL-FM"]
+		if instrument == protos.ScanInstrument_PIXL_EM {
+			memberGroup = userGroups["PIXL-EM"]
+		} else if instrument != protos.ScanInstrument_PIXL_FM {
+			memberGroup = userGroups["JPL Breadboard"]
+		}
+
 		// Each scan needs an ownership item to define who can view/edit it
 		// Prefix the ID with "scan_" because the dataset IDs are likely not that long, and we also want them
 		// to differ from our random ones
-		err = saveOwnershipItem("scan_"+dataset.DatasetID, protos.ObjectType_OT_SCAN, "", uint32(dataset.CreationUnixTimeSec), dest)
+		err = saveOwnershipItem( /*"scan_"+*/ dataset.DatasetID, protos.ObjectType_OT_SCAN, "", memberGroup, uint32(dataset.CreationUnixTimeSec), dest)
 		if err != nil {
 			return err
 		}

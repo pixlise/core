@@ -145,7 +145,7 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database) 
 			Tags:           tags,
 		}
 
-		err = saveOwnershipItem(destExpr.Id, protos.ObjectType_OT_ROI, expr.Origin.Creator.UserID, uint32(expr.Origin.CreatedUnixTimeSec), dest)
+		err = saveOwnershipItem(destExpr.Id, protos.ObjectType_OT_ROI, expr.Origin.Creator.UserID, "", uint32(expr.Origin.CreatedUnixTimeSec), dest)
 		if err != nil {
 			return err
 		}
@@ -215,7 +215,7 @@ func migrateExpressionsDBModules(src *mongo.Database, dest *mongo.Database) erro
 			Comments: mod.Comments,
 		}
 
-		err = saveOwnershipItem(destMod.Id, protos.ObjectType_OT_ROI, mod.Origin.Creator.UserID, uint32(mod.Origin.CreatedUnixTimeSec), dest)
+		err = saveOwnershipItem(destMod.Id, protos.ObjectType_OT_ROI, mod.Origin.Creator.UserID, "", uint32(mod.Origin.CreatedUnixTimeSec), dest)
 		if err != nil {
 			return err
 		}

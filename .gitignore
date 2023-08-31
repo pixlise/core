@@ -14,6 +14,7 @@ auth0dummy.go
 /local-mongo/3repl/
 
 local-api-config.json
+local-api-config-unittest.json
 
 # temp files that get generated for tests
 diffraction-detector/test-files/dataset-diffraction.bin

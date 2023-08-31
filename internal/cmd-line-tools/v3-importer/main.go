@@ -18,6 +18,7 @@ import (
 )
 
 var maxItemsToRead int
+var quantLogLimitCount int
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
@@ -48,6 +49,7 @@ func main() {
 	flag.StringVar(&auth0ClientId, "auth0ClientId", "", "Auth0 client id for management API")
 	flag.StringVar(&auth0Secret, "auth0Secret", "", "Auth0 secret for management API")
 	flag.StringVar(&limitToDatasetIDs, "limitToDatasetIDs", "", "Comma-separated dataset IDs to limit import to (for speed/testing)")
+	flag.IntVar(&quantLogLimitCount, "quantLogLimitCount", 0, "Limits how many log files are copied (for speed/testing)")
 
 	flag.Parse()
 
@@ -102,14 +104,26 @@ func main() {
 		log.Fatal(err)
 	}
 
+	userGroups := map[string]string{}
+
 	if len(auth0Domain) > 0 && len(auth0ClientId) > 0 && len(auth0Secret) > 0 {
 		fmt.Println("==========================================")
 		fmt.Println("Migrating user groups from Auth0...")
 		fmt.Println("==========================================")
-		err = migrateAuth0UserGroups(auth0Domain, auth0ClientId, auth0Secret, destDB)
+		userGroups, err = migrateAuth0UserGroups(auth0Domain, auth0ClientId, auth0Secret, destDB)
 		if err != nil {
 			log.Fatal(err)
 		}
+	}
+
+	fmt.Println("==========================================")
+	fmt.Println("Migrating data from datasets bucket...")
+	fmt.Println("==========================================")
+
+	fmt.Println("Datasets...")
+	err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB, limitToDatasetIDsList, userGroups)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	fmt.Println("==========================================")
@@ -165,7 +179,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-
 	fmt.Println("Element Sets...")
 	err = migrateElementSets(userContentBucket, userContentPaths, fs, destDB)
 	if err != nil {
@@ -198,16 +211,6 @@ func main() {
 
 	fmt.Println("View States...")
 	err = migrateViewStates(userContentBucket, userContentPaths, fs, destDB)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("==========================================")
-	fmt.Println("Migrating data from datasets bucket...")
-	fmt.Println("==========================================")
-
-	fmt.Println("Datasets...")
-	err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB, limitToDatasetIDsList)
 	if err != nil {
 		log.Fatal(err)
 	}

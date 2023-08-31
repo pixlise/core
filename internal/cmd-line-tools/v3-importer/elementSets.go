@@ -82,7 +82,7 @@ func migrateElementSets(userContentBucket string, userContentFiles []string, fs 
 						})
 					}
 
-					err = saveOwnershipItem(destSet.Id, protos.ObjectType_OT_ELEMENT_SET, item.Creator.UserID, uint32(item.CreatedUnixTimeSec), dest)
+					err = saveOwnershipItem(destSet.Id, protos.ObjectType_OT_ELEMENT_SET, item.Creator.UserID, "", uint32(item.CreatedUnixTimeSec), dest)
 					if err != nil {
 						return err
 					}

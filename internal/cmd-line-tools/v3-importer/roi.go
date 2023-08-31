@@ -112,7 +112,7 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 						// MistROIItem
 					}
 
-					err = saveOwnershipItem(destROI.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, uint32(item.CreatedUnixTimeSec), dest)
+					err = saveOwnershipItem(destROI.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, "", uint32(item.CreatedUnixTimeSec), dest)
 					if err != nil {
 						return err
 					}

@@ -212,7 +212,7 @@ func migrateQuants(userContentBucket string, userContentFiles []string, limitToD
 					},
 				}
 
-				err = saveOwnershipItem(quantId, protos.ObjectType_OT_QUANTIFICATION, jobSummary.Params.Creator.UserID, uint32(jobSummary.EndUnixTime), dest)
+				err = saveOwnershipItem(quantId, protos.ObjectType_OT_QUANTIFICATION, jobSummary.Params.Creator.UserID, "", uint32(jobSummary.EndUnixTime), dest)
 				if err != nil {
 					return err
 				}
@@ -289,7 +289,12 @@ func saveQuantFiles(datasetId string, userId string, quantId string, userContent
 		// We just warn here
 		log.Printf("Failed to list quant log files at: %v. Skipping...", s3Path)
 	} else {
-		for _, logPath := range logFiles {
+		for c, logPath := range logFiles {
+			if quantLogLimitCount > 0 && c >= quantLogLimitCount {
+				log.Printf(" Stopping log copy due to quantLogLimitCount = %v", quantLogLimitCount)
+				break
+			}
+
 			bytes, err = fs.ReadObject(userContentBucket, logPath)
 			if err != nil {
 				return err
