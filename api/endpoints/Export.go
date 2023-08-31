@@ -47,14 +47,31 @@ type exportFilesParams struct {
 func registerExportHandler(router *apiRouter.ApiObjectRouter) {
 	const pathPrefix = "export"
 
-	router.AddGenericHandler(handlers.MakeEndpointPath(pathPrefix+"/files", datasetIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermExportMap), exportFilesPost)
+	router.AddGenericHandler(handlers.MakeEndpointPath(pathPrefix+"/files", datasetIdentifier), apiRouter.MakeMethodPermission("POST", permission.PermPublic), exportFilesPost)
 }
 
 func exportFilesPost(params handlers.ApiHandlerGenericParams) error {
+	datasetID := params.PathParams[datasetIdentifier]
+
 	// Read in body
 	body, err := ioutil.ReadAll(params.Request.Body)
 	if err != nil {
 		return api.MakeBadRequestError(err)
+	}
+
+	isPublicUser := !params.UserInfo.Permissions[permission.PermExportMap]
+	publicObjectsAuth, err := permission.GetPublicObjectsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, isPublicUser)
+	if err != nil {
+		return err
+	}
+
+	isDatasetPublicWithObjects, err := permission.CheckIsObjectInPublicSet(publicObjectsAuth.Datasets, datasetID)
+	if err != nil {
+		return err
+	}
+
+	if !isDatasetPublicWithObjects {
+		return api.MakeBadRequestError(fmt.Errorf("Dataset %v is not public", datasetID))
 	}
 
 	var req exportFilesParams
@@ -77,8 +94,6 @@ func exportFilesPost(params handlers.ApiHandlerGenericParams) error {
 	// File IDs
 
 	// We need to export a ZIP file containing what is identified in File IDs
-
-	datasetID := params.PathParams[datasetIdentifier]
 
 	// Get the quantification file - if it's a shared file, quantUserID should be empty
 	quantPath := filepaths.GetUserQuantPath(params.UserInfo.UserID, datasetID, "")
