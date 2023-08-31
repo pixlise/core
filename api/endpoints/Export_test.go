@@ -83,6 +83,16 @@ func Example_registerExportHandlerMissingFileName() {
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Exporter = &exp
+	mockUser := pixlUser.UserInfo{
+		Name:   "Niko Bellic",
+		UserID: "600f2a0806b6c70071d3d174",
+		Email:  "niko@rockstar.com",
+		Permissions: map[string]bool{
+			"export:map": true,
+		},
+	}
+	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
+
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/export/files/983561", bytes.NewReader([]byte(`{
@@ -106,6 +116,16 @@ func Example_registerExportHandlerMissingColumn() {
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Exporter = &exp
+	mockUser := pixlUser.UserInfo{
+		Name:   "Niko Bellic",
+		UserID: "600f2a0806b6c70071d3d174",
+		Email:  "niko@rockstar.com",
+		Permissions: map[string]bool{
+			"export:map": true,
+		},
+	}
+	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
+
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/export/files/983561", bytes.NewReader([]byte(`{
@@ -130,6 +150,16 @@ func Example_registerExportHandlerBadJSONBody() {
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Exporter = &exp
+	mockUser := pixlUser.UserInfo{
+		Name:   "Niko Bellic",
+		UserID: "600f2a0806b6c70071d3d174",
+		Email:  "niko@rockstar.com",
+		Permissions: map[string]bool{
+			"export:map": true,
+		},
+	}
+	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
+
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/export/files/983561", bytes.NewReader([]byte(`{
