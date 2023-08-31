@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/pixlise/core/v3/core/awsutil"
+	"github.com/pixlise/core/v3/core/pixlUser"
 )
 
 func Example_registerExportHandlerSunny() {
@@ -33,6 +34,16 @@ func Example_registerExportHandlerSunny() {
 
 	svcs := MakeMockSvcs(&mockS3, nil, nil, nil)
 	svcs.Exporter = &exp
+
+	mockUser := pixlUser.UserInfo{
+		Name:   "Niko Bellic",
+		UserID: "600f2a0806b6c70071d3d174",
+		Email:  "niko@rockstar.com",
+		Permissions: map[string]bool{
+			"export:map": true,
+		},
+	}
+	svcs.JWTReader = MockJWTReader{InfoToReturn: &mockUser}
 	apiRouter := MakeRouter(svcs)
 
 	req, _ := http.NewRequest("POST", "/export/files/983561", bytes.NewReader([]byte(`{

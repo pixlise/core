@@ -60,17 +60,21 @@ func exportFilesPost(params handlers.ApiHandlerGenericParams) error {
 	}
 
 	isPublicUser := !params.UserInfo.Permissions[permission.PermExportMap]
-	publicObjectsAuth, err := permission.GetPublicObjectsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, isPublicUser)
-	if err != nil {
-		return err
+	isDatasetViewable := !isPublicUser
+
+	if isPublicUser {
+		publicObjectsAuth, err := permission.GetPublicObjectsAuth(params.Svcs.FS, params.Svcs.Config.ConfigBucket, isPublicUser)
+		if err != nil {
+			return err
+		}
+
+		isDatasetViewable, err = permission.CheckIsObjectInPublicSet(publicObjectsAuth.Datasets, datasetID)
+		if err != nil {
+			return err
+		}
 	}
 
-	isDatasetPublicWithObjects, err := permission.CheckIsObjectInPublicSet(publicObjectsAuth.Datasets, datasetID)
-	if err != nil {
-		return err
-	}
-
-	if !isDatasetPublicWithObjects {
+	if !isDatasetViewable {
 		return api.MakeBadRequestError(fmt.Errorf("Dataset %v is not public", datasetID))
 	}
 
