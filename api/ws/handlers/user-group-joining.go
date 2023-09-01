@@ -133,6 +133,16 @@ func HandleUserGroupJoinListReq(req *protos.UserGroupJoinListReq, hctx wsHelpers
 		return nil, err
 	}
 
+	// Loop through join requests and add user details
+	for _, item := range items {
+		userDBItem, err := wsHelpers.GetDBUser(item.UserId, hctx.Svcs.MongoDB)
+		if err != nil {
+			return nil, err
+		}
+
+		item.Details = userDBItem.Info
+	}
+
 	return &protos.UserGroupJoinListResp{
 		Requests: items,
 	}, nil
