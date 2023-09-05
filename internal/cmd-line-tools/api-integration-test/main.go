@@ -138,6 +138,7 @@ func main() {
 func runTests(apiHost string) {
 	testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
+	testSelectionMsgs(apiHost)
 	testQuants(apiHost)
 	testDiffractionManualPeaks(apiHost)
 	testDiffractionStatus(apiHost)
