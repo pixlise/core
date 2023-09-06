@@ -2,6 +2,7 @@ package wsHandler
 
 import (
 	"context"
+	"errors"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
@@ -13,20 +14,46 @@ import (
 )
 
 func HandleSelectedScanEntriesReq(req *protos.SelectedScanEntriesReq, hctx wsHelpers.HandlerContext) (*protos.SelectedScanEntriesResp, error) {
-	idxs, err := readSelection("entry_"+req.ScanId+"_"+hctx.SessUser.User.Id, hctx.Svcs.MongoDB)
-	if err != nil {
-		return nil, err
+	// We read multiple scans and assemble a single response
+	// If any have an error, we error the whole thing out
+
+	// Cap it though for performance...
+	if len(req.ScanIds) > 10 {
+		return nil, errors.New("Too many ScanIds requested")
+	}
+
+	result := map[string]*protos.ScanEntryRange{}
+
+	for _, scanId := range req.ScanIds {
+		if err := wsHelpers.CheckStringField(&scanId, "scanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+			return nil, err
+		}
+
+		idxs, err := readSelection("entry_"+scanId+"_"+hctx.SessUser.User.Id, hctx.Svcs.MongoDB)
+		if err != nil {
+			return nil, err
+		}
+
+		result[scanId] = idxs
 	}
 
 	return &protos.SelectedScanEntriesResp{
-		EntryIndexes: idxs,
+		ScanIdEntryIndexes: result,
 	}, nil
 }
 
+// Allowing user to save multiple scans worth of entry indexes in one message
 func HandleSelectedScanEntriesWriteReq(req *protos.SelectedScanEntriesWriteReq, hctx wsHelpers.HandlerContext) (*protos.SelectedScanEntriesWriteResp, error) {
-	err := writeSelection("entry_"+req.ScanId+"_"+hctx.SessUser.User.Id, req.EntryIndexes, hctx.Svcs.MongoDB, hctx.Svcs.Log)
-	if err != nil {
-		return nil, err
+	// Cap it though for performance...
+	if len(req.ScanIdEntryIndexes) > 10 {
+		return nil, errors.New("Too many ScanIds written")
+	}
+
+	for scanId, idxs := range req.ScanIdEntryIndexes {
+		err := writeSelection("entry_"+scanId+"_"+hctx.SessUser.User.Id, idxs, hctx.Svcs.MongoDB, hctx.Svcs.Log)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &protos.SelectedScanEntriesWriteResp{}, nil

@@ -11,32 +11,63 @@ func testSelectionMsgs(apiHost string) {
 	})
 
 	u1.AddSendReqAction("Get selection (not exist, should return empty, no error)",
-		`{"selectedScanEntriesReq":{"scanId": "abc123"}}`,
+		`{"selectedScanEntriesReq":{"scanIds": ["abc123"]}}`,
 		`{"msgId":1,
 			"status": "WS_OK",
-			"selectedScanEntriesResp": {"entryIndexes": {}}
+			"selectedScanEntriesResp": {"scanIdEntryIndexes": {"abc123": {}}}
 		}`,
 	)
 
 	u1.AddSendReqAction("Save selection (should work)",
-		`{"selectedScanEntriesWriteReq":{"scanId": "abc123", "entryIndexes": {"indexes": [5,12,17,224312]}}}`,
+		`{"selectedScanEntriesWriteReq":{
+			"scanIdEntryIndexes": {
+				"abc123": {"indexes": [5,12,17,224312]},
+				"def456": {"indexes": [144,256]}
+		}}}`,
 		`{"msgId":2,
 			"status": "WS_OK",
 			"selectedScanEntriesWriteResp": {}
 		}`,
 	)
 
-	u1.AddSendReqAction("Get selection (should return what was saved)",
-		`{"selectedScanEntriesReq":{"scanId": "abc123"}}`,
+	u1.AddSendReqAction("Get selection for abc123 (should return what was saved for abc123)",
+		`{"selectedScanEntriesReq":{"scanIds": ["abc123"]}}`,
 		`{"msgId":3,
 			"status": "WS_OK",
-			"selectedScanEntriesResp": {"entryIndexes": { "indexes": [5,12,17,224312] }}
+			"selectedScanEntriesResp": {"scanIdEntryIndexes": { "abc123": { "indexes": [5,12,17,224312] }} }
+		}`,
+	)
+
+	u1.AddSendReqAction("Get selection for both (should return what was saved)",
+		`{"selectedScanEntriesReq":{"scanIds": ["abc123", "def456"]}}`,
+		`{"msgId":4,
+			"status": "WS_OK",
+			"selectedScanEntriesResp": {
+				"scanIdEntryIndexes": {
+					"abc123": { "indexes": [5,12,17,224312] },
+					"def456": { "indexes": [144, 256] }
+				}
+			}
+		}`,
+	)
+
+	u1.AddSendReqAction("Get selection with non-existant one (should return what was saved)",
+		`{"selectedScanEntriesReq":{"scanIds": ["abc123", "def456", "eee999"]}}`,
+		`{"msgId":5,
+			"status": "WS_OK",
+			"selectedScanEntriesResp": {
+				"scanIdEntryIndexes": {
+					"abc123": { "indexes": [5,12,17,224312] },
+					"def456": { "indexes": [144, 256] },
+					"eee999": {}
+				}
+			}
 		}`,
 	)
 
 	u1.AddSendReqAction("Get pixel selection (not exist, should return empty, no error)",
 		`{"selectedImagePixelsReq":{"image": "abc123"}}`,
-		`{"msgId":4,
+		`{"msgId":6,
 			"status": "WS_OK",
 			"selectedImagePixelsResp": {"pixelIndexes": {}}
 		}`,
@@ -44,7 +75,7 @@ func testSelectionMsgs(apiHost string) {
 
 	u1.AddSendReqAction("Save selection (should work)",
 		`{"selectedImagePixelsWriteReq":{"image": "abc123", "pixelIndexes": {"indexes": [58283,12343,17,886432113]}}}`,
-		`{"msgId":5,
+		`{"msgId":7,
 			"status": "WS_OK",
 			"selectedImagePixelsWriteResp": {}
 		}`,
@@ -52,7 +83,7 @@ func testSelectionMsgs(apiHost string) {
 
 	u1.AddSendReqAction("Get selection (should return what was saved)",
 		`{"selectedImagePixelsReq":{"image": "abc123"}}`,
-		`{"msgId":6,
+		`{"msgId":8,
 			"status": "WS_OK",
 			"selectedImagePixelsResp": {"pixelIndexes": { "indexes": [58283,12343,17,886432113] }}
 		}`,
