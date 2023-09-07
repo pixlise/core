@@ -112,45 +112,7 @@ func EncodeIndexList[T uint32 | int32](indexes []T) ([]int32, error) {
 				// be the start of a run of incrementing numbers
 				result = append(result, int32(idx))
 			}
-			/*
-				// Check if it's an increment
-				diff := idx - indexes[c-1]
-
-				if c == len(indexes)-1 {
-					// Last one, can't keep looping!
-					if diff == 1 {
-						incrCount++
-					}
-
-					endIncRun(&result, int32(idx), int32(indexes[c-1]), int32(diff), &incrCount)
-				} else if diff > 0 {
-					if diff == 1 {
-						// Only do this if there are more coming...
-						incrCount++
-					} else {
-						endIncRun(&result, int32(idx), int32(indexes[c-1]), int32(diff), &incrCount)
-					}
-				}
-			*/
 		}
 	}
 	return result, nil
 }
-
-/*
-func endIncRun(result *[]int32, currIdx int32, prevIdx int32, idxDiff int32, incrCount *int) {
-	if *incrCount > 1 {
-		// Mark this as a continuation of the run
-		*result = append(*result, -1)
-
-		// Last one may have been the end of the run, check
-		if idxDiff > 1 {
-			*result = append(*result, prevIdx)
-		}
-	}
-
-	// Write current one out
-	*result = append(*result, currIdx)
-	*incrCount = 0
-}
-*/
