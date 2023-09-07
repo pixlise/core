@@ -2,6 +2,8 @@ package semanticversion
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
@@ -13,7 +15,6 @@ func SemanticVersionToString(v *protos.SemanticVersion) string {
 	return fmt.Sprintf("%v.%v.%v", v.Major, v.Minor, v.Patch)
 }
 
-/*
 func SemanticVersionFromString(v string) (*protos.SemanticVersion, error) {
 	result := &protos.SemanticVersion{}
 
@@ -36,4 +37,3 @@ func SemanticVersionFromString(v string) (*protos.SemanticVersion, error) {
 
 	return result, nil
 }
-*/

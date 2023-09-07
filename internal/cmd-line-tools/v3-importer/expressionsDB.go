@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/core/semanticversion"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -159,9 +160,14 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database) 
 		}
 
 		for _, modRef := range expr.ModuleReferences {
+			ver, err := semanticversion.SemanticVersionFromString(modRef.Version)
+			if err != nil {
+				return err
+			}
+
 			destExpr.ModuleReferences = append(destExpr.ModuleReferences, &protos.ModuleReference{
 				ModuleId: modRef.ModuleID,
-				Version:  modRef.Version,
+				Version:  ver,
 			})
 		}
 
