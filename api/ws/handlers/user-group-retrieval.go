@@ -21,6 +21,9 @@ func HandleUserGroupListReq(req *protos.UserGroupListReq, hctx wsHelpers.Handler
 	filter := bson.D{}
 	opts := options.Find()
 	cursor, err := coll.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
 
 	groups := []*protos.UserGroupDB{}
 	err = cursor.All(context.TODO(), &groups)
@@ -31,20 +34,22 @@ func HandleUserGroupListReq(req *protos.UserGroupListReq, hctx wsHelpers.Handler
 	// Just sending back the "info" part
 	groupInfos := []*protos.UserGroupInfo{}
 	for _, group := range groups {
-		userRship := protos.UserGroupRelationship_UGR_UNKNOWN
+		userRelationship := protos.UserGroupRelationship_UGR_UNKNOWN
 		if utils.ItemInSlice(hctx.SessUser.User.Id, group.AdminUserIds) {
-			userRship = protos.UserGroupRelationship_UGR_ADMIN
+			userRelationship = protos.UserGroupRelationship_UGR_ADMIN
 		} else if utils.ItemInSlice(hctx.SessUser.User.Id, group.Members.UserIds) {
-			userRship = protos.UserGroupRelationship_UGR_MEMBER
+			userRelationship = protos.UserGroupRelationship_UGR_MEMBER
 		} else if utils.ItemInSlice(hctx.SessUser.User.Id, group.Viewers.UserIds) {
-			userRship = protos.UserGroupRelationship_UGR_VIEWER
+			userRelationship = protos.UserGroupRelationship_UGR_VIEWER
 		}
 
 		groupInfos = append(groupInfos, &protos.UserGroupInfo{
-			Id:                 group.Id,
-			Name:               group.Name,
-			CreatedUnixSec:     group.CreatedUnixSec,
-			RelationshipToUser: userRship,
+			Id:                    group.Id,
+			Name:                  group.Name,
+			Description:           group.Description,
+			CreatedUnixSec:        group.CreatedUnixSec,
+			LastUserJoinedUnixSec: group.LastUserJoinedUnixSec,
+			RelationshipToUser:    userRelationship,
 		})
 	}
 
@@ -86,5 +91,85 @@ func HandleUserGroupReq(req *protos.UserGroupReq, hctx wsHelpers.HandlerContext)
 
 	return &protos.UserGroupResp{
 		Group: decGroup,
+	}, nil
+}
+
+func HandleUserGroupListJoinableReq(req *protos.UserGroupListJoinableReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupListJoinableResp, error) {
+	// Should only be called if we have admin rights, so other permission issues here
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
+
+	filter := bson.D{}
+	// opts := options.Find()
+	// Since we want only summary data, specify less fields to retrieve
+	opts := options.Find().SetProjection(bson.D{
+		{"_id", true},
+		{"name", true},
+		{"description", true},
+		{"adminuserids", true},
+		{"lastuserjoinedunixsec", true},
+	})
+	cursor, err := coll.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	groups := []*protos.UserGroupDB{}
+	err = cursor.All(context.TODO(), &groups)
+	if err != nil {
+		return nil, err
+	}
+
+	groupSummaries := []*protos.UserGroupJoinSummaryInfo{}
+	for _, group := range groups {
+		idToOwner, err := wsHelpers.ListGroupAccessibleIDs(false, protos.ObjectType_OT_SCAN, group.Id, hctx.Svcs.MongoDB)
+		if err != nil {
+			return nil, err
+		}
+
+		ids := utils.GetMapKeys(idToOwner)
+
+		filter := bson.M{"_id": bson.M{"$in": ids}}
+
+		opts = options.Find()
+		cursor, err = hctx.Svcs.MongoDB.Collection(dbCollections.ScansName).Find(context.TODO(), filter, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		scans := []*protos.ScanItem{}
+		err = cursor.All(context.TODO(), &scans)
+		if err != nil {
+			return nil, err
+		}
+
+		admins := []*protos.UserInfo{}
+		for _, adminId := range group.AdminUserIds {
+			user := &protos.UserInfo{}
+			if dbUser, err := wsHelpers.GetDBUser(adminId, hctx.Svcs.MongoDB); err != nil {
+				// Print an error but return an empty user struct
+				hctx.Svcs.Log.Errorf("Failed to find user info for user-group %v %v user ID %v", group.Name, group.Id, adminId)
+				user = &protos.UserInfo{
+					Id: adminId,
+				}
+			} else {
+				user = dbUser.Info
+			}
+
+			admins = append(admins, user)
+		}
+
+		groupSummaries = append(groupSummaries, &protos.UserGroupJoinSummaryInfo{
+			Id:                    group.Id,
+			Name:                  group.Name,
+			Description:           group.Description,
+			Administrators:        admins,
+			Datasets:              uint32(len(scans)),
+			LastUserJoinedUnixSec: group.LastUserJoinedUnixSec,
+		})
+	}
+
+	return &protos.UserGroupListJoinableResp{
+		Groups: groupSummaries,
 	}, nil
 }

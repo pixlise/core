@@ -176,6 +176,11 @@ func modifyGroupMembershipList(groupId string, opGroupId string, opUserId string
 		hctx.Svcs.Log.Errorf("UserGroup %v %v result had unexpected counts %+v id: %v", dbOp, dbField, result, checkId)
 	}
 
+	_, err = coll.UpdateByID(ctx, groupId, bson.D{{Key: "$set", Value: bson.D{{"lastuserjoinedunixsec", uint32(hctx.Svcs.TimeStamper.GetTimeNowSec())}}}})
+	if err != nil {
+		return nil, err
+	}
+
 	// Dismiss any outstanding request for this user to join the group
 	if !isGroup && add {
 		coll = hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupJoinRequestsName)

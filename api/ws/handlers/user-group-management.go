@@ -33,9 +33,11 @@ func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.Han
 	groupId := hctx.Svcs.IDGen.GenObjectID()
 
 	group := &protos.UserGroupDB{
-		Id:             groupId,
-		Name:           req.Name,
-		CreatedUnixSec: uint32(hctx.Svcs.TimeStamper.GetTimeNowSec()),
+		Id:                    groupId,
+		Name:                  req.Name,
+		Description:           req.Description,
+		CreatedUnixSec:        uint32(hctx.Svcs.TimeStamper.GetTimeNowSec()),
+		LastUserJoinedUnixSec: uint32(hctx.Svcs.TimeStamper.GetTimeNowSec()),
 		Members: &protos.UserGroupList{
 			UserIds:  []string{},
 			GroupIds: []string{},

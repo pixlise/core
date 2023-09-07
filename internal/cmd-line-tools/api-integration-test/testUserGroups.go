@@ -29,6 +29,9 @@ func testUserGroups(apiHost string) {
 	// User group creation, rename, list, get
 	u2 := testUserGroupCreation(apiHost)
 
+	// Testing that the summary list of joinable groups is correct
+	testJoinableUserGroupSummaryList(apiHost)
+
 	// Test that non-admin users can't add/delete members, viewers or admins to the
 	// user group
 	testUserGroupAddDeleteMembersAdminsViewersNoPerm(u1)
@@ -116,7 +119,8 @@ func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 				{
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+					"lastUserJoinedUnixSec": "${SECAGO=5}"
 				}
 			]
 		}}`,
@@ -144,7 +148,8 @@ func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 				{
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+					"lastUserJoinedUnixSec": "${SECAGO=5}"
 				}
 			]
 		}}`,
@@ -239,10 +244,15 @@ func testAddRemoveUserAsGroupMember(u2 wstestlib.ScriptedTestUser, nonAdminUserI
 					"id": "${IDSAVE=createdJoinReqId}",
 					"userId": "%v",
 					"joinGroupId": "${IDCHK=createdGroupId}",
+					"details": {
+						"id": "%v",
+						"name": "Test 1 User",
+						"email": "test1-2@pixlise.org"
+					},
 					"createdUnixSec": "${SECAGO=5}"
 				}
 			]
-		}}`, nonAdminUserId),
+		}}`, nonAdminUserId, nonAdminUserId),
 	)
 
 	u2.AddSendReqAction("Add user1 as member of group",
@@ -346,6 +356,7 @@ func testUserCanSeeGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 				"id": "${IDCHK=createdGroupId}",
 				"name": "M2020 Scientists",
 				"createdUnixSec": "${SECAGO=5}",
+				"lastUserJoinedUnixSec": "${SECAGO=5}",
 				"relationshipToUser": "UGR_ADMIN"
 			}]
 		}}`,
@@ -1149,10 +1160,15 @@ func testAdminUserIgnoreGroupJoin(apiHost string) {
 					"id": "${IDSAVE=createdJoinReqId2}",
 					"userId": "%v",
 					"joinGroupId": "${IDCHK=createdGroupId2}",
+					"details": {
+						"id": "%v",
+						"name": "Test 1 User",
+						"email": "test1-2@pixlise.org"
+					},
 					"createdUnixSec": "${SECAGO=5}"
 				}
 			]
-		}}`, u1.GetUserId()),
+		}}`, u1.GetUserId(), u1.GetUserId()),
 	)
 
 	u2.CloseActionGroup([]string{}, userGroupWaitTime)
@@ -1168,6 +1184,62 @@ func testAdminUserIgnoreGroupJoin(apiHost string) {
 		`{"msgId":4,
 			"status":"WS_OK",
 			"userGroupJoinListResp":{}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+}
+
+func testJoinableUserGroupSummaryList(apiHost string) {
+	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test2Username,
+		Pass: test2Password,
+	})
+
+	u2.AddSendReqAction("Create valid user group 3",
+		`{"userGroupCreateReq":{"name": "M2020", "description": "test"}}`,
+		`{"msgId":1,"status":"WS_OK","userGroupCreateResp":{
+			"group": {
+				"info": {
+					"id": "${IDSAVE=joinableGroupId1}",
+					"name": "M2020",
+					"createdUnixSec": "${SECAGO=5}"
+				},
+				"viewers": {},
+				"members": {}
+			}
+		}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	u2.AddSendReqAction("Request list of joinable user groups",
+		`{"userGroupListJoinableReq":{}}`,
+		`{"msgId":2,"status":"WS_OK","userGroupListJoinableResp":{
+			"groups": [
+				{
+					"id": "${IDCHK=createdGroupId}",
+					"name": "M2020 Scientists",
+					"lastUserJoinedUnixSec": "${SECAGO=5}"
+				},
+				{
+					"id": "${IDCHK=joinableGroupId1}",
+					"name": "M2020",
+					"description": "test",
+					"lastUserJoinedUnixSec": "${SECAGO=5}"
+				}
+			]
+		}}`,
+	)
+
+	u2.AddSendReqAction("Delete user group (expect success)",
+		`{"userGroupDeleteReq":{"groupId": "${IDLOAD=joinableGroupId1}"}}`,
+		`{"msgId":3,
+			"status": "WS_OK",
+			"userGroupDeleteResp":{}}`,
 	)
 
 	u2.CloseActionGroup([]string{}, userGroupWaitTime)
@@ -1488,10 +1560,15 @@ func testJoinRequestNotificationLive(apiHost string) {
 					"id": "${IDSAVE=createdJoinReqId6}",
 					"userId": "%v",
 					"joinGroupId": "${IDCHK=createdGroupId6}",
+					"details": {
+						"id": "%v",
+						"name": "Test 1 User",
+						"email": "test1-2@pixlise.org"
+					},
 					"createdUnixSec": "${SECAGO=5}"
 				}
 			]
-		}}`, u1.GetUserId()),
+		}}`, u1.GetUserId(), u1.GetUserId()),
 	)
 
 	// Expecting to see an update here...
@@ -1565,10 +1642,15 @@ func testJoinRequestNotificationAfterConnect(apiHost string) {
 					"id": "${IDSAVE=createdJoinReqId5}",
 					"userId": "%v",
 					"joinGroupId": "${IDCHK=createdGroupId5}",
+					"details": {
+						"id": "%v",
+						"name": "Test 1 User",
+						"email":"test1-2@pixlise.org"
+					},
 					"createdUnixSec": "${SECAGO=5}"
 				}
 			]
-		}}`, u1.GetUserId()),
+		}}`, u1.GetUserId(), u1.GetUserId()),
 	)
 
 	// Not expecting to see an update here...

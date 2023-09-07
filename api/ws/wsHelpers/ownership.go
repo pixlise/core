@@ -158,6 +158,45 @@ func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, hctx Hand
 	return result, nil
 }
 
+func ListGroupAccessibleIDs(requireEdit bool, objectType protos.ObjectType, groupID string, mongoDB *mongo.Database) (map[string]*protos.OwnershipItem, error) {
+	idLookups := []interface{}{
+		bson.D{{"editors.groupids", groupID}},
+	}
+
+	if !requireEdit {
+		idLookups = append(idLookups, bson.D{{"viewers.groupids", groupID}})
+	}
+
+	filter := bson.D{
+		{
+			"$and", []interface{}{
+				bson.D{{"objecttype", objectType}},
+				bson.M{"$or": idLookups},
+			},
+		},
+	}
+
+	result := map[string]*protos.OwnershipItem{}
+
+	opts := options.Find() //.SetProjection(bson.D{{"_id", true}})
+	cursor, err := mongoDB.Collection(dbCollections.OwnershipName).Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	items := []*protos.OwnershipItem{}
+	err = cursor.All(context.TODO(), &items)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, item := range items {
+		result[item.Id] = item
+	}
+
+	return result, nil
+}
+
 func MakeOwnerSummary(ownership *protos.OwnershipItem, db *mongo.Database, ts timestamper.ITimeStamper) *protos.OwnershipSummary {
 	user, err := getUserInfo(ownership.CreatorUserId, db, ts)
 	result := &protos.OwnershipSummary{

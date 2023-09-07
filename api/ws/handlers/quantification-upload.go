@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	// "github.com/pixlise/core/v3/api/quantification"
+	"github.com/pixlise/core/v3/api/quantification"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
+	"github.com/pixlise/core/v3/core/errorwithstatus"
 	// "github.com/pixlise/core/v3/core/errorwithstatus"
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
@@ -20,38 +22,37 @@ import (
 // <csv row n>
 
 func HandleQuantUploadReq(req *protos.QuantUploadReq, hctx wsHelpers.HandlerContext) (*protos.QuantUploadResp, error) {
-	return nil, errors.New("HandleQuantUploadReq not implemented yet")
-	// if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
-	// 	return nil, err
-	// }
-	// if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 50); err != nil {
-	// 	return nil, err
-	// }
-	// if err := wsHelpers.CheckStringField(&req.Comments, "Comments", 1, wsHelpers.DescriptionFieldMaxLength); err != nil {
-	// 	return nil, err
-	// }
-	// if err := wsHelpers.CheckStringField(&req.CsvData, "CsvData", 1, 10*1024*1024); err != nil {
-	// 	return nil, err
-	// }
+	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 50); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&req.Comments, "Comments", 1, wsHelpers.DescriptionFieldMaxLength); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&req.CsvData, "CsvData", 1, 10*1024*1024); err != nil {
+		return nil, err
+	}
 
-	// csvRows := strings.Split(req.CsvData, "\n")
-	// colLookup, err := parseQuantCSVColumns(csvRows)
-	// if err != nil {
-	// 	return nil, errorwithstatus.MakeBadRequestError(err)
-	// }
+	csvRows := strings.Split(req.CsvData, "\n")
+	colLookup, err := parseQuantCSVColumns(csvRows)
+	if err != nil {
+		return nil, errorwithstatus.MakeBadRequestError(err)
+	}
 
-	// quantMode := quantification.QuantModeCombinedManualUpload
+	quantMode := quantification.QuantModeCombinedManualUpload
 
-	// // We know the filename column exists due to parseCSVColumns above
-	// if isABQuant(csvRows, colLookup["filename"]) {
-	// 	quantMode = quantification.QuantModeABManualUpload
-	// }
+	// We know the filename column exists due to parseCSVColumns above
+	if isABQuant(csvRows, colLookup["filename"]) {
+		quantMode = quantification.QuantModeABManualUpload
+	}
 
-	// quantId, err := quantification.ImportQuantCSV(hctx, req.ScanId, hctx.SessUser.User, req.CsvData, "user-supplied", "upload", req.Name, quantMode, req.Comments)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// return &protos.QuantUploadResp{CreatedQuantId: quantId}, nil
+	quantId, err := quantification.ImportQuantCSV(hctx, req.ScanId, hctx.SessUser.User, req.CsvData, "user-supplied", "upload", req.Name, quantMode, req.Comments)
+	if err != nil {
+		return nil, err
+	}
+	return &protos.QuantUploadResp{CreatedQuantId: quantId}, nil
 }
 
 func parseQuantCSVColumns(csvRows []string) (map[string]int, error) {
