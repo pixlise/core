@@ -26,6 +26,8 @@ func Example_DecodeIndexList() {
 	fmt.Println(DecodeIndexList([]int32{1, -1, 12}, 10))
 	// And specified value going past
 	fmt.Println(DecodeIndexList([]int32{1, 3, 5, 12, 2}, 10))
+	// Verify arraySizeOptional is optional!
+	fmt.Println(DecodeIndexList([]int32{1, 3, 5, 12, 2}, -1))
 
 	// Output:
 	// [] index 5 out of bounds: 4
@@ -45,6 +47,7 @@ func Example_DecodeIndexList() {
 	// [1 2 3 4 2 3 4 5 6 7 8 11 13 14 15 16] <nil>
 	// [] index 12 out of bounds: 10
 	// [] index 12 out of bounds: 10
+	// [1 3 5 12 2] <nil>
 }
 
 func Example_EncodeIndexList() {

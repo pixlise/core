@@ -13,14 +13,15 @@ import (
 // as needing indexes: 0, 1, 2, ... 98, 99
 // Of course, multiple runs can be encoded, so 0, -1, 4, 50, -1, 55
 // should mean 0, 1, 2, 3, 4, 50, 51, 52, 53, 54, 55
-// NOTE: arraySize is the size of the array these indexes are
-// reading from, so if any index is >= arraySize it's reading past
+// NOTE: arraySizeOptional is the size of the array these indexes are
+// reading from, so if any index is >= arraySizeOptional it's reading past
 // the array bounds!
+// If arraySizeOptional is -1, it is not checked!
 
 // Returns a list of unsigned indexes, and an error if:
 // - A negative value is seen that is not -1
 // - <start idx>, -1, <end idx which is <= start idx>
-func DecodeIndexList(encodedIndexes []int32, arraySize int) ([]uint32, error) {
+func DecodeIndexList(encodedIndexes []int32, arraySizeOptional int) ([]uint32, error) {
 	if len(encodedIndexes) <= 0 {
 		return []uint32{}, nil
 	}
@@ -42,8 +43,8 @@ func DecodeIndexList(encodedIndexes []int32, arraySize int) ([]uint32, error) {
 			startIdx := encodedIndexes[c-1]
 			endIdx := encodedIndexes[c+1]
 
-			if int(endIdx) >= arraySize {
-				return nil, fmt.Errorf("index %v out of bounds: %v", uint32(endIdx), arraySize)
+			if arraySizeOptional > -1 && int(endIdx) >= arraySizeOptional {
+				return nil, fmt.Errorf("index %v out of bounds: %v", uint32(endIdx), arraySizeOptional)
 			}
 
 			// Ensure there is a valid range between these numbers
@@ -57,8 +58,8 @@ func DecodeIndexList(encodedIndexes []int32, arraySize int) ([]uint32, error) {
 		} else if idx < -1 {
 			return nil, fmt.Errorf("invalid index: %v", idx)
 		} else {
-			if int(idx) >= arraySize {
-				return nil, fmt.Errorf("index %v out of bounds: %v", idx, arraySize)
+			if arraySizeOptional > -1 && int(idx) >= arraySizeOptional {
+				return nil, fmt.Errorf("index %v out of bounds: %v", idx, arraySizeOptional)
 			}
 			result = append(result, uint32(idx))
 		}
