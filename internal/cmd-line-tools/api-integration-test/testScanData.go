@@ -496,6 +496,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 		`{"spectrumReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
 		`{"msgId":3, "status": "WS_OK",
 			"spectrumResp":{
+				"channelCount": 4096,
 				"spectraPerLocation": [
 					{
 						"spectra": [
@@ -634,6 +635,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 		`{"spectrumReq":{"scanId": "048300551", "bulkSum": true, "maxValue": true}}`,
 		`{"msgId":4, "status": "WS_OK",
 			"spectrumResp":{
+				"channelCount": 4096,
 				"bulkSpectra": [
 					{
 						"detector": "A",

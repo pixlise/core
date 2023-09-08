@@ -52,7 +52,11 @@ func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (
 		spectra = append(spectra, &protos.Spectra{Spectra: detectorSpectra})
 	}
 
-	result := &protos.SpectrumResp{SpectraPerLocation: spectra}
+	// For now, all our spectra are 4096 but in time if we have other detectors, we should be able to send back
+	// the channel count based on the detector here...
+	channelCount := uint32(4096)
+
+	result := &protos.SpectrumResp{SpectraPerLocation: spectra, ChannelCount: channelCount}
 
 	// If bulk or max spectra are required... find & return those too
 	if req.BulkSum || req.MaxValue {
