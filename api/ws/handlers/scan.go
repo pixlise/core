@@ -41,14 +41,27 @@ func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) (
 	}, nil
 }
 
-func HandleScanMetaLabelsReq(req *protos.ScanMetaLabelsReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaLabelsResp, error) {
+func HandleScanMetaLabelsAndTypesReq(req *protos.ScanMetaLabelsAndTypesReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaLabelsAndTypesResp, error) {
 	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &protos.ScanMetaLabelsResp{
+	// Form the list of types, we have the enums defined in a new spot separate to the experiment files
+	types := []protos.ScanMetaDataType{}
+	for _, t := range exprPB.MetaTypes {
+		tScan := protos.ScanMetaDataType_MT_STRING
+		if t == protos.Experiment_MT_INT {
+			tScan = protos.ScanMetaDataType_MT_INT
+		} else if t == protos.Experiment_MT_FLOAT {
+			tScan = protos.ScanMetaDataType_MT_FLOAT
+		}
+		types = append(types, tScan)
+	}
+
+	return &protos.ScanMetaLabelsAndTypesResp{
 		MetaLabels: exprPB.MetaLabels,
+		MetaTypes:  types,
 	}, nil
 }
 
