@@ -18,3 +18,5 @@ core/fileaccess/test-output/
 #binary files
 integrationTest
 .vscode/
+
+*.secret.*

@@ -25,8 +25,9 @@ import (
 
 // Check the summary filename gets created correctly
 func Test_InitializeConfigWithFile(t *testing.T) {
+	var cfg APIConfig
 	want := "buildsBucket"
-	cfg, err := NewConfigFromFile("./example_config.json")
+	cfg, err := NewConfigFromFile("./example_config.json", cfg)
 	if err != nil {
 		t.Fatalf("Error initializing config: %v", err)
 	}
@@ -37,9 +38,10 @@ func Test_InitializeConfigWithFile(t *testing.T) {
 
 // Check the quant path is calculated correctly
 func Test_InitializeConfigWithJsonString(t *testing.T) {
+	var cfg APIConfig
 	want := "buildsBucketCustomConfig"
 	configStr := fmt.Sprintf(`{"BuildsBucket": "%s"}`, want)
-	cfg, err := NewConfigFromJsonString(configStr)
+	cfg, err := NewConfigFromJsonString(configStr, cfg)
 	if err != nil {
 		t.Fatalf("Error initializing config: %v", err)
 	}
@@ -50,9 +52,10 @@ func Test_InitializeConfigWithJsonString(t *testing.T) {
 
 // Check that the config can be overridden with Environment Variables
 func Test_OverrideConfigWithEnvVars(t *testing.T) {
+	var cfg APIConfig
 	want := "ENV-SET-BuildsBucket"
 	os.Setenv("PIXLISE_CONFIG_BuildsBucket", want)
-	cfg, err := NewConfigFromFile("./example_config.json")
+	cfg, err := NewConfigFromFile("./example_config.json", cfg)
 	if err != nil {
 		t.Fatalf("Error initializing config: %v", err)
 	}

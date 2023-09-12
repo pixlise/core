@@ -33,42 +33,23 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 	startupTime := time.Now()
 
-	if len(os.Args) != 10 {
-		fmt.Println("Arguments: environment, user, password, auth0_user_id, auth0_client_id auth0_secret auth0_domain auth0_audience expected_version")
-		fmt.Println("  Where:")
-		fmt.Println("  - environment name is one of [dev, staging, prod] OR a review environment name (eg review-env-blah, so without -api.review at the end)")
-		fmt.Println("  - user - Auth0 user")
-		fmt.Println("  - password - Auth0 password")
-		fmt.Println("  - auth0_user_id - Auth0 user id (without Auth0| prefix)")
-		fmt.Println("  - auth0_client_id - Auth0 API client id")
-		fmt.Println("  - auth0_secret - Auth0 API secret")
-		fmt.Println("  - auth0_domain - Auth0 API domain eg something.au.auth0.com")
-		fmt.Println("  - auth0_audience - Auth0 API audience")
-		fmt.Println("  - expected_version is what we expect the API to return, eg 2.0.8-RC12. Or nil to skip check")
-		os.Exit(1)
+	config, err := LoadConfig()
+	if err != nil {
+		println("Could not load config; ERR:")
+		panic(err)
 	}
 
 	// Check arguments
-	var environment = os.Args[1]
 
-	fmt.Println("Running integration test for env: " + environment)
-
-	var username = os.Args[2]
-	var password = os.Args[3]
-	var auth0UserID = os.Args[4]
-	var auth0ClientID = os.Args[5]
-	var auth0ClientSecret = os.Args[6]
-	var auth0Domain = os.Args[7]
-	var auth0Audience = os.Args[8]
-	var expectedVersion = os.Args[9]
+	fmt.Println("Running integration test for env: " + config.Environment)
 
 	// If expectedVersion is nil, clear it
-	if expectedVersion == "nil" {
-		expectedVersion = ""
+	if config.ExpectedVersion == "nil" {
+		config.ExpectedVersion = ""
 	}
 
 	printTestStart("API Version")
-	err := checkAPIVersion(environment, expectedVersion)
+	err = checkAPIVersion(config.Environment, config.ExpectedVersion)
 	printTestResult(err, "")
 	if err != nil {
 		// If API version call is broken, probably everything is...
@@ -77,19 +58,28 @@ func main() {
 
 	// TODO: Maybe we need to change this if we go open source?
 	printTestStart("Getting JWT (Auth0 login)")
-	JWT, err := auth0login.GetJWT(username, password, auth0ClientID, auth0ClientSecret, auth0Domain, "http://localhost:4200/authenticate", auth0Audience, "openid profile email")
+	JWT, err := auth0login.GetJWT(
+		config.Username,
+		config.Password,
+		config.Auth0ClientID,
+		config.Auth0ClientSecret,
+		config.Auth0Domain,
+		"http://localhost:4200/authenticate",
+		config.Auth0Audience,
+		"openid profile email",
+	)
 	if err == nil && len(JWT) <= 0 {
 		err = errors.New("JWT returned is empty")
 	}
 	printTestResult(err, "")
 	if err != nil {
 		// No point continuing, we couldn't log in!
-		os.Exit(1)
+		panic(err)
 	}
 
 	// Check to see if there are alerts. If some come back we warn and check again, as maybe prev unit test run has left some over?
 	printTestStart("Alerts (Before quantification tests)")
-	preQuantAlerts, err := getAlerts(JWT, environment)
+	preQuantAlerts, err := getAlerts(JWT, config.Environment)
 	if len(preQuantAlerts) > 0 {
 		fmt.Printf(" WARNING: alerts came back with %v items. Will call again and verify it's cleared...\n", len(preQuantAlerts))
 	}
@@ -100,7 +90,7 @@ func main() {
 		time.Sleep(3 * time.Second) // just in case...
 
 		printTestStart("Alerts (Re-check)")
-		alerts2, err2 := getAlerts(JWT, environment)
+		alerts2, err2 := getAlerts(JWT, config.Environment)
 		if len(alerts2) > 0 {
 			err2 = errors.New("Alerts expected to be empty after clearing")
 		}
@@ -108,7 +98,7 @@ func main() {
 	}
 
 	printTestStart("Dataset listing")
-	datasets, err := requestAndValidateDatasets(JWT, environment)
+	datasets, err := requestAndValidateDatasets(JWT, config.Environment)
 	printTestResult(err, "")
 	if err != nil {
 		os.Exit(1)
@@ -168,7 +158,7 @@ func main() {
 	// Run a fit command first
 	if err == nil {
 		printTestStart("Checking Fit command")
-		err = runQuantFit(JWT, environment, datasetIDs[0], pmcList[0], elementList, detectorConfig[0])
+		err = runQuantFit(JWT, config.Environment, datasetIDs[0], pmcList[0], elementList, detectorConfig[0])
 		printTestResult(err, "")
 	}
 
@@ -184,7 +174,7 @@ func main() {
 
 			now := time.Now().Format(timeFormat)
 			fmt.Printf(" %v   Quantify [dataset: %v, quant name: %v] with config: %v, PMC count: %v\n", now, datasetID, quantNames[i], detectorConfig[i], len(pmcList[i]))
-			jobID, err := runQuantification(JWT, environment, datasetID, pmcList[i], elementList, detectorConfig[i], quantNames[i])
+			jobID, err := runQuantification(JWT, config.Environment, datasetID, pmcList[i], elementList, detectorConfig[i], quantNames[i])
 
 			if i == len(datasetIDs)-1 {
 				expectedFailJobID = jobID
@@ -222,7 +212,7 @@ func main() {
 	// Now verify all the quants (except the last one, which should've failed)
 	for i, jobID := range quantJobIDs {
 		if jobID != expectedFailJobID {
-			verifyQuantificationOKThenDelete(jobID, JWT, environment, datasetIDs[i], detectorConfig[i], pmcList[i], elementList, quantNames[i], quantColumns)
+			verifyQuantificationOKThenDelete(jobID, JWT, config.Environment, datasetIDs[i], detectorConfig[i], pmcList[i], elementList, quantNames[i], quantColumns)
 		}
 	}
 
@@ -251,7 +241,7 @@ func main() {
 	}
 
 	printTestStart("Alerts (Post quantification tests)")
-	postQuantAlerts, err := getAlerts(JWT, environment)
+	postQuantAlerts, err := getAlerts(JWT, config.Environment)
 
 	if err == nil {
 		// NOTE: this covers the case where there are duplicate alerts coming in and we don't consider that an error!
@@ -275,7 +265,7 @@ func main() {
 					break
 				}
 
-				if alert.UserID != auth0UserID {
+				if alert.UserID != config.Auth0UserID {
 					err = fmt.Errorf("Alert user ID was unexpected: %v", alert.UserID)
 					break
 				}
