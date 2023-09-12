@@ -338,13 +338,14 @@ func getUserGroupInfos(userGroupIds []string, db *mongo.Database) (map[string]*p
 
 	// Read the requested items from DB, but only reading the fields we're interested in!
 	filter := bson.M{"_id": bson.M{"$in": userGroupIds}}
-	opts := options.Find().SetProjection(bson.D{{"info", true}})
+	opts := options.Find().SetProjection(bson.M{"id": true, "name": true, "createdunixsec": true})
+
 	cursor, err := coll.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	items := []*protos.UserGroup{}
+	items := []*protos.UserGroupDB{}
 	err = cursor.All(ctx, &items)
 	if err != nil {
 		return nil, err
@@ -352,11 +353,11 @@ func getUserGroupInfos(userGroupIds []string, db *mongo.Database) (map[string]*p
 
 	// Form the map and we're done
 	for _, item := range items {
-		result[item.Info.Id] = &protos.UserGroupInfo{
+		result[item.Id] = &protos.UserGroupInfo{
 			// NOTE: only item.Info is valid, the rest hasn't been read due to the DB Find() call
-			Id:             item.Info.Id,
-			Name:           item.Info.Name,
-			CreatedUnixSec: item.Info.CreatedUnixSec,
+			Id:             item.Id,
+			Name:           item.Name,
+			CreatedUnixSec: item.CreatedUnixSec,
 		}
 	}
 
