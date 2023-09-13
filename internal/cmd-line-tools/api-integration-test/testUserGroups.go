@@ -157,6 +157,89 @@ func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 
 	u2.CloseActionGroup([]string{}, userGroupWaitTime)
 	wstestlib.ExecQueuedActions(&u2)
+
+	u2.AddSendReqAction("Create valid user group",
+		`{"userGroupCreateReq":{"name": "GroupWithSubGroups"}}`,
+		`{"msgId":7,"status":"WS_OK","userGroupCreateResp":{
+			"group": {
+				"info": {
+					"id": "${IDSAVE=createdGroupWithSubGroupsId}",
+					"name": "GroupWithSubGroups",
+					"createdUnixSec": "${SECAGO=5}"
+				},
+				"viewers": {},
+				"members": {}
+			}
+		}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	u2.AddSendReqAction("Add createdGroupId group as sub-group member of group",
+		`{"userGroupAddMemberReq":{"groupId": "${IDLOAD=createdGroupWithSubGroupsId}", "groupMemberId": "${IDLOAD=createdGroupId}"}}`,
+		`{"msgId":8,
+			"status": "WS_OK",
+				"userGroupAddMemberResp":{
+					"group": {
+						"info": {
+							"id": "${IDCHK=createdGroupWithSubGroupsId}",
+							"name": "GroupWithSubGroups",
+							"createdUnixSec": "${SECAGO=5}"
+						},
+						"viewers": {},
+						"members": {
+							"groups": [
+								{
+									"id": "${IDCHK=createdGroupId}",
+									"name": "M2020 Scientists",
+									"createdUnixSec": "${SECAGO=5}"
+								}
+							]
+						}
+					}
+		}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	u2.AddSendReqAction("Fetch user group to verify subgroups",
+		`{"userGroupReq":{"groupId": "${IDLOAD=createdGroupWithSubGroupsId}"}}`,
+		`{"msgId":9,"status":"WS_OK","userGroupResp":{
+			"group": {
+				"info": {
+					"id": "${IDCHK=createdGroupWithSubGroupsId}",
+					"name": "GroupWithSubGroups",
+					"createdUnixSec": "${SECAGO=5}"
+				},
+				"viewers": {},
+				"members": {
+					"groups": [
+						{
+							"id": "${IDCHK=createdGroupId}",
+							"name": "M2020 Scientists",
+							"createdUnixSec": "${SECAGO=5}"
+						}
+					]
+				}
+			}
+		}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
+	u2.AddSendReqAction("Delete user group (expect success)",
+		`{"userGroupDeleteReq":{"groupId": "${IDLOAD=createdGroupWithSubGroupsId}"}}`,
+		`{"msgId":10,
+			"status": "WS_OK",
+			"userGroupDeleteResp":{}}`,
+	)
+
+	u2.CloseActionGroup([]string{}, userGroupWaitTime)
+	wstestlib.ExecQueuedActions(&u2)
+
 	return u2
 }
 
@@ -236,7 +319,7 @@ func testUserGroupJoin(u1NonAdmin wstestlib.ScriptedTestUser) {
 func testAddRemoveUserAsGroupMember(u2 wstestlib.ScriptedTestUser, nonAdminUserId string) {
 	u2.AddSendReqAction("Check for join requests",
 		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		fmt.Sprintf(`{"msgId":7,
+		fmt.Sprintf(`{"msgId":11,
 			"status":"WS_OK",
 			"userGroupJoinListResp":{
 				"requests": [
@@ -257,7 +340,7 @@ func testAddRemoveUserAsGroupMember(u2 wstestlib.ScriptedTestUser, nonAdminUserI
 
 	u2.AddSendReqAction("Add user1 as member of group",
 		fmt.Sprintf(`{"userGroupAddMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "userMemberId": "%v"}}`, nonAdminUserId),
-		fmt.Sprintf(`{"msgId":8,
+		fmt.Sprintf(`{"msgId":12,
 			"status": "WS_OK",
 				"userGroupAddMemberResp":{
 					"group": 
@@ -275,7 +358,7 @@ func testAddRemoveUserAsGroupMember(u2 wstestlib.ScriptedTestUser, nonAdminUserI
 
 	u2.AddSendReqAction("Check for join requests again to see if cleared",
 		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		`{"msgId":9,
+		`{"msgId":13,
 			"status":"WS_OK",
 			"userGroupJoinListResp":{}
 		}`,
@@ -283,7 +366,7 @@ func testAddRemoveUserAsGroupMember(u2 wstestlib.ScriptedTestUser, nonAdminUserI
 
 	u2.AddSendReqAction("Delete user as member",
 		fmt.Sprintf(`{"userGroupDeleteMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "userMemberId": "%v"}}`, nonAdminUserId),
-		`{"msgId":10,
+		`{"msgId":14,
 			"status": "WS_OK",
 			"userGroupDeleteMemberResp":{
 				"group": {
@@ -307,29 +390,29 @@ func testUserGroupAdminAdd(u2 wstestlib.ScriptedTestUser, nonAdminUserId string)
 	// Edits by admin of group
 	u2.AddSendReqAction("Add admin user to bad group id",
 		`{"userGroupAddAdminReq":{"groupId": "way-too-long-group-id", "adminUserId": "u123"}}`,
-		`{"msgId":11,"status":"WS_BAD_REQUEST","errorText": "GroupId is too long","userGroupAddAdminResp":{}}`,
+		`{"msgId":15,"status":"WS_BAD_REQUEST","errorText": "GroupId is too long","userGroupAddAdminResp":{}}`,
 	)
 
 	u2.AddSendReqAction("Add bad admin user id to group id",
 		`{"userGroupAddAdminReq":{"groupId": "non-existant", "adminUserId": "admin-user-id-that-is-way-too-long even-for-auth0"}}`,
-		`{"msgId":12,"status":"WS_BAD_REQUEST","errorText": "AdminUserId is too long","userGroupAddAdminResp":{}}`,
+		`{"msgId":16,"status":"WS_BAD_REQUEST","errorText": "AdminUserId is too long","userGroupAddAdminResp":{}}`,
 	)
 
 	u2.AddSendReqAction("Add admin user to non-existant group",
 		`{"userGroupAddAdminReq":{"groupId": "non-existant", "adminUserId": "u123"}}`,
-		`{"msgId":13, "status": "WS_NOT_FOUND",
+		`{"msgId":17, "status": "WS_NOT_FOUND",
 			"errorText": "non-existant not found","userGroupAddAdminResp":{}}`,
 	)
 
 	u2.AddSendReqAction("Add admin user to non-existant group",
 		`{"userGroupAddAdminReq":{"groupId": "non-existant", "adminUserId": "u123"}}`,
-		`{"msgId":14, "status": "WS_NOT_FOUND",
+		`{"msgId":18, "status": "WS_NOT_FOUND",
 			"errorText": "non-existant not found","userGroupAddAdminResp":{}}`,
 	)
 
 	u2.AddSendReqAction("Add admin user to created group",
 		fmt.Sprintf(`{"userGroupAddAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "%v"}}`, nonAdminUserId),
-		fmt.Sprintf(`{"msgId":15, "status": "WS_OK","userGroupAddAdminResp":{
+		fmt.Sprintf(`{"msgId":19, "status": "WS_OK","userGroupAddAdminResp":{
 			"group": {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
@@ -385,7 +468,7 @@ func testUserCanSeeGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 func testUserGroupsAddDeleteAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId string) {
 	u2.AddSendReqAction("Add another admin user to created group",
 		`{"userGroupAddAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "123"}}`,
-		fmt.Sprintf(`{"msgId":16, "status": "WS_OK","userGroupAddAdminResp":{
+		fmt.Sprintf(`{"msgId":20, "status": "WS_OK","userGroupAddAdminResp":{
 			"group": {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
@@ -407,7 +490,7 @@ func testUserGroupsAddDeleteAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId 
 
 	u2.AddSendReqAction("Delete test admin user from created group",
 		`{"userGroupDeleteAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "123"}}`,
-		fmt.Sprintf(`{"msgId":17, "status": "WS_OK","userGroupDeleteAdminResp":{
+		fmt.Sprintf(`{"msgId":21, "status": "WS_OK","userGroupDeleteAdminResp":{
 			"group": {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
@@ -426,13 +509,13 @@ func testUserGroupsAddDeleteAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId 
 
 	u2.AddSendReqAction("Delete non-existant admin user from created group",
 		`{"userGroupDeleteAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "non-existant"}}`,
-		`{"msgId":18, "status": "WS_BAD_REQUEST",
+		`{"msgId":22, "status": "WS_BAD_REQUEST",
 			"errorText": "non-existant is not an admin","userGroupDeleteAdminResp":{}}`,
 	)
 
 	u2.AddSendReqAction("List user groups again",
 		`{"userGroupReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		fmt.Sprintf(`{"msgId":19,"status":"WS_OK","userGroupResp":{
+		fmt.Sprintf(`{"msgId":23,"status":"WS_OK","userGroupResp":{
 			"group": {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
@@ -934,7 +1017,7 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 func testUserGroupAdminAddAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId string) {
 	u2.AddSendReqAction("Add member user to user group",
 		`{"userGroupAddMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "userMemberId": "user-abc999"}}`,
-		fmt.Sprintf(`{"msgId":20,
+		fmt.Sprintf(`{"msgId":24,
 			"status": "WS_OK",
 			"userGroupAddMemberResp":{
 				"group": 
@@ -974,7 +1057,7 @@ func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
 				]
 			}
 		}}`,
-		`{"msgId":21, "status":"WS_OK", "elementSetWriteResp":{
+		`{"msgId":25, "status":"WS_OK", "elementSetWriteResp":{
 			"elementSet":{
 				"id":"${IDSAVE=u2CreatedElementSetId}",
 				"name":"User2 ElementSet",
@@ -997,7 +1080,7 @@ func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
 
 	u2.AddSendReqAction("Add created group as viewer of an object",
 		`{"objectEditAccessReq": { "objectId": "${IDLOAD=u2CreatedElementSetId}", "objectType": 2, "addViewers": { "groupIds": [ "${IDLOAD=createdGroupId}" ] }}}`,
-		`{"msgId":22,"status":"WS_OK",
+		`{"msgId":26,"status":"WS_OK",
 			"objectEditAccessResp": {
 				"ownership": {
 					"id": "${IDCHK=u2CreatedElementSetId}",
@@ -1021,7 +1104,7 @@ func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
 
 	u2.AddSendReqAction("Delete user group (should fail due to reference)",
 		`{"userGroupDeleteReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		`{"msgId":23,
+		`{"msgId":27,
 			"status": "WS_SERVER_ERROR",
 			"errorText": "Cannot delete user group because it is a member/viewer of 1 items",
 			"userGroupDeleteResp":{}}`,
@@ -1030,7 +1113,7 @@ func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
 	//
 	u2.AddSendReqAction("Remove the group as a viewer of object",
 		`{"objectEditAccessReq": { "objectId": "${IDLOAD=u2CreatedElementSetId}", "objectType": 2, "deleteViewers": { "groupIds": [ "${IDLOAD=createdGroupId}" ] }}}`,
-		`{"msgId":24,"status":"WS_OK",
+		`{"msgId":28,"status":"WS_OK",
 			"objectEditAccessResp": {
 				"ownership": {
 					"id": "${IDCHK=u2CreatedElementSetId}",
@@ -1050,14 +1133,14 @@ func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
 
 	u2.AddSendReqAction("Delete user group (expect success)",
 		`{"userGroupDeleteReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		`{"msgId":25,
+		`{"msgId":29,
 			"status": "WS_OK",
 			"userGroupDeleteResp":{}}`,
 	)
 
 	u2.AddSendReqAction("List user groups again",
 		`{"userGroupListReq":{}}`,
-		`{"msgId":26,"status":"WS_OK","userGroupListResp":{}}`,
+		`{"msgId":30,"status":"WS_OK","userGroupListResp":{}}`,
 	)
 
 	u2.CloseActionGroup([]string{}, userGroupWaitTime)
