@@ -3,7 +3,6 @@ package wsHandler
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
@@ -68,19 +67,23 @@ func HandleScanMetaLabelsAndTypesReq(req *protos.ScanMetaLabelsAndTypesReq, hctx
 // Utility to call for any Req message that involves serving data out of a dataset.bin file
 // scanId is mandatory, but startIdx and locCount may not exist in all requests, can be set to 0 if unused/not relevant
 func beginDatasetFileReqForRange(scanId string, entryRange *protos.ScanEntryRange, hctx wsHelpers.HandlerContext) (*protos.Experiment, []uint32, error) {
-	if entryRange == nil {
-		return nil, []uint32{}, fmt.Errorf("no entry range specified for scan %v", scanId)
-	}
-
 	exprPB, err := beginDatasetFileReq(scanId, hctx)
 	if err != nil {
 		return nil, []uint32{}, err
 	}
 
-	// Decode the range
-	indexes, err := indexcompression.DecodeIndexList(entryRange.Indexes, len(exprPB.Locations))
-	if err != nil {
-		return nil, []uint32{}, err
+	indexes := []uint32{}
+	if entryRange == nil {
+		// Use all indexes available in the file
+		for c := range exprPB.Locations {
+			indexes = append(indexes, uint32(c))
+		}
+	} else {
+		// Decode the range
+		indexes, err = indexcompression.DecodeIndexList(entryRange.Indexes, len(exprPB.Locations))
+		if err != nil {
+			return nil, []uint32{}, err
+		}
 	}
 
 	return exprPB, indexes, nil
