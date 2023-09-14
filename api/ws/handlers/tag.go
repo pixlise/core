@@ -2,7 +2,6 @@ package wsHandler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
@@ -104,7 +103,31 @@ func HandleTagCreateReq(req *protos.TagCreateReq, hctx wsHelpers.HandlerContext)
 }
 
 func HandleTagDeleteReq(req *protos.TagDeleteReq, hctx wsHelpers.HandlerContext) (*protos.TagDeleteResp, error) {
-	return nil, errors.New("HandleTagDeleteReq not implemented yet")
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.TagsName)
+
+	// Check if tag exists and is owned by user
+	filter := bson.M{"$and": []interface{}{
+		bson.M{"_id": req.TagId},
+		bson.M{"ownerid": hctx.SessUser.User.Id},
+	}}
+	cursor, err := coll.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// If user doesn't own tag, return error
+	if !cursor.Next(ctx) {
+		return nil, errorwithstatus.MakeUnauthorisedError(fmt.Errorf("User does not own tag: %v", req.TagId))
+	}
+
+	// Delete tag
+	_, err = coll.DeleteOne(ctx, bson.M{"_id": req.TagId})
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.TagDeleteResp{}, nil
 }
 
 func HandleTagListReq(req *protos.TagListReq, hctx wsHelpers.HandlerContext) (*protos.TagListResp, error) {

@@ -71,6 +71,12 @@ func testTags(apiHost string) {
 		}}`,
 	)
 
+	// Delete the tag
+	u2.AddSendReqAction("Delete the tag",
+		`{"tagDeleteReq":{"tagId": "${IDLOAD=tagId}"}}`,
+		`{"msgId":3,"status":"WS_OK","tagDeleteResp":{}}`,
+	)
+
 	u2.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u2)
 
