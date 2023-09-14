@@ -58,6 +58,8 @@ func (ws *WSHandler) HandleBeginWSConnection(params apiRouter.ApiHandlerGenericP
 	result := &protos.BeginWSConnectionResponse{}
 	result.ConnToken = token
 	utils.SendProtoBinary(params.Writer, result)
+
+	fmt.Printf("Generated WS token %v for user %v (%v)\n", token, params.UserInfo.UserID, params.UserInfo.Name)
 	return nil
 }
 
@@ -76,22 +78,26 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 
 	queryParams := s.Request.URL.Query()
 	if token, ok := queryParams["token"]; !ok {
+		fmt.Println("WS connect failed due to missing token")
 		s.CloseWithMsg([]byte("Missing token"))
 		return
 	} else {
 		// Validate the token
 		if len(token) != 1 {
+			fmt.Printf("WS connect failed for token: %v\n", token)
 			s.CloseWithMsg([]byte("Multiple tokens provided"))
 			return
 		}
 
 		if conn, ok := ws.connectTokens[token[0]]; !ok {
+			fmt.Printf("WS connect failed for INVALID token: %v\n", token)
 			s.CloseWithMsg([]byte("Invalid token"))
 			return
 		} else {
 			// Check that it hasn't expired
 			nowSec := time.Now().Unix() // TODO: use GetTimeNowSec
 			if conn.expiryUnixSec < nowSec {
+				fmt.Printf("WS connect failed for EXPIRED token: %v. User: %v (%v)\n", token, conn.userInfo.UserID, conn.userInfo.Name)
 				s.CloseWithMsg([]byte("Expired token"))
 				return
 			} else {
@@ -112,6 +118,7 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 		if err == mongo.ErrNoDocuments {
 			sessionUser, err = wsHelpers.CreateDBUser(sessId, connectingUser, ws.svcs.MongoDB)
 			if err != nil {
+				fmt.Printf("WS connect failed for user: %v (%v) - failed to read/create user in DB\n", connectingUser.UserID, connectingUser.Name)
 				s.CloseWithMsg([]byte("Failed to validate session user"))
 				return
 			}
@@ -121,7 +128,7 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	// Store the connection info!
 	s.Set("user", *sessionUser)
 
-	fmt.Printf("Connect user: %v, session: %v\n", connectingUser.UserID, sessId)
+	fmt.Printf("Connect user: %v (%v), session: %v\n", connectingUser.UserID, connectingUser.Name, sessId)
 
 	// And we're connected, nothing more to do but wait for requests!
 }
