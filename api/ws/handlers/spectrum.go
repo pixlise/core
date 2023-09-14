@@ -10,15 +10,7 @@ import (
 )
 
 func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumResp, error) {
-	var exprPB *protos.Experiment
-	var indexes []uint32
-	var err error
-
-	if req.Entries == nil {
-		exprPB, err = beginDatasetFileReq(req.ScanId, hctx)
-	} else {
-		exprPB, indexes, err = beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
-	}
+	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
 	if err != nil {
 		return nil, err
 	}
