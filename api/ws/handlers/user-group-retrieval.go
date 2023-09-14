@@ -108,6 +108,7 @@ func HandleUserGroupListJoinableReq(req *protos.UserGroupListJoinableReq, hctx w
 		{"description", true},
 		{"adminuserids", true},
 		{"lastuserjoinedunixsec", true},
+		{"uniqueusercount", true},
 	})
 	cursor, err := coll.Find(ctx, filter, opts)
 	if err != nil {
@@ -158,6 +159,8 @@ func HandleUserGroupListJoinableReq(req *protos.UserGroupListJoinableReq, hctx w
 
 			admins = append(admins, user)
 		}
+
+		// uniqueusercount
 
 		groupSummaries = append(groupSummaries, &protos.UserGroupJoinSummaryInfo{
 			Id:                    group.Id,

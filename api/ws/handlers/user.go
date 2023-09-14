@@ -92,7 +92,7 @@ func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, hctx wsHelpers.H
 }
 
 func HandleUserSearchReq(req *protos.UserSearchReq, hctx wsHelpers.HandlerContext) (*protos.UserSearchResp, error) {
-	if err := wsHelpers.CheckStringField(&req.SearchString, "SearchString", 1, 30); err != nil {
+	if err := wsHelpers.CheckStringField(&req.SearchString, "SearchString", 0, 100); err != nil {
 		return nil, err
 	}
 
