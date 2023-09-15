@@ -7,8 +7,10 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
+	"log"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
@@ -36,33 +38,56 @@ func importImagesForDataset(datasetID string, dataBucket string, destDataBucket 
 		return fmt.Errorf("Failed to decode scan data for scan: %v. Error: %v", datasetID, err)
 	}
 
+	var wg sync.WaitGroup
+
 	// Read all images and save an image record, while also saving location info if there is any...
 	alignedImageSizes := map[string][]uint32{}
 	for alignedIdx, img := range exprPB.AlignedContextImages {
-		// Image itself
-		if savedName, w, h, err := importAlignedImage(img, exprPB, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
-			return err
-		} else {
-			// Import coordinates
-			if err := importImageLocations(savedName, datasetID, alignedIdx, exprPB, dest); err != nil {
-				return err
-			}
+		wg.Add(1)
+		go func(alignedIdx int, img *protos.Experiment_ContextImageCoordinateInfo) {
+			defer wg.Done()
 
-			alignedImageSizes[savedName] = []uint32{w, h, uint32(alignedIdx)}
-		}
+			// Image itself
+			if savedName, w, h, err := importAlignedImage(img, exprPB, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
+				log.Fatalln(err)
+			} else {
+				// Import coordinates
+				if err := importImageLocations(savedName, datasetID, alignedIdx, exprPB, dest); err != nil {
+					log.Fatalln(err)
+				}
+
+				alignedImageSizes[savedName] = []uint32{w, h, uint32(alignedIdx)}
+			}
+		}(alignedIdx, img)
 	}
 
+	// Wait for all aligned images (we need the sizes to import tifs next)
+	wg.Wait()
+
+	var wg2 sync.WaitGroup
+
 	for _, img := range exprPB.MatchedAlignedContextImages {
-		if _, err := importMatchedImage(img, alignedImageSizes, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
-			return err
-		}
+		wg2.Add(1)
+		go func(img *protos.Experiment_MatchedContextImageInfo) {
+			defer wg2.Done()
+			if _, err := importMatchedImage(img, alignedImageSizes, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
+				log.Fatalln(err)
+			}
+		}(img)
 	}
 
 	for _, img := range exprPB.UnalignedContextImages {
-		if _, err := importUnalignedImage(img, exprPB, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
-			return err
-		}
+		wg2.Add(1)
+		go func(img string) {
+			defer wg2.Done()
+			if _, err := importUnalignedImage(img, exprPB, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
+				log.Fatalln(err)
+			}
+		}(img)
 	}
+
+	// Wait for all
+	wg2.Wait()
 
 	// Write the dataset file out to destination
 	s3Path = filepaths.GetScanFilePath(datasetID, filepaths.DatasetFileName)
@@ -84,7 +109,7 @@ func importAlignedImage(
 		return "", 0, 0, fmt.Errorf("Expected only PNG or JPG image for Aligned image, got: %v", img.Image)
 	}
 
-	imgSave, imgBytes, err := getImportImage(img.Image, datasetID, dataBucket, fs, 0, 0)
+	imgSave, imgBytes, err := getImportImage("aligned", img.Image, datasetID, dataBucket, fs, 0, 0)
 	if err != nil {
 		return "", 0, 0, err
 	}
@@ -148,7 +173,7 @@ func importMatchedImage(
 		imageH = alignedImageH
 	}
 
-	imgSave, imgBytes, err := getImportImage(img.Image, datasetID, dataBucket, fs, imageW, imageH)
+	imgSave, imgBytes, err := getImportImage("matched", img.Image, datasetID, dataBucket, fs, imageW, imageH)
 	if err != nil {
 		return "", err
 	}
@@ -184,7 +209,7 @@ func importUnalignedImage(
 	fs fileaccess.FileAccess,
 	imagesColl *mongo.Collection,
 ) (string, error) {
-	imgSave, imgBytes, err := getImportImage(imgName, datasetID, dataBucket, fs, 0, 0)
+	imgSave, imgBytes, err := getImportImage("unaligned", imgName, datasetID, dataBucket, fs, 0, 0)
 	if err != nil {
 		return "", err
 	}
@@ -195,8 +220,8 @@ func importUnalignedImage(
 }
 
 // Downloads the image and determines the size if passed in imageW==imageH==0
-func getImportImage(imageName string, datasetID string, dataBucket string, fs fileaccess.FileAccess, imageW uint32, imageH uint32) (*protos.ScanImage, []byte, error) {
-	fmt.Printf("Importing scan: %v image: %v...\n", datasetID, imageName)
+func getImportImage(imgType string, imageName string, datasetID string, dataBucket string, fs fileaccess.FileAccess, imageW uint32, imageH uint32) (*protos.ScanImage, []byte, error) {
+	fmt.Printf("Importing scan: %v %v image: %v...\n", datasetID, imgType, imageName)
 
 	// Read the image file itself
 	s3Path := filepaths.GetDatasetFilePath(datasetID, imageName)

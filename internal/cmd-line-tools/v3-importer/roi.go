@@ -35,24 +35,43 @@ type SrcROISavedItem struct {
 }
 type SrcROILookup map[string]SrcROISavedItem
 
-func migrateROIs(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database) error {
+func migrateROIs(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database, userGroups map[string]string) error {
 	coll := dest.Collection(dbCollections.RegionsOfInterestName)
 	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
 
+	sharedItems := SrcROILookup{}
+	for _, p := range userContentFiles {
+		if strings.HasSuffix(p, "ROI.json") && strings.HasPrefix(p, "UserContent/shared/") {
+			scanId := filepath.Base(filepath.Dir(p))
+
+			// Read this file
+			items := SrcROILookup{}
+			err = fs.ReadJSON(userContentBucket, p, &items, false)
+			if err != nil {
+				return err
+			}
+
+			// Store these till we're finished here
+			for id, item := range items {
+				sharedItems[scanId+"_"+id] = item
+			}
+			sharedItems = items
+		}
+	}
+
 	destROIs := []interface{}{}
 	allItems := SrcROILookup{}
-	sharedItems := SrcROILookup{}
 
 	for _, p := range userContentFiles {
-		if strings.HasSuffix(p, "ROI.json") {
+		if strings.HasSuffix(p, "ROI.json") && !strings.HasPrefix(p, "UserContent/shared/") {
 			scanId := filepath.Base(filepath.Dir(p))
 			userIdFromPath := filepath.Base(filepath.Dir(filepath.Dir(p)))
 
 			if shouldIgnoreUser(userIdFromPath) {
-				fmt.Printf("Skipping import of ROI from user: %v aka %v\n", userIdFromPath, usersIdsToIgnore[userIdFromPath])
+				fmt.Printf(" SKIPPING import of ROI from user: %v aka %v\n", userIdFromPath, usersIdsToIgnore[userIdFromPath])
 				continue
 			}
 
@@ -63,62 +82,59 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 				return err
 			}
 
-			if strings.HasPrefix(p, "UserContent/shared/") {
-				// Store these till we're finished here
-				for id, item := range items {
-					sharedItems[scanId+"_"+id] = item
+			// Write these to DB and also remember them for later...
+			for id, item := range items {
+				saveId := scanId + "_" + id
+
+				if ex, ok := allItems[saveId]; ok {
+					fmt.Printf("Duplicate: %v - %v vs %v\n", saveId, item.Name, ex.Name)
+					continue
 				}
-				sharedItems = items
-			} else {
-				// Write these to DB and also remember them for later...
-				for id, item := range items {
-					saveId := scanId + "_" + id
 
-					if ex, ok := allItems[saveId]; ok {
-						fmt.Printf("Duplicate: %v - %v vs %v\n", saveId, item.Name, ex.Name)
-						continue
-					}
-
-					if item.SrcAPIObjectItem.Creator.UserID != userIdFromPath {
-						fmt.Printf("Unexpected ROI user: %v, path had id: %v\n", item.SrcAPIObjectItem.Creator.UserID, userIdFromPath)
-					}
-
-					allItems[saveId] = item
-
-					tags := item.Tags
-					if tags == nil {
-						tags = []string{}
-					}
-
-					scanIdxs, err := indexcompression.EncodeIndexList(item.LocationIndexes)
-					if err != nil {
-						return fmt.Errorf("ROI %v: location list error: %v", saveId, err)
-					}
-					pixIdxs, err := indexcompression.EncodeIndexList(item.PixelIndexes)
-					if err != nil {
-						return fmt.Errorf("ROI %v: pixel list error: %v", saveId, err)
-					}
-
-					destROI := protos.ROIItem{
-						Id:                      saveId,
-						ScanId:                  scanId,
-						Name:                    item.Name,
-						Description:             item.Description,
-						Tags:                    tags,
-						ScanEntryIndexesEncoded: scanIdxs,
-						ImageName:               item.ImageName,
-						PixelIndexesEncoded:     pixIdxs,
-						ModifiedUnixSec:         uint32(item.CreatedUnixTimeSec),
-						// MistROIItem
-					}
-
-					err = saveOwnershipItem(destROI.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, "", uint32(item.CreatedUnixTimeSec), dest)
-					if err != nil {
-						return err
-					}
-
-					destROIs = append(destROIs, destROI)
+				if item.SrcAPIObjectItem.Creator.UserID != userIdFromPath {
+					fmt.Printf("Unexpected ROI user: %v, path had id: %v\n", item.SrcAPIObjectItem.Creator.UserID, userIdFromPath)
 				}
+
+				allItems[saveId] = item
+
+				tags := item.Tags
+				if tags == nil {
+					tags = []string{}
+				}
+
+				scanIdxs, err := indexcompression.EncodeIndexList(item.LocationIndexes)
+				if err != nil {
+					return fmt.Errorf("ROI %v: location list error: %v", saveId, err)
+				}
+				pixIdxs, err := indexcompression.EncodeIndexList(item.PixelIndexes)
+				if err != nil {
+					return fmt.Errorf("ROI %v: pixel list error: %v", saveId, err)
+				}
+
+				destROI := protos.ROIItem{
+					Id:                      saveId,
+					ScanId:                  scanId,
+					Name:                    item.Name,
+					Description:             item.Description,
+					Tags:                    tags,
+					ScanEntryIndexesEncoded: scanIdxs,
+					ImageName:               item.ImageName,
+					PixelIndexesEncoded:     pixIdxs,
+					ModifiedUnixSec:         uint32(item.CreatedUnixTimeSec),
+					// MistROIItem
+				}
+
+				viewerGroupId := ""
+				if removeIfSharedROI(item, sharedItems) {
+					viewerGroupId = userGroups["PIXL-FM"]
+				}
+
+				err = saveOwnershipItem(destROI.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, "", viewerGroupId, uint32(item.CreatedUnixTimeSec), dest)
+				if err != nil {
+					return err
+				}
+
+				destROIs = append(destROIs, destROI)
 			}
 		}
 	}
@@ -129,26 +145,23 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 	}
 
 	fmt.Printf("ROIs inserted: %v\n", len(result.InsertedIDs))
-
-	// Report what was shared
-	for sharedId, sharedItem := range sharedItems {
-		found := false
-		for itemId, item := range allItems {
-			if item.Name == sharedItem.Name &&
-				item.Creator.UserID == sharedItem.Creator.UserID &&
-				len(sharedItem.LocationIndexes) == len(item.LocationIndexes) &&
-				sharedItem.ImageName == item.ImageName &&
-				len(sharedItem.PixelIndexes) == len(item.PixelIndexes) {
-				fmt.Printf("User %v item %v, named %v seems shared as %v\n", item.Creator.UserID, itemId, item.Name, sharedId)
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			fmt.Printf("Shared %v item is orphaned:%+v\n", sharedId, sharedItem)
-		}
+	fmt.Println("ROIs orphaned (shared but original not found):")
+	for id := range sharedItems {
+		fmt.Printf("%v\n", id)
 	}
 
 	return err
+}
+
+func removeIfSharedROI(roi SrcROISavedItem, sharedROIs SrcROILookup) bool {
+	for c, sharedItem := range sharedROIs {
+		if roi.Name == sharedItem.Name &&
+			roi.Creator.UserID == sharedItem.Creator.UserID {
+			// Remove this from the shared list
+			delete(sharedROIs, c)
+			return true
+		}
+	}
+
+	return false
 }

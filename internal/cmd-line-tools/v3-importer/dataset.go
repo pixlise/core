@@ -134,7 +134,7 @@ func migrateDatasets(
 	destItems := []interface{}{}
 	for _, dataset := range summaries.Datasets {
 		if len(limitToDatasetIds) > 0 && !utils.ItemInSlice(dataset.DatasetID, limitToDatasetIds) {
-			fmt.Printf("Skipping scan: %v...\n", dataset.DatasetID)
+			fmt.Printf(" SKIPPING scan: %v...\n", dataset.DatasetID)
 			continue
 		}
 
@@ -213,7 +213,7 @@ func migrateDatasets(
 		// Each scan needs an ownership item to define who can view/edit it
 		// Prefix the ID with "scan_" because the dataset IDs are likely not that long, and we also want them
 		// to differ from our random ones
-		err = saveOwnershipItem( /*"scan_"+*/ dataset.DatasetID, protos.ObjectType_OT_SCAN, "", memberGroup, uint32(dataset.CreationUnixTimeSec), dest)
+		err = saveOwnershipItem( /*"scan_"+*/ dataset.DatasetID, protos.ObjectType_OT_SCAN, "", memberGroup, "", uint32(dataset.CreationUnixTimeSec), dest)
 		if err != nil {
 			return err
 		}

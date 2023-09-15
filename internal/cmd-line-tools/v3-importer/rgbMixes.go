@@ -55,22 +55,36 @@ func fixOldIDs(itemLookup SrcRGBMixLookup) SrcRGBMixLookup {
 	return itemLookup
 }
 
-func migrateRGBMixes(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database) error {
+func migrateRGBMixes(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database, userGroups map[string]string) error {
 	coll := dest.Collection(dbCollections.ExpressionGroupsName)
 	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
 
+	sharedItems := SrcRGBMixLookup{}
+	for _, p := range userContentFiles {
+		if strings.HasSuffix(p, "RGBMixes.json") && strings.HasPrefix(p, "UserContent/shared/") {
+			// Read this file
+			items := SrcRGBMixLookup{}
+			err = fs.ReadJSON(userContentBucket, p, &items, false)
+			if err != nil {
+				return err
+			}
+
+			// Store these till we're finished here
+			sharedItems = items
+		}
+	}
+
 	destGroups := []interface{}{}
 	allItems := SrcRGBMixLookup{}
-	sharedItems := SrcRGBMixLookup{}
 
 	for _, p := range userContentFiles {
-		if strings.HasSuffix(p, "RGBMixes.json") {
+		if strings.HasSuffix(p, "RGBMixes.json") && !strings.HasPrefix(p, "UserContent/shared/") {
 			userIdFromPath := filepath.Base(filepath.Dir(p))
 			if shouldIgnoreUser(userIdFromPath) {
-				fmt.Printf("Skipping import of RGB mix from user: %v aka %v\n", userIdFromPath, usersIdsToIgnore[userIdFromPath])
+				fmt.Printf(" SKIPPING import of RGB mix from user: %v aka %v\n", userIdFromPath, usersIdsToIgnore[userIdFromPath])
 				continue
 			}
 
@@ -83,52 +97,52 @@ func migrateRGBMixes(userContentBucket string, userContentFiles []string, fs fil
 
 			items = fixOldIDs(items)
 
-			if strings.HasPrefix(p, "UserContent/shared/") {
-				// Store these till we're finished here
-				sharedItems = items
-			} else {
-				// Write these to DB and also remember them for later...
-				for id, item := range items {
-					if ex, ok := allItems[id]; ok {
-						fmt.Printf("Duplicate: %v - %v vs %v\n", id, item.Name, ex.Name)
-						continue
-					}
-					allItems[id] = item
-
-					tags := item.Tags
-					if tags == nil {
-						tags = []string{}
-					}
-					destGroup := protos.ExpressionGroup{
-						Id:   id,
-						Name: item.Name,
-						Tags: tags,
-						GroupItems: []*protos.ExpressionGroupItem{
-							{
-								ExpressionId: item.Red.ExpressionID,
-								RangeMin:     item.Red.RangeMin,
-								RangeMax:     item.Red.RangeMax,
-							},
-							{
-								ExpressionId: item.Green.ExpressionID,
-								RangeMin:     item.Green.RangeMin,
-								RangeMax:     item.Green.RangeMax,
-							},
-							{
-								ExpressionId: item.Blue.ExpressionID,
-								RangeMin:     item.Blue.RangeMin,
-								RangeMax:     item.Blue.RangeMax,
-							},
-						},
-					}
-
-					err = saveOwnershipItem(destGroup.Id, protos.ObjectType_OT_EXPRESSION_GROUP, item.Creator.UserID, "", uint32(item.CreatedUnixTimeSec), dest)
-					if err != nil {
-						return err
-					}
-
-					destGroups = append(destGroups, destGroup)
+			// Write these to DB and also remember them for later...
+			for id, item := range items {
+				if ex, ok := allItems[id]; ok {
+					fmt.Printf("Duplicate: %v - %v vs %v\n", id, item.Name, ex.Name)
+					continue
 				}
+				allItems[id] = item
+
+				tags := item.Tags
+				if tags == nil {
+					tags = []string{}
+				}
+				destGroup := protos.ExpressionGroup{
+					Id:   id,
+					Name: item.Name,
+					Tags: tags,
+					GroupItems: []*protos.ExpressionGroupItem{
+						{
+							ExpressionId: item.Red.ExpressionID,
+							RangeMin:     item.Red.RangeMin,
+							RangeMax:     item.Red.RangeMax,
+						},
+						{
+							ExpressionId: item.Green.ExpressionID,
+							RangeMin:     item.Green.RangeMin,
+							RangeMax:     item.Green.RangeMax,
+						},
+						{
+							ExpressionId: item.Blue.ExpressionID,
+							RangeMin:     item.Blue.RangeMin,
+							RangeMax:     item.Blue.RangeMax,
+						},
+					},
+				}
+
+				viewerGroupId := ""
+				if removeIfSharedRGBMix(item, sharedItems) {
+					viewerGroupId = userGroups["PIXL-FM"]
+				}
+
+				err = saveOwnershipItem(destGroup.Id, protos.ObjectType_OT_EXPRESSION_GROUP, item.Creator.UserID, "", viewerGroupId, uint32(item.CreatedUnixTimeSec), dest)
+				if err != nil {
+					return err
+				}
+
+				destGroups = append(destGroups, destGroup)
 			}
 		}
 	}
@@ -139,26 +153,26 @@ func migrateRGBMixes(userContentBucket string, userContentFiles []string, fs fil
 	}
 
 	fmt.Printf("Expression Groups inserted: %v\n", len(result.InsertedIDs))
-
-	// Report what was shared
-	for sharedId, sharedItem := range sharedItems {
-		found := false
-		for itemId, item := range allItems {
-			if item.Name == sharedItem.Name &&
-				item.Creator.UserID == sharedItem.Creator.UserID &&
-				(item.Red.ExpressionID == sharedItem.Red.ExpressionID || item.Red.Element == sharedItem.Red.Element) &&
-				(item.Green.ExpressionID == sharedItem.Green.ExpressionID || item.Green.Element == sharedItem.Green.Element) &&
-				(item.Blue.ExpressionID == sharedItem.Blue.ExpressionID || item.Blue.Element == sharedItem.Blue.Element) {
-				fmt.Printf("User %v item %v, named %v seems shared as %v\n", item.Creator.UserID, itemId, item.Name, sharedId)
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			fmt.Printf("Shared %v item is orphaned:%+v\n", sharedId, sharedItem)
-		}
+	fmt.Println("Expression Groups orphaned (shared but original not found):")
+	for id := range sharedItems {
+		fmt.Printf("%v\n", id)
 	}
 
 	return err
+}
+
+func removeIfSharedRGBMix(rgbMix SrcRGBMix, sharedRGBMixes SrcRGBMixLookup) bool {
+	for c, sharedItem := range sharedRGBMixes {
+		if rgbMix.Name == sharedItem.Name &&
+			rgbMix.Creator.UserID == sharedItem.Creator.UserID &&
+			(rgbMix.Red.ExpressionID == sharedItem.Red.ExpressionID || rgbMix.Red.Element == sharedItem.Red.Element) &&
+			(rgbMix.Green.ExpressionID == sharedItem.Green.ExpressionID || rgbMix.Green.Element == sharedItem.Green.Element) &&
+			(rgbMix.Blue.ExpressionID == sharedItem.Blue.ExpressionID || rgbMix.Blue.Element == sharedItem.Blue.Element) {
+			// Remove this from the shared list
+			delete(sharedRGBMixes, c)
+			return true
+		}
+	}
+
+	return false
 }

@@ -73,16 +73,52 @@ const (
 	SrcJobError                              = "error"
 )
 
-func migrateQuants(userContentBucket string, userContentFiles []string, limitToDatasetIds []string, fs fileaccess.FileAccess, dest *mongo.Database, destUserContentBucket string) error {
+func migrateQuants(
+	userContentBucket string,
+	userContentFiles []string,
+	limitToDatasetIds []string,
+	fs fileaccess.FileAccess,
+	dest *mongo.Database,
+	destUserContentBucket string,
+	userGroups map[string]string) error {
 	coll := dest.Collection(dbCollections.QuantificationsName)
 	err := coll.Drop(context.TODO())
 	if err != nil {
 		return err
 	}
 
+	sharedItems := map[string]SrcJobSummaryItem{}
+
+	// First, find all the shared quants
+	for _, p := range userContentFiles {
+		if strings.Contains(p, "/Quantifications/summary-") && strings.HasPrefix(p, "UserContent/shared/") {
+			scanId := filepath.Base(filepath.Dir(filepath.Dir(p)))
+
+			if len(limitToDatasetIds) > 0 && !utils.ItemInSlice(scanId, limitToDatasetIds) {
+				fmt.Printf(" SKIPPING shared quant for dataset id: %v...\n", scanId)
+				continue
+			}
+
+			// Read this file
+			jobSummary := SrcJobSummaryItem{}
+			err := fs.ReadJSON(userContentBucket, p, &jobSummary, false)
+			if err != nil {
+				return err
+			}
+
+			// Example: UserContent/<user-id>/<dataset-id>/Quantification/summary-<quant-id>.json
+			quantId := filepath.Base(p)
+
+			// Snip off the summary- and .json
+			quantId = quantId[len("summary-") : len(quantId)-5]
+
+			// Store these till we're finished here
+			sharedItems[quantId] = jobSummary
+		}
+	}
+
 	destQuants := []interface{}{}
 	userItems := map[string]SrcJobSummaryItem{}
-	sharedItems := map[string]SrcJobSummaryItem{}
 
 	roiSetCount := 0
 	roisSetCount := 0
@@ -90,7 +126,7 @@ func migrateQuants(userContentBucket string, userContentFiles []string, limitToD
 	multiQuantCount := 0
 
 	for _, p := range userContentFiles {
-		if strings.Contains(p, "/Quantifications/summary-") {
+		if strings.Contains(p, "/Quantifications/summary-") && !strings.HasPrefix(p, "UserContent/shared/") {
 			// Example: UserContent/<user-id>/<dataset-id>/Quantification/summary-<quant-id>.json
 			quantId := filepath.Base(p)
 
@@ -100,12 +136,12 @@ func migrateQuants(userContentBucket string, userContentFiles []string, limitToD
 			userIdFromPath := filepath.Base(filepath.Dir(filepath.Dir(filepath.Dir(p))))
 
 			if shouldIgnoreUser(userIdFromPath) {
-				fmt.Printf("Skipping import of ROI from user: %v aka %v\n", userIdFromPath, usersIdsToIgnore[userIdFromPath])
+				fmt.Printf(" SKIPPING import of quant from user: %v aka %v\n", userIdFromPath, usersIdsToIgnore[userIdFromPath])
 				continue
 			}
 
 			if len(limitToDatasetIds) > 0 && !utils.ItemInSlice(scanId, limitToDatasetIds) {
-				fmt.Printf("Skipping quant for dataset id: %v...\n", scanId)
+				fmt.Printf(" SKIPPING quant for dataset id: %v...\n", scanId)
 				continue
 			}
 
@@ -140,89 +176,89 @@ func migrateQuants(userContentBucket string, userContentFiles []string, limitToD
 				return fmt.Errorf("Quant Scan ID mismatch: path had %v, job summary file had %v. Path: %v", scanId, jobSummary.Params.DatasetID, p)
 			}
 
-			if strings.HasPrefix(p, "UserContent/shared/") {
-				// Store these till we're finished here
-				sharedItems[quantId] = jobSummary
-			} else {
-				// Write user quant to DB and also remember them for later...
-				if _, ok := userItems[quantId]; ok {
-					fmt.Printf("Duplicate quantification ID: %v\n", quantId)
-					continue
-				}
-
-				if jobSummary.Params.Creator.UserID != userIdFromPath {
-					fmt.Printf("Unexpected quant user: %v, path had id: %v. Path was: %v\n", jobSummary.Params.Creator.UserID, userIdFromPath, p)
-				}
-
-				userItems[quantId] = jobSummary
-
-				var jobStatus protos.JobStatus_Status
-
-				switch jobSummary.Status {
-				case SrcJobStarting:
-					jobStatus = protos.JobStatus_STARTING
-				case SrcJobPreparingNodes:
-					jobStatus = protos.JobStatus_PREPARING_NODES
-				case SrcJobNodesRunning:
-					jobStatus = protos.JobStatus_NODES_RUNNING
-				case SrcJobGatheringResults:
-					jobStatus = protos.JobStatus_GATHERING_RESULTS
-				case SrcJobComplete:
-					jobStatus = protos.JobStatus_COMPLETE
-				case SrcJobError:
-					jobStatus = protos.JobStatus_ERROR
-				}
-
-				// Write to DB
-				destQuant := &protos.QuantificationSummary{
-					Id: jobSummary.JobID,
-					Params: &protos.QuantStartingParametersWithPMCCount{
-						PMCCount: uint32(jobSummary.Params.PMCCount),
-						Params: &protos.QuantStartingParameters{
-							Name:              jobSummary.Params.Name,
-							DataBucket:        jobSummary.Params.DataBucket,
-							DatasetPath:       jobSummary.Params.DatasetPath,
-							DatasetID:         jobSummary.Params.DatasetID,
-							PiquantJobsBucket: jobSummary.Params.PiquantJobsBucket,
-							DetectorConfig:    jobSummary.Params.DetectorConfig,
-							Elements:          jobSummary.Params.Elements,
-							Parameters:        jobSummary.Params.Parameters,
-							RunTimeSec:        uint32(jobSummary.Params.RunTimeSec),
-							CoresPerNode:      uint32(jobSummary.Params.CoresPerNode),
-							StartUnixTimeSec:  uint32(jobSummary.Params.StartUnixTime),
-							RequestorUserId:   utils.FixUserId(jobSummary.Params.Creator.UserID),
-							RoiID:             jobSummary.Params.RoiID,
-							ElementSetID:      jobSummary.Params.ElementSetID,
-							PIQUANTVersion:    jobSummary.Params.PIQUANTVersion,
-							QuantMode:         jobSummary.Params.QuantMode,
-							Comments:          jobSummary.Params.Comments,
-							RoiIDs:            jobSummary.Params.RoiIDs,
-							IncludeDwells:     jobSummary.Params.IncludeDwells,
-							Command:           jobSummary.Params.Command,
-						},
-					},
-					Elements: jobSummary.Elements,
-					Status: &protos.JobStatus{
-						JobID:          jobSummary.JobID,
-						Status:         jobStatus,
-						Message:        jobSummary.Message,
-						EndUnixTimeSec: uint32(jobSummary.EndUnixTime),
-						OutputFilePath: path.Join("Quantifications", scanId, utils.FixUserId(jobSummary.Params.Creator.UserID)), //jobSummary.OutputFilePath,
-						PiquantLogs:    jobSummary.PiquantLogList,
-					},
-				}
-
-				err = saveOwnershipItem(quantId, protos.ObjectType_OT_QUANTIFICATION, jobSummary.Params.Creator.UserID, "", uint32(jobSummary.EndUnixTime), dest)
-				if err != nil {
-					return err
-				}
-
-				// Save the relevant quantification files to their destination in S3.
-				// NOTE: if they are not found, this is an error!
-				saveQuantFiles(scanId, userIdFromPath, quantId, userContentBucket, destUserContentBucket, fs)
-
-				destQuants = append(destQuants, destQuant)
+			// Write user quant to DB and also remember them for later...
+			if _, ok := userItems[quantId]; ok {
+				fmt.Printf("Duplicate quantification ID: %v\n", quantId)
+				continue
 			}
+
+			if jobSummary.Params.Creator.UserID != userIdFromPath {
+				fmt.Printf("Unexpected quant user: %v, path had id: %v. Path was: %v\n", jobSummary.Params.Creator.UserID, userIdFromPath, p)
+			}
+
+			userItems[quantId] = jobSummary
+
+			var jobStatus protos.JobStatus_Status
+
+			switch jobSummary.Status {
+			case SrcJobStarting:
+				jobStatus = protos.JobStatus_STARTING
+			case SrcJobPreparingNodes:
+				jobStatus = protos.JobStatus_PREPARING_NODES
+			case SrcJobNodesRunning:
+				jobStatus = protos.JobStatus_NODES_RUNNING
+			case SrcJobGatheringResults:
+				jobStatus = protos.JobStatus_GATHERING_RESULTS
+			case SrcJobComplete:
+				jobStatus = protos.JobStatus_COMPLETE
+			case SrcJobError:
+				jobStatus = protos.JobStatus_ERROR
+			}
+
+			// Write to DB
+			destQuant := &protos.QuantificationSummary{
+				Id: jobSummary.JobID,
+				Params: &protos.QuantStartingParametersWithPMCCount{
+					PMCCount: uint32(jobSummary.Params.PMCCount),
+					Params: &protos.QuantStartingParameters{
+						Name:              jobSummary.Params.Name,
+						DataBucket:        jobSummary.Params.DataBucket,
+						DatasetPath:       jobSummary.Params.DatasetPath,
+						DatasetID:         jobSummary.Params.DatasetID,
+						PiquantJobsBucket: jobSummary.Params.PiquantJobsBucket,
+						DetectorConfig:    jobSummary.Params.DetectorConfig,
+						Elements:          jobSummary.Params.Elements,
+						Parameters:        jobSummary.Params.Parameters,
+						RunTimeSec:        uint32(jobSummary.Params.RunTimeSec),
+						CoresPerNode:      uint32(jobSummary.Params.CoresPerNode),
+						StartUnixTimeSec:  uint32(jobSummary.Params.StartUnixTime),
+						RequestorUserId:   utils.FixUserId(jobSummary.Params.Creator.UserID),
+						RoiID:             jobSummary.Params.RoiID,
+						ElementSetID:      jobSummary.Params.ElementSetID,
+						PIQUANTVersion:    jobSummary.Params.PIQUANTVersion,
+						QuantMode:         jobSummary.Params.QuantMode,
+						Comments:          jobSummary.Params.Comments,
+						RoiIDs:            jobSummary.Params.RoiIDs,
+						IncludeDwells:     jobSummary.Params.IncludeDwells,
+						Command:           jobSummary.Params.Command,
+					},
+				},
+				Elements: jobSummary.Elements,
+				Status: &protos.JobStatus{
+					JobID:          jobSummary.JobID,
+					Status:         jobStatus,
+					Message:        jobSummary.Message,
+					EndUnixTimeSec: uint32(jobSummary.EndUnixTime),
+					OutputFilePath: path.Join("Quantifications", scanId, utils.FixUserId(jobSummary.Params.Creator.UserID)), //jobSummary.OutputFilePath,
+					PiquantLogs:    jobSummary.PiquantLogList,
+				},
+			}
+
+			viewerGroupId := ""
+			if removeIfSharedQuant(jobSummary, sharedItems) {
+				viewerGroupId = userGroups["PIXL-FM"]
+			}
+
+			err = saveOwnershipItem(quantId, protos.ObjectType_OT_QUANTIFICATION, jobSummary.Params.Creator.UserID, "", viewerGroupId, uint32(jobSummary.EndUnixTime), dest)
+			if err != nil {
+				return err
+			}
+
+			// Save the relevant quantification files to their destination in S3.
+			// NOTE: if they are not found, this is an error!
+			saveQuantFiles(scanId, userIdFromPath, quantId, userContentBucket, destUserContentBucket, fs)
+
+			destQuants = append(destQuants, destQuant)
 		}
 	}
 
@@ -235,8 +271,36 @@ func migrateQuants(userContentBucket string, userContentFiles []string, limitToD
 	}
 
 	fmt.Printf("Quants inserted: %v\n", len(result.InsertedIDs))
+	fmt.Println("Quants orphaned (shared but original not found):")
+	for _, shared := range sharedItems {
+		fmt.Printf("%v\n", shared.JobID)
+	}
 
 	return nil
+}
+
+func removeIfSharedQuant(jobSummary SrcJobSummaryItem, sharedQuantSummaries map[string]SrcJobSummaryItem) bool {
+	// Run through all shared quants and see if we find one that matches this one
+	for c, sharedItem := range sharedQuantSummaries {
+		if jobSummary.Params.DatasetID == sharedItem.Params.DatasetID &&
+			jobSummary.Params.Name == sharedItem.Params.Name &&
+			jobSummary.Params.QuantMode == sharedItem.Params.QuantMode &&
+			jobSummary.Params.Creator.UserID == sharedItem.Params.Creator.UserID &&
+			len(jobSummary.Params.Elements) == len(sharedItem.Params.Elements) {
+			// Finally, check that the elements array are equal
+			for c, elem := range jobSummary.Params.Elements {
+				if elem != sharedItem.Params.Elements[c] {
+					return false
+				}
+			}
+
+			// Remove this from the shared list
+			delete(sharedQuantSummaries, c)
+			return true
+		}
+	}
+
+	return false
 }
 
 const quantificationSubPath = "Quantifications"
@@ -251,39 +315,23 @@ func SrcGetUserQuantPath(userID string, datasetID string, fileName string) strin
 }
 
 func saveQuantFiles(datasetId string, userId string, quantId string, userContentBucket string, destUserContentBucket string, fs fileaccess.FileAccess) error {
-	// Expecting a quant bin file
-	s3Path := SrcGetUserQuantPath(userId, datasetId, quantId+".bin")
-	bytes, err := fs.ReadObject(userContentBucket, s3Path)
-	if err != nil {
-		return err
+	srcPaths := []string{
+		SrcGetUserQuantPath(userId, datasetId, quantId+".bin"),
+		SrcGetUserQuantPath(userId, datasetId, quantId+".csv"),
 	}
 
-	// Write to new location
-	s3Path = filepaths.GetQuantPath(utils.FixUserId(userId), datasetId, quantId+".bin")
-	err = fs.WriteObject(destUserContentBucket, s3Path, bytes)
-	if err != nil {
-		return err
+	dstPaths := []string{
+		filepaths.GetQuantPath(utils.FixUserId(userId), datasetId, quantId+".bin"),
+		filepaths.GetQuantPath(utils.FixUserId(userId), datasetId, quantId+".csv"),
 	}
-	fmt.Printf("  Wrote: %v\n", s3Path)
 
-	// Optional quant CSV file, warn if not found though
-	s3Path = SrcGetUserQuantPath(userId, datasetId, quantId+".csv")
-	bytes, err = fs.ReadObject(userContentBucket, s3Path)
-	if err != nil {
-		// We just warn here
-		log.Printf("Failed to find quant CSV file: %v. Skipping...", s3Path)
-	} else {
-		// Worked, so save
-		s3Path = filepaths.GetQuantPath(utils.FixUserId(userId), datasetId, quantId+".csv")
-		err = fs.WriteObject(destUserContentBucket, s3Path, bytes)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("  Wrote: %v\n", s3Path)
+	failOnError := []bool{
+		true,  // Expecting a quant bin file to exist
+		false, // CSV is optional
 	}
 
 	// Quant log files, we need a listing of these
-	s3Path = SrcGetUserQuantPath(userId, datasetId, filepaths.MakeQuantLogDirName(quantId))
+	s3Path := SrcGetUserQuantPath(userId, datasetId, filepaths.MakeQuantLogDirName(quantId))
 	logFiles, err := fs.ListObjects(userContentBucket, s3Path)
 	if err != nil {
 		// We just warn here
@@ -295,20 +343,13 @@ func saveQuantFiles(datasetId string, userId string, quantId string, userContent
 				break
 			}
 
-			bytes, err = fs.ReadObject(userContentBucket, logPath)
-			if err != nil {
-				return err
-			}
-
-			s3Path = filepaths.GetQuantPath(utils.FixUserId(userId), datasetId, path.Join(quantId+"-logs", path.Base(logPath)))
-			err = fs.WriteObject(destUserContentBucket, s3Path, bytes)
-			if err != nil {
-				return err
-			}
-			fmt.Printf("  Wrote: %v\n", s3Path)
+			srcPaths = append(srcPaths, logPath)
+			dstPaths = append(dstPaths, filepaths.GetQuantPath(utils.FixUserId(userId), datasetId, path.Join(quantId+"-logs", path.Base(logPath))))
+			failOnError = append(failOnError, false) // optional
 		}
 	}
 
+	s3Copy(fs, userContentBucket, srcPaths, destUserContentBucket, dstPaths, failOnError)
 	return nil
 }
 
@@ -339,12 +380,12 @@ func migrateMultiQuants(userContentBucket string, userContentFiles []string, lim
 			userIdFromPath := filepath.Base(filepath.Dir(filepath.Dir(p)))
 
 			if shouldIgnoreUser(userIdFromPath) {
-				fmt.Printf("Skipping import of ROI from user: %v aka %v\n", userIdFromPath, usersIdsToIgnore[userIdFromPath])
+				fmt.Printf(" SKIPPING import of multi-quant from user: %v aka %v\n", userIdFromPath, usersIdsToIgnore[userIdFromPath])
 				continue
 			}
 
 			if len(limitToDatasetIds) > 0 && !utils.ItemInSlice(datasetIdFromPath, limitToDatasetIds) {
-				fmt.Printf("Skipping multi-quant for dataset id: %v...\n", datasetIdFromPath)
+				fmt.Printf(" SKIPPING multi-quant for dataset id: %v...\n", datasetIdFromPath)
 				continue
 			}
 

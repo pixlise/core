@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
@@ -22,6 +23,9 @@ var quantLogLimitCount int
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
+
+	t0 := time.Now().UnixMilli()
+	fmt.Printf("Started: %v\n", time.Now().String())
 
 	var sourceMongoSecret string
 	var destMongoSecret string
@@ -167,51 +171,94 @@ func main() {
 	fmt.Println("Migrating data from user content bucket...")
 	fmt.Println("==========================================")
 
-	fmt.Println("Quant Z-stacks...")
-	err = migrateMultiQuants(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB)
-	if err != nil {
-		log.Fatal(err)
-	}
+	var wg sync.WaitGroup
 
-	fmt.Println("Quants...")
-	err = migrateQuants(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB, destUserContentBucket)
-	if err != nil {
-		log.Fatal(err)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		fmt.Println("Quant Z-stacks...")
+		err = migrateMultiQuants(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-	fmt.Println("Element Sets...")
-	err = migrateElementSets(userContentBucket, userContentPaths, fs, destDB)
-	if err != nil {
-		log.Fatal(err)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		fmt.Println("Quants...")
+		err = migrateQuants(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB, destUserContentBucket, userGroups)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-	fmt.Println("ROIs...")
-	err = migrateROIs(userContentBucket, userContentPaths, fs, destDB)
-	if err != nil {
-		log.Fatal(err)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		fmt.Println("Element Sets...")
+		err = migrateElementSets(userContentBucket, userContentPaths, fs, destDB, userGroups)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-	fmt.Println("RGB Mixes...")
-	err = migrateRGBMixes(userContentBucket, userContentPaths, fs, destDB)
-	if err != nil {
-		log.Fatal(err)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		fmt.Println("ROIs...")
+		err = migrateROIs(userContentBucket, userContentPaths, fs, destDB, userGroups)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-	fmt.Println("Tags...")
-	err = migrateTags(userContentBucket, userContentPaths, fs, destDB)
-	if err != nil {
-		log.Fatal(err)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		fmt.Println("RGB Mixes...")
+		err = migrateRGBMixes(userContentBucket, userContentPaths, fs, destDB, userGroups)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-	fmt.Println("Diffraction Peak...")
-	err = migrateDiffraction(userContentBucket, userContentPaths, fs, destDB)
-	if err != nil {
-		log.Fatal(err)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		fmt.Println("Tags...")
+		err = migrateTags(userContentBucket, userContentPaths, fs, destDB)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-	fmt.Println("View States...")
-	err = migrateViewStates(userContentBucket, userContentPaths, fs, destDB)
-	if err != nil {
-		log.Fatal(err)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		fmt.Println("Diffraction Peak...")
+		err = migrateDiffraction(userContentBucket, userContentPaths, fs, destDB)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		fmt.Println("View States...")
+		err = migrateViewStates(userContentBucket, userContentPaths, fs, destDB)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	// Wait for all
+	wg.Wait()
+
+	t1 := time.Now().UnixMilli()
+	sec := (t1 - t0) / 1000
+
+	fmt.Printf("Finished: %v\n", time.Now().String())
+	fmt.Printf("Runtime %v seconds\n", sec)
 }
