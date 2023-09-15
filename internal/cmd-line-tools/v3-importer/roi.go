@@ -9,6 +9,7 @@ import (
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/indexcompression"
+	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -35,7 +36,13 @@ type SrcROISavedItem struct {
 }
 type SrcROILookup map[string]SrcROISavedItem
 
-func migrateROIs(userContentBucket string, userContentFiles []string, fs fileaccess.FileAccess, dest *mongo.Database, userGroups map[string]string) error {
+func migrateROIs(
+	userContentBucket string,
+	userContentFiles []string,
+	limitToDatasetIds []string,
+	fs fileaccess.FileAccess,
+	dest *mongo.Database,
+	userGroups map[string]string) error {
 	coll := dest.Collection(dbCollections.RegionsOfInterestName)
 	err := coll.Drop(context.TODO())
 	if err != nil {
@@ -47,6 +54,11 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 		if strings.HasSuffix(p, "ROI.json") && strings.HasPrefix(p, "UserContent/shared/") {
 			scanId := filepath.Base(filepath.Dir(p))
 
+			if len(limitToDatasetIds) > 0 && !utils.ItemInSlice(scanId, limitToDatasetIds) {
+				fmt.Printf(" SKIPPING shared roi for dataset id: %v...\n", scanId)
+				continue
+			}
+
 			// Read this file
 			items := SrcROILookup{}
 			err = fs.ReadJSON(userContentBucket, p, &items, false)
@@ -56,7 +68,7 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 
 			// Store these till we're finished here
 			for id, item := range items {
-				sharedItems[scanId+"_"+id] = item
+				sharedItems[ /*scanId+"_"+*/ id] = item
 			}
 			sharedItems = items
 		}
@@ -75,6 +87,11 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 				continue
 			}
 
+			if len(limitToDatasetIds) > 0 && !utils.ItemInSlice(scanId, limitToDatasetIds) {
+				fmt.Printf(" SKIPPING shared roi for dataset id: %v...\n", scanId)
+				continue
+			}
+
 			// Read this file
 			items := SrcROILookup{}
 			err = fs.ReadJSON(userContentBucket, p, &items, false)
@@ -84,7 +101,7 @@ func migrateROIs(userContentBucket string, userContentFiles []string, fs fileacc
 
 			// Write these to DB and also remember them for later...
 			for id, item := range items {
-				saveId := scanId + "_" + id
+				saveId := /*scanId + "_" +*/ id
 
 				if ex, ok := allItems[saveId]; ok {
 					fmt.Printf("Duplicate: %v - %v vs %v\n", saveId, item.Name, ex.Name)

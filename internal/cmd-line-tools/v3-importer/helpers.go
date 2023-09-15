@@ -42,6 +42,8 @@ func saveOwnershipItem(objectId string, objectType protos.ObjectType, editorUser
 	if result.InsertedID != objectId {
 		return fmt.Errorf("Ownership insert for object %v %v inserted different id %v", objectType, objectId, result.InsertedID)
 	}
+
+	fmt.Printf(" saving ownership: %v, type: %v, editorUser: %v, editorGroup: %v, viewerGroup: %v\n", objectId, objectType, editorUserId, editorGroupId, viewerGroupId)
 	return nil
 }
 

@@ -207,7 +207,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		fmt.Println("ROIs...")
-		err = migrateROIs(userContentBucket, userContentPaths, fs, destDB, userGroups)
+		err = migrateROIs(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB, userGroups)
 		if err != nil {
 			log.Fatal(err)
 		}
