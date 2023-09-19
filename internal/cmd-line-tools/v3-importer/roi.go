@@ -50,6 +50,7 @@ func migrateROIs(
 	}
 
 	sharedItems := SrcROILookup{}
+	sharedItemScanIds := map[string]string{}
 	for _, p := range userContentFiles {
 		if strings.HasSuffix(p, "ROI.json") && strings.HasPrefix(p, "UserContent/shared/") {
 			scanId := filepath.Base(filepath.Dir(p))
@@ -69,12 +70,12 @@ func migrateROIs(
 			// Store these till we're finished here
 			for id, item := range items {
 				sharedItems[ /*scanId+"_"+*/ id] = item
+				sharedItemScanIds[id] = scanId
 			}
 			sharedItems = items
 		}
 	}
 
-	destROIs := []interface{}{}
 	allItems := SrcROILookup{}
 
 	for _, p := range userContentFiles {
@@ -101,70 +102,33 @@ func migrateROIs(
 
 			// Write these to DB and also remember them for later...
 			for id, item := range items {
-				saveId := /*scanId + "_" +*/ id
-
-				if ex, ok := allItems[saveId]; ok {
-					fmt.Printf("Duplicate: %v - %v vs %v\n", saveId, item.Name, ex.Name)
+				if ex, ok := allItems[id]; ok {
+					fmt.Printf("Duplicate: %v - %v vs %v\n", id, item.Name, ex.Name)
 					continue
 				}
 
 				if item.SrcAPIObjectItem.Creator.UserID != userIdFromPath {
-					fmt.Printf("Unexpected ROI user: %v, path had id: %v\n", item.SrcAPIObjectItem.Creator.UserID, userIdFromPath)
+					fmt.Printf("Unexpected ROI user: %v, path had id: %v. ROI was likely copied to another user, skipping...\n", item.SrcAPIObjectItem.Creator.UserID, userIdFromPath)
+					continue
 				}
 
-				allItems[saveId] = item
-
-				tags := item.Tags
-				if tags == nil {
-					tags = []string{}
-				}
-
-				scanIdxs, err := indexcompression.EncodeIndexList(item.LocationIndexes)
-				if err != nil {
-					return fmt.Errorf("ROI %v: location list error: %v", saveId, err)
-				}
-				pixIdxs, err := indexcompression.EncodeIndexList(item.PixelIndexes)
-				if err != nil {
-					return fmt.Errorf("ROI %v: pixel list error: %v", saveId, err)
-				}
-
-				destROI := protos.ROIItem{
-					Id:                      saveId,
-					ScanId:                  scanId,
-					Name:                    item.Name,
-					Description:             item.Description,
-					Tags:                    tags,
-					ScanEntryIndexesEncoded: scanIdxs,
-					ImageName:               item.ImageName,
-					PixelIndexesEncoded:     pixIdxs,
-					ModifiedUnixSec:         uint32(item.CreatedUnixTimeSec),
-					// MistROIItem
-				}
+				allItems[id] = item
 
 				viewerGroupId := ""
 				if removeIfSharedROI(item, sharedItems) {
 					viewerGroupId = userGroups["PIXL-FM"]
 				}
 
-				err = saveOwnershipItem(destROI.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, "", viewerGroupId, uint32(item.CreatedUnixTimeSec), dest)
-				if err != nil {
-					return err
-				}
-
-				destROIs = append(destROIs, destROI)
+				migrateROI(id, scanId, item, coll, dest, viewerGroupId)
 			}
 		}
 	}
 
-	result, err := coll.InsertMany(context.TODO(), destROIs)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("ROIs inserted: %v\n", len(result.InsertedIDs))
-	fmt.Println("ROIs orphaned (shared but original not found):")
-	for id := range sharedItems {
+	fmt.Printf("ROIs inserted: %v\n", len(allItems))
+	fmt.Println("Adding the following orphaned ROIs (shared but original not found):")
+	for id, shared := range sharedItems {
 		fmt.Printf("%v\n", id)
+		migrateROI(id, sharedItemScanIds[id], shared, coll, dest, userGroups["PIXL-FM"])
 	}
 
 	return err
@@ -181,4 +145,45 @@ func removeIfSharedROI(roi SrcROISavedItem, sharedROIs SrcROILookup) bool {
 	}
 
 	return false
+}
+
+func migrateROI(roiId string, scanId string, item SrcROISavedItem, coll *mongo.Collection, dest *mongo.Database, viewerGroupId string) error {
+	tags := item.Tags
+	if tags == nil {
+		tags = []string{}
+	}
+
+	scanIdxs, err := indexcompression.EncodeIndexList(item.LocationIndexes)
+	if err != nil {
+		return fmt.Errorf("ROI %v: location list error: %v", roiId, err)
+	}
+	pixIdxs, err := indexcompression.EncodeIndexList(item.PixelIndexes)
+	if err != nil {
+		return fmt.Errorf("ROI %v: pixel list error: %v", roiId, err)
+	}
+
+	destROI := protos.ROIItem{
+		Id:                      roiId,
+		ScanId:                  scanId,
+		Name:                    item.Name,
+		Description:             item.Description,
+		Tags:                    tags,
+		ScanEntryIndexesEncoded: scanIdxs,
+		ImageName:               item.ImageName,
+		PixelIndexesEncoded:     pixIdxs,
+		ModifiedUnixSec:         uint32(item.CreatedUnixTimeSec),
+		// MistROIItem
+	}
+
+	_, err = coll.InsertOne(context.TODO(), destROI)
+	if err != nil {
+		return err
+	}
+
+	err = saveOwnershipItem(destROI.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, "", viewerGroupId, uint32(item.CreatedUnixTimeSec), dest)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
