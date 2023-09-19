@@ -244,7 +244,7 @@ func HandleExpressionWriteExecStatReq(req *protos.ExpressionWriteExecStatReq, hc
 		return nil, err
 	}
 
-	if req.Stats == nil || len(req.Stats.DataRequired) <= 0 || req.Stats.RuntimeMs < 0 {
+	if req.Stats == nil || len(req.Stats.DataRequired) <= 0 || req.Stats.RuntimeMsPer1000Pts < 0 {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("Invalid stats in request"))
 	}
 

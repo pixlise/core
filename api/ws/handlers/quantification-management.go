@@ -26,13 +26,13 @@ func HandleQuantDeleteReq(req *protos.QuantDeleteReq, hctx wsHelpers.HandlerCont
 
 	// We have the item, form the paths that need to be deleted
 	toDelete := []string{
-		filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.Params.Params.DatasetID, dbItem.Id+".bin"),
-		filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.Params.Params.DatasetID, dbItem.Id+".csv"),
+		filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.ScanId, dbItem.Id+".bin"),
+		filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.ScanId, dbItem.Id+".csv"),
 	}
 
 	// Add all the known log files too
 	for _, logFile := range dbItem.Status.PiquantLogs {
-		toDelete = append(toDelete, filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.Params.Params.DatasetID, path.Join(filepaths.MakeQuantLogDirName(dbItem.Id), logFile)))
+		toDelete = append(toDelete, filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.ScanId, path.Join(filepaths.MakeQuantLogDirName(dbItem.Id), logFile)))
 	}
 
 	// Now delete from DB

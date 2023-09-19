@@ -153,9 +153,10 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database) 
 
 		if expr.RecentExecStats != nil {
 			destExpr.RecentExecStats = &protos.DataExpressionExecStats{
-				DataRequired:     expr.RecentExecStats.DataRequired,
-				RuntimeMs:        expr.RecentExecStats.RuntimeMS,
-				TimeStampUnixSec: uint32(expr.RecentExecStats.RuntimeMS),
+				DataRequired: expr.RecentExecStats.DataRequired,
+				// Old field wasn't normalised for how many PMCs we are running it for, so leave them out
+				//RuntimeMs:        expr.RecentExecStats.RuntimeMS,
+				TimeStampUnixSec: uint32(expr.RecentExecStats.TimeStampUnixSec),
 			}
 		}
 

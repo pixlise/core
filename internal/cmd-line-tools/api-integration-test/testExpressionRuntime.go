@@ -49,7 +49,7 @@ func testExpressionRuntimeMsgs(apiHost string) {
 			"id": "${IDLOAD=CreatedForStat1}",
 			"stats": {
 				"dataRequired": [],
-				"runtimeMs": 2
+				"runtimeMsPer1000Pts": 2
 			}
 		}}`,
 		`{"msgId":2,"status":"WS_BAD_REQUEST",
@@ -63,7 +63,7 @@ func testExpressionRuntimeMsgs(apiHost string) {
 			"id": "${IDLOAD=CreatedForStat1}",
 			"stats": {
 				"dataRequired": ["Fe", "Ca"],
-				"runtimeMs": 2.1
+				"runtimeMsPer1000Pts": 2.1
 			}
 		}}`,
 		`{"msgId":3,"status":"WS_OK",
@@ -97,7 +97,7 @@ func testExpressionRuntimeMsgs(apiHost string) {
 							"Fe",
 							"Ca"
 						],
-						"runtimeMs": 2.1,
+						"runtimeMsPer1000Pts": 2.1,
 						"timeStampUnixSec": "${SECAGO=3}"
 					}
 				}
