@@ -100,57 +100,62 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("==========================================")
-	fmt.Println("Migrating data from old users DB...")
-	fmt.Println("==========================================")
-	err = migrateUsersDB(srcUserDB, destDB)
-	if err != nil {
-		log.Fatal(err)
-	}
+	var listingWG sync.WaitGroup
+	listingWG.Add(2)
 
 	userGroups := map[string]string{}
-
-	if len(auth0Domain) > 0 && len(auth0ClientId) > 0 && len(auth0Secret) > 0 {
+	go func() {
+		defer listingWG.Done()
 		fmt.Println("==========================================")
-		fmt.Println("Migrating user groups from Auth0...")
+		fmt.Println("Migrating data from old users DB...")
 		fmt.Println("==========================================")
-		userGroups, err = migrateAuth0UserGroups(auth0Domain, auth0ClientId, auth0Secret, destDB)
+		err := migrateUsersDB(srcUserDB, destDB)
 		if err != nil {
 			log.Fatal(err)
 		}
-	}
 
-	fmt.Println("==========================================")
-	fmt.Println("Migrating data from datasets bucket...")
-	fmt.Println("==========================================")
+		if len(auth0Domain) > 0 && len(auth0ClientId) > 0 && len(auth0Secret) > 0 {
+			fmt.Println("==========================================")
+			fmt.Println("Migrating user groups from Auth0...")
+			fmt.Println("==========================================")
+			userGroups, err = migrateAuth0UserGroups(auth0Domain, auth0ClientId, auth0Secret, destDB)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 
-	fmt.Println("Datasets...")
-	err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB, limitToDatasetIDsList, userGroups)
-	if err != nil {
-		log.Fatal(err)
-	}
+		fmt.Println("==========================================")
+		fmt.Println("Migrating data from datasets bucket...")
+		fmt.Println("==========================================")
 
-	fmt.Println("==========================================")
-	fmt.Println("Migrating data from old expressions DB...")
-	fmt.Println("==========================================")
-	err = migrateExpressionsDB(srcExprDB, destDB)
-	if err != nil {
-		log.Fatal(err)
-	}
+		fmt.Println("Datasets...")
+		err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB, limitToDatasetIDsList, userGroups)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	fmt.Println("==========================================")
-	fmt.Println("Migrating data from config bucket...")
-	fmt.Println("==========================================")
-	fmt.Println("Detector Configs...")
-	err = migrateDetectorConfigs(configBucket, fs, destDB)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("Piquant Version...")
-	err = migratePiquantVersion(configBucket, fs, destDB)
-	if err != nil {
-		log.Fatal(err)
-	}
+		fmt.Println("==========================================")
+		fmt.Println("Migrating data from old expressions DB...")
+		fmt.Println("==========================================")
+		err = migrateExpressionsDB(srcExprDB, destDB)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println("==========================================")
+		fmt.Println("Migrating data from config bucket...")
+		fmt.Println("==========================================")
+		fmt.Println("Detector Configs...")
+		err = migrateDetectorConfigs(configBucket, fs, destDB)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Piquant Version...")
+		err = migratePiquantVersion(configBucket, fs, destDB)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	/* Decided to leave PIQUANT configs in S3 because that way PIQUANT docker container has authenticated direct access
 	fmt.Println("Piquant Configs...")
@@ -159,13 +164,20 @@ func main() {
 		log.Fatal(err)
 	}*/
 
-	// List all of S3 user contents
-	fmt.Println("Listing user contents from S3...")
-	userContentPaths, err := fs.ListObjects(userContentBucket, filepaths.RootUserContent)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("  Listed %v files\n", len(userContentPaths))
+	userContentPaths := []string{}
+	go func() {
+		defer listingWG.Done()
+		// List all of S3 user contents
+		fmt.Println("Listing user contents from S3...")
+		var err error
+		userContentPaths, err = fs.ListObjects(userContentBucket, filepaths.RootUserContent)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("  Listed %v files\n", len(userContentPaths))
+	}()
+
+	listingWG.Wait()
 
 	fmt.Println("==========================================")
 	fmt.Println("Migrating data from user content bucket...")

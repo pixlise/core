@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"sync"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/fileaccess"
@@ -131,105 +133,113 @@ func migrateDatasets(
 		return err
 	}
 
-	destItems := []interface{}{}
+	var wg sync.WaitGroup
+	insertCount := 0
+
 	for _, dataset := range summaries.Datasets {
 		if len(limitToDatasetIds) > 0 && !utils.ItemInSlice(dataset.DatasetID, limitToDatasetIds) {
 			fmt.Printf(" SKIPPING scan: %v...\n", dataset.DatasetID)
 			continue
 		}
 
-		fmt.Printf("Importing scan: %v...\n", dataset.DatasetID)
+		wg.Add(1)
+		go func(dataset SrcSummaryFileData) {
+			defer wg.Done()
+			fmt.Printf("Importing scan: %v...\n", dataset.DatasetID)
 
-		instrument := protos.ScanInstrument_PIXL_FM
-		if dataset.Group == "PIXL_EM" {
-			instrument = protos.ScanInstrument_PIXL_EM
-		} else if dataset.Group == "Breadboard" {
-			instrument = protos.ScanInstrument_JPL_BREADBOARD
-		}
+			instrument := protos.ScanInstrument_PIXL_FM
+			if dataset.Group == "PIXL_EM" {
+				instrument = protos.ScanInstrument_PIXL_EM
+			} else if dataset.Group == "Breadboard" {
+				instrument = protos.ScanInstrument_JPL_BREADBOARD
+			}
 
-		meta := map[string]string{
-			"RTT":     dataset.GetRTT(),
-			"SCLK":    fmt.Sprintf("%v", dataset.SCLK),
-			"Sol":     dataset.SOL,
-			"DriveId": fmt.Sprintf("%v", dataset.DriveID),
-			//"Drive":    dataset.Drive, <-- doesn't exist
-			"TargetId": dataset.TargetID,
-			"Target":   dataset.Target,
-			"SiteId":   fmt.Sprintf("%v", dataset.SiteID),
-			"Site":     dataset.Site,
-		}
+			meta := map[string]string{
+				"RTT":     dataset.GetRTT(),
+				"SCLK":    fmt.Sprintf("%v", dataset.SCLK),
+				"Sol":     dataset.SOL,
+				"DriveId": fmt.Sprintf("%v", dataset.DriveID),
+				//"Drive":    dataset.Drive, <-- doesn't exist
+				"TargetId": dataset.TargetID,
+				"Target":   dataset.Target,
+				"SiteId":   fmt.Sprintf("%v", dataset.SiteID),
+				"Site":     dataset.Site,
+			}
 
-		counts := map[string]int32{
-			"NormalSpectra":     int32(dataset.NormalSpectra),
-			"DwellSpectra":      int32(dataset.DwellSpectra),
-			"BulkSpectra":       int32(dataset.BulkSpectra),
-			"MaxSpectra":        int32(dataset.MaxSpectra),
-			"PseudoIntensities": int32(dataset.PseudoIntensities),
-		}
+			counts := map[string]int32{
+				"NormalSpectra":     int32(dataset.NormalSpectra),
+				"DwellSpectra":      int32(dataset.DwellSpectra),
+				"BulkSpectra":       int32(dataset.BulkSpectra),
+				"MaxSpectra":        int32(dataset.MaxSpectra),
+				"PseudoIntensities": int32(dataset.PseudoIntensities),
+			}
 
-		destItem := protos.ScanItem{
-			Id:               dataset.DatasetID,
-			Title:            dataset.Title,
-			Description:      "",
-			TimestampUnixSec: uint32(dataset.CreationUnixTimeSec),
-			Instrument:       instrument,
-			InstrumentConfig: dataset.DetectorConfig,
-			DataTypes:        []*protos.ScanItem_ScanTypeCount{},
-			Meta:             meta,
-			ContentCounts:    counts,
-		}
+			destItem := protos.ScanItem{
+				Id:               dataset.DatasetID,
+				Title:            dataset.Title,
+				Description:      "",
+				TimestampUnixSec: uint32(dataset.CreationUnixTimeSec),
+				Instrument:       instrument,
+				InstrumentConfig: dataset.DetectorConfig,
+				DataTypes:        []*protos.ScanItem_ScanTypeCount{},
+				Meta:             meta,
+				ContentCounts:    counts,
+			}
 
-		if dataset.LocationCount > 0 {
-			destItem.DataTypes = append(destItem.DataTypes, &protos.ScanItem_ScanTypeCount{
-				DataType: protos.ScanDataType_SD_XRF,
-				Count:    uint32(dataset.LocationCount),
-			})
-		}
+			if dataset.LocationCount > 0 {
+				destItem.DataTypes = append(destItem.DataTypes, &protos.ScanItem_ScanTypeCount{
+					DataType: protos.ScanDataType_SD_XRF,
+					Count:    uint32(dataset.LocationCount),
+				})
+			}
 
-		if dataset.TIFFContextImages > 0 {
-			destItem.DataTypes = append(destItem.DataTypes, &protos.ScanItem_ScanTypeCount{
-				DataType: protos.ScanDataType_SD_RGBU,
-				Count:    uint32(dataset.TIFFContextImages),
-			})
-		}
+			if dataset.TIFFContextImages > 0 {
+				destItem.DataTypes = append(destItem.DataTypes, &protos.ScanItem_ScanTypeCount{
+					DataType: protos.ScanDataType_SD_RGBU,
+					Count:    uint32(dataset.TIFFContextImages),
+				})
+			}
 
-		if dataset.ContextImages > 0 {
-			destItem.DataTypes = append(destItem.DataTypes, &protos.ScanItem_ScanTypeCount{
-				DataType: protos.ScanDataType_SD_IMAGE,
-				Count:    uint32(dataset.ContextImages),
-			})
-		}
+			if dataset.ContextImages > 0 {
+				destItem.DataTypes = append(destItem.DataTypes, &protos.ScanItem_ScanTypeCount{
+					DataType: protos.ScanDataType_SD_IMAGE,
+					Count:    uint32(dataset.ContextImages),
+				})
+			}
 
-		destItems = append(destItems, destItem)
+			// Decide which group to link this scan to
+			memberGroup := userGroups["PIXL-FM"]
+			if instrument == protos.ScanInstrument_PIXL_EM {
+				memberGroup = userGroups["PIXL-EM"]
+			} else if instrument != protos.ScanInstrument_PIXL_FM {
+				memberGroup = userGroups["JPL Breadboard"]
+			}
 
-		// Decide which group to link this scan to
-		memberGroup := userGroups["PIXL-FM"]
-		if instrument == protos.ScanInstrument_PIXL_EM {
-			memberGroup = userGroups["PIXL-EM"]
-		} else if instrument != protos.ScanInstrument_PIXL_FM {
-			memberGroup = userGroups["JPL Breadboard"]
-		}
+			_, err := coll.InsertOne(context.TODO(), destItem)
+			if err != nil {
+				log.Fatalln(err)
+			}
 
-		// Each scan needs an ownership item to define who can view/edit it
-		// Prefix the ID with "scan_" because the dataset IDs are likely not that long, and we also want them
-		// to differ from our random ones
-		err = saveOwnershipItem( /*"scan_"+*/ dataset.DatasetID, protos.ObjectType_OT_SCAN, "", memberGroup, "", uint32(dataset.CreationUnixTimeSec), dest)
-		if err != nil {
-			return err
-		}
+			// Each scan needs an ownership item to define who can view/edit it
+			// Prefix the ID with "scan_" because the dataset IDs are likely not that long, and we also want them
+			// to differ from our random ones
+			err = saveOwnershipItem( /*"scan_"+*/ dataset.DatasetID, protos.ObjectType_OT_SCAN, "", memberGroup, "", uint32(dataset.CreationUnixTimeSec), dest)
+			if err != nil {
+				log.Fatalln(err)
+			}
 
-		err = importImagesForDataset(dataset.DatasetID, dataBucket, destDataBucket, fs, dest)
-		if err != nil {
-			return err
-		}
+			err = importImagesForDataset(dataset.DatasetID, dataBucket, destDataBucket, fs, dest)
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			insertCount++
+		}(dataset)
 	}
 
-	result, err := coll.InsertMany(context.TODO(), destItems)
-	if err != nil {
-		return err
-	}
+	// Wait for all
+	wg.Wait()
 
-	fmt.Printf("Scans inserted: %v\n", len(result.InsertedIDs))
-
+	fmt.Printf("Scans inserted: %v\n", insertCount)
 	return err
 }

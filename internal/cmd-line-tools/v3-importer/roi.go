@@ -88,7 +88,7 @@ func migrateROIs(
 			}
 
 			if len(limitToDatasetIds) > 0 && !utils.ItemInSlice(scanId, limitToDatasetIds) {
-				fmt.Printf(" SKIPPING shared roi for dataset id: %v...\n", scanId)
+				fmt.Printf(" SKIPPING roi for dataset id: %v...\n", scanId)
 				continue
 			}
 
