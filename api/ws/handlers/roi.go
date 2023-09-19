@@ -22,6 +22,18 @@ func HandleRegionOfInterestGetReq(req *protos.RegionOfInterestGetReq, hctx wsHel
 	}
 
 	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+
+	if req.IsMIST {
+		// Fetch from MIST table and add to dbItem
+		mistItem := &protos.MistROIItem{}
+		err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).FindOne(context.TODO(), bson.D{{"_id", req.Id}}).Decode(&mistItem)
+		if err != nil {
+			return nil, err
+		}
+
+		dbItem.MistROIItem = mistItem
+	}
+
 	return &protos.RegionOfInterestGetResp{
 		RegionOfInterest: dbItem,
 	}, nil
@@ -66,6 +78,17 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 		// Look up owner info
 		if owner, ok := idToOwner[item.Id]; ok {
 			item.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+		}
+
+		if req.IsMIST {
+			// Fetch from MIST table and add to item
+			mistItem := &protos.MistROIItem{}
+			err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).FindOne(context.TODO(), bson.D{{"_id", item.Id}}).Decode(&mistItem)
+			if err != nil {
+				return nil, err
+			}
+
+			item.MistROIItem = mistItem
 		}
 
 		// Add to map
@@ -247,6 +270,20 @@ func HandleRegionOfInterestWriteReq(req *protos.RegionOfInterestWriteReq, hctx w
 	var item *protos.ROIItem
 	var err error
 
+	var mistInfo *protos.MistROIItem
+	if req.IsMIST {
+		mistInfo = &protos.MistROIItem{
+			Species:             req.RegionOfInterest.MistROIItem.Species,
+			MineralGroupID:      req.RegionOfInterest.MistROIItem.MineralGroupID,
+			IdDepth:             req.RegionOfInterest.MistROIItem.IdDepth,
+			ClassificationTrail: req.RegionOfInterest.MistROIItem.ClassificationTrail,
+			Formula:             req.RegionOfInterest.MistROIItem.Formula,
+		}
+
+		// We don't want to write this to the ROI table
+		req.RegionOfInterest.MistROIItem = nil
+	}
+
 	if len(req.RegionOfInterest.Id) <= 0 {
 		item, err = createROI(req.RegionOfInterest, hctx)
 	} else {
@@ -256,7 +293,96 @@ func HandleRegionOfInterestWriteReq(req *protos.RegionOfInterestWriteReq, hctx w
 		return nil, err
 	}
 
+	if req.IsMIST {
+		mistInfo.Id = item.Id
+		mistInfo.ScanId = item.ScanId
+
+		// Add an entry into the MIST ROI table
+		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).InsertOne(context.TODO(), mistInfo)
+		if err != nil {
+			return nil, err
+		}
+
+		item.MistROIItem = mistInfo
+	}
+
 	return &protos.RegionOfInterestWriteResp{
 		RegionOfInterest: item,
+	}, nil
+}
+
+func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestBulkWriteResp, error) {
+	if req.IsMIST && req.MistROIScanIdsToDelete != nil && len(req.MistROIScanIdsToDelete) > 0 {
+		ctx := context.TODO()
+		coll := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName)
+		filter := bson.M{"scanid": bson.M{"$in": req.MistROIScanIdsToDelete}}
+		opts := options.Find().SetProjection(bson.M{"_id": true})
+
+		cursor, err := coll.Find(ctx, filter, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		mistIds := []string{}
+		err = cursor.All(ctx, &mistIds)
+		if err != nil {
+			return nil, err
+		}
+
+		// Delete all the MIST ROIs for this scan
+		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).DeleteMany(ctx, bson.M{"_id": bson.M{"$in": mistIds}})
+		if err != nil {
+			return nil, err
+		}
+
+		// Delete all the ROIs associated with the MIST ROIs for this scan
+		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName).DeleteMany(ctx, bson.M{"_id": bson.M{"$in": mistIds}})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	writtenROIs := []*protos.ROIItem{}
+
+	for _, item := range req.RegionsOfInterest {
+		var err error
+		if len(item.Id) >= 0 && req.Overwrite {
+			// Overwrite existing ROI
+			item, err = updateROI(item, hctx)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			// Create new ROI
+			item, err = createROI(item, hctx)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if req.IsMIST {
+			mistROIItem := &protos.MistROIItem{
+				Id:                  item.Id,
+				ScanId:              item.ScanId,
+				Species:             item.MistROIItem.Species,
+				MineralGroupID:      item.MistROIItem.MineralGroupID,
+				IdDepth:             item.MistROIItem.IdDepth,
+				ClassificationTrail: item.MistROIItem.ClassificationTrail,
+				Formula:             item.MistROIItem.Formula,
+			}
+			// Add an entry into the MIST ROI table
+			_, err := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).InsertOne(context.TODO(), mistROIItem)
+			if err != nil {
+				return nil, err
+			}
+
+			item.MistROIItem = mistROIItem
+		}
+
+		writtenROIs = append(writtenROIs, item)
+	}
+
+	return &protos.RegionOfInterestBulkWriteResp{
+		RegionsOfInterest: writtenROIs,
 	}, nil
 }
