@@ -25,6 +25,21 @@ import "golang.org/x/exp/constraints"
 // stuff that you'd expect to be part of the std lib but aren't, eg functions to search for strings
 // in string arrays...
 
+func SlicesEqual[T comparable](listA []T, listB []T) bool {
+	if len(listA) != len(listB) {
+		return false
+	}
+
+	// Lists can be in a different order so we have to check each item
+	for _, a := range listA {
+		if !ItemInSlice(a, listB) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func ItemInSlice[T comparable](a T, list []T) bool {
 	for _, b := range list {
 		if b == a {

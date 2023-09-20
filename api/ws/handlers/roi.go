@@ -7,6 +7,7 @@ import (
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
+	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,6 +15,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
+
+type IdOnly struct {
+	Id string `bson:"_id"`
+}
 
 func HandleRegionOfInterestGetReq(req *protos.RegionOfInterestGetReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestGetResp, error) {
 	dbItem, owner, err := wsHelpers.GetUserObjectById[protos.ROIItem](false, req.Id, protos.ObjectType_OT_ROI, dbCollections.RegionsOfInterestName, hctx)
@@ -49,6 +54,9 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 		return nil, err
 	}
 
+	// Add MIST ROI filter
+	filter["ismist"] = req.IsMIST
+
 	// Since we want only summary data, specify less fields to retrieve
 	opts := options.Find().SetProjection(bson.D{
 		{"_id", true},
@@ -58,6 +66,7 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 		{"imagename", true},
 		{"tags", true},
 		{"modifiedunixsec", true},
+		{"ismist", true},
 	})
 
 	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName).Find(context.TODO(), filter, opts)
@@ -101,7 +110,7 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 }
 
 func validateROI(roi *protos.ROIItem) error {
-	if err := wsHelpers.CheckStringField(&roi.Name, "Name", 1, 50); err != nil {
+	if err := wsHelpers.CheckStringField(&roi.Name, "Name", 1, 100); err != nil {
 		return err
 	}
 	if err := wsHelpers.CheckStringField(&roi.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
@@ -211,7 +220,7 @@ func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROII
 		update = append(update, bson.E{Key: "name", Value: roi.Name})
 	}
 
-	if len(roi.Description) > 0 {
+	if dbItem.Description != roi.Description {
 		dbItem.Description = roi.Description
 		update = append(update, bson.E{Key: "description", Value: roi.Description})
 	}
@@ -221,17 +230,17 @@ func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROII
 		update = append(update, bson.E{Key: "imagename", Value: roi.ImageName})
 	}
 
-	if len(roi.ScanEntryIndexesEncoded) > 0 {
+	if !utils.SlicesEqual(dbItem.ScanEntryIndexesEncoded, roi.ScanEntryIndexesEncoded) {
 		dbItem.ScanEntryIndexesEncoded = roi.ScanEntryIndexesEncoded
 		update = append(update, bson.E{Key: "ScanEntryIndexesEncoded", Value: roi.ScanEntryIndexesEncoded})
 	}
 
-	if len(roi.PixelIndexesEncoded) > 0 {
+	if !utils.SlicesEqual(dbItem.PixelIndexesEncoded, roi.PixelIndexesEncoded) {
 		dbItem.PixelIndexesEncoded = roi.PixelIndexesEncoded
 		update = append(update, bson.E{Key: "pixelindexesencoded", Value: roi.PixelIndexesEncoded})
 	}
 
-	if len(roi.Tags) > 0 {
+	if !utils.SlicesEqual(dbItem.Tags, roi.Tags) {
 		dbItem.Tags = roi.Tags
 		update = append(update, bson.E{Key: "tags", Value: roi.Tags})
 	}
@@ -267,25 +276,35 @@ func HandleRegionOfInterestWriteReq(req *protos.RegionOfInterestWriteReq, hctx w
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("Owner must be empty for write messages"))
 	}
 
-	var item *protos.ROIItem
-	var err error
-
-	var mistInfo *protos.MistROIItem
 	if req.IsMIST {
-		mistInfo = &protos.MistROIItem{
-			Species:             req.RegionOfInterest.MistROIItem.Species,
-			MineralGroupID:      req.RegionOfInterest.MistROIItem.MineralGroupID,
-			IdDepth:             req.RegionOfInterest.MistROIItem.IdDepth,
-			ClassificationTrail: req.RegionOfInterest.MistROIItem.ClassificationTrail,
-			Formula:             req.RegionOfInterest.MistROIItem.Formula,
-		}
-
-		// We don't want to write this to the ROI table
-		req.RegionOfInterest.MistROIItem = nil
+		req.RegionOfInterest.IsMIST = true
 	}
 
+	var item *protos.ROIItem
+
+	var mistInfo = req.RegionOfInterest.MistROIItem
+
+	// We don't want to write this to the ROI table
+	req.RegionOfInterest.MistROIItem = nil
+
+	var err error
 	if len(req.RegionOfInterest.Id) <= 0 {
 		item, err = createROI(req.RegionOfInterest, hctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// If this is a new ROI and it's a MIST ROI, we need to add it to the MIST ROI table
+		if req.IsMIST {
+			mistInfo.Id = item.Id
+			mistInfo.ScanId = item.ScanId
+
+			// Add an entry into the MIST ROI table
+			_, err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).InsertOne(context.TODO(), mistInfo)
+			if err != nil {
+				return nil, err
+			}
+		}
 	} else {
 		item, err = updateROI(req.RegionOfInterest, hctx)
 	}
@@ -293,16 +312,8 @@ func HandleRegionOfInterestWriteReq(req *protos.RegionOfInterestWriteReq, hctx w
 		return nil, err
 	}
 
+	// Add the MIST ROI info back in before return
 	if req.IsMIST {
-		mistInfo.Id = item.Id
-		mistInfo.ScanId = item.ScanId
-
-		// Add an entry into the MIST ROI table
-		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).InsertOne(context.TODO(), mistInfo)
-		if err != nil {
-			return nil, err
-		}
-
 		item.MistROIItem = mistInfo
 	}
 
@@ -323,20 +334,25 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 			return nil, err
 		}
 
-		mistIds := []string{}
+		mistIds := []*IdOnly{}
 		err = cursor.All(ctx, &mistIds)
 		if err != nil {
 			return nil, err
 		}
 
+		mistIdList := []string{}
+		for _, item := range mistIds {
+			mistIdList = append(mistIdList, item.Id)
+		}
+
 		// Delete all the MIST ROIs for this scan
-		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).DeleteMany(ctx, bson.M{"_id": bson.M{"$in": mistIds}})
+		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).DeleteMany(ctx, bson.M{"_id": bson.M{"$in": mistIdList}})
 		if err != nil {
 			return nil, err
 		}
 
 		// Delete all the ROIs associated with the MIST ROIs for this scan
-		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName).DeleteMany(ctx, bson.M{"_id": bson.M{"$in": mistIds}})
+		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName).DeleteMany(ctx, bson.M{"_id": bson.M{"$in": mistIdList}})
 		if err != nil {
 			return nil, err
 		}
@@ -345,8 +361,11 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 	writtenROIs := []*protos.ROIItem{}
 
 	for _, item := range req.RegionsOfInterest {
+		item.Owner = nil
+		item.IsMIST = req.IsMIST
+
 		var err error
-		if len(item.Id) >= 0 && req.Overwrite {
+		if len(item.Id) > 0 && req.Overwrite {
 			// Overwrite existing ROI
 			item, err = updateROI(item, hctx)
 			if err != nil {
