@@ -32,7 +32,7 @@ func HandleDataModuleGetReq(req *protos.DataModuleGetReq, hctx wsHelpers.Handler
 		ModifiedUnixSec: dbItem.ModifiedUnixSec,
 	}
 
-	module.Creator = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	module.Creator = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 
 	// Get the version requested...
 	verRequested := req.Version
@@ -110,7 +110,7 @@ func HandleDataModuleListReq(req *protos.DataModuleListReq, hctx wsHelpers.Handl
 		}
 
 		if owner, ok := idToOwner[item.Id]; ok {
-			itemWire.Creator = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+			itemWire.Creator = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 		}
 
 		itemMap[item.Id] = itemWire
@@ -300,7 +300,7 @@ func createModule(name string, comments string, intialSourceCode string, tags []
 		Id:              module.Id,
 		Name:            module.Name,
 		Comments:        module.Comments,
-		Creator:         wsHelpers.MakeOwnerSummary(ownerItem, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper),
+		Creator:         wsHelpers.MakeOwnerSummary(ownerItem, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper),
 		ModifiedUnixSec: module.ModifiedUnixSec,
 		Versions: []*protos.DataModuleVersion{
 			{
@@ -362,7 +362,7 @@ func updateModule(id string, name string, comments string, hctx wsHelpers.Handle
 		Name:            dbItem.Name,
 		Comments:        dbItem.Comments,
 		ModifiedUnixSec: dbItem.ModifiedUnixSec,
-		Creator:         wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper),
+		Creator:         wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper),
 	}
 
 	return result, nil
@@ -438,7 +438,7 @@ func HandleDataModuleAddVersionReq(req *protos.DataModuleAddVersionReq, hctx wsH
 		ModifiedUnixSec: dbItem.ModifiedUnixSec,
 	}
 
-	module.Creator = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	module.Creator = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 
 	ver, err := getLatestModuleVersion(req.ModuleId, hctx.Svcs.MongoDB)
 	if err != nil {

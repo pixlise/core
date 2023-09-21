@@ -42,7 +42,7 @@ func HandleExpressionGroupListReq(req *protos.ExpressionGroupListReq, hctx wsHel
 	itemMap := map[string]*protos.ExpressionGroup{}
 	for _, item := range items {
 		if owner, ok := idToOwner[item.Id]; ok {
-			item.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+			item.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 		}
 		itemMap[item.Id] = item
 	}
@@ -58,7 +58,7 @@ func HandleExpressionGroupGetReq(req *protos.ExpressionGroupGetReq, hctx wsHelpe
 		return nil, err
 	}
 
-	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 	return &protos.ExpressionGroupGetResp{
 		Group: dbItem,
 	}, nil
@@ -137,7 +137,7 @@ func createExpressionGroup(egroup *protos.ExpressionGroup, hctx wsHelpers.Handle
 		return nil, err
 	}
 
-	egroup.Owner = wsHelpers.MakeOwnerSummary(ownerItem, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	egroup.Owner = wsHelpers.MakeOwnerSummary(ownerItem, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 	return egroup, nil
 }
 
@@ -192,7 +192,7 @@ func updateExpressionGroup(egroup *protos.ExpressionGroup, hctx wsHelpers.Handle
 	}
 
 	// Return the merged item we validated, which in theory is in the DB now
-	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 	return dbItem, nil
 }
 

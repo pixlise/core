@@ -21,7 +21,7 @@ func HandleExpressionGetReq(req *protos.ExpressionGetReq, hctx wsHelpers.Handler
 		return nil, err
 	}
 
-	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 	return &protos.ExpressionGetResp{
 		Expression: dbItem,
 	}, nil
@@ -63,7 +63,7 @@ func HandleExpressionListReq(req *protos.ExpressionListReq, hctx wsHelpers.Handl
 	itemMap := map[string]*protos.DataExpression{}
 	for _, item := range items {
 		if owner, ok := idToOwner[item.Id]; ok {
-			item.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+			item.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 		}
 		itemMap[item.Id] = item
 	}
@@ -146,7 +146,7 @@ func createExpression(expr *protos.DataExpression, hctx wsHelpers.HandlerContext
 		return nil, err
 	}
 
-	expr.Owner = wsHelpers.MakeOwnerSummary(ownerItem, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	expr.Owner = wsHelpers.MakeOwnerSummary(ownerItem, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 	return expr, nil
 }
 
@@ -211,7 +211,7 @@ func updateExpression(expr *protos.DataExpression, hctx wsHelpers.HandlerContext
 	}
 
 	// Return the merged item we validated, which in theory is in the DB now
-	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 	return dbItem, nil
 }
 

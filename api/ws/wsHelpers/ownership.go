@@ -197,7 +197,7 @@ func ListGroupAccessibleIDs(requireEdit bool, objectType protos.ObjectType, grou
 	return result, nil
 }
 
-func MakeOwnerSummary(ownership *protos.OwnershipItem, db *mongo.Database, ts timestamper.ITimeStamper) *protos.OwnershipSummary {
+func MakeOwnerSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, db *mongo.Database, ts timestamper.ITimeStamper) *protos.OwnershipSummary {
 	user, err := getUserInfo(ownership.CreatorUserId, db, ts)
 	result := &protos.OwnershipSummary{
 		CreatedUnixSec: ownership.CreatedUnixSec,
@@ -220,15 +220,33 @@ func MakeOwnerSummary(ownership *protos.OwnershipItem, db *mongo.Database, ts ti
 
 		result.ViewerGroupCount = uint32(len(ownership.Viewers.GroupIds))
 	}
+
+	canEdit := result.CreatorUser.Id == sessionUser.User.Id
+
 	if ownership.Editors != nil {
 		result.EditorUserCount = uint32(len(ownership.Editors.UserIds))
 
-		// NOTE: if we're a viewer, subtract one!
+		// NOTE: if we're an editor, subtract one!
 		if utils.ItemInSlice(ownership.CreatorUserId, ownership.Editors.UserIds) && result.EditorUserCount > 0 {
 			result.EditorUserCount--
 		}
 
 		result.EditorGroupCount = uint32(len(ownership.Editors.GroupIds))
+
+		if !canEdit && ownership.Editors.UserIds != nil {
+			canEdit = utils.ItemInSlice(sessionUser.User.Id, ownership.Editors.UserIds)
+		}
+
+		if !canEdit && ownership.Editors.GroupIds != nil {
+			for _, groupId := range sessionUser.MemberOfGroupIds {
+				if utils.ItemInSlice(groupId, ownership.Editors.GroupIds) {
+					canEdit = true
+					break
+				}
+			}
+		}
+
+		result.CanEdit = canEdit
 	}
 
 	result.SharedWithOthers = result.ViewerUserCount > 0 || result.ViewerGroupCount > 0 || result.EditorUserCount > 0 || result.EditorGroupCount > 0

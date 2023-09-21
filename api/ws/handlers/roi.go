@@ -26,7 +26,7 @@ func HandleRegionOfInterestGetReq(req *protos.RegionOfInterestGetReq, hctx wsHel
 		return nil, err
 	}
 
-	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 
 	if req.IsMIST {
 		// Fetch from MIST table and add to dbItem
@@ -86,7 +86,7 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 
 		// Look up owner info
 		if owner, ok := idToOwner[item.Id]; ok {
-			item.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+			item.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 		}
 
 		if req.IsMIST {
@@ -196,7 +196,7 @@ func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROII
 		return nil, err
 	}
 
-	roi.Owner = wsHelpers.MakeOwnerSummary(ownerItem, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	roi.Owner = wsHelpers.MakeOwnerSummary(ownerItem, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 	return roi, nil
 }
 
@@ -230,17 +230,17 @@ func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROII
 		update = append(update, bson.E{Key: "imagename", Value: roi.ImageName})
 	}
 
-	if !utils.SlicesEqual(dbItem.ScanEntryIndexesEncoded, roi.ScanEntryIndexesEncoded) {
+	if roi.ScanEntryIndexesEncoded != nil && !utils.SlicesEqual(dbItem.ScanEntryIndexesEncoded, roi.ScanEntryIndexesEncoded) {
 		dbItem.ScanEntryIndexesEncoded = roi.ScanEntryIndexesEncoded
 		update = append(update, bson.E{Key: "ScanEntryIndexesEncoded", Value: roi.ScanEntryIndexesEncoded})
 	}
 
-	if !utils.SlicesEqual(dbItem.PixelIndexesEncoded, roi.PixelIndexesEncoded) {
+	if roi.PixelIndexesEncoded != nil && !utils.SlicesEqual(dbItem.PixelIndexesEncoded, roi.PixelIndexesEncoded) {
 		dbItem.PixelIndexesEncoded = roi.PixelIndexesEncoded
 		update = append(update, bson.E{Key: "pixelindexesencoded", Value: roi.PixelIndexesEncoded})
 	}
 
-	if !utils.SlicesEqual(dbItem.Tags, roi.Tags) {
+	if roi.Tags != nil && !utils.SlicesEqual(dbItem.Tags, roi.Tags) {
 		dbItem.Tags = roi.Tags
 		update = append(update, bson.E{Key: "tags", Value: roi.Tags})
 	}
@@ -266,7 +266,7 @@ func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROII
 	}
 
 	// Return the merged item we validated, which in theory is in the DB now
-	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 	return dbItem, nil
 }
 

@@ -172,15 +172,43 @@ func migrateROI(roiId string, scanId string, item SrcROISavedItem, coll *mongo.C
 		ImageName:               item.ImageName,
 		PixelIndexesEncoded:     pixIdxs,
 		ModifiedUnixSec:         uint32(item.CreatedUnixTimeSec),
-		// MistROIItem
+		IsMIST:                  item.MistROIItem.ClassificationTrail != "",
 	}
 
-	_, err = coll.InsertOne(context.TODO(), destROI)
+	_, err = coll.InsertOne(context.TODO(), &destROI)
 	if err != nil {
 		return err
 	}
 
 	err = saveOwnershipItem(destROI.Id, protos.ObjectType_OT_ROI, item.Creator.UserID, "", viewerGroupId, uint32(item.CreatedUnixTimeSec), dest)
+	if err != nil {
+		return err
+	}
+
+	if item.MistROIItem.ClassificationTrail != "" {
+		err = migrateMistROI(roiId, scanId, item.MistROIItem, dest)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func migrateMistROI(roiId string, scanId string, mistROI SrcMistROIItem, dest *mongo.Database) error {
+	coll := dest.Collection(dbCollections.MistROIsName)
+
+	destMistROI := protos.MistROIItem{
+		Id:                  roiId,
+		ScanId:              scanId,
+		Species:             mistROI.Species,
+		MineralGroupID:      mistROI.MineralGroupID,
+		IdDepth:             mistROI.ID_Depth,
+		ClassificationTrail: mistROI.ClassificationTrail,
+		Formula:             mistROI.Formula,
+	}
+
+	_, err := coll.InsertOne(context.TODO(), &destMistROI)
 	if err != nil {
 		return err
 	}
