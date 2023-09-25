@@ -1069,7 +1069,8 @@ func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
 						"name": "${IGNORE}",
 						"email": "${IGNORE}"
 					},
-					"createdUnixSec": "${SECAGO=3}"
+					"createdUnixSec": "${SECAGO=3}",
+					"canEdit": true
 				}
 			}
 		}}`,

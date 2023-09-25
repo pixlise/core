@@ -273,6 +273,7 @@ func runTests(apiHost string) {
 				{
 					`"scanId": "048300551",
 						"name": "The ROI",
+						"description": "User1 ROI1",
 						"scanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88]`,
 					`"scanId": "048300551",
 						"name": "The ROI",

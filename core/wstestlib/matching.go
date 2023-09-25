@@ -194,8 +194,43 @@ func compare(received any, expected any, ctx compareParams) error {
 			sort.Strings(recKeys)
 			sort.Strings(expKeys)
 
+			missingKeys := []string{}
 			if len(recKeys) != len(expKeys) {
-				return fmt.Errorf("mismatch in structure, expected %v fields, received %v. Expected keys: [%v]", len(expKeys), len(recKeys), strings.Join(expKeys, ", "))
+				// Find which expected key is missing
+				for _, expKey := range expKeys {
+					ignoreField := false
+
+					// Check if it's in the received keys
+					if !utils.ItemInSlice(expKey, recKeys) {
+						// We need to check if we can ignore this key
+						expectedKeyValue := expVal[expKey]
+						expectedKeyValueStr, ok := expectedKeyValue.(string)
+						if ok {
+							defMap, preDef, postDef, err := parseDefinitions(expectedKeyValueStr)
+							if err != nil {
+								return err
+							}
+
+							if len(defMap) == 1 && len(preDef) == 0 && len(postDef) == 0 {
+								for cmd, params := range defMap {
+									if cmd == "IGNORE" && len(params) <= 0 {
+										// If we're ignoring this field, remove it from expected keys
+										// so we don't report it as missing
+										expKeys = utils.RemoveItemFromSlice(expKey, expKeys)
+										ignoreField = true
+									}
+								}
+							}
+						}
+
+						if !ignoreField {
+							missingKeys = append(missingKeys, expKey)
+						}
+					}
+				}
+				if len(missingKeys) > 0 {
+					return fmt.Errorf("mismatch in structure, expected %v fields, received %v. Expected keys: [%v]. Missing from Received: [%v]", len(expKeys), len(recKeys), strings.Join(expKeys, ", "), strings.Join(missingKeys, ", "))
+				}
 			}
 
 			for c, expKey := range expKeys {

@@ -201,6 +201,7 @@ func MakeOwnerSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, 
 	user, err := getUserInfo(ownership.CreatorUserId, db, ts)
 	result := &protos.OwnershipSummary{
 		CreatedUnixSec: ownership.CreatedUnixSec,
+		CanEdit:        false,
 	}
 	if err == nil {
 		result.CreatorUser = user
@@ -209,6 +210,8 @@ func MakeOwnerSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, 
 			Id: ownership.CreatorUserId,
 		}
 	}
+
+	result.CanEdit = string(result.CreatorUser.Id) == string(sessionUser.User.Id)
 
 	if ownership.Viewers != nil {
 		result.ViewerUserCount = uint32(len(ownership.Viewers.UserIds))
@@ -221,8 +224,6 @@ func MakeOwnerSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, 
 		result.ViewerGroupCount = uint32(len(ownership.Viewers.GroupIds))
 	}
 
-	canEdit := result.CreatorUser.Id == sessionUser.User.Id
-
 	if ownership.Editors != nil {
 		result.EditorUserCount = uint32(len(ownership.Editors.UserIds))
 
@@ -233,20 +234,18 @@ func MakeOwnerSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, 
 
 		result.EditorGroupCount = uint32(len(ownership.Editors.GroupIds))
 
-		if !canEdit && ownership.Editors.UserIds != nil {
-			canEdit = utils.ItemInSlice(sessionUser.User.Id, ownership.Editors.UserIds)
+		if !result.CanEdit && ownership.Editors.UserIds != nil {
+			result.CanEdit = utils.ItemInSlice(sessionUser.User.Id, ownership.Editors.UserIds)
 		}
 
-		if !canEdit && ownership.Editors.GroupIds != nil {
+		if !result.CanEdit && ownership.Editors.GroupIds != nil {
 			for _, groupId := range sessionUser.MemberOfGroupIds {
 				if utils.ItemInSlice(groupId, ownership.Editors.GroupIds) {
-					canEdit = true
+					result.CanEdit = true
 					break
 				}
 			}
 		}
-
-		result.CanEdit = canEdit
 	}
 
 	result.SharedWithOthers = result.ViewerUserCount > 0 || result.ViewerGroupCount > 0 || result.EditorUserCount > 0 || result.EditorGroupCount > 0

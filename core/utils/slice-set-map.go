@@ -49,6 +49,18 @@ func ItemInSlice[T comparable](a T, list []T) bool {
 	return false
 }
 
+func RemoveItemFromSlice[T comparable](a T, list []T) []T {
+	result := []T{}
+	for i, b := range list {
+		if b == a {
+			result = append(list[:i], list[i+1:]...)
+			break
+		}
+	}
+
+	return result
+}
+
 func AddItemsToSet[K comparable](keys []K, theSet map[K]bool) {
 	for _, key := range keys {
 		theSet[key] = true

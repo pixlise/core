@@ -120,7 +120,8 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 									"name": "${REGEXMATCH=test}",
 									"email": "${REGEXMATCH=.+@pixlise\\.org}"
 								},
-								"createdUnixSec": "${SECAGO=3}"
+								"createdUnixSec": "${SECAGO=3}",
+								"canEdit": "${IGNORE}"
 							}
 						}
 				}}`, u1ExpectedRespSeqNo, msgName, msgContents.itemName, msgName, validItem[1]),
@@ -222,7 +223,8 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 							"name": "${REGEXMATCH=test}",
 							"email": "${REGEXMATCH=.+@pixlise\\.org}"
 						},
-						"createdUnixSec": "${SECAGO=3}"
+						"createdUnixSec": "${SECAGO=3}",
+						"canEdit": "${IGNORE}"
 					}
 				}
 			}}`, u1ExpectedRespSeqNo, msgName, msgContents.itemName, msgName, u1ItemsForGet[msgName][0]),
@@ -265,7 +267,8 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 								"name": "${REGEXMATCH=test}",
 								"email": "${REGEXMATCH=.+@pixlise\\.org}"
 							},
-							"createdUnixSec": "${SECAGO=3}"
+							"createdUnixSec": "${SECAGO=3}",
+							"canEdit": "${IGNORE}"
 						}
 					}
 				}}`, u1ExpectedRespSeqNo, msgName, msgContents.itemName, msgName, editItem[1]),
@@ -289,7 +292,8 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 								"name": "${REGEXMATCH=test}",
 								"email": "${REGEXMATCH=.+@pixlise\\.org}"
 							},
-							"createdUnixSec": "${SECAGO=3}"
+							"createdUnixSec": "${SECAGO=3}",
+							"canEdit": "${IGNORE}"
 						}
 					}
 				}}`, u1ExpectedRespSeqNo, msgName, msgContents.itemName, msgName, u1ItemsForGet[msgName][0]),
@@ -310,7 +314,8 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 										"name": "${REGEXMATCH=test}",
 										"email": "${REGEXMATCH=.+@pixlise\\.org}"
 									},
-									"createdUnixSec": "${SECAGO=3}"
+									"createdUnixSec": "${SECAGO=3}",
+									"canEdit": "${IGNORE}"
 								}
 							}
 						}
@@ -387,7 +392,8 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 						},
 						"createdUnixSec": "${SECAGO=3}",
 						"viewerUserCount": 1,
-						"sharedWithOthers": true
+						"sharedWithOthers": true,
+						"canEdit": "${IGNORE}"
 					}
 				}
 			}}`, u1ExpectedRespSeqNo, msgName, msgContents.itemName, msgName, u1ItemsForGet[msgName][0]),
@@ -410,7 +416,8 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 								},
 								"createdUnixSec": "${SECAGO=3}",
 								"viewerUserCount": 1,
-								"sharedWithOthers": true
+								"sharedWithOthers": true,
+								"canEdit": "${IGNORE}"
 							}
 						}
 					}
@@ -445,7 +452,8 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 								},
 								"createdUnixSec": "${SECAGO=3}",
 								"viewerUserCount": 1,
-								"sharedWithOthers": true
+								"sharedWithOthers": true,
+								"canEdit": "${IGNORE}"
 							}
 						}
 					}
@@ -469,7 +477,8 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 						},
 						"createdUnixSec": "${SECAGO=3}",
 						"viewerUserCount": 1,
-						"sharedWithOthers": true
+						"sharedWithOthers": true,
+						"canEdit": "${IGNORE}"
 					}
 				}
 			}}`, u2ExpectedRespSeqNo, msgName, msgContents.itemName, msgName, u2ItemsForGet[msgName][0], u1.GetUserId()),
