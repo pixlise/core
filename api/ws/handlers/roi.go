@@ -45,6 +45,14 @@ func HandleRegionOfInterestGetReq(req *protos.RegionOfInterestGetReq, hctx wsHel
 }
 
 func HandleRegionOfInterestDeleteReq(req *protos.RegionOfInterestDeleteReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestDeleteResp, error) {
+	if req.IsMIST {
+		// Delete from MIST table
+		_, err := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).DeleteOne(context.TODO(), bson.D{{"_id", req.Id}})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return wsHelpers.DeleteUserObject[protos.RegionOfInterestDeleteResp](req.Id, protos.ObjectType_OT_ROI, dbCollections.RegionsOfInterestName, hctx)
 }
 
@@ -358,8 +366,9 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 		}
 	}
 
-	writtenROIs := []*protos.ROIItem{}
+	needMistEntry := false
 
+	writtenROIs := []*protos.ROIItem{}
 	for _, item := range req.RegionsOfInterest {
 		item.Owner = nil
 		item.IsMIST = req.IsMIST
@@ -371,15 +380,49 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 			if err != nil {
 				return nil, err
 			}
+		} else if req.SkipDuplicates {
+			// If id is not empty, but we're not overwriting, so skip this ROI
+			// If id is empty and this is a MIST ROI, we need to check if this ROI already exists
+			if req.IsMIST && len(item.MistROIItem.ClassificationTrail) > 0 {
+				// Skip ROIs with same classification trail for the same scan
+				filter := bson.M{"scanid": item.ScanId, "classificationtrail": item.MistROIItem.ClassificationTrail}
+				opts := options.Find().SetProjection(bson.M{"_id": true})
+				cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).Find(context.Background(), filter, opts)
+				if err != nil {
+					return nil, err
+				}
+
+				ids := []*IdOnly{}
+				err = cursor.All(context.Background(), &ids)
+				if err != nil {
+					return nil, err
+				}
+
+				// If we found an ROI with the same classification trail, then don't create a new one
+				if len(ids) > 0 {
+					continue
+				} else {
+					// Create new ROI
+					item, err = createROI(item, hctx)
+					if err != nil {
+						return nil, err
+					}
+
+					needMistEntry = true
+				}
+			}
+
 		} else {
 			// Create new ROI
 			item, err = createROI(item, hctx)
 			if err != nil {
 				return nil, err
 			}
+
+			needMistEntry = req.IsMIST
 		}
 
-		if req.IsMIST {
+		if needMistEntry {
 			mistROIItem := &protos.MistROIItem{
 				Id:                  item.Id,
 				ScanId:              item.ScanId,
