@@ -51,9 +51,6 @@ func CheckObjectAccess(requireEdit bool, objectId string, objectType protos.Obje
 
 func CheckObjectAccessForUser(requireEdit bool, objectId string, objectType protos.ObjectType, userId string, memberOfGroupIds []string, db *mongo.Database) (*protos.OwnershipItem, error) {
 	ownerCollectionId := objectId
-	/*if objectType == protos.ObjectType_OT_SCAN {
-		ownerCollectionId = "scan_" + objectId
-	}*/
 
 	result := db.Collection(dbCollections.OwnershipName).FindOne(context.TODO(), bson.M{"_id": ownerCollectionId})
 	if result.Err() != nil {

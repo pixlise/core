@@ -85,19 +85,23 @@ type SrcDOIMetadata struct {
 	DOILink            string                    `json:"doiLink"`
 }
 
-func migrateExpressionsDB(src *mongo.Database, dest *mongo.Database) error {
-	err := migrateExpressionsDBExpressions(src, dest)
+func migrateExpressionsDB(
+	src *mongo.Database,
+	dest *mongo.Database,
+	userGroups map[string]string) error {
+	pixlFMGroup := userGroups["PIXL-FM"]
+	err := migrateExpressionsDBExpressions(src, dest, pixlFMGroup)
 	if err != nil {
 		return err
 	}
-	err = migrateExpressionsDBModules(src, dest)
+	err = migrateExpressionsDBModules(src, dest, pixlFMGroup)
 	if err != nil {
 		return err
 	}
 	return migrateExpressionsDBModuleVersions(src, dest)
 }
 
-func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database) error {
+func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database, pixlFMGroup string) error {
 	destColl := dest.Collection(dbCollections.ExpressionsName)
 	err := destColl.Drop(context.TODO())
 	if err != nil {
@@ -137,16 +141,40 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database) 
 		if tags == nil {
 			tags = []string{}
 		}
-		destExpr := protos.DataExpression{
-			Id:             expr.ID,
-			Name:           expr.Name,
-			SourceCode:     expr.SourceCode,
-			SourceLanguage: expr.SourceLanguage,
-			Comments:       expr.Comments,
-			Tags:           tags,
+
+		refs := []*protos.ModuleReference{}
+		if expr.ModuleReferences != nil {
+			for _, ref := range expr.ModuleReferences {
+				ver, err := semanticversion.SemanticVersionFromString(ref.Version)
+				if err != nil {
+					return err
+				}
+
+				refs = append(refs, &protos.ModuleReference{
+					ModuleId: ref.ModuleID,
+					Version:  ver,
+				})
+			}
 		}
 
-		err = saveOwnershipItem(destExpr.Id, protos.ObjectType_OT_ROI, expr.Origin.Creator.UserID, "", "", uint32(expr.Origin.CreatedUnixTimeSec), dest)
+		destExpr := protos.DataExpression{
+			Id:               expr.ID,
+			Name:             expr.Name,
+			SourceCode:       expr.SourceCode,
+			SourceLanguage:   expr.SourceLanguage,
+			Comments:         expr.Comments,
+			ModifiedUnixSec:  uint32(expr.Origin.ModifiedUnixTimeSec),
+			Tags:             tags,
+			ModuleReferences: refs,
+		}
+
+		// If the expression is shared, we give view access to PIXL-FM group
+		shareWithGroupId := ""
+		if expr.Origin.Shared {
+			shareWithGroupId = pixlFMGroup
+		}
+
+		err = saveOwnershipItem(destExpr.Id, protos.ObjectType_OT_EXPRESSION, expr.Origin.Creator.UserID, "", shareWithGroupId, uint32(expr.Origin.CreatedUnixTimeSec), dest)
 		if err != nil {
 			return err
 		}
@@ -194,7 +222,7 @@ type SrcDataModule struct {
 	Origin   SrcAPIObjectItem `json:"origin"`
 }
 
-func migrateExpressionsDBModules(src *mongo.Database, dest *mongo.Database) error {
+func migrateExpressionsDBModules(src *mongo.Database, dest *mongo.Database, pixlFMGroup string) error {
 	destColl := dest.Collection(dbCollections.ModulesName)
 	err := destColl.Drop(context.TODO())
 	if err != nil {
@@ -216,13 +244,15 @@ func migrateExpressionsDBModules(src *mongo.Database, dest *mongo.Database) erro
 
 	destModules := []interface{}{}
 	for _, mod := range srcModules {
-		destMod := protos.DataModule{
-			Id:       mod.ID,
-			Name:     mod.Name,
-			Comments: mod.Comments,
+		destMod := protos.DataModuleDB{
+			Id:              mod.ID,
+			Name:            mod.Name,
+			Comments:        mod.Comments,
+			ModifiedUnixSec: uint32(mod.Origin.ModifiedUnixTimeSec),
 		}
 
-		err = saveOwnershipItem(destMod.Id, protos.ObjectType_OT_ROI, mod.Origin.Creator.UserID, "", "", uint32(mod.Origin.CreatedUnixTimeSec), dest)
+		// NOTE: we give viewer access to PIXL-FM group
+		err = saveOwnershipItem(destMod.Id, protos.ObjectType_OT_DATA_MODULE, mod.Origin.Creator.UserID, "", pixlFMGroup, uint32(mod.Origin.CreatedUnixTimeSec), dest)
 		if err != nil {
 			return err
 		}

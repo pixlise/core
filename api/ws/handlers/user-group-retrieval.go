@@ -123,6 +123,9 @@ func HandleUserGroupListJoinableReq(req *protos.UserGroupListJoinableReq, hctx w
 
 	groupSummaries := []*protos.UserGroupJoinSummaryInfo{}
 	for _, group := range groups {
+		// TODO: This seems to just be listing to count how many there are. Do we need to read the scans? Presumably a length of ids
+		// returned is enough. If we DO need to read the scans, we should project them to be as small as possible (or maybe we can ask
+		// mongo to count them and return a single number!)
 		idToOwner, err := wsHelpers.ListGroupAccessibleIDs(false, protos.ObjectType_OT_SCAN, group.Id, hctx.Svcs.MongoDB)
 		if err != nil {
 			return nil, err
