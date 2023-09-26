@@ -154,7 +154,7 @@ func validateROI(roi *protos.ROIItem) error {
 	return nil
 }
 
-func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROIItem, error) {
+func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, needMistEntry bool) (*protos.ROIItem, error) {
 	ctx := context.TODO()
 
 	// It's a new item, check these fields...
@@ -185,8 +185,13 @@ func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROII
 	}
 	defer sess.EndSession(ctx)
 
+	var mistROIItem *protos.MistROIItem
 	// Write the 2 items in a single transaction
 	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		// We don't want to write this to the ROI table
+		mistROIItem = roi.MistROIItem
+		roi.MistROIItem = nil
+
 		_, _err := hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName).InsertOne(sessCtx, roi)
 		if _err != nil {
 			return nil, _err
@@ -195,16 +200,36 @@ func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROII
 		if _err != nil {
 			return nil, _err
 		}
+
+		if needMistEntry {
+			mistROIItem = &protos.MistROIItem{
+				Id:                  roi.Id,
+				ScanId:              roi.ScanId,
+				Species:             mistROIItem.Species,
+				MineralGroupID:      mistROIItem.MineralGroupID,
+				IdDepth:             mistROIItem.IdDepth,
+				ClassificationTrail: mistROIItem.ClassificationTrail,
+				Formula:             mistROIItem.Formula,
+			}
+			// Add an entry into the MIST ROI table
+			_, err := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).InsertOne(context.TODO(), mistROIItem)
+			if err != nil {
+				return nil, err
+			}
+
+			roi.MistROIItem = mistROIItem
+		}
+
 		return nil, nil
 	}
 
 	_, err = sess.WithTransaction(ctx, callback, txnOpts)
-
 	if err != nil {
 		return nil, err
 	}
 
 	roi.Owner = wsHelpers.MakeOwnerSummary(ownerItem, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+
 	return roi, nil
 }
 
@@ -290,39 +315,17 @@ func HandleRegionOfInterestWriteReq(req *protos.RegionOfInterestWriteReq, hctx w
 
 	var item *protos.ROIItem
 
-	var mistInfo = req.RegionOfInterest.MistROIItem
-
-	// We don't want to write this to the ROI table
-	req.RegionOfInterest.MistROIItem = nil
-
 	var err error
 	if len(req.RegionOfInterest.Id) <= 0 {
-		item, err = createROI(req.RegionOfInterest, hctx)
+		item, err = createROI(req.RegionOfInterest, hctx, req.IsMIST)
 		if err != nil {
 			return nil, err
-		}
-
-		// If this is a new ROI and it's a MIST ROI, we need to add it to the MIST ROI table
-		if req.IsMIST {
-			mistInfo.Id = item.Id
-			mistInfo.ScanId = item.ScanId
-
-			// Add an entry into the MIST ROI table
-			_, err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).InsertOne(context.TODO(), mistInfo)
-			if err != nil {
-				return nil, err
-			}
 		}
 	} else {
 		item, err = updateROI(req.RegionOfInterest, hctx)
 	}
 	if err != nil {
 		return nil, err
-	}
-
-	// Add the MIST ROI info back in before return
-	if req.IsMIST {
-		item.MistROIItem = mistInfo
 	}
 
 	return &protos.RegionOfInterestWriteResp{
@@ -366,8 +369,6 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 		}
 	}
 
-	needMistEntry := false
-
 	writtenROIs := []*protos.ROIItem{}
 	for _, item := range req.RegionsOfInterest {
 		item.Owner = nil
@@ -387,13 +388,13 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 				// Skip ROIs with same classification trail for the same scan
 				filter := bson.M{"scanid": item.ScanId, "classificationtrail": item.MistROIItem.ClassificationTrail}
 				opts := options.Find().SetProjection(bson.M{"_id": true})
-				cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).Find(context.Background(), filter, opts)
+				cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).Find(context.TODO(), filter, opts)
 				if err != nil {
 					return nil, err
 				}
 
 				ids := []*IdOnly{}
-				err = cursor.All(context.Background(), &ids)
+				err = cursor.All(context.TODO(), &ids)
 				if err != nil {
 					return nil, err
 				}
@@ -403,42 +404,19 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 					continue
 				} else {
 					// Create new ROI
-					item, err = createROI(item, hctx)
+					item, err = createROI(item, hctx, req.IsMIST)
 					if err != nil {
 						return nil, err
 					}
-
-					needMistEntry = true
 				}
 			}
 
 		} else {
 			// Create new ROI
-			item, err = createROI(item, hctx)
+			item, err = createROI(item, hctx, req.IsMIST)
 			if err != nil {
 				return nil, err
 			}
-
-			needMistEntry = req.IsMIST
-		}
-
-		if needMistEntry {
-			mistROIItem := &protos.MistROIItem{
-				Id:                  item.Id,
-				ScanId:              item.ScanId,
-				Species:             item.MistROIItem.Species,
-				MineralGroupID:      item.MistROIItem.MineralGroupID,
-				IdDepth:             item.MistROIItem.IdDepth,
-				ClassificationTrail: item.MistROIItem.ClassificationTrail,
-				Formula:             item.MistROIItem.Formula,
-			}
-			// Add an entry into the MIST ROI table
-			_, err := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).InsertOne(context.TODO(), mistROIItem)
-			if err != nil {
-				return nil, err
-			}
-
-			item.MistROIItem = mistROIItem
 		}
 
 		writtenROIs = append(writtenROIs, item)
@@ -446,5 +424,51 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 
 	return &protos.RegionOfInterestBulkWriteResp{
 		RegionsOfInterest: writtenROIs,
+	}, nil
+}
+
+func HandleRegionOfInterestBulkDuplicateReq(req *protos.RegionOfInterestBulkDuplicateReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestBulkDuplicateResp, error) {
+	// Get the ROIs to duplicate
+	filter := bson.M{"_id": bson.M{"$in": req.Ids}}
+	opts := options.Find()
+	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName).Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	items := []*protos.ROIItem{}
+	err = cursor.All(context.TODO(), &items)
+	if err != nil {
+		return nil, err
+	}
+
+	roiSummaries := map[string]*protos.ROIItemSummary{}
+	// Create new ROIs
+	for _, item := range items {
+		item.Id = ""
+		item.Owner = nil
+		item.IsMIST = req.IsMIST
+
+		// Create new ROI
+		newROI, err := createROI(item, hctx, req.IsMIST)
+		if err != nil {
+			return nil, err
+		}
+
+		// Add summary to list
+		roiSummaries[newROI.Id] = &protos.ROIItemSummary{
+			Id:              newROI.Id,
+			Name:            newROI.Name,
+			ScanId:          newROI.ScanId,
+			Description:     newROI.Description,
+			ImageName:       newROI.ImageName,
+			Tags:            newROI.Tags,
+			ModifiedUnixSec: newROI.ModifiedUnixSec,
+			IsMIST:          newROI.IsMIST,
+		}
+	}
+
+	return &protos.RegionOfInterestBulkDuplicateResp{
+		RegionsOfInterest: roiSummaries,
 	}, nil
 }
