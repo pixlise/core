@@ -559,6 +559,109 @@ func (*RegionOfInterestDeleteResp) Descriptor() ([]byte, []int) {
 	return file_roi_msgs_proto_rawDescGZIP(), []int{9}
 }
 
+// requires(EDIT_ROI)
+type RegionOfInterestBulkDuplicateReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Ids    []string `protobuf:"bytes,1,rep,name=ids,proto3" json:"ids,omitempty"`
+	IsMIST bool     `protobuf:"varint,2,opt,name=isMIST,proto3" json:"isMIST,omitempty"`
+}
+
+func (x *RegionOfInterestBulkDuplicateReq) Reset() {
+	*x = RegionOfInterestBulkDuplicateReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_roi_msgs_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RegionOfInterestBulkDuplicateReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegionOfInterestBulkDuplicateReq) ProtoMessage() {}
+
+func (x *RegionOfInterestBulkDuplicateReq) ProtoReflect() protoreflect.Message {
+	mi := &file_roi_msgs_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegionOfInterestBulkDuplicateReq.ProtoReflect.Descriptor instead.
+func (*RegionOfInterestBulkDuplicateReq) Descriptor() ([]byte, []int) {
+	return file_roi_msgs_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *RegionOfInterestBulkDuplicateReq) GetIds() []string {
+	if x != nil {
+		return x.Ids
+	}
+	return nil
+}
+
+func (x *RegionOfInterestBulkDuplicateReq) GetIsMIST() bool {
+	if x != nil {
+		return x.IsMIST
+	}
+	return false
+}
+
+type RegionOfInterestBulkDuplicateResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	RegionsOfInterest map[string]*ROIItemSummary `protobuf:"bytes,1,rep,name=regionsOfInterest,proto3" json:"regionsOfInterest,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (x *RegionOfInterestBulkDuplicateResp) Reset() {
+	*x = RegionOfInterestBulkDuplicateResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_roi_msgs_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RegionOfInterestBulkDuplicateResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegionOfInterestBulkDuplicateResp) ProtoMessage() {}
+
+func (x *RegionOfInterestBulkDuplicateResp) ProtoReflect() protoreflect.Message {
+	mi := &file_roi_msgs_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegionOfInterestBulkDuplicateResp.ProtoReflect.Descriptor instead.
+func (*RegionOfInterestBulkDuplicateResp) Descriptor() ([]byte, []int) {
+	return file_roi_msgs_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *RegionOfInterestBulkDuplicateResp) GetRegionsOfInterest() map[string]*ROIItemSummary {
+	if x != nil {
+		return x.RegionsOfInterest
+	}
+	return nil
+}
+
 var File_roi_msgs_proto protoreflect.FileDescriptor
 
 var file_roi_msgs_proto_rawDesc = []byte{
@@ -633,9 +736,28 @@ var file_roi_msgs_proto_rawDesc = []byte{
 	0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x16, 0x0a, 0x06, 0x69, 0x73, 0x4d, 0x49, 0x53,
 	0x54, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x69, 0x73, 0x4d, 0x49, 0x53, 0x54, 0x22,
 	0x1c, 0x0a, 0x1a, 0x52, 0x65, 0x67, 0x69, 0x6f, 0x6e, 0x4f, 0x66, 0x49, 0x6e, 0x74, 0x65, 0x72,
-	0x65, 0x73, 0x74, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x42, 0x0a, 0x5a,
-	0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x65, 0x73, 0x74, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x22, 0x4c, 0x0a,
+	0x20, 0x52, 0x65, 0x67, 0x69, 0x6f, 0x6e, 0x4f, 0x66, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x73,
+	0x74, 0x42, 0x75, 0x6c, 0x6b, 0x44, 0x75, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x65, 0x52, 0x65,
+	0x71, 0x12, 0x10, 0x0a, 0x03, 0x69, 0x64, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x03,
+	0x69, 0x64, 0x73, 0x12, 0x16, 0x0a, 0x06, 0x69, 0x73, 0x4d, 0x49, 0x53, 0x54, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x08, 0x52, 0x06, 0x69, 0x73, 0x4d, 0x49, 0x53, 0x54, 0x22, 0xe3, 0x01, 0x0a, 0x21,
+	0x52, 0x65, 0x67, 0x69, 0x6f, 0x6e, 0x4f, 0x66, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x73, 0x74,
+	0x42, 0x75, 0x6c, 0x6b, 0x44, 0x75, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73,
+	0x70, 0x12, 0x67, 0x0a, 0x11, 0x72, 0x65, 0x67, 0x69, 0x6f, 0x6e, 0x73, 0x4f, 0x66, 0x49, 0x6e,
+	0x74, 0x65, 0x72, 0x65, 0x73, 0x74, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x52,
+	0x65, 0x67, 0x69, 0x6f, 0x6e, 0x4f, 0x66, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x73, 0x74, 0x42,
+	0x75, 0x6c, 0x6b, 0x44, 0x75, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70,
+	0x2e, 0x52, 0x65, 0x67, 0x69, 0x6f, 0x6e, 0x73, 0x4f, 0x66, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x65,
+	0x73, 0x74, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x11, 0x72, 0x65, 0x67, 0x69, 0x6f, 0x6e, 0x73,
+	0x4f, 0x66, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x73, 0x74, 0x1a, 0x55, 0x0a, 0x16, 0x52, 0x65,
+	0x67, 0x69, 0x6f, 0x6e, 0x73, 0x4f, 0x66, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x65, 0x73, 0x74, 0x45,
+	0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x25, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x52, 0x4f, 0x49, 0x49, 0x74, 0x65, 0x6d, 0x53,
+	0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38,
+	0x01, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -650,37 +772,42 @@ func file_roi_msgs_proto_rawDescGZIP() []byte {
 	return file_roi_msgs_proto_rawDescData
 }
 
-var file_roi_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_roi_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_roi_msgs_proto_goTypes = []interface{}{
-	(*RegionOfInterestListReq)(nil),       // 0: RegionOfInterestListReq
-	(*RegionOfInterestListResp)(nil),      // 1: RegionOfInterestListResp
-	(*RegionOfInterestGetReq)(nil),        // 2: RegionOfInterestGetReq
-	(*RegionOfInterestGetResp)(nil),       // 3: RegionOfInterestGetResp
-	(*RegionOfInterestWriteReq)(nil),      // 4: RegionOfInterestWriteReq
-	(*RegionOfInterestWriteResp)(nil),     // 5: RegionOfInterestWriteResp
-	(*RegionOfInterestBulkWriteReq)(nil),  // 6: RegionOfInterestBulkWriteReq
-	(*RegionOfInterestBulkWriteResp)(nil), // 7: RegionOfInterestBulkWriteResp
-	(*RegionOfInterestDeleteReq)(nil),     // 8: RegionOfInterestDeleteReq
-	(*RegionOfInterestDeleteResp)(nil),    // 9: RegionOfInterestDeleteResp
-	nil,                                   // 10: RegionOfInterestListResp.RegionsOfInterestEntry
-	(*SearchParams)(nil),                  // 11: SearchParams
-	(*ROIItem)(nil),                       // 12: ROIItem
-	(*ROIItemSummary)(nil),                // 13: ROIItemSummary
+	(*RegionOfInterestListReq)(nil),           // 0: RegionOfInterestListReq
+	(*RegionOfInterestListResp)(nil),          // 1: RegionOfInterestListResp
+	(*RegionOfInterestGetReq)(nil),            // 2: RegionOfInterestGetReq
+	(*RegionOfInterestGetResp)(nil),           // 3: RegionOfInterestGetResp
+	(*RegionOfInterestWriteReq)(nil),          // 4: RegionOfInterestWriteReq
+	(*RegionOfInterestWriteResp)(nil),         // 5: RegionOfInterestWriteResp
+	(*RegionOfInterestBulkWriteReq)(nil),      // 6: RegionOfInterestBulkWriteReq
+	(*RegionOfInterestBulkWriteResp)(nil),     // 7: RegionOfInterestBulkWriteResp
+	(*RegionOfInterestDeleteReq)(nil),         // 8: RegionOfInterestDeleteReq
+	(*RegionOfInterestDeleteResp)(nil),        // 9: RegionOfInterestDeleteResp
+	(*RegionOfInterestBulkDuplicateReq)(nil),  // 10: RegionOfInterestBulkDuplicateReq
+	(*RegionOfInterestBulkDuplicateResp)(nil), // 11: RegionOfInterestBulkDuplicateResp
+	nil,                    // 12: RegionOfInterestListResp.RegionsOfInterestEntry
+	nil,                    // 13: RegionOfInterestBulkDuplicateResp.RegionsOfInterestEntry
+	(*SearchParams)(nil),   // 14: SearchParams
+	(*ROIItem)(nil),        // 15: ROIItem
+	(*ROIItemSummary)(nil), // 16: ROIItemSummary
 }
 var file_roi_msgs_proto_depIdxs = []int32{
-	11, // 0: RegionOfInterestListReq.searchParams:type_name -> SearchParams
-	10, // 1: RegionOfInterestListResp.regionsOfInterest:type_name -> RegionOfInterestListResp.RegionsOfInterestEntry
-	12, // 2: RegionOfInterestGetResp.regionOfInterest:type_name -> ROIItem
-	12, // 3: RegionOfInterestWriteReq.regionOfInterest:type_name -> ROIItem
-	12, // 4: RegionOfInterestWriteResp.regionOfInterest:type_name -> ROIItem
-	12, // 5: RegionOfInterestBulkWriteReq.regionsOfInterest:type_name -> ROIItem
-	12, // 6: RegionOfInterestBulkWriteResp.regionsOfInterest:type_name -> ROIItem
-	13, // 7: RegionOfInterestListResp.RegionsOfInterestEntry.value:type_name -> ROIItemSummary
-	8,  // [8:8] is the sub-list for method output_type
-	8,  // [8:8] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	14, // 0: RegionOfInterestListReq.searchParams:type_name -> SearchParams
+	12, // 1: RegionOfInterestListResp.regionsOfInterest:type_name -> RegionOfInterestListResp.RegionsOfInterestEntry
+	15, // 2: RegionOfInterestGetResp.regionOfInterest:type_name -> ROIItem
+	15, // 3: RegionOfInterestWriteReq.regionOfInterest:type_name -> ROIItem
+	15, // 4: RegionOfInterestWriteResp.regionOfInterest:type_name -> ROIItem
+	15, // 5: RegionOfInterestBulkWriteReq.regionsOfInterest:type_name -> ROIItem
+	15, // 6: RegionOfInterestBulkWriteResp.regionsOfInterest:type_name -> ROIItem
+	13, // 7: RegionOfInterestBulkDuplicateResp.regionsOfInterest:type_name -> RegionOfInterestBulkDuplicateResp.RegionsOfInterestEntry
+	16, // 8: RegionOfInterestListResp.RegionsOfInterestEntry.value:type_name -> ROIItemSummary
+	16, // 9: RegionOfInterestBulkDuplicateResp.RegionsOfInterestEntry.value:type_name -> ROIItemSummary
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_roi_msgs_proto_init() }
@@ -811,6 +938,30 @@ func file_roi_msgs_proto_init() {
 				return nil
 			}
 		}
+		file_roi_msgs_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RegionOfInterestBulkDuplicateReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_roi_msgs_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RegionOfInterestBulkDuplicateResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -818,7 +969,7 @@ func file_roi_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_roi_msgs_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
