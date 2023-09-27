@@ -35,6 +35,7 @@ func ReadDatasetFile(scanId string, svcs *services.APIServices) (*protos.Experim
 	var err error
 	if fileBytes == nil {
 		s3Path := filepaths.GetDatasetFilePath(scanId, filepaths.DatasetFileName)
+		fmt.Printf("Downloading file: s3://%v/%v\n", svcs.Config.DatasetsBucket, s3Path)
 		fileBytes, err = svcs.FS.ReadObject(svcs.Config.DatasetsBucket, s3Path)
 		if err != nil {
 			// Doesn't seem to exist?
@@ -68,6 +69,7 @@ func ReadQuantificationFile(quantId string, quantPath string, svcs *services.API
 	// If we don't have data by now, download it and add to our cache
 	var err error
 	if fileBytes == nil {
+		fmt.Printf("Downloading file: s3://%v/%v\n", svcs.Config.DatasetsBucket, quantPath)
 		fileBytes, err = svcs.FS.ReadObject(svcs.Config.UsersBucket, quantPath)
 		if err != nil {
 			// Doesn't seem to exist?
@@ -102,6 +104,7 @@ func ReadDiffractionFile(scanId string, svcs *services.APIServices) (*protos.Dif
 	var err error
 	if fileBytes == nil {
 		s3Path := filepaths.GetDatasetFilePath(scanId, filepaths.DiffractionDBFileName)
+		fmt.Printf("Downloading file: s3://%v/%v\n", svcs.Config.DatasetsBucket, s3Path)
 		fileBytes, err = svcs.FS.ReadObject(svcs.Config.DatasetsBucket, s3Path)
 		if err != nil {
 			// Doesn't seem to exist?
@@ -140,6 +143,7 @@ func checkCache(id string, fileTypeName string, svcs *services.APIServices) []by
 
 		if item.timestampUnixSec > now-maxFileCacheAgeSec {
 			// Read the file from local cache
+			fmt.Printf("Reading local file: %v\n", item.localPath)
 			fileBytes, err = lfs.ReadObject("", item.localPath)
 			if err != nil {
 				// Failed to read locally, delete this cache item
