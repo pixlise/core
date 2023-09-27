@@ -137,7 +137,7 @@ func main() {
 		fmt.Println("==========================================")
 		fmt.Println("Migrating data from old expressions DB...")
 		fmt.Println("==========================================")
-		err = migrateExpressionsDB(srcExprDB, destDB)
+		err = migrateExpressionsDB(srcExprDB, destDB, userGroups)
 		if err != nil {
 			log.Fatal(err)
 		}
