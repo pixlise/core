@@ -96,7 +96,7 @@ jobs:
           echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
           echo "Tag name: ${{ needs.version.outputs.version_tag }}"
       - name: Build Package
-        run: ls ./ && ls ./data-formats && BUILD_VERSION="${{ needs.version.outputs.version }}" make build-linux
+        run: BUILD_VERSION="${{ needs.version.outputs.version }}" make build-linux
       - name: Copy to S3 Archive
         run: |
           cd _out && \
@@ -130,6 +130,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          submodules: true
       - name: Print Version
         run: |
           echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
