@@ -144,6 +144,7 @@ func runTests(apiHost string) {
 	testDiffractionStatus(apiHost)
 	testPiquantMsgs(apiHost)
 	testExpressionRuntimeMsgs(apiHost)
+	testDOI(apiHost)
 	testDataModules(apiHost)
 	testUserContent(apiHost, map[string]contentMessaging{
 		"elementSet": {

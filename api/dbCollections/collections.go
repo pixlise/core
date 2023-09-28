@@ -4,6 +4,7 @@ package dbCollections
 const DetectorConfigsName = "detectorConfigs"
 const DiffractionDetectedPeakStatusesName = "diffractionDetectedPeakStatuses"
 const DiffractionManualPeaksName = "diffractionManualPeaks"
+const DOIName = "doi"
 const ElementSetsName = "elementSets"
 const ExpressionGroupsName = "expressionGroups"
 const ExpressionsName = "expressions"
