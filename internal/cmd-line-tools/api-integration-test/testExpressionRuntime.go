@@ -34,7 +34,8 @@ func testExpressionRuntimeMsgs(apiHost string) {
 							"name": "${REGEXMATCH=test}",
 							"email": "${REGEXMATCH=.+@pixlise\\.org}"
 						},
-						"createdUnixSec": "${SECAGO=3}"
+						"createdUnixSec": "${SECAGO=3}",
+						"canEdit": true
 					}
 				}
 			}
@@ -90,7 +91,8 @@ func testExpressionRuntimeMsgs(apiHost string) {
 							"name": "${REGEXMATCH=test}",
 							"email": "${REGEXMATCH=.+@pixlise\\.org}"
 						},
-						"createdUnixSec": "${SECAGO=3}"
+						"createdUnixSec": "${SECAGO=3}",
+						"canEdit": true
 					},
 					"recentExecStats": {
 						"dataRequired": [

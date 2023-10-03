@@ -263,17 +263,20 @@ func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROII
 		update = append(update, bson.E{Key: "imagename", Value: roi.ImageName})
 	}
 
+	// Once created, these can't be set to empty
 	if roi.ScanEntryIndexesEncoded != nil && !utils.SlicesEqual(dbItem.ScanEntryIndexesEncoded, roi.ScanEntryIndexesEncoded) {
 		dbItem.ScanEntryIndexesEncoded = roi.ScanEntryIndexesEncoded
 		update = append(update, bson.E{Key: "ScanEntryIndexesEncoded", Value: roi.ScanEntryIndexesEncoded})
 	}
 
+	// Once created, these can't be set to empty
 	if roi.PixelIndexesEncoded != nil && !utils.SlicesEqual(dbItem.PixelIndexesEncoded, roi.PixelIndexesEncoded) {
 		dbItem.PixelIndexesEncoded = roi.PixelIndexesEncoded
 		update = append(update, bson.E{Key: "pixelindexesencoded", Value: roi.PixelIndexesEncoded})
 	}
 
-	if roi.Tags != nil && !utils.SlicesEqual(dbItem.Tags, roi.Tags) {
+	// Tags are a summary field, so are expected to be passed with every request
+	if !utils.SlicesEqual(dbItem.Tags, roi.Tags) {
 		dbItem.Tags = roi.Tags
 		update = append(update, bson.E{Key: "tags", Value: roi.Tags})
 	}

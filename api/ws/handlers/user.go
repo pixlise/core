@@ -36,35 +36,35 @@ func HandleUserDetailsReq(req *protos.UserDetailsReq, hctx wsHelpers.HandlerCont
 }
 
 func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, hctx wsHelpers.HandlerContext) (*protos.UserDetailsWriteResp, error) {
-	if err := wsHelpers.CheckStringField(req.Name, "Name", 1, 50); err != nil {
+	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 50); err != nil {
 		return nil, err
 	}
 
-	if err := wsHelpers.CheckStringField(req.Email, "Email", 1, 320); err != nil {
+	if err := wsHelpers.CheckStringField(&req.Email, "Email", 1, 320); err != nil {
 		return nil, err
 	}
 
 	// Limit to 30kb because it can be a URL or a data://<base64 image>
-	if err := wsHelpers.CheckStringField(req.IconURL, "IconURL", 0, 30000); err != nil {
+	if err := wsHelpers.CheckStringField(&req.IconURL, "IconURL", 0, 30000); err != nil {
 		return nil, err
 	}
 
-	if err := wsHelpers.CheckStringField(req.DataCollectionVersion, "DataCollectionVersion", 1, 20); err != nil {
+	if err := wsHelpers.CheckStringField(&req.DataCollectionVersion, "DataCollectionVersion", 1, 20); err != nil {
 		return nil, err
 	}
 
 	update := bson.D{}
-	if req.Name != nil {
-		update = append(update, bson.E{Key: "info.name", Value: *req.Name})
+	if &req.Name != nil {
+		update = append(update, bson.E{Key: "info.name", Value: req.Name})
 	}
-	if req.Email != nil {
-		update = append(update, bson.E{Key: "info.email", Value: *req.Email})
+	if &req.Email != nil {
+		update = append(update, bson.E{Key: "info.email", Value: req.Email})
 	}
-	if req.IconURL != nil {
-		update = append(update, bson.E{Key: "info.iconurl", Value: *req.IconURL})
+	if &req.IconURL != nil {
+		update = append(update, bson.E{Key: "info.iconurl", Value: req.IconURL})
 	}
-	if req.DataCollectionVersion != nil {
-		update = append(update, bson.E{Key: "datacollectionversion", Value: *req.DataCollectionVersion})
+	if &req.DataCollectionVersion != nil {
+		update = append(update, bson.E{Key: "datacollectionversion", Value: req.DataCollectionVersion})
 	}
 
 	if len(update) <= 0 {
