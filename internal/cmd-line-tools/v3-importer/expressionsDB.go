@@ -142,9 +142,24 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database, 
 			tags = []string{}
 		}
 
+		// Added duplicate module checks because it appeared there's a bug in data, but turns out this importer was appending the list twice!
+		// Left the checking code just in case but it shouldn't happen...
 		refs := []*protos.ModuleReference{}
+		existingRefs := map[string]bool{}
+		existingRefModules := map[string]bool{}
 		if expr.ModuleReferences != nil {
 			for _, ref := range expr.ModuleReferences {
+				refstr := ref.ModuleID + "_" + ref.Version
+				if _, exists := existingRefs[refstr]; exists {
+					fmt.Printf("  IGNORING duplicate module+version reference: %v on expression %v\n", refstr, expr.ID)
+					continue
+				}
+
+				if _, exists := existingRefModules[ref.ModuleID]; exists {
+					fmt.Printf("  IGNORING duplicate module reference: %v on expression %v\n", ref.ModuleID, expr.ID)
+					continue
+				}
+
 				ver, err := semanticversion.SemanticVersionFromString(ref.Version)
 				if err != nil {
 					return err
@@ -154,6 +169,8 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database, 
 					ModuleId: ref.ModuleID,
 					Version:  ver,
 				})
+				existingRefs[refstr] = true
+				existingRefModules[ref.ModuleID] = true
 			}
 		}
 
@@ -186,18 +203,6 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database, 
 				//RuntimeMs:        expr.RecentExecStats.RuntimeMS,
 				TimeStampUnixSec: uint32(expr.RecentExecStats.TimeStampUnixSec),
 			}
-		}
-
-		for _, modRef := range expr.ModuleReferences {
-			ver, err := semanticversion.SemanticVersionFromString(modRef.Version)
-			if err != nil {
-				return err
-			}
-
-			destExpr.ModuleReferences = append(destExpr.ModuleReferences, &protos.ModuleReference{
-				ModuleId: modRef.ModuleID,
-				Version:  ver,
-			})
 		}
 
 		// TODO: zenodo
