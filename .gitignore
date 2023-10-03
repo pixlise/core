@@ -11,6 +11,7 @@ auth0dummy.go
 /local-mongo/dbseed/migrated/
 /local-mongo/dbseed/old/
 /local-mongo/dbseed/*.json
+/local-mongo/dbseed/json/
 /local-mongo/3repl/
 
 local-api-config.json

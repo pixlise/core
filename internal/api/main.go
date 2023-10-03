@@ -18,6 +18,7 @@ import (
 	apiRouter "github.com/pixlise/core/v3/api/router"
 	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/api/ws"
+	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/awsutil"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/idgen"
@@ -65,6 +66,12 @@ func main() {
 	}
 	if cfg.WSMessageBufferSize > 0 {
 		m.Config.MessageBufferSize = int(cfg.WSMessageBufferSize)
+	}
+	if cfg.MaxFileCacheAgeSec > 0 {
+		wsHelpers.MaxFileCacheAgeSec = int64(cfg.MaxFileCacheAgeSec)
+	}
+	if cfg.MaxFileCacheSizeBytes > 0 {
+		wsHelpers.MaxFileCacheSizeBytes = uint64(cfg.MaxFileCacheSizeBytes)
 	}
 
 	fmt.Printf("Web socket config: %+v\n", m.Config)

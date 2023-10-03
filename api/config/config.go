@@ -95,6 +95,10 @@ type APIConfig struct {
 	WSPingPeriodMs      uint
 	WSMaxMessageSize    uint
 	WSMessageBufferSize uint
+
+	// Local file caching (from S3 to where API is running)
+	MaxFileCacheAgeSec    uint
+	MaxFileCacheSizeBytes uint
 }
 
 func homeDir() string {

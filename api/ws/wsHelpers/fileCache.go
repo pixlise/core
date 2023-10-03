@@ -24,8 +24,8 @@ type fileCacheItem struct {
 
 var fileCache = map[string]fileCacheItem{}
 
-const maxFileCacheAgeSec = 60 * 5
-const maxFileCacheSizeBytes = 200 * 1024 * 1024
+var MaxFileCacheAgeSec = int64(60 * 5)
+var MaxFileCacheSizeBytes = uint64(200 * 1024 * 1024)
 
 func ReadDatasetFile(scanId string, svcs *services.APIServices) (*protos.Experiment, error) {
 	cacheId := "scan-" + scanId
@@ -141,7 +141,7 @@ func checkCache(id string, fileTypeName string, svcs *services.APIServices) []by
 		// We have a cached file, use if not too old
 		now := svcs.TimeStamper.GetTimeNowSec()
 
-		if item.timestampUnixSec > now-maxFileCacheAgeSec {
+		if item.timestampUnixSec > now-MaxFileCacheAgeSec {
 			// Read the file from local cache
 			fmt.Printf("Reading local file: %v\n", item.localPath)
 			fileBytes, err = lfs.ReadObject("", item.localPath)
@@ -203,7 +203,7 @@ func removeOldFileCacheItems(cache map[string]fileCacheItem) {
 
 	// Loop through, oldest to newest, delete until we satisfy cache size limit
 	for c := len(itemsByAge) - 1; c >= 0; c-- {
-		if totalSize < maxFileCacheSizeBytes {
+		if totalSize < MaxFileCacheSizeBytes {
 			// Cache is small enough now, stop here
 			break
 		}
