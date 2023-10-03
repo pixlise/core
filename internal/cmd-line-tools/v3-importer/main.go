@@ -125,19 +125,19 @@ func main() {
 		}
 
 		fmt.Println("==========================================")
-		fmt.Println("Migrating data from datasets bucket...")
+		fmt.Println("Migrating data from old expressions DB...")
 		fmt.Println("==========================================")
-
-		fmt.Println("Datasets...")
-		err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB, limitToDatasetIDsList, userGroups)
+		err = migrateExpressionsDB(srcExprDB, destDB, userGroups)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		fmt.Println("==========================================")
-		fmt.Println("Migrating data from old expressions DB...")
+		fmt.Println("Migrating data from datasets bucket...")
 		fmt.Println("==========================================")
-		err = migrateExpressionsDB(srcExprDB, destDB, userGroups)
+
+		fmt.Println("Datasets...")
+		err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB, limitToDatasetIDsList, userGroups)
 		if err != nil {
 			log.Fatal(err)
 		}
