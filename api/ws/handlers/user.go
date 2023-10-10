@@ -36,12 +36,16 @@ func HandleUserDetailsReq(req *protos.UserDetailsReq, hctx wsHelpers.HandlerCont
 }
 
 func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, hctx wsHelpers.HandlerContext) (*protos.UserDetailsWriteResp, error) {
-	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 50); err != nil {
-		return nil, err
+	if &req.Name != nil && req.Name != "" {
+		if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 50); err != nil {
+			return nil, err
+		}
 	}
 
-	if err := wsHelpers.CheckStringField(&req.Email, "Email", 1, 320); err != nil {
-		return nil, err
+	if &req.Email != nil && req.Email != "" {
+		if err := wsHelpers.CheckStringField(&req.Email, "Email", 1, 320); err != nil {
+			return nil, err
+		}
 	}
 
 	// Limit to 30kb because it can be a URL or a data://<base64 image>
@@ -49,21 +53,23 @@ func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, hctx wsHelpers.H
 		return nil, err
 	}
 
-	if err := wsHelpers.CheckStringField(&req.DataCollectionVersion, "DataCollectionVersion", 1, 20); err != nil {
-		return nil, err
+	if &req.DataCollectionVersion != nil && req.DataCollectionVersion != "" {
+		if err := wsHelpers.CheckStringField(&req.DataCollectionVersion, "DataCollectionVersion", 1, 20); err != nil {
+			return nil, err
+		}
 	}
 
 	update := bson.D{}
-	if &req.Name != nil {
+	if &req.Name != nil && req.Name != "" {
 		update = append(update, bson.E{Key: "info.name", Value: req.Name})
 	}
-	if &req.Email != nil {
+	if &req.Email != nil && req.Email != "" {
 		update = append(update, bson.E{Key: "info.email", Value: req.Email})
 	}
 	if &req.IconURL != nil {
 		update = append(update, bson.E{Key: "info.iconurl", Value: req.IconURL})
 	}
-	if &req.DataCollectionVersion != nil {
+	if &req.DataCollectionVersion != nil && req.DataCollectionVersion != "" {
 		update = append(update, bson.E{Key: "datacollectionversion", Value: req.DataCollectionVersion})
 	}
 

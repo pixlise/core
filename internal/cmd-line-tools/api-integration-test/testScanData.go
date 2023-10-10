@@ -487,6 +487,11 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 					"Y",
 					"Zr",
 					"Ba"
+				],
+				"data${LIST,MODE=CONTAINS,MINLENGTH=4}": [
+					{
+						"intensities${LIST,MODE=LENGTH,LENGTH=32}": []
+					}
 				]
 			}
 		}`,

@@ -55,6 +55,9 @@ func testUserDetails(apiHost string) {
 		`{"msgId":4,"status":"WS_OK","userDetailsWriteResp":{}}`,
 	)
 
+	u1.CloseActionGroup([]string{}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
+
 	u1.AddSendReqAction("Request details again",
 		`{"userDetailsReq":{}}`,
 		`{"msgId":5,"status":"WS_OK","userDetailsResp":{
@@ -73,14 +76,9 @@ func testUserDetails(apiHost string) {
             ]}}}`,
 	)
 
-	u1.AddSendReqAction("Send blank data collection version",
-		`{"userDetailsWriteReq":{ "dataCollectionVersion": "" }}`,
-		`{"msgId":6,"status":"WS_BAD_REQUEST", "errorText": "DataCollectionVersion is too short", "userDetailsWriteResp":{}}`,
-	)
-
 	u1.AddSendReqAction("Request details again",
 		`{"userDetailsReq":{}}`,
-		`{"msgId":7,"status":"WS_OK","userDetailsResp":{
+		`{"msgId":6,"status":"WS_OK","userDetailsResp":{
 			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
 			"dataCollectionVersion": "1.2.4",
             "permissions": [
@@ -98,12 +96,12 @@ func testUserDetails(apiHost string) {
 
 	u1.AddSendReqAction("Edit but with invalid fields",
 		`{"userDetailsWriteReq":{ "name": "one ridiculously long name that can't be possibly ever be valid" }}`,
-		`{"msgId":8,"status":"WS_BAD_REQUEST", "errorText": "Name is too long", "userDetailsWriteResp":{}}`,
+		`{"msgId":7,"status":"WS_BAD_REQUEST", "errorText": "Name is too long", "userDetailsWriteResp":{}}`,
 	)
 
 	u1.AddSendReqAction("Request details again",
 		`{"userDetailsReq":{}}`,
-		`{"msgId":9,"status":"WS_OK","userDetailsResp":{
+		`{"msgId":8,"status":"WS_OK","userDetailsResp":{
 			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
 			"dataCollectionVersion": "1.2.4",
             "permissions": [
@@ -129,7 +127,7 @@ func testUserDetails(apiHost string) {
 
 	u1.AddSendReqAction("Request notification settings",
 		`{"userNotificationSettingsReq":{}}`,
-		`{"msgId":10,"status":"WS_OK","userNotificationSettingsResp":{
+		`{"msgId":9,"status":"WS_OK","userNotificationSettingsResp":{
 			"notifications":{}}}`,
 	)
 
@@ -142,12 +140,12 @@ func testUserDetails(apiHost string) {
 				}
 			}
 		}}`,
-		`{"msgId":11,"status":"WS_OK","userNotificationSettingsWriteResp":{}}`,
+		`{"msgId":10,"status":"WS_OK","userNotificationSettingsWriteResp":{}}`,
 	)
 
 	u1.AddSendReqAction("Request notification settings",
 		`{"userNotificationSettingsReq":{}}`,
-		`{"msgId":12,"status":"WS_OK","userNotificationSettingsResp":{
+		`{"msgId":11,"status":"WS_OK","userNotificationSettingsResp":{
 			"notifications":{
 				"topicSettings": {
 					"new-dataset": "NOTIF_EMAIL",
@@ -163,12 +161,12 @@ func testUserDetails(apiHost string) {
 				}
 			}
 		}}`,
-		`{"msgId":13,"status":"WS_OK","userNotificationSettingsWriteResp":{}}`,
+		`{"msgId":12,"status":"WS_OK","userNotificationSettingsWriteResp":{}}`,
 	)
 
 	u1.AddSendReqAction("Request notification settings",
 		`{"userNotificationSettingsReq":{}}`,
-		`{"msgId":14,"status":"WS_OK","userNotificationSettingsResp":{
+		`{"msgId":13,"status":"WS_OK","userNotificationSettingsResp":{
 			"notifications":{
 				"topicSettings": {
 					"new-dataset": "NOTIF_BOTH"

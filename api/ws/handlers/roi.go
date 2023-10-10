@@ -108,6 +108,18 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 			item.MistROIItem = mistItem
 		}
 
+		// Look up display settings and add to item if found (otherwise leave nil)
+		userROIId := formROIUserConfigID(hctx.SessUser.User, item.Id)
+		displaySettings := &protos.ROIItemDisplaySettings{}
+		err = hctx.Svcs.MongoDB.Collection(dbCollections.UserROIDisplaySettings).FindOne(context.TODO(), bson.D{{"_id", userROIId}}).Decode(&displaySettings)
+		if err != nil && err != mongo.ErrNoDocuments {
+			return nil, err
+		}
+
+		if err != mongo.ErrNoDocuments && displaySettings != nil {
+			item.DisplaySettings = displaySettings
+		}
+
 		// Add to map
 		rois[item.Id] = item
 	}
@@ -473,5 +485,110 @@ func HandleRegionOfInterestBulkDuplicateReq(req *protos.RegionOfInterestBulkDupl
 
 	return &protos.RegionOfInterestBulkDuplicateResp{
 		RegionsOfInterest: roiSummaries,
+	}, nil
+}
+
+func formROIUserConfigID(user *protos.UserInfo, roiId string) string {
+	return user.Id + "-" + roiId
+}
+
+func HandleRegionOfInterestDisplaySettingsWriteReq(req *protos.RegionOfInterestDisplaySettingsWriteReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestDisplaySettingsWriteResp, error) {
+	// Check that we have an id, current user, and display settings
+	if len(req.Id) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("ROI ID must be specified"))
+	}
+
+	if req.DisplaySettings == nil {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("DisplaySettings must be specified"))
+	}
+
+	if hctx.SessUser.User.Id == "" {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("User must be logged in"))
+	}
+
+	userROIId := formROIUserConfigID(hctx.SessUser.User, req.Id)
+
+	// Check if the ROI display settings already exist
+	filter := bson.M{"_id": userROIId}
+	opts := options.Find().SetProjection(bson.M{"_id": true})
+	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.UserROIDisplaySettings).Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	existingIds := []*IdOnly{}
+	err = cursor.All(context.TODO(), &existingIds)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update the display settings
+	ctx := context.TODO()
+	sess, err := hctx.Svcs.MongoDB.Client().StartSession()
+	if err != nil {
+		return nil, err
+	}
+	defer sess.EndSession(ctx)
+
+	wc := writeconcern.New(writeconcern.WMajority())
+	rc := readconcern.Snapshot()
+	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
+
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		var err error
+
+		if len(existingIds) > 0 {
+			_, err = hctx.Svcs.MongoDB.Collection(dbCollections.UserROIDisplaySettings).UpdateByID(sessCtx, userROIId, bson.D{{
+				Key: "$set",
+				Value: bson.D{
+					{Key: "colour", Value: req.DisplaySettings.Colour},
+					{Key: "shape", Value: req.DisplaySettings.Shape},
+				},
+			}})
+		} else {
+			_, err = hctx.Svcs.MongoDB.Collection(dbCollections.UserROIDisplaySettings).InsertOne(sessCtx, &protos.ROIItemDisplaySettings{
+				Id:     userROIId,
+				Colour: req.DisplaySettings.Colour,
+				Shape:  req.DisplaySettings.Shape,
+			})
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+
+	_, err = sess.WithTransaction(ctx, callback, txnOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.RegionOfInterestDisplaySettingsWriteResp{
+		DisplaySettings: req.DisplaySettings,
+	}, nil
+}
+
+func HandleRegionOfInterestDisplaySettingsGetReq(req *protos.RegionOfInterestDisplaySettingsGetReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestDisplaySettingsGetResp, error) {
+	// Check that we have an id, current user, and display settings
+	if len(req.Id) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("ROI ID must be specified"))
+	}
+
+	if hctx.SessUser.User.Id == "" {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("User must be logged in"))
+	}
+
+	// Get the display settings
+	userROIId := formROIUserConfigID(hctx.SessUser.User, req.Id)
+	displaySettings := &protos.ROIItemDisplaySettings{}
+	err := hctx.Svcs.MongoDB.Collection(dbCollections.UserROIDisplaySettings).FindOne(context.Background(), bson.M{"_id": userROIId}).Decode(&displaySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.RegionOfInterestDisplaySettingsGetResp{
+		DisplaySettings: displaySettings,
 	}, nil
 }

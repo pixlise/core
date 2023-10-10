@@ -14,7 +14,7 @@ func testDOI(apiHost string) {
 		`{"expressionWriteReq":{
 			"expression": {
 				"name": "User1 Expression",
-				"comments": "FOR RUNTIME STAT SAVE checking",
+				"comments": "FOR DOI TEST checking",
 				"sourceLanguage": "LUA",
 				"sourceCode": "element(\"Ca\")"
 			}
@@ -26,7 +26,7 @@ func testDOI(apiHost string) {
 					"name": "User1 Expression",
 					"sourceCode": "element(\"Ca\")",
 					"sourceLanguage": "LUA",
-					"comments": "FOR RUNTIME STAT SAVE checking",
+					"comments": "FOR DOI TEST checking",
 					"modifiedUnixSec": "${SECAGO=3}",
 					"owner": {
 						"creatorUser": {
@@ -140,6 +140,11 @@ func testDOI(apiHost string) {
 				}
 			}
 		}`,
+	)
+
+	u1.AddSendReqAction("Delete DOI expression so we don't mess up listings for the user content one",
+		`{"expressionDeleteReq":{"id": "${IDLOAD=DOI_SAVED_ID}"}}`,
+		`{"msgId":4,"status":"WS_OK", "expressionDeleteResp":{}}`,
 	)
 
 	u1.CloseActionGroup([]string{}, 5000)

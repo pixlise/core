@@ -53,7 +53,8 @@ func testDataModules(apiHost string) {
 						"name": "${REGEXMATCH=test}",
 						"email": "${REGEXMATCH=.+@pixlise\\.org}"
 					},
-					"createdUnixSec": "${SECAGO=3}"
+					"createdUnixSec": "${SECAGO=3}",
+					"canEdit": true
 				},
 				"versions": [
 					{
@@ -96,7 +97,8 @@ func testDataModules(apiHost string) {
 						"name": "${REGEXMATCH=test}",
 						"email": "${REGEXMATCH=.+@pixlise\\.org}"
 					},
-					"createdUnixSec": "${SECAGO=3}"
+					"createdUnixSec": "${SECAGO=3}",
+					"canEdit": true
 				}
 			}
 		}}`,
@@ -117,7 +119,8 @@ func testDataModules(apiHost string) {
 							"name": "${REGEXMATCH=test}",
 							"email": "${REGEXMATCH=.+@pixlise\\.org}"
 						},
-						"createdUnixSec": "${SECAGO=3}"
+						"createdUnixSec": "${SECAGO=3}",
+						"canEdit": true
 					},
 					"versions": [
 						{
@@ -147,7 +150,8 @@ func testDataModules(apiHost string) {
 						"name": "${REGEXMATCH=test}",
 						"email": "${REGEXMATCH=.+@pixlise\\.org}"
 					},
-					"createdUnixSec": "${SECAGO=3}"
+					"createdUnixSec": "${SECAGO=3}",
+					"canEdit": true
 				},
                 "versions": [
                     {
@@ -177,7 +181,8 @@ func testDataModules(apiHost string) {
 						"name": "${REGEXMATCH=test}",
 						"email": "${REGEXMATCH=.+@pixlise\\.org}"
 					},
-					"createdUnixSec": "${SECAGO=3}"
+					"createdUnixSec": "${SECAGO=3}",
+					"canEdit": true
 				},
 				"versions": [
 					{
@@ -217,7 +222,8 @@ func testDataModules(apiHost string) {
 						"name": "${REGEXMATCH=test}",
 						"email": "${REGEXMATCH=.+@pixlise\\.org}"
 					},
-					"createdUnixSec": "${SECAGO=3}"
+					"createdUnixSec": "${SECAGO=3}",
+					"canEdit": true
 				},
 				"versions": [
 					{
@@ -250,7 +256,8 @@ func testDataModules(apiHost string) {
 						"name": "${REGEXMATCH=test}",
 						"email": "${REGEXMATCH=.+@pixlise\\.org}"
 					},
-					"createdUnixSec": "${SECAGO=3}"
+					"createdUnixSec": "${SECAGO=3}",
+					"canEdit": true
 				},
 				"versions": [
 					{
@@ -283,7 +290,8 @@ func testDataModules(apiHost string) {
 						"name": "${REGEXMATCH=test}",
 						"email": "${REGEXMATCH=.+@pixlise\\.org}"
 					},
-					"createdUnixSec": "${SECAGO=3}"
+					"createdUnixSec": "${SECAGO=3}",
+					"canEdit": true
 				},
 				"versions": [
 					{
@@ -317,7 +325,8 @@ func testDataModules(apiHost string) {
 							"name": "${REGEXMATCH=test}",
 							"email": "${REGEXMATCH=.+@pixlise\\.org}"
 						},
-						"createdUnixSec": "${SECAGO=3}"
+						"createdUnixSec": "${SECAGO=3}",
+						"canEdit": true
 					},
 					"versions": [
 						{
