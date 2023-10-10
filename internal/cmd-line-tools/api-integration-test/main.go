@@ -138,287 +138,287 @@ func main() {
 func runTests(apiHost string) {
 	testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
-	// testSelectionMsgs(apiHost)
-	// // testQuants(apiHost)
-	// testDiffractionManualPeaks(apiHost)
-	// testDiffractionStatus(apiHost)
-	// testPiquantMsgs(apiHost)
-	// testExpressionRuntimeMsgs(apiHost)
-	// testDOI(apiHost)
-	// testDataModules(apiHost)
-	// testUserContent(apiHost, map[string]contentMessaging{
-	// 	"elementSet": {
-	// 		itemName: "elementSet",
-	// 		listName: "elementSets",
-	// 		invalidItemsToCreate: [][]string{
-	// 			{
-	// 				`"name": "User1 ElementSet1",
-	// 					"lines": []`,
-	// 				"Lines must contain at least 1 items",
-	// 			},
-	// 		},
-	// 		validItemsToCreate: [][]string{
-	// 			{
-	// 				`"name": "User1 ElementSet1",
-	// 					"lines": [
-	// 						{
-	// 							"Z":   14,
-	// 							"K":   false,
-	// 							"L":   false,
-	// 							"M":   true,
-	// 							"Esc": false
-	// 						},
-	// 						{
-	// 							"Z":   16,
-	// 							"K":   false,
-	// 							"L":   true,
-	// 							"M":   false,
-	// 							"Esc": true
-	// 						}
-	// 					]`,
-	// 				`"name": "User1 ElementSet1",
-	// 					"lines": [
-	// 						{
-	// 							"Z":   14,
-	// 							"M":   true
-	// 						},
-	// 						{
-	// 							"Z":   16,
-	// 							"L":   true,
-	// 							"Esc":   true
-	// 						}
-	// 					]`,
-	// 				`"name": "User1 ElementSet1",
-	// 					"atomicNumbers": [
-	// 						14, 16
-	// 					]`,
-	// 			},
-	// 		},
-	// 		invalidItemsToEdit: [][]string{
-	// 			{
-	// 				`"name": "This name is way way too long for any element set to seriously be named this way",
-	// 					"lines": [
-	// 						{
-	// 							"Z":   17,
-	// 							"K":   false,
-	// 							"L":   false,
-	// 							"M":   true,
-	// 							"Esc": false
-	// 						}
-	// 					]`,
-	// 				"Name is too long",
-	// 			},
-	// 		},
-	// 		validItemsToEdit: [][]string{
-	// 			{
-	// 				`"name": "User1 ElementSet1-Edited",
-	// 					"lines": [
-	// 						{
-	// 							"Z":   17,
-	// 							"K":   false,
-	// 							"L":   false,
-	// 							"M":   true,
-	// 							"Esc": false
-	// 						}
-	// 					]`,
-	// 				`"name": "User1 ElementSet1-Edited",
-	// 					"lines": [
-	// 						{
-	// 							"Z":   17,
-	// 							"M":   true
-	// 						}
-	// 					]`,
-	// 				`"name": "User1 ElementSet1-Edited",
-	// 					"atomicNumbers": [
-	// 						17
-	// 					]`,
-	// 			},
-	// 		},
-	// 		objectType: "OT_ELEMENT_SET",
-	// 	},
-	// 	"regionOfInterest": {
-	// 		itemName: "regionOfInterest",
-	// 		listName: "regionsOfInterest",
-	// 		invalidItemsToCreate: [][]string{
-	// 			{
-	// 				`"name": "Invalid ROI",
-	// 					"description": "Ye Invalid ROIe",
-	// 					"scanId": "048300551"`,
-	// 				"ROI must have location or pixel indexes defined",
-	// 			},
-	// 		},
-	// 		validItemsToCreate: [][]string{
-	// 			{
-	// 				`"name": "User1 ROI1",
-	// 					"description": "User1 ROI1",
-	// 					"scanId": "048300551",
-	// 					"scanEntryIndexesEncoded": [14, 123, -1, 126, 98]`,
-	// 				`"name": "User1 ROI1",
-	// 					"description": "User1 ROI1",
-	// 					"scanId": "048300551",
-	// 					"scanEntryIndexesEncoded": [14, 123, -1, 126, 98]`,
-	// 				`"name": "User1 ROI1",
-	// 					"description": "User1 ROI1",
-	// 					"scanId": "048300551"`,
-	// 			},
-	// 		},
-	// 		invalidItemsToEdit: [][]string{
-	// 			{
-	// 				`"scanId": "048300551",
-	// 					"name": "The ROI",
-	// 					"imageName": "WhatsAnImageDoingHere.png"`,
-	// 				"ROI image and pixel indexes must both be defined",
-	// 			},
-	// 		},
-	// 		validItemsToEdit: [][]string{
-	// 			{
-	// 				`"scanId": "048300551",
-	// 					"name": "The ROI",
-	// 					"description": "User1 ROI1",
-	// 					"scanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88]`,
-	// 				`"scanId": "048300551",
-	// 					"name": "The ROI",
-	// 					"description": "User1 ROI1",
-	// 					"scanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88]`,
-	// 				`"scanId": "048300551",
-	// 					"description": "User1 ROI1",
-	// 					"name": "The ROI"`,
-	// 			},
-	// 		},
-	// 		objectType: "OT_ROI",
-	// 	},
-	// 	"expressionGroup": {
-	// 		itemName: "group",
-	// 		listName: "groups",
-	// 		invalidItemsToCreate: [][]string{
-	// 			{
-	// 				`"name": "Invalid Expression Group",
-	// 					"groupItems": [{"expressionId": "abcd-123", "rangeMin": "12"}]`,
-	// 				"GroupItems is too short",
-	// 			},
-	// 		},
-	// 		validItemsToCreate: [][]string{
-	// 			{
-	// 				`"name": "User1 ExpressionGroup",
-	// 					"description": "User1 RGBMix",
-	// 					"groupItems": [
-	// 						{"expressionId": "red-expr-1", "rangeMin": 0, "rangeMax": 10},
-	// 						{"expressionId": "green-expr-1", "rangeMin": 4, "rangeMax": 12},
-	// 						{"expressionId": "blue-expr-1"}
-	// 					]`,
-	// 				`"name": "User1 ExpressionGroup",
-	// 					"description": "User1 RGBMix",
-	// 					"groupItems": [
-	// 						{"expressionId": "red-expr-1", "rangeMax": 10},
-	// 						{"expressionId": "green-expr-1", "rangeMin": 4, "rangeMax": 12},
-	// 						{"expressionId": "blue-expr-1"}
-	// 					]`,
-	// 				// List and item are the same
-	// 				`"name": "User1 ExpressionGroup",
-	// 					"description": "User1 RGBMix",
-	// 					"groupItems": [
-	// 						{"expressionId": "red-expr-1", "rangeMax": 10},
-	// 						{"expressionId": "green-expr-1", "rangeMin": 4, "rangeMax": 12},
-	// 						{"expressionId": "blue-expr-1"}
-	// 					]`,
-	// 			},
-	// 		},
-	// 		invalidItemsToEdit: [][]string{
-	// 			{
-	// 				`"name": "User1 ExpressionGroup",
-	// 					"description": "User1 RGBMix",
-	// 					"groupItems": [
-	// 						{"expressionId": "red-expr-2", "rangeMax": 10},
-	// 						{"expressionId": "green-expr-1", "rangeMin": 3, "rangeMax": 12},
-	// 						{"rangeMax": 133}]`,
-	// 				"[2].ExpressionId is too short",
-	// 			},
-	// 		},
-	// 		validItemsToEdit: [][]string{
-	// 			{
-	// 				`"description": "User1 RGBMix Modified",
-	// 					"groupItems": [
-	// 						{"expressionId": "red-expr-1", "rangeMax": 19},
-	// 						{"expressionId": "green-expr-3", "rangeMin": 4, "rangeMax": 12},
-	// 						{"expressionId": "blue-expr-6"}
-	// 					]`,
-	// 				`"name": "User1 ExpressionGroup",
-	// 					"description": "User1 RGBMix Modified",
-	// 					"groupItems": [
-	// 						{"expressionId": "red-expr-1", "rangeMax": 19},
-	// 						{"expressionId": "green-expr-3", "rangeMin": 4, "rangeMax": 12},
-	// 						{"expressionId": "blue-expr-6"}
-	// 					]`,
-	// 				// List and item are the same
-	// 				`"name": "User1 ExpressionGroup",
-	// 					"description": "User1 RGBMix Modified",
-	// 					"groupItems": [
-	// 						{"expressionId": "red-expr-1", "rangeMax": 19},
-	// 						{"expressionId": "green-expr-3", "rangeMin": 4, "rangeMax": 12},
-	// 						{"expressionId": "blue-expr-6"}
-	// 					]`,
-	// 			},
-	// 		},
-	// 		objectType: "OT_EXPRESSION_GROUP",
-	// 	},
-	// 	"expression": {
-	// 		itemName: "expression",
-	// 		listName: "expressions",
-	// 		invalidItemsToCreate: [][]string{
-	// 			{
-	// 				`"name": "Invalid Expression",
-	// 				"sourceLanguage": "LUA"`,
-	// 				"SourceCode is too short",
-	// 			},
-	// 		},
-	// 		validItemsToCreate: [][]string{
-	// 			{
-	// 				`"name": "User1 Expression",
-	// 				"comments": "User1 Expression",
-	// 				"sourceLanguage": "LUA",
-	// 				"sourceCode": "element(\"Ca\")"`,
-	// 				`"name": "User1 Expression",
-	// 				"sourceLanguage": "LUA",
-	// 				"comments": "User1 Expression",
-	// 				"sourceCode": "element(\"Ca\")"`,
-	// 				`"name": "User1 Expression",
-	// 				"sourceLanguage": "LUA",
-	// 				"comments": "User1 Expression"`,
-	// 			},
-	// 		},
-	// 		invalidItemsToEdit: [][]string{
-	// 			{
-	// 				`"name": "User1 Expression Invalid",
-	// 				"comments": "User1 Expression Invalid",
-	// 				"sourceLanguage": "PYTHON"`,
-	// 				"Invalid source language: PYTHON",
-	// 			},
-	// 		},
-	// 		validItemsToEdit: [][]string{
-	// 			{
-	// 				`"comments": "User1 Expression Modified",
-	// 				"sourceCode": "element(\"Fe\")"`,
-	// 				`"name": "User1 Expression",
-	// 				"comments": "User1 Expression Modified",
-	// 				"sourceLanguage": "LUA",
-	// 				"sourceCode": "element(\"Fe\")"`,
-	// 				`"name": "User1 Expression",
-	// 				"comments": "User1 Expression Modified",
-	// 				"sourceLanguage": "LUA"`,
-	// 			},
-	// 		},
-	// 		objectType: "OT_EXPRESSION",
-	// 	},
-	// })
+	testSelectionMsgs(apiHost)
+	testQuants(apiHost)
+	testDiffractionManualPeaks(apiHost)
+	testDiffractionStatus(apiHost)
+	testPiquantMsgs(apiHost)
+	testExpressionRuntimeMsgs(apiHost)
+	testDOI(apiHost)
+	testDataModules(apiHost)
+	testUserContent(apiHost, map[string]contentMessaging{
+		"elementSet": {
+			itemName: "elementSet",
+			listName: "elementSets",
+			invalidItemsToCreate: [][]string{
+				{
+					`"name": "User1 ElementSet1",
+						"lines": []`,
+					"Lines must contain at least 1 items",
+				},
+			},
+			validItemsToCreate: [][]string{
+				{
+					`"name": "User1 ElementSet1",
+						"lines": [
+							{
+								"Z":   14,
+								"K":   false,
+								"L":   false,
+								"M":   true,
+								"Esc": false
+							},
+							{
+								"Z":   16,
+								"K":   false,
+								"L":   true,
+								"M":   false,
+								"Esc": true
+							}
+						]`,
+					`"name": "User1 ElementSet1",
+						"lines": [
+							{
+								"Z":   14,
+								"M":   true
+							},
+							{
+								"Z":   16,
+								"L":   true,
+								"Esc":   true
+							}
+						]`,
+					`"name": "User1 ElementSet1",
+						"atomicNumbers": [
+							14, 16
+						]`,
+				},
+			},
+			invalidItemsToEdit: [][]string{
+				{
+					`"name": "This name is way way too long for any element set to seriously be named this way",
+						"lines": [
+							{
+								"Z":   17,
+								"K":   false,
+								"L":   false,
+								"M":   true,
+								"Esc": false
+							}
+						]`,
+					"Name is too long",
+				},
+			},
+			validItemsToEdit: [][]string{
+				{
+					`"name": "User1 ElementSet1-Edited",
+						"lines": [
+							{
+								"Z":   17,
+								"K":   false,
+								"L":   false,
+								"M":   true,
+								"Esc": false
+							}
+						]`,
+					`"name": "User1 ElementSet1-Edited",
+						"lines": [
+							{
+								"Z":   17,
+								"M":   true
+							}
+						]`,
+					`"name": "User1 ElementSet1-Edited",
+						"atomicNumbers": [
+							17
+						]`,
+				},
+			},
+			objectType: "OT_ELEMENT_SET",
+		},
+		"regionOfInterest": {
+			itemName: "regionOfInterest",
+			listName: "regionsOfInterest",
+			invalidItemsToCreate: [][]string{
+				{
+					`"name": "Invalid ROI",
+						"description": "Ye Invalid ROIe",
+						"scanId": "048300551"`,
+					"ROI must have location or pixel indexes defined",
+				},
+			},
+			validItemsToCreate: [][]string{
+				{
+					`"name": "User1 ROI1",
+						"description": "User1 ROI1",
+						"scanId": "048300551",
+						"scanEntryIndexesEncoded": [14, 123, -1, 126, 98]`,
+					`"name": "User1 ROI1",
+						"description": "User1 ROI1",
+						"scanId": "048300551",
+						"scanEntryIndexesEncoded": [14, 123, -1, 126, 98]`,
+					`"name": "User1 ROI1",
+						"description": "User1 ROI1",
+						"scanId": "048300551"`,
+				},
+			},
+			invalidItemsToEdit: [][]string{
+				{
+					`"scanId": "048300551",
+						"name": "The ROI",
+						"imageName": "WhatsAnImageDoingHere.png"`,
+					"ROI image and pixel indexes must both be defined",
+				},
+			},
+			validItemsToEdit: [][]string{
+				{
+					`"scanId": "048300551",
+						"name": "The ROI",
+						"description": "User1 ROI1",
+						"scanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88]`,
+					`"scanId": "048300551",
+						"name": "The ROI",
+						"description": "User1 ROI1",
+						"scanEntryIndexesEncoded": [14, 123, -1, 126, 98, 88]`,
+					`"scanId": "048300551",
+						"description": "User1 ROI1",
+						"name": "The ROI"`,
+				},
+			},
+			objectType: "OT_ROI",
+		},
+		"expressionGroup": {
+			itemName: "group",
+			listName: "groups",
+			invalidItemsToCreate: [][]string{
+				{
+					`"name": "Invalid Expression Group",
+						"groupItems": [{"expressionId": "abcd-123", "rangeMin": "12"}]`,
+					"GroupItems is too short",
+				},
+			},
+			validItemsToCreate: [][]string{
+				{
+					`"name": "User1 ExpressionGroup",
+						"description": "User1 RGBMix",
+						"groupItems": [
+							{"expressionId": "red-expr-1", "rangeMin": 0, "rangeMax": 10},
+							{"expressionId": "green-expr-1", "rangeMin": 4, "rangeMax": 12},
+							{"expressionId": "blue-expr-1"}
+						]`,
+					`"name": "User1 ExpressionGroup",
+						"description": "User1 RGBMix",
+						"groupItems": [
+							{"expressionId": "red-expr-1", "rangeMax": 10},
+							{"expressionId": "green-expr-1", "rangeMin": 4, "rangeMax": 12},
+							{"expressionId": "blue-expr-1"}
+						]`,
+					// List and item are the same
+					`"name": "User1 ExpressionGroup",
+						"description": "User1 RGBMix",
+						"groupItems": [
+							{"expressionId": "red-expr-1", "rangeMax": 10},
+							{"expressionId": "green-expr-1", "rangeMin": 4, "rangeMax": 12},
+							{"expressionId": "blue-expr-1"}
+						]`,
+				},
+			},
+			invalidItemsToEdit: [][]string{
+				{
+					`"name": "User1 ExpressionGroup",
+						"description": "User1 RGBMix",
+						"groupItems": [
+							{"expressionId": "red-expr-2", "rangeMax": 10},
+							{"expressionId": "green-expr-1", "rangeMin": 3, "rangeMax": 12},
+							{"rangeMax": 133}]`,
+					"[2].ExpressionId is too short",
+				},
+			},
+			validItemsToEdit: [][]string{
+				{
+					`"description": "User1 RGBMix Modified",
+						"groupItems": [
+							{"expressionId": "red-expr-1", "rangeMax": 19},
+							{"expressionId": "green-expr-3", "rangeMin": 4, "rangeMax": 12},
+							{"expressionId": "blue-expr-6"}
+						]`,
+					`"name": "User1 ExpressionGroup",
+						"description": "User1 RGBMix Modified",
+						"groupItems": [
+							{"expressionId": "red-expr-1", "rangeMax": 19},
+							{"expressionId": "green-expr-3", "rangeMin": 4, "rangeMax": 12},
+							{"expressionId": "blue-expr-6"}
+						]`,
+					// List and item are the same
+					`"name": "User1 ExpressionGroup",
+						"description": "User1 RGBMix Modified",
+						"groupItems": [
+							{"expressionId": "red-expr-1", "rangeMax": 19},
+							{"expressionId": "green-expr-3", "rangeMin": 4, "rangeMax": 12},
+							{"expressionId": "blue-expr-6"}
+						]`,
+				},
+			},
+			objectType: "OT_EXPRESSION_GROUP",
+		},
+		"expression": {
+			itemName: "expression",
+			listName: "expressions",
+			invalidItemsToCreate: [][]string{
+				{
+					`"name": "Invalid Expression",
+					"sourceLanguage": "LUA"`,
+					"SourceCode is too short",
+				},
+			},
+			validItemsToCreate: [][]string{
+				{
+					`"name": "User1 Expression",
+					"comments": "User1 Expression",
+					"sourceLanguage": "LUA",
+					"sourceCode": "element(\"Ca\")"`,
+					`"name": "User1 Expression",
+					"sourceLanguage": "LUA",
+					"comments": "User1 Expression",
+					"sourceCode": "element(\"Ca\")"`,
+					`"name": "User1 Expression",
+					"sourceLanguage": "LUA",
+					"comments": "User1 Expression"`,
+				},
+			},
+			invalidItemsToEdit: [][]string{
+				{
+					`"name": "User1 Expression Invalid",
+					"comments": "User1 Expression Invalid",
+					"sourceLanguage": "PYTHON"`,
+					"Invalid source language: PYTHON",
+				},
+			},
+			validItemsToEdit: [][]string{
+				{
+					`"comments": "User1 Expression Modified",
+					"sourceCode": "element(\"Fe\")"`,
+					`"name": "User1 Expression",
+					"comments": "User1 Expression Modified",
+					"sourceLanguage": "LUA",
+					"sourceCode": "element(\"Fe\")"`,
+					`"name": "User1 Expression",
+					"comments": "User1 Expression Modified",
+					"sourceLanguage": "LUA"`,
+				},
+			},
+			objectType: "OT_EXPRESSION",
+		},
+	})
 
-	// testUserSearch(apiHost)
-	// testUserDetails(apiHost)
-	// testUserManagement(apiHost)
-	// testUserGroups(apiHost)
-	// testLogMsgs(apiHost)
-	// testScanData(apiHost, 0 /*3 for proper testing*/)
-	// testDetectorConfig(apiHost)
+	testUserSearch(apiHost)
+	testUserDetails(apiHost)
+	testUserManagement(apiHost)
+	testUserGroups(apiHost)
+	testLogMsgs(apiHost)
+	testScanData(apiHost, 0 /*3 for proper testing*/)
+	testDetectorConfig(apiHost)
 
-	// testTags(apiHost)
+	testTags(apiHost)
 	testROIUserConfiguration(apiHost)
 }
