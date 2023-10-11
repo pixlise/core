@@ -19,8 +19,11 @@ package quantification
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/pixlise/core/v3/core/logger"
+	protos "github.com/pixlise/core/v3/generated-protos"
+	"google.golang.org/protobuf/proto"
 )
 
 func Example_filterListItems() {
@@ -122,25 +125,36 @@ value two,444,555
 	// Output: {[col 1 col, 2 col_3] [[value one 123 456] [value two 444 555]]}|<nil>
 }
 
+func readDatasetFile(path string) (*protos.Experiment, error) {
+	dsbytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	ds := &protos.Experiment{}
+	err = proto.Unmarshal(dsbytes, ds)
+	if err != nil {
+		return nil, err
+	}
+	return ds, nil
+}
+
 func Example_matchPMCsWithDataset() {
 	l := &logger.StdOutLogger{}
 	data := csvData{[]string{"X", "Y", "Z", "filename", "Ca_%"}, [][]string{[]string{"1", "0.40", "0", "Roastt_Laguna_Salinas_28kV_230uA_03_03_2020_111.msa", "4.5"}}}
 
-	err := matchPMCsWithDataset(&data, "non-existant-file.bin", true, l)
-	if err.Error() == "open non-existant-file.bin: no such file or directory" || err.Error() == "open non-existant-file.bin: The system cannot find the file specified." {
-		fmt.Println("open non-existant-file.bin: Failed as expected")
-	}
-
-	fmt.Printf("%v, header[%v]=%v, data[%v]=%v\n", matchPMCsWithDataset(&data, "./testdata/LagunaSalinasdataset.bin", true, l), len(data.header)-1, data.header[5], len(data.data[0])-1, data.data[0][5])
+	exp, err := readDatasetFile("./testdata/LagunaSalinasdataset.bin")
+	fmt.Printf("Test file read: %v\n", err)
+	fmt.Printf("%v, header[%v]=%v, data[%v]=%v\n", matchPMCsWithDataset(&data, exp, true, l), len(data.header)-1, data.header[5], len(data.data[0])-1, data.data[0][5])
 
 	data = csvData{[]string{"X", "Y", "Z", "filename", "Ca_%"}, [][]string{[]string{"1", "930.40", "0", "Roastt_Laguna_Salinas_28kV_230uA_03_03_2020_111.msa", "4.5"}}}
-	fmt.Println(matchPMCsWithDataset(&data, "./testdata/LagunaSalinasdataset.bin", true, l))
+	fmt.Println(matchPMCsWithDataset(&data, exp, true, l))
 
 	data = csvData{[]string{"X", "Y", "Z", "filename", "Ca_%"}, [][]string{[]string{"1", "0.40", "0", "Roastt_Laguna_Salinas_28kV_230uA_03_03_2020_116.msa", "4.5"}}}
-	fmt.Printf("%v, header[%v]=%v, data[%v]=%v\n", matchPMCsWithDataset(&data, "./testdata/LagunaSalinasdataset.bin", false, l), len(data.header)-1, data.header[5], len(data.data[0])-1, data.data[0][5])
+	fmt.Printf("%v, header[%v]=%v, data[%v]=%v\n", matchPMCsWithDataset(&data, exp, false, l), len(data.header)-1, data.header[5], len(data.data[0])-1, data.data[0][5])
 
 	// Output:
-	// open non-existant-file.bin: Failed as expected
+	// Test file read: <nil>
 	// <nil>, header[5]=PMC, data[5]=111
 	// matchPMCsWithDataset Failed to match 1.00,930.40,0.00 to a PMC in dataset file
 	// <nil>, header[5]=PMC, data[5]=116
