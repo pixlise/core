@@ -48,7 +48,12 @@ func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (
 	// the channel count based on the detector here...
 	channelCount := uint32(4096)
 
-	result := &protos.SpectrumResp{SpectraPerLocation: spectra, ChannelCount: channelCount}
+	result := &protos.SpectrumResp{
+		SpectraPerLocation:   spectra,
+		ChannelCount:         channelCount,
+		NormalSpectraForScan: uint32(exprPB.NormalSpectra),
+		DwellSpectraForScan:  uint32(exprPB.DwellSpectra),
+	}
 
 	// If bulk or max spectra are required... find & return those too
 	if req.BulkSum || req.MaxValue {

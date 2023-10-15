@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
-	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/wstestlib"
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
@@ -138,7 +137,16 @@ func testQuants(apiHost string) {
 	wstestlib.ExecQueuedActions(&u1)
 
 	// Ensure files aren't there in S3 at this point
-	err := apiStorageFileAccess.DeleteObject(apiUsersBucket, filepaths.GetQuantPath(u1.GetUserId(), scanId, quantId+".bin"))
+	// NOTE: This test was unfortunately written for a slightly weird scan that was copied between user accounts
+	// so the username in the path is not the expected u1.GetUserId() one!
+	//     filepaths.GetQuantPath(u1.GetUserId(), scanId, quantId+".bin")
+	// Which evaluates to:
+	//     Quantifications/089063943/u1.GetUserId()/3vjoovnrhkhv8ecd.bin
+	// but it's the one referenced in the quant summary:
+	//     UserContent/5df311ed8a0b5d0ebf5fb476/089063943/Quantifications/3vjoovnrhkhv8ecd.bin
+	// Which means we need to override the user id here:
+	thisQuantRootPath := "UserContent/5df311ed8a0b5d0ebf5fb476/089063943/Quantifications/"
+	err := apiStorageFileAccess.DeleteObject(apiUsersBucket, thisQuantRootPath+quantId+".bin")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -152,24 +160,23 @@ func testQuants(apiHost string) {
 			"quants": [{
 				"id": "%v",
 				"params": {
-					"params": {
-						"name": "Trial quant with Rh",
-						"dataBucket": "databucket",
-						"datasetPath": "Datasets/the-scan-id/dataset.bin",
-						"datasetID": "the-scan-id",
-						"piquantJobsBucket": "piquantbucket",
-						"detectorConfig": "PIXL/PiquantConfigs/v7",
-						"elements": ["CO3","Rh","Na","Mg","Al","Si","P","S","Cl","K","Ca","Ti","Cr","Mn","Fe"],
-						"runTimeSec": 60,
-						"coresPerNode": 4,
-						"startUnixTimeSec": 1652813392,
-						"requestorUserId": "auth0|5df311ed8a0b5d0ebf5fb476",
-						"roiID": "wob0wm8cogiot1rp",
-						"PIQUANTVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8",
-						"quantMode": "AB"
-					}
+					"name": "Trial quant with Rh",
+					"dataBucket": "databucket",
+					"datasetPath": "Datasets/the-scan-id/dataset.bin",
+					"datasetID": "the-scan-id",
+					"piquantJobsBucket": "piquantbucket",
+					"detectorConfig": "PIXL/PiquantConfigs/v7",
+					"elements": ["CO3","Rh","Na","Mg","Al","Si","P","S","Cl","K","Ca","Ti","Cr","Mn","Fe"],
+					"runTimeSec": 60,
+					"coresPerNode": 4,
+					"startUnixTimeSec": 1652813392,
+					"requestorUserId": "auth0|5df311ed8a0b5d0ebf5fb476",
+					"roiID": "wob0wm8cogiot1rp",
+					"PIQUANTVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8",
+					"quantMode": "AB"
 				},
 				"elements": ["Rh2O3","Na2O","MgCO3","Al2O3","SiO2","P2O5","SO3","Cl","K2O","CaCO3","TiO2","Cr2O3","MnCO3","FeCO3-T"],
+				"scanId": "the-scan-id",
 				"status": {
 					"jobID": "%v",
 					"status": "COMPLETE",
@@ -188,24 +195,23 @@ func testQuants(apiHost string) {
 			"summary": {
 				"id": "%v",
 				"params": {
-					"params": {
-						"name": "Trial quant with Rh",
-						"dataBucket": "databucket",
-						"datasetPath": "Datasets/the-scan-id/dataset.bin",
-						"datasetID": "the-scan-id",
-						"piquantJobsBucket": "piquantbucket",
-						"detectorConfig": "PIXL/PiquantConfigs/v7",
-						"elements": ["CO3","Rh","Na","Mg","Al","Si","P","S","Cl","K","Ca","Ti","Cr","Mn","Fe"],
-						"runTimeSec": 60,
-						"coresPerNode": 4,
-						"startUnixTimeSec": 1652813392,
-						"requestorUserId": "auth0|5df311ed8a0b5d0ebf5fb476",
-						"roiID": "wob0wm8cogiot1rp",
-						"PIQUANTVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8",
-						"quantMode": "AB"
-					}
+					"name": "Trial quant with Rh",
+					"dataBucket": "databucket",
+					"datasetPath": "Datasets/the-scan-id/dataset.bin",
+					"datasetID": "the-scan-id",
+					"piquantJobsBucket": "piquantbucket",
+					"detectorConfig": "PIXL/PiquantConfigs/v7",
+					"elements": ["CO3","Rh","Na","Mg","Al","Si","P","S","Cl","K","Ca","Ti","Cr","Mn","Fe"],
+					"runTimeSec": 60,
+					"coresPerNode": 4,
+					"startUnixTimeSec": 1652813392,
+					"requestorUserId": "auth0|5df311ed8a0b5d0ebf5fb476",
+					"roiID": "wob0wm8cogiot1rp",
+					"PIQUANTVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8",
+					"quantMode": "AB"
 				},
 				"elements": ["Rh2O3","Na2O","MgCO3","Al2O3","SiO2","P2O5","SO3","Cl","K2O","CaCO3","TiO2","Cr2O3","MnCO3","FeCO3-T"],
+				"scanId": "the-scan-id",
 				"status": {
 					"jobID": "%v",
 					"status": "COMPLETE",
@@ -226,10 +232,11 @@ func testQuants(apiHost string) {
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 
-	seedQuantFile(quantId+".bin", u1.GetUserId(), scanId, apiUsersBucket)
-	seedQuantFile(quantId+".csv", u1.GetUserId(), scanId, apiUsersBucket)
+	// As above, this quant has slightly "weird" paths...
+	seedQuantFile(quantId+".bin", thisQuantRootPath+quantId+".bin" /*u1.GetUserId(), scanId*/, apiUsersBucket)
+	seedQuantFile(quantId+".csv", thisQuantRootPath+quantId+".csv" /*u1.GetUserId(), scanId*/, apiUsersBucket)
 	for _, logFile := range quantLogs {
-		seedQuantFile("./"+quantId+"-logs/"+logFile, u1.GetUserId(), scanId, apiUsersBucket)
+		seedQuantFile("./"+quantId+"-logs/"+logFile, thisQuantRootPath+quantId+"-logs/"+logFile /*u1.GetUserId(), scanId*/, apiUsersBucket)
 	}
 
 	u1.AddSendReqAction("Get quant summary+data (should work)",
@@ -238,24 +245,23 @@ func testQuants(apiHost string) {
 			"summary": {
 				"id": "%v",
 				"params": {
-					"params": {
-						"name": "Trial quant with Rh",
-						"dataBucket": "databucket",
-						"datasetPath": "Datasets/the-scan-id/dataset.bin",
-						"datasetID": "the-scan-id",
-						"piquantJobsBucket": "piquantbucket",
-						"detectorConfig": "PIXL/PiquantConfigs/v7",
-						"elements": ["CO3","Rh","Na","Mg","Al","Si","P","S","Cl","K","Ca","Ti","Cr","Mn","Fe"],
-						"runTimeSec": 60,
-						"coresPerNode": 4,
-						"startUnixTimeSec": 1652813392,
-						"requestorUserId": "auth0|5df311ed8a0b5d0ebf5fb476",
-						"roiID": "wob0wm8cogiot1rp",
-						"PIQUANTVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8",
-						"quantMode": "AB"
-					}
+					"name": "Trial quant with Rh",
+					"dataBucket": "databucket",
+					"datasetPath": "Datasets/the-scan-id/dataset.bin",
+					"datasetID": "the-scan-id",
+					"piquantJobsBucket": "piquantbucket",
+					"detectorConfig": "PIXL/PiquantConfigs/v7",
+					"elements": ["CO3","Rh","Na","Mg","Al","Si","P","S","Cl","K","Ca","Ti","Cr","Mn","Fe"],
+					"runTimeSec": 60,
+					"coresPerNode": 4,
+					"startUnixTimeSec": 1652813392,
+					"requestorUserId": "auth0|5df311ed8a0b5d0ebf5fb476",
+					"roiID": "wob0wm8cogiot1rp",
+					"PIQUANTVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8",
+					"quantMode": "AB"
 				},
 				"elements": ["Rh2O3","Na2O","MgCO3","Al2O3","SiO2","P2O5","SO3","Cl","K2O","CaCO3","TiO2","Cr2O3","MnCO3","FeCO3-T"],
+				"scanId": "the-scan-id",
 				"status": {
 					"jobID": "%v",
 					"status": "COMPLETE",
@@ -600,26 +606,25 @@ func testQuants(apiHost string) {
 				"summary": {
 					"id": "${IDCHK=uploadedQuantId}",
 					"params": {
-						"params": {
-							"name": "uploaded Quant",
-							"dataBucket": "devpixlise-datasets0030ee04-ox1crk4uej2x",
-							"datasetPath": "Datasets/the-scan-id/dataset.bin",
-							"datasetID": "%v",
-							"piquantJobsBucket": "devpixlise-piquantjobs2a7b0239-wcx2ijxt49jc",
-							"elements": [
-								"Ca"
-							],
-							"startUnixTimeSec": "${SECAGO=3}",
-							"requestorUserId": "${USERID}",
-							"PIQUANTVersion": "N/A",
-							"quantMode": "ABManual",
-							"comments": "This was just uploaded from CSV",
-							"command": "map"
-						}
+						"name": "uploaded Quant",
+						"dataBucket": "devpixlise-datasets0030ee04-ox1crk4uej2x",
+						"datasetPath": "Datasets/the-scan-id/dataset.bin",
+						"datasetID": "%v",
+						"piquantJobsBucket": "devpixlise-piquantjobs2a7b0239-wcx2ijxt49jc",
+						"elements": [
+							"Ca"
+						],
+						"startUnixTimeSec": "${SECAGO=3}",
+						"requestorUserId": "${USERID}",
+						"PIQUANTVersion": "N/A",
+						"quantMode": "ABManual",
+						"comments": "This was just uploaded from CSV",
+						"command": "map"
 					},
 					"elements": [
 						"Ca"
 					],
+					"scanId": "%v",
 					"status": {
 						"jobID": "${IDCHK=uploadedQuantId}",
 						"status": "COMPLETE",
@@ -659,7 +664,7 @@ func testQuants(apiHost string) {
 					]
 				}
 			}
-		}`, scanId),
+		}`, scanId, scanId),
 	)
 
 	u1.AddSendReqAction("Delete uploaded quant (should work)",
@@ -706,14 +711,14 @@ func seedDBQuants(quants []*protos.QuantificationSummary) {
 	}
 }
 
-func seedQuantFile(fileName string, userId string, scanId string, bucket string) {
+func seedQuantFile(fileName string, s3Path string /*userId string, scanId string*/, bucket string) {
 	data, err := os.ReadFile("./test-files/" + fileName)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	// Upload it where we need it for the test
-	s3Path := filepaths.GetQuantPath(userId, scanId, fileName)
+	//s3Path := filepaths.GetQuantPath(userId, scanId, fileName)
 	err = apiStorageFileAccess.WriteObject(bucket, s3Path, data)
 	if err != nil {
 		log.Fatalln(err)

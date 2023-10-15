@@ -502,6 +502,8 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 		`{"msgId":3, "status": "WS_OK",
 			"spectrumResp":{
 				"channelCount": 4096,
+				"normalSpectraForScan": 242,
+				"dwellSpectraForScan": 0,
 				"spectraPerLocation": [
 					{
 						"spectra": [
@@ -641,6 +643,8 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 		`{"msgId":4, "status": "WS_OK",
 			"spectrumResp":{
 				"channelCount": 4096,
+				"normalSpectraForScan": 242,
+				"dwellSpectraForScan": 0,
 				"bulkSpectra": [
 					{
 						"detector": "A",
