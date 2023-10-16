@@ -55,6 +55,13 @@ func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (
 		DwellSpectraForScan:  uint32(exprPB.DwellSpectra),
 	}
 
+	for c, label := range exprPB.MetaLabels {
+		if label == "LIVETIME" {
+			result.LiveTimeMetaIndex = uint32(c)
+			break
+		}
+	}
+
 	// If bulk or max spectra are required... find & return those too
 	if req.BulkSum || req.MaxValue {
 		bulkSpectra, maxSpectra, err := getBulkMaxSpectra(req.BulkSum, req.MaxValue, exprPB, detectorIdIdx, readtypeIdx)
