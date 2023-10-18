@@ -21,7 +21,7 @@ func formUserScreenConfigurationId(user *protos.UserInfo, id string) string {
 
 func formWidgetId(widget *protos.WidgetLayoutConfiguration, screenConfigId string, layoutIndex int) string {
 	positionId := fmt.Sprint(widget.StartRow) + "-" + fmt.Sprint(widget.StartColumn) + "-" + fmt.Sprint(widget.EndRow) + "-" + fmt.Sprint(widget.EndColumn)
-	return screenConfigId + "-" + fmt.Sprint(layoutIndex) + "-" + widget.Type + "-" + positionId
+	return screenConfigId + "-" + fmt.Sprint(layoutIndex) + "-" + positionId
 }
 
 func HandleScreenConfigurationGetReq(req *protos.ScreenConfigurationGetReq, hctx wsHelpers.HandlerContext) (*protos.ScreenConfigurationGetResp, error) {
@@ -47,11 +47,16 @@ func HandleScreenConfigurationGetReq(req *protos.ScreenConfigurationGetReq, hctx
 				return nil, result.Err()
 			}
 		} else {
-			err := result.Decode(screenConfig)
+			err := result.Decode(&screenConfig)
 			if err != nil {
 				return nil, err
 			}
 		}
+	}
+
+	screenConfig, err := loadWidgetsForScreenConfiguration(screenConfig, hctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return &protos.ScreenConfigurationGetResp{
@@ -181,6 +186,66 @@ func checkIfScreenConfigurationExists(id string, hctx wsHelpers.HandlerContext) 
 	return true, nil
 }
 
+func loadWidgetsForScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsHelpers.HandlerContext) (*protos.ScreenConfiguration, error) {
+	ctx := context.TODO()
+	sess, err := hctx.Svcs.MongoDB.Client().StartSession()
+	if err != nil {
+		return nil, err
+	}
+	defer sess.EndSession(ctx)
+
+	wc := writeconcern.New(writeconcern.WMajority())
+	rc := readconcern.Snapshot()
+	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
+
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		var err error
+
+		for layoutIndex, layout := range screenConfig.Layouts {
+			for widgetIndex, widget := range layout.Widgets {
+				if widget.Id != "" {
+					result := hctx.Svcs.MongoDB.Collection(dbCollections.WidgetDataName).FindOne(sessCtx, bson.M{
+						"_id": widget.Id,
+					})
+
+					widgetData := &protos.WidgetData{}
+					if result.Err() != nil {
+						if result.Err() == mongo.ErrNoDocuments {
+							// Widget not found, insert a new one with this ID
+							_, err := hctx.Svcs.MongoDB.Collection(dbCollections.WidgetDataName).InsertOne(sessCtx, &protos.WidgetData{
+								Id: widget.Id,
+							})
+							if err != nil {
+								return nil, err
+							}
+
+							widgetData.Id = widget.Id
+						} else {
+							return nil, result.Err()
+						}
+					} else {
+						err = result.Decode(&widgetData)
+						if err != nil {
+							return nil, err
+						}
+					}
+
+					screenConfig.Layouts[layoutIndex].Widgets[widgetIndex].Data = widgetData
+				}
+			}
+		}
+
+		return nil, err
+	}
+
+	_, err = sess.WithTransaction(ctx, callback, txnOpts)
+	if err != nil {
+		return screenConfig, err
+	}
+
+	return screenConfig, nil
+}
+
 func HandleScreenConfigurationWriteReq(req *protos.ScreenConfigurationWriteReq, hctx wsHelpers.HandlerContext) (*protos.ScreenConfigurationWriteResp, error) {
 	if req.ScreenConfiguration == nil {
 		return nil, errors.New("screen configuration must be specified")
@@ -207,6 +272,11 @@ func HandleScreenConfigurationWriteReq(req *protos.ScreenConfigurationWriteReq, 
 	}
 
 	screenConfig, err := writeScreenConfiguration(screenConfig, hctx, updateExisting)
+	if err != nil {
+		return nil, err
+	}
+
+	screenConfig, err = loadWidgetsForScreenConfiguration(screenConfig, hctx)
 	if err != nil {
 		return nil, err
 	}
