@@ -65,7 +65,37 @@ func HandleScreenConfigurationGetReq(req *protos.ScreenConfigurationGetReq, hctx
 }
 
 func HandleScreenConfigurationListReq(req *protos.ScreenConfigurationListReq, hctx wsHelpers.HandlerContext) (*protos.ScreenConfigurationListResp, error) {
-	return nil, errors.New("HandleScreenConfigurationListReq not implemented yet")
+	filter, idToOwner, err := wsHelpers.MakeFilter(req.SearchParams, false, protos.ObjectType_OT_SCREEN_CONFIG, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	opts := options.Find()
+
+	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName).Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	result := []*protos.ScreenConfiguration{}
+	err = cursor.All(context.TODO(), &result)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add ownership info
+	for _, screenConfig := range result {
+		owner, ok := idToOwner[screenConfig.Id]
+		if !ok {
+			return nil, errors.New("could not find ownership info for screen config")
+		}
+
+		screenConfig.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	}
+
+	return &protos.ScreenConfigurationListResp{
+		ScreenConfigurations: result,
+	}, nil
 }
 
 func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsHelpers.HandlerContext, updateExisting bool) (*protos.ScreenConfiguration, error) {
@@ -99,10 +129,10 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 				configuration.Layouts = screenConfig.Layouts
 
 				// Add an ID to any widgets that don't have one
-				for _, layout := range screenConfig.Layouts {
+				for i, layout := range screenConfig.Layouts {
 					for _, widget := range layout.Widgets {
 						if widget.Id == "" {
-							widget.Id = hctx.Svcs.IDGen.GenObjectID()
+							widget.Id = formWidgetId(widget, screenConfig.Id, i)
 						}
 					}
 				}
@@ -112,6 +142,7 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 			updatedConfig = append(updatedConfig, bson.E{Key: "name", Value: screenConfig.Name})
 			updatedConfig = append(updatedConfig, bson.E{Key: "tags", Value: screenConfig.Tags})
 			updatedConfig = append(updatedConfig, bson.E{Key: "description", Value: screenConfig.Description})
+			updatedConfig = append(updatedConfig, bson.E{Key: "scanconfigurations", Value: screenConfig.ScanConfigurations})
 
 			configuration.Name = screenConfig.Name
 			configuration.Tags = screenConfig.Tags
@@ -187,6 +218,10 @@ func checkIfScreenConfigurationExists(id string, hctx wsHelpers.HandlerContext) 
 }
 
 func loadWidgetsForScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsHelpers.HandlerContext) (*protos.ScreenConfiguration, error) {
+	if screenConfig == nil || screenConfig.Layouts == nil || len(screenConfig.Layouts) == 0 {
+		return screenConfig, nil
+	}
+
 	ctx := context.TODO()
 	sess, err := hctx.Svcs.MongoDB.Client().StartSession()
 	if err != nil {
@@ -249,6 +284,10 @@ func loadWidgetsForScreenConfiguration(screenConfig *protos.ScreenConfiguration,
 func HandleScreenConfigurationWriteReq(req *protos.ScreenConfigurationWriteReq, hctx wsHelpers.HandlerContext) (*protos.ScreenConfigurationWriteResp, error) {
 	if req.ScreenConfiguration == nil {
 		return nil, errors.New("screen configuration must be specified")
+	}
+
+	if req.ScreenConfiguration.Layouts == nil || len(req.ScreenConfiguration.Layouts) == 0 {
+		return nil, errors.New("screen configuration must have at least one layout")
 	}
 
 	screenConfig := req.ScreenConfiguration

@@ -115,7 +115,7 @@ func (x *WidgetDataGetResp) GetWidgetData() *WidgetData {
 	return nil
 }
 
-// requires(EDIT_OWN_USER)
+// requires(EDIT_VIEW_STATE)
 type WidgetDataWriteReq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
