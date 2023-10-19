@@ -22,7 +22,30 @@ func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) (
 
 	ids := utils.GetMapKeys(idToOwner)
 
-	filter := bson.M{"_id": bson.M{"$in": ids}}
+	filterItems := []bson.M{{"_id": bson.M{"$in": ids}}}
+
+	for field, value := range req.SearchFilters {
+		filterItems = append(filterItems, bson.M{"meta." + field: value})
+	}
+	/*
+		for field, minmax := range req.SearchMinMaxFilters {
+			filterItems = append(filterItems, )
+		}
+	*/
+	// Form the filter
+	var filter bson.M
+	if len(filterItems) == 1 {
+		// Filter is simply the "_id" search
+		filter = filterItems[0]
+	} else {
+		// It's an and clause of all our filter options
+		ifcItems := []interface{}{}
+		for _, item := range filterItems {
+			ifcItems = append(ifcItems, item)
+		}
+		filter = bson.M{"$and": ifcItems}
+	}
+
 	opts := options.Find()
 	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.ScansName).Find(context.TODO(), filter, opts)
 	if err != nil {
