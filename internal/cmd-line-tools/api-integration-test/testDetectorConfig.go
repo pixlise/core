@@ -73,6 +73,18 @@ func testDetectorConfig(apiHost string) {
 		}`,
 	)
 
+	u1.AddSendReqAction("Read config list",
+		`{"detectorConfigListReq":{}}`,
+		`{"msgId":3,
+			"status":"WS_OK",
+			"detectorConfigListResp":{
+				"configs": [
+					"PIXL"
+				]
+			}
+		}`,
+	)
+
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 }
