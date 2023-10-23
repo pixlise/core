@@ -94,7 +94,8 @@ func Example_ImportForTrigger_OCS_Archive_BadData() {
 		"Downloaded 2 zip files, unzipped 6 files",
 		"Downloading pseudo-intensity ranges...",
 		"Downloading user customisation files...",
-		"Failed to determine dataset type to import.",
+		"SelectImporter: Path contains 3 files...",
+		"Failed to open detector.json when determining dataset type",
 	}
 
 	for _, msg := range requiredLogs {
@@ -102,12 +103,13 @@ func Example_ImportForTrigger_OCS_Archive_BadData() {
 	}
 
 	// Output:
-	// Errors: Failed to determine dataset type to import., changes: , isUpdate: false
+	// Errors: Failed to open detector.json when determining dataset type, changes: , isUpdate: false
 	// Logged "Downloading archived zip files...": true
 	// Logged "Downloaded 2 zip files, unzipped 6 files": true
 	// Logged "Downloading pseudo-intensity ranges...": true
 	// Logged "Downloading user customisation files...": true
-	// Logged "Failed to determine dataset type to import.": true
+	// Logged "SelectImporter: Path contains 3 files...": true
+	// Logged "Failed to open detector.json when determining dataset type": true
 }
 
 // Import FM-style (simulate trigger by OCS pipeline), file already in archive, so should do nothing
