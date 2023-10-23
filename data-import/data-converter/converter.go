@@ -28,6 +28,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pixlise/core/v3/api/filepaths"
@@ -40,6 +41,7 @@ import (
 	"github.com/pixlise/core/v3/data-import/internal/data-converters/combined"
 	converter "github.com/pixlise/core/v3/data-import/internal/data-converters/interface"
 	"github.com/pixlise/core/v3/data-import/internal/data-converters/jplbreadboard"
+	"github.com/pixlise/core/v3/data-import/internal/data-converters/pixlem"
 	"github.com/pixlise/core/v3/data-import/internal/data-converters/pixlfm"
 	"github.com/pixlise/core/v3/data-import/internal/data-converters/soff"
 	"github.com/pixlise/core/v3/data-import/output"
@@ -282,12 +284,12 @@ func SelectImporter(localFS fileaccess.FileAccess, remoteFS fileaccess.FileAcces
 	err = localFS.ReadJSON(detPath, "", &detectorFile, false)
 	if err == nil {
 		// We found it, work out based on what's in there
-		if detectorFile.Detector == "JPL Breadboard" {
+		if strings.Contains(detectorFile.Detector, "breadboard") {
 			return jplbreadboard.MSATestData{}, nil
+		} else if detectorFile.Detector == "pixl-em" {
+			return pixlem.PIXLEM{}, nil
 		}
 	}
-
-	// TODO: Add other formats here!
 
 	// Unknown
 	return nil, errors.New("Failed to determine dataset type to import.")

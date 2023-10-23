@@ -315,13 +315,13 @@ func Example_ImportForTrigger_OCS_DatasetEdit() {
 	// {DatasetID:048300551 Group:PIXL-FM DriveID:1712 SiteID:4 TargetID:? Site: Target: Title:Naltsos SOL:0125 RTT:048300551 SCLK:678031418 ContextImage:PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png LocationCount:133 DataFileSize:843541 ContextImages:5 TIFFContextImages:1 NormalSpectra:242 DwellSpectra:0 BulkSpectra:2 MaxSpectra:2 PseudoIntensities:121 DetectorConfig:PIXL CreationUnixTimeSec:0}
 }
 
-func printManualOKLogOutput(log *logger.StdOutLoggerForTest, datasetBucket string, remoteFS fileaccess.FileAccess) {
+func printManualOKLogOutput(log *logger.StdOutLoggerForTest, datasetBucket string, remoteFS fileaccess.FileAccess, datasetId string, fileCount uint32) {
 	// Ensure these log msgs appeared...
 	requiredLogs := []string{
 		"Downloading archived zip files...",
 		"Downloaded 0 zip files, unzipped 0 files",
 		"No zip files found in archive, dataset may have been manually uploaded. Trying to download...",
-		"Dataset test1234 downloaded 3 files from manual upload area",
+		fmt.Sprintf("Dataset %v downloaded %v files from manual upload area", datasetId, fileCount),
 		"Downloading pseudo-intensity ranges...",
 		"Downloading user customisation files...",
 		"Reading 1261 files from spectrum directory...",
@@ -337,7 +337,7 @@ func printManualOKLogOutput(log *logger.StdOutLoggerForTest, datasetBucket strin
 	}
 
 	// Dump contents of summary file, this verifies most things imported as expected
-	summary, err := dataset.ReadDataSetSummary(remoteFS, datasetBucket, "test1234")
+	summary, err := dataset.ReadDataSetSummary(remoteFS, datasetBucket, datasetId)
 	if err != nil {
 		fmt.Println("Failed to read dataset summary file")
 	}
@@ -359,7 +359,7 @@ func Example_ImportForTrigger_Manual() {
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
-	printManualOKLogOutput(log, datasetBucket, remoteFS)
+	printManualOKLogOutput(log, datasetBucket, remoteFS, "test1234", 3)
 
 	// Output:
 	// Errors: <nil>, changes: unknown, isUpdate: false
@@ -376,6 +376,70 @@ func Example_ImportForTrigger_Manual() {
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Warning: No import.json found, defaults will be used": true
 	// {DatasetID:test1234 Group:JPL Breadboard DriveID:0 SiteID:0 TargetID:0 Site: Target: Title:test1234 SOL: RTT:000000000 SCLK:0 ContextImage: LocationCount:1261 DataFileSize:6786781 ContextImages:0 TIFFContextImages:0 NormalSpectra:2520 DwellSpectra:0 BulkSpectra:2 MaxSpectra:2 PseudoIntensities:0 DetectorConfig:Breadboard CreationUnixTimeSec:0}
+}
+
+// Import a breadboard dataset from manual uploaded zip file
+func Example_ImportForTrigger_Manual_SBU() {
+	remoteFS, log, envName, configBucket, datasetBucket, manualBucket := initTest("Manual_OK2")
+
+	trigger := `{
+	"datasetID": "test1234sbu",
+	"logID": "dataimport-unittest123sbu"
+}`
+
+	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
+
+	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
+
+	printManualOKLogOutput(log, datasetBucket, remoteFS, "test1234sbu", 4)
+
+	// Output:
+	// Errors: <nil>, changes: unknown, isUpdate: false
+	// Logged "Downloading archived zip files...": true
+	// Logged "Downloaded 0 zip files, unzipped 0 files": true
+	// Logged "No zip files found in archive, dataset may have been manually uploaded. Trying to download...": true
+	// Logged "Dataset test1234sbu downloaded 4 files from manual upload area": true
+	// Logged "Downloading pseudo-intensity ranges...": true
+	// Logged "Downloading user customisation files...": true
+	// Logged "Reading 1261 files from spectrum directory...": true
+	// Logged "Reading spectrum [1135/1260] 90%": true
+	// Logged "PMC 1261 has 4 MSA/spectrum entries": true
+	// Logged "WARNING: No main context image determined": true
+	// Logged "Diffraction db saved successfully": true
+	// Logged "Warning: No import.json found, defaults will be used": false
+	// {DatasetID:test1234sbu Group:Stony Brook Breadboard DriveID:0 SiteID:0 TargetID:0 Site: Target: Title:test1234sbu SOL: RTT:000000000 SCLK:0 ContextImage: LocationCount:1261 DataFileSize:6786794 ContextImages:0 TIFFContextImages:0 NormalSpectra:2520 DwellSpectra:0 BulkSpectra:2 MaxSpectra:2 PseudoIntensities:0 DetectorConfig:StonyBrookBreadboard CreationUnixTimeSec:0}
+}
+
+// Import a breadboard dataset from manual uploaded zip file
+func Example_ImportForTrigger_Manual_EM() {
+	remoteFS, log, envName, configBucket, datasetBucket, manualBucket := initTest("ManualEM_OK")
+
+	trigger := `{
+	"datasetID": "048300551",
+	"logID": "dataimport-unittest048300551"
+}`
+
+	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
+
+	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
+
+	printManualOKLogOutput(log, datasetBucket, remoteFS, "048300551", 3)
+
+	// Output:
+	// Errors: <nil>, changes: unknown, isUpdate: false
+	// Logged "Downloading archived zip files...": true
+	// Logged "Downloaded 0 zip files, unzipped 0 files": true
+	// Logged "No zip files found in archive, dataset may have been manually uploaded. Trying to download...": true
+	// Logged "Dataset 048300551 downloaded 3 files from manual upload area": true
+	// Logged "Downloading pseudo-intensity ranges...": true
+	// Logged "Downloading user customisation files...": true
+	// Logged "Reading 1261 files from spectrum directory...": false
+	// Logged "Reading spectrum [1135/1260] 90%": false
+	// Logged "PMC 1261 has 4 MSA/spectrum entries": false
+	// Logged "WARNING: No main context image determined": false
+	// Logged "Diffraction db saved successfully": true
+	// Logged "Warning: No import.json found, defaults will be used": false
+	// {DatasetID:048300551 Group:PIXL-EM DriveID:1712 SiteID:4 TargetID:? Site: Target: Title:048300551 SOL:0125 RTT:048300551 SCLK:678031418 ContextImage:PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png LocationCount:133 DataFileSize:843477 ContextImages:4 TIFFContextImages:0 NormalSpectra:242 DwellSpectra:0 BulkSpectra:2 MaxSpectra:2 PseudoIntensities:121 DetectorConfig:PIXL-EM-E2E CreationUnixTimeSec:0}
 }
 
 /* NOT TESTED YET, because it's not done yet!

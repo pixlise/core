@@ -268,7 +268,7 @@ func (dl *DatasetArchiveDownloader) DownloadFromDatasetUploads(datasetID string,
 		if len(zipName) > 0 {
 			// Unzip it!
 			zipDest := filepath.Join(unzippedPath, zipName)
-			_, err := utils.UnzipDirectory(savePath, zipDest, true)
+			_, err := utils.UnzipDirectory(savePath, zipDest, false) // We used to flatten paths for uploads, but no longer, we support FM format so need subdirs
 			if err != nil {
 				err = fmt.Errorf("Failed to unzip %v: %v", savePath, err)
 				dl.log.Errorf("%v", err)
