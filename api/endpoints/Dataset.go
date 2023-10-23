@@ -535,6 +535,14 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 				} else if f.Name == "RSI" {
 					foundHousekeeping = true
 				}
+			} else {
+				if strings.HasPrefix(f.Name, "RFS") {
+					foundSpectra = true
+				} else if strings.HasPrefix(f.Name, "RXL") {
+					foundBeamLocation = true
+				} else if strings.HasPrefix(f.Name, "RSI") {
+					foundHousekeeping = true
+				}
 			}
 		}
 
@@ -549,7 +557,7 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 		}
 
 		// Save the contents as a zip file in the uploads area
-		savePath := path.Join(s3PathStart, datasetID+".zip")
+		savePath := path.Join(s3PathStart, "data.zip")
 		err = params.Svcs.FS.WriteObject(params.Svcs.Config.ManualUploadBucket, savePath, body)
 		if err != nil {
 			return nil, err
