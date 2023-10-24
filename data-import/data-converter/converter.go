@@ -28,6 +28,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pixlise/core/v3/api/filepaths"
@@ -40,6 +41,7 @@ import (
 	"github.com/pixlise/core/v3/data-import/internal/data-converters/combined"
 	converter "github.com/pixlise/core/v3/data-import/internal/data-converters/interface"
 	"github.com/pixlise/core/v3/data-import/internal/data-converters/jplbreadboard"
+	"github.com/pixlise/core/v3/data-import/internal/data-converters/pixlem"
 	"github.com/pixlise/core/v3/data-import/internal/data-converters/pixlfm"
 	"github.com/pixlise/core/v3/data-import/internal/data-converters/soff"
 	"github.com/pixlise/core/v3/data-import/output"
@@ -252,6 +254,16 @@ func ImportFromLocalFileSystem(
 // SelectImporter - Looks in specified path and determines what importer to use. Requires remoteFS for new case of importing combined
 // datasets where it may need to download other files to complete the job
 func SelectImporter(localFS fileaccess.FileAccess, remoteFS fileaccess.FileAccess, datasetBucket string, importPath string, log logger.ILogger) (converter.DataConverter, error) {
+	items, err := localFS.ListObjects(importPath, "")
+	if err != nil {
+		return nil, errors.New("Failed to list files in import path when determining dataset type")
+	}
+
+	log.Infof("SelectImporter: Path contains %v files...", len(items))
+	for c, item := range items {
+		log.Infof("  %v. %v", c+1, item)
+	}
+
 	// Check if it's a combined dataset
 	combinedFiles, _ /*imageFileNames*/, _ /*combinedFile1Meta*/, _ /*combinedFile2Meta*/, err := combined.GetCombinedBeamFiles(importPath, log)
 	if len(combinedFiles) > 0 && err == nil {
@@ -282,12 +294,14 @@ func SelectImporter(localFS fileaccess.FileAccess, remoteFS fileaccess.FileAcces
 	err = localFS.ReadJSON(detPath, "", &detectorFile, false)
 	if err == nil {
 		// We found it, work out based on what's in there
-		if detectorFile.Detector == "JPL Breadboard" {
+		if strings.HasSuffix(detectorFile.Detector, "-breadboard") {
 			return jplbreadboard.MSATestData{}, nil
+		} else if detectorFile.Detector == "pixl-em" {
+			return pixlem.PIXLEM{}, nil
 		}
+	} else {
+		return nil, errors.New("Failed to open detector.json when determining dataset type")
 	}
-
-	// TODO: Add other formats here!
 
 	// Unknown
 	return nil, errors.New("Failed to determine dataset type to import.")

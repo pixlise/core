@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -1080,8 +1081,39 @@ func Example_datasetCreatePost_Success() {
 			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("UploadedDatasets/the-test_dataset/spectra.zip"), Body: bytes.NewReader(expectedSpectraBytes),
 		},
 		{
+			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("UploadedDatasets/the-test_dataset/import.json"), Body: bytes.NewReader([]byte(`{
+    "datasetid": "the-test_dataset",
+    "title": "the-test_dataset",
+    "targetid": "0",
+    "target": "",
+    "siteid": 0,
+    "site": "",
+    "group": "JPL Breadboard",
+    "beamfile": "",
+    "beamparams": "10,0,10,0",
+    "housekeeping": "",
+    "contextimgdir": "",
+    "msadir": "spectra",
+    "pseudointensitycsv": "",
+    "ignoremsa": "",
+    "singledetectormsa": false,
+    "genpmcs": true,
+    "readtype": "Normal",
+    "detaduplicate": false,
+    "genbulkmax": true,
+    "detectorconfig": "Breadboard",
+    "bulkquantfile": "",
+    "ev_xperchan_a": 0,
+    "ev_offset_a": 0,
+    "ev_xperchan_b": 0,
+    "ev_offset_b": 0,
+    "exclude_normal_dwell": false,
+    "sol": ""
+}`)),
+		},
+		{
 			Bucket: aws.String(artifactManualUploadBucket), Key: aws.String("UploadedDatasets/the-test_dataset/detector.json"), Body: bytes.NewReader([]byte(`{
-    "detector": "JPL Breadboard"
+    "detector": "jpl-breadboard"
 }`)),
 		},
 		{
@@ -1094,6 +1126,7 @@ func Example_datasetCreatePost_Success() {
 	}
 
 	mockS3.QueuedPutObjectOutput = []*s3.PutObjectOutput{
+		{},
 		{},
 		{},
 		{},
@@ -1120,7 +1153,7 @@ func Example_datasetCreatePost_Success() {
 	svcs.Config.ManualUploadBucket = artifactManualUploadBucket
 	apiRouter := MakeRouter(svcs)
 
-	body, err := ioutil.ReadFile("./test-data/just-msas.zip")
+	body, err := os.ReadFile("./test-data/just-msas.zip")
 	fmt.Printf("expected upload file read error: %v\n", err)
 
 	req, _ := http.NewRequest("POST", "/dataset/the-test dataset?format=jpl-breadboard", bytes.NewReader(body))

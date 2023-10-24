@@ -19,7 +19,7 @@ package pixlfm
 
 import (
 	"errors"
-	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -57,6 +57,13 @@ import (
 // Metadata about the dataset (can be derived from file names, see in docs/PIXL_filename.docx)
 
 type PIXLFM struct {
+	overrideGroup    string
+	overrideDetector string
+}
+
+func (p *PIXLFM) SetOverrides(group string, detector string) {
+	p.overrideGroup = group
+	p.overrideDetector = detector
 }
 
 type fileStructure struct {
@@ -344,6 +351,8 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		whiteDiscoImage,
 		housekeepingFileNameMeta,
 		datasetIDExpected,
+		p.overrideGroup,
+		p.overrideDetector,
 		log,
 	)
 
@@ -355,7 +364,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 }
 
 func DetectPIXLFMStructure(importPath string) (string, error) {
-	c, _ := ioutil.ReadDir(importPath)
+	c, _ := os.ReadDir(importPath)
 	for _, entry := range c {
 		if entry.IsDir() && entry.Name() == "drift_corr_x_ray_beam_location" {
 			return "PreDataDriveFormat", nil
@@ -372,7 +381,7 @@ func DetectPIXLFMStructure(importPath string) (string, error) {
 
 func validatePaths(importPath string, validpaths []string) error {
 	validated := []string{}
-	c, _ := ioutil.ReadDir(importPath)
+	c, _ := os.ReadDir(importPath)
 	for _, entry := range c {
 		for _, p := range validpaths {
 			if p == entry.Name() && entry.IsDir() {

@@ -22,7 +22,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path"
 	"strconv"
@@ -39,8 +39,10 @@ import (
 	"github.com/pixlise/core/v3/api/filepaths"
 	datasetModel "github.com/pixlise/core/v3/core/dataset"
 	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/utils"
 	datasetArchive "github.com/pixlise/core/v3/data-import/dataset-archive"
 	"github.com/pixlise/core/v3/data-import/importer"
+	"github.com/pixlise/core/v3/data-import/importparams"
 )
 
 const datasetURLEnd = "dataset"
@@ -484,7 +486,8 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 	// quant summary file was written with a + instead of a space?!
 	datasetID = fileaccess.MakeValidObjectName(datasetID, false)
 
-	if format != "jpl-breadboard" {
+	formats := []string{"jpl-breadboard", "sbu-breadboard", "pixl-em"}
+	if !utils.StringInSlice(format, formats) {
 		return nil, fmt.Errorf("Unexpected format: \"%v\"", format)
 	}
 
@@ -506,7 +509,7 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 	}
 
 	// Read in body
-	body, err := ioutil.ReadAll(params.Request.Body)
+	body, err := io.ReadAll(params.Request.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -517,46 +520,138 @@ func datasetCreatePost(params handlers.ApiHandlerParams) (interface{}, error) {
 		return nil, err
 	}
 
-	count := 0
-	for _, f := range zipReader.File {
-		// If the zip path starts with __MACOSX, ignore it, it's garbage that a mac laptop has included...
-		//if strings.HasPrefix(f.Name, "__MACOSX") {
-		//	continue
-		//}
-
-		if f.FileInfo().IsDir() {
-			return nil, fmt.Errorf("Zip file must not contain sub-directories. Found: %v", f.Name)
+	// Validate contents - detector dependent
+	if format == "pixl-em" {
+		// Expecting certain product dirs, but don't be too prescriptive
+		foundHousekeeping := false
+		foundBeamLocation := false
+		foundSpectra := false
+		for _, f := range zipReader.File {
+			if f.FileInfo().IsDir() {
+				if f.Name == "RFS" {
+					foundSpectra = true
+				} else if f.Name == "RXL" {
+					foundBeamLocation = true
+				} else if f.Name == "RSI" {
+					foundHousekeeping = true
+				}
+			} else {
+				if strings.HasPrefix(f.Name, "RFS") {
+					foundSpectra = true
+				} else if strings.HasPrefix(f.Name, "RXL") {
+					foundBeamLocation = true
+				} else if strings.HasPrefix(f.Name, "RSI") {
+					foundHousekeeping = true
+				}
+			}
 		}
 
-		if !strings.HasSuffix(f.Name, ".msa") {
-			return nil, fmt.Errorf("Zip file must only contain MSA files. Found: %v", f.Name)
+		if !foundHousekeeping {
+			return nil, fmt.Errorf("Zip file missing RSI sub-directory")
 		}
-		count++
+		if !foundBeamLocation {
+			return nil, fmt.Errorf("Zip file missing RXL sub-directory")
+		}
+		if !foundSpectra {
+			return nil, fmt.Errorf("Zip file missing RFS sub-directory")
+		}
+
+		// Save the contents as a zip file in the uploads area
+		savePath := path.Join(s3PathStart, "data.zip")
+		err = params.Svcs.FS.WriteObject(params.Svcs.Config.ManualUploadBucket, savePath, body)
+		if err != nil {
+			return nil, err
+		}
+		params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", params.Svcs.Config.ManualUploadBucket, savePath)
+	} else {
+		// Expecting flat zip of MSA files
+		count := 0
+		for _, f := range zipReader.File {
+			// If the zip path starts with __MACOSX, ignore it, it's garbage that a mac laptop has included...
+			//if strings.HasPrefix(f.Name, "__MACOSX") {
+			//	continue
+			//}
+
+			if f.FileInfo().IsDir() {
+				return nil, fmt.Errorf("Zip file must not contain sub-directories. Found: %v", f.Name)
+			}
+
+			if !strings.HasSuffix(f.Name, ".msa") {
+				return nil, fmt.Errorf("Zip file must only contain MSA files. Found: %v", f.Name)
+			}
+			count++
+		}
+
+		// Make sure it has at least one msa!
+		if count <= 0 {
+			return nil, errors.New("Zip file did not contain any MSA files")
+		}
+
+		// Save the contents as a zip file in the uploads area
+		savePath := path.Join(s3PathStart, "spectra.zip")
+		err = params.Svcs.FS.WriteObject(params.Svcs.Config.ManualUploadBucket, savePath, body)
+		if err != nil {
+			return nil, err
+		}
+		params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", params.Svcs.Config.ManualUploadBucket, savePath)
+
+		// Now save detector info
+		savePath = path.Join(s3PathStart, "import.json")
+		importerFile := importparams.BreadboardImportParams{
+			MsaDir:           "spectra", // We now assume we will have a spectra.zip extracted into a spectra dir!
+			MsaBeamParams:    "10,0,10,0",
+			GenBulkMax:       true,
+			GenPMCs:          true,
+			ReadTypeOverride: "Normal",
+			DetectorConfig:   "Breadboard",
+			Group:            "JPL Breadboard",
+			TargetID:         "0",
+			SiteID:           0,
+
+			// The rest we set to the dataset ID
+			DatasetID: datasetID,
+			//Site: datasetID,
+			//Target: datasetID,
+			Title: datasetID,
+			/*
+				BeamFile // Beam location CSV path
+				HousekeepingFile // Housekeeping CSV path
+				ContextImgDir // Dir to find context images in
+				PseudoIntensityCSVPath // Pseudointensity CSV path
+				IgnoreMSAFiles // MSA files to ignore
+				SingleDetectorMSAs // Expecting single detector (1 column) MSA files
+				DetectorADuplicate // Duplication of detector A to B, because test MSA only had 1 set of spectra
+				BulkQuantFile // Bulk quantification file (for tactical datasets)
+				XPerChanA // eV calibration eV/channel (detector A)
+				OffsetA // eV calibration eV start offset (detector A)
+				XPerChanB // eV calibration eV/channel (detector B)
+				OffsetB // eV calibration eV start offset (detector B)
+				ExcludeNormalDwellSpectra // Hack for tactical datasets - load all MSAs to gen bulk sum, but dont save them in output
+				SOL // Might as well be able to specify SOL. Needed for first spectrum dataset on SOL13
+			*/
+		}
+
+		if format == "sbu-breadboard" {
+			importerFile.Group = "Stony Brook Breadboard"
+			importerFile.DetectorConfig = "StonyBrookBreadboard"
+		}
+
+		err = params.Svcs.FS.WriteJSON(params.Svcs.Config.ManualUploadBucket, savePath, importerFile)
+		if err != nil {
+			return nil, err
+		}
+		params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", params.Svcs.Config.ManualUploadBucket, savePath)
 	}
 
-	// Make sure it has at least one msa!
-	if count <= 0 {
-		return nil, errors.New("Zip file did not contain any MSA files")
-	}
-
-	// Save the contents as a zip file in the uploads area
-	savePath := path.Join(s3PathStart, "spectra.zip")
-	err = params.Svcs.FS.WriteObject(params.Svcs.Config.ManualUploadBucket, savePath, body)
-	if err != nil {
-		return nil, err
-	}
-	params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", params.Svcs.Config.ManualUploadBucket, savePath)
-
-	// Now save detector info
-	savePath = path.Join(s3PathStart, "detector.json")
+	// Save detector info
+	savePath := path.Join(s3PathStart, "detector.json")
 	detectorFile := datasetArchive.DetectorChoice{
-		Detector: "JPL Breadboard",
+		Detector: format,
 	}
 	err = params.Svcs.FS.WriteJSON(params.Svcs.Config.ManualUploadBucket, savePath, detectorFile)
 	if err != nil {
 		return nil, err
 	}
-	params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", params.Svcs.Config.ManualUploadBucket, savePath)
 
 	// Now save creator info
 	savePath = path.Join(s3PathStart, "creator.json")
