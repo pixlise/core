@@ -421,4 +421,6 @@ func runTests(apiHost string) {
 
 	testTags(apiHost)
 	testROIUserConfiguration(apiHost)
+	testScreenConfiguration(apiHost)
+	testWidgetData(apiHost)
 }

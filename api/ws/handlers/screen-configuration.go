@@ -32,32 +32,17 @@ func HandleScreenConfigurationGetReq(req *protos.ScreenConfigurationGetReq, hctx
 		configId = formUserScreenConfigurationId(hctx.SessUser.User, req.ScanId)
 	}
 
-	screenConfig := &protos.ScreenConfiguration{}
-	// Read into screen config if there's a result, otherwise lets create one
-	if configId != "" {
-		result := hctx.Svcs.MongoDB.Collection(dbCollections.ScreenConfigurationName).FindOne(context.TODO(), bson.M{
-			"_id": configId,
-		})
-
-		if result.Err() != nil {
-			if result.Err() == mongo.ErrNoDocuments {
-				// No screen config found, so we'll create one
-				screenConfig = nil
-			} else {
-				return nil, result.Err()
-			}
-		} else {
-			err := result.Decode(&screenConfig)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	screenConfig, err := loadWidgetsForScreenConfiguration(screenConfig, hctx)
+	screenConfig, owner, err := wsHelpers.GetUserObjectById[protos.ScreenConfiguration](false, configId, protos.ObjectType_OT_SCREEN_CONFIG, dbCollections.ScreenConfigurationName, hctx)
 	if err != nil {
 		return nil, err
 	}
+
+	screenConfig, err = loadWidgetsForScreenConfiguration(screenConfig, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	screenConfig.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 
 	return &protos.ScreenConfigurationGetResp{
 		ScreenConfiguration: screenConfig,
@@ -201,17 +186,10 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 	return configuration, nil
 }
 
-func checkIfScreenConfigurationExists(id string, hctx wsHelpers.HandlerContext) (bool, error) {
-	result := hctx.Svcs.MongoDB.Collection(dbCollections.ScreenConfigurationName).FindOne(context.TODO(), bson.M{
-		"_id": id,
-	})
-
-	if result.Err() != nil {
-		if result.Err() == mongo.ErrNoDocuments {
-			return false, nil
-		} else {
-			return false, result.Err()
-		}
+func checkIfScreenConfigurationExists(id string, hctx wsHelpers.HandlerContext, canEdit bool) (bool, error) {
+	_, _, err := wsHelpers.GetUserObjectById[protos.ScreenConfiguration](true, id, protos.ObjectType_OT_SCREEN_CONFIG, dbCollections.ScreenConfigurationName, hctx)
+	if err != nil {
+		return false, err
 	}
 
 	return true, nil
@@ -297,7 +275,7 @@ func HandleScreenConfigurationWriteReq(req *protos.ScreenConfigurationWriteReq, 
 	if req.ScreenConfiguration.Id == "" {
 		if req.ScanId != "" {
 			screenConfig.Id = formUserScreenConfigurationId(hctx.SessUser.User, req.ScanId)
-			exists, err := checkIfScreenConfigurationExists(screenConfig.Id, hctx)
+			exists, err := checkIfScreenConfigurationExists(screenConfig.Id, hctx, true)
 			if err != nil {
 				return nil, err
 			}
@@ -322,5 +300,71 @@ func HandleScreenConfigurationWriteReq(req *protos.ScreenConfigurationWriteReq, 
 
 	return &protos.ScreenConfigurationWriteResp{
 		ScreenConfiguration: screenConfig,
+	}, nil
+}
+
+func HandleScreenConfigurationDeleteReq(req *protos.ScreenConfigurationDeleteReq, hctx wsHelpers.HandlerContext) (*protos.ScreenConfigurationDeleteResp, error) {
+	if req.Id == "" {
+		return nil, errors.New("screen configuration id must be specified")
+	}
+
+	// Check if exists and if user can delete
+	screenConfig, _, err := wsHelpers.GetUserObjectById[protos.ScreenConfiguration](true, req.Id, protos.ObjectType_OT_SCREEN_CONFIG, dbCollections.ScreenConfigurationName, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Run through all the widgets and delete them, then delete screen config and ownership item
+	ctx := context.TODO()
+	sess, err := hctx.Svcs.MongoDB.Client().StartSession()
+	if err != nil {
+		return nil, err
+	}
+	defer sess.EndSession(ctx)
+
+	wc := writeconcern.New(writeconcern.WMajority())
+	rc := readconcern.Snapshot()
+	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
+
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		var err error
+
+		for _, layout := range screenConfig.Layouts {
+			for _, widget := range layout.Widgets {
+				if widget.Id != "" {
+					_, err = hctx.Svcs.MongoDB.Collection(dbCollections.WidgetDataName).DeleteOne(sessCtx, bson.M{
+						"_id": widget.Id,
+					})
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
+
+		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.ScreenConfigurationName).DeleteOne(sessCtx, bson.M{
+			"_id": req.Id,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteOne(sessCtx, bson.M{
+			"_id": req.Id,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, err
+	}
+
+	_, err = sess.WithTransaction(ctx, callback, txnOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.ScreenConfigurationDeleteResp{
+		Id: req.Id,
 	}, nil
 }
