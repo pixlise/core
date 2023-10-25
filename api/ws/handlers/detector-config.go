@@ -22,7 +22,8 @@ func HandleDetectorConfigReq(req *protos.DetectorConfigReq, hctx wsHelpers.Handl
 	}
 
 	return &protos.DetectorConfigResp{
-		Config: cfg,
+		Config:                cfg,
+		PiquantConfigVersions: piquant.GetPiquantConfigVersions(hctx.Svcs, req.Id),
 	}, nil
 }
 
