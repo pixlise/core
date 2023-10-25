@@ -1,6 +1,9 @@
 package wsHandler
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
@@ -22,7 +25,13 @@ func HandlePseudoIntensityReq(req *protos.PseudoIntensityReq, hctx wsHelpers.Han
 	tooManyPseudosLocations := 0
 	pseudoIntensities := []*protos.PseudoIntensityData{}
 	for _, c := range indexes {
-		pseudos := exprPB.Locations[c].PseudoIntensities
+		loc := exprPB.Locations[c]
+		pseudos := loc.PseudoIntensities
+
+		pmc, err := strconv.Atoi(loc.Id)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to convert PMC %v to int while reading scan location %v", loc.Id, c)
+		}
 
 		// There really should only be one item!
 		if len(pseudos) > 1 {
@@ -30,6 +39,7 @@ func HandlePseudoIntensityReq(req *protos.PseudoIntensityReq, hctx wsHelpers.Han
 		} else if len(pseudos) == 1 {
 			// Just read the first one
 			pseudoIntensities = append(pseudoIntensities, &protos.PseudoIntensityData{
+				Id:          uint32(pmc),
 				Intensities: pseudos[0].ElementIntensities,
 			})
 		}
