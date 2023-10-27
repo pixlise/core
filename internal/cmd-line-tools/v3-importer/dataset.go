@@ -119,6 +119,13 @@ func migrateDatasets(
 		return err
 	}
 
+	// And default images
+	coll = dest.Collection(dbCollections.ScanDefaultImagesName)
+	err = coll.Drop(context.TODO())
+	if err != nil {
+		return err
+	}
+
 	// Also drop scan collection
 	coll = dest.Collection(dbCollections.ScansName)
 	err = coll.Drop(context.TODO())
@@ -233,6 +240,12 @@ func migrateDatasets(
 				log.Fatalln(err)
 			}
 
+			// Set the default image
+			err = setDefaultImage(dataset.DatasetID, dataset.ContextImage, dest)
+			if err != nil {
+				log.Fatalln(err)
+			}
+
 			insertCount++
 		}(dataset)
 	}
@@ -241,5 +254,11 @@ func migrateDatasets(
 	wg.Wait()
 
 	fmt.Printf("Scans inserted: %v\n", insertCount)
+	return err
+}
+
+func setDefaultImage(scanId string, image string, db *mongo.Database) error {
+	coll := db.Collection(dbCollections.ScanDefaultImagesName)
+	_, err := coll.InsertOne(context.TODO(), &protos.ScanImageDefaultDB{ScanId: scanId, DefaultImageFileName: image})
 	return err
 }

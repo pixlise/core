@@ -453,6 +453,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 				],
 				"data${LIST,MODE=CONTAINS,MINLENGTH=4}": [
 					{
+						"id": 189,
 						"intensities${LIST,MODE=LENGTH,LENGTH=32}": []
 					}
 				]
@@ -490,6 +491,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 				],
 				"data${LIST,MODE=CONTAINS,MINLENGTH=4}": [
 					{
+						"id": 93,
 						"intensities${LIST,MODE=LENGTH,LENGTH=32}": []
 					}
 				]
@@ -1217,7 +1219,8 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 								"baselineVariation": 0.19179639,
 								"globalDifference": 0.06739717,
 								"differenceSigma": 0.16368404,
-								"peakHeight": 0.3579455
+								"peakHeight": 0.3579455,
+								"detector": "A"
 							}
 						]
 					},
@@ -1230,7 +1233,8 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 								"baselineVariation": 0.24875456,
 								"globalDifference": 0.06951845,
 								"differenceSigma": 0.15115373,
-								"peakHeight": 0.22210322
+								"peakHeight": 0.22210322,
+								"detector": "A"
 							}
 						]
 					},
@@ -1243,7 +1247,8 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 								"baselineVariation": 0.22377764,
 								"globalDifference": 0.08196892,
 								"differenceSigma": 0.1122962,
-								"peakHeight": 0.2930711
+								"peakHeight": 0.2930711,
+								"detector": "A"
 							}
 						]
 					},
@@ -1256,7 +1261,8 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 								"baselineVariation": 0.25955257,
 								"globalDifference": 0.08716079,
 								"differenceSigma": 0.12355343,
-								"peakHeight": 0.38338855
+								"peakHeight": 0.38338855,
+								"detector": "A"
 							}
 						]
 					},
@@ -1269,7 +1275,8 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 								"baselineVariation": 0.15942448,
 								"globalDifference": 0.097010836,
 								"differenceSigma": 0.099084,
-								"peakHeight": 0.15445672
+								"peakHeight": 0.15445672,
+								"detector": "A"
 							}
 						]
 					}
@@ -1373,6 +1380,35 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 			}`,
 		)
 	}
+
+	// Changing default image and querying
+	u1.AddSendReqAction("get default image (empty)",
+		`{"imageGetDefaultReq":{"scanIds": ["048300551", "another"]}}`,
+		`{"msgId":14,
+			"status": "WS_NOT_FOUND",
+			"errorText": "another not found",
+			"imageGetDefaultResp": {}
+		}`,
+	)
+
+	u1.AddSendReqAction("set default image",
+		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "some/path/to/the-image.png"}}`,
+		`{"msgId":15,
+			"status": "WS_OK",
+			"imageSetDefaultResp": {}
+		}`,
+	)
+	u1.AddSendReqAction("get default image (should work)",
+		`{"imageGetDefaultReq":{"scanIds": ["048300551"]}}`,
+		`{"msgId":16,
+			"status": "WS_OK",
+			"imageGetDefaultResp": {
+				"defaultImagesPerScanId": {
+					"048300551": "some/path/to/the-image.png"
+				}
+			}
+		}`,
+	)
 
 	u1.CloseActionGroup([]string{}, scanWaitTime)
 	wstestlib.ExecQueuedActions(&u1)
