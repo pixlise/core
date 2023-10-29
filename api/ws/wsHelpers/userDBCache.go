@@ -2,6 +2,7 @@ package wsHelpers
 
 import (
 	"context"
+	"sync"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/timestamper"
@@ -34,19 +35,15 @@ type userCacheItem struct {
 }
 
 var userInfoCache = map[string]userCacheItem{}
+var userInfoCacheLock = sync.Mutex{}
 
 const maxUserCacheAgeSec = 60 * 5
 
 func getUserInfo(userId string, db *mongo.Database, ts timestamper.ITimeStamper) (*protos.UserInfo, error) {
-	now := ts.GetTimeNowSec()
+	user := getUserInfoFromCache(userId, ts)
 
-	if user, ok := userInfoCache[userId]; ok {
-		// We found cached item, use if not too old
-		if user.timestampUnixSec > now-maxUserCacheAgeSec {
-			return user.cachedInfo, nil
-		}
-
-		// Otherwise, do a DB read again and overwrite our cached item
+	if user != nil {
+		return user, nil
 	}
 
 	userDBItem, err := GetDBUser(userId, db)
@@ -55,6 +52,9 @@ func getUserInfo(userId string, db *mongo.Database, ts timestamper.ITimeStamper)
 	}
 
 	// Cache this for future
+	userInfoCacheLock.Lock()
+	defer userInfoCacheLock.Unlock()
+
 	userInfoCache[userId] = userCacheItem{
 		cachedInfo:       userDBItem.Info,
 		timestampUnixSec: ts.GetTimeNowSec(),
@@ -63,7 +63,28 @@ func getUserInfo(userId string, db *mongo.Database, ts timestamper.ITimeStamper)
 	return userDBItem.Info, nil
 }
 
+func getUserInfoFromCache(userId string, ts timestamper.ITimeStamper) *protos.UserInfo {
+	now := ts.GetTimeNowSec()
+
+	userInfoCacheLock.Lock()
+	defer userInfoCacheLock.Unlock()
+
+	if user, ok := userInfoCache[userId]; ok {
+		// We found cached item, use if not too old
+		if user.timestampUnixSec > now-maxUserCacheAgeSec {
+			return user.cachedInfo
+		}
+
+		// Otherwise, do a DB read again and overwrite our cached item
+	}
+
+	return nil
+}
+
 func NotifyUserInfoChange(userId string) {
+	userInfoCacheLock.Lock()
+	defer userInfoCacheLock.Unlock()
+
 	// Delete this item from our cache
 	// This will ensure it is read fresh the next time this user is accessed
 	delete(userInfoCache, userId)
