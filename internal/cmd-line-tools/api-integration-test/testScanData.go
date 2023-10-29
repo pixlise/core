@@ -1022,7 +1022,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 						"id": 216,
 						"timestamp": 678034827,
 						"images": 1,
-						"spectra": 2,
+						"normalSpectra": 2,
 						"meta": true,
 						"location": true,
 						"pseudoIntensities": true
@@ -1036,7 +1036,8 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 						"id": 218,
 						"timestamp": 678035193,
 						"images": 1,
-						"spectra": 4,
+						"bulkSpectra": 2,
+						"maxSpectra": 2,
 						"meta": true,
 						"location": true
 					},
