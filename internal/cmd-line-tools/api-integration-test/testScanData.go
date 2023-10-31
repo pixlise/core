@@ -378,9 +378,18 @@ func testScanDataNoPermission(apiHost string) {
 		}`,
 	)
 
+	u1.AddSendReqAction("imageGetReq (expect no permission)",
+		`{"imageGetReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
+		`{"msgId":9,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "User cannot access scan 048300551 associated with image PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png. Error: View access denied for: 048300551",
+			"imageGetResp":{}
+		}`,
+	)
+
 	u1.AddSendReqAction("detectedDiffractionPeaksReq (expect no permission)",
 		`{"detectedDiffractionPeaksReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
-		`{"msgId":9,
+		`{"msgId":10,
 			"status": "WS_NO_PERMISSION",
 			"errorText": "View access denied for: 048300551",
 			"detectedDiffractionPeaksResp":{}
@@ -389,7 +398,7 @@ func testScanDataNoPermission(apiHost string) {
 
 	u1.AddSendReqAction("scan meta write (not found)",
 		`{"scanMetaWriteReq":{"scanId": "048300551", "title": "Something", "description": "The blah"}}`,
-		`{"msgId":10,
+		`{"msgId":11,
 			"status": "WS_NO_PERMISSION",
 			"errorText": "Edit access denied for: 048300551",
 			"scanMetaWriteResp": {}
@@ -1323,10 +1332,32 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 		}`,
 	)
 
+	u1.AddSendReqAction("imageGetReq (should work)",
+		`{"imageGetReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
+		`{"msgId":11,
+			"status": "WS_OK",
+			"imageGetResp":{
+				"image": {
+					"name": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+					"source": "SI_INSTRUMENT",
+					"width": 752,
+					"height": 580,
+					"fileSize": 240084,
+					"purpose": "SIP_VIEWING",
+					"associatedScanIds": [
+						"048300551"
+					],
+					"originScanId": "048300551",
+					"path": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"
+				}
+			}
+		}`,
+	)
+
 	u1.AddSendReqAction("imageBeamLocationsReq (bad image name)",
 		`{"imageBeamLocationsReq":{"imageName": "non-existant.jpg"}}`,
 		`{
-			"msgId": 11,
+			"msgId": 12,
 			"status": "WS_NOT_FOUND",
 			"errorText": "non-existant.jpg not found",
 			"imageBeamLocationsResp": {}
@@ -1335,7 +1366,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 
 	u1.AddSendReqAction("imageBeamLocationsReq (should work)",
 		`{"imageBeamLocationsReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
-		`{"msgId":12, "status": "WS_OK",
+		`{"msgId":13, "status": "WS_OK",
 			"imageBeamLocationsResp":{
 				"locations": {
 					"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
@@ -1366,7 +1397,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 	if editAllowed {
 		u1.AddSendReqAction("scan meta write (should work)",
 			`{"scanMetaWriteReq":{"scanId": "048300551", "title": "Naltsos", "description": "The first scan on Mars"}}`,
-			`{"msgId":13,
+			`{"msgId":14,
 				"status": "WS_OK",
 				"scanMetaWriteResp":{}
 			}`,
@@ -1374,7 +1405,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 	} else {
 		u1.AddSendReqAction("scan meta write (not found)",
 			`{"scanMetaWriteReq":{"scanId": "048300551", "title": "Something", "description": "The blah"}}`,
-			`{"msgId":13,
+			`{"msgId":14,
 				"status": "WS_NO_PERMISSION",
 				"errorText": "Edit access denied for: 048300551",
 				"scanMetaWriteResp": {}
@@ -1385,7 +1416,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 	// Changing default image and querying
 	u1.AddSendReqAction("get default image (empty)",
 		`{"imageGetDefaultReq":{"scanIds": ["048300551", "another"]}}`,
-		`{"msgId":14,
+		`{"msgId":15,
 			"status": "WS_NOT_FOUND",
 			"errorText": "another not found",
 			"imageGetDefaultResp": {}
@@ -1394,14 +1425,14 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 
 	u1.AddSendReqAction("set default image",
 		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "some/path/to/the-image.png"}}`,
-		`{"msgId":15,
+		`{"msgId":16,
 			"status": "WS_OK",
 			"imageSetDefaultResp": {}
 		}`,
 	)
 	u1.AddSendReqAction("get default image (should work)",
 		`{"imageGetDefaultReq":{"scanIds": ["048300551"]}}`,
-		`{"msgId":16,
+		`{"msgId":17,
 			"status": "WS_OK",
 			"imageGetDefaultResp": {
 				"defaultImagesPerScanId": {

@@ -3,9 +3,11 @@ package wsHandler
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
+	"github.com/pixlise/core/v3/core/errorwithstatus"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -48,6 +50,45 @@ func HandleImageListReq(req *protos.ImageListReq, hctx wsHelpers.HandlerContext)
 
 	return &protos.ImageListResp{
 		Images: items,
+	}, nil
+}
+
+func HandleImageGetReq(req *protos.ImageGetReq, hctx wsHelpers.HandlerContext) (*protos.ImageGetResp, error) {
+	if err := wsHelpers.CheckStringField(&req.ImageName, "ImageName", 1, 255); err != nil {
+		return nil, err
+	}
+
+	// Look up the image in DB to determine scan IDs, then determine ownership
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+
+	filter := bson.M{"_id": req.ImageName}
+	result := coll.FindOne(ctx, filter)
+	if result.Err() != nil {
+		return nil, result.Err()
+	}
+
+	img := protos.ScanImage{}
+	err := result.Decode(&img)
+	if err != nil {
+		return nil, err
+	}
+
+	// Now look up any associated ids
+	if len(img.AssociatedScanIds) <= 0 {
+		return nil, fmt.Errorf("Failed to find scan associated with image: %v", req.ImageName)
+	}
+
+	// Check that the user has access to all the scans in question
+	for _, scanId := range img.AssociatedScanIds {
+		_, err := wsHelpers.CheckObjectAccess(false, scanId, protos.ObjectType_OT_SCAN, hctx)
+		if err != nil {
+			return nil, errorwithstatus.MakeUnauthorisedError(fmt.Errorf("User cannot access scan %v associated with image %v. Error: %v", scanId, req.ImageName, err))
+		}
+	}
+
+	return &protos.ImageGetResp{
+		Image: &img,
 	}, nil
 }
 
