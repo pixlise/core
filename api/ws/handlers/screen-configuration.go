@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
+	"github.com/pixlise/core/v3/core/errorwithstatus"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,8 +17,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-func formUserScreenConfigurationId(user *protos.UserInfo, id string) string {
-	return user.Id + "-" + id
+func formUserScreenConfigurationId(user *protos.UserInfo, scanId string) string {
+	return user.Id + "-" + scanId
 }
 
 func formWidgetId(widget *protos.WidgetLayoutConfiguration, screenConfigId string, layoutIndex int) string {
@@ -189,6 +191,15 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 func checkIfScreenConfigurationExists(id string, hctx wsHelpers.HandlerContext, canEdit bool) (bool, error) {
 	_, _, err := wsHelpers.GetUserObjectById[protos.ScreenConfiguration](true, id, protos.ObjectType_OT_SCREEN_CONFIG, dbCollections.ScreenConfigurationName, hctx)
 	if err != nil {
+		switch e := err.(type) {
+		case errorwithstatus.Error:
+			if e.Status() == http.StatusNotFound {
+				// This is a not found error!
+				return false, nil
+			}
+		}
+
+		// Something else went wrong
 		return false, err
 	}
 
