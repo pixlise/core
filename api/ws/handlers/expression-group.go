@@ -97,7 +97,12 @@ func createExpressionGroup(egroup *protos.ExpressionGroup, hctx wsHelpers.Handle
 	}
 
 	// Generate a new id
-	id := hctx.Svcs.IDGen.GenObjectID()
+	// NOTE: Previously we had a thing called an RGB mix, which was a group of 3 expressions. We have now transitioned to having
+	//       the more generic mechanism of an expression group. RGB mixes were all saved prefixed with "rgbmix-", which we didn't
+	//       change in the migration tool because there are many places they could be stored, but now we call prefix them with
+	//       "grp-". This should be fine, except anywhere where we're checking if the ID is for a group or an expression we need
+	//       to check for both!
+	id := "grp-" + hctx.Svcs.IDGen.GenObjectID()
 	egroup.Id = id
 
 	// We need to create an ownership item along with it
