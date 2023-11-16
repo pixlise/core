@@ -1,0 +1,6 @@
+Find docker container for mongo and get its id
+docker exec -ti dockercontainerid bash
+/dbseed/migrated
+mongodump
+
+Make sure the files end up in /local-mongo/dbseed/migrated/pixlise-prodMigrated
