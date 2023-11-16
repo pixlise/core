@@ -54,8 +54,29 @@ func HandleDataModuleGetReq(req *protos.DataModuleGetReq, hctx wsHelpers.Handler
 		return nil, fmt.Errorf("Failed to get version: %v for module: %v. Error: %v", semanticversion.SemanticVersionToString(verRequested), req.Id, err)
 	}
 
-	// Combine it
-	module.Versions = append(module.Versions, moduleVersion)
+	versions, err := getModuleVersions(req.Id, hctx.Svcs.MongoDB)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add all previous versions
+	module.Versions = versions
+	// Find the requested version and replace it with the one we got if it exists
+	fetchedSemanticVersion := semanticversion.SemanticVersionToString(moduleVersion.Version)
+
+	replacedFetchedVersion := false
+	for i, ver := range module.Versions {
+		if semanticversion.SemanticVersionToString(ver.Version) == fetchedSemanticVersion {
+			module.Versions[i] = moduleVersion
+			replacedFetchedVersion = true
+			break
+		}
+	}
+
+	// If we didn't find the version we fetched, add it to the end
+	if !replacedFetchedVersion {
+		module.Versions = append(module.Versions, moduleVersion)
+	}
 
 	return &protos.DataModuleGetResp{
 		Module: module,
@@ -482,14 +503,38 @@ func HandleDataModuleAddVersionReq(req *protos.DataModuleAddVersionReq, hctx wsH
 		hctx.Svcs.Log.Errorf("CreateModule (version): Expected Mongo insert to return ID %v, got %v", verId, insertResult.InsertedID)
 	}
 
-	// We return it differently
-	module.Versions = append(module.Versions, &protos.DataModuleVersion{
+	// Add all previous versions
+	versions, err := getModuleVersions(req.ModuleId, hctx.Svcs.MongoDB)
+	if err != nil {
+		return nil, err
+	}
+
+	module.Versions = versions
+
+	// Find the requested version and replace it with the one we got if it exists
+	fetchedSemanticVersion := semanticversion.SemanticVersionToString(verRec.Version)
+
+	returnVersion := &protos.DataModuleVersion{
 		Version:          verRec.Version,
 		Tags:             verRec.Tags,
 		Comments:         verRec.Comments,
 		TimeStampUnixSec: verRec.TimeStampUnixSec,
 		SourceCode:       verRec.SourceCode,
-	})
+	}
+
+	replacedFetchedVersion := false
+	for i, ver := range module.Versions {
+		if semanticversion.SemanticVersionToString(ver.Version) == fetchedSemanticVersion {
+			module.Versions[i] = returnVersion
+			replacedFetchedVersion = true
+			break
+		}
+	}
+
+	// If we didn't find the version we fetched, add it to the end
+	if !replacedFetchedVersion {
+		module.Versions = append(module.Versions, returnVersion)
+	}
 
 	return &protos.DataModuleAddVersionResp{
 		Module: module,
