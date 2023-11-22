@@ -260,9 +260,9 @@ func SelectImporter(localFS fileaccess.FileAccess, remoteFS fileaccess.FileAcces
 	}
 
 	log.Infof("SelectImporter: Path contains %v files...", len(items))
-	for c, item := range items {
+	/*for c, item := range items {
 		log.Infof("  %v. %v", c+1, item)
-	}
+	}*/
 
 	// Check if it's a combined dataset
 	combinedFiles, _ /*imageFileNames*/, _ /*combinedFile1Meta*/, _ /*combinedFile2Meta*/, err := combined.GetCombinedBeamFiles(importPath, log)

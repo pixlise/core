@@ -126,6 +126,9 @@ func makeSpectraLookup(inputpath string, spectraFiles []string, singleDetectorMS
 	spectraLookup := make(dataConvertModels.DetectorSampleByPMC)
 
 	reportInterval := len(spectraFiles) / 10
+	if reportInterval == 0 {
+		reportInterval = 1
+	}
 
 	c := 1
 	for idx, f := range spectraFiles {
