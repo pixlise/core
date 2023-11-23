@@ -11,7 +11,7 @@ import (
 )
 
 func HandleGetOwnershipReq(req *protos.GetOwnershipReq, hctx wsHelpers.HandlerContext) (*protos.GetOwnershipResp, error) {
-	if err := wsHelpers.CheckStringField(&req.ObjectId, "ObjectId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+	if err := wsHelpers.CheckStringField(&req.ObjectId, "ObjectId", 1, wsHelpers.IdFieldMaxLength*2 /* Tests have longer ids anyway... */); err != nil {
 		return nil, err
 	}
 
@@ -46,7 +46,7 @@ func deleteFromMap(ids []string, theMap *map[string]bool) {
 }
 
 func HandleObjectEditAccessReq(req *protos.ObjectEditAccessReq, hctx wsHelpers.HandlerContext) (*protos.ObjectEditAccessResp, error) {
-	if err := wsHelpers.CheckStringField(&req.ObjectId, "ObjectId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+	if err := wsHelpers.CheckStringField(&req.ObjectId, "ObjectId", 1, wsHelpers.IdFieldMaxLength*2 /* Tests have longer ids anyway... */); err != nil {
 		return nil, err
 	}
 

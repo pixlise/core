@@ -1,15 +1,21 @@
 package wsHandler
 
 import (
+	"bytes"
 	"context"
-	"errors"
 	"fmt"
+	"image"
+	"path"
+	"strings"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
+	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -65,6 +71,9 @@ func HandleImageGetReq(req *protos.ImageGetReq, hctx wsHelpers.HandlerContext) (
 	filter := bson.M{"_id": req.ImageName}
 	result := coll.FindOne(ctx, filter)
 	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			return nil, errorwithstatus.MakeNotFoundError(req.ImageName)
+		}
 		return nil, result.Err()
 	}
 
@@ -159,7 +168,7 @@ func HandleImageSetDefaultReq(req *protos.ImageSetDefaultReq, hctx wsHelpers.Han
 		return nil, err
 	}
 
-	if result.MatchedCount != 1 {
+	if result.MatchedCount != 1 && result.UpsertedCount != 1 {
 		hctx.Svcs.Log.Errorf("ImageSetDefaultReq UpdateOne result had unexpected counts %+v id: %v", result, req.ScanId)
 	}
 
@@ -167,9 +176,163 @@ func HandleImageSetDefaultReq(req *protos.ImageSetDefaultReq, hctx wsHelpers.Han
 }
 
 func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerContext) (*protos.ImageDeleteResp, error) {
-	return nil, errors.New("HandleImageDeleteReq not implemented yet")
+	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 255); err != nil {
+		return nil, err
+	}
+
+	ctx := context.TODO()
+
+	// Get image meta so we have all info we need
+	filterImg := bson.M{"_id": req.Name}
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+	result := coll.FindOne(ctx, filterImg)
+	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			return nil, errorwithstatus.MakeNotFoundError(req.Name)
+		}
+		return nil, result.Err()
+	}
+
+	img := protos.ScanImage{}
+	err := result.Decode(&img)
+	if err != nil {
+		return nil, err
+	}
+
+	// If it's the default image in any scan, we can't delete it
+	filter := bson.D{{"defaultImageFileName", img.Path}}
+	opt := options.Find()
+	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ScanDefaultImagesName)
+
+	cursor, err := coll.Find(ctx, filter, opt)
+	if err != nil {
+		return nil, err
+	}
+
+	items := []*protos.ScanImageDefaultDB{}
+	err = cursor.All(context.TODO(), &items)
+	if err != nil {
+		return nil, err
+	}
+
+	// If we have any, it's an error
+	if len(items) > 0 {
+		list := []string{}
+		for _, item := range items {
+			list = append(list, item.ScanId)
+		}
+		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Cannot delete image: \"%v\" because it is the default image for scans: [%v]", req.Name, strings.Join(list, ",")))
+	}
+
+	// Delete anything related to this image
+	s3Path := filepaths.GetImageFilePath(img.Path)
+	err = hctx.Svcs.FS.DeleteObject(hctx.Svcs.Config.DatasetsBucket, s3Path)
+	if err != nil {
+		// Just log, but continue
+		hctx.Svcs.Log.Errorf("Delete image %v - failed to delete s3://%v/%v: %v", req.Name, hctx.Svcs.Config.DatasetsBucket, s3Path, err)
+	}
+
+	// And the cached files
+	files, err := hctx.Svcs.FS.ListObjects(hctx.Svcs.Config.DatasetsBucket, path.Join(filepaths.DatasetImageCacheRoot, img.Path))
+	for _, fileName := range files {
+		err = hctx.Svcs.FS.DeleteObject(hctx.Svcs.Config.DatasetsBucket, fileName)
+		if err != nil {
+			// Just log, but continue
+			hctx.Svcs.Log.Errorf("Delete cached image %v - failed to delete s3://%v/%v: %v", req.Name, hctx.Svcs.Config.DatasetsBucket, fileName, err)
+		}
+	}
+
+	// Delete from Images collection
+	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+	filter = bson.D{{"_id", req.Name}}
+	delOpt := options.Delete()
+	_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
+	if err != nil {
+		return nil, err
+	}
+
+	//Verify delImgResult.DeletedCount == 1 ???
+
+	return &protos.ImageDeleteResp{}, nil
 }
 
 func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerContext) (*protos.ImageUploadResp, error) {
-	return nil, errors.New("HandleImageUploadReq not implemented yet")
+	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 255); err != nil {
+		return nil, err
+	}
+
+	// We only allow a few formats:
+	nameLowerCase := strings.ToLower(req.Name)
+	if !strings.HasSuffix(nameLowerCase, ".png") && !strings.HasSuffix(nameLowerCase, ".jpg") && !strings.HasSuffix(nameLowerCase, ".tif") {
+		return nil, fmt.Errorf("Unexpected format: %v. Must be either PNG, JPG or 32bit float 4-channel TIF file", req.Name)
+	}
+
+	if err := wsHelpers.CheckStringField(&req.OriginScanId, "OriginScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckFieldLength(req.AssociatedScanIds, "AssociatedScanIds", 0, 10); err != nil {
+		return nil, err
+	}
+
+	db := hctx.Svcs.MongoDB
+
+	// Save image meta in collection
+	img, _, err := image.Decode(bytes.NewReader(req.ImageData))
+	if err != nil {
+		return nil, err
+	}
+
+	purpose := protos.ScanImagePurpose_SIP_VIEWING
+	if strings.HasSuffix(nameLowerCase, ".tif") {
+		purpose = protos.ScanImagePurpose_SIP_MULTICHANNEL
+	}
+
+	associatedScanIds := []string{req.OriginScanId}
+	if len(req.AssociatedScanIds) > 0 {
+		associatedScanIds = req.AssociatedScanIds
+	}
+
+	savePath := path.Join(req.OriginScanId, req.Name)
+	scanImage := utils.MakeScanImage(
+		req.Name,
+		savePath,
+		uint32(len(req.ImageData)),
+		protos.ScanImageSource_SI_UPLOAD,
+		purpose,
+		associatedScanIds,
+		req.OriginScanId,
+		"",
+		req.GetBeamImageRef(),
+		img)
+
+	ctx := context.TODO()
+	coll := db.Collection(dbCollections.ImagesName)
+	opt := options.InsertOne()
+
+	result, err := coll.InsertOne(ctx, scanImage, opt)
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("%v already exists", req.Name))
+		}
+		return nil, err
+	}
+
+	if result.InsertedID != scanImage.Name {
+		return nil, fmt.Errorf("HandleImageUploadReq wrote id %v, got back %v", scanImage.Name, result.InsertedID)
+		// Not the end of the world... don't error out here
+	}
+
+	// Save the image to S3
+	s3Path := filepaths.GetImageFilePath(savePath)
+	err = hctx.Svcs.FS.WriteObject(hctx.Svcs.Config.DatasetsBucket, s3Path, req.ImageData)
+	if err != nil {
+		// Failed to upload image data, so no point in having a DB entry now either...
+		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+		filter := bson.D{{"_id", req.Name}}
+		delOpt := options.Delete()
+		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
+		return nil, err
+	}
+
+	return &protos.ImageUploadResp{}, nil
 }

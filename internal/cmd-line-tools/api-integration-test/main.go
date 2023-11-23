@@ -138,13 +138,13 @@ func main() {
 func runTests(apiHost string) {
 	testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
+	testImageUpload(apiHost)
 	testSelectionMsgs(apiHost)
 	testQuants(apiHost)
 	testDiffractionManualPeaks(apiHost)
 	testDiffractionStatus(apiHost)
 	testPiquantMsgs(apiHost)
 	testExpressionRuntimeMsgs(apiHost)
-	testDOI(apiHost)
 	testDataModules(apiHost)
 	testUserContent(apiHost, map[string]contentMessaging{
 		"elementSet": {
@@ -423,4 +423,5 @@ func runTests(apiHost string) {
 	testROIUserConfiguration(apiHost)
 	testScreenConfiguration(apiHost)
 	testWidgetData(apiHost)
+	testDOI(apiHost)
 }

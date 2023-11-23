@@ -24,6 +24,8 @@ import (
 	"image/png"
 	"os"
 	"strings"
+
+	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
 func ReadImageFile(path string) (image.Image, error) {
@@ -98,4 +100,36 @@ func WritePNGImageFile(pathPrefix string, img image.Image) error {
 
 	png.Encode(f, img)
 	return nil
+}
+
+func MakeScanImage(
+	imgName string,
+	imgPath string,
+	fileSize uint32,
+	source protos.ScanImageSource,
+	purpose protos.ScanImagePurpose,
+	associatedScanIds []string,
+	originScanId string,
+	originImageURL string,
+	matchInfo *protos.ImageMatchTransform,
+	img image.Image) *protos.ScanImage {
+	result := &protos.ScanImage{
+		Name: imgName,
+
+		Source:   source,
+		Width:    uint32(img.Bounds().Dx()),
+		Height:   uint32(img.Bounds().Dy()),
+		FileSize: fileSize,
+		Purpose:  purpose,
+
+		AssociatedScanIds: associatedScanIds,
+		OriginScanId:      originScanId,
+		OriginImageURL:    originImageURL,
+
+		Path: imgPath,
+
+		MatchInfo: matchInfo,
+	}
+
+	return result
 }

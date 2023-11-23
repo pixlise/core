@@ -1,12 +1,21 @@
 package wsHandler
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"path"
+	"strings"
 
+	"github.com/pixlise/core/v3/api/dataimport"
+	dataimportModel "github.com/pixlise/core/v3/api/dataimport/models"
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
+	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/indexcompression"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -164,9 +173,203 @@ func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.Handler
 }
 
 func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHelpers.HandlerContext) (*protos.ScanTriggerReImportResp, error) {
-	return nil, errors.New("HandleScanTriggerReImportReq not implemented yet")
+	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, 50); err != nil {
+		return nil, err
+	}
+
+	result, logId, err := dataimport.TriggerDatasetReprocessViaSNS(hctx.Svcs.SNS, hctx.Svcs.IDGen, req.ScanId, hctx.Svcs.Config.DataSourceSNSTopic)
+
+	hctx.Svcs.Log.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Log ID: %v", result, logId)
+	return &protos.ScanTriggerReImportResp{LogId: logId}, err
 }
 
 func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContext) (*protos.ScanUploadResp, error) {
-	return nil, errors.New("HandleScanUploadReq not implemented yet")
+	destBucket := hctx.Svcs.Config.ManualUploadBucket
+	fs := hctx.Svcs.FS
+	logger := hctx.Svcs.Log
+	logger.Debugf("Dataset create started for format: %v, id: %v", req.Id, req.Format)
+
+	// Validate the dataset ID - can't contain funny characters because it ends up as an S3 path
+	// NOTE: we also turn space to _ here! Having spaces in the path broke quants because the
+	// quant summary file was written with a + instead of a space?!
+	datasetID := fileaccess.MakeValidObjectName(req.Id, false)
+
+	formats := []string{"jpl-breadboard", "sbu-breadboard", "pixl-em"}
+	if !utils.ItemInSlice(req.Format, formats) {
+		return nil, fmt.Errorf("Unexpected format: \"%v\"", req.Format)
+	}
+
+	s3PathStart := path.Join(filepaths.DatasetUploadRoot, datasetID)
+
+	// Check if this exists already...
+	existingPaths, err := fs.ListObjects(destBucket, s3PathStart)
+	if err != nil {
+		err = fmt.Errorf("Failed to list existing files for dataset ID: %v. Error: %v", datasetID, err)
+		logger.Errorf("%v", err)
+		return nil, err
+	}
+
+	// If there are any existing paths, we stop here
+	if len(existingPaths) > 0 {
+		err = fmt.Errorf("Dataset ID already exists: %v", datasetID)
+		logger.Errorf("%v", err)
+		return nil, err
+	}
+
+	// Validate zip contents matches the format we were given
+	zipReader, err := zip.NewReader(bytes.NewReader(req.ZippedData), int64(len(req.ZippedData)))
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate contents - detector dependent
+	if req.Format == "pixl-em" {
+		// Expecting certain product dirs, but don't be too prescriptive
+		foundHousekeeping := false
+		foundBeamLocation := false
+		foundSpectra := false
+		for _, f := range zipReader.File {
+			if f.FileInfo().IsDir() {
+				if f.Name == "RFS" {
+					foundSpectra = true
+				} else if f.Name == "RXL" {
+					foundBeamLocation = true
+				} else if f.Name == "RSI" {
+					foundHousekeeping = true
+				}
+			} else {
+				if strings.HasPrefix(f.Name, "RFS") {
+					foundSpectra = true
+				} else if strings.HasPrefix(f.Name, "RXL") {
+					foundBeamLocation = true
+				} else if strings.HasPrefix(f.Name, "RSI") {
+					foundHousekeeping = true
+				}
+			}
+		}
+
+		if !foundHousekeeping {
+			return nil, fmt.Errorf("Zip file missing RSI sub-directory")
+		}
+		if !foundBeamLocation {
+			return nil, fmt.Errorf("Zip file missing RXL sub-directory")
+		}
+		if !foundSpectra {
+			return nil, fmt.Errorf("Zip file missing RFS sub-directory")
+		}
+
+		// Save the contents as a zip file in the uploads area
+		savePath := path.Join(s3PathStart, "data.zip")
+		err = fs.WriteObject(destBucket, savePath, req.ZippedData)
+		if err != nil {
+			return nil, err
+		}
+		logger.Debugf("  Wrote: s3://%v/%v", destBucket, savePath)
+	} else {
+		// Expecting flat zip of MSA files
+		count := 0
+		for _, f := range zipReader.File {
+			// If the zip path starts with __MACOSX, ignore it, it's garbage that a mac laptop has included...
+			//if strings.HasPrefix(f.Name, "__MACOSX") {
+			//	continue
+			//}
+
+			if f.FileInfo().IsDir() {
+				return nil, fmt.Errorf("Zip file must not contain sub-directories. Found: %v", f.Name)
+			}
+
+			if !strings.HasSuffix(f.Name, ".msa") {
+				return nil, fmt.Errorf("Zip file must only contain MSA files. Found: %v", f.Name)
+			}
+			count++
+		}
+
+		// Make sure it has at least one msa!
+		if count <= 0 {
+			return nil, errors.New("Zip file did not contain any MSA files")
+		}
+
+		// Save the contents as a zip file in the uploads area
+		savePath := path.Join(s3PathStart, "spectra.zip")
+		err = fs.WriteObject(destBucket, savePath, req.ZippedData)
+		if err != nil {
+			return nil, err
+		}
+		logger.Debugf("  Wrote: s3://%v/%v", destBucket, savePath)
+
+		// Now save detector info
+		savePath = path.Join(s3PathStart, "import.json")
+		importerFile := dataimportModel.BreadboardImportParams{
+			MsaDir:           "spectra", // We now assume we will have a spectra.zip extracted into a spectra dir!
+			MsaBeamParams:    "10,0,10,0",
+			GenBulkMax:       true,
+			GenPMCs:          true,
+			ReadTypeOverride: "Normal",
+			DetectorConfig:   "Breadboard",
+			Group:            "JPL Breadboard",
+			TargetID:         "0",
+			SiteID:           0,
+
+			// The rest we set to the dataset ID
+			DatasetID: datasetID,
+			//Site: datasetID,
+			//Target: datasetID,
+			Title: datasetID,
+			/*
+				BeamFile // Beam location CSV path
+				HousekeepingFile // Housekeeping CSV path
+				ContextImgDir // Dir to find context images in
+				PseudoIntensityCSVPath // Pseudointensity CSV path
+				IgnoreMSAFiles // MSA files to ignore
+				SingleDetectorMSAs // Expecting single detector (1 column) MSA files
+				DetectorADuplicate // Duplication of detector A to B, because test MSA only had 1 set of spectra
+				BulkQuantFile // Bulk quantification file (for tactical datasets)
+				XPerChanA // eV calibration eV/channel (detector A)
+				OffsetA // eV calibration eV start offset (detector A)
+				XPerChanB // eV calibration eV/channel (detector B)
+				OffsetB // eV calibration eV start offset (detector B)
+				ExcludeNormalDwellSpectra // Hack for tactical datasets - load all MSAs to gen bulk sum, but dont save them in output
+				SOL // Might as well be able to specify SOL. Needed for first spectrum dataset on SOL13
+			*/
+		}
+
+		if req.Format == "sbu-breadboard" {
+			importerFile.Group = "Stony Brook Breadboard"
+			importerFile.DetectorConfig = "StonyBrookBreadboard"
+		}
+
+		err = fs.WriteJSON(destBucket, savePath, importerFile)
+		if err != nil {
+			return nil, err
+		}
+		logger.Debugf("  Wrote: s3://%v/%v", destBucket, savePath)
+	}
+
+	// Save detector info
+	savePath := path.Join(s3PathStart, "detector.json")
+	detectorFile := dataimportModel.DetectorChoice{
+		Detector: req.Format,
+	}
+	err = fs.WriteJSON(destBucket, savePath, detectorFile)
+	if err != nil {
+		return nil, err
+	}
+
+	// Now save creator info
+	savePath = path.Join(s3PathStart, "creator.json")
+	err = fs.WriteJSON(destBucket, savePath, hctx.SessUser.User)
+	if err != nil {
+		return nil, err
+	}
+	logger.Debugf("  Wrote: s3://%v/%v", destBucket, savePath)
+
+	// Now we trigger a dataset conversion
+	result, logId, err := dataimport.TriggerDatasetReprocessViaSNS(hctx.Svcs.SNS, hctx.Svcs.IDGen, datasetID, hctx.Svcs.Config.DataSourceSNSTopic)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Log ID: %v", result, logId)
+
+	return &protos.ScanUploadResp{LogId: logId}, nil
 }

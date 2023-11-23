@@ -1,0 +1,29 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: pixlise-core-data-import
+  description: |
+    The data import core packages repo for the pixlise application. 
+    These data import functions service import and processing data files across a range of components.
+  links:
+    - title: Website
+      url: https://pixlise.org
+    - title: Documentation
+      url: https://pixlise.gitbook.io/
+    - title: Slack
+      url: https://pixlise.slack.com/archives/CQUA2FSS0
+  annotations:
+    github.com/project-slug: pixlise/core/data-import
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - golang
+    - data
+spec:
+  type: library
+  owner: default/developers
+  lifecycle: production
+  dependencyOf:
+    - component:data-import
+  system: data-processing
+  dependsOn:
+    - component:pixlise-core-packages
