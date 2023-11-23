@@ -6,7 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -29,7 +29,7 @@ func createEmptyDeposition(zenodoURI string, accessToken string) (*protos.Zenodo
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return &emptyResponse, err
 	}
@@ -60,7 +60,7 @@ func uploadFileContentsToZenodo(deposition protos.ZenodoDepositionResponse, file
 	}
 
 	defer putResponse.Body.Close()
-	putBody, err := ioutil.ReadAll(putResponse.Body)
+	putBody, err := io.ReadAll(putResponse.Body)
 	if err != nil {
 		return &emptyResponse, err
 	}
@@ -124,7 +124,7 @@ func uploadMetadataToDeposition(deposition protos.ZenodoDepositionResponse, meta
 
 	defer metaResponse.Body.Close()
 
-	metaObject, err := ioutil.ReadAll(metaResponse.Body)
+	metaObject, err := io.ReadAll(metaResponse.Body)
 	if err != nil {
 		return &emptyResponse, err
 	}
@@ -239,7 +239,7 @@ func publishDeposition(deposition protos.ZenodoDepositionResponse, accessToken s
 
 	defer publishResponse.Body.Close()
 
-	publishBody, err := ioutil.ReadAll(publishResponse.Body)
+	publishBody, err := io.ReadAll(publishResponse.Body)
 	if err != nil {
 		return nil, err
 	}

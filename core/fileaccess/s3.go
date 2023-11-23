@@ -20,7 +20,7 @@ package fileaccess
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -106,7 +106,7 @@ func (s3Access S3Access) ReadObject(bucket string, path string) ([]byte, error) 
 		return nil, err
 	}
 
-	return ioutil.ReadAll(result.Body)
+	return io.ReadAll(result.Body)
 }
 
 func (s3Access S3Access) WriteObject(bucket string, path string, data []byte) error {

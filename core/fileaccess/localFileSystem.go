@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -252,11 +251,11 @@ func MakeEmptyLocalDirectory(root string, subdir string) (string, error) {
 
 func CopyFileLocally(srcPath string, dstPath string) error {
 	// Read all content of src to data
-	data, err := ioutil.ReadFile(srcPath)
+	data, err := os.ReadFile(srcPath)
 	if err != nil {
 		return err
 	}
 
 	// Write data to dst
-	return ioutil.WriteFile(dstPath, data, 0644)
+	return os.WriteFile(dstPath, data, 0644)
 }

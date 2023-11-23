@@ -23,7 +23,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -112,7 +111,7 @@ func NewConfigFromFile(configFilePath string) (APIConfig, error) {
 	var cfg APIConfig
 
 	fmt.Printf("Loading custom config from: %s\n", configFilePath)
-	customConfig, err := ioutil.ReadFile(configFilePath)
+	customConfig, err := os.ReadFile(configFilePath)
 	if err != nil {
 		return cfg, fmt.Errorf("could not read config file at %s", configFilePath)
 	}

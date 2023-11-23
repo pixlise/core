@@ -24,7 +24,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -101,7 +101,7 @@ func connectToRemoteMongoDB(
 
 func getCustomTLSConfig(caFile string) (*tls.Config, error) {
 	tlsConfig := new(tls.Config)
-	certs, err := ioutil.ReadFile(caFile)
+	certs, err := os.ReadFile(caFile)
 
 	if err != nil {
 		return tlsConfig, err

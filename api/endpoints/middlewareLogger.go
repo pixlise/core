@@ -20,7 +20,7 @@ package endpoints
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -64,8 +64,8 @@ type LoggerMiddleware struct {
 func (h *LoggerMiddleware) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Read the HTTP body. We can log it here if required, and then we pass it into the next in chain
-		bodyBytes, err := ioutil.ReadAll(r.Body)
-		r.Body = ioutil.NopCloser(bytes.NewReader(bodyBytes))
+		bodyBytes, err := io.ReadAll(r.Body)
+		r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 		fullReqBodyText := "REQ BODY ERROR"
 		reqBodyText := fullReqBodyText
 
