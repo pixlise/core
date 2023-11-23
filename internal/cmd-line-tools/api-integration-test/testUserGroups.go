@@ -330,7 +330,7 @@ func testAddRemoveUserAsGroupMember(u2 wstestlib.ScriptedTestUser, nonAdminUserI
 					"details": {
 						"id": "%v",
 						"name": "Test 1 User",
-						"email": "test1-2@pixlise.org"
+						"email": "test1@pixlise.org"
 					},
 					"createdUnixSec": "${SECAGO=5}"
 				}
@@ -1247,7 +1247,7 @@ func testAdminUserIgnoreGroupJoin(apiHost string) {
 					"details": {
 						"id": "%v",
 						"name": "Test 1 User",
-						"email": "test1-2@pixlise.org"
+						"email": "test1@pixlise.org"
 					},
 					"createdUnixSec": "${SECAGO=5}"
 				}
@@ -1647,7 +1647,7 @@ func testJoinRequestNotificationLive(apiHost string) {
 					"details": {
 						"id": "%v",
 						"name": "Test 1 User",
-						"email": "test1-2@pixlise.org"
+						"email": "test1@pixlise.org"
 					},
 					"createdUnixSec": "${SECAGO=5}"
 				}
@@ -1729,7 +1729,7 @@ func testJoinRequestNotificationAfterConnect(apiHost string) {
 					"details": {
 						"id": "%v",
 						"name": "Test 1 User",
-						"email":"test1-2@pixlise.org"
+						"email":"test1@pixlise.org"
 					},
 					"createdUnixSec": "${SECAGO=5}"
 				}

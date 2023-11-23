@@ -529,6 +529,5 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 
 	// Verify the above
 	u1.CloseActionGroup([]string{}, 60000)
-
 	wstestlib.ExecQueuedActions(&u1)
 }

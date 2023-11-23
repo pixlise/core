@@ -185,8 +185,8 @@ func testWidgetData(apiHost string) {
 					"modifiedUnixSec": "${SECAGO=3}",
 					"owner": {
 						"creatorUser": {
-							"id": "${IDSAVE=CREATOR_ID_U1}",
-							"name": "test1@pixlise.org - WS Integration Test",
+							"id": "${USERID}",
+							"name": "${IGNORE}",
 							"email": "test1@pixlise.org"
 						},
 						"createdUnixSec": "${SECAGO=3}",

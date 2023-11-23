@@ -1,6 +1,10 @@
 package main
 
-import "github.com/pixlise/core/v3/core/wstestlib"
+import (
+	"fmt"
+
+	"github.com/pixlise/core/v3/core/wstestlib"
+)
 
 func testUserDetails(apiHost string) {
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
@@ -10,44 +14,37 @@ func testUserDetails(apiHost string) {
 		Pass: test1Password,
 	})
 
+	permissionExpected := `[
+		"EDIT_DIFFRACTION",
+		"EDIT_ELEMENT_SET",
+		"EDIT_EXPRESSION",
+		"EDIT_EXPRESSION_GROUP",
+		"EDIT_OWN_USER",
+		"EDIT_ROI",
+		"EDIT_SCAN",
+		"EDIT_VIEW_STATE",
+		"QUANTIFY",
+		"SHARE"
+	]`
+
 	u1.AddSendReqAction("Request details",
 		`{"userDetailsReq":{}}`,
-		`{"msgId":1,"status":"WS_OK","userDetailsResp":{
+		fmt.Sprintf(`{"msgId":1,"status":"WS_OK","userDetailsResp":{
 				"details":{"info":{"id":"${USERID}","name":"test1@pixlise.org - WS Integration Test","email":"test1@pixlise.org"},
-				"permissions": [
-					"EDIT_DIFFRACTION",
-					"EDIT_ELEMENT_SET",
-					"EDIT_EXPRESSION",
-					"EDIT_EXPRESSION_GROUP",
-					"EDIT_OWN_USER",
-					"EDIT_ROI",
-					"EDIT_SCAN",
-					"QUANTIFY",
-					"SHARE"
-				]}}}`,
+				"permissions": %v}}}`, permissionExpected),
 	)
 
 	u1.AddSendReqAction("Edit details",
-		`{"userDetailsWriteReq":{ "name": "Test 1 User", "email": "test1-2@pixlise.org", "dataCollectionVersion": "1.2.3" }}`,
+		`{"userDetailsWriteReq":{ "name": "Test 1 User", "email": "test1-edited@pixlise.org", "dataCollectionVersion": "1.2.3" }}`,
 		`{"msgId":2,"status":"WS_OK","userDetailsWriteResp":{}}`,
 	)
 
 	u1.AddSendReqAction("Request details again",
 		`{"userDetailsReq":{}}`,
-		`{"msgId":3,"status":"WS_OK","userDetailsResp":{
-			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
+		fmt.Sprintf(`{"msgId":3,"status":"WS_OK","userDetailsResp":{
+			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-edited@pixlise.org"},
 			"dataCollectionVersion": "1.2.3",
-            "permissions": [
-                "EDIT_DIFFRACTION",
-                "EDIT_ELEMENT_SET",
-                "EDIT_EXPRESSION",
-                "EDIT_EXPRESSION_GROUP",
-                "EDIT_OWN_USER",
-                "EDIT_ROI",
-                "EDIT_SCAN",
-				"QUANTIFY",
-                "SHARE"
-            ]}}}`,
+            "permissions": %v}}}`, permissionExpected),
 	)
 
 	u1.AddSendReqAction("Edit data collection version only",
@@ -60,38 +57,15 @@ func testUserDetails(apiHost string) {
 
 	u1.AddSendReqAction("Request details again",
 		`{"userDetailsReq":{}}`,
-		`{"msgId":5,"status":"WS_OK","userDetailsResp":{
-			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
+		fmt.Sprintf(`{"msgId":5,"status":"WS_OK","userDetailsResp":{
+			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-edited@pixlise.org"},
 			"dataCollectionVersion": "1.2.4",
-            "permissions": [
-                "EDIT_DIFFRACTION",
-                "EDIT_ELEMENT_SET",
-                "EDIT_EXPRESSION",
-                "EDIT_EXPRESSION_GROUP",
-                "EDIT_OWN_USER",
-                "EDIT_ROI",
-                "EDIT_SCAN",
-				"QUANTIFY",
-                "SHARE"
-            ]}}}`,
+            "permissions": %v}}}`, permissionExpected),
 	)
 
-	u1.AddSendReqAction("Request details again",
-		`{"userDetailsReq":{}}`,
-		`{"msgId":6,"status":"WS_OK","userDetailsResp":{
-			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
-			"dataCollectionVersion": "1.2.4",
-            "permissions": [
-                "EDIT_DIFFRACTION",
-                "EDIT_ELEMENT_SET",
-                "EDIT_EXPRESSION",
-                "EDIT_EXPRESSION_GROUP",
-                "EDIT_OWN_USER",
-                "EDIT_ROI",
-                "EDIT_SCAN",
-				"QUANTIFY",
-                "SHARE"
-            ]}}}`,
+	u1.AddSendReqAction("Change email back so we don't screw up future tests",
+		`{"userDetailsWriteReq":{ "name": "Test 1 User", "email": "test1@pixlise.org" }}`,
+		`{"msgId":6,"status":"WS_OK","userDetailsWriteResp":{}}`,
 	)
 
 	u1.AddSendReqAction("Edit but with invalid fields",
@@ -101,20 +75,10 @@ func testUserDetails(apiHost string) {
 
 	u1.AddSendReqAction("Request details again",
 		`{"userDetailsReq":{}}`,
-		`{"msgId":8,"status":"WS_OK","userDetailsResp":{
-			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1-2@pixlise.org"},
+		fmt.Sprintf(`{"msgId":8,"status":"WS_OK","userDetailsResp":{
+			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1@pixlise.org"},
 			"dataCollectionVersion": "1.2.4",
-            "permissions": [
-                "EDIT_DIFFRACTION",
-                "EDIT_ELEMENT_SET",
-                "EDIT_EXPRESSION",
-                "EDIT_EXPRESSION_GROUP",
-                "EDIT_OWN_USER",
-                "EDIT_ROI",
-                "EDIT_SCAN",
-				"QUANTIFY",
-                "SHARE"
-            ]}}}`,
+            "permissions": %v}}}`, permissionExpected),
 	)
 
 	u1.CloseActionGroup([]string{}, 5000)

@@ -37,7 +37,7 @@ func testROIUserConfiguration(apiHost string) {
 					"owner": {
 						"creatorUser": {
 							"id": "${USERID}",
-							"name": "${REGEXMATCH=test}",
+							"name": "${REGEXMATCH=Test}",
 							"email": "${REGEXMATCH=.+@pixlise\\.org}"
 						},
 						"createdUnixSec": "${SECAGO=3}",
@@ -106,7 +106,7 @@ func testROIUserConfiguration(apiHost string) {
 						"owner": {
 							"creatorUser": {
 								"id": "${USERID}",
-								"name": "${REGEXMATCH=test}",
+								"name": "${REGEXMATCH=Test}",
 								"email": "${REGEXMATCH=.+@pixlise\\.org}"
 							},
 							"createdUnixSec": "${SECAGO=3}",
