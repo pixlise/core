@@ -108,7 +108,7 @@ func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen idgen.IDGenerator, logLeve
 		Log:    &logger.NullLogger{},
 		//AWSSessionCW: nil,
 		//S3:           mockS3,
-		//SNS:          &awsutil.MockSNS{},
+		SNS:       &awsutil.MockSNS{},
 		JWTReader: MockJWTReader{},
 		IDGen:     idGen,
 		//Signer:       signer,

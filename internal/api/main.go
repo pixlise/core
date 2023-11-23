@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/olahol/melody"
@@ -217,11 +218,14 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 
 	jwt := jwtparser.RealJWTReader{Validator: jwtValidator}
 
+	snsSvc := sns.New(sess)
+
 	// Set up services
 	svcs := &services.APIServices{
 		Config:      cfg,
 		Log:         iLog,
 		S3:          s3svc,
+		SNS:         awsutil.RealSNS{SNS: snsSvc},
 		FS:          fs,
 		JWTReader:   jwt,
 		IDGen:       &idgen.IDGen{},
