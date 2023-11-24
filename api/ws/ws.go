@@ -216,5 +216,3 @@ func (ws *WSHandler) GetSessionForUsersIfExists(userIds []string) ([]*melody.Ses
 
 	return result, noSessionFoundUserIds
 }
-
-func (n *NotificationSender) DispatchUpdateMessage() {
