@@ -180,3 +180,41 @@ func (ws *WSHandler) HandleMessage(s *melody.Session, msg []byte) {
 		fmt.Printf("WARNING: No response generated for request: %+v\n", resp)
 	}
 }
+
+// For a a list of user ids, this returns all the sessions we have for them, and a list of user ids we didn't find sessions for
+func (ws *WSHandler) GetSessionForUsersIfExists(userIds []string) ([]*melody.Session, []string) {
+	result := []*melody.Session{}
+	sessions, err := ws.melody.Sessions()
+	if err != nil {
+		return []*melody.Session{}, []string{}
+	}
+
+	// Remember who we found...
+	usersWithSessions := map[string]bool{}
+	for _, userId := range userIds {
+		usersWithSessions[userId] = false
+	}
+
+	for _, session := range sessions {
+		sessUser, err := wsHelpers.GetSessionUser(session)
+		if err == nil {
+			if utils.ItemInSlice(sessUser.User.Id, userIds) {
+				// We found one, add it to our output list!
+				result = append(result, session)
+				usersWithSessions[sessUser.User.Id] = true
+			}
+		}
+	}
+
+	// Build the list of users we didn't find sessions for
+	noSessionFoundUserIds := []string{}
+	for userId, hasSession := range usersWithSessions {
+		if !hasSession {
+			noSessionFoundUserIds = append(noSessionFoundUserIds, userId)
+		}
+	}
+
+	return result, noSessionFoundUserIds
+}
+
+func (n *NotificationSender) DispatchUpdateMessage() {

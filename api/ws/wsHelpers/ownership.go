@@ -248,3 +248,82 @@ func MakeOwnerSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, 
 	result.SharedWithOthers = result.ViewerUserCount > 0 || result.ViewerGroupCount > 0 || result.EditorUserCount > 0 || result.EditorGroupCount > 0
 	return result
 }
+
+func FindUserIdsFor(objectId string, mongoDB *mongo.Database) ([]string, error) {
+	filter := bson.M{"_id": objectId}
+	opts := options.FindOne()
+	ownership := mongoDB.Collection(dbCollections.OwnershipName).FindOne(context.TODO(), filter, opts)
+	if ownership.Err() != nil {
+		if ownership.Err() == mongo.ErrNoDocuments {
+			return []string{}, errorwithstatus.MakeNotFoundError(objectId)
+		}
+		return []string{}, ownership.Err()
+	}
+
+	ownershipItem := protos.OwnershipItem{}
+	err := ownership.Decode(&ownershipItem)
+	if err != nil {
+		return []string{}, err
+	}
+
+	userIds := []string{}
+	userIds = append(userIds, ownershipItem.Viewers.UserIds...)
+	userIds = append(userIds, ownershipItem.Editors.UserIds...)
+
+	// Gather up all the user ids for the groups selected
+	groupIds := []string{}
+	groupIds = append(groupIds, ownershipItem.Viewers.GroupIds...)
+	groupIds = append(groupIds, ownershipItem.Editors.GroupIds...)
+
+	usersForGroups, err := GetUserIdsForGroup(groupIds, mongoDB)
+	if err != nil {
+		return []string{}, err
+	}
+
+	return append(userIds, usersForGroups...), nil
+}
+
+func GetUserIdsForGroup(groupIds []string, mongoDB *mongo.Database) ([]string, error) {
+	filter := bson.M{"_id": bson.M{"$in": groupIds}}
+	opts := options.Find()
+	cursor, err := mongoDB.Collection(dbCollections.UserGroupsName).Find(context.TODO(), filter, opts)
+
+	if err != nil {
+		return []string{}, err
+	}
+
+	groups := []*protos.UserGroup{}
+	err = cursor.All(context.TODO(), &groups)
+	if err != nil {
+		return []string{}, err
+	}
+
+	userIds := []string{}
+	for _, group := range groups {
+		// Pull in the users
+		for _, user := range group.Viewers.Users {
+			userIds = append(userIds, user.Id)
+		}
+		for _, user := range group.Members.Users {
+			userIds = append(userIds, user.Id)
+		}
+
+		// Recurse into groups
+		groupIds := []string{}
+		for _, group := range group.Viewers.Groups {
+			groupIds = append(groupIds, group.Id)
+		}
+		for _, group := range group.Members.Groups {
+			groupIds = append(groupIds, group.Id)
+		}
+
+		usersForGroup, err := GetUserIdsForGroup(groupIds, mongoDB)
+		if err != nil {
+			return []string{}, err
+		}
+
+		userIds = append(userIds, usersForGroup...)
+	}
+
+	return userIds, nil
+}
