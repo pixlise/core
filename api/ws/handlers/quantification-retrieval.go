@@ -12,7 +12,7 @@ import (
 )
 
 func HandleQuantListReq(req *protos.QuantListReq, hctx wsHelpers.HandlerContext) (*protos.QuantListResp, error) {
-	filter, _, err := wsHelpers.MakeFilter(req.SearchParams, false, protos.ObjectType_OT_QUANTIFICATION, hctx)
+	filter, idToOwner, err := wsHelpers.MakeFilter(req.SearchParams, false, protos.ObjectType_OT_QUANTIFICATION, hctx)
 	if err != nil {
 		return nil, err
 	}
@@ -35,6 +35,9 @@ func HandleQuantListReq(req *protos.QuantListReq, hctx wsHelpers.HandlerContext)
 
 	quants := []*protos.QuantificationSummary{}
 	for _, item := range items {
+		if owner, ok := idToOwner[item.Id]; ok {
+			item.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+		}
 		quants = append(quants, item)
 	}
 
@@ -44,7 +47,7 @@ func HandleQuantListReq(req *protos.QuantListReq, hctx wsHelpers.HandlerContext)
 }
 
 func HandleQuantGetReq(req *protos.QuantGetReq, hctx wsHelpers.HandlerContext) (*protos.QuantGetResp, error) {
-	dbItem, _, err := wsHelpers.GetUserObjectById[protos.QuantificationSummary](false, req.QuantId, protos.ObjectType_OT_QUANTIFICATION, dbCollections.QuantificationsName, hctx)
+	dbItem, ownerItem, err := wsHelpers.GetUserObjectById[protos.QuantificationSummary](false, req.QuantId, protos.ObjectType_OT_QUANTIFICATION, dbCollections.QuantificationsName, hctx)
 	if err != nil {
 		return nil, err
 	}
@@ -61,6 +64,8 @@ func HandleQuantGetReq(req *protos.QuantGetReq, hctx wsHelpers.HandlerContext) (
 			return nil, err
 		}
 	}
+
+	dbItem.Owner = wsHelpers.MakeOwnerSummary(ownerItem, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 
 	return &protos.QuantGetResp{
 		Summary: dbItem,

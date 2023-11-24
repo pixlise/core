@@ -134,6 +134,7 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 			configuration.Name = screenConfig.Name
 			configuration.Tags = screenConfig.Tags
 			configuration.Description = screenConfig.Description
+			configuration.ScanConfigurations = screenConfig.ScanConfigurations
 
 			_, err = hctx.Svcs.MongoDB.Collection(dbCollections.ScreenConfigurationName).UpdateByID(sessCtx, screenConfig.Id, bson.D{{
 				Key:   "$set",
@@ -183,7 +184,7 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 		return nil, err
 	}
 
-	screenConfig.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	configuration.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 
 	return configuration, nil
 }

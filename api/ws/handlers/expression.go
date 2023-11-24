@@ -145,7 +145,6 @@ func createExpression(expr *protos.DataExpression, hctx wsHelpers.HandlerContext
 	if err != nil {
 		return nil, err
 	}
-
 	expr.Owner = wsHelpers.MakeOwnerSummary(ownerItem, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 	return expr, nil
 }
