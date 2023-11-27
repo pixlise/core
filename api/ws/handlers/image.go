@@ -159,7 +159,7 @@ func HandleImageSetDefaultReq(req *protos.ImageSetDefaultReq, hctx wsHelpers.Han
 
 	data := bson.D{
 		{"$set", bson.D{
-			{"defaultImageFileName", req.DefaultImageFileName},
+			{"defaultimagefilename", req.DefaultImageFileName},
 		}},
 	}
 
