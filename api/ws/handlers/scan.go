@@ -29,12 +29,44 @@ func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) (
 		return nil, err
 	}
 
-	ids := utils.GetMapKeys(idToOwner)
-
-	filterItems := []bson.M{{"_id": bson.M{"$in": ids}}}
+	// Check if the user specified a scanId in the request search filters, then we only need to use that one
+	filterItems := []bson.M{}
 
 	for field, value := range req.SearchFilters {
-		filterItems = append(filterItems, bson.M{"meta." + field: value})
+		if field == "scanId" {
+			filterItems = []bson.M{{"_id": value}}
+			break
+		}
+	}
+
+	if len(filterItems) <= 0 {
+		// Search through all ids accessible to our caller user
+		ids := utils.GetMapKeys(idToOwner)
+		filterItems = []bson.M{{"_id": bson.M{"$in": ids}}}
+	}
+
+	// It's either a meta field... one of the following known fields:
+	metaFields := []string{"Target", "SiteId", "Site", "RTT", "SCLK", "Sol", "DriveId", "TargetId"}
+
+	// Or it's a field on the struct:
+	// - title
+	// - description
+	// - instrument
+	// - instrumentConfig
+	// - timeStampUnixSec
+
+	for field, value := range req.SearchFilters {
+		if field == "scanId" {
+			// handled above
+			continue
+		}
+
+		if utils.ItemInSlice(field, metaFields) {
+			filterItems = append(filterItems, bson.M{"meta." + field: value})
+		} else {
+			// It must just be a struct field...
+			filterItems = append(filterItems, bson.M{field: value})
+		}
 	}
 	/*
 		for field, minmax := range req.SearchMinMaxFilters {

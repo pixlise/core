@@ -3,6 +3,7 @@ package wsHandler
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"image"
 	"path"
@@ -270,6 +271,7 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 	if err := wsHelpers.CheckStringField(&req.OriginScanId, "OriginScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
+
 	if err := wsHelpers.CheckFieldLength(req.AssociatedScanIds, "AssociatedScanIds", 0, 10); err != nil {
 		return nil, err
 	}
@@ -292,9 +294,11 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 		associatedScanIds = req.AssociatedScanIds
 	}
 
-	savePath := path.Join(req.OriginScanId, req.Name)
+	// We make the names more unique this way...
+	saveName := req.OriginScanId + "-" + req.Name
+	savePath := path.Join(req.OriginScanId, saveName)
 	scanImage := utils.MakeScanImage(
-		req.Name,
+		saveName,
 		savePath,
 		uint32(len(req.ImageData)),
 		protos.ScanImageSource_SI_UPLOAD,
@@ -312,7 +316,7 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 	result, err := coll.InsertOne(ctx, scanImage, opt)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("%v already exists", req.Name))
+			return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("%v already exists", scanImage.Name))
 		}
 		return nil, err
 	}
@@ -328,11 +332,87 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 	if err != nil {
 		// Failed to upload image data, so no point in having a DB entry now either...
 		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
-		filter := bson.D{{"_id", req.Name}}
+		filter := bson.D{{"_id", saveName}}
 		delOpt := options.Delete()
 		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
 		return nil, err
 	}
 
 	return &protos.ImageUploadResp{}, nil
+}
+
+func HandleImageSetMatchTransformReq(req *protos.ImageSetMatchTransformReq, hctx wsHelpers.HandlerContext) (*protos.ImageSetMatchTransformResp, error) {
+	if err := wsHelpers.CheckStringField(&req.ImageName, "ImageName", 1, 255); err != nil {
+		return nil, err
+	}
+	if req.Transform == nil {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Transform must be set"))
+	}
+
+	if req.Transform.XScale <= 0 || req.Transform.YScale <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Transform must have positive scale values"))
+	}
+
+	// Read image
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+
+	filter := bson.M{"_id": req.ImageName}
+	result := coll.FindOne(ctx, filter)
+	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			return nil, errorwithstatus.MakeNotFoundError(req.ImageName)
+		}
+		return nil, result.Err()
+	}
+
+	img := protos.ScanImage{}
+	err := result.Decode(&img)
+	if err != nil {
+		return nil, err
+	}
+
+	// Now look up any associated ids
+	if len(img.AssociatedScanIds) <= 0 {
+		return nil, fmt.Errorf("Failed to find scan associated with image: %v", req.ImageName)
+	}
+
+	// Check that the user has access to all the scans in question
+	for _, scanId := range img.AssociatedScanIds {
+		_, err := wsHelpers.CheckObjectAccess(false, scanId, protos.ObjectType_OT_SCAN, hctx)
+		if err != nil {
+			return nil, errorwithstatus.MakeUnauthorisedError(fmt.Errorf("User cannot access scan %v associated with image %v. Error: %v", scanId, req.ImageName, err))
+		}
+	}
+
+	// Check that this is a matched image!
+	if img.MatchInfo == nil {
+		return nil, fmt.Errorf("Failed edit transform for image %v - it is not a matched image", req.ImageName)
+
+	}
+
+	// Make the change
+	img.MatchInfo.XOffset = req.Transform.XOffset
+	img.MatchInfo.YOffset = req.Transform.YOffset
+	img.MatchInfo.XScale = req.Transform.XScale
+	img.MatchInfo.YScale = req.Transform.YScale
+
+	// Write it back
+	opt := options.Update()
+	data := bson.D{
+		{"$set", bson.D{
+			{"matchinfo", img.MatchInfo},
+		}},
+	}
+
+	updResult, err := coll.UpdateOne(ctx, filter, data, opt)
+	if err != nil {
+		return nil, err
+	}
+
+	if updResult.MatchedCount != 1 {
+		hctx.Svcs.Log.Errorf("ImageSetMatchTransformReq update result had unexpected match count %+v imageName: %v", updResult, req.ImageName)
+	}
+
+	return &protos.ImageSetMatchTransformResp{}, nil
 }

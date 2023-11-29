@@ -259,6 +259,10 @@ func migrateDatasets(
 
 func setDefaultImage(scanId string, image string, db *mongo.Database) error {
 	coll := db.Collection(dbCollections.ScanDefaultImagesName)
-	_, err := coll.InsertOne(context.TODO(), &protos.ScanImageDefaultDB{ScanId: scanId, DefaultImageFileName: image})
+
+	// Check if we need to prefix the name
+	imageSaveName := getImageSaveName(scanId, image)
+
+	_, err := coll.InsertOne(context.TODO(), &protos.ScanImageDefaultDB{ScanId: scanId, DefaultImageFileName: imageSaveName})
 	return err
 }
