@@ -84,7 +84,7 @@ func ImportQuantCSV(
 			Name:       quantName,
 			DataBucket: hctx.Svcs.Config.DatasetsBucket,
 			//ConfigBucket:      svcs.Config.ConfigBucket,
-			DatasetPath:       filepaths.GetDatasetFilePath(scanId, filepaths.DatasetFileName),
+			DatasetPath:       filepaths.GetScanFilePath(scanId, filepaths.DatasetFileName),
 			DatasetID:         scanId,
 			PiquantJobsBucket: hctx.Svcs.Config.PiquantJobsBucket,
 			DetectorConfig:    "",

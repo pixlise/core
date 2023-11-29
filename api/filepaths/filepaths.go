@@ -84,17 +84,6 @@ Root directory containing all archived data set zips as we downloaded them
 */
 const RootArchive = "Archive"
 
-/*
-Root directory containing dataset summaries (named <datset-id>.json). This makes it easier to list all datasets, rather than listing all files in \Datasets
-  - DatasetSummaries/
-*/
-const RootDatasetSummaries = "DatasetSummaries"
-
-// Get a dataset summary file path given a dataset ID
-func GetDatasetSummaryFilePath(datasetID string) string {
-	return path.Join(RootDatasetSummaries, datasetID+".json")
-}
-
 ////////////////////////////////////////////////////////////////////////////////////
 // Config Bucket
 ////////////////////////////////////////////////////////////////////////////////////
@@ -105,9 +94,6 @@ Root directory containing all dataset configs
   - ----import-times.json - Specifies when each dataset was imported (map id->unix time)
 */
 const RootDatasetConfig = "DatasetConfig"
-
-// Dataset last import time path, used by importer
-const DatasetLastImportTimesPath = RootDatasetConfig + "/import-times.json"
 
 /*
 Root directory containing all detector configs

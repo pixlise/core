@@ -224,7 +224,7 @@ func ImportFromLocalFileSystem(
 
 	// Finally, copy the whole thing to our target bucket
 	log.Infof("Copying generated dataset to bucket: %v...", datasetBucket)
-	err = copyToBucket(remoteFS, data.DatasetID, outputPath, datasetBucket, filepaths.RootDatasets, log)
+	err = copyToBucket(remoteFS, data.DatasetID, outputPath, datasetBucket, filepaths.DatasetScansRoot, log)
 	if err != nil {
 		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
 	}
