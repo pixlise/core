@@ -99,22 +99,23 @@ jobs:
         run: BUILD_VERSION="${{ needs.version.outputs.version }}" make build-linux
       - name: Copy to S3 Archive
         run: |
-          cd _out && \
-          rm pixlise-api-linux && \
+          cd _out
+          rm pixlise-api-linux
           wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
-        # mkdir test-data && \
-        # cp ../internal/cmdline-tools/import-integration-test/test-data/000000001-21-10-2022-15-37-00.zip ./test-data && \
-        # zip -q jobupdater-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem jobupdater-linux && \
-        # rm jobupdater-linux && \
-        # zip -q datasourceupdater-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem datasourceupdater-linux && \
-        # rm datasourceupdater-linux && \
-        # zip -q integrationtest-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem integrationtest-linux && \
-        # rm integrationtest-linux && \
-        # zip -q dataimport-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem dataimport-linux && \
-        # rm dataimport-linux && \
-        # zip -q importtest-linux-${{ needs.version.outputs.version }}.zip importtest-linux test-data/000000001-21-10-2022-15-37-00.zip && \
-        # rm importtest-linux && \
-        # aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
+          # mkdir test-data
+          # cp ../internal/cmdline-tools/import-integration-test/test-data/000000001-21-10-2022-15-37-00.zip ./test-data
+          # zip -q jobupdater-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem jobupdater-linux
+          # rm jobupdater-linux
+          # zip -q datasourceupdater-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem datasourceupdater-linux
+          # rm datasourceupdater-linux
+          # zip -q integrationtest-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem integrationtest-linux
+          # rm integrationtest-linux
+          zip -q dataimport-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem dataimport-linux
+          rm dataimport-linux
+          # zip -q importtest-linux-${{ needs.version.outputs.version }}.zip importtest-linux test-data/000000001-21-10-2022-15-37-00.zip
+          # rm importtest-linux
+          aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
+
 
   docker:
     needs: [version, test]
