@@ -103,8 +103,13 @@ func HandleImageGetReq(req *protos.ImageGetReq, hctx wsHelpers.HandlerContext) (
 }
 
 func HandleImageGetDefaultReq(req *protos.ImageGetDefaultReq, hctx wsHelpers.HandlerContext) (*protos.ImageGetDefaultResp, error) {
-	if err := wsHelpers.CheckFieldLength(req.ScanIds, "ScanIds", 1, 10); err != nil {
+	/*if err := wsHelpers.CheckFieldLength(req.ScanIds, "ScanIds", 1, 10); err != nil {
 		return nil, err
+	}*/
+	if len(req.ScanIds) <= 0 {
+		return &protos.ImageGetDefaultResp{
+			DefaultImagesPerScanId: map[string]string{},
+		}, nil
 	}
 
 	// Check that the user has access to all the scans in question
