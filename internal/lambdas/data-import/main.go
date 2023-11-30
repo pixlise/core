@@ -81,12 +81,10 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		// and it'll be useful for initial debugging
 		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
 
-		result, err := dataimport.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, db, nil, remoteFS)
+		result, err := dataimport.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, db, logger, remoteFS)
 		if err != nil {
 			return "", err
 		}
-
-		defer result.Logger.Close()
 
 		// Delete the working directory here, there's no point leaving it on a lambda machine, we can't debug it
 		// but if this code ran elsewhere we wouldn't delete it, to have something to look at

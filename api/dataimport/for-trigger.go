@@ -23,7 +23,6 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v3/api/dataimport/internal/datasetArchive"
-	"github.com/pixlise/core/v3/core/awsutil"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/logger"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -67,20 +66,20 @@ func ImportForTrigger(
 	if err != nil {
 		return result, err
 	}
-
-	// Initialise stuff
-	sess, err := awsutil.GetSession()
-	if err != nil {
-		return result, err
-	}
-
-	if log == nil {
-		log, err = logger.InitCloudWatchLogger(sess, "/dataset-importer/"+envName, datasetID+"-"+logID, logger.LogDebug, 30, 3)
+	/*
+		// Initialise stuff
+		sess, err := awsutil.GetSession()
 		if err != nil {
 			return result, err
 		}
-	}
 
+		if log == nil {
+			log, err = logger.InitCloudWatchLogger(sess, "/dataset-importer/"+envName, datasetID+"-"+logID, logger.LogDebug, 30, 3)
+			if err != nil {
+				return result, err
+			}
+		}
+	*/
 	// Return the logger...
 	result.Logger = log
 
