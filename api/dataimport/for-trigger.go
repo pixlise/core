@@ -53,7 +53,7 @@ func ImportForTrigger(
 	db *mongo.Database,
 	log logger.ILogger,
 	remoteFS fileaccess.FileAccess) (ImportResult, error) {
-	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger(triggerMessage)
+	sourceBucket, sourceFilePath, datasetID, _, err := decodeImportTrigger(triggerMessage)
 
 	result := ImportResult{
 		WorkingDir:   "",
