@@ -36,7 +36,7 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 	datasetBucket := os.Getenv("DATASETS_BUCKET")
 	manualBucket := os.Getenv("MANUAL_BUCKET")
 	envName := os.Getenv("ENVIRONMENT_NAME")
-	mongoSecret := os.Getenv("MONGO_SECRET") // Used to be hard coded to: "pixlise/docdb/masteruser"
+	mongoSecret := os.Getenv("DB_SECRET_NAME") // Used to be hard coded to: "pixlise/docdb/masteruser"
 
 	sess, err := awsutil.GetSession()
 	if err != nil {
