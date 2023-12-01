@@ -281,6 +281,12 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 		return nil, err
 	}
 
+	// Check that user has access to this scan
+	_, err := wsHelpers.CheckObjectAccess(false, req.OriginScanId, protos.ObjectType_OT_SCAN, hctx)
+	if err != nil {
+		return nil, err
+	}
+
 	db := hctx.Svcs.MongoDB
 
 	// Save image meta in collection
@@ -316,6 +322,27 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.ImagesName)
+
+	// If this is the first image added to a dataset that has no images (and hence no beam location ij's), generate ij's here so the image can be
+	// aligned to them. The image will refer to itself as the owner of the ij's it's matching and will be able to have a transform too
+	foundItems, err := coll.Find(ctx, bson.M{"_id": req.OriginScanId}, options.Find())
+	generateCoords := err == mongo.ErrNoDocuments // This won't really happen... Find() doesn't return an error for none!
+	if !generateCoords {
+		// Check if the count is 0
+		generateCoords = !foundItems.Next(ctx)
+	}
+
+	if generateCoords && scanImage.MatchInfo == nil {
+		// Set a beam transform
+		scanImage.MatchInfo = &protos.ImageMatchTransform{
+			BeamImageFileName: saveName,
+			XOffset:           0,
+			YOffset:           0,
+			XScale:            1,
+			YScale:            1,
+		}
+	}
+
 	opt := options.InsertOne()
 
 	result, err := coll.InsertOne(ctx, scanImage, opt)
@@ -341,6 +368,13 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 		delOpt := options.Delete()
 		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
 		return nil, err
+	}
+
+	if generateCoords {
+		err = generateIJs(saveName, req.OriginScanId, hctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &protos.ImageUploadResp{}, nil
