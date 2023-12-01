@@ -101,7 +101,7 @@ func createElementSet(elementSet *protos.ElementSet, hctx wsHelpers.HandlerConte
 	elementSet.Id = id
 
 	// We need to create an ownership item along with it
-	ownerItem, err := wsHelpers.MakeOwnerForWrite(id, protos.ObjectType_OT_ELEMENT_SET, hctx)
+	ownerItem, err := wsHelpers.MakeOwnerForWrite(id, protos.ObjectType_OT_ELEMENT_SET, hctx.SessUser.User.Id, hctx.Svcs.TimeStamper.GetTimeNowSec())
 	if err != nil {
 		return nil, err
 	}

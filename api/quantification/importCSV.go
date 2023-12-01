@@ -72,7 +72,7 @@ func ImportQuantCSV(
 	}
 
 	// Finally, write the summary data to DB along with ownership entry
-	ownerItem, err := wsHelpers.MakeOwnerForWrite(quantId, protos.ObjectType_OT_QUANTIFICATION, hctx)
+	ownerItem, err := wsHelpers.MakeOwnerForWrite(quantId, protos.ObjectType_OT_QUANTIFICATION, hctx.SessUser.User.Id, hctx.Svcs.TimeStamper.GetTimeNowSec())
 	if err != nil {
 		return quantId, err
 	}

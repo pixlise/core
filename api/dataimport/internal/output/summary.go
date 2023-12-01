@@ -31,7 +31,8 @@ func makeSummaryFileContent(
 	sourceInstrument protos.ScanInstrument,
 	meta dataConvertModels.FileMetaData,
 	fileSize int,
-	creationUnixTimeSec int64) *protos.ScanItem {
+	creationUnixTimeSec int64,
+	creatorUserId string) *protos.ScanItem {
 	contextImgCount := len(exp.AlignedContextImages) + len(exp.UnalignedContextImages) + len(exp.MatchedAlignedContextImages)
 	tiffContextImgCount := 0
 
@@ -101,7 +102,7 @@ func makeSummaryFileContent(
 		TimestampUnixSec: uint32(creationUnixTimeSec),
 		Meta:             saveMeta,
 		ContentCounts:    contentCounts,
-		CreatorUserId:    "",
+		CreatorUserId:    creatorUserId,
 	}
 	return s
 }

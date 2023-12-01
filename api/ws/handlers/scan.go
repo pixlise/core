@@ -342,6 +342,8 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 			TargetID:         "0",
 			SiteID:           0,
 
+			CreatorUserId: hctx.SessUser.User.Id,
+
 			// The rest we set to the dataset ID
 			DatasetID: datasetID,
 			//Site: datasetID,

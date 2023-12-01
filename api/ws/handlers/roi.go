@@ -180,7 +180,7 @@ func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, needMistEntry
 	roi.Id = id
 
 	// We need to create an ownership item along with it
-	ownerItem, err := wsHelpers.MakeOwnerForWrite(id, protos.ObjectType_OT_ROI, hctx)
+	ownerItem, err := wsHelpers.MakeOwnerForWrite(id, protos.ObjectType_OT_ROI, hctx.SessUser.User.Id, hctx.Svcs.TimeStamper.GetTimeNowSec())
 	if err != nil {
 		return nil, err
 	}

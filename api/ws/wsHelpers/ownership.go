@@ -14,29 +14,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// TODO: maybe we can pass in some generic thing that has an owner field?
-// NO: we cannot. https://github.com/golang/go/issues/51259
-/*
-
-type HasOwnerField interface {
-	Owner *protos.Ownership
-}
-func MakeOwnerForWrite(writable HasOwnerField, s *melody.Session, svcs *services.APIServices) (*protos.Ownership, error) {
-	if writable.Owner != nil {
-*/
-
-func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, hctx HandlerContext) (*protos.OwnershipItem, error) {
-	ts := uint32(hctx.Svcs.TimeStamper.GetTimeNowSec())
-
+func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, creatorUserId string, createTimeUnixSec int64) (*protos.OwnershipItem, error) {
 	ownerItem := &protos.OwnershipItem{
 		Id:             objectId,
 		ObjectType:     objectType,
-		CreatorUserId:  hctx.SessUser.User.Id,
-		CreatedUnixSec: ts,
-		//Viewers: ,
-		Editors: &protos.UserGroupList{
-			UserIds: []string{hctx.SessUser.User.Id},
-		},
+		CreatedUnixSec: uint32(createTimeUnixSec),
+	}
+
+	if len(creatorUserId) > 0 {
+		ownerItem.CreatorUserId = creatorUserId
+		//ownerItem.Viewers
+		ownerItem.Editors = &protos.UserGroupList{
+			UserIds: []string{creatorUserId},
+		}
 	}
 
 	return ownerItem, nil

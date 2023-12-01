@@ -27,6 +27,7 @@ import (
 	"github.com/pixlise/core/v3/api/dataimport/internal/dataConvertModels"
 	"github.com/pixlise/core/v3/api/dataimport/internal/importerutils"
 	dataimportModel "github.com/pixlise/core/v3/api/dataimport/models"
+	"github.com/pixlise/core/v3/api/specialUserIds"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/logger"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -211,6 +212,14 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 		instr = protos.ScanInstrument_SBU_BREADBOARD // OK hack for now...
 	}
 
+	creator := params.CreatorUserId
+	if len(creator) <= 0 {
+		creator = specialUserIds.JPLImport
+		if instr == protos.ScanInstrument_SBU_BREADBOARD {
+			creator = specialUserIds.SBUImport
+		}
+	}
+
 	data := &dataConvertModels.OutputData{
 		DatasetID:            params.DatasetID,
 		Instrument:           instr,
@@ -220,6 +229,7 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 		PseudoRanges:         pseudoIntensityRanges,
 		PerPMCData:           map[int32]*dataConvertModels.PMCData{},
 		MatchedAlignedImages: matchedAlignedImages,
+		CreatorUserId:        creator,
 	}
 
 	data.SetPMCData(beamLookup, hkData, spectraLookup, contextImgsPerPMC, pseudoIntensityData, map[int32]string{})

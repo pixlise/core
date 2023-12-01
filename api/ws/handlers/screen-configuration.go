@@ -156,7 +156,7 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 			}
 
 			// We need to create an ownership item along with it
-			owner, err = wsHelpers.MakeOwnerForWrite(screenConfig.Id, protos.ObjectType_OT_SCREEN_CONFIG, hctx)
+			owner, err = wsHelpers.MakeOwnerForWrite(screenConfig.Id, protos.ObjectType_OT_SCREEN_CONFIG, hctx.SessUser.User.Id, hctx.Svcs.TimeStamper.GetTimeNowSec())
 			if err != nil {
 				return nil, err
 			}

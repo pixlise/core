@@ -46,6 +46,7 @@ type BreadboardImportParams struct {
 	OffsetB                   float32 `json:"ev_offset_b"`          // eV calibration eV start offset (detector B)
 	ExcludeNormalDwellSpectra bool    `json:"exclude_normal_dwell"` // Hack for tactical datasets - load all MSAs to gen bulk sum, but dont save them in output
 	SOL                       string  `json:"sol"`                  // Might as well be able to specify SOL. Needed for first spectrum dataset on SOL13
+	CreatorUserId             string  `json:"creatorUserId"`        // Who created it
 }
 
 type DetectorChoice struct {

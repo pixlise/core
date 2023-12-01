@@ -264,7 +264,7 @@ func getImageSaveName(scanId string, imageName string) string {
 	// If the image name can't be parsed as a gds filename, we prepend the dataset ID to make it more unique. This is not done
 	// on GDS filenames because they would already contain the RTT making them unique, and we also want to keep those
 	// searchable/equivalent to names in Mars Viewer
-	if _, err := gdsfilename.ParseFileName(imageName); err != nil {
+	if fields, err := gdsfilename.ParseFileName(imageName); err != nil || fields.Producer == "D" || fields.ProdType == "MSA" || fields.ProdType == "VIS" {
 		imageName = scanId + "-" + imageName
 	}
 	return imageName

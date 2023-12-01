@@ -48,7 +48,7 @@ type FileNameMeta struct {
 	camSpecific      string // PIXL MCC format PPPP = PMC
 	downsample       string // 0=1x1, 1=2x2, 2=4x4, 3=8x8
 	compression      string // 00=thumbnail, 01-99,A0=JPG quality, I1-I9=ICER, LI,LL,LM,LU=lossless
-	producer         string // J=JPL, P=Principal investigator
+	Producer         string // J=JPL, P=Principal investigator
 	versionStr       string // 01-99=1-9, A0-A9=100-109, AA-AZ=110-135, B0-B9=136-145, __=out of range
 	// . always before...
 	// EXT - file extension, which we get through conventional Go filepath.Ext()
@@ -138,7 +138,7 @@ func (m FileNameMeta) ToString() string {
 	s.WriteString(m.camSpecific)
 	s.WriteString(m.downsample)
 	s.WriteString(m.compression)
-	s.WriteString(m.producer)
+	s.WriteString(m.Producer)
 	s.WriteString(m.versionStr)
 
 	return s.String()
@@ -157,6 +157,7 @@ func (m FileNameMeta) Timestamp() (int32, error) {
 	return int32(i), err
 }
 */
+
 func ParseFileName(fileName string) (FileNameMeta, error) {
 	// We often get passed paths so here we ensure we're just dealing with the file name at the end
 	fileName = filepath.Base(fileName)
@@ -186,7 +187,7 @@ func ParseFileName(fileName string) (FileNameMeta, error) {
 	result.camSpecific = fileName[44:48]
 	result.downsample = fileName[48:49]
 	result.compression = fileName[49:51]
-	result.producer = fileName[51:52]
+	result.Producer = fileName[51:52]
 	result.versionStr = fileName[52:54]
 	//         "." = fileName[53:54]
 	//         EXT = fileName[54:57]
@@ -213,7 +214,7 @@ func GetLatestFileVersions(fileNames []string, jobLog logger.ILogger) map[string
 
 			// Store the key as all the fields we're NOT interested in comparing:
 			// this way if we have 2 TIF files with different PMCs, we won't think we need to ignore some due to versioning
-			nonVerFields := ext + meta.instrument + meta.ColourFilter + meta.ProdType + meta.siteStr + meta.driveStr + meta.seqRTT + meta.camSpecific + meta.downsample + meta.compression + meta.producer
+			nonVerFields := ext + meta.instrument + meta.ColourFilter + meta.ProdType + meta.siteStr + meta.driveStr + meta.seqRTT + meta.camSpecific + meta.downsample + meta.compression + meta.Producer
 
 			if _, ok := byNonVerFields[nonVerFields]; !ok {
 				// Add an empty map for this

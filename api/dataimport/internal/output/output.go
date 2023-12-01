@@ -33,6 +33,7 @@ import (
 	"github.com/pixlise/core/v3/api/dataimport/internal/dataConvertModels"
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/gdsfilename"
 	"github.com/pixlise/core/v3/core/logger"
@@ -268,6 +269,28 @@ func (s *PIXLISEDataSaver) Save(
 		}
 	}
 
+	// Look up who to auto-share with based on creator ID
+	coll := db.Collection(dbCollections.ScanAutoShareName)
+	optFind := options.FindOne()
+
+	autoShare := &dataConvertModels.AutoShareConfigItem{}
+	sharer := data.CreatorUserId
+
+	autoShareResult := coll.FindOne(context.TODO(), bson.D{{"_id", sharer}}, optFind)
+	if autoShareResult.Err() != nil {
+		// We couldn't find someone to auto-share it with, if we don't have anyone to share with, just fail here
+		if autoShareResult.Err() == mongo.ErrNoDocuments {
+			return fmt.Errorf("Cannot work out groups to auto-share imported dataset with")
+		}
+		return autoShareResult.Err()
+	} else {
+		err := autoShareResult.Decode(autoShare)
+
+		if err != nil {
+			return fmt.Errorf("Failed to decode auto share configuration: %v", err)
+		}
+	}
+
 	// We work out the default file name when copying output images now... because if there isn't one, we may pick one during that process.
 	defaultContextImage, err := copyImagesToOutput(contextImageSrcPath, []string{data.DatasetID}, data.DatasetID, outPath, data, db, jobLog)
 	exp.MainContextImage = defaultContextImage
@@ -295,19 +318,14 @@ func (s *PIXLISEDataSaver) Save(
 		return fmt.Errorf("Failed to get dataset file size for: %v", outFilePath)
 	}
 
-	summaryData := makeSummaryFileContent(&exp, data.DatasetID, data.Instrument, data.Meta, int(fi.Size()), creationUnixTimeSec)
+	summaryData := makeSummaryFileContent(&exp, data.DatasetID, data.Instrument, data.Meta, int(fi.Size()), creationUnixTimeSec, data.CreatorUserId)
 
 	jobLog.Infof("Writing summary to DB...")
 
-	coll := db.Collection(dbCollections.ScansName)
-	filter := bson.D{{"_id", summaryData.Id}}
+	coll = db.Collection(dbCollections.ScansName)
 	opt := options.Update().SetUpsert(true)
 
-	dbItem := bson.D{
-		{"$set", summaryData},
-	}
-
-	result, err := coll.UpdateOne(context.TODO(), filter, dbItem, opt)
+	result, err := coll.UpdateOne(context.TODO(), bson.D{{"_id", summaryData.Id}}, bson.D{{"$set", summaryData}}, opt)
 
 	//result, err := db.Collection(dbCollections.ScansName).InsertOne(context.TODO(), summaryData)
 	if err != nil {
@@ -315,6 +333,21 @@ func (s *PIXLISEDataSaver) Save(
 		return err
 	} else if result.UpsertedCount != 1 {
 		jobLog.Errorf("Expected summary write to create 1 upsert, got: %v", result.UpsertedCount)
+	}
+
+	// Set ownership
+	ownerItem, err := wsHelpers.MakeOwnerForWrite(summaryData.Id, protos.ObjectType_OT_SCAN, summaryData.CreatorUserId, creationUnixTimeSec)
+
+	ownerItem.Viewers = autoShare.Viewers
+	ownerItem.Editors = autoShare.Editors
+
+	coll = db.Collection(dbCollections.OwnershipName)
+	opt = options.Update().SetUpsert(true)
+
+	result, err = coll.UpdateOne(context.TODO(), bson.D{{"_id", ownerItem.Id}}, bson.D{{"$set", ownerItem}}, opt)
+	if err != nil {
+		jobLog.Errorf("Failed to write ownership item to DB: %v", err)
+		return err
 	}
 
 	bulkSpectraCount := summaryData.ContentCounts["BulkSpectra"]

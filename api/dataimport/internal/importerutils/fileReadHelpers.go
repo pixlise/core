@@ -26,6 +26,7 @@ import (
 	"os"
 
 	"github.com/pixlise/core/v3/api/dataimport/internal/dataConvertModels"
+	"github.com/pixlise/core/v3/api/specialUserIds"
 	"github.com/pixlise/core/v3/core/gdsfilename"
 	"github.com/pixlise/core/v3/core/logger"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -172,6 +173,7 @@ func MakeFMDatasetOutput(
 		RGBUImages:           rgbuImages,
 		DISCOImages:          discoImages,
 		MatchedAlignedImages: matchedAlignedImages,
+		CreatorUserId:        specialUserIds.PIXLISESystemUserId, // Auto-importing FM datasets, we don't show a creator... TODO: what about EM though??
 	}
 
 	data.SetPMCData(beamLookup, hkData, locSpectraLookup, contextImgsPerPMC, pseudoIntensityData, map[int32]string{})

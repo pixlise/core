@@ -239,6 +239,9 @@ type OutputData struct {
 
 	// Images that reference and match aligned images
 	MatchedAlignedImages []MatchedAlignedImageMeta
+
+	// Who created this dataset
+	CreatorUserId string
 }
 
 // EnsurePMC - allocates an item to store data for the given PMC if doesn't already exist
