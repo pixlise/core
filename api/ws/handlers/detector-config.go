@@ -12,7 +12,7 @@ import (
 )
 
 func HandleDetectorConfigReq(req *protos.DetectorConfigReq, hctx wsHelpers.HandlerContext) (*protos.DetectorConfigResp, error) {
-	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, wsHelpers.IdFieldMaxLength); err != nil {
+	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, 255); err != nil {
 		return nil, err
 	}
 
