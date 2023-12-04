@@ -60,7 +60,7 @@ func AddJob(jobTimeoutSec uint32, db *mongo.Database, idgen idgen.IDGenerator, t
 	activeJobs[jobId] = true
 
 	// Start a thread to watch this job
-	go watchJob(jobId, now, watchUntilUnixSec, db, logger, sendUpdate)
+	go watchJob(jobId, now, watchUntilUnixSec, db, logger, ts, sendUpdate)
 
 	return jobId, nil
 }
@@ -133,7 +133,7 @@ func CompleteJob(jobId string, success bool, message string, outputFilePath stri
 	return nil
 }
 
-func watchJob(jobId string, nowUnixSec uint32, watchUntilUnixSec uint32, db *mongo.Database, logger logger.ILogger, sendUpdate func(*protos.JobStatus)) {
+func watchJob(jobId string, nowUnixSec uint32, watchUntilUnixSec uint32, db *mongo.Database, logger logger.ILogger, ts timestamper.ITimeStamper, sendUpdate func(*protos.JobStatus)) {
 	logger.Infof(">> Start watching job: %v...", jobId)
 
 	// Check the DB for updates periodically until watchUntilUnixSec at which point if the job isn't
@@ -182,4 +182,12 @@ func watchJob(jobId string, nowUnixSec uint32, watchUntilUnixSec uint32, db *mon
 	}
 
 	logger.Errorf(">> Stop watching TIMED-OUT job: %v", jobId)
+	sendUpdate(&protos.JobStatus{
+		JobId:          jobId,
+		Status:         protos.JobStatus_ERROR,
+		Message:        "Timed out while waiting for status",
+		EndUnixTimeSec: uint32(ts.GetTimeNowSec()),
+		OutputFilePath: "",
+		OtherLogFiles:  []string{},
+	})
 }

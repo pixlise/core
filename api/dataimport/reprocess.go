@@ -40,7 +40,7 @@ type datasetReprocessSNSRequest struct {
 }
 
 // Decoding trigger message
-// Returns: sourceBucket (optional), sourceFilePath (optional), datasetID, logID
+// Returns: sourceBucket (optional), sourceFilePath (optional), datasetID, jobId
 func decodeImportTrigger(triggerMessageBody []byte) (string, string, string, string, error) {
 	datasetID := ""
 

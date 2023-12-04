@@ -21,10 +21,13 @@ package dataimport
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/pixlise/core/v3/api/dataimport/internal/datasetArchive"
+	"github.com/pixlise/core/v3/api/job"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v3/core/timestamper"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -53,7 +56,13 @@ func ImportForTrigger(
 	db *mongo.Database,
 	log logger.ILogger,
 	remoteFS fileaccess.FileAccess) (ImportResult, error) {
-	sourceBucket, sourceFilePath, datasetID, _, err := decodeImportTrigger(triggerMessage)
+	sourceBucket, sourceFilePath, datasetID, jobId, err := decodeImportTrigger(triggerMessage)
+
+	// Report a status so API/users can track what's going on already
+	logId := os.Getenv("AWS_LAMBDA_LOG_GROUP_NAME") + "/" + os.Getenv("AWS_LAMBDA_LOG_STREAM_NAME ")
+
+	ts := timestamper.UnixTimeNowStamper{}
+	job.UpdateJob(jobId, protos.JobStatus_STARTING, "Starting importer", logId, db, &ts, log)
 
 	result := ImportResult{
 		WorkingDir:   "",
@@ -114,13 +123,18 @@ func ImportForTrigger(
 		return result, err
 	}
 
+	job.UpdateJob(jobId, protos.JobStatus_RUNNING, "Importing Files", logId, db, &ts, log)
+
 	importedSummary := &protos.ScanItem{}
 	result.WorkingDir, importedSummary, result.WhatChanged, result.IsUpdate, err = ImportDataset(localFS, remoteFS, configBucket, manualBucket, datasetBucket, db, datasetID, log, archived)
 	result.DatasetID = importedSummary.Id
 	result.DatasetTitle = importedSummary.Title
 
 	if err != nil {
+		job.UpdateJob(jobId, protos.JobStatus_ERROR, err.Error(), logId, db, &ts, log)
 		log.Errorf("%v", err)
+	} else {
+		job.UpdateJob(jobId, protos.JobStatus_COMPLETE, "Imported successfully", logId, db, &ts, log)
 	}
 
 	// NOTE: We are now passing this responsibility to the caller, because we're very trusting... And they may want
