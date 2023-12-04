@@ -92,12 +92,12 @@ func testQuants(apiHost string) {
 				"FeCO3-T",
 			},
 			Status: &protos.JobStatus{
-				JobID:          quantId,
+				JobId:          quantId,
 				Status:         5,
 				Message:        "Nodes ran: 7",
 				EndUnixTimeSec: 1652813627,
 				OutputFilePath: "UserContent/5df311ed8a0b5d0ebf5fb476/089063943/Quantifications",
-				PiquantLogs:    quantLogs,
+				OtherLogFiles:  quantLogs,
 			},
 		},
 	})

@@ -31,7 +31,7 @@ func HandleQuantDeleteReq(req *protos.QuantDeleteReq, hctx wsHelpers.HandlerCont
 	}
 
 	// Add all the known log files too
-	for _, logFile := range dbItem.Status.PiquantLogs {
+	for _, logFile := range dbItem.Status.OtherLogFiles {
 		toDelete = append(toDelete, filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.ScanId, path.Join(filepaths.MakeQuantLogDirName(dbItem.Id), logFile)))
 	}
 

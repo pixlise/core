@@ -104,10 +104,10 @@ func ImportQuantCSV(
 		},
 		Elements: elements,
 		Status: &protos.JobStatus{
-			JobID:          quantId,
+			JobId:          quantId,
 			Status:         protos.JobStatus_COMPLETE,
 			Message:        csvOrigin + " quantification processed",
-			PiquantLogs:    []string{},
+			OtherLogFiles:  []string{},
 			EndUnixTimeSec: uint32(ownerItem.CreatedUnixSec),
 			OutputFilePath: quantOutPath,
 		},

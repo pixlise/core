@@ -98,6 +98,9 @@ type APIConfig struct {
 	// Local file caching (from S3 to where API is running)
 	MaxFileCacheAgeSec    uint
 	MaxFileCacheSizeBytes uint
+
+	ImportJobMaxTimeSec  uint32
+	PIQUANTJobMaxTimeSec uint32
 }
 
 func homeDir() string {
@@ -189,6 +192,15 @@ func Init() (APIConfig, error) {
 	if nodeCountOverride != nil && *nodeCountOverride > 0 {
 		cfg.NodeCountOverride = int32(*nodeCountOverride)
 	}
+
+	if cfg.ImportJobMaxTimeSec <= 0 {
+		cfg.ImportJobMaxTimeSec = uint32(10 * 60)
+	}
+
+	if cfg.PIQUANTJobMaxTimeSec <= 0 {
+		cfg.PIQUANTJobMaxTimeSec = uint32(15 * 60)
+	}
+
 	cfg.KubeConfig = *kubeconfig
 
 	return cfg, nil

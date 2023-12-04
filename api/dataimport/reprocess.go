@@ -30,14 +30,13 @@ import (
 	"github.com/pixlise/core/v3/api/dataimport/internal/datasetArchive"
 	"github.com/pixlise/core/v3/core/awsutil"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
-	"github.com/pixlise/core/v3/core/idgen"
 	"github.com/pixlise/core/v3/core/utils"
 )
 
 // One of the 2 SNS messages we accept. The other is an AWS S3 event message
 type datasetReprocessSNSRequest struct {
 	DatasetID string `json:"datasetID"`
-	LogID     string `json:"logID"`
+	JobID     string `json:"jobID"`
 }
 
 // Decoding trigger message
@@ -45,8 +44,8 @@ type datasetReprocessSNSRequest struct {
 func decodeImportTrigger(triggerMessageBody []byte) (string, string, string, string, error) {
 	datasetID := ""
 
-	// Log ID to use - this forms part of the log stream in cloudwatch
-	logID := ""
+	// job ID to use - we save DB updates about our status using this id
+	jobID := ""
 
 	// But if we're being triggered due to new data arriving, these will be filled out
 	sourceFilePath := ""
@@ -68,10 +67,10 @@ func decodeImportTrigger(triggerMessageBody []byte) (string, string, string, str
 			return "", "", "", "", fmt.Errorf("Failed to find dataset ID in reprocess trigger")
 		}
 
-		if len(triggerSNS.LogID) > 0 {
-			logID = triggerSNS.LogID
+		if len(triggerSNS.JobID) > 0 {
+			jobID = triggerSNS.JobID
 		} else {
-			return "", "", "", "", fmt.Errorf("Failed to find log ID in reprocess trigger")
+			return "", "", "", "", fmt.Errorf("Failed to find job ID in reprocess trigger")
 		}
 	} else {
 		// Maybe it's a packaged S3 object inside an SNS message
@@ -97,28 +96,22 @@ func decodeImportTrigger(triggerMessageBody []byte) (string, string, string, str
 		}
 
 		// So this is basically a new dataset download, generate a fresh log ID
-		logID = fmt.Sprintf("auto-import-%v (%v)", time.Now().Format("02-Jan-2006 15-04-05"), utils.RandStringBytesMaskImpr(8))
+		jobID = fmt.Sprintf("auto-import-%v (%v)", time.Now().Format("02-Jan-2006 15-04-05"), utils.RandStringBytesMaskImpr(8))
 	}
 
-	return sourceBucket, sourceFilePath, datasetID, logID, nil
+	return sourceBucket, sourceFilePath, datasetID, jobID, nil
 }
 
 // Firing a trigger message. Anything calling this is triggering a dataset reimport via a lambda function
-func TriggerDatasetReprocessViaSNS(snsSvc awsutil.SNSInterface, idGen idgen.IDGenerator, datasetID string, snsTopic string) (*sns.PublishOutput, string, error) {
-	// Generate a new log ID that this reprocess job will write to
-	// which we also return to the caller, so they can track what happens
-	// with this async task
-
-	reprocessId := fmt.Sprintf("dataimport-%s", idGen.GenObjectID())
-
+func TriggerDatasetReprocessViaSNS(snsSvc awsutil.SNSInterface, jobId string, scanId string, snsTopic string) (*sns.PublishOutput, error) {
 	snsReq := datasetReprocessSNSRequest{
-		DatasetID: datasetID,
-		LogID:     reprocessId,
+		DatasetID: scanId,
+		JobID:     jobId,
 	}
 
 	snsReqJSON, err := json.Marshal(snsReq)
 	if err != nil {
-		return nil, "", errorwithstatus.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to trigger dataset reprocess: %v", err))
+		return nil, errorwithstatus.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to trigger dataset reprocess: %v", err))
 	}
 
 	result, err := snsSvc.Publish(&sns.PublishInput{
@@ -127,11 +120,8 @@ func TriggerDatasetReprocessViaSNS(snsSvc awsutil.SNSInterface, idGen idgen.IDGe
 	})
 
 	if err != nil {
-		return nil, "", errorwithstatus.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to publish SNS topic for dataset regeneration: %v", err))
+		return nil, errorwithstatus.MakeStatusError(http.StatusInternalServerError, fmt.Errorf("Failed to publish SNS topic for dataset regeneration: %v", err))
 	}
 
-	// The actual log stream name that gets generated is prefixed with the dataset ID
-	// so return that one here, any users of our function should only need to be given
-	// the stream name, log group is more fixed.
-	return result, datasetID + "-" + reprocessId, nil
+	return result, nil
 }

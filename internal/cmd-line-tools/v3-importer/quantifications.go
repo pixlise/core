@@ -227,7 +227,7 @@ func migrateQuant(jobSummary SrcJobSummaryItem, overrideSrcPath string, coll *mo
 	case SrcJobPreparingNodes:
 		jobStatus = protos.JobStatus_PREPARING_NODES
 	case SrcJobNodesRunning:
-		jobStatus = protos.JobStatus_NODES_RUNNING
+		jobStatus = protos.JobStatus_RUNNING
 	case SrcJobGatheringResults:
 		jobStatus = protos.JobStatus_GATHERING_RESULTS
 	case SrcJobComplete:
@@ -265,12 +265,12 @@ func migrateQuant(jobSummary SrcJobSummaryItem, overrideSrcPath string, coll *mo
 		},
 		Elements: jobSummary.Elements,
 		Status: &protos.JobStatus{
-			JobID:          jobSummary.JobID,
+			JobId:          jobSummary.JobID,
 			Status:         jobStatus,
 			Message:        jobSummary.Message,
 			EndUnixTimeSec: uint32(jobSummary.EndUnixTime),
 			OutputFilePath: path.Join("Quantifications", jobSummary.Params.DatasetID, utils.FixUserId(jobSummary.Params.Creator.UserID)), //jobSummary.OutputFilePath,
-			PiquantLogs:    jobSummary.PiquantLogList,
+			OtherLogFiles:  jobSummary.PiquantLogList,
 		},
 	}
 

@@ -174,6 +174,11 @@ func (ws *WSHandler) HandleMessage(s *melody.Session, msg []byte) {
 		// Set incoming message ID on the outgoing one
 		resp.MsgId = wsmsg.MsgId
 
+		// Print out errors
+		if len(resp.ErrorText) > 0 {
+			fmt.Printf("Sending Response Error for msg id %v:\n  %v\n", resp.MsgId-1, resp.ErrorText)
+		}
+
 		// Send
 		wsHelpers.SendForSession(s, resp)
 	} else {

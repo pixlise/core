@@ -327,7 +327,7 @@ func Example_ImportForTrigger_OCS_DatasetEdit() {
 
 	trigger := `{
 	"datasetID": "048300551",
-	"logID": "dataimport-unittest123"
+	"jobID": "dataimport-unittest123"
 }`
 
 	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
@@ -392,7 +392,7 @@ func Example_ImportForTrigger_Manual_JPL() {
 
 	trigger := `{
 	"datasetID": "test1234",
-	"logID": "dataimport-unittest123"
+	"jobID": "dataimport-unittest123"
 }`
 
 	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
@@ -424,7 +424,7 @@ func Example_ImportForTrigger_Manual_SBU() {
 
 	trigger := `{
 	"datasetID": "test1234sbu",
-	"logID": "dataimport-unittest123sbu"
+	"jobID": "dataimport-unittest123sbu"
 }`
 
 	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
@@ -456,7 +456,7 @@ func Test_ImportForTrigger_Manual_SBU_NoAutoShare(t *testing.T) {
 
 	trigger := `{
 	"datasetID": "test1234sbu",
-	"logID": "dataimport-unittest123sbu"
+	"jobID": "dataimport-unittest123sbu"
 }`
 
 	_, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
@@ -473,7 +473,7 @@ func Example_ImportForTrigger_Manual_EM() {
 
 	trigger := `{
 	"datasetID": "048300551",
-	"logID": "dataimport-unittest048300551"
+	"jobID": "dataimport-unittest048300551"
 }`
 
 	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)

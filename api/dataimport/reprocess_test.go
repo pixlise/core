@@ -25,17 +25,17 @@ import (
 func Example_decodeImportTrigger_Manual() {
 	trigger := `{
 	"datasetID": "189137412",
-	"logID": "dataimport-zmzddoytch2krd7n"
+	"jobID": "dataimport-zmzddoytch2krd7n"
 }`
 
-	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger([]byte(trigger))
-	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nLog: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, logID, err)
+	sourceBucket, sourceFilePath, datasetID, jobId, err := decodeImportTrigger([]byte(trigger))
+	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nJob: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, jobId, err)
 
 	// Output:
 	// Source Bucket: ""
 	// Source file: ""
 	// Dataset: "189137412"
-	// Log: "dataimport-zmzddoytch2krd7n"
+	// Job: "dataimport-zmzddoytch2krd7n"
 	// Err: "<nil>"
 }
 
@@ -134,16 +134,16 @@ func Example_decodeImportTrigger_OCS2() {
     ]
 }`
 
-	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger([]byte(trigger))
+	sourceBucket, sourceFilePath, datasetID, jobID, err := decodeImportTrigger([]byte(trigger))
 
 	// NOTE: we're only checking the length of the log ID because it's a timestamp+random chars. Other code has this stubbed out but here it's probably sufficient
-	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nLog Str Len: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, len(logID), err)
+	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nJob Str Len: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, len(jobID), err)
 
 	// Output:
 	// Source Bucket: "prodpipeline-rawdata202c7bd0-o40ktu17o2oj"
 	// Source file: "197329413-25-09-2022-14-33-39.zip"
 	// Dataset: "197329413"
-	// Log Str Len: "43"
+	// Job Str Len: "43"
 	// Err: "<nil>"
 }
 
@@ -152,31 +152,31 @@ func Example_decodeImportTrigger_ManualBadMsg() {
 	"weird": "message"
 }`
 
-	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger([]byte(trigger))
-	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nLog: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, logID, err)
+	sourceBucket, sourceFilePath, datasetID, jobID, err := decodeImportTrigger([]byte(trigger))
+	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nJob: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, jobID, err)
 
 	// Output:
 	// Source Bucket: ""
 	// Source file: ""
 	// Dataset: ""
-	// Log: ""
+	// Job: ""
 	// Err: "Unexpected or no message type embedded in triggering SNS message"
 }
 
 func Example_decodeImportTrigger_ManualBadDatasetID() {
 	trigger := `{
 	"datasetID": "",
-	"logID": "dataimport-zmzddoytch2krd7n"
+	"jobID": "dataimport-zmzddoytch2krd7n"
 }`
 
-	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger([]byte(trigger))
-	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nLog: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, logID, err)
+	sourceBucket, sourceFilePath, datasetID, jobID, err := decodeImportTrigger([]byte(trigger))
+	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nJob: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, jobID, err)
 
 	// Output:
 	// Source Bucket: ""
 	// Source file: ""
 	// Dataset: ""
-	// Log: ""
+	// Job: ""
 	// Err: "Failed to find dataset ID in reprocess trigger"
 }
 
@@ -185,29 +185,29 @@ func Example_decodeImportTrigger_ManualBadLogID() {
 		"datasetID": "qwerty"
 	}`
 
-	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger([]byte(trigger))
-	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nLog: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, logID, err)
+	sourceBucket, sourceFilePath, datasetID, jobID, err := decodeImportTrigger([]byte(trigger))
+	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nJob: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, jobID, err)
 
 	// Output:
 	// Source Bucket: ""
 	// Source file: ""
 	// Dataset: ""
-	// Log: ""
-	// Err: "Failed to find log ID in reprocess trigger"
+	// Job: ""
+	// Err: "Failed to find job ID in reprocess trigger"
 }
 
 func Example_decodeImportTrigger_OCS_Error() {
 	trigger := `{
 		"Records": []
 }`
-	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger([]byte(trigger))
-	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nLog: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, logID, err)
+	sourceBucket, sourceFilePath, datasetID, jobID, err := decodeImportTrigger([]byte(trigger))
+	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nJob: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, jobID, err)
 
 	// Output:
 	// Source Bucket: ""
 	// Source file: ""
 	// Dataset: ""
-	// Log: ""
+	// Job: ""
 	// Err: "Unexpected or no message type embedded in triggering SNS message"
 }
 
@@ -234,13 +234,13 @@ func Example_decodeImportTrigger_OCS_BadEventType() {
     ]
 }`
 
-	sourceBucket, sourceFilePath, datasetID, logID, err := decodeImportTrigger([]byte(trigger))
-	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nLog: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, logID, err)
+	sourceBucket, sourceFilePath, datasetID, jobID, err := decodeImportTrigger([]byte(trigger))
+	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nJob: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, jobID, err)
 
 	// Output:
 	// Source Bucket: ""
 	// Source file: ""
 	// Dataset: ""
-	// Log: ""
+	// Job: ""
 	// Err: "Failed to decode dataset import trigger: Failed to decode sqs body to an S3 event: unexpected end of JSON input"
 }

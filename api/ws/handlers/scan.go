@@ -9,10 +9,12 @@ import (
 	"path"
 	"strings"
 
+	"github.com/olahol/melody"
 	"github.com/pixlise/core/v3/api/dataimport"
 	dataimportModel "github.com/pixlise/core/v3/api/dataimport/models"
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/job"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
 	"github.com/pixlise/core/v3/core/fileaccess"
@@ -209,10 +211,20 @@ func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHel
 		return nil, err
 	}
 
-	result, logId, err := dataimport.TriggerDatasetReprocessViaSNS(hctx.Svcs.SNS, hctx.Svcs.IDGen, req.ScanId, hctx.Svcs.Config.DataSourceSNSTopic)
+	i := importUpdater{
+		hctx.Session,
+	}
 
-	hctx.Svcs.Log.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Log ID: %v", result, logId)
-	return &protos.ScanTriggerReImportResp{LogId: logId}, err
+	jobId, err := job.AddJob(uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendReimportUpdate)
+
+	if err != nil || len(jobId) < 0 {
+		hctx.Svcs.Log.Errorf("Failed to add job watcher for Job ID: %v", jobId)
+	}
+
+	result, err := dataimport.TriggerDatasetReprocessViaSNS(hctx.Svcs.SNS, jobId, req.ScanId, hctx.Svcs.Config.DataSourceSNSTopic)
+
+	hctx.Svcs.Log.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Job ID: %v", result, jobId)
+	return &protos.ScanTriggerReImportResp{JobId: jobId}, err
 }
 
 func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContext) (*protos.ScanUploadResp, error) {
@@ -225,6 +237,9 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	// NOTE: we also turn space to _ here! Having spaces in the path broke quants because the
 	// quant summary file was written with a + instead of a space?!
 	datasetID := fileaccess.MakeValidObjectName(req.Id, false)
+
+	// Append a few random chars to make it more unique
+	datasetID += "_" + utils.RandStringBytesMaskImpr(6)
 
 	formats := []string{"jpl-breadboard", "sbu-breadboard", "pixl-em"}
 	if !utils.ItemInSlice(req.Format, formats) {
@@ -397,13 +412,53 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	}
 	logger.Debugf("  Wrote: s3://%v/%v", destBucket, savePath)
 
+	i := importUpdater{
+		hctx.Session,
+	}
+
+	// Add a job watcher for this
+	jobId, err := job.AddJob(uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendImportUpdate)
+
+	if err != nil || len(jobId) < 0 {
+		hctx.Svcs.Log.Errorf("Failed to add job watcher for Job ID: %v", jobId)
+	}
+
 	// Now we trigger a dataset conversion
-	result, logId, err := dataimport.TriggerDatasetReprocessViaSNS(hctx.Svcs.SNS, hctx.Svcs.IDGen, datasetID, hctx.Svcs.Config.DataSourceSNSTopic)
+	result, err := dataimport.TriggerDatasetReprocessViaSNS(hctx.Svcs.SNS, jobId, datasetID, hctx.Svcs.Config.DataSourceSNSTopic)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Log ID: %v", result, logId)
+	logger.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Job ID: %v", result, jobId)
 
-	return &protos.ScanUploadResp{LogId: logId}, nil
+	return &protos.ScanUploadResp{JobId: jobId}, nil
+}
+
+type importUpdater struct {
+	session *melody.Session
+}
+
+func (i *importUpdater) sendReimportUpdate(status *protos.JobStatus) {
+	wsUpd := protos.WSMessage{
+		Contents: &protos.WSMessage_ScanTriggerReImportUpd{
+			ScanTriggerReImportUpd: &protos.ScanTriggerReImportUpd{
+				Status: status,
+			},
+		},
+	}
+
+	wsHelpers.SendForSession(i.session, &wsUpd)
+
+}
+
+func (i *importUpdater) sendImportUpdate(status *protos.JobStatus) {
+	wsUpd := protos.WSMessage{
+		Contents: &protos.WSMessage_ScanUploadUpd{
+			ScanUploadUpd: &protos.ScanUploadUpd{
+				Status: status,
+			},
+		},
+	}
+
+	wsHelpers.SendForSession(i.session, &wsUpd)
 }
