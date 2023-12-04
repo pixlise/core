@@ -59,7 +59,7 @@ func ImportForTrigger(
 	sourceBucket, sourceFilePath, datasetID, jobId, err := decodeImportTrigger(triggerMessage)
 
 	// Report a status so API/users can track what's going on already
-	logId := os.Getenv("AWS_LAMBDA_LOG_GROUP_NAME") + "/" + os.Getenv("AWS_LAMBDA_LOG_STREAM_NAME ")
+	logId := os.Getenv("AWS_LAMBDA_LOG_GROUP_NAME") + "/|/" + os.Getenv("AWS_LAMBDA_LOG_STREAM_NAME")
 
 	ts := timestamper.UnixTimeNowStamper{}
 	job.UpdateJob(jobId, protos.JobStatus_STARTING, "Starting importer", logId, db, &ts, log)
