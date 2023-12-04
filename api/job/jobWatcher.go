@@ -42,6 +42,7 @@ func AddJob(jobTimeoutSec uint32, db *mongo.Database, idgen idgen.IDGenerator, t
 		JobId:            jobId,
 		Status:           protos.JobStatus_STARTING,
 		StartUnixTimeSec: now,
+		OtherLogFiles:    []string{},
 	}
 
 	ctx := context.TODO()
@@ -148,6 +149,7 @@ func watchJob(jobId string, nowUnixSec uint32, watchUntilUnixSec uint32, db *mon
 
 	for c := uint32(0); c < maxUpdates; c++ {
 		time.Sleep(time.Duration(jobUpdateIntervalSec) * time.Second)
+		logger.Infof(">> Checking watched job: %v...", jobId)
 
 		filter := bson.D{{"_id", jobId}}
 		opt := options.FindOne()
@@ -162,6 +164,8 @@ func watchJob(jobId string, nowUnixSec uint32, watchUntilUnixSec uint32, db *mon
 			if err != nil {
 				logger.Errorf("Failed to decode DB entry for job status: %v", jobId)
 			} else if lastUpdateUnixSec != dbStatus.LastUpdateUnixTimeSec {
+				logger.Infof(">> Update sent for watched job: %v...", jobId)
+
 				// OK we have a status update! Send
 				sendUpdate(&dbStatus)
 
