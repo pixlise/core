@@ -70,20 +70,29 @@ func HandleLogSetLevelReq(req *protos.LogSetLevelReq, hctx wsHelpers.HandlerCont
 	return &protos.LogSetLevelResp{LogLevelId: req.LogLevelId}, nil
 }
 
+var cloudwatchSvc *cloudwatchlogs.CloudWatchLogs = nil
+
 func fetchLogs(services *services.APIServices, logGroupName string, logStreamName string) ([]*protos.LogLine, error) {
 	var limit int64 = 10000
 
 	result := []*protos.LogLine{}
 
-	sess, err := awsutil.GetSession()
-	if err != nil {
-		return []*protos.LogLine{}, fmt.Errorf("Failed to create AWS session. Error: %v", err)
+	if cloudwatchSvc == nil {
+		sess, err := awsutil.GetSession()
+		if err != nil {
+			return result, fmt.Errorf("Failed to create AWS session. Error: %v", err)
+		}
+
+		// NOTE: previously here we used a session: AWSSessionCW which could be configured to a different region... don't know why
+		// this was required but seemed redundant, it was in the same region lately...
+		cloudwatchSvc = cloudwatchlogs.New(sess)
 	}
 
-	// NOTE: previously here we used a session: AWSSessionCW which could be configured to a different region... don't know why
-	// this was required but seemed redundant, it was in the same region lately...
-	svc := cloudwatchlogs.New(sess)
-	resp, err := svc.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
+	if cloudwatchSvc == nil {
+		return result, fmt.Errorf("No connection to cloudwatch")
+	}
+
+	resp, err := cloudwatchSvc.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
 		Limit:         &limit,
 		LogGroupName:  aws.String(logGroupName),
 		LogStreamName: aws.String(logStreamName),
@@ -96,7 +105,7 @@ func fetchLogs(services *services.APIServices, logGroupName string, logStreamNam
 
 	for _, event := range resp.Events {
 		result = append(result, &protos.LogLine{
-			TimeStampUnixMs: uint32(*event.IngestionTime),
+			TimeStampUnixMs: uint64(*event.IngestionTime),
 			Message:         *event.Message,
 		})
 	}

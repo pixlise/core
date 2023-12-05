@@ -23,6 +23,7 @@ import (
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"google.golang.org/protobuf/proto"
 )
 
 func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) (*protos.ScanListResp, error) {
@@ -213,6 +214,7 @@ func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHel
 
 	i := importUpdater{
 		hctx.Session,
+		hctx.Melody,
 	}
 
 	jobId, err := job.AddJob(uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendReimportUpdate)
@@ -414,6 +416,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 
 	i := importUpdater{
 		hctx.Session,
+		hctx.Melody,
 	}
 
 	// Add a job watcher for this
@@ -436,6 +439,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 
 type importUpdater struct {
 	session *melody.Session
+	melody  *melody.Melody
 }
 
 func (i *importUpdater) sendReimportUpdate(status *protos.JobStatus) {
@@ -461,4 +465,22 @@ func (i *importUpdater) sendImportUpdate(status *protos.JobStatus) {
 	}
 
 	wsHelpers.SendForSession(i.session, &wsUpd)
+
+	// If this is the final complete success message of a scan import, fire off a ScanListUpd to trigger
+	// anyone who is connected to do a listing of scans
+	// NOTE: IDEALLY this should happen when the scan notification happens. That process is not yet
+	// implemented in the "new" way - Lambda completes but still needs to notify all instances of API
+	// of the notification... For now this should work though
+	if status.Status == protos.JobStatus_COMPLETE && status.EndUnixTimeSec > 0 {
+		wsScanListUpd := protos.WSMessage{
+			Contents: &protos.WSMessage_ScanListUpd{
+				ScanListUpd: &protos.ScanListUpd{},
+			},
+		}
+
+		bytes, err := proto.Marshal(&wsScanListUpd)
+		if err == nil {
+			i.melody.BroadcastBinary(bytes)
+		}
+	}
 }
