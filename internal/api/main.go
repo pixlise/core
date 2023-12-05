@@ -44,6 +44,9 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 
+	// Turn off date+time prefixing of log msgs, we have timestamps captured in other ways
+	log.SetFlags(0)
+
 	cfg := loadConfig()
 	svcs := initServices(cfg)
 

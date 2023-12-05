@@ -64,6 +64,9 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 
 	remoteFS := fileaccess.MakeS3Access(svc)
 
+	// Turn off date+time prefixing of log msgs, we have timestamps captured in other ways
+	log.SetFlags(0)
+
 	// Normally we'd only expect event.Records to be of length 1...
 	worked := 0
 	logger := &logger.StdOutLogger{}
