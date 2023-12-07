@@ -10,11 +10,9 @@ import (
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/piquant"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	"github.com/pixlise/core/v3/core/errorwithstatus"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -80,22 +78,11 @@ func HandlePiquantVersionListReq(req *protos.PiquantVersionListReq, hctx wsHelpe
 }
 
 func HandlePiquantCurrentVersionReq(req *protos.PiquantCurrentVersionReq, hctx wsHelpers.HandlerContext) (*protos.PiquantCurrentVersionResp, error) {
-	// Look up the PIQUANT version currently set
-	result := hctx.Svcs.MongoDB.Collection(dbCollections.PiquantVersionName).FindOne(context.TODO(), bson.M{"_id": "current"})
-	if result.Err() != nil {
-		if result.Err() == mongo.ErrNoDocuments {
-			return nil, errorwithstatus.MakeNotFoundError("PIQUANT version")
-		}
-		return nil, result.Err()
-	}
-
-	ver := protos.PiquantVersion{}
-	err := result.Decode(&ver)
+	ver, err := piquant.GetPiquantVersion(hctx.Svcs)
 	if err != nil {
 		return nil, err
 	}
-
-	return &protos.PiquantCurrentVersionResp{PiquantVersion: &ver}, nil
+	return &protos.PiquantCurrentVersionResp{PiquantVersion: ver}, nil
 }
 
 func HandlePiquantWriteCurrentVersionReq(req *protos.PiquantWriteCurrentVersionReq, hctx wsHelpers.HandlerContext) (*protos.PiquantWriteCurrentVersionResp, error) {

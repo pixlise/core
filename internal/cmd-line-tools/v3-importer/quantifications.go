@@ -236,32 +236,42 @@ func migrateQuant(jobSummary SrcJobSummaryItem, overrideSrcPath string, coll *mo
 		jobStatus = protos.JobStatus_ERROR
 	}
 
+	if len(jobSummary.Params.RoiIDs) > 0 && len(jobSummary.Params.RoiID) > 0 && !utils.ItemInSlice(jobSummary.Params.RoiID, jobSummary.Params.RoiIDs) {
+		return fmt.Errorf("Both Roi (%v) and Roi IDs is set for quant %v, scan %v, and Roi IDs doesn't contain Roi!", jobSummary.JobID, jobSummary.Params.DatasetID)
+	}
+
+	rois := jobSummary.Params.RoiIDs
+	if len(rois) <= 0 && len(jobSummary.Params.RoiID) > 0 {
+		rois = []string{jobSummary.Params.RoiID}
+	}
+
 	// Write to DB
 	destQuant := &protos.QuantificationSummary{
 		Id:     jobSummary.JobID,
 		ScanId: jobSummary.Params.DatasetID,
 		Params: &protos.QuantStartingParameters{
-			Name:              jobSummary.Params.Name,
+			Params: &protos.QuantCreateParams{
+				Command: jobSummary.Params.Command,
+				Name:    jobSummary.Params.Name,
+				ScanId:  jobSummary.Params.DatasetID,
+				//Pmcs:           ??,
+				Elements:       jobSummary.Params.Elements,
+				DetectorConfig: jobSummary.Params.DetectorConfig,
+				Parameters:     jobSummary.Params.Parameters,
+				RunTimeSec:     uint32(jobSummary.Params.RunTimeSec),
+				QuantMode:      jobSummary.Params.QuantMode,
+				RoiIDs:         rois,
+				IncludeDwells:  jobSummary.Params.IncludeDwells,
+			},
+			PmcCount:          uint32(jobSummary.Params.PMCCount),
+			ScanFilePath:      jobSummary.Params.DatasetPath,
 			DataBucket:        jobSummary.Params.DataBucket,
-			DatasetPath:       jobSummary.Params.DatasetPath,
-			DatasetID:         jobSummary.Params.DatasetID,
 			PiquantJobsBucket: jobSummary.Params.PiquantJobsBucket,
-			DetectorConfig:    jobSummary.Params.DetectorConfig,
-			Elements:          jobSummary.Params.Elements,
-			Parameters:        jobSummary.Params.Parameters,
-			RunTimeSec:        uint32(jobSummary.Params.RunTimeSec),
 			CoresPerNode:      uint32(jobSummary.Params.CoresPerNode),
 			StartUnixTimeSec:  uint32(jobSummary.Params.StartUnixTime),
 			RequestorUserId:   utils.FixUserId(jobSummary.Params.Creator.UserID),
-			RoiID:             jobSummary.Params.RoiID,
-			ElementSetID:      jobSummary.Params.ElementSetID,
 			PIQUANTVersion:    jobSummary.Params.PIQUANTVersion,
-			QuantMode:         jobSummary.Params.QuantMode,
 			Comments:          jobSummary.Params.Comments,
-			RoiIDs:            jobSummary.Params.RoiIDs,
-			IncludeDwells:     jobSummary.Params.IncludeDwells,
-			Command:           jobSummary.Params.Command,
-			PmcCount:          uint32(jobSummary.Params.PMCCount),
 		},
 		Elements: jobSummary.Elements,
 		Status: &protos.JobStatus{
@@ -269,7 +279,7 @@ func migrateQuant(jobSummary SrcJobSummaryItem, overrideSrcPath string, coll *mo
 			Status:         jobStatus,
 			Message:        jobSummary.Message,
 			EndUnixTimeSec: uint32(jobSummary.EndUnixTime),
-			OutputFilePath: path.Join("Quantifications", jobSummary.Params.DatasetID, utils.FixUserId(jobSummary.Params.Creator.UserID)), //jobSummary.OutputFilePath,
+			OutputFilePath: filepaths.GetQuantPath(utils.FixUserId(jobSummary.Params.Creator.UserID), jobSummary.Params.DatasetID, ""), //jobSummary.OutputFilePath,
 			OtherLogFiles:  jobSummary.PiquantLogList,
 		},
 	}

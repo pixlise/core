@@ -217,7 +217,11 @@ func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHel
 		hctx.Melody,
 	}
 
-	jobId, err := job.AddJob(uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendReimportUpdate)
+	jobStatus, err := job.AddJob("reimport", uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendReimportUpdate)
+	jobId := ""
+	if jobStatus != nil {
+		jobId = jobStatus.JobId
+	}
 
 	if err != nil || len(jobId) < 0 {
 		hctx.Svcs.Log.Errorf("Failed to add job watcher for Job ID: %v", jobId)
@@ -420,10 +424,14 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	}
 
 	// Add a job watcher for this
-	jobId, err := job.AddJob(uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendImportUpdate)
+	jobStatus, err := job.AddJob("import", uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendImportUpdate)
+	jobId := ""
+	if jobStatus != nil {
+		jobId = jobStatus.JobId
+	}
 
 	if err != nil || len(jobId) < 0 {
-		hctx.Svcs.Log.Errorf("Failed to add job watcher for Job ID: %v", jobId)
+		hctx.Svcs.Log.Errorf("Failed to add job watcher for scan upload Job ID: %v", jobId)
 	}
 
 	// Now we trigger a dataset conversion
@@ -452,7 +460,6 @@ func (i *importUpdater) sendReimportUpdate(status *protos.JobStatus) {
 	}
 
 	wsHelpers.SendForSession(i.session, &wsUpd)
-
 }
 
 func (i *importUpdater) sendImportUpdate(status *protos.JobStatus) {

@@ -1,34 +1,17 @@
 package wsHandler
 
 import (
-	"context"
 	"errors"
 	"path"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/api/quantification"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v3/generated-protos"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func HandleQuantListReq(req *protos.QuantListReq, hctx wsHelpers.HandlerContext) (*protos.QuantListResp, error) {
-	filter, idToOwner, err := wsHelpers.MakeFilter(req.SearchParams, false, protos.ObjectType_OT_QUANTIFICATION, hctx)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.QuantificationsName)
-
-	opts := options.Find()
-
-	cursor, err := coll.Find(ctx, filter, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	items := []*protos.QuantificationSummary{}
-	err = cursor.All(ctx, &items)
+	items, idToOwner, err := quantification.ListUserQuants(req.SearchParams, hctx)
 	if err != nil {
 		return nil, err
 	}

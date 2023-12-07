@@ -21,23 +21,14 @@ var activeJobs = map[string]bool{}
 
 // Expected to be called by API to create the initial record of a job. It can then trigger it however it needs to
 // (eg AWS lambda or running PIQUANT nodes) and this sticks around monitoring the DB entry for changes, calling
-// the sendUpdate callback function on change
-func AddJob(jobTimeoutSec uint32, db *mongo.Database, idgen idgen.IDGenerator, ts timestamper.ITimeStamper, logger logger.ILogger, sendUpdate func(*protos.JobStatus)) (string, error) {
-	// Generate a new job id
-
-	// Generate a new job Id that this reprocess job will write to
+// the sendUpdate callback function on change. Returns the snapshot of the "added" job that was saved
+func AddJob(idPrefix string, jobTimeoutSec uint32, db *mongo.Database, idgen idgen.IDGenerator, ts timestamper.ITimeStamper, logger logger.ILogger, sendUpdate func(*protos.JobStatus)) (*protos.JobStatus, error) {
+	// Generate a new job Id that this job will write to
 	// which we also return to the caller, so they can track what happens
 	// with this async task
-	jobId := fmt.Sprintf("job-%s", idgen.GenObjectID())
-
-	if _, ok := activeJobs[jobId]; ok {
-		return jobId, errors.New("Job already exists: " + jobId)
-	}
-
+	jobId := fmt.Sprintf("%v-%s", idPrefix, idgen.GenObjectID())
 	now := uint32(ts.GetTimeNowSec())
-	watchUntilUnixSec := now + jobTimeoutSec
 
-	// Add to DB
 	job := &protos.JobStatus{
 		JobId:            jobId,
 		Status:           protos.JobStatus_STARTING,
@@ -45,11 +36,18 @@ func AddJob(jobTimeoutSec uint32, db *mongo.Database, idgen idgen.IDGenerator, t
 		OtherLogFiles:    []string{},
 	}
 
+	if _, ok := activeJobs[jobId]; ok {
+		return job, errors.New("Job already exists: " + jobId)
+	}
+
+	watchUntilUnixSec := now + jobTimeoutSec
+
+	// Add to DB
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.JobStatusName)
 	result, err := coll.InsertOne(ctx, job, options.InsertOne())
 	if err != nil {
-		return jobId, err
+		return job, err
 	}
 
 	if result.InsertedID != jobId {
@@ -62,7 +60,7 @@ func AddJob(jobTimeoutSec uint32, db *mongo.Database, idgen idgen.IDGenerator, t
 	// Start a thread to watch this job
 	go watchJob(jobId, now, watchUntilUnixSec, db, logger, ts, sendUpdate)
 
-	return jobId, nil
+	return job, nil
 }
 
 // Expected to be called from the thing running the job. This updates the DB status, which hopefully the go thread started by
@@ -130,6 +128,7 @@ func CompleteJob(jobId string, success bool, message string, outputFilePath stri
 		logger.Errorf("CompleteJob result had unexpected counts %+v id: %v", result, jobId)
 	}
 
+	activeJobs[jobId] = false
 	return nil
 }
 
@@ -190,4 +189,5 @@ func watchJob(jobId string, nowUnixSec uint32, watchUntilUnixSec uint32, db *mon
 		OutputFilePath: "",
 		OtherLogFiles:  []string{},
 	})
+	activeJobs[jobId] = false
 }
