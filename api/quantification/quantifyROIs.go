@@ -29,7 +29,7 @@ func makePMCListFilesForQuantROI(
 		return "", 0, []roiItemWithPMCs{}, err
 	}
 
-	rois, err := getROIs(params.Params.Command, params.Params.ScanId, params.Params.RoiIDs, hctx, locIdxToPMCLookup, dataset)
+	rois, err := getROIs(params.UserParams.Command, params.UserParams.ScanId, params.UserParams.RoiIDs, hctx, locIdxToPMCLookup, dataset)
 	if err != nil {
 		return "", 0, rois, err
 	}
@@ -45,7 +45,7 @@ func makePMCListFilesForQuantROI(
 		return "", 0, rois, err
 	}
 
-	contents, err := makeROIPMCListFileContents(rois, datasetFileName, combinedSpectra, params.Params.IncludeDwells, pmcHasDwellLookup)
+	contents, err := makeROIPMCListFileContents(rois, datasetFileName, combinedSpectra, params.UserParams.IncludeDwells, pmcHasDwellLookup)
 	if err != nil {
 		return "", 0, rois, fmt.Errorf("Error when preparing quant ROI node list. Error: %v", err)
 	}

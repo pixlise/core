@@ -81,7 +81,7 @@ func ImportQuantCSV(
 		Id:     quantId,
 		ScanId: scanId,
 		Params: &protos.QuantStartingParameters{
-			Params: &protos.QuantCreateParams{
+			UserParams: &protos.QuantCreateParams{
 				Command:        "map",
 				Name:           quantName,
 				ScanId:         scanId,

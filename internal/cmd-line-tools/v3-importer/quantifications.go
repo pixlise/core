@@ -237,7 +237,7 @@ func migrateQuant(jobSummary SrcJobSummaryItem, overrideSrcPath string, coll *mo
 	}
 
 	if len(jobSummary.Params.RoiIDs) > 0 && len(jobSummary.Params.RoiID) > 0 && !utils.ItemInSlice(jobSummary.Params.RoiID, jobSummary.Params.RoiIDs) {
-		return fmt.Errorf("Both Roi (%v) and Roi IDs is set for quant %v, scan %v, and Roi IDs doesn't contain Roi!", jobSummary.JobID, jobSummary.Params.DatasetID)
+		return fmt.Errorf("Both Roi (%v) and Roi IDs is set for quant %v, scan %v, and Roi IDs doesn't contain Roi!", jobSummary.JobID, jobSummary.JobID, jobSummary.Params.DatasetID)
 	}
 
 	rois := jobSummary.Params.RoiIDs
@@ -250,7 +250,7 @@ func migrateQuant(jobSummary SrcJobSummaryItem, overrideSrcPath string, coll *mo
 		Id:     jobSummary.JobID,
 		ScanId: jobSummary.Params.DatasetID,
 		Params: &protos.QuantStartingParameters{
-			Params: &protos.QuantCreateParams{
+			UserParams: &protos.QuantCreateParams{
 				Command: jobSummary.Params.Command,
 				Name:    jobSummary.Params.Name,
 				ScanId:  jobSummary.Params.DatasetID,

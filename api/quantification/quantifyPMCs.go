@@ -21,17 +21,18 @@ func makePMCListFilesForQuantPMCs(
 	cfg config.APIConfig,
 	datasetFileName string,
 	jobDataPath string,
-	params *protos.QuantStartingParameters,
+	quantStartSettings *protos.QuantStartingParameters,
 	dataset *protos.Experiment) ([]string, int32, error) {
 	pmcFiles := []string{}
+	userParams := quantStartSettings.UserParams
 
 	// Work out how many quants we're running, therefore how many nodes we need to generate in a reasonable time frame
-	spectraCount := int32(len(params.Params.Pmcs))
+	spectraCount := int32(len(userParams.Pmcs))
 	if !combinedSpectra {
 		spectraCount *= 2
 	}
 
-	nodeCount := quantRunner.EstimateNodeCount(spectraCount, int32(len(params.Params.Elements)), int32(params.Params.RunTimeSec), int32(params.CoresPerNode), cfg.MaxQuantNodes)
+	nodeCount := quantRunner.EstimateNodeCount(spectraCount, int32(len(userParams.Elements)), int32(userParams.RunTimeSec), int32(quantStartSettings.CoresPerNode), cfg.MaxQuantNodes)
 
 	if cfg.NodeCountOverride > 0 {
 		nodeCount = cfg.NodeCountOverride
@@ -39,7 +40,7 @@ func makePMCListFilesForQuantPMCs(
 	}
 
 	// NOTE: if we're running anything but the map command, the result is pretty quick, so we don't need to farm it out to multiple nodes
-	if params.Params.Command != "map" {
+	if userParams.Command != "map" {
 		nodeCount = 1
 	}
 
@@ -54,7 +55,7 @@ func makePMCListFilesForQuantPMCs(
 	svcs.Log.Debugf("spectraPerNode: %v, PMCs per node: %v for %v spectra, nodes: %v", spectraPerNode, pmcsPerNode, spectraCount, nodeCount)
 
 	// Generate the lists and save to S3
-	pmcLists := makeQuantJobPMCLists(params.Params.Pmcs, int(pmcsPerNode))
+	pmcLists := makeQuantJobPMCLists(userParams.Pmcs, int(pmcsPerNode))
 
 	pmcHasDwellLookup, err := makePMCHasDwellLookup(dataset)
 	if err != nil {
@@ -63,13 +64,13 @@ func makePMCListFilesForQuantPMCs(
 
 	for i, pmcList := range pmcLists {
 		// Serialise the data for the list
-		contents, err := makeIndividualPMCListFileContents(pmcList, datasetFileName, combinedSpectra, params.Params.IncludeDwells, pmcHasDwellLookup)
+		contents, err := makeIndividualPMCListFileContents(pmcList, datasetFileName, combinedSpectra, userParams.IncludeDwells, pmcHasDwellLookup)
 
 		if err != nil {
 			return pmcFiles, 0, fmt.Errorf("Error when preparing node PMC list: %v. Error: %v", i, err)
 		}
 
-		pmcListName, err := savePMCList(svcs, params.PiquantJobsBucket, contents, i+1, jobDataPath)
+		pmcListName, err := savePMCList(svcs, quantStartSettings.PiquantJobsBucket, contents, i+1, jobDataPath)
 		if err != nil {
 			return []string{}, 0, err
 		}

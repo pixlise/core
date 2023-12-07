@@ -13,7 +13,7 @@ func checkQuantificationNameExists(name string, scanId string, hctx wsHelpers.Ha
 
 	// Check if it exists
 	for _, item := range items {
-		if item.Params.Params.Name == name {
+		if item.Params.UserParams.Name == name {
 			return true
 		}
 	}

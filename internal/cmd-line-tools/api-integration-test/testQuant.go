@@ -38,7 +38,7 @@ func testQuants(apiHost string) {
 			Id:     quantId,
 			ScanId: scanId,
 			Params: &protos.QuantStartingParameters{
-				Params: &protos.QuantCreateParams{
+				UserParams: &protos.QuantCreateParams{
 					Command: "",
 					Name:    "Trial quant with Rh",
 					ScanId:  scanId,
