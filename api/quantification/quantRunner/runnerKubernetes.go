@@ -117,6 +117,10 @@ func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jo
 		// PiQuant Map Commands will need much more CPU (and can safely request it since they are running on Fargate nodes)
 		cpu = "3500m"
 	}
+
+	// Kubernetes doesn't like | in owner name, so we swap it for a _ here
+	safeUserId := strings.ReplaceAll(requestorUserId, "|", "_")
+
 	return &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      jobid + "-" + parts[0],
@@ -129,7 +133,7 @@ func getPodObject(paramsStr string, params PiquantParams, dockerImage string, jo
 				"app.kubernetes.io/component": application,
 				"piquant/command":             params.Command,
 				"app":                         node,
-				"owner":                       requestorUserId,
+				"owner":                       safeUserId,
 				"jobid":                       jobid,
 				"numberofpods":                strconv.Itoa(length),
 			},
