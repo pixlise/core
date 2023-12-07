@@ -321,7 +321,7 @@ func triggerPiquantNodes(jobId string, quantStartSettings *protos.QuantStartingP
 	}
 
 	// Convert to binary format
-	binFileBytes, elements, err := ConvertQuantificationCSV(svcs.Log, outputCSV, []string{"PMC", "SCLK", "RTT", "filename"}, dataset, false, "", false)
+	binFileBytes, elements, err := ConvertQuantificationCSV(svcs.Log, outputCSV, []string{"PMC", "SCLK", "RTT", "filename"}, nil, false, "", false)
 	if err != nil {
 		job.CompleteJob(jobId, false, fmt.Sprintf("Error when converting quant CSV to PIXLISE bin: %v", err), quantOutPath, piquantLogList, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
 		return
