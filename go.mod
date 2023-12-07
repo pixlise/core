@@ -1,6 +1,6 @@
 module github.com/pixlise/core/v3
 
-go 1.18
+go 1.21
 
 require (
 	github.com/auth0-community/go-auth0 v1.0.0
@@ -46,7 +46,6 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
-	github.com/jcxplorer/cwlogger v0.0.0-20170704082755-4e30a5a47e6a // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -57,8 +56,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.6.6 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/olivere/elastic/v7 v7.0.32 // indirect
-	github.com/orcaman/concurrent-map v1.0.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect

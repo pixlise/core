@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-FROM golang:1.18-alpine
+FROM golang:1.21-alpine
 ARG VERSION
 ARG GITHUB_SHA
 

@@ -69,7 +69,7 @@ If you're wondering what the Gitpod button above is and would like to get a deve
 - Start a local mongo DB in docker: run `local-mongo/startdb.sh`. On startup the DB is seeded with data from JSON files. This container can be stopped and will be deleted at that point.
 - Hit debug for the config in VS Code
 
-You may encounter errors related to having an old Go version. At time of writing PIXLISE Core requires Go version 1.18. VS Code may also want to install some plugins for Go development.
+You may encounter errors related to having an old Go version. At time of writing PIXLISE Core requires Go version 1.21. VS Code may also want to install some plugins for Go development.
 
 The API takes a few seconds to start up. Watch the Debug Console in VS Code! You will see:
 - A dump of the configuration the API started with
