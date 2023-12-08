@@ -18,7 +18,6 @@
 package quantification
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -26,7 +25,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/job"
 	"github.com/pixlise/core/v3/api/piquant"
@@ -36,7 +34,6 @@ import (
 	"github.com/pixlise/core/v3/core/logger"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // JobParamsFileName - File name of job params file
@@ -346,24 +343,8 @@ func triggerPiquantNodes(jobId string, quantStartSettings *protos.QuantStartingP
 		svcs.Log.Errorf("Failed to upload quant CSV file to s3 at \"s3://%v / %v\": %v", svcs.Config.UsersBucket, csvFilePath, err)
 	}
 
-	ctx := context.TODO()
-	coll := svcs.MongoDB.Collection(dbCollections.QuantificationsName)
-
-	// Save ownership item for this quant
-	now := svcs.TimeStamper.GetTimeNowSec()
-	coll = svcs.MongoDB.Collection(dbCollections.OwnershipName)
-	ownerItem, err := wsHelpers.MakeOwnerForWrite(jobId, protos.ObjectType_OT_QUANTIFICATION, quantStartSettings.RequestorUserId, now)
-	_, err = coll.InsertOne(ctx, ownerItem, options.InsertOne())
-	if err != nil {
-		job.CompleteJob(jobId, false, fmt.Sprintf("Failed to write ownership item to DB: %v", err), quantOutPath, piquantLogList, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
-		return
-	}
-
-	// Report success
 	completeMsg := fmt.Sprintf("Nodes ran: %v", len(pmcFiles))
-	job.CompleteJob(jobId, true, completeMsg, quantOutPath, piquantLogList, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
-
-	// Finally, write a DB entry summarising our quant and ownership info
+	now := svcs.TimeStamper.GetTimeNowSec()
 	summary := &protos.QuantificationSummary{
 		Id:       jobId,
 		ScanId:   userParams.ScanId,
@@ -379,11 +360,21 @@ func triggerPiquantNodes(jobId string, quantStartSettings *protos.QuantStartingP
 		},
 	}
 
-	_, err = coll.InsertOne(ctx, summary)
+	ownerItem, err := wsHelpers.MakeOwnerForWrite(jobId, protos.ObjectType_OT_QUANTIFICATION, quantStartSettings.RequestorUserId, now)
 	if err != nil {
-		job.CompleteJob(jobId, false, fmt.Sprintf("Failed to write ownership item to DB: %v", err), quantOutPath, piquantLogList, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+		msg := fmt.Sprintf("Failed to create ownership info for quant job %v. Error was: %v", jobId, err)
+		job.CompleteJob(jobId, false, msg, quantOutPath, piquantLogList, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
 		return
 	}
+
+	err = writeQuantAndOwnershipToDB(summary, ownerItem, hctx.Svcs.MongoDB)
+	if err != nil {
+		job.CompleteJob(jobId, false, fmt.Sprintf("Failed to write quantification and ownership to DB: %v. Id: %v", err, jobId), quantOutPath, piquantLogList, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+		return
+	}
+
+	// Report success
+	job.CompleteJob(jobId, true, completeMsg, quantOutPath, piquantLogList, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
 }
 
 func copyAllLogs(fs fileaccess.FileAccess, jobLog logger.ILogger, jobBucket string, jobDataPath string, usersBucket string, logSavePath string, jobID string) ([]string, error) {

@@ -18,19 +18,13 @@
 package quantification
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
-	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
 	protos "github.com/pixlise/core/v3/generated-protos"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 func ImportQuantCSV(
@@ -115,33 +109,7 @@ func ImportQuantCSV(
 		},
 	}
 
-	ctx := context.TODO()
-
-	wc := writeconcern.New(writeconcern.WMajority())
-	rc := readconcern.Snapshot()
-	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
-
-	sess, err := hctx.Svcs.MongoDB.Client().StartSession()
-	if err != nil {
-		return quantId, err
-	}
-	defer sess.EndSession(ctx)
-
-	// Write the 2 items in a single transaction
-	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		_, _err := hctx.Svcs.MongoDB.Collection(dbCollections.QuantificationsName).InsertOne(sessCtx, &summary)
-		if _err != nil {
-			return nil, _err
-		}
-		_, _err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).InsertOne(sessCtx, ownerItem)
-		if _err != nil {
-			return nil, _err
-		}
-		return nil, nil
-	}
-
-	_, err = sess.WithTransaction(ctx, callback, txnOpts)
-
+	err = writeQuantAndOwnershipToDB(&summary, ownerItem, hctx.Svcs.MongoDB)
 	if err != nil {
 		return quantId, err
 	}

@@ -60,6 +60,7 @@ func AddJob(idPrefix string, jobTimeoutSec uint32, db *mongo.Database, idgen idg
 	// Start a thread to watch this job
 	go watchJob(jobId, now, watchUntilUnixSec, db, logger, ts, sendUpdate)
 
+	logger.Infof("AddJob: %v", jobId)
 	return job, nil
 }
 
@@ -83,11 +84,14 @@ func UpdateJob(jobId string, status protos.JobStatus_Status, message string, log
 
 	result, err := coll.UpdateOne(ctx, filter, data, opt)
 	if err != nil {
+		logger.Errorf("UpdateJob %v: %v", jobId, err)
 		return err
 	}
 
 	if result.MatchedCount != 1 && result.UpsertedCount != 1 {
 		logger.Errorf("UpdateJob result had unexpected counts %+v id: %v", result, jobId)
+	} else {
+		logger.Infof("UpdateJob: %v with status %v, message: %v", jobId, protos.JobStatus_Status_name[int32(status.Number())], message)
 	}
 
 	return nil
@@ -121,11 +125,14 @@ func CompleteJob(jobId string, success bool, message string, outputFilePath stri
 
 	result, err := coll.UpdateOne(ctx, filter, data, opt)
 	if err != nil {
+		logger.Errorf("CompleteJob %v: %v", jobId, err)
 		return err
 	}
 
 	if result.MatchedCount != 1 && result.UpsertedCount != 1 {
 		logger.Errorf("CompleteJob result had unexpected counts %+v id: %v", result, jobId)
+	} else {
+		logger.Infof("UpdateJob: %v with status %v, message: %v", jobId, protos.JobStatus_Status_name[int32(status.Number())], message)
 	}
 
 	activeJobs[jobId] = false

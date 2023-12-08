@@ -327,7 +327,6 @@ func (s *PIXLISEDataSaver) Save(
 
 	result, err := coll.UpdateOne(context.TODO(), bson.D{{"_id", summaryData.Id}}, bson.D{{"$set", summaryData}}, opt)
 
-	//result, err := db.Collection(dbCollections.ScansName).InsertOne(context.TODO(), summaryData)
 	if err != nil {
 		jobLog.Errorf("Failed to write summary to DB: %v", err)
 		return err
