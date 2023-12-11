@@ -3,26 +3,14 @@ package quantification
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/core/pixlUser"
 	"github.com/pixlise/core/v3/core/awsutil"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
-
-var testROICreator = pixlUser.UserInfo{
-	Name:   "Niko Bellic",
-	UserID: "600f2a0806b6c70071d3d174",
-	Email:  "niko@rockstar.com",
-	Permissions: map[string]bool{
-		"access:the-group":     true,
-		"access:groupie":       true,
-		"access:another-group": true,
-	},
-}
 
 var testROIs = []roiItemWithPMCs{
 	{
@@ -122,7 +110,7 @@ func Example_processQuantROIsToPMCs_Combined_OK() {
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row1
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row1
 PMC, CaO_%, filename, CaO_int, RTT
 15, 5.1, Normal_A_roi1-id, 400, 7890
 7, 6.1, Normal_B_roi2-id, 405, 7800
@@ -162,7 +150,7 @@ func Example_processQuantROIsToPMCs_SeparateAB_OK() {
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row1
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row1
 PMC, CaO_%, CaO_int, filename, RTT
 15, 5.1, 400, Normal_A_roi1-id, 7890
 15, 5.2, 401, Normal_B_roi1-id, 7890
@@ -209,7 +197,7 @@ func Example_processQuantROIsToPMCs_SeparateAB_InvalidFileName() {
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row1
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row1
 PMC, CaO_%, CaO_int, filename, RTT
 15, 5.1, 400, Normal_A_roi1-id, 7890
 15, 5.2, 401, Normal_B, 7890
@@ -244,7 +232,7 @@ func Example_processQuantROIsToPMCs_Combined_NoFileNameCol() {
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row1
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row1
 PMC, CaO_%, CaO_int, RTT
 15, 5.1, 400, 7890
 7, 6.1, 405, 7800
@@ -304,7 +292,7 @@ func Example_processQuantROIsToPMCs_Combined_CSVRowCountROICountMismatch() {
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row1
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row1
 PMC, CaO_%, CaO_int, RTT, filename
 15, 5.1, 400, 7890, Normal_A_roi1-id
 7, 6.1, 405, 7800, Normal_A_roi1-id
@@ -338,7 +326,7 @@ func Example_processQuantROIsToPMCs_Combined_InvalidPMC() {
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row1
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row1
 PMC, CaO_%, CaO_int, filename, RTT
 15, 5.1, 400, Normal_A_roi1-id, 7890
 Qwerty, 6.1, 405, Normal_A_roi1-id, 7800

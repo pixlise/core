@@ -4,22 +4,21 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
+	"github.com/pixlise/core/v3/core/errorwithstatus"
 	"github.com/pixlise/core/v3/core/indexcompression"
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
 func HandleDetectedDiffractionPeaksReq(req *protos.DetectedDiffractionPeaksReq, hctx wsHelpers.HandlerContext) (*protos.DetectedDiffractionPeaksResp, error) {
-	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
-		return nil, err
-	}
-	if req.Entries == nil {
-		return nil, fmt.Errorf("no entry range specified for scan %v", req.ScanId)
+	// Because we're dealing in entry indexes (relative to the scan), we download the dataset.bin file here too
+	// to get the totals, and to look up PMCs from diffraction DB
+	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
+	if err != nil {
+		return nil, errorwithstatus.MakeBadRequestError(err)
 	}
 
-	// Check if user is allowed to see this data...
-	_, err := wsHelpers.CheckObjectAccess(false, req.ScanId, protos.ObjectType_OT_SCAN, hctx)
-	if err != nil {
-		return nil, err
+	if req.Entries == nil {
+		return nil, fmt.Errorf("no entry range specified for scan %v", req.ScanId)
 	}
 
 	// Cache the file locally, like we do with datasets (aka Scans)
@@ -32,13 +31,6 @@ func HandleDetectedDiffractionPeaksReq(req *protos.DetectedDiffractionPeaksReq, 
 	diffLookup := map[string]*protos.Diffraction_Location{}
 	for _, loc := range diffRawData.Locations {
 		diffLookup[loc.Id] = loc
-	}
-
-	// Because we're dealing in entry indexes (relative to the scan), we download the dataset.bin file here too
-	// to get the totals, and to look up PMCs from diffraction DB
-	exprPB, err := wsHelpers.ReadDatasetFile(req.ScanId, hctx.Svcs)
-	if err != nil {
-		return nil, err
 	}
 
 	// Decode the range

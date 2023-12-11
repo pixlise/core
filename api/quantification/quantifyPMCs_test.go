@@ -3,7 +3,7 @@ package quantification
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -93,20 +93,20 @@ func Example_combineQuantOutputs_OK() {
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row1
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row1
 PMC, CaO_%, CaO_int, RTT
 30, 5.1, 400, 7890
 12, 6.1, 405, 7800
 `))),
 		},
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row2
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row2
 PMC, CaO_%, CaO_int, RTT
 18, 7.1, 415, 7840
 `))),
 		},
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row3
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row3
 PMC, CaO_%, CaO_int, RTT
 3, 1.1, 450, 7830
 40, 8.1, 455, 7870
@@ -152,20 +152,20 @@ func Example_combineQuantOutputs_DuplicatePMC() {
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row1
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row1
 PMC, CaO_%, CaO_int, RTT
 30, 5.1, 400, 7890
 12, 6.1, 405, 7800
 `))),
 		},
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row2
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row2
 PMC, CaO_%, CaO_int, RTT
 18, 7.1, 415, 7840
 `))),
 		},
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row3
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row3
 PMC, CaO_%, CaO_int, RTT
 3, 1.1, 450, 7830
 30, 1.3, 451, 7833
@@ -210,7 +210,7 @@ func Example_combineQuantOutputs_DownloadError() {
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row1
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row1
 PMC, CaO_%, CaO_int, RTT
 30, 5.1, 400, 7890
 12, 6.1, 405, 7800
@@ -247,14 +247,14 @@ func Example_combineQuantOutputs_BadPMC() {
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row1
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row1
 PMC, CaO_%, CaO_int, RTT
 30, 5.1, 400, 7890
 12, 6.1, 405, 7800
 `))),
 		},
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row2
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row2
 PMC, CaO_%, CaO_int, RTT
 NaN, 7.1, 415, 7840
 `))),
@@ -289,14 +289,14 @@ func Example_combineQuantOutputs_LastLineCutOff() {
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row1
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row1
 PMC, CaO_%, CaO_int, RTT
 30, 5.1, 400, 7890
 12, 6.1, 405, 7800
 `))),
 		},
 		{
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`Header row2
+			Body: io.NopCloser(bytes.NewReader([]byte(`Header row2
 PMC, CaO_%, CaO_int, RTT
 31
 `))),

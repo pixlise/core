@@ -93,3 +93,28 @@ func makeLocToPMCLookup(dataset *protos.Experiment, onlyWithNormalOrDwellSpectra
 
 	return locIdxToPMCLookup, nil
 }
+
+func getPMCsForLocationIndexes[T int32 | int | uint32](locationIndexes []T, dataset *protos.Experiment) ([]int32, error) {
+	// Get a lookup for all of them...
+	lookup, err := makeLocToPMCLookup(dataset, false)
+	pmcs := []int32{}
+	errorCount := 0
+
+	if err != nil {
+		return pmcs, err
+	}
+
+	for _, idx := range locationIndexes {
+		if pmc, ok := lookup[int32(idx)]; ok {
+			pmcs = append(pmcs, int32(pmc))
+		} else {
+			errorCount++
+		}
+	}
+
+	if errorCount > 0 {
+		return []int32{}, fmt.Errorf("Failed to get %v ROI PMCs", errorCount)
+	}
+
+	return pmcs, nil
+}

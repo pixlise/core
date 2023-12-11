@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/api/quantification"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -14,6 +15,10 @@ import (
 
 // Anyone can retrieve a quant z-stack if they have quant messaging permissions
 func HandleQuantCombineListGetReq(req *protos.QuantCombineListGetReq, hctx wsHelpers.HandlerContext) (*protos.QuantCombineListGetResp, error) {
+	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+
 	zId := hctx.SessUser.User.Id + "_" + req.ScanId
 
 	ctx := context.TODO()
@@ -41,6 +46,13 @@ func HandleQuantCombineListGetReq(req *protos.QuantCombineListGetReq, hctx wsHel
 
 // Anyone can save a quant z-stack if they have quant messaging permissions
 func HandleQuantCombineListWriteReq(req *protos.QuantCombineListWriteReq, hctx wsHelpers.HandlerContext) (*protos.QuantCombineListWriteResp, error) {
+	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+	if req.List == nil || len(req.List.RoiZStack) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("List cannot be empty"))
+	}
+
 	zId := hctx.SessUser.User.Id + "_" + req.ScanId
 
 	ctx := context.TODO()
@@ -66,9 +78,83 @@ func HandleQuantCombineListWriteReq(req *protos.QuantCombineListWriteReq, hctx w
 }
 
 func HandleMultiQuantCompareReq(req *protos.MultiQuantCompareReq, hctx wsHelpers.HandlerContext) (*protos.MultiQuantCompareResp, error) {
-	return nil, errors.New("HandleMultiQuantCompareReq not implemented yet")
+	// req.ScanId is checked in beginDatasetFileReq
+
+	if len(req.QuantIds) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Requested with 0 quant IDs"))
+	}
+
+	// If we're requesting for RemainingPoints ROI, mandate that the PMC list is not empty, otherwise it should be
+	if req.ReqRoiId == "RemainingPoints" && len(req.RemainingPointsPMCs) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("No PMCs supplied for RemainingPoints ROI"))
+	} else if req.ReqRoiId != "RemainingPoints" && len(req.RemainingPointsPMCs) > 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Unexpected PMCs supplied for ROI: " + req.ReqRoiId))
+	}
+
+	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
+	if err != nil {
+		return nil, errorwithstatus.MakeBadRequestError(err)
+	}
+
+	tables, err := quantification.MultiQuantCompare(req.ReqRoiId, req.RemainingPointsPMCs, req.QuantIds, exprPB, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.MultiQuantCompareResp{
+		RoiId:       req.ReqRoiId,
+		QuantTables: tables,
+	}, nil
 }
 
 func HandleQuantCombineReq(req *protos.QuantCombineReq, hctx wsHelpers.HandlerContext) (*protos.QuantCombineResp, error) {
-	return nil, errors.New("HandleQuantCombineReq not implemented yet")
+	// Simple validation
+
+	// NOTE: if only asking for a summary, we don't care about name being empty
+	if !req.SummaryOnly && len(req.Name) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Name cannot be empty"))
+	}
+
+	if len(req.RoiZStack) <= 1 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Must reference more than 1 ROI"))
+	}
+
+	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
+	if err != nil {
+		return nil, errorwithstatus.MakeBadRequestError(err)
+	}
+
+	multiQuantData, err := quantification.MultiQuantCombinedCSV(req.Name, req.ScanId, req.RoiZStack, exprPB, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.SummaryOnly {
+		// We return a summary instead of forming a CSV
+		summary := quantification.FormMultiQuantSummary(multiQuantData.DataPerDetectorPerPMC, multiQuantData.AllColumns, multiQuantData.PMCCount)
+		return &protos.QuantCombineResp{
+			CombineResult: &protos.QuantCombineResp_Summary{
+				Summary: summary,
+			},
+		}, nil
+	}
+
+	// Form a CSV
+	csv := quantification.FormCombinedCSV(multiQuantData.QuantIds, multiQuantData.DataPerDetectorPerPMC, multiQuantData.AllColumns)
+
+	quantMode := quantification.QuantModeCombinedMultiQuant
+	if len(multiQuantData.Detectors) > 1 {
+		quantMode = quantification.QuantModeABMultiQuant
+	}
+
+	quantId, err := quantification.ImportQuantCSV(hctx, req.ScanId, hctx.SessUser.User, csv, "combined-multi", "multi", req.Name, quantMode, req.Description)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.QuantCombineResp{
+		CombineResult: &protos.QuantCombineResp_JobId{
+			JobId: quantId,
+		},
+	}, nil
 }
