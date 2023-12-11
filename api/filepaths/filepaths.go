@@ -222,13 +222,14 @@ const tagFile = "Tags.json"
 const MultiQuantZStackFile = "multi-quant-z-stack.json"
 
 const annotationFile = "SpectrumAnnotation.json"
-const quantificationSubPath = "Quantifications"
+
+const RootQuantificationPath = "Quantifications"
 
 func GetQuantPath(userId string, scanId string, fileName string) string {
 	if len(fileName) > 0 {
-		return path.Join("Quantifications", scanId, userId, fileName)
+		return path.Join(RootQuantificationPath, scanId, userId, fileName)
 	}
-	return path.Join("Quantifications", scanId, userId)
+	return path.Join(RootQuantificationPath, scanId, userId)
 }
 
 const quantLastOutputSubPath = "LastPiquantOutput"

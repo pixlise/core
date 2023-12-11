@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/wstestlib"
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
@@ -160,32 +161,40 @@ func testQuants(apiHost string) {
 		fmt.Sprintf(`{"msgId": 5, "status": "WS_OK", "quantListResp": {
 			"quants": [{
 				"id": "%v",
+				"scanId": "the-scan-id",
 				"params": {
-					"name": "Trial quant with Rh",
+					"userParams": {
+						"name": "Trial quant with Rh",
+						"scanId": "the-scan-id",
+						"elements": ["CO3","Rh","Na","Mg","Al","Si","P","S","Cl","K","Ca","Ti","Cr","Mn","Fe"],
+						"detectorConfig": "PIXL/PiquantConfigs/v7",
+						"runTimeSec": 60,
+						"quantMode": "AB"
+					},
 					"dataBucket": "databucket",
-					"datasetPath": "Datasets/the-scan-id/dataset.bin",
-					"datasetID": "the-scan-id",
+					"scanFilePath": "Datasets/the-scan-id/dataset.bin",
 					"piquantJobsBucket": "piquantbucket",
-					"detectorConfig": "PIXL/PiquantConfigs/v7",
-					"elements": ["CO3","Rh","Na","Mg","Al","Si","P","S","Cl","K","Ca","Ti","Cr","Mn","Fe"],
-					"runTimeSec": 60,
+					"pmcCount": 100,
 					"coresPerNode": 4,
 					"startUnixTimeSec": 1652813392,
 					"requestorUserId": "auth0|5df311ed8a0b5d0ebf5fb476",
-					"roiID": "wob0wm8cogiot1rp",
-					"PIQUANTVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8",
-					"quantMode": "AB"
+					"PIQUANTVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8"
 				},
 				"elements": ["Rh2O3","Na2O","MgCO3","Al2O3","SiO2","P2O5","SO3","Cl","K2O","CaCO3","TiO2","Cr2O3","MnCO3","FeCO3-T"],
-				"scanId": "the-scan-id",
 				"status": {
-					"jobID": "%v",
+					"jobId": "%v",
 					"status": "COMPLETE",
 					"message": "Nodes ran: 7",
 					"endUnixTimeSec": 1652813627,
 					"outputFilePath": "UserContent/5df311ed8a0b5d0ebf5fb476/089063943/Quantifications",
-					"piquantLogs": ["node00001_piquant.log","node00001_stdout.log","node00002_piquant.log","node00002_stdout.log","node00003_piquant.log","node00003_stdout.log","node00004_piquant.log","node00004_stdout.log","node00005_piquant.log","node00005_stdout.log","node00006_piquant.log","node00006_stdout.log","node00007_piquant.log","node00007_stdout.log"]
-				}
+					"otherLogFiles": ["node00001_piquant.log","node00001_stdout.log","node00002_piquant.log","node00002_stdout.log","node00003_piquant.log","node00003_stdout.log","node00004_piquant.log","node00004_stdout.log","node00005_piquant.log","node00005_stdout.log","node00006_piquant.log","node00006_stdout.log","node00007_piquant.log","node00007_stdout.log"]
+				},
+                "owner": {
+                    "creatorUser": {},
+                    "createdUnixSec": 1646262426,
+                    "viewerUserCount": 1,
+                    "sharedWithOthers": true
+                }
 			}]
 		}}`, quantId, quantId),
 	)
@@ -195,32 +204,40 @@ func testQuants(apiHost string) {
 		fmt.Sprintf(`{"msgId":6,"status":"WS_OK", "quantGetResp":{
 			"summary": {
 				"id": "%v",
+				"scanId": "the-scan-id",
 				"params": {
-					"name": "Trial quant with Rh",
+					"userParams": {
+						"name": "Trial quant with Rh",
+						"scanId": "the-scan-id",
+						"elements": ["CO3","Rh","Na","Mg","Al","Si","P","S","Cl","K","Ca","Ti","Cr","Mn","Fe"],
+						"detectorConfig": "PIXL/PiquantConfigs/v7",
+						"runTimeSec": 60,
+						"quantMode": "AB"
+					},
 					"dataBucket": "databucket",
-					"datasetPath": "Datasets/the-scan-id/dataset.bin",
-					"datasetID": "the-scan-id",
+					"scanFilePath": "Datasets/the-scan-id/dataset.bin",
 					"piquantJobsBucket": "piquantbucket",
-					"detectorConfig": "PIXL/PiquantConfigs/v7",
-					"elements": ["CO3","Rh","Na","Mg","Al","Si","P","S","Cl","K","Ca","Ti","Cr","Mn","Fe"],
-					"runTimeSec": 60,
+					"pmcCount": 100,
 					"coresPerNode": 4,
 					"startUnixTimeSec": 1652813392,
 					"requestorUserId": "auth0|5df311ed8a0b5d0ebf5fb476",
-					"roiID": "wob0wm8cogiot1rp",
-					"PIQUANTVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8",
-					"quantMode": "AB"
+					"PIQUANTVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8"
 				},
 				"elements": ["Rh2O3","Na2O","MgCO3","Al2O3","SiO2","P2O5","SO3","Cl","K2O","CaCO3","TiO2","Cr2O3","MnCO3","FeCO3-T"],
-				"scanId": "the-scan-id",
 				"status": {
-					"jobID": "%v",
+					"jobId": "%v",
 					"status": "COMPLETE",
 					"message": "Nodes ran: 7",
 					"endUnixTimeSec": 1652813627,
 					"outputFilePath": "UserContent/5df311ed8a0b5d0ebf5fb476/089063943/Quantifications",
-					"piquantLogs": ["node00001_piquant.log","node00001_stdout.log","node00002_piquant.log","node00002_stdout.log","node00003_piquant.log","node00003_stdout.log","node00004_piquant.log","node00004_stdout.log","node00005_piquant.log","node00005_stdout.log","node00006_piquant.log","node00006_stdout.log","node00007_piquant.log","node00007_stdout.log"]
-				}
+					"otherLogFiles": ["node00001_piquant.log","node00001_stdout.log","node00002_piquant.log","node00002_stdout.log","node00003_piquant.log","node00003_stdout.log","node00004_piquant.log","node00004_stdout.log","node00005_piquant.log","node00005_stdout.log","node00006_piquant.log","node00006_stdout.log","node00007_piquant.log","node00007_stdout.log"]
+				},
+                "owner": {
+                    "creatorUser": {},
+                    "createdUnixSec": 1646262426,
+                    "viewerUserCount": 1,
+                    "sharedWithOthers": true
+                }
 			}
 		}}`, quantId, quantId),
 	)
@@ -245,32 +262,40 @@ func testQuants(apiHost string) {
 		fmt.Sprintf(`{"msgId":8,"status":"WS_OK", "quantGetResp":{
 			"summary": {
 				"id": "%v",
+				"scanId": "the-scan-id",
 				"params": {
-					"name": "Trial quant with Rh",
+					"userParams": {
+						"name": "Trial quant with Rh",
+						"scanId": "the-scan-id",
+						"elements": ["CO3","Rh","Na","Mg","Al","Si","P","S","Cl","K","Ca","Ti","Cr","Mn","Fe"],
+						"runTimeSec": 60,
+						"quantMode": "AB",
+						"detectorConfig": "PIXL/PiquantConfigs/v7"
+					},
 					"dataBucket": "databucket",
-					"datasetPath": "Datasets/the-scan-id/dataset.bin",
-					"datasetID": "the-scan-id",
+					"scanFilePath": "Datasets/the-scan-id/dataset.bin",
 					"piquantJobsBucket": "piquantbucket",
-					"detectorConfig": "PIXL/PiquantConfigs/v7",
-					"elements": ["CO3","Rh","Na","Mg","Al","Si","P","S","Cl","K","Ca","Ti","Cr","Mn","Fe"],
-					"runTimeSec": 60,
+					"pmcCount": 100,
 					"coresPerNode": 4,
 					"startUnixTimeSec": 1652813392,
 					"requestorUserId": "auth0|5df311ed8a0b5d0ebf5fb476",
-					"roiID": "wob0wm8cogiot1rp",
-					"PIQUANTVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8",
-					"quantMode": "AB"
+					"PIQUANTVersion": "registry.gitlab.com/pixlise/piquant/runner:3.2.8"
 				},
 				"elements": ["Rh2O3","Na2O","MgCO3","Al2O3","SiO2","P2O5","SO3","Cl","K2O","CaCO3","TiO2","Cr2O3","MnCO3","FeCO3-T"],
-				"scanId": "the-scan-id",
 				"status": {
-					"jobID": "%v",
+					"jobId": "%v",
 					"status": "COMPLETE",
 					"message": "Nodes ran: 7",
 					"endUnixTimeSec": 1652813627,
 					"outputFilePath": "UserContent/5df311ed8a0b5d0ebf5fb476/089063943/Quantifications",
-					"piquantLogs": ["node00001_piquant.log","node00001_stdout.log","node00002_piquant.log","node00002_stdout.log","node00003_piquant.log","node00003_stdout.log","node00004_piquant.log","node00004_stdout.log","node00005_piquant.log","node00005_stdout.log","node00006_piquant.log","node00006_stdout.log","node00007_piquant.log","node00007_stdout.log"]
-				}
+					"otherLogFiles": ["node00001_piquant.log","node00001_stdout.log","node00002_piquant.log","node00002_stdout.log","node00003_piquant.log","node00003_stdout.log","node00004_piquant.log","node00004_stdout.log","node00005_piquant.log","node00005_stdout.log","node00006_piquant.log","node00006_stdout.log","node00007_piquant.log","node00007_stdout.log"]
+				},
+                "owner": {
+                    "creatorUser": {},
+                    "createdUnixSec": 1646262426,
+                    "viewerUserCount": 1,
+                    "sharedWithOthers": true
+                }
 			},
 			"data": {
 				"labels": [
@@ -588,13 +613,13 @@ func testQuants(apiHost string) {
 	wstestlib.ExecQueuedActions(&u1)
 
 	// Check that the files have been deleted
-	items, err := apiStorageFileAccess.ListObjects(apiUsersBucket, "Quantification/"+scanId+"/")
+	items, err := apiStorageFileAccess.ListObjects(apiUsersBucket, filepaths.RootQuantificationPath+"/"+scanId+"/")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	if len(items) > 0 {
-		log.Fatalf("Failed to delete all quant file. Remaining: %v\n", strings.Join(items, ", "))
+	if len(items) != 2 {
+		log.Fatalf("Quant upload must've failed")
 	}
 
 	// Now create a quant by uploading a CSV
@@ -606,32 +631,41 @@ func testQuants(apiHost string) {
 			"quantGetResp": {
 				"summary": {
 					"id": "${IDCHK=uploadedQuantId}",
+					"scanId": "%v",
 					"params": {
-						"name": "uploaded Quant",
+						"userParams": {
+							"command": "map",
+							"name": "uploaded Quant",
+							"scanId": "%v",
+							"elements": ["Ca"],
+							"quantMode": "ABManual"
+						},
 						"dataBucket": "devpixlise-datasets0030ee04-ox1crk4uej2x",
-						"datasetPath": "Datasets/the-scan-id/dataset.bin",
-						"datasetID": "%v",
+						"scanFilePath": "Scans/the-scan-id/dataset.bin",
 						"piquantJobsBucket": "devpixlise-piquantjobs2a7b0239-wcx2ijxt49jc",
-						"elements": [
-							"Ca"
-						],
 						"startUnixTimeSec": "${SECAGO=3}",
 						"requestorUserId": "${USERID}",
 						"PIQUANTVersion": "N/A",
-						"quantMode": "ABManual",
-						"comments": "This was just uploaded from CSV",
-						"command": "map"
+						"comments": "This was just uploaded from CSV"
 					},
 					"elements": [
 						"Ca"
 					],
-					"scanId": "%v",
 					"status": {
-						"jobID": "${IDCHK=uploadedQuantId}",
+						"jobId": "${IDCHK=uploadedQuantId}",
 						"status": "COMPLETE",
 						"message": "user-supplied quantification processed",
 						"endUnixTimeSec": "${SECAGO=3}",
 						"outputFilePath": "Quantifications/the-scan-id/auth0|649e54491154cac52ec21718"
+					},
+					"owner": {
+						"creatorUser": {
+							"id": "auth0|649e54491154cac52ec21718",
+							"name": "test1@pixlise.org - WS Integration Test",
+							"email": "test1@pixlise.org"
+						},
+						"createdUnixSec": "${SECAGO=3}",
+						"canEdit": true
 					}
 				},
 				"data": {
@@ -681,7 +715,7 @@ func testQuants(apiHost string) {
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 
-	items, err = apiStorageFileAccess.ListObjects(apiUsersBucket, "Quantification/"+scanId+"/")
+	items, err = apiStorageFileAccess.ListObjects(apiUsersBucket, filepaths.RootQuantificationPath+"/"+scanId+"/")
 	if err != nil {
 		log.Fatalln(err)
 	}
