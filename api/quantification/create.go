@@ -52,23 +52,22 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, h
 
 	scanFilePath := filepaths.GetScanFilePath(createParams.ScanId, filepaths.DatasetFileName)
 
-	jobIdPrefix := "quant"
-
 	// NOTE: if we're NOT running a map job, we make weird job IDs that help us identify this as a piquant that doesn't need to be
 	// treated as a long-running job
+	var jobStatus *protos.JobStatus
+	jobId := ""
 	if createParams.Command != "map" {
 		// Make the name and ID the same, and start with something that stands out
-		jobIdPrefix = "cmd-" + createParams.Command
-	}
+		jobId = fmt.Sprintf("cmd-%v-%s", createParams.Command, hctx.Svcs.IDGen.GenObjectID())
+	} else {
+		jobStatus, err = job.AddJob("quant", uint32(svcs.Config.ImportJobMaxTimeSec), svcs.MongoDB, svcs.IDGen, svcs.TimeStamper, svcs.Log, sendUpdate)
+		if jobStatus != nil {
+			jobId = jobStatus.JobId
+		}
 
-	jobStatus, err := job.AddJob(jobIdPrefix, uint32(svcs.Config.ImportJobMaxTimeSec), svcs.MongoDB, svcs.IDGen, svcs.TimeStamper, svcs.Log, sendUpdate)
-	jobId := ""
-	if jobStatus != nil {
-		jobId = jobStatus.JobId
-	}
-
-	if err != nil || len(jobId) < 0 {
-		svcs.Log.Errorf("Failed to add job watcher for quant Job ID: %v", jobId)
+		if err != nil || len(jobId) < 0 {
+			return nil, fmt.Errorf("Failed to add job watcher for quant Job ID: %v", jobId)
+		}
 	}
 
 	// If not a map command, use the name as the job id just to have a non-empty name and be trackable
@@ -103,52 +102,68 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, h
 	wg.Add(1)
 
 	// Trigger task to start in a go routine, so we don't block!
-	go triggerPiquantNodes(jobId, params, hctx, wg)
+	r := quantNodeRunner{
+		jobId:              jobId,
+		quantStartSettings: params,
+		hctx:               hctx,
+	}
+
+	go r.triggerPiquantNodes(wg)
 
 	return jobStatus, nil
 }
 
+type quantNodeRunner struct {
+	jobId              string
+	quantStartSettings *protos.QuantStartingParameters
+	hctx               wsHelpers.HandlerContext
+	isJob              bool
+	logId              string
+}
+
 // This should be triggered as a go routine from quant creation endpoint so we can return a job id there quickly and do the processing offline
-func triggerPiquantNodes(jobId string, quantStartSettings *protos.QuantStartingParameters, hctx wsHelpers.HandlerContext, wg *sync.WaitGroup) {
+func (r *quantNodeRunner) triggerPiquantNodes(wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	svcs := hctx.Svcs
-	userParams := quantStartSettings.UserParams
+	r.isJob = r.quantStartSettings.UserParams.Command == "map"
 
 	// TODO: figure out log id!
-	logId := jobId
+	r.logId = r.jobId
+
+	svcs := r.hctx.Svcs
+	userParams := r.quantStartSettings.UserParams
 
 	jobRoot := filepaths.GetJobDataPath(userParams.ScanId, "", "")
-	jobDataPath := filepaths.GetJobDataPath(userParams.ScanId, jobId, "")
+	jobDataPath := filepaths.GetJobDataPath(userParams.ScanId, r.jobId, "")
 
 	// Get quant runner interface
 	runner, err := quantRunner.GetQuantRunner(svcs.Config.QuantExecutor)
 	if err != nil {
-		job.CompleteJob(jobId, false, fmt.Sprintf("Failed to start quant runner: %v", err), "", []string{}, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+		r.completeJobState(false, fmt.Sprintf("Failed to start quant runner: %v", err), "", []string{})
 		return
 	}
 
-	job.UpdateJob(jobId, protos.JobStatus_PREPARING_NODES, fmt.Sprintf("Cores/Node: %v", quantStartSettings.CoresPerNode), logId, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+	r.updateJobState(protos.JobStatus_PREPARING_NODES, fmt.Sprintf("Cores/Node: %v", r.quantStartSettings.CoresPerNode))
 
-	datasetFileName := path.Base(quantStartSettings.ScanFilePath)
-	datasetPathOnly := path.Dir(quantStartSettings.ScanFilePath)
+	datasetFileName := path.Base(r.quantStartSettings.ScanFilePath)
+	datasetPathOnly := path.Dir(r.quantStartSettings.ScanFilePath)
 
 	// Gather required params (these are static, same data passed to each node)
 	piquantParams := quantRunner.PiquantParams{
 		RunTimeEnv:  svcs.Config.EnvironmentName,
-		JobID:       jobId,
+		JobID:       r.jobId,
 		JobsPath:    jobRoot,
 		DatasetPath: datasetPathOnly,
 		// NOTE: not using path.Join because we want this as / deliberately, this is being
 		//       saved in a config file that runs in docker/linux
 		DetectorConfig: filepaths.RootDetectorConfig + "/" + userParams.DetectorConfig + "/",
 		Elements:       userParams.Elements,
-		Parameters:     fmt.Sprintf("%v -t,%v", userParams.Parameters, quantStartSettings.CoresPerNode),
+		Parameters:     fmt.Sprintf("%v -t,%v", userParams.Parameters, r.quantStartSettings.CoresPerNode),
 		//DatasetsBucket:    params.DatasetsBucket,
 		//ConfigBucket:      params.ConfigBucket,
 		DatasetsBucket:    svcs.Config.DatasetsBucket,
 		ConfigBucket:      svcs.Config.ConfigBucket,
-		PiquantJobsBucket: quantStartSettings.PiquantJobsBucket,
+		PiquantJobsBucket: r.quantStartSettings.PiquantJobsBucket,
 		QuantName:         userParams.Name,
 		PMCListName:       "", // PMC List Name will be filled in later
 		Command:           userParams.Command,
@@ -173,30 +188,30 @@ func triggerPiquantNodes(jobId string, quantStartSettings *protos.QuantStartingP
 	// Download the dataset itself because we'll need it to generate our .pmcs files for each node to run
 	dataset, err := wsHelpers.ReadDatasetFile(userParams.ScanId, svcs)
 	if err != nil {
-		job.CompleteJob(jobId, false, fmt.Sprintf("Error: %v", err), "", []string{}, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+		r.completeJobState(false, fmt.Sprintf("Error: %v", err), "", []string{})
 		return
 	}
 	if quantByROI {
 		pmcFile := ""
-		pmcFile, spectraPerNode, rois, err = makePMCListFilesForQuantROI(hctx, combined, svcs.Config, datasetFileName, jobDataPath, quantStartSettings, dataset)
+		pmcFile, spectraPerNode, rois, err = makePMCListFilesForQuantROI(r.hctx, combined, svcs.Config, datasetFileName, jobDataPath, r.quantStartSettings, dataset)
 		pmcFiles = []string{pmcFile}
 	} else {
-		pmcFiles, spectraPerNode, err = makePMCListFilesForQuantPMCs(svcs, combined, svcs.Config, datasetFileName, jobDataPath, quantStartSettings, dataset)
+		pmcFiles, spectraPerNode, err = makePMCListFilesForQuantPMCs(svcs, combined, svcs.Config, datasetFileName, jobDataPath, r.quantStartSettings, dataset)
 	}
 
 	if err != nil {
-		job.CompleteJob(jobId, false, fmt.Sprintf("Error: %v", err), "", []string{}, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+		r.completeJobState(false, fmt.Sprintf("Error: %v", err), "", []string{})
 		return
 	}
 
 	// Save running state as we are blocked after this!
-	job.UpdateJob(jobId, protos.JobStatus_RUNNING, fmt.Sprintf("Node count: %v, Spectra/Node: %v", len(pmcFiles), spectraPerNode), logId, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+	r.updateJobState(protos.JobStatus_RUNNING, fmt.Sprintf("Node count: %v, Spectra/Node: %v", len(pmcFiles), spectraPerNode))
 
 	// Run piquant job(s)
-	runner.RunPiquant(quantStartSettings.PIQUANTVersion, piquantParams, pmcFiles, svcs.Config, quantStartSettings.RequestorUserId, svcs.Log)
+	runner.RunPiquant(r.quantStartSettings.PIQUANTVersion, piquantParams, pmcFiles, svcs.Config, r.quantStartSettings.RequestorUserId, svcs.Log)
 
 	// Generate the output path for all generated data files & logs
-	quantOutPath := filepaths.GetQuantPath(quantStartSettings.RequestorUserId, userParams.ScanId, "")
+	quantOutPath := filepaths.GetQuantPath(r.quantStartSettings.RequestorUserId, userParams.ScanId, "")
 
 	outputCSVName := ""
 	outputCSVBytes := []byte{}
@@ -204,22 +219,22 @@ func triggerPiquantNodes(jobId string, quantStartSettings *protos.QuantStartingP
 
 	piquantLogList := []string{}
 
-	if userParams.Command == "map" {
-		job.UpdateJob(jobId, protos.JobStatus_GATHERING_RESULTS, fmt.Sprintf("Combining CSVs from %v nodes...", len(pmcFiles)), logId, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+	r.updateJobState(protos.JobStatus_GATHERING_RESULTS, fmt.Sprintf("Combining CSVs from %v nodes...", len(pmcFiles)))
 
+	if userParams.Command == "map" {
 		// Gather log files straight away, we want any status updates to include the logs!
 		piquantLogList, err = copyAllLogs(
 			svcs.FS,
 			svcs.Log,
-			quantStartSettings.PiquantJobsBucket,
+			r.quantStartSettings.PiquantJobsBucket,
 			jobDataPath,
 			svcs.Config.UsersBucket,
-			path.Join(quantOutPath, filepaths.MakeQuantLogDirName(jobId)),
-			jobId,
+			path.Join(quantOutPath, filepaths.MakeQuantLogDirName(r.jobId)),
+			r.jobId,
 		)
 
 		// Now we can combine the outputs from all runners
-		csvTitleRow := fmt.Sprintf("PIQUANT version: %v DetectorConfig: %v", quantStartSettings.PIQUANTVersion, userParams.DetectorConfig)
+		csvTitleRow := fmt.Sprintf("PIQUANT version: %v DetectorConfig: %v", r.quantStartSettings.PIQUANTVersion, userParams.DetectorConfig)
 		err = nil
 
 		// Again, if we're in ROI mode, we act differently
@@ -233,7 +248,7 @@ func triggerPiquantNodes(jobId string, quantStartSettings *protos.QuantStartingP
 			errMsg = "Error when combining quants"
 		}
 		if err != nil {
-			job.CompleteJob(jobId, false, fmt.Sprintf("%v: %v", errMsg, err), "", piquantLogList, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+			r.completeJobState(false, fmt.Sprintf("%v: %v", errMsg, err), "", piquantLogList)
 			return
 		}
 
@@ -261,7 +276,7 @@ func triggerPiquantNodes(jobId string, quantStartSettings *protos.QuantStartingP
 	}
 
 	// Save to S3
-	csvOutPath := path.Join(jobRoot, jobId, "output", outputCSVName)
+	csvOutPath := path.Join(jobRoot, r.jobId, "output", outputCSVName)
 	svcs.FS.WriteObject(svcs.Config.PiquantJobsBucket, csvOutPath, outputCSVBytes)
 
 	if userParams.Command != "map" {
@@ -269,8 +284,8 @@ func triggerPiquantNodes(jobId string, quantStartSettings *protos.QuantStartingP
 		// but all other commands are far simpler.
 
 		// Clear the previously written files
-		csvUserFilePath := filepaths.GetUserLastPiquantOutputPath(quantStartSettings.RequestorUserId, userParams.ScanId, userParams.Command, filepaths.QuantLastOutputFileName+".csv")
-		userLogFilePath := filepaths.GetUserLastPiquantOutputPath(quantStartSettings.RequestorUserId, userParams.ScanId, userParams.Command, filepaths.QuantLastOutputLogName)
+		csvUserFilePath := filepaths.GetUserLastPiquantOutputPath(r.quantStartSettings.RequestorUserId, userParams.ScanId, userParams.Command, filepaths.QuantLastOutputFileName+".csv")
+		userLogFilePath := filepaths.GetUserLastPiquantOutputPath(r.quantStartSettings.RequestorUserId, userParams.ScanId, userParams.Command, filepaths.QuantLastOutputLogName)
 
 		err = svcs.FS.DeleteObject(svcs.Config.UsersBucket, csvUserFilePath)
 		if err != nil {
@@ -313,25 +328,26 @@ func triggerPiquantNodes(jobId string, quantStartSettings *protos.QuantStartingP
 
 		// STOP HERE! Non-map commands are simpler, map commands do a whole bunch more to maintain state files which are picked up
 		// by quant listing generation
+		r.completeJobState(true, "Wrote Fit output CSV", quantOutPath, piquantLogList)
 		return
 	}
 
 	// Convert to binary format
 	binFileBytes, elements, err := ConvertQuantificationCSV(svcs.Log, outputCSV, []string{"PMC", "SCLK", "RTT", "filename"}, nil, false, "", false)
 	if err != nil {
-		job.CompleteJob(jobId, false, fmt.Sprintf("Error when converting quant CSV to PIXLISE bin: %v", err), quantOutPath, piquantLogList, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+		r.completeJobState(false, fmt.Sprintf("Error when converting quant CSV to PIXLISE bin: %v", err), quantOutPath, piquantLogList)
 		return
 	}
 
 	// Figure out file paths
-	binFilePath := filepaths.GetQuantPath(quantStartSettings.RequestorUserId, userParams.ScanId, filepaths.MakeQuantDataFileName(jobId))
-	csvFilePath := filepaths.GetQuantPath(quantStartSettings.RequestorUserId, userParams.ScanId, filepaths.MakeQuantCSVFileName(jobId))
+	binFilePath := filepaths.GetQuantPath(r.quantStartSettings.RequestorUserId, userParams.ScanId, filepaths.MakeQuantDataFileName(r.jobId))
+	csvFilePath := filepaths.GetQuantPath(r.quantStartSettings.RequestorUserId, userParams.ScanId, filepaths.MakeQuantCSVFileName(r.jobId))
 
 	// Save bin quant to S3
 	err = svcs.FS.WriteObject(svcs.Config.UsersBucket, binFilePath, binFileBytes)
 	if err != nil {
 		msg := fmt.Sprintf("Error when uploading converted PIXLISE bin file to s3 at \"s3://%v / %v\": %v", svcs.Config.UsersBucket, binFilePath, err)
-		job.CompleteJob(jobId, false, msg, quantOutPath, piquantLogList, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+		r.completeJobState(false, msg, quantOutPath, piquantLogList)
 		return
 	}
 
@@ -345,12 +361,12 @@ func triggerPiquantNodes(jobId string, quantStartSettings *protos.QuantStartingP
 	completeMsg := fmt.Sprintf("Nodes ran: %v", len(pmcFiles))
 	now := svcs.TimeStamper.GetTimeNowSec()
 	summary := &protos.QuantificationSummary{
-		Id:       jobId,
+		Id:       r.jobId,
 		ScanId:   userParams.ScanId,
-		Params:   quantStartSettings,
+		Params:   r.quantStartSettings,
 		Elements: elements,
 		Status: &protos.JobStatus{
-			JobId:          jobId,
+			JobId:          r.jobId,
 			Status:         protos.JobStatus_COMPLETE,
 			Message:        completeMsg,
 			EndUnixTimeSec: uint32(now),
@@ -359,21 +375,44 @@ func triggerPiquantNodes(jobId string, quantStartSettings *protos.QuantStartingP
 		},
 	}
 
-	ownerItem, err := wsHelpers.MakeOwnerForWrite(jobId, protos.ObjectType_OT_QUANTIFICATION, quantStartSettings.RequestorUserId, now)
+	ownerItem, err := wsHelpers.MakeOwnerForWrite(r.jobId, protos.ObjectType_OT_QUANTIFICATION, r.quantStartSettings.RequestorUserId, now)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to create ownership info for quant job %v. Error was: %v", jobId, err)
-		job.CompleteJob(jobId, false, msg, quantOutPath, piquantLogList, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+		msg := fmt.Sprintf("Failed to create ownership info for quant job %v. Error was: %v", r.jobId, err)
+		r.completeJobState(false, msg, quantOutPath, piquantLogList)
 		return
 	}
 
-	err = writeQuantAndOwnershipToDB(summary, ownerItem, hctx.Svcs.MongoDB)
+	err = writeQuantAndOwnershipToDB(summary, ownerItem, svcs.MongoDB)
 	if err != nil {
-		job.CompleteJob(jobId, false, fmt.Sprintf("Failed to write quantification and ownership to DB: %v. Id: %v", err, jobId), quantOutPath, piquantLogList, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+		r.completeJobState(false, fmt.Sprintf("Failed to write quantification and ownership to DB: %v. Id: %v", err, r.jobId), quantOutPath, piquantLogList)
 		return
 	}
 
 	// Report success
-	job.CompleteJob(jobId, true, completeMsg, quantOutPath, piquantLogList, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+	r.completeJobState(true, completeMsg, quantOutPath, piquantLogList)
+}
+
+func (r *quantNodeRunner) updateJobState(status protos.JobStatus_Status, message string) {
+	if r.isJob {
+		job.UpdateJob(r.jobId, status, message, r.logId, r.hctx.Svcs.MongoDB, r.hctx.Svcs.TimeStamper, r.hctx.Svcs.Log)
+	} else {
+		// Just log
+		r.hctx.Svcs.Log.Infof("Job %v state: %v, message: %v", r.jobId, status, message)
+	}
+}
+
+func (r *quantNodeRunner) completeJobState(success bool, message string, outputFilePath string, otherLogFiles []string) {
+	if r.isJob {
+		job.CompleteJob(r.jobId, success, message, outputFilePath, otherLogFiles, r.hctx.Svcs.MongoDB, r.hctx.Svcs.TimeStamper, r.hctx.Svcs.Log)
+	} else {
+		// Just log
+		status := protos.JobStatus_COMPLETE
+		if !success {
+			status = protos.JobStatus_ERROR
+		}
+
+		r.hctx.Svcs.Log.Infof("Job complete: %v state: %v, message: %v", r.jobId, status, message)
+	}
 }
 
 func copyAllLogs(fs fileaccess.FileAccess, jobLog logger.ILogger, jobBucket string, jobDataPath string, usersBucket string, logSavePath string, jobID string) ([]string, error) {
