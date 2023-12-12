@@ -245,6 +245,8 @@ func (s *socketConn) waitForMessages(msgCount int, timeout time.Duration) []*pro
 			}
 			msgs = append(msgs, wsResp)
 
+			//log.Printf("Received msgs: %v, latest Id: %v, msg: %+v\n", len(msgs), wsResp.MsgId, wsResp)
+
 			// If we have enough, stop here
 			if len(msgs) >= msgCount {
 				running = false

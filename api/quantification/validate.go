@@ -14,7 +14,9 @@ import (
 // Validates the create parameters. Side-effect of modifying PmcsEncoded to just be an array of decoded PMCs
 func IsValidCreateParam(createParams *protos.QuantCreateParams, hctx wsHelpers.HandlerContext) error {
 	if createParams.RoiIDs == nil {
-		return errors.New("RoiIDs cannot be nil")
+		// Make it an empty list if its nil...
+		createParams.RoiIDs = []string{}
+		//return errors.New("RoiIDs cannot be nil")
 	}
 
 	if len(createParams.Command) <= 0 {

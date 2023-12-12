@@ -27,8 +27,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/awsutil"
 	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v3/core/logger"
 	"github.com/pixlise/core/v3/core/wstestlib"
 )
 
@@ -117,6 +119,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	dbCollections.InitCollections(db, &logger.StdOutLogger{})
 
 	startTime := time.Now()
 	runTests(apiHost)

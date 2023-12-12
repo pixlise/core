@@ -117,7 +117,6 @@ func triggerPiquantNodes(jobId string, quantStartSettings *protos.QuantStartingP
 
 	// TODO: figure out log id!
 	logId := jobId
-	job.UpdateJob(jobId, protos.JobStatus_PREPARING_NODES, "", logId, svcs.MongoDB, svcs.TimeStamper, svcs.Log)
 
 	jobRoot := filepaths.GetJobDataPath(userParams.ScanId, "", "")
 	jobDataPath := filepaths.GetJobDataPath(userParams.ScanId, jobId, "")

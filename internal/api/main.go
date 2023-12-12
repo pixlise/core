@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v3/api/config"
+	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/endpoints"
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/permission"
@@ -207,6 +208,9 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 			db.Drop(context.TODO())
 		}
 	*/
+
+	dbCollections.InitCollections(db, iLog)
+
 	// Authenticaton for endpoints
 	jwtValidator, err := jwtparser.InitJWTValidator(
 		cfg.Auth0Domain,

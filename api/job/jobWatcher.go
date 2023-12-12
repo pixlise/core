@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/idgen"
@@ -58,7 +57,7 @@ func AddJob(idPrefix string, jobTimeoutSec uint32, db *mongo.Database, idgen idg
 	activeJobs[jobId] = true
 
 	// Start a thread to watch this job
-	go watchJob(jobId, now, watchUntilUnixSec, db, logger, ts, sendUpdate)
+	go watchJob(jobId, watchUntilUnixSec, db, logger, ts, sendUpdate)
 
 	logger.Infof("AddJob: %v", jobId)
 	return job, nil
@@ -71,25 +70,31 @@ func UpdateJob(jobId string, status protos.JobStatus_Status, message string, log
 	coll := db.Collection(dbCollections.JobStatusName)
 
 	filter := bson.D{{"_id", jobId}}
-	opt := options.Update()
+	opt := options.Replace()
 
-	data := bson.D{
-		{"$set", bson.D{
-			{"status", status},
-			{"message", message},
-			{"logid", logId},
-			{"lastupdateunixtimesec", uint32(ts.GetTimeNowSec())},
-		}},
+	jobStatus := &protos.JobStatus{
+		JobId:                 jobId,
+		Status:                status,
+		Message:               message,
+		LogId:                 logId,
+		LastUpdateUnixTimeSec: uint32(ts.GetTimeNowSec()),
 	}
 
-	result, err := coll.UpdateOne(ctx, filter, data, opt)
+	existingStatus, err := readJobStatus(jobId, coll)
+	if err != nil {
+		logger.Errorf("Failed to read existing job status when writing UpdateJob %v: %v", jobId, err)
+	} else {
+		jobStatus.StartUnixTimeSec = existingStatus.StartUnixTimeSec
+	}
+
+	replaceResult, err := coll.ReplaceOne(ctx, filter, jobStatus, opt)
 	if err != nil {
 		logger.Errorf("UpdateJob %v: %v", jobId, err)
 		return err
 	}
 
-	if result.MatchedCount != 1 && result.UpsertedCount != 1 {
-		logger.Errorf("UpdateJob result had unexpected counts %+v id: %v", result, jobId)
+	if replaceResult.MatchedCount != 1 && replaceResult.UpsertedCount != 1 {
+		logger.Errorf("UpdateJob result had unexpected counts %+v id: %v", replaceResult, jobId)
 	} else {
 		logger.Infof("UpdateJob: %v with status %v, message: %v", jobId, protos.JobStatus_Status_name[int32(status.Number())], message)
 	}
@@ -110,27 +115,36 @@ func CompleteJob(jobId string, success bool, message string, outputFilePath stri
 	coll := db.Collection(dbCollections.JobStatusName)
 
 	filter := bson.D{{"_id", jobId}}
-	opt := options.Update()
+	opt := options.Replace()
 
-	data := bson.D{
-		{"$set", bson.D{
-			{"status", status},
-			{"message", message},
-			{"lastupdateunixtimesec", now},
-			{"endunixtimesec", now},
-			{"outputfilepath", outputFilePath},
-			{"otherlogfiles", otherLogFiles},
-		}},
+	jobStatus := &protos.JobStatus{
+		JobId:                 jobId,
+		Status:                status,
+		Message:               message,
+		LogId:                 "",
+		StartUnixTimeSec:      0,
+		LastUpdateUnixTimeSec: now,
+		EndUnixTimeSec:        now,
+		OutputFilePath:        outputFilePath,
+		OtherLogFiles:         otherLogFiles,
 	}
 
-	result, err := coll.UpdateOne(ctx, filter, data, opt)
+	existingStatus, err := readJobStatus(jobId, coll)
+	if err != nil {
+		logger.Errorf("Failed to read existing job status when writing CompleteJob %v: %v", jobId, err)
+	} else {
+		jobStatus.LogId = existingStatus.LogId
+		jobStatus.StartUnixTimeSec = existingStatus.StartUnixTimeSec
+	}
+
+	replaceResult, err := coll.ReplaceOne(ctx, filter, jobStatus, opt)
 	if err != nil {
 		logger.Errorf("CompleteJob %v: %v", jobId, err)
 		return err
 	}
 
-	if result.MatchedCount != 1 && result.UpsertedCount != 1 {
-		logger.Errorf("CompleteJob result had unexpected counts %+v id: %v", result, jobId)
+	if replaceResult.MatchedCount != 1 && replaceResult.UpsertedCount != 1 {
+		logger.Errorf("CompleteJob result had unexpected counts %+v id: %v", replaceResult, jobId)
 	} else {
 		logger.Infof("UpdateJob: %v with status %v, message: %v", jobId, protos.JobStatus_Status_name[int32(status.Number())], message)
 	}
@@ -139,62 +153,78 @@ func CompleteJob(jobId string, success bool, message string, outputFilePath stri
 	return nil
 }
 
-func watchJob(jobId string, nowUnixSec uint32, watchUntilUnixSec uint32, db *mongo.Database, logger logger.ILogger, ts timestamper.ITimeStamper, sendUpdate func(*protos.JobStatus)) {
+func watchJob(jobId string, watchUntilUnixSec uint32, db *mongo.Database, logger logger.ILogger, ts timestamper.ITimeStamper, sendUpdate func(*protos.JobStatus)) {
 	logger.Infof(">> Start watching job: %v...", jobId)
 
-	// Check the DB for updates periodically until watchUntilUnixSec at which point if the job isn't
-	// complete we can assume it died/timed-out/whatever
-	// Firstly, lets work out how many updates we'll need to send
-	maxUpdates := (watchUntilUnixSec - nowUnixSec) / jobUpdateIntervalSec
-
+	// NOTE: we subscribe for changes to the jobs collection in Mongo and if we see a change for
+	// the job we're watching, we can send notifications out. We only listen for a certain amount of
+	// time after which we assume the job has timed out
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.JobStatusName)
 
-	// Run that many times
-	lastUpdateUnixSec := uint32(0)
+	stream, err := coll.Watch(ctx, mongo.Pipeline{})
+	if err != nil {
+		logger.Errorf("Failed to watch job status: %v, no notifications will be sent", jobId)
+		return
+	}
 
-	for c := uint32(0); c < maxUpdates; c++ {
-		time.Sleep(time.Duration(jobUpdateIntervalSec) * time.Second)
-		logger.Infof(">> Checking watched job: %v...", jobId)
+	for stream.Next(ctx) {
+		// A status has changed! Check if it's ours and process it
+		// otherwise check if we've timed out
+		type ChangeStreamId struct {
+			Id string `bson:"_id"`
+		}
+		type ChangeStreamItem struct {
+			OperationType string            `bson:"operationType"`
+			DocumentKey   ChangeStreamId    `bson:"documentKey"`
+			FullDocument  *protos.JobStatus `bson:"fullDocument"`
+		}
 
-		filter := bson.D{{"_id", jobId}}
-		opt := options.FindOne()
+		item := ChangeStreamItem{}
+		err = stream.Decode(&item)
+		if err != nil {
+			logger.Errorf("Failed to decode change stream for job status while watching for job: %v", jobId)
+			continue
+		}
 
-		dbStatusResult := coll.FindOne(ctx, filter, opt)
-		if dbStatusResult.Err() != nil {
-			logger.Errorf("Failed to find DB entry for job status: %v", jobId)
+		// Check if we're interested
+		if item.FullDocument != nil && item.DocumentKey.Id == jobId {
+			// Send an update
+			sendUpdate(item.FullDocument)
+
+			// If job has completed, stop here
+			if item.FullDocument.Status == protos.JobStatus_COMPLETE || item.FullDocument.Status == protos.JobStatus_ERROR {
+				break
+			}
 		} else {
-			// Check if update field differs
-			dbStatus := protos.JobStatus{}
-			err := dbStatusResult.Decode(&dbStatus)
-			if err != nil {
-				logger.Errorf("Failed to decode DB entry for job status: %v", jobId)
-			} else if lastUpdateUnixSec != dbStatus.LastUpdateUnixTimeSec {
-				logger.Infof(">> Update sent for watched job: %v...", jobId)
+			// Not one of ours, but check if we've timed out
+			now := ts.GetTimeNowSec()
+			if now > int64(watchUntilUnixSec) {
+				// We've timed out
+				sendUpdate(&protos.JobStatus{
+					JobId:          jobId,
+					Status:         protos.JobStatus_ERROR,
+					Message:        "Timed out while waiting for status update",
+					EndUnixTimeSec: uint32(ts.GetTimeNowSec()),
+					OutputFilePath: "",
+					OtherLogFiles:  []string{},
+				})
 
-				// OK we have a status update! Send
-				sendUpdate(&dbStatus)
-
-				// If the job is finished, stop here
-				if dbStatus.Status == protos.JobStatus_COMPLETE || dbStatus.Status == protos.JobStatus_ERROR {
-					logger.Infof(">> Stop watching completed job: %v, status: %v", jobId, dbStatus.Status)
-					return
-				}
-
-				// Remember the new update time
-				lastUpdateUnixSec = dbStatus.LastUpdateUnixTimeSec
+				break
 			}
 		}
 	}
 
-	logger.Errorf(">> Stop watching TIMED-OUT job: %v", jobId)
-	sendUpdate(&protos.JobStatus{
-		JobId:          jobId,
-		Status:         protos.JobStatus_ERROR,
-		Message:        "Timed out while waiting for status",
-		EndUnixTimeSec: uint32(ts.GetTimeNowSec()),
-		OutputFilePath: "",
-		OtherLogFiles:  []string{},
-	})
 	activeJobs[jobId] = false
+}
+
+func readJobStatus(jobId string, coll *mongo.Collection) (*protos.JobStatus, error) {
+	dbStatusResult := coll.FindOne(context.TODO(), bson.M{"_id": jobId})
+	if dbStatusResult.Err() != nil {
+		return nil, dbStatusResult.Err()
+	}
+
+	dbStatus := &protos.JobStatus{}
+	err := dbStatusResult.Decode(&dbStatus)
+	return dbStatus, err
 }

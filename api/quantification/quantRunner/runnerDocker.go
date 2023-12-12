@@ -48,7 +48,7 @@ func runDockerInstance(wg *sync.WaitGroup, params PiquantParams, dockerImage str
 
 	// Start up docker, give it env vars for AWS access
 	// and our JSON param blob too
-	cmd := exec.Command("/usr/local/bin/docker",
+	cmd := exec.Command(dockerCommand,
 		"run",
 		"--rm",
 		"-e", "AWS_ACCESS_KEY_ID="+os.Getenv("AWS_ACCESS_KEY_ID"),
