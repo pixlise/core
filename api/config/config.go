@@ -50,6 +50,7 @@ type APIConfig struct {
 	CoresPerNode int32
 
 	DataSourceSNSTopic string
+	CoregSqsQueueUrl   string
 
 	DatasetsBucket string
 
