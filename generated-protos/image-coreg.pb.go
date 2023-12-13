@@ -312,6 +312,61 @@ func (x *MarsViewerExport) GetMarsviewerLink() string {
 	return ""
 }
 
+type ImageCoregImportJob struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	JobId  string            `protobuf:"bytes,1,opt,name=JobId,proto3" json:"JobId,omitempty"`
+	Params *MarsViewerExport `protobuf:"bytes,2,opt,name=Params,proto3" json:"Params,omitempty"`
+}
+
+func (x *ImageCoregImportJob) Reset() {
+	*x = ImageCoregImportJob{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_image_coreg_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ImageCoregImportJob) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ImageCoregImportJob) ProtoMessage() {}
+
+func (x *ImageCoregImportJob) ProtoReflect() protoreflect.Message {
+	mi := &file_image_coreg_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ImageCoregImportJob.ProtoReflect.Descriptor instead.
+func (*ImageCoregImportJob) Descriptor() ([]byte, []int) {
+	return file_image_coreg_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ImageCoregImportJob) GetJobId() string {
+	if x != nil {
+		return x.JobId
+	}
+	return ""
+}
+
+func (x *ImageCoregImportJob) GetParams() *MarsViewerExport {
+	if x != nil {
+		return x.Params
+	}
+	return nil
+}
+
 var File_image_coreg_proto protoreflect.FileDescriptor
 
 var file_image_coreg_proto_rawDesc = []byte{
@@ -363,8 +418,14 @@ var file_image_coreg_proto_rawDesc = []byte{
 	0x65, 0x64, 0x4f, 0x76, 0x65, 0x72, 0x6c, 0x61, 0x79, 0x49, 0x6d, 0x61, 0x67, 0x65, 0x73, 0x12,
 	0x26, 0x0a, 0x0e, 0x4d, 0x61, 0x72, 0x73, 0x76, 0x69, 0x65, 0x77, 0x65, 0x72, 0x4c, 0x69, 0x6e,
 	0x6b, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x4d, 0x61, 0x72, 0x73, 0x76, 0x69, 0x65,
-	0x77, 0x65, 0x72, 0x4c, 0x69, 0x6e, 0x6b, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x77, 0x65, 0x72, 0x4c, 0x69, 0x6e, 0x6b, 0x22, 0x56, 0x0a, 0x13, 0x49, 0x6d, 0x61, 0x67, 0x65,
+	0x43, 0x6f, 0x72, 0x65, 0x67, 0x49, 0x6d, 0x70, 0x6f, 0x72, 0x74, 0x4a, 0x6f, 0x62, 0x12, 0x14,
+	0x0a, 0x05, 0x4a, 0x6f, 0x62, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x4a,
+	0x6f, 0x62, 0x49, 0x64, 0x12, 0x29, 0x0a, 0x06, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x4d, 0x61, 0x72, 0x73, 0x56, 0x69, 0x65, 0x77, 0x65,
+	0x72, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x52, 0x06, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x42,
+	0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x33,
 }
 
 var (
@@ -379,23 +440,25 @@ func file_image_coreg_proto_rawDescGZIP() []byte {
 	return file_image_coreg_proto_rawDescData
 }
 
-var file_image_coreg_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_image_coreg_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_image_coreg_proto_goTypes = []interface{}{
 	(*MVPoint)(nil),              // 0: MVPoint
 	(*MVObservation)(nil),        // 1: MVObservation
 	(*MVWarpedOverlayImage)(nil), // 2: MVWarpedOverlayImage
 	(*MarsViewerExport)(nil),     // 3: MarsViewerExport
+	(*ImageCoregImportJob)(nil),  // 4: ImageCoregImportJob
 }
 var file_image_coreg_proto_depIdxs = []int32{
 	0, // 0: MVObservation.OriginalPoints:type_name -> MVPoint
 	0, // 1: MVObservation.TranslatedPoints:type_name -> MVPoint
 	1, // 2: MarsViewerExport.Observations:type_name -> MVObservation
 	2, // 3: MarsViewerExport.WarpedOverlayImages:type_name -> MVWarpedOverlayImage
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3, // 4: ImageCoregImportJob.Params:type_name -> MarsViewerExport
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_image_coreg_proto_init() }
@@ -452,6 +515,18 @@ func file_image_coreg_proto_init() {
 				return nil
 			}
 		}
+		file_image_coreg_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ImageCoregImportJob); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -459,7 +534,7 @@ func file_image_coreg_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_image_coreg_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
