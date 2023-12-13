@@ -27,7 +27,7 @@ import (
 )
 
 func testImageUpload(apiHost string) {
-	scanId := seedDBScanData()
+	scanId := seedDBScanData(scan_Naltsos)
 
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
 	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{

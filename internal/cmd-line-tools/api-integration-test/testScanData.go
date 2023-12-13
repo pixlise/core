@@ -11,7 +11,7 @@ import (
 )
 
 func testScanData(apiHost string, groupDepth int) {
-	scanId := seedDBScanData()
+	scanId := seedDBScanData(scan_Naltsos)
 
 	// Prepend the special bit required for ownership table scan storage
 	//scanId = "scan_" + scanId
@@ -48,43 +48,79 @@ func testScanData(apiHost string, groupDepth int) {
 
 const scanWaitTime = 60 * 1000 * 10
 
-func seedDBScanData() string {
-	scanItem := protos.ScanItem{
-		Id:    "048300551",
-		Title: "",
-		DataTypes: []*protos.ScanItem_ScanTypeCount{
-			{
-				DataType: protos.ScanDataType_SD_XRF,
-				Count:    133,
-			},
-			{
-				DataType: protos.ScanDataType_SD_IMAGE,
-				Count:    4,
-			},
+var scan_Naltsos = &protos.ScanItem{
+	Id:    "048300551",
+	Title: "",
+	DataTypes: []*protos.ScanItem_ScanTypeCount{
+		{
+			DataType: protos.ScanDataType_SD_XRF,
+			Count:    133,
 		},
-		Instrument:       protos.ScanInstrument_PIXL_FM,
-		InstrumentConfig: "PIXL",
-		TimestampUnixSec: 1646262426,
-		Meta: map[string]string{
-			"Sol":      "0125",
-			"DriveId":  "1712",
-			"TargetId": "?",
-			"Target":   "",
-			"SiteId":   "4",
-			"Site":     "",
-			"RTT":      "048300551",
-			"SCLK":     "678031418",
+		{
+			DataType: protos.ScanDataType_SD_IMAGE,
+			Count:    4,
 		},
-		ContentCounts: map[string]int32{
-			"BulkSpectra":       2,
-			"MaxSpectra":        2,
-			"PseudoIntensities": 121,
-			"NormalSpectra":     242,
-			"DwellSpectra":      0,
-		},
-		CreatorUserId: "",
-	}
+	},
+	Instrument:       protos.ScanInstrument_PIXL_FM,
+	InstrumentConfig: "PIXL",
+	TimestampUnixSec: 1646262426,
+	Meta: map[string]string{
+		"Sol":      "0125",
+		"DriveId":  "1712",
+		"TargetId": "?",
+		"Target":   "",
+		"SiteId":   "4",
+		"Site":     "",
+		"RTT":      "048300551",
+		"SCLK":     "678031418",
+	},
+	ContentCounts: map[string]int32{
+		"BulkSpectra":       2,
+		"MaxSpectra":        2,
+		"PseudoIntensities": 121,
+		"NormalSpectra":     242,
+		"DwellSpectra":      0,
+	},
+	CreatorUserId: "",
+}
 
+var scan_Beaujeu = &protos.ScanItem{
+	Id:    "052822532",
+	Title: "",
+	DataTypes: []*protos.ScanItem_ScanTypeCount{
+		{
+			DataType: protos.ScanDataType_SD_XRF,
+			Count:    450,
+		},
+		{
+			DataType: protos.ScanDataType_SD_IMAGE,
+			Count:    4,
+		},
+	},
+	Instrument:       protos.ScanInstrument_PIXL_FM,
+	InstrumentConfig: "PIXL",
+	TimestampUnixSec: 1663626388,
+	Meta: map[string]string{
+		"Sol":      "0138",
+		"DriveId":  "1812",
+		"TargetId": "?",
+		"Target":   "",
+		"SiteId":   "5",
+		"Site":     "",
+		"RTT":      "052822532",
+		"SCLK":     "679215716",
+	},
+	ContentCounts: map[string]int32{
+		"BulkSpectra":       2,
+		"MaxSpectra":        2,
+		"PseudoIntensities": 225,
+		"NormalSpectra":     450,
+		"DwellSpectra":      0,
+	},
+	CreatorUserId: "",
+}
+
+func seedDBScanData(scan *protos.ScanItem) string {
 	db := wstestlib.GetDB()
 	coll := db.Collection(dbCollections.ScansName)
 	ctx := context.TODO()
@@ -93,12 +129,12 @@ func seedDBScanData() string {
 		log.Fatalln(err)
 	}
 
-	_, err = coll.InsertOne(ctx, &scanItem)
+	_, err = coll.InsertOne(ctx, &scan)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	return scanItem.Id
+	return scan.Id
 }
 
 func seedImages() {
@@ -218,6 +254,35 @@ func seedDBOwnership(objectId string, objectType protos.ObjectType, viewers *pro
 	}
 
 	_, err = coll.InsertOne(ctx, &scanOwnerItem)
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func seedDBOwnershipMulti(ownerships []*protos.OwnershipItem, viewers *protos.UserGroupList, editors *protos.UserGroupList) {
+	// Insert a scan item into DB for this
+	ownershipIfcs := []interface{}{}
+	for _, owner := range ownerships {
+		if viewers != nil {
+			owner.Viewers = viewers
+		}
+
+		if editors != nil {
+			owner.Editors = editors
+		}
+
+		ownershipIfcs = append(ownershipIfcs, owner)
+	}
+
+	db := wstestlib.GetDB()
+	coll := db.Collection(dbCollections.OwnershipName)
+	ctx := context.TODO()
+	err := coll.Drop(ctx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	_, err = coll.InsertMany(ctx, ownershipIfcs)
 	if err != nil {
 		log.Fatalln(err)
 	}

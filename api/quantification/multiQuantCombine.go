@@ -16,6 +16,7 @@ import (
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -161,6 +162,9 @@ func MultiQuantCombinedCSV(
 			coll := hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName)
 			roiResult := coll.FindOne(context.TODO(), bson.D{{"_id", zItem.RoiId}}, options.FindOne())
 			if roiResult.Err() != nil {
+				if roiResult.Err() == mongo.ErrNoDocuments {
+					return result, errorwithstatus.MakeNotFoundError(zItem.RoiId)
+				}
 				return result, roiResult.Err()
 			}
 

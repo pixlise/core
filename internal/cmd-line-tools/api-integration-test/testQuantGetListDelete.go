@@ -246,10 +246,10 @@ func testQuantGetListDelete(apiHost string) {
 	wstestlib.ExecQueuedActions(&u1)
 
 	// As above, this quant has slightly "weird" paths...
-	seedQuantFile(quantId+".bin", thisQuantRootPath+quantId+".bin" /*u1.GetUserId(), scanId*/, apiUsersBucket)
-	seedQuantFile(quantId+".csv", thisQuantRootPath+quantId+".csv" /*u1.GetUserId(), scanId*/, apiUsersBucket)
+	seedS3File(quantId+".bin", thisQuantRootPath+quantId+".bin", apiUsersBucket)
+	seedS3File(quantId+".csv", thisQuantRootPath+quantId+".csv", apiUsersBucket)
 	for _, logFile := range quantLogs {
-		seedQuantFile("./"+quantId+"-logs/"+logFile, thisQuantRootPath+quantId+"-logs/"+logFile /*u1.GetUserId(), scanId*/, apiUsersBucket)
+		seedS3File("./"+quantId+"-logs/"+logFile, thisQuantRootPath+quantId+"-logs/"+logFile, apiUsersBucket)
 	}
 
 	u1.AddSendReqAction("Get quant summary+data (should work)",

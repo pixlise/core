@@ -69,7 +69,7 @@ func ReadQuantificationFile(quantId string, quantPath string, svcs *services.API
 	// If we don't have data by now, download it and add to our cache
 	var err error
 	if fileBytes == nil {
-		fmt.Printf("Downloading file: s3://%v/%v\n", svcs.Config.DatasetsBucket, quantPath)
+		fmt.Printf("Downloading file: s3://%v/%v\n", svcs.Config.UsersBucket, quantPath)
 		fileBytes, err = svcs.FS.ReadObject(svcs.Config.UsersBucket, quantPath)
 		if err != nil {
 			// Doesn't seem to exist?

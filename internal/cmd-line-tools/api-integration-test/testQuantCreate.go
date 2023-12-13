@@ -1,52 +1,17 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/utils"
 	"github.com/pixlise/core/v3/core/wstestlib"
-	protos "github.com/pixlise/core/v3/generated-protos"
 )
 
 func testQuantCreate(apiHost string) {
-	db := wstestlib.GetDB()
-	ctx := context.TODO()
-	// Seed jobs
-	coll := db.Collection(dbCollections.JobStatusName)
-	err := coll.Drop(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = db.CreateCollection(ctx, dbCollections.JobStatusName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Seed piquant versions
-	coll = db.Collection(dbCollections.PiquantVersionName)
-	err = coll.Drop(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = db.CreateCollection(ctx, dbCollections.PiquantVersionName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	insertResult, err := coll.InsertOne(context.TODO(), &protos.PiquantVersion{
-		Id:              "current",
-		Version:         "registry.gitlab.com/pixlise/piquant/runner:3.2.16",
-		ModifiedUnixSec: 1234567890,
-		ModifierUserId:  "user-123",
-	})
-	if err != nil || insertResult.InsertedID != "current" {
-		panic(err)
-	}
+	resetDBPiquantAndJobs()
 
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
 	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{

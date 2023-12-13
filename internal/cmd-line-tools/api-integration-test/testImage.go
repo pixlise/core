@@ -34,7 +34,7 @@ func testImageGet_PreWS(apiHost string) {
 	testImageGet_NoJWT(apiHost)
 	testImageGet_BadPath(apiHost, imageGetJWT)
 
-	scanId := seedDBScanData()
+	scanId := seedDBScanData(scan_Naltsos)
 	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, nil, nil)
 	seedImages()
 	seedImageLocations()
@@ -60,7 +60,7 @@ func seedImageFile(fileName string, scanId string, bucket string) {
 /*
 // By now we should have cached member details in API
 func testImageGet_PostWS(apiHost string) {
-	seedDBScanData()
+	seedDBScanData(scan_Naltsos)
 	seedImages()
 	seedImageLocations()
 
