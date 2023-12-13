@@ -25,8 +25,8 @@ type MVPoint struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Line           float32 `protobuf:"fixed32,1,opt,name=Line,proto3" json:"Line,omitempty"`
-	Sample         float32 `protobuf:"fixed32,2,opt,name=Sample,proto3" json:"Sample,omitempty"`
+	Line           float32 `protobuf:"fixed32,1,opt,name=Line,proto3" json:"line"`                     
+	Sample         float32 `protobuf:"fixed32,2,opt,name=Sample,proto3" json:"sample"`                 
 	SpectrumNumber int32   `protobuf:"varint,3,opt,name=SpectrumNumber,proto3" json:"spectrum_number"`  
 }
 
@@ -88,13 +88,13 @@ type MVObservation struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Interpolated           bool       `protobuf:"varint,1,opt,name=Interpolated,proto3" json:"Interpolated,omitempty"`
-	ObservationCSVFilename string     `protobuf:"bytes,2,opt,name=ObservationCSVFilename,proto3" json:"ObservationCSVFilename,omitempty"`
-	ContextImageUrl        string     `protobuf:"bytes,3,opt,name=ContextImageUrl,proto3" json:"ContextImageUrl,omitempty"`
-	Site                   string     `protobuf:"bytes,4,opt,name=Site,proto3" json:"Site,omitempty"`
-	Drive                  int32      `protobuf:"varint,5,opt,name=Drive,proto3" json:"Drive,omitempty"`
-	OriginalPoints         []*MVPoint `protobuf:"bytes,6,rep,name=OriginalPoints,proto3" json:"OriginalPoints,omitempty"`
-	TranslatedPoints       []*MVPoint `protobuf:"bytes,7,rep,name=TranslatedPoints,proto3" json:"TranslatedPoints,omitempty"`
+	Interpolated           bool       `protobuf:"varint,1,opt,name=Interpolated,proto3" json:"interpolated"`                     
+	ObservationCSVFilename string     `protobuf:"bytes,2,opt,name=ObservationCSVFilename,proto3" json:"observationCSVFilename"`  
+	ContextImageUrl        string     `protobuf:"bytes,3,opt,name=ContextImageUrl,proto3" json:"contextImageUrl"`                
+	Site                   string     `protobuf:"bytes,4,opt,name=Site,proto3" json:"site"`                                      
+	Drive                  int32      `protobuf:"varint,5,opt,name=Drive,proto3" json:"drive"`                                   
+	OriginalPoints         []*MVPoint `protobuf:"bytes,6,rep,name=OriginalPoints,proto3" json:"originalPoints"`                  
+	TranslatedPoints       []*MVPoint `protobuf:"bytes,7,rep,name=TranslatedPoints,proto3" json:"translatedPoints"`              
 }
 
 func (x *MVObservation) Reset() {
@@ -183,9 +183,9 @@ type MVWarpedOverlayImage struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Interpolated   bool   `protobuf:"varint,1,opt,name=Interpolated,proto3" json:"Interpolated,omitempty"`
-	MappedImageUrl string `protobuf:"bytes,2,opt,name=MappedImageUrl,proto3" json:"MappedImageUrl,omitempty"`
-	WarpedImageUrl string `protobuf:"bytes,3,opt,name=WarpedImageUrl,proto3" json:"WarpedImageUrl,omitempty"`
+	Interpolated   bool   `protobuf:"varint,1,opt,name=Interpolated,proto3" json:"interpolated"`     
+	MappedImageUrl string `protobuf:"bytes,2,opt,name=MappedImageUrl,proto3" json:"mappedImageUrl"`  
+	WarpedImageUrl string `protobuf:"bytes,3,opt,name=WarpedImageUrl,proto3" json:"warpedImageUrl"`  
 }
 
 func (x *MVWarpedOverlayImage) Reset() {
@@ -246,10 +246,10 @@ type MarsViewerExport struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Observations        []*MVObservation        `protobuf:"bytes,1,rep,name=Observations,proto3" json:"Observations,omitempty"`
-	BaseImageUrl        string                  `protobuf:"bytes,2,opt,name=BaseImageUrl,proto3" json:"BaseImageUrl,omitempty"`
-	WarpedOverlayImages []*MVWarpedOverlayImage `protobuf:"bytes,3,rep,name=WarpedOverlayImages,proto3" json:"WarpedOverlayImages,omitempty"`
-	MarsviewerLink      string                  `protobuf:"bytes,4,opt,name=MarsviewerLink,proto3" json:"MarsviewerLink,omitempty"`
+	Observations        []*MVObservation        `protobuf:"bytes,1,rep,name=Observations,proto3" json:"observations"`                
+	BaseImageUrl        string                  `protobuf:"bytes,2,opt,name=BaseImageUrl,proto3" json:"baseImageUrl"`                
+	WarpedOverlayImages []*MVWarpedOverlayImage `protobuf:"bytes,3,rep,name=WarpedOverlayImages,proto3" json:"warpedOverlayImages"`  
+	MarsviewerLink      string                  `protobuf:"bytes,4,opt,name=MarsviewerLink,proto3" json:"marsviewerLink"`            
 }
 
 func (x *MarsViewerExport) Reset() {
