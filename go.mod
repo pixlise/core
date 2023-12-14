@@ -12,7 +12,6 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/olahol/melody v1.1.3
-	github.com/pixlise/core v0.0.0-20220907201358-9ea7be01240e
 	github.com/pixlise/diffraction-peak-detection/v2 v2.0.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.15.1
