@@ -97,7 +97,7 @@ func (i *coregUpdater) sendUpdate(status *protos.JobStatus) {
 	if status.Status == protos.JobStatus_GATHERING_RESULTS {
 		// NOTE: If this fails, it will set the job status to ERROR and we'll
 		// get another call to update...
-		completeMarsViewerImportJob(status.JobId, i.mvReq)
+		completeMarsViewerImportJob(status.JobId, i.mvReq, i.hctx)
 		return
 	}
 
