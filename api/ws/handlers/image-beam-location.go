@@ -54,6 +54,7 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 }
 
 func generateIJs(imageName string, scanId string, hctx wsHelpers.HandlerContext) error {
+	hctx.Svcs.Log.Infof("Generating IJ's for image: %v, scan: %v...", imageName, scanId)
 	// Read the dataset file
 	exprPB, err := wsHelpers.ReadDatasetFile(scanId, hctx.Svcs)
 	if err != nil {

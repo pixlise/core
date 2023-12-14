@@ -59,8 +59,12 @@ type APIServices struct {
 	// Anything talking to S3 should use this
 	S3 s3iface.S3API
 
-	// AWS SNS
+	// AWS SNS - At time of writing used for triggering Data Import lambda (it gets triggered by SNS
+	// from iSDS pipeline, so we also trigger it the same way) and sending email alerts
 	SNS awsutil.SNSInterface
+
+	// AWS SQS - At time of writing used for triggering Image Coreg importing lambda
+	SQS awsutil.SQSInterface
 
 	// Anything accessing files should use this
 	FS fileaccess.FileAccess

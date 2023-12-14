@@ -325,7 +325,12 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 
 	// If this is the first image added to a dataset that has no images (and hence no beam location ij's), generate ij's here so the image can be
 	// aligned to them. The image will refer to itself as the owner of the ij's it's matching and will be able to have a transform too
-	foundItems, err := coll.Find(ctx, bson.M{"_id": req.OriginScanId}, options.Find())
+	foundItems, err := coll.Find(ctx, bson.M{"originscanid": req.OriginScanId}, options.Find())
+	// If there was an error, stop here
+	if err != nil && err != mongo.ErrNoDocuments {
+		return nil, fmt.Errorf("Error while querying for other images for scan %v. Error was: %v", req.OriginScanId, err)
+	}
+
 	generateCoords := err == mongo.ErrNoDocuments // This won't really happen... Find() doesn't return an error for none!
 	if !generateCoords {
 		// Check if the count is 0

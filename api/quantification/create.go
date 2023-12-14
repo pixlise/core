@@ -66,7 +66,9 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, h
 		}
 
 		if err != nil || len(jobId) < 0 {
-			return nil, fmt.Errorf("Failed to add job watcher for quant Job ID: %v", jobId)
+			returnErr := fmt.Errorf("Failed to add job watcher for quant Job ID: %v. Error was: %v", jobId, err)
+			hctx.Svcs.Log.Errorf("%v", returnErr)
+			return nil, returnErr
 		}
 	}
 

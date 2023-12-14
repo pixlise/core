@@ -224,7 +224,9 @@ func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHel
 	}
 
 	if err != nil || len(jobId) < 0 {
-		hctx.Svcs.Log.Errorf("Failed to add job watcher for Job ID: %v", jobId)
+		returnErr := fmt.Errorf("Failed to add job watcher for scan import trigger Job ID: %v. Error was: %v", jobId, err)
+		hctx.Svcs.Log.Errorf("%v", returnErr)
+		return nil, returnErr
 	}
 
 	result, err := dataimport.TriggerDatasetReprocessViaSNS(hctx.Svcs.SNS, jobId, req.ScanId, hctx.Svcs.Config.DataSourceSNSTopic)
@@ -431,7 +433,9 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	}
 
 	if err != nil || len(jobId) < 0 {
-		hctx.Svcs.Log.Errorf("Failed to add job watcher for scan upload Job ID: %v", jobId)
+		returnErr := fmt.Errorf("Failed to add job watcher for scan upload Job ID: %v. Error was: %v", jobId, err)
+		hctx.Svcs.Log.Errorf("%v", returnErr)
+		return nil, returnErr
 	}
 
 	// Now we trigger a dataset conversion
