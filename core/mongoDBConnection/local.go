@@ -21,6 +21,7 @@ package mongoDBConnection
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/pixlise/core/v3/core/logger"
@@ -35,9 +36,12 @@ func connectToLocalMongoDB(log logger.ILogger) (*mongo.Client, error) {
 	cmdMonitor := makeMongoCommandMonitor(log)
 
 	log.Infof("Connecting to local mongo db...")
-
+	mongoUri, set := os.LookupEnv("LOCAL_MONGO_URI")
+	if !set {
+		mongoUri = "mongodb://localhost"
+	}
 	//ctx := context.Background()
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost").SetMonitor(cmdMonitor))
+	client, err := mongo.NewClient(options.Client().ApplyURI(mongoUri).SetMonitor(cmdMonitor))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create new local mongo DB connection: %v", err)
 	}
