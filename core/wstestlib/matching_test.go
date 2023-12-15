@@ -225,6 +225,8 @@ func Example_compareMaps() {
 	fmt.Println(compare(map[string]interface{}{"zztop": "band", "hello": "world"}, map[string]interface{}{"hello": "${IGNORE}", "zztop": "band"}, ctx))
 	fmt.Println(compare(map[string]interface{}{"zztop": 17, "hello": "world"}, map[string]interface{}{"hello": "world", "zztop": "${IGNORE}"}, ctx))
 	fmt.Println(compare(map[string]interface{}{"zztop": []bool{true, false}, "hello": "world"}, map[string]interface{}{"hello": "world", "zztop": "${IGNORE}"}, ctx))
+	fmt.Println(compare(map[string]interface{}{}, map[string]interface{}{"hello": "world", "zztop": "band"}, ctx))
+	fmt.Println(compare(map[string]interface{}{"hello": "world", "zztop": "band"}, map[string]interface{}{}, ctx))
 
 	// Output:
 	// expected "map[hello:world zztop:band]", received "72"
@@ -233,6 +235,8 @@ func Example_compareMaps() {
 	// <nil>
 	// <nil>
 	// <nil>
+	// mismatch in structure, expected 2 fields, received 0. Expected keys: [hello, zztop]. Missing from Received: [hello, zztop]
+	// mismatch in structure, expected 0 fields, received 2. Expected keys: []. Received keys: [hello, zztop]
 }
 
 func Example_compareMapsOfLists() {

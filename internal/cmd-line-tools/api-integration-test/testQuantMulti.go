@@ -122,7 +122,7 @@ func testMultiQuant(apiHost string) {
 				}
 			]
 		}}`,
-		`{"msgId":6,"status":"WS_BAD_REQUEST","errorText":"non-existant-scan not found","quantCombineResp":{}}`,
+		`{"msgId":6,"status":"WS_NOT_FOUND","errorText":"non-existant-scan not found","quantCombineResp":{}}`,
 	)
 
 	u1.AddSendReqAction("MultiQuant - should fail, scan access denied",
@@ -141,7 +141,7 @@ func testMultiQuant(apiHost string) {
 				}
 			]
 		}}`, scanId),
-		fmt.Sprintf(`{"msgId":7,"status":"WS_BAD_REQUEST","errorText":"View access denied for: %s","quantCombineResp":{}}`, scanId),
+		fmt.Sprintf(`{"msgId":7,"status":"WS_NO_PERMISSION","errorText":"View access denied for: %s","quantCombineResp":{}}`, scanId),
 	)
 
 	u1.CloseActionGroup([]string{}, 10000)

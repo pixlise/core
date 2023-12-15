@@ -23,6 +23,8 @@ func InitCollections(db *mongo.Database, iLog logger.ILogger) {
 		ModuleVersionsName,
 		RegionsOfInterestName,
 		ScreenConfigurationName,
+		UserROIDisplaySettings,
+		WidgetDataName,
 	}
 
 	ctx := context.TODO()

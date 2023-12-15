@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	"github.com/pixlise/core/v3/core/errorwithstatus"
 	"github.com/pixlise/core/v3/core/indexcompression"
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
@@ -14,7 +13,7 @@ func HandleDetectedDiffractionPeaksReq(req *protos.DetectedDiffractionPeaksReq, 
 	// to get the totals, and to look up PMCs from diffraction DB
 	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
 	if err != nil {
-		return nil, errorwithstatus.MakeBadRequestError(err)
+		return nil, err
 	}
 
 	if req.Entries == nil {

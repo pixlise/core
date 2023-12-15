@@ -93,7 +93,7 @@ func HandleMultiQuantCompareReq(req *protos.MultiQuantCompareReq, hctx wsHelpers
 
 	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
 	if err != nil {
-		return nil, errorwithstatus.MakeBadRequestError(err)
+		return nil, err
 	}
 
 	tables, err := quantification.MultiQuantCompare(req.ReqRoiId, req.RemainingPointsPMCs, req.QuantIds, exprPB, hctx)
@@ -121,7 +121,7 @@ func HandleQuantCombineReq(req *protos.QuantCombineReq, hctx wsHelpers.HandlerCo
 
 	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
 	if err != nil {
-		return nil, errorwithstatus.MakeBadRequestError(err)
+		return nil, err
 	}
 
 	multiQuantData, err := quantification.MultiQuantCombinedCSV(req.Name, req.ScanId, req.RoiZStack, exprPB, hctx)

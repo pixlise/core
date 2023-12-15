@@ -1,8 +1,27 @@
 package main
 
-import "github.com/pixlise/core/v3/core/wstestlib"
+import (
+	"context"
+	"log"
+
+	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/core/wstestlib"
+)
 
 func testPiquantMsgs(apiHost string) {
+	db := wstestlib.GetDB()
+	ctx := context.TODO()
+	// Seed jobs
+	coll := db.Collection(dbCollections.PiquantVersionName)
+	err := coll.Drop(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = db.CreateCollection(ctx, dbCollections.PiquantVersionName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	testPiquantNotAllowedMsgs(apiHost)
 	u2 := testPiquantVersionAllowedMsgs(apiHost)
 	testPiquantConfigAllowedMsgs(u2)

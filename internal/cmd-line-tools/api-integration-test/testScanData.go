@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/wstestlib"
 	protos "github.com/pixlise/core/v3/generated-protos"
 )
@@ -18,6 +19,9 @@ func testScanData(apiHost string, groupDepth int) {
 
 	seedImages()
 	seedImageLocations()
+	// Seed the diffraction DB
+	seedS3File(scanId+"-diffraction-db.bin", filepaths.GetScanFilePath(scanId, filepaths.DiffractionDBFileName), apiDatasetBucket)
+
 	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, nil, nil)
 
 	// Dataset - bad dataset id
@@ -715,7 +719,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 	)
 
 	u1.AddSendReqAction("Spectra: "+actionMsg+" (should work)",
-		`{"spectrumReq":{"scanId": "048300551", "bulkSum": true, "maxValue": true}}`,
+		`{"spectrumReq":{"scanId": "048300551", "bulkSum": true, "maxValue": true, "entries": {"indexes": [] } }}`,
 		`{"msgId":4, "status": "WS_OK",
 			"spectrumResp":{
 				"channelCount": 4096,

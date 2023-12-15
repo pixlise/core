@@ -228,6 +228,13 @@ func testDataModules(apiHost string) {
 				"versions": [
 					{
 						"version": {
+							"patch": 1
+						},
+						"comments": "Geology toolkit",
+						"timeStampUnixSec": "${SECAGO=3}"
+					},
+					{
+						"version": {
 							"patch": 2
 						},
 						"tags": [
@@ -262,6 +269,23 @@ func testDataModules(apiHost string) {
 				"versions": [
 					{
 						"version": {
+							"patch": 1
+						},
+						"comments": "Geology toolkit",
+						"timeStampUnixSec": "${SECAGO=3}"
+					},
+					{
+						"version": {
+							"patch": 2
+						},
+						"tags": [
+							"tag-id-123"
+						],
+						"comments": "v0.0.2 comment",
+						"timeStampUnixSec": "${SECAGO=3}"
+					},
+					{
+						"version": {
 							"minor": 1
 						},
 						"tags": [
@@ -294,6 +318,33 @@ func testDataModules(apiHost string) {
 					"canEdit": true
 				},
 				"versions": [
+					{
+						"version": {
+							"patch": 1
+						},
+						"comments": "Geology toolkit",
+						"timeStampUnixSec": "${SECAGO=3}"
+					},
+					{
+						"version": {
+							"patch": 2
+						},
+						"tags": [
+							"tag-id-123"
+						],
+						"comments": "v0.0.2 comment",
+						"timeStampUnixSec": "${SECAGO=3}"
+					},
+					{
+						"version": {
+							"minor": 1
+						},
+						"tags": [
+							"tag-id-123",
+							"tag-id-234"
+						],
+						"timeStampUnixSec": "${SECAGO=3}"
+					},
 					{
 						"version": {
 							"major": 1

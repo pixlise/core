@@ -206,7 +206,7 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 	}
 
 	// If it's the default image in any scan, we can't delete it
-	filter := bson.D{{"defaultImageFileName", img.Path}}
+	filter := bson.D{{"defaultimagefilename", img.Path}}
 	opt := options.Find()
 	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ScanDefaultImagesName)
 
@@ -432,7 +432,6 @@ func HandleImageSetMatchTransformReq(req *protos.ImageSetMatchTransformReq, hctx
 	// Check that this is a matched image!
 	if img.MatchInfo == nil {
 		return nil, fmt.Errorf("Failed edit transform for image %v - it is not a matched image", req.ImageName)
-
 	}
 
 	// Make the change

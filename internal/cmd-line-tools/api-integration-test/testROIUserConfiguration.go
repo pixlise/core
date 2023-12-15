@@ -60,7 +60,12 @@ func testROIUserConfiguration(apiHost string) {
 			}
 		}}`,
 		`{"msgId":2,"status":"WS_OK",
-			"regionOfInterestDisplaySettingsWriteResp":{}
+			"regionOfInterestDisplaySettingsWriteResp":{
+				"displaySettings": {
+					"shape": "triangle",
+					"colour": "rgba(0, 0, 255, 0.5)"
+				}
+			}
 		}`,
 	)
 

@@ -74,7 +74,7 @@ func testImageUpload(apiHost string) {
 		}`,
 	)
 
-	u1.AddSendReqAction("Upload corrupt image",
+	u1.AddSendReqAction("Upload should fail - bad originScanId",
 		`{"imageUploadReq":{
 			"name": "file_Name.png",
 			"imageData": "aW1hZ2Ugb2YgYSBjYXQ=",
@@ -82,23 +82,58 @@ func testImageUpload(apiHost string) {
 		}}`,
 		`{
 			"msgId": 4,
-			"status": "WS_SERVER_ERROR",
-			"errorText": "image: unknown format",
+			"status": "WS_NOT_FOUND",
+			"errorText": "scan123 not found",
 			"imageUploadResp": {}
 		}`,
 	)
+
+	u1.AddSendReqAction("Upload corrupt image",
+		`{"imageUploadReq":{
+			"name": "file_Name.png",
+			"imageData": "aW1hZ2Ugb2YgYSBjYXQ=",
+			"originScanId": "scan123"
+		}}`,
+		`{
+			"msgId": 5,
+			"status": "WS_NOT_FOUND",
+			"errorText": "scan123 not found",
+			"imageUploadResp": {}
+		}`,
+	)
+
 	// Delete a non-existant image
-	u1.AddSendReqAction("Delete non-existant imag",
+	u1.AddSendReqAction("Delete non-existant image",
 		`{"imageDeleteReq":{
 			"name": "doesnt-exist.png"
 		}}`,
 		`{
-			"msgId": 5,
+			"msgId": 6,
 			"status": "WS_NOT_FOUND",
 			"errorText": "doesnt-exist.png not found",
 			"imageDeleteResp": {}
 		}`,
 	)
+
+	u1.AddSendReqAction("Upload should fail because no access to originScanId",
+		fmt.Sprintf(`{"imageUploadReq":{
+			"name": "file_Name.png",
+			"imageData": "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAIAAAACDbGyAAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw1AUhU/TiqIVEQuKOGSoTnZREcdSxSJYKG2FVh1MXvoHTRqSFBdHwbXg4M9i1cHFWVcHV0EQ/AFxdXFSdJES70sKLWJ8cHkf571zuO8+QGhUmGoGooCqWUYqHhOzuVWx+xV9GEaAalBipp5IL2bgub7u4eP7XYRned/7c/UreZMBPpE4ynTDIt4gnt20dM77xCFWkhTic+JJgxokfuS67PIb56LDAs8MGZnUPHGIWCx2sNzBrGSoxDPEYUXVKF/Iuqxw3uKsVmqs1Sd/YTCvraS5TjWGOJaQQBIiZNRQRgUWIrRrpJhI0XnMwz/q+JPkkslVBiPHAqpQITl+8D/4PVuzMD3lJgVjQNeLbX+MA927QLNu29/Htt08AfzPwJXW9lcbwNwn6fW2Fj4CBraBi+u2Ju8BlzvAyJMuGZIj+amEQgF4P6NvygFDt0Dvmju31jlOH4AMzWr5Bjg4BCaKlL3u8e6ezrn9e6c1vx9+a3KrJcLc2QAAAAlwSFlzAAAuIwAALiMBeKU/dgAAAAd0SU1FB+cLFwQYLiRP4ucAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAPklEQVQI1zXLsQ0AMQzDQGYZ1YGnNZDCy2QXewt9ETy7K7hsA8DM3Huxbbu7M1MSD+ccSQAPe+93UVURwd8HumEiarSzGIIAAAAASUVORK5CYII=",
+			"originScanId": "%v"
+		}}`, scanId),
+		`{
+			"msgId": 7,
+			"status": "WS_NO_PERMISSION",
+			"errorText": "View access denied for: 048300551",
+			"imageUploadResp": {}
+		}`,
+	)
+
+	u1.CloseActionGroup([]string{}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
+
+	// Now allow access to originScanId
+	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, &protos.UserGroupList{UserIds: []string{u1.GetUserId()}}, nil)
 
 	// Upload success
 	u1.AddSendReqAction("Upload OK",
@@ -108,7 +143,7 @@ func testImageUpload(apiHost string) {
 			"originScanId": "%v"
 		}}`, scanId),
 		`{
-			"msgId": 6,
+			"msgId": 8,
 			"status": "WS_OK",
 			"imageUploadResp": {}
 		}`,
@@ -122,25 +157,21 @@ func testImageUpload(apiHost string) {
 			"originScanId": "%v"
 		}}`, scanId),
 		`{
-			"msgId": 7,
+			"msgId": 9,
 			"status": "WS_BAD_REQUEST",
-			"errorText": "file_Name.png already exists",
+			"errorText": "048300551-file_Name.png already exists",
 			"imageUploadResp": {}
 		}`,
 	)
-	u1.CloseActionGroup([]string{}, 5000)
-	wstestlib.ExecQueuedActions(&u1)
-
-	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, &protos.UserGroupList{UserIds: []string{u1.GetUserId()}}, nil)
 
 	// Get the image
 	u1.AddSendReqAction("Get uploaded image",
-		`{"imageGetReq":{"imageName": "file_Name.png"}}`,
-		fmt.Sprintf(`{"msgId": 8,
+		`{"imageGetReq":{"imageName": "048300551-file_Name.png"}}`,
+		fmt.Sprintf(`{"msgId": 10,
 		"status": "WS_OK",
 		"imageGetResp":{
 			"image": {
-				"name": "file_Name.png",
+				"name": "048300551-file_Name.png",
 				"source": "SI_UPLOAD",
 				"width": 5,
 				"height": 5,
@@ -150,7 +181,7 @@ func testImageUpload(apiHost string) {
 					"%v"
 				],
 				"originScanId": "%v",
-				"path": "%v/file_Name.png"
+				"path": "%v/048300551-file_Name.png"
 			}
 		}
 	}`, scanId, scanId, scanId),
@@ -160,7 +191,7 @@ func testImageUpload(apiHost string) {
 	wstestlib.ExecQueuedActions(&u1)
 
 	// Download image data
-	status, body, err := doGet("http", apiHost, fmt.Sprintf("images/download/%v/file_Name.png", scanId), "", imageGetJWT)
+	status, body, err := doGet("http", apiHost, fmt.Sprintf("images/download/%v/048300551-file_Name.png", scanId), "", imageGetJWT)
 	failIf(err != nil, err)
 	img, format, err := image.Decode(bytes.NewReader(body))
 	var imgW, imgH int
@@ -173,7 +204,7 @@ func testImageUpload(apiHost string) {
 	)
 
 	// Download a scaled version (forcing generation of cached scaled image)
-	status, body, err = doGet("http", apiHost, fmt.Sprintf("images/download/%v/file_Name.png", scanId), "minwidth=2", imageGetJWT)
+	status, body, err = doGet("http", apiHost, fmt.Sprintf("images/download/%v/048300551-file_Name.png", scanId), "minwidth=2", imageGetJWT)
 	failIf(err != nil, err)
 	img, format, err = image.Decode(bytes.NewReader(body))
 	if img != nil {
@@ -186,8 +217,8 @@ func testImageUpload(apiHost string) {
 
 	// Set it as default image
 	u1.AddSendReqAction("set default image",
-		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "048300551/file_Name.png"}}`,
-		`{"msgId":9,
+		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "048300551/048300551-file_Name.png"}}`,
+		`{"msgId":11,
 			"status": "WS_OK",
 			"imageSetDefaultResp": {}
 		}`,
@@ -196,12 +227,12 @@ func testImageUpload(apiHost string) {
 	// Try to delete
 	u1.AddSendReqAction("Delete uploaded image, should fail because it's default",
 		`{"imageDeleteReq":{
-		"name": "file_Name.png"
+		"name": "048300551-file_Name.png"
 	}}`,
 		`{
-		"msgId": 10,
+		"msgId": 12,
 		"status": "WS_BAD_REQUEST",
-		"errorText": "Cannot delete image: \"file_Name.png\" because it is the default image for scans: [048300551]",
+		"errorText": "Cannot delete image: \"048300551-file_Name.png\" because it is the default image for scans: [048300551]",
 		"imageDeleteResp": {}
 	}`,
 	)
@@ -209,7 +240,7 @@ func testImageUpload(apiHost string) {
 	// Unset default image
 	u1.AddSendReqAction("set default image",
 		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "048300551/another.png"}}`,
-		`{"msgId":11,
+		`{"msgId":13,
 		"status": "WS_OK",
 		"imageSetDefaultResp": {}
 	}`,
@@ -218,14 +249,217 @@ func testImageUpload(apiHost string) {
 	// Delete uploaded image
 	u1.AddSendReqAction("Delete uploaded image",
 		`{"imageDeleteReq":{
-			"name": "file_Name.png"
+			"name": "048300551-file_Name.png"
 		}}`,
 		`{
-			"msgId": 12,
+			"msgId": 14,
 			"status": "WS_OK",
 			"imageDeleteResp": {}
 		}`,
 	)
 	u1.CloseActionGroup([]string{}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
+}
+
+func testImageMatchTransform(apiHost string) {
+	scanId := seedDBScanData(scan_Naltsos)
+	//scanImage := "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"
+	seedImages()
+	seedImageLocations()
+
+	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+		Host: apiHost,
+		User: test1Username,
+		Pass: test1Password,
+	})
+
+	u1.AddSendReqAction("SetImageMatchTransform - should fail, missing transform",
+		`{"imageSetMatchTransformReq":{
+			"imageName": "file_Name.png"
+		}}`,
+		`{
+			"msgId": 1,
+			"status": "WS_BAD_REQUEST",
+			"errorText": "Transform must be set",
+			"imageSetMatchTransformResp": {}
+		}`,
+	)
+
+	u1.AddSendReqAction("SetImageMatchTransform - should fail, bad transform",
+		`{"imageSetMatchTransformReq":{
+			"imageName": "file_Name.png",
+			"transform": {
+				"beamImageFileName": "beamImage.png",
+				"xOffset": -1,
+				"yOffset": -1,
+				"xScale": 0,
+				"yScale": 1
+			}
+		}}`,
+		`{
+			"msgId": 2,
+			"status": "WS_BAD_REQUEST",
+			"errorText": "Transform must have positive scale values",
+			"imageSetMatchTransformResp": {}
+		}`,
+	)
+
+	u1.AddSendReqAction("SetImageMatchTransform - should fail, bad image",
+		`{"imageSetMatchTransformReq":{
+			"imageName": "048300551-file_Name.png",
+			"transform": {
+				"beamImageFileName": "beamImage.png",
+				"xOffset": -1,
+				"xScale": 10,
+				"yScale": 1
+			}
+		}}`,
+		`{
+			"msgId": 3,
+			"status": "WS_NOT_FOUND",
+			"errorText": "048300551-file_Name.png not found",
+			"imageSetMatchTransformResp": {}
+		}`,
+	)
+
+	u1.CloseActionGroup([]string{}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
+
+	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, &protos.UserGroupList{UserIds: []string{u1.GetUserId()}}, nil)
+
+	u1.AddSendReqAction("Upload OK",
+		fmt.Sprintf(`{"imageUploadReq":{
+			"name": "file_Name.png",
+			"imageData": "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAIAAAACDbGyAAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw1AUhU/TiqIVEQuKOGSoTnZREcdSxSJYKG2FVh1MXvoHTRqSFBdHwbXg4M9i1cHFWVcHV0EQ/AFxdXFSdJES70sKLWJ8cHkf571zuO8+QGhUmGoGooCqWUYqHhOzuVWx+xV9GEaAalBipp5IL2bgub7u4eP7XYRned/7c/UreZMBPpE4ynTDIt4gnt20dM77xCFWkhTic+JJgxokfuS67PIb56LDAs8MGZnUPHGIWCx2sNzBrGSoxDPEYUXVKF/Iuqxw3uKsVmqs1Sd/YTCvraS5TjWGOJaQQBIiZNRQRgUWIrRrpJhI0XnMwz/q+JPkkslVBiPHAqpQITl+8D/4PVuzMD3lJgVjQNeLbX+MA927QLNu29/Htt08AfzPwJXW9lcbwNwn6fW2Fj4CBraBi+u2Ju8BlzvAyJMuGZIj+amEQgF4P6NvygFDt0Dvmju31jlOH4AMzWr5Bjg4BCaKlL3u8e6ezrn9e6c1vx9+a3KrJcLc2QAAAAlwSFlzAAAuIwAALiMBeKU/dgAAAAd0SU1FB+cLFwQYLiRP4ucAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAPklEQVQI1zXLsQ0AMQzDQGYZ1YGnNZDCy2QXewt9ETy7K7hsA8DM3Huxbbu7M1MSD+ccSQAPe+93UVURwd8HumEiarSzGIIAAAAASUVORK5CYII=",
+			"originScanId": "%v"
+		}}`, scanId),
+		`{
+			"msgId": 4,
+			"status": "WS_OK",
+			"imageUploadResp": {}
+		}`,
+	)
+
+	u1.AddSendReqAction("SetImageMatchTransform - should succeed",
+		`{"imageSetMatchTransformReq":{
+			"imageName": "048300551-file_Name.png",
+			"transform": {
+				"beamImageFileName": "beamImage.png",
+				"xOffset": -1,
+				"xScale": 10,
+				"yScale": 1
+			}
+		}}`,
+		`{
+			"msgId": 5,
+			"status": "WS_SERVER_ERROR",
+			"errorText": "Failed edit transform for image 048300551-file_Name.png - it is not a matched image",
+			"imageSetMatchTransformResp": {}
+		}`,
+	)
+
+	// Delete image
+	u1.AddSendReqAction("Delete uploaded image",
+		`{"imageDeleteReq":{
+			"name": "048300551-file_Name.png"
+		}}`,
+		`{
+			"msgId": 6,
+			"status": "WS_OK",
+			"imageDeleteResp": {}
+		}`,
+	)
+
+	// Re-upload as matched image
+	u1.AddSendReqAction("Upload Matched OK",
+		fmt.Sprintf(`{"imageUploadReq":{
+			"name": "file_Name.png",
+			"imageData": "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAIAAAACDbGyAAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw1AUhU/TiqIVEQuKOGSoTnZREcdSxSJYKG2FVh1MXvoHTRqSFBdHwbXg4M9i1cHFWVcHV0EQ/AFxdXFSdJES70sKLWJ8cHkf571zuO8+QGhUmGoGooCqWUYqHhOzuVWx+xV9GEaAalBipp5IL2bgub7u4eP7XYRned/7c/UreZMBPpE4ynTDIt4gnt20dM77xCFWkhTic+JJgxokfuS67PIb56LDAs8MGZnUPHGIWCx2sNzBrGSoxDPEYUXVKF/Iuqxw3uKsVmqs1Sd/YTCvraS5TjWGOJaQQBIiZNRQRgUWIrRrpJhI0XnMwz/q+JPkkslVBiPHAqpQITl+8D/4PVuzMD3lJgVjQNeLbX+MA927QLNu29/Htt08AfzPwJXW9lcbwNwn6fW2Fj4CBraBi+u2Ju8BlzvAyJMuGZIj+amEQgF4P6NvygFDt0Dvmju31jlOH4AMzWr5Bjg4BCaKlL3u8e6ezrn9e6c1vx9+a3KrJcLc2QAAAAlwSFlzAAAuIwAALiMBeKU/dgAAAAd0SU1FB+cLFwQYLiRP4ucAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAPklEQVQI1zXLsQ0AMQzDQGYZ1YGnNZDCy2QXewt9ETy7K7hsA8DM3Huxbbu7M1MSD+ccSQAPe+93UVURwd8HumEiarSzGIIAAAAASUVORK5CYII=",
+			"originScanId": "%v",
+			"beamImageRef": {
+				"beamImageFileName": "match_image.png",
+				"xOffset":           0,
+				"yOffset":           0,
+				"xScale":            1,
+				"yScale":            1
+			}
+		}}`, scanId),
+		`{
+			"msgId": 7,
+			"status": "WS_OK",
+			"imageUploadResp": {}
+		}`,
+	)
+
+	// Set transform again
+	u1.AddSendReqAction("SetImageMatchTransform - should succeed",
+		`{"imageSetMatchTransformReq":{
+			"imageName": "048300551-file_Name.png",
+			"transform": {
+				"beamImageFileName": "beamImage.png",
+				"xOffset": -1,
+				"xScale": 10,
+				"yScale": 1
+			}
+		}}`,
+		`{
+			"msgId": 8,
+			"status": "WS_OK",
+			"imageSetMatchTransformResp": {}
+		}`,
+	)
+
+	u1.AddSendReqAction("SetImageMatchTransform - overwrite should succeed",
+		`{"imageSetMatchTransformReq":{
+			"imageName": "048300551-file_Name.png",
+			"transform": {
+				"beamImageFileName": "beamImage.png",
+				"xOffset": -1,
+				"yOffset": 20,
+				"xScale": 10,
+				"yScale": 4
+			}
+		}}`,
+		`{
+			"msgId": 9,
+			"status": "WS_OK",
+			"imageSetMatchTransformResp": {}
+		}`,
+	)
+
+	u1.AddSendReqAction("ImageGetReq - should succeed",
+		`{"imageGetReq":{
+			"imageName": "048300551-file_Name.png"
+		}}`,
+		`{
+			"msgId": 10,
+			"status": "WS_OK",
+			"imageGetResp": {
+				"image": {
+					"name": "048300551-file_Name.png",
+					"source": "SI_UPLOAD",
+					"width": 5,
+					"height": 5,
+					"fileSize": 596,
+					"purpose": "SIP_VIEWING",
+					"associatedScanIds": [
+						"048300551"
+					],
+					"originScanId": "048300551",
+					"path": "048300551/048300551-file_Name.png",
+					"matchInfo": {
+						"beamImageFileName": "match_image.png",
+						"xOffset": -1,
+						"yOffset": 20,
+						"xScale": 10,
+						"yScale": 4
+					}
+				}
+			}
+		}`,
+	)
+
+	u1.CloseActionGroup([]string{}, 10000)
 	wstestlib.ExecQueuedActions(&u1)
 }

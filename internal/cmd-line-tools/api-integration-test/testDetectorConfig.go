@@ -68,7 +68,12 @@ func testDetectorConfig(apiHost string) {
 					"windowElement": 14,
 					"tubeElement": 45,
 					"mmBeamRadius": 0.06
-				}
+				},
+				"piquantConfigVersions": [
+					"v5",
+					"v6",
+					"v7"
+				]
 			}
 		}`,
 	)

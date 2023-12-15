@@ -42,6 +42,12 @@ func checkMatch(expectedMsg string, receivedMsg string, userId string, savedItem
 	prettyExpectedMsgStr := expectedMsgBytes.String()
 	prettyReceivedMsgStr := receivedMsgBytes.String()
 
+	// Limit length
+	const lengthLimit = 10000
+	if len(prettyReceivedMsgStr) > lengthLimit {
+		prettyReceivedMsgStr = prettyReceivedMsgStr[0:lengthLimit]
+	}
+
 	// Now read both as generic JSON objects and compare what we got
 	var received map[string]any
 	err = json.Unmarshal(receivedMsgBytes.Bytes(), &received)
@@ -230,6 +236,11 @@ func compare(received any, expected any, ctx compareParams) error {
 				}
 				if len(missingKeys) > 0 {
 					return fmt.Errorf("mismatch in structure, expected %v fields, received %v. Expected keys: [%v]. Missing from Received: [%v]", len(expKeys), len(recKeys), strings.Join(expKeys, ", "), strings.Join(missingKeys, ", "))
+				}
+
+				// If we got keys that were not expected, that's an error too
+				if len(expKeys) < len(recKeys) {
+					return fmt.Errorf("mismatch in structure, expected %v fields, received %v. Expected keys: [%v]. Received keys: [%v]", len(expKeys), len(recKeys), strings.Join(expKeys, ", "), strings.Join(recKeys, ", "))
 				}
 			}
 
