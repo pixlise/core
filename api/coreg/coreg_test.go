@@ -23,13 +23,6 @@ func TestNewJobFromMVExport(t *testing.T) {
 	// Read into JSON object
 	var sampleMve protos.MarsViewerExport
 	err = json.Unmarshal(testData, &sampleMve)
-
-	// Serialise to proto binary format
-	//proto.Marshal()
-
-	// Read from proto binary format
-	//var sampleMve protos.MarsViewerExport
-	//err = protojson.Unmarshal(testData, &sampleMve)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal test data: %s", err)
 	}
