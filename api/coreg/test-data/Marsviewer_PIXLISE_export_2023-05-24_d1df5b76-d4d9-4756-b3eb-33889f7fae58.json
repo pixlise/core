@@ -1,0 +1,324 @@
+{
+  "observations": [
+    {
+      "interpolated": false,
+      "observationCSVFilename": "SS__0614_0721474508_785RRS__0301172SRLC11360W108CGNJ01.CSV",
+      "contextImageUrl": "s3://m20-ids-g-data-g66bt/ods/dev/sol/00614/ids/rdr/shrlc/SC3_0614_0721474493_226RAS_N0301172SRLC11360_0000LMJ03.IMG",
+      "site": 30,
+      "drive": 1172,
+      "originalPoints": [
+        { "line": 324.367, "sample": 465.182, "spectrum_number": 0 },
+        { "line": 324.601, "sample": 540.645, "spectrum_number": 1 },
+        { "line": 323.629, "sample": 615.429, "spectrum_number": 2 },
+        { "line": 322.961, "sample": 690.462, "spectrum_number": 3 },
+        { "line": 322.643, "sample": 765.627, "spectrum_number": 4 },
+        { "line": 322.629, "sample": 841.042, "spectrum_number": 5 },
+        { "line": 321.293, "sample": 915.733, "spectrum_number": 6 },
+        { "line": 321.002, "sample": 991.177, "spectrum_number": 7 },
+        { "line": 320.438, "sample": 1065.936, "spectrum_number": 8 },
+        { "line": 320.206, "sample": 1141.224, "spectrum_number": 9 },
+        { "line": 395.942, "sample": 1142.406, "spectrum_number": 10 },
+        { "line": 396.333, "sample": 1067.223, "spectrum_number": 11 },
+        { "line": 397.35, "sample": 992.322, "spectrum_number": 12 },
+        { "line": 397.901, "sample": 917.245, "spectrum_number": 13 },
+        { "line": 398.058, "sample": 842.332, "spectrum_number": 14 },
+        { "line": 398.654, "sample": 767.137, "spectrum_number": 15 },
+        { "line": 398.828, "sample": 691.649, "spectrum_number": 16 },
+        { "line": 399.627, "sample": 616.621, "spectrum_number": 17 },
+        { "line": 400.323, "sample": 541.687, "spectrum_number": 18 },
+        { "line": 400.626, "sample": 466.74, "spectrum_number": 19 },
+        { "line": 476.391, "sample": 467.844, "spectrum_number": 20 },
+        { "line": 476.132, "sample": 542.852, "spectrum_number": 21 },
+        { "line": 475.421, "sample": 617.825, "spectrum_number": 22 },
+        { "line": 474.884, "sample": 692.863, "spectrum_number": 23 },
+        { "line": 474.318, "sample": 768.158, "spectrum_number": 24 },
+        { "line": 474.407, "sample": 843.298, "spectrum_number": 25 },
+        { "line": 473.272, "sample": 918.513, "spectrum_number": 26 },
+        { "line": 473.101, "sample": 993.465, "spectrum_number": 27 },
+        { "line": 472.608, "sample": 1068.564, "spectrum_number": 28 },
+        { "line": 472.464, "sample": 1143.795, "spectrum_number": 29 },
+        { "line": 548.477, "sample": 1144.948, "spectrum_number": 30 },
+        { "line": 548.59, "sample": 1069.973, "spectrum_number": 31 },
+        { "line": 548.822, "sample": 994.686, "spectrum_number": 32 },
+        { "line": 549.824, "sample": 919.824, "spectrum_number": 33 },
+        { "line": 550.229, "sample": 844.781, "spectrum_number": 34 },
+        { "line": 550.796, "sample": 769.486, "spectrum_number": 35 },
+        { "line": 551.39, "sample": 694.648, "spectrum_number": 36 },
+        { "line": 551.549, "sample": 619.378, "spectrum_number": 37 },
+        { "line": 552.072, "sample": 544.022, "spectrum_number": 38 },
+        { "line": 552.463, "sample": 468.84, "spectrum_number": 39 },
+        { "line": 628.679, "sample": 470.337, "spectrum_number": 40 },
+        { "line": 628.375, "sample": 545.463, "spectrum_number": 41 },
+        { "line": 627.882, "sample": 620.562, "spectrum_number": 42 },
+        { "line": 627.112, "sample": 695.691, "spectrum_number": 43 },
+        { "line": 626.503, "sample": 770.568, "spectrum_number": 44 },
+        { "line": 626.388, "sample": 845.899, "spectrum_number": 45 },
+        { "line": 625.981, "sample": 921.299, "spectrum_number": 46 },
+        { "line": 624.98, "sample": 995.983, "spectrum_number": 47 },
+        { "line": 624.34, "sample": 1071.295, "spectrum_number": 48 },
+        { "line": 623.731, "sample": 1146.172, "spectrum_number": 49 }
+      ],
+      "translatedPoints": [
+        {
+          "line": 314.56435187249485,
+          "sample": 481.59458872022174,
+          "spectrum_number": 0
+        },
+        {
+          "line": 315.108292461814,
+          "sample": 556.8091544098625,
+          "spectrum_number": 1
+        },
+        {
+          "line": 313.49789796685644,
+          "sample": 631.6060845068151,
+          "spectrum_number": 2
+        },
+        {
+          "line": 312.7262591068983,
+          "sample": 707.2533632644393,
+          "spectrum_number": 3
+        },
+        {
+          "line": 312.89121225384747,
+          "sample": 782.4894726722425,
+          "spectrum_number": 4
+        },
+        {
+          "line": 312.0753773842007,
+          "sample": 857.5096383935143,
+          "spectrum_number": 5
+        },
+        {
+          "line": 311.7736718686589,
+          "sample": 932.1851128366753,
+          "spectrum_number": 6
+        },
+        {
+          "line": 311.6733527686406,
+          "sample": 1008.481698936107,
+          "spectrum_number": 7
+        },
+        {
+          "line": 310.58762044994364,
+          "sample": 1083.0842246671964,
+          "spectrum_number": 8
+        },
+        {
+          "line": 311.14446612040547,
+          "sample": 1158.812115403839,
+          "spectrum_number": 9
+        },
+        {
+          "line": 385.83906998801376,
+          "sample": 1159.8463054492413,
+          "spectrum_number": 10
+        },
+        {
+          "line": 386.41685008269997,
+          "sample": 1084.213731605283,
+          "spectrum_number": 11
+        },
+        {
+          "line": 387.54949410766903,
+          "sample": 1009.3625494967373,
+          "spectrum_number": 12
+        },
+        {
+          "line": 387.7551320843877,
+          "sample": 933.927922204567,
+          "spectrum_number": 13
+        },
+        {
+          "line": 388.1100768003391,
+          "sample": 858.4544912039772,
+          "spectrum_number": 14
+        },
+        {
+          "line": 388.2232044327543,
+          "sample": 783.4470451214661,
+          "spectrum_number": 15
+        },
+        {
+          "line": 388.3869594285801,
+          "sample": 708.5392620681824,
+          "spectrum_number": 16
+        },
+        {
+          "line": 390.3977657701248,
+          "sample": 633.3838364212083,
+          "spectrum_number": 17
+        },
+        {
+          "line": 390.41215543322687,
+          "sample": 559.0776534971883,
+          "spectrum_number": 18
+        },
+        {
+          "line": 390.42861677420547,
+          "sample": 483.6133974931902,
+          "spectrum_number": 19
+        },
+        {
+          "line": 466.9086881058647,
+          "sample": 483.9885263260321,
+          "spectrum_number": 20
+        },
+        {
+          "line": 466.5959691180945,
+          "sample": 559.5433891203477,
+          "spectrum_number": 21
+        },
+        {
+          "line": 466.2966035717873,
+          "sample": 634.8900437116183,
+          "spectrum_number": 22
+        },
+        {
+          "line": 464.66977328863743,
+          "sample": 709.470808831024,
+          "spectrum_number": 23
+        },
+        {
+          "line": 464.38842890788214,
+          "sample": 784.7976344776548,
+          "spectrum_number": 24
+        },
+        {
+          "line": 465.20223876200396,
+          "sample": 860.3830129622988,
+          "spectrum_number": 25
+        },
+        {
+          "line": 463.70699217139924,
+          "sample": 935.4298586428395,
+          "spectrum_number": 26
+        },
+        {
+          "line": 462.7102570410366,
+          "sample": 1010.8183836708613,
+          "spectrum_number": 27
+        },
+        {
+          "line": 462.69555663074516,
+          "sample": 1085.1136482800794,
+          "spectrum_number": 28
+        },
+        {
+          "line": 463.11837303750553,
+          "sample": 1161.5687732474635,
+          "spectrum_number": 29
+        },
+        {
+          "line": 538.6607137423489,
+          "sample": 1162.4730282576165,
+          "spectrum_number": 30
+        },
+        {
+          "line": 538.9316084977495,
+          "sample": 1087.8638487804637,
+          "spectrum_number": 31
+        },
+        {
+          "line": 539.1365816275647,
+          "sample": 1012.2431922610804,
+          "spectrum_number": 32
+        },
+        {
+          "line": 538.6032554705671,
+          "sample": 936.1152539237482,
+          "spectrum_number": 33
+        },
+        {
+          "line": 539.7664038484436,
+          "sample": 861.6053583054236,
+          "spectrum_number": 34
+        },
+        {
+          "line": 540.7789959035795,
+          "sample": 785.8403884164636,
+          "spectrum_number": 35
+        },
+        {
+          "line": 541.849800997878,
+          "sample": 711.2682548481766,
+          "spectrum_number": 36
+        },
+        {
+          "line": 541.6265338040836,
+          "sample": 636.5195137402843,
+          "spectrum_number": 37
+        },
+        {
+          "line": 541.7324467751969,
+          "sample": 560.5036130670924,
+          "spectrum_number": 38
+        },
+        {
+          "line": 542.9733445393042,
+          "sample": 486.0590456215923,
+          "spectrum_number": 39
+        },
+        {
+          "line": 619.2028968750182,
+          "sample": 487.0941898126099,
+          "spectrum_number": 40
+        },
+        {
+          "line": 618.0911691710353,
+          "sample": 561.6782747153193,
+          "spectrum_number": 41
+        },
+        {
+          "line": 618.4497132691122,
+          "sample": 637.1843749755444,
+          "spectrum_number": 42
+        },
+        {
+          "line": 616.7537194053725,
+          "sample": 713.2210908259513,
+          "spectrum_number": 43
+        },
+        {
+          "line": 616.2189111391185,
+          "sample": 787.2403134112783,
+          "spectrum_number": 44
+        },
+        {
+          "line": 616.8405545802193,
+          "sample": 863.0781648284521,
+          "spectrum_number": 45
+        },
+        {
+          "line": 616.3067193650238,
+          "sample": 938.1854883532226,
+          "spectrum_number": 46
+        },
+        {
+          "line": 615.1256945469868,
+          "sample": 1013.0888848185205,
+          "spectrum_number": 47
+        },
+        {
+          "line": 614.2847515492613,
+          "sample": 1087.7032221958298,
+          "spectrum_number": 48
+        },
+        {
+          "line": 613.3813073059509,
+          "sample": 1162.9433534151294,
+          "spectrum_number": 49
+        }
+      ]
+    }
+  ],
+  "baseImageUrl": "s3://m20-ids-g-data-g66bt/ods/dev/sol/00614/ids/rdr/shrlc/SC3_0614_0721480213_394RAS_N0301172SRLC10600_0000LMJ03.IMG",
+  "warpedOverlayImages": [
+    {
+      "interpolated": true,
+      "mappedImageUrl": "s3://m20-ids-g-data-g66bt/ods/dev/sol/00614/ids/rdr/shrlc/SIF_0614_0721455441_734RAS_N0301172SRLC00643_0000LMJ03.IMG",
+      "warpedImageUrl": "s3://m20-dev-ids-crisp-imgcoregi/crisp_data/ICM-SC3_0614_0721480213_394RAS_N0301172SRLC10600_0000-SIF_0614_0721455441_734RAS_N0301172SRLC00643_0000-J01.VIC/09cd570f0963157fbf39575de1da4e73/crisp_data/ods/dev/sol/00614/ids/rdr/shrlc/warped-zoom_1-SN100D0-SIF_0614_0721455441_734RAS_N0301172SRLC00643_0000LMJ03.VIC"
+    }
+  ],
+  "marsviewerLink": "https://localhost.dev.m20.jpl.nasa.gov:8443/?B_ocs_type_name=m20-edr-rdr-m20-mosaic&EDR=s3%3A%2F%2Fm20-ids-g-data-g66bt%2Fods%2Fdev%2Fsol%2F00614%2Fids%2Frdr%2Fshrlc%2FSC3_0614_0721480213_394RAS_N0301172SRLC10600_0000LMJ03.IMG&FS_ocs_type_name=m20-edr-rdr-m20-mosaic&FS_vicar_label.VICAR_PROCESSING.COREG_ELIGIBLE=true&center=824.00000%2C600.00000&iti=9&overlays=SC3_0614_0721480213_394RAS_N0301172SRLC10600_0000LMJ03.IMG%2CSS__0614_0721474508_785RRS__0301172SRLC11360W108CGNJ01.CSV%28spec%3Dtrue%7Cspec_int%3Dfalse%7Cspec_col%3D1100FF%29%2CICM-SC3_0614_0721480213_394RAS_N0301172SRLC10600_0000-SIF_0614_0721455441_734RAS_N0301172SRLC00643_0000-J01.VIC%28coreg%3Dtrue%7Ccoreg_int%3Dtrue%29&package=m20-ids-g-data-g66bt&sti=0&zoom=0.52050"
+}

@@ -2,11 +2,13 @@ package wsHandler
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/pixlise/core/v3/api/coreg"
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/job"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
@@ -14,7 +16,6 @@ import (
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func HandleImportMarsViewerImageReq(req *protos.ImportMarsViewerImageReq, hctx wsHelpers.HandlerContext) (*protos.ImportMarsViewerImageResp, error) {
@@ -49,27 +50,8 @@ func HandleImportMarsViewerImageReq(req *protos.ImportMarsViewerImageReq, hctx w
 	// We can now trigger the lambda
 	// NOTE: here we build the same structure that triggered us, but we exclude the points data so we don't exceed
 	// the SQS 256kb limit. The lambda doesn't care about the points anyway, only we do once the lambda has completed!
-	coregReq := &protos.ImageCoregImportJob{
-		JobId: jobId,
-		Params: &protos.MarsViewerExport{
-			BaseImageUrl:        req.MarsViewerExport.BaseImageUrl,
-			MarsviewerLink:      req.MarsViewerExport.MarsviewerLink,
-			WarpedOverlayImages: req.MarsViewerExport.WarpedOverlayImages,
-			Observations:        []*protos.MVObservation{},
-		},
-	}
-
-	for _, obs := range req.MarsViewerExport.Observations {
-		coregReq.Params.Observations = append(coregReq.Params.Observations, &protos.MVObservation{
-			Interpolated:           obs.Interpolated,
-			ObservationCSVFilename: obs.ObservationCSVFilename,
-			ContextImageUrl:        obs.ContextImageUrl,
-			Site:                   obs.Site,
-			Drive:                  obs.Drive,
-		})
-	}
-
-	msg, err := protojson.Marshal(coregReq)
+	coregReq := coreg.NewJobFromMVExport(jobId, req.MarsViewerExport)
+	msg, err := json.Marshal(coregReq)
 	if err != nil {
 		returnErr := fmt.Errorf("Failed to create coreg job trigger message for job ID: %v", jobId)
 		job.CompleteJob(jobId, false, returnErr.Error(), "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
@@ -112,8 +94,6 @@ func (i *coregUpdater) sendUpdate(status *protos.JobStatus) {
 	wsHelpers.SendForSession(i.hctx.Session, &wsUpd)
 }
 
-type JobOutput struct{} // <-- Define in API, pull into Lambda as go module
-
 // Should be called after Coreg Import Lambda has completed successfully
 func completeMarsViewerImportJob(jobId string, marsViewerReq *protos.MarsViewerExport, hctx wsHelpers.HandlerContext) {
 	// Read the job completion entry from DB
@@ -126,7 +106,7 @@ func completeMarsViewerImportJob(jobId string, marsViewerReq *protos.MarsViewerE
 		return
 	}
 
-	coregResult := JobOutput{}
+	coregResult := coreg.CoregJobResult{}
 	err := dbResult.Decode(&coregResult)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to decode Coreg Job completion record for: %v. Error: %v", jobId, err)
@@ -136,6 +116,7 @@ func completeMarsViewerImportJob(jobId string, marsViewerReq *protos.MarsViewerE
 
 	// At this point we should have everything ready to go - our own bucket should contain all images
 	// and we have the mars viewer export msg containing any points we require so lets import this image!
+	//coregResult.
 
 	job.CompleteJob(jobId, true, "Import complete", "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
 }
