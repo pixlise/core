@@ -11,9 +11,8 @@ import (
 )
 
 func testQuants(apiHost string) {
-	testMultiQuant(apiHost)
-	return
 	testQuantCreate(apiHost)
+	testMultiQuant(apiHost)
 	testQuantFit(apiHost)
 	testQuantUpload(apiHost)
 	testQuantGetListDelete(apiHost)

@@ -64,7 +64,7 @@ func testUserDetails(apiHost string) {
 	)
 
 	u1.AddSendReqAction("Change email back so we don't screw up future tests",
-		`{"userDetailsWriteReq":{ "name": "Test 1 User", "email": "test1@pixlise.org" }}`,
+		`{"userDetailsWriteReq":{ "name": "test1@pixlise.org - WS Integration Test", "email": "test1@pixlise.org" }}`,
 		`{"msgId":6,"status":"WS_OK","userDetailsWriteResp":{}}`,
 	)
 
@@ -76,7 +76,7 @@ func testUserDetails(apiHost string) {
 	u1.AddSendReqAction("Request details again",
 		`{"userDetailsReq":{}}`,
 		fmt.Sprintf(`{"msgId":8,"status":"WS_OK","userDetailsResp":{
-			"details":{"info":{"id":"${USERID}","name":"Test 1 User","email":"test1@pixlise.org"},
+			"details":{"info":{"id":"${USERID}","name":"test1@pixlise.org - WS Integration Test","email":"test1@pixlise.org"},
 			"dataCollectionVersion": "1.2.4",
             "permissions": %v}}}`, permissionExpected),
 	)

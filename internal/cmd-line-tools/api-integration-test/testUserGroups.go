@@ -329,7 +329,7 @@ func testAddRemoveUserAsGroupMember(u2 wstestlib.ScriptedTestUser, nonAdminUserI
 					"joinGroupId": "${IDCHK=createdGroupId}",
 					"details": {
 						"id": "%v",
-						"name": "Test 1 User",
+						"name": "test1@pixlise.org - WS Integration Test",
 						"email": "test1@pixlise.org"
 					},
 					"createdUnixSec": "${SECAGO=5}"
@@ -1246,7 +1246,7 @@ func testAdminUserIgnoreGroupJoin(apiHost string) {
 					"joinGroupId": "${IDCHK=createdGroupId2}",
 					"details": {
 						"id": "%v",
-						"name": "Test 1 User",
+						"name": "test1@pixlise.org - WS Integration Test",
 						"email": "test1@pixlise.org"
 					},
 					"createdUnixSec": "${SECAGO=5}"
@@ -1646,7 +1646,7 @@ func testJoinRequestNotificationLive(apiHost string) {
 					"joinGroupId": "${IDCHK=createdGroupId6}",
 					"details": {
 						"id": "%v",
-						"name": "Test 1 User",
+						"name": "test1@pixlise.org - WS Integration Test",
 						"email": "test1@pixlise.org"
 					},
 					"createdUnixSec": "${SECAGO=5}"
@@ -1728,7 +1728,7 @@ func testJoinRequestNotificationAfterConnect(apiHost string) {
 					"joinGroupId": "${IDCHK=createdGroupId5}",
 					"details": {
 						"id": "%v",
-						"name": "Test 1 User",
+						"name": "test1@pixlise.org - WS Integration Test",
 						"email":"test1@pixlise.org"
 					},
 					"createdUnixSec": "${SECAGO=5}"
