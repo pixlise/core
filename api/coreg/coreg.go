@@ -20,12 +20,12 @@ func NewJobFromMVExport(jobId string, mve *protos.MarsViewerExport) *CoregJobReq
 }
 
 type CoregJobRequest struct {
-	ContextImageUrls []string
-	MappedImageUrls  []string
-	WarpedImageUrls  []string
-	BaseImageUrl     string
-	JobID            string
-	Environment      string
+	ContextImageUrls []string `json:"contextImageUrls"`
+	MappedImageUrls  []string `json:"mappedImageUrls"`
+	WarpedImageUrls  []string `json:"warpedImageUrls"`
+	BaseImageUrl     string   `json:"baseImageUrl"`
+	JobID            string   `json:"jobId"`
+	Environment      string   `json:"environment"`
 }
 
 type CoregJobResult struct {
