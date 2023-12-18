@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func InitCollections(db *mongo.Database, iLog logger.ILogger) {
+func InitCollections(db *mongo.Database, iLog logger.ILogger, environment string) {
 	// Ensure collections exist, required because some collections are "first" written to in a transaction which fails
 	// if the collection doesn't already exist
 	collectionsRequired := []string{
@@ -41,6 +41,20 @@ func InitCollections(db *mongo.Database, iLog logger.ILogger) {
 			if err != nil {
 				log.Fatal(err)
 			}
+		}
+	}
+
+	// We want to be able to watch change streams on some of our collections... DocumentDB seems to require this to be enabled
+	// separately, so do that here
+	if environment != "unittest" && environment != "prodMigrated" {
+		result := db.RunCommand(ctx, bson.D{
+			{"modifyChangeStreams", 1},
+			{"database", db.Name()},
+			{"collection", JobStatusName},
+			{"enable", true},
+		})
+		if result != nil {
+			log.Fatal(result.Err())
 		}
 	}
 }

@@ -120,7 +120,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	dbCollections.InitCollections(db, &logger.StdOutLogger{})
+	dbCollections.InitCollections(db, &logger.StdOutLogger{}, "")
 
 	startTime := time.Now()
 	runTests(apiHost)

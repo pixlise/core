@@ -164,7 +164,7 @@ func watchJob(jobId string, watchUntilUnixSec uint32, db *mongo.Database, logger
 
 	stream, err := coll.Watch(ctx, mongo.Pipeline{})
 	if err != nil {
-		logger.Errorf("Failed to watch job status: %v, no notifications will be sent", jobId)
+		logger.Errorf("Failed to watch job status: %v, no notifications will be sent. Error: %v", jobId, err)
 		return
 	}
 

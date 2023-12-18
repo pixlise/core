@@ -210,7 +210,7 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 		}
 	*/
 
-	dbCollections.InitCollections(db, iLog)
+	dbCollections.InitCollections(db, iLog, cfg.EnvironmentName)
 
 	// Authenticaton for endpoints
 	jwtValidator, err := jwtparser.InitJWTValidator(
