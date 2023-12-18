@@ -105,8 +105,10 @@ func fetchLogs(services *services.APIServices, logGroupName string, logStreamNam
 
 	for _, event := range resp.Events {
 		result = append(result, &protos.LogLine{
-			TimeStampUnixMs: uint64(*event.IngestionTime),
-			Message:         *event.Message,
+			// Split it up, we don't like sending uint64 via proto because deserialisation to JS turns to shit
+			TimeStampUnixSec: uint32(*event.IngestionTime / 1000),
+			TimeStampMs:      uint32(*event.IngestionTime % 1000),
+			Message:          *event.Message,
 		})
 	}
 
