@@ -684,6 +684,100 @@ func (x *ScanMetaLabelsAndTypesResp) GetMetaTypes() []ScanMetaDataType {
 	return nil
 }
 
+// requires(EDIT_SCAN)
+type ScanDeleteReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ScanId                  string `protobuf:"bytes,1,opt,name=scanId,proto3" json:"scanId,omitempty"`
+	ScanNameForVerification string `protobuf:"bytes,2,opt,name=scanNameForVerification,proto3" json:"scanNameForVerification,omitempty"`
+}
+
+func (x *ScanDeleteReq) Reset() {
+	*x = ScanDeleteReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_scan_msgs_proto_msgTypes[13]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ScanDeleteReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScanDeleteReq) ProtoMessage() {}
+
+func (x *ScanDeleteReq) ProtoReflect() protoreflect.Message {
+	mi := &file_scan_msgs_proto_msgTypes[13]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScanDeleteReq.ProtoReflect.Descriptor instead.
+func (*ScanDeleteReq) Descriptor() ([]byte, []int) {
+	return file_scan_msgs_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ScanDeleteReq) GetScanId() string {
+	if x != nil {
+		return x.ScanId
+	}
+	return ""
+}
+
+func (x *ScanDeleteReq) GetScanNameForVerification() string {
+	if x != nil {
+		return x.ScanNameForVerification
+	}
+	return ""
+}
+
+type ScanDeleteResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *ScanDeleteResp) Reset() {
+	*x = ScanDeleteResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_scan_msgs_proto_msgTypes[14]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ScanDeleteResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScanDeleteResp) ProtoMessage() {}
+
+func (x *ScanDeleteResp) ProtoReflect() protoreflect.Message {
+	mi := &file_scan_msgs_proto_msgTypes[14]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScanDeleteResp.ProtoReflect.Descriptor instead.
+func (*ScanDeleteResp) Descriptor() ([]byte, []int) {
+	return file_scan_msgs_proto_rawDescGZIP(), []int{14}
+}
+
 type ScanListReq_MinMaxInt struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -696,7 +790,7 @@ type ScanListReq_MinMaxInt struct {
 func (x *ScanListReq_MinMaxInt) Reset() {
 	*x = ScanListReq_MinMaxInt{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_scan_msgs_proto_msgTypes[14]
+		mi := &file_scan_msgs_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -709,7 +803,7 @@ func (x *ScanListReq_MinMaxInt) String() string {
 func (*ScanListReq_MinMaxInt) ProtoMessage() {}
 
 func (x *ScanListReq_MinMaxInt) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[14]
+	mi := &file_scan_msgs_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -800,8 +894,15 @@ var file_scan_msgs_proto_rawDesc = []byte{
 	0x61, 0x62, 0x65, 0x6c, 0x73, 0x12, 0x2f, 0x0a, 0x09, 0x6d, 0x65, 0x74, 0x61, 0x54, 0x79, 0x70,
 	0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0e, 0x32, 0x11, 0x2e, 0x53, 0x63, 0x61, 0x6e, 0x4d,
 	0x65, 0x74, 0x61, 0x44, 0x61, 0x74, 0x61, 0x54, 0x79, 0x70, 0x65, 0x52, 0x09, 0x6d, 0x65, 0x74,
-	0x61, 0x54, 0x79, 0x70, 0x65, 0x73, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x54, 0x79, 0x70, 0x65, 0x73, 0x22, 0x61, 0x0a, 0x0d, 0x53, 0x63, 0x61, 0x6e, 0x44, 0x65,
+	0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x63, 0x61, 0x6e, 0x49,
+	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x12,
+	0x38, 0x0a, 0x17, 0x73, 0x63, 0x61, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x46, 0x6f, 0x72, 0x56, 0x65,
+	0x72, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x17, 0x73, 0x63, 0x61, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x46, 0x6f, 0x72, 0x56, 0x65, 0x72,
+	0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x10, 0x0a, 0x0e, 0x53, 0x63, 0x61,
+	0x6e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x42, 0x0a, 0x5a, 0x08, 0x2e,
+	0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -816,7 +917,7 @@ func file_scan_msgs_proto_rawDescGZIP() []byte {
 	return file_scan_msgs_proto_rawDescData
 }
 
-var file_scan_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_scan_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_scan_msgs_proto_goTypes = []interface{}{
 	(*ScanListReq)(nil),                // 0: ScanListReq
 	(*ScanListResp)(nil),               // 1: ScanListResp
@@ -831,18 +932,20 @@ var file_scan_msgs_proto_goTypes = []interface{}{
 	(*ScanTriggerReImportUpd)(nil),     // 10: ScanTriggerReImportUpd
 	(*ScanMetaLabelsAndTypesReq)(nil),  // 11: ScanMetaLabelsAndTypesReq
 	(*ScanMetaLabelsAndTypesResp)(nil), // 12: ScanMetaLabelsAndTypesResp
-	nil,                                // 13: ScanListReq.SearchFiltersEntry
-	(*ScanListReq_MinMaxInt)(nil),      // 14: ScanListReq.MinMaxInt
-	(*ScanItem)(nil),                   // 15: ScanItem
-	(*JobStatus)(nil),                  // 16: JobStatus
-	(ScanMetaDataType)(0),              // 17: ScanMetaDataType
+	(*ScanDeleteReq)(nil),              // 13: ScanDeleteReq
+	(*ScanDeleteResp)(nil),             // 14: ScanDeleteResp
+	nil,                                // 15: ScanListReq.SearchFiltersEntry
+	(*ScanListReq_MinMaxInt)(nil),      // 16: ScanListReq.MinMaxInt
+	(*ScanItem)(nil),                   // 17: ScanItem
+	(*JobStatus)(nil),                  // 18: JobStatus
+	(ScanMetaDataType)(0),              // 19: ScanMetaDataType
 }
 var file_scan_msgs_proto_depIdxs = []int32{
-	13, // 0: ScanListReq.searchFilters:type_name -> ScanListReq.SearchFiltersEntry
-	15, // 1: ScanListResp.scans:type_name -> ScanItem
-	16, // 2: ScanUploadUpd.status:type_name -> JobStatus
-	16, // 3: ScanTriggerReImportUpd.status:type_name -> JobStatus
-	17, // 4: ScanMetaLabelsAndTypesResp.metaTypes:type_name -> ScanMetaDataType
+	15, // 0: ScanListReq.searchFilters:type_name -> ScanListReq.SearchFiltersEntry
+	17, // 1: ScanListResp.scans:type_name -> ScanItem
+	18, // 2: ScanUploadUpd.status:type_name -> JobStatus
+	18, // 3: ScanTriggerReImportUpd.status:type_name -> JobStatus
+	19, // 4: ScanMetaLabelsAndTypesResp.metaTypes:type_name -> ScanMetaDataType
 	5,  // [5:5] is the sub-list for method output_type
 	5,  // [5:5] is the sub-list for method input_type
 	5,  // [5:5] is the sub-list for extension type_name
@@ -1014,7 +1117,31 @@ func file_scan_msgs_proto_init() {
 				return nil
 			}
 		}
+		file_scan_msgs_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ScanDeleteReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 		file_scan_msgs_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ScanDeleteResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_scan_msgs_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ScanListReq_MinMaxInt); i {
 			case 0:
 				return &v.state
@@ -1033,7 +1160,7 @@ func file_scan_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_scan_msgs_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

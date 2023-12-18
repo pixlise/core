@@ -175,6 +175,46 @@ func beginDatasetFileReq(scanId string, hctx wsHelpers.HandlerContext) (*protos.
 	return exprPB, nil
 }
 
+func HandleScanDeleteReq(req *protos.ScanDeleteReq, hctx wsHelpers.HandlerContext) (*protos.ScanDeleteResp, error) {
+	// Check user has access
+	dbItem, _, err := wsHelpers.GetUserObjectById[protos.ScanItem](true, req.ScanId, protos.ObjectType_OT_SCAN, dbCollections.ScansName, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify they specified the right name
+	if req.ScanNameForVerification != dbItem.Title {
+		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Specified title did not match scan title of: \"%v\"", dbItem.Title))
+	}
+
+	// Check that it's not an FM dataset
+	if dbItem.Instrument == protos.ScanInstrument_PIXL_FM {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Cannot delete FM datasets using this feature"))
+	}
+
+	// TODO: Should we stop deletion if images or quants reference it???
+
+	// Delete the dataset from DB and the file from S3
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ScansName)
+	delResult, err := coll.DeleteOne(ctx, bson.D{{"_id", req.ScanId}}, options.Delete())
+	if err != nil {
+		return nil, err
+	}
+
+	if delResult.DeletedCount != 1 {
+		hctx.Svcs.Log.Errorf("ScanDelete %v - Unexpected DeletedCount %v, expected 1", req.ScanId, delResult.DeletedCount)
+	}
+
+	// Delete scan data from S3
+	err = hctx.Svcs.FS.DeleteObject(hctx.Svcs.Config.DatasetsBucket, filepaths.GetScanFilePath(req.ScanId, filepaths.DatasetFileName))
+	if err != nil {
+		return nil, fmt.Errorf("ScanDelete %v - partially succeeded, as some files failed to delete: %v", req.ScanId, err)
+	}
+
+	return &protos.ScanDeleteResp{}, nil
+}
+
 func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaWriteResp, error) {
 	if err := wsHelpers.CheckStringField(&req.Title, "Title", 1, 100); err != nil {
 		return nil, err
