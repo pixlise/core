@@ -46,15 +46,16 @@ func InitCollections(db *mongo.Database, iLog logger.ILogger, environment string
 
 	// We want to be able to watch change streams on some of our collections... DocumentDB seems to require this to be enabled
 	// separately, so do that here
-	if environment != "unittest" && environment != "prodMigrated" {
-		result := db.RunCommand(ctx, bson.D{
-			{"modifyChangeStreams", 1},
-			{"database", db.Name()},
-			{"collection", JobStatusName},
-			{"enable", true},
-		})
-		if result != nil {
-			log.Fatal(result.Err())
-		}
-	}
+	// if environment != "unittest" && environment != "prodMigrated" {
+	// 	// Tried with an env, got AWS DocumentDB error: The modifyChangeStreams command can only be run against the admin database
+	// 	result := db.RunCommand(ctx, bson.D{
+	// 		{"modifyChangeStreams", 1},
+	// 		{"database", db.Name()},
+	// 		{"collection", JobStatusName},
+	// 		{"enable", true},
+	// 	})
+	// 	if result != nil {
+	// 		log.Fatal(result.Err())
+	// 	}
+	// }
 }
