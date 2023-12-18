@@ -23,6 +23,7 @@ func testUserDetails(apiHost string) {
 		"EDIT_ROI",
 		"EDIT_SCAN",
 		"EDIT_VIEW_STATE",
+		"EXPORT",
 		"QUANTIFY",
 		"SHARE"
 	]`
