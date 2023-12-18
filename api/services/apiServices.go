@@ -80,4 +80,6 @@ type APIServices struct {
 
 	// Our mongo db connection
 	MongoDB *mongo.Database
+
+	Notifier INotifier
 }

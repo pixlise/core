@@ -15,6 +15,7 @@ import (
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/job"
+	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
 	"github.com/pixlise/core/v3/core/fileaccess"
@@ -212,6 +213,9 @@ func HandleScanDeleteReq(req *protos.ScanDeleteReq, hctx wsHelpers.HandlerContex
 		return nil, fmt.Errorf("ScanDelete %v - partially succeeded, as some files failed to delete: %v", req.ScanId, err)
 	}
 
+	// Notify of our scan change
+	//hctx.Svcs.Notifier.SysNotifyScanChanged(req.ScanId)
+
 	return &protos.ScanDeleteResp{}, nil
 }
 
@@ -244,6 +248,9 @@ func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.Handler
 		return nil, errorwithstatus.MakeNotFoundError(req.ScanId)
 	}
 
+	// Notify of our scan change
+	//hctx.Svcs.Notifier.SysNotifyScanChanged(req.ScanId)
+
 	return &protos.ScanMetaWriteResp{}, nil
 }
 
@@ -255,6 +262,8 @@ func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHel
 	i := importUpdater{
 		hctx.Session,
 		hctx.Melody,
+		hctx.Svcs.Notifier,
+		req.ScanId,
 	}
 
 	jobStatus, err := job.AddJob("reimport", uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendReimportUpdate)
@@ -463,6 +472,8 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	i := importUpdater{
 		hctx.Session,
 		hctx.Melody,
+		hctx.Svcs.Notifier,
+		datasetID,
 	}
 
 	// Add a job watcher for this
@@ -490,8 +501,10 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 }
 
 type importUpdater struct {
-	session *melody.Session
-	melody  *melody.Melody
+	session        *melody.Session
+	melody         *melody.Melody
+	notifier       services.INotifier
+	scanIdImported string
 }
 
 func (i *importUpdater) sendReimportUpdate(status *protos.JobStatus) {
@@ -504,6 +517,11 @@ func (i *importUpdater) sendReimportUpdate(status *protos.JobStatus) {
 	}
 
 	wsHelpers.SendForSession(i.session, &wsUpd)
+
+	if status.Status == protos.JobStatus_COMPLETE && status.EndUnixTimeSec > 0 {
+		// Notify of our scan change
+		//i.notifier.SysNotifyScanChanged(i.scanIdImported)
+	}
 }
 
 func (i *importUpdater) sendImportUpdate(status *protos.JobStatus) {
@@ -533,5 +551,8 @@ func (i *importUpdater) sendImportUpdate(status *protos.JobStatus) {
 		if err == nil {
 			i.melody.BroadcastBinary(bytes)
 		}
+
+		// Notify of our scan change
+		//i.notifier.SysNotifyScanChanged(i.scanIdImported)
 	}
 }

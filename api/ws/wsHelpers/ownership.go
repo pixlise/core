@@ -257,13 +257,17 @@ func FindUserIdsFor(objectId string, mongoDB *mongo.Database) ([]string, error) 
 	}
 
 	userIds := []string{}
-	userIds = append(userIds, ownershipItem.Viewers.UserIds...)
-	userIds = append(userIds, ownershipItem.Editors.UserIds...)
+	groupIds := []string{}
 
 	// Gather up all the user ids for the groups selected
-	groupIds := []string{}
-	groupIds = append(groupIds, ownershipItem.Viewers.GroupIds...)
-	groupIds = append(groupIds, ownershipItem.Editors.GroupIds...)
+	if ownershipItem.Viewers != nil {
+		userIds = append(userIds, ownershipItem.Viewers.UserIds...)
+		groupIds = append(groupIds, ownershipItem.Viewers.GroupIds...)
+	}
+	if ownershipItem.Editors != nil {
+		userIds = append(userIds, ownershipItem.Editors.UserIds...)
+		groupIds = append(groupIds, ownershipItem.Editors.GroupIds...)
+	}
 
 	usersForGroups, err := GetUserIdsForGroup(groupIds, mongoDB)
 	if err != nil {

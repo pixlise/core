@@ -178,6 +178,8 @@ func HandleImageSetDefaultReq(req *protos.ImageSetDefaultReq, hctx wsHelpers.Han
 		hctx.Svcs.Log.Errorf("ImageSetDefaultReq UpdateOne result had unexpected counts %+v id: %v", result, req.ScanId)
 	}
 
+	// TODO: Treat this like an image upload in terms of notification???
+
 	return &protos.ImageSetDefaultResp{}, nil
 }
 
@@ -258,6 +260,8 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 	}
 
 	//Verify delImgResult.DeletedCount == 1 ???
+
+	// TODO: for any associated scans or origin scans, we send out: hctx.Svcs.Notifier.SysNotifyScanImagesChanged()
 
 	return &protos.ImageDeleteResp{}, nil
 }
@@ -381,6 +385,9 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 			return nil, err
 		}
 	}
+
+	// Notify of our successful image addition
+	//hctx.Svcs.Notifier.NotifyNewScanImage(req.OriginScanId, req.OriginScanId, saveName)
 
 	return &protos.ImageUploadResp{}, nil
 }

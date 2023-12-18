@@ -26,6 +26,7 @@ func MakeNotificationSender(db *mongo.Database, timestamper timestamper.ITimeSta
 		db:          db,
 		timestamper: timestamper,
 		log:         log,
+		ws:          ws,
 	}
 }
 
@@ -59,6 +60,10 @@ func (n *NotificationSender) NotifyUpdatedScan(scanName string, scanId string) {
 	n.sendNotificationToObjectUsers(notifMsg, scanId)
 }
 
+func (n *NotificationSender) SysNotifyScanChanged(scanId string) {
+
+}
+
 func (n *NotificationSender) NotifyNewScanImage(scanName string, scanId string, imageName string) {
 	notifMsg := &protos.UserNotificationUpd{
 		Notification: &protos.UserNotification{
@@ -74,7 +79,11 @@ func (n *NotificationSender) NotifyNewScanImage(scanName string, scanId string, 
 	n.sendNotificationToObjectUsers(notifMsg, scanId)
 }
 
-func (n *NotificationSender) NotifyQuantComplete(quantId string, quantName string, status string, scanName string, scanId string) {
+func (n *NotificationSender) SysNotifyScanImagesChanged(scanIds []string) {
+
+}
+
+func (n *NotificationSender) NotifyNewQuant(uploaded bool, quantId string, quantName string, status string, scanName string, scanId string) {
 	notifMsg := &protos.UserNotificationUpd{
 		Notification: &protos.UserNotification{
 			Subject:          fmt.Sprintf("Quantification %v has completed with status: %v", quantName, status),
@@ -87,6 +96,10 @@ func (n *NotificationSender) NotifyQuantComplete(quantId string, quantName strin
 	}
 
 	n.sendNotificationToObjectUsers(notifMsg, quantId)
+}
+
+func (n *NotificationSender) SysNotifyQuantChanged(quantId string) {
+
 }
 
 func (n *NotificationSender) NotifyObjectShared(objectType string, objectId string, objectName, sharerName string) {

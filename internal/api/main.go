@@ -17,6 +17,7 @@ import (
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/endpoints"
 	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/api/notificationSender"
 	"github.com/pixlise/core/v3/api/permission"
 	apiRouter "github.com/pixlise/core/v3/api/router"
 	"github.com/pixlise/core/v3/api/services"
@@ -82,6 +83,8 @@ func main() {
 
 	fmt.Printf("Web socket config: %+v\n", m.Config)
 	ws := ws.MakeWSHandler(m, svcs)
+
+	svcs.Notifier = notificationSender.MakeNotificationSender(svcs.MongoDB, svcs.TimeStamper, svcs.Log, svcs.Config.EnvironmentName, ws)
 
 	// Create event handlers for websocket
 	m.HandleConnect(ws.HandleConnect)
@@ -241,6 +244,7 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 		IDGen:       &idgen.IDGen{},
 		TimeStamper: &timestamper.UnixTimeNowStamper{},
 		MongoDB:     db,
+		// Notifier is configured after ws is created
 	}
 
 	return svcs
