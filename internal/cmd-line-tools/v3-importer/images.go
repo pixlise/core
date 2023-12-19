@@ -17,6 +17,7 @@ import (
 	"github.com/pixlise/core/v3/core/beamLocation"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/gdsfilename"
+	"github.com/pixlise/core/v3/core/logger"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/protobuf/proto"
@@ -53,7 +54,7 @@ func importImagesForDataset(datasetID string, dataBucket string, destDataBucket 
 				log.Fatalln(err)
 			} else {
 				// Import coordinates
-				if err := beamLocation.ImportBeamLocationToDB(savedName, datasetID, alignedIdx, exprPB, dest); err != nil {
+				if err := beamLocation.ImportBeamLocationToDB(savedName, datasetID, alignedIdx, exprPB, dest, &logger.StdOutLogger{}); err != nil {
 					log.Fatalln(err)
 				}
 

@@ -2,14 +2,16 @@ package beamLocation
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/core/logger"
 	protos "github.com/pixlise/core/v3/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func ImportBeamLocationToDB(imgName string, forScanId string, ijIndex int, fromExprPB *protos.Experiment, db *mongo.Database) error {
+func ImportBeamLocationToDB(imgName string, forScanId string, ijIndex int, fromExprPB *protos.Experiment, db *mongo.Database, logger logger.ILogger) error {
 	imagesColl := db.Collection(dbCollections.ImageBeamLocationsName)
 
 	beams := &protos.ImageLocations{
@@ -42,13 +44,14 @@ func ImportBeamLocationToDB(imgName string, forScanId string, ijIndex int, fromE
 		Locations: ijs,
 	})
 
-	result, err := imagesColl.InsertOne(context.TODO(), beams)
+	opt := options.Replace().SetUpsert(true)
+	result, err := imagesColl.ReplaceOne(context.TODO(), bson.M{"_id": imgName}, beams, opt)
 	if err != nil {
 		return err
 	}
 
-	if result.InsertedID != imgName {
-		return fmt.Errorf("Image beam location insert for %v inserted different id %v", imgName, result.InsertedID)
+	if result.MatchedCount == 0 && result.ModifiedCount == 0 && result.UpsertedCount == 0 {
+		logger.Errorf("Image beam location insert for %v returned unexpected result %+v", imgName, result)
 	}
 
 	return nil

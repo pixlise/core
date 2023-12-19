@@ -10,13 +10,9 @@ func HandleImportMarsViewerImageReq(req *protos.ImportMarsViewerImageReq, hctx w
 	jobId := ""
 	var err error
 
-	if len(req.TriggerUrl) > 0 {
-		// We got triggered by URL, so start with that
-	} else {
-		jobId, err = coreg.StartCoregImport(req.MarsViewerExport, hctx)
-		if err != nil {
-			return nil, err
-		}
+	jobId, err = coreg.StartCoregImport(req.TriggerUrl, hctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return &protos.ImportMarsViewerImageResp{
