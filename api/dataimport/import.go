@@ -177,7 +177,8 @@ func ImportFromLocalFileSystem(
 	}
 
 	// Create an output directory
-	outputPath, err := fileaccess.MakeEmptyLocalDirectory(workingDir, "output")
+	outputScanPath, err := fileaccess.MakeEmptyLocalDirectory(workingDir, "output-"+filepaths.DatasetScansRoot)
+	outputImagesPath, err := fileaccess.MakeEmptyLocalDirectory(workingDir, "output-"+filepaths.DatasetImagesRoot)
 
 	if err != nil {
 		return "", err
@@ -206,11 +207,11 @@ func ImportFromLocalFileSystem(
 	}
 
 	// Form the output path
-	outPath := filepath.Join(outputPath, data.DatasetID)
+	outPath := filepath.Join(outputScanPath, data.DatasetID)
 
 	log.Infof("Writing dataset file...")
 	saver := output.PIXLISEDataSaver{}
-	err = saver.Save(*data, contextImageSrcPath, outPath, db, time.Now().Unix(), log)
+	err = saver.Save(*data, contextImageSrcPath, outPath, filepath.Join(outputImagesPath, data.DatasetID), db, time.Now().Unix(), log)
 	if err != nil {
 		return "", fmt.Errorf("Failed to write dataset file: %v. Error: %v", outPath, err)
 	}
@@ -222,9 +223,15 @@ func ImportFromLocalFileSystem(
 		return "", fmt.Errorf("Failed to run diffraction DB generator. Error: %v", err)
 	}
 
-	// Finally, copy the whole thing to our target bucket
+	// Finally, copy scan files to scans, and images to images
 	log.Infof("Copying generated dataset to bucket: %v...", datasetBucket)
-	err = copyToBucket(remoteFS, data.DatasetID, outputPath, datasetBucket, filepaths.DatasetScansRoot, log)
+	err = copyToBucket(remoteFS, data.DatasetID, outputScanPath, datasetBucket, filepaths.DatasetScansRoot, log)
+	if err != nil {
+		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
+	}
+
+	log.Infof("Copying images to bucket: %v...", datasetBucket)
+	err = copyToBucket(remoteFS, data.DatasetID, outputImagesPath, datasetBucket, filepaths.DatasetImagesRoot, log)
 	if err != nil {
 		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
 	}

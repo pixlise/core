@@ -60,7 +60,8 @@ type PIXLISEDataSaver struct {
 func (s *PIXLISEDataSaver) Save(
 	data dataConvertModels.OutputData,
 	contextImageSrcPath string,
-	outPath string,
+	outputDatasetPath string,
+	outputImagesPath string,
 	db *mongo.Database,
 	creationUnixTimeSec int64,
 	jobLog logger.ILogger) error {
@@ -260,12 +261,16 @@ func (s *PIXLISEDataSaver) Save(
 
 	// Now save the counts
 	saveSpectrumTypeCounts(&exp, data)
+	whatDir := []string{"dataset", "images"}
+	dirs := []string{outputDatasetPath, outputImagesPath}
 
-	if _, err := os.Stat(outPath); os.IsNotExist(err) {
-		jobLog.Infof("Creating output directory: \"%v\"", outPath)
-		err := os.MkdirAll(outPath, os.ModePerm)
-		if err != nil {
-			return fmt.Errorf("Failed to create output directory: %v", outPath)
+	for c, dir := range dirs {
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			jobLog.Infof("Creating %v output directory: \"%v\"", whatDir[c], dir)
+			err := os.MkdirAll(dir, os.ModePerm)
+			if err != nil {
+				return fmt.Errorf("Failed to create %v output directory: %v", whatDir[c], dir)
+			}
 		}
 	}
 
@@ -300,7 +305,7 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	// We work out the default file name when copying output images now... because if there isn't one, we may pick one during that process.
-	defaultContextImage, err := copyImagesToOutput(contextImageSrcPath, []string{data.DatasetID}, data.DatasetID, outPath, data, db, jobLog)
+	defaultContextImage, err := copyImagesToOutput(contextImageSrcPath, []string{data.DatasetID}, data.DatasetID, outputImagesPath, data, db, jobLog)
 	exp.MainContextImage = defaultContextImage
 
 	// Set any matched aligned images - this happens after copyImagesToOutput because file names may be modified by it depending on formats
@@ -310,7 +315,7 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	outfileName := outPrefix + filepaths.DatasetFileName
-	outFilePath := filepath.Join(outPath, outfileName)
+	outFilePath := filepath.Join(outputDatasetPath, outfileName)
 
 	jobLog.Infof("Writing binary file: %v", outFilePath)
 	out, err := proto.Marshal(&exp)

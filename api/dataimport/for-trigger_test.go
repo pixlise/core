@@ -133,7 +133,7 @@ func Example_ImportForTrigger_OCS_Archive_BadData() {
 	}
 
 	// Output:
-	// Errors: Failed to open detector.json when determining dataset type, changes: , isUpdate: false
+	// Errors: Failed to determine dataset type to import., changes: , isUpdate: false
 	// Logged "Downloading archived zip files...": true
 	// Logged "Downloaded 2 zip files, unzipped 6 files": true
 	// Logged "Downloading pseudo-intensity ranges...": true
