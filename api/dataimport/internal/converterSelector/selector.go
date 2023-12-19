@@ -40,9 +40,6 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 	}
 
 	log.Infof("SelectDataConverter: Path contains %v files...", len(items))
-	for c, item := range items {
-		log.Infof("  %v. %v", c+1, item)
-	}
 	/*
 		// Check if it's a combined dataset
 		combinedFiles, _ /*imageFileNames* /, _ /*combinedFile1Meta* /, _ /*combinedFile2Meta* /, err := combined.GetCombinedBeamFiles(importPath, log)
@@ -84,7 +81,13 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 			return pixlem.PIXLEM{}, nil
 		}
 	} else {
-		return nil, errors.New("Failed to open detector.json when determining dataset type")
+		log.Errorf("Failed to open detector.json when determining dataset type. Error: %v", err)
+	}
+
+	// Log the paths to help us diagnose issues...
+	log.Infof("SelectDataConverter path listing:")
+	for c, item := range items {
+		log.Infof("  %v. %v", c+1, item)
 	}
 
 	// Unknown
