@@ -22,6 +22,7 @@ package dataimport
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pixlise/core/v3/api/dataimport/internal/datasetArchive"
 	"github.com/pixlise/core/v3/api/job"
@@ -62,7 +63,7 @@ func ImportForTrigger(
 	logId := os.Getenv("AWS_LAMBDA_LOG_GROUP_NAME") + "/|/" + os.Getenv("AWS_LAMBDA_LOG_STREAM_NAME")
 
 	ts := timestamper.UnixTimeNowStamper{}
-	job.UpdateJob(jobId, protos.JobStatus_STARTING, "Starting importer", logId, db, &ts, log)
+	updateJobState(jobId, protos.JobStatus_STARTING, "Starting importer", logId, db, &ts, log)
 
 	result := ImportResult{
 		WorkingDir:   "",
@@ -110,7 +111,7 @@ func ImportForTrigger(
 		return result, err
 	}
 
-	job.UpdateJob(jobId, protos.JobStatus_RUNNING, "Importing Files", logId, db, &ts, log)
+	updateJobState(jobId, protos.JobStatus_RUNNING, "Importing Files", logId, db, &ts, log)
 
 	importedSummary := &protos.ScanItem{}
 	result.WorkingDir, importedSummary, result.WhatChanged, result.IsUpdate, err = ImportDataset(localFS, remoteFS, configBucket, manualBucket, datasetBucket, db, datasetID, log, archived)
@@ -118,10 +119,10 @@ func ImportForTrigger(
 	result.DatasetTitle = importedSummary.Title
 
 	if err != nil {
-		job.CompleteJob(jobId, false, err.Error(), "", []string{}, db, &ts, log)
+		completeJobState(jobId, false, err.Error(), "", []string{}, db, &ts, log)
 		log.Errorf("%v", err)
 	} else {
-		job.CompleteJob(jobId, true, "Imported successfully", "", []string{}, db, &ts, log)
+		completeJobState(jobId, true, "Imported successfully", "", []string{}, db, &ts, log)
 	}
 
 	// NOTE: We are now passing this responsibility to the caller, because we're very trusting... And they may want
@@ -130,4 +131,30 @@ func ImportForTrigger(
 	//log.Close()
 
 	return result, err
+}
+
+func updateJobState(jobId string, status protos.JobStatus_Status, message string, logId string, db *mongo.Database, ts timestamper.ITimeStamper, logger logger.ILogger) {
+	// NOTE: We only do this if we're NOT an auto-import job. Those are not triggered by the API
+	// so don't need to write job states to DB because nothing would pick it up anyway. It'd fail
+	// anyway because the API normally writes the initial job state
+	if !strings.HasPrefix(jobId, jobIDAutoImportPrefix) {
+		job.UpdateJob(jobId, status, message, logId, db, ts, logger)
+	} else {
+		logger.Infof("Job %v status: %v. Message: %v", jobId, status, message)
+	}
+}
+
+func completeJobState(jobId string, success bool, message string, outputFilePath string, otherLogFiles []string, db *mongo.Database, ts timestamper.ITimeStamper, logger logger.ILogger) {
+	// NOTE: We only do this if we're NOT an auto-import job. Those are not triggered by the API
+	// so don't need to write job states to DB because nothing would pick it up anyway. It'd fail
+	// anyway because the API normally writes the initial job state
+	if !strings.HasPrefix(jobId, jobIDAutoImportPrefix) {
+		job.CompleteJob(jobId, true, message, outputFilePath, otherLogFiles, db, ts, logger)
+	} else {
+		if success {
+			logger.Infof("Job %v complete: %v. Output path: %v", jobId, message, outputFilePath)
+		} else {
+			logger.Errorf("Job %v Failed: %v", jobId, message)
+		}
+	}
 }

@@ -98,7 +98,7 @@ func decodeImportTrigger(triggerMessageBody []byte) (string, string, string, str
 		}
 
 		// So this is basically a new dataset download, generate a fresh log ID
-		jobID = fmt.Sprintf("%v%v (%v)", jobIDAutoImportPrefix, time.Now().Format("02-Jan-2006 15-04-05"), utils.RandStringBytesMaskImpr(8))
+		jobID = fmt.Sprintf("%v%v(%v)", jobIDAutoImportPrefix, time.Now().Format("02-Jan-2006 15-04-05"), utils.RandStringBytesMaskImpr(8))
 	}
 
 	return sourceBucket, sourceFilePath, datasetID, jobID, nil
