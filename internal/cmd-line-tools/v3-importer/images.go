@@ -14,6 +14,7 @@ import (
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
+	"github.com/pixlise/core/v3/core/beamLocation"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/gdsfilename"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -52,7 +53,7 @@ func importImagesForDataset(datasetID string, dataBucket string, destDataBucket 
 				log.Fatalln(err)
 			} else {
 				// Import coordinates
-				if err := importImageLocations(savedName, datasetID, alignedIdx, exprPB, dest); err != nil {
+				if err := beamLocation.ImportBeamLocationToDB(savedName, datasetID, alignedIdx, exprPB, dest); err != nil {
 					log.Fatalln(err)
 				}
 
@@ -294,47 +295,4 @@ func saveImage(
 	// Also write the image file to S3 destination
 	writePath := filepaths.GetImageFilePath(savePath)
 	return fs.WriteObject(destDataBucket, writePath, imgBytes)
-}
-
-func importImageLocations(imgName string, scanId string, alignedImageIdx int, exprPB *protos.Experiment, dest *mongo.Database) error {
-	imagesColl := dest.Collection(dbCollections.ImageBeamLocationsName)
-
-	beams := &protos.ImageLocations{
-		ImageName:       imgName,
-		LocationPerScan: []*protos.ImageLocationsForScan{},
-	}
-
-	// Find the coordinates for this image
-	ijs := []*protos.Coordinate2D{}
-
-	for _, loc := range exprPB.Locations {
-		var ij *protos.Coordinate2D
-
-		if loc.Beam != nil {
-			ij = &protos.Coordinate2D{}
-			if alignedImageIdx == 0 {
-				ij.I = loc.Beam.ImageI
-				ij.J = loc.Beam.ImageJ
-			} else {
-				ij.I = loc.Beam.ContextLocations[alignedImageIdx-1].I
-				ij.J = loc.Beam.ContextLocations[alignedImageIdx-1].J
-			}
-		}
-
-		ijs = append(ijs, ij)
-	}
-
-	beams.LocationPerScan = append(beams.LocationPerScan, &protos.ImageLocationsForScan{
-		ScanId:    scanId,
-		Locations: ijs,
-	})
-
-	result, err := imagesColl.InsertOne(context.TODO(), beams)
-	if err != nil {
-		return err
-	}
-	if result.InsertedID != imgName {
-		return fmt.Errorf("Image insert for %v inserted different id %v", imgName, result.InsertedID)
-	}
-	return nil
 }
