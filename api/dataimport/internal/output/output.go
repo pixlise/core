@@ -276,6 +276,14 @@ func (s *PIXLISEDataSaver) Save(
 	autoShare := &dataConvertModels.AutoShareConfigItem{}
 	sharer := data.CreatorUserId
 
+	if len(sharer) <= 0 {
+		// we dont have a creator, so probably started as an automated process. Here we
+		// try to look up the auto-share destination by instrument type
+		sharer = data.Instrument.String()
+	}
+
+	jobLog.Infof("Looking up auto-share group(s) for: \"%v\"", sharer)
+
 	autoShareResult := coll.FindOne(context.TODO(), bson.D{{"_id", sharer}}, optFind)
 	if autoShareResult.Err() != nil {
 		// We couldn't find someone to auto-share it with, if we don't have anyone to share with, just fail here

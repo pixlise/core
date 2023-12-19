@@ -40,9 +40,9 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 	}
 
 	log.Infof("SelectDataConverter: Path contains %v files...", len(items))
-	/*for c, item := range items {
+	for c, item := range items {
 		log.Infof("  %v. %v", c+1, item)
-	}*/
+	}
 	/*
 		// Check if it's a combined dataset
 		combinedFiles, _ /*imageFileNames* /, _ /*combinedFile1Meta* /, _ /*combinedFile2Meta* /, err := combined.GetCombinedBeamFiles(importPath, log)
@@ -58,6 +58,8 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 		return pixlfm.PIXLFM{}, nil
 	}
 
+	log.Infof("Assuming non-PIXL-FM dataset...")
+
 	// Check if it's SOFF
 	soffFile, err := soff.GetSOFFDescriptionFile(importPath)
 	if err != nil {
@@ -67,6 +69,8 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 	if len(soffFile) > 0 {
 		return &soff.SOFFImport{}, nil
 	}
+
+	log.Infof("Assuming non-SOFF format dataset...")
 
 	// Try to read a detector.json - manually uploaded datasets will contain this to direct our operation...
 	detPath := filepath.Join(importPath, "detector.json")
