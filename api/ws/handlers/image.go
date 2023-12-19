@@ -65,8 +65,6 @@ func HandleImageGetReq(req *protos.ImageGetReq, hctx wsHelpers.HandlerContext) (
 		return nil, err
 	}
 
-	hctx.Svcs.Log.Infof("'%v' requested, db: %v", req.ImageName, hctx.Svcs.MongoDB.Name())
-
 	// Look up the image in DB to determine scan IDs, then determine ownership
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
@@ -74,22 +72,16 @@ func HandleImageGetReq(req *protos.ImageGetReq, hctx wsHelpers.HandlerContext) (
 	filter := bson.M{"_id": req.ImageName}
 	result := coll.FindOne(ctx, filter)
 	if result.Err() != nil {
-		hctx.Svcs.Log.Errorf("'%v' db error: %v", req.ImageName, result.Err())
 		if result.Err() == mongo.ErrNoDocuments {
 			return nil, errorwithstatus.MakeNotFoundError(req.ImageName)
 		}
 		return nil, result.Err()
 	}
-
-	hctx.Svcs.Log.Infof("'%v' got result", req.ImageName)
 	img := protos.ScanImage{}
 	err := result.Decode(&img)
 	if err != nil {
-		hctx.Svcs.Log.Errorf("'%v' decode failed: %v", req.ImageName, err)
 		return nil, err
 	}
-
-	hctx.Svcs.Log.Infof("'%v' got scan image", req.ImageName)
 
 	// Now look up any associated ids
 	if len(img.AssociatedScanIds) <= 0 {

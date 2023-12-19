@@ -34,6 +34,7 @@ import (
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
+	"github.com/pixlise/core/v3/core/beamLocation"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/gdsfilename"
 	"github.com/pixlise/core/v3/core/logger"
@@ -312,6 +313,16 @@ func (s *PIXLISEDataSaver) Save(
 	err = setMatchedImageInfo(data, &exp, jobLog)
 	if err != nil {
 		return err
+	}
+
+	// Save the image beam locations to DB. They are already in the experiment file (dataset.bin) but those aren't read any more
+	// as we switched to storing them in DB (to allow import of other images with a corresponding set of beam locations)
+	// Redundant, but this is how it evolved...
+	for idx, imgItem := range exp.AlignedContextImages {
+		err := beamLocation.ImportBeamLocationToDB(imgItem.Image, data.DatasetID, idx, &exp, db)
+		if err != nil {
+			return fmt.Errorf("Failed to import beam locations for image %v into DB. Error: %v", imgItem.Image, err)
+		}
 	}
 
 	outfileName := outPrefix + filepaths.DatasetFileName
