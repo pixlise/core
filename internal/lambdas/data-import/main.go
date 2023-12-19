@@ -69,9 +69,11 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 
 	// Normally we'd only expect event.Records to be of length 1...
 	worked := 0
-	logger := &logger.StdOutLogger{}
+	iLog := &logger.StdOutLogger{}
+	iLog.SetLogLevel(logger.LogInfo)
+
 	for _, record := range event.Records {
-		mongoClient, err := mongoDBConnection.Connect(sess, mongoSecret, logger)
+		mongoClient, err := mongoDBConnection.Connect(sess, mongoSecret, iLog)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -84,7 +86,7 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		// and it'll be useful for initial debugging
 		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
 
-		result, err := dataimport.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, db, logger, remoteFS)
+		result, err := dataimport.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, db, iLog, remoteFS)
 		if err != nil {
 			return "", err
 		}
