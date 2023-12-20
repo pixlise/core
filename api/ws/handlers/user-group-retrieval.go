@@ -35,11 +35,11 @@ func HandleUserGroupListReq(req *protos.UserGroupListReq, hctx wsHelpers.Handler
 	groupInfos := []*protos.UserGroupInfo{}
 	for _, group := range groups {
 		userRelationship := protos.UserGroupRelationship_UGR_UNKNOWN
-		if utils.ItemInSlice(hctx.SessUser.User.Id, group.AdminUserIds) {
+		if group.AdminUserIds != nil && utils.ItemInSlice(hctx.SessUser.User.Id, group.AdminUserIds) {
 			userRelationship = protos.UserGroupRelationship_UGR_ADMIN
-		} else if utils.ItemInSlice(hctx.SessUser.User.Id, group.Members.UserIds) {
+		} else if group.Members != nil && utils.ItemInSlice(hctx.SessUser.User.Id, group.Members.UserIds) {
 			userRelationship = protos.UserGroupRelationship_UGR_MEMBER
-		} else if utils.ItemInSlice(hctx.SessUser.User.Id, group.Viewers.UserIds) {
+		} else if group.Viewers != nil && utils.ItemInSlice(hctx.SessUser.User.Id, group.Viewers.UserIds) {
 			userRelationship = protos.UserGroupRelationship_UGR_VIEWER
 		}
 
