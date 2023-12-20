@@ -201,7 +201,7 @@ type DataExpressionExecStats struct {
 	unknownFields protoimpl.UnknownFields
 
 	DataRequired        []string `protobuf:"bytes,1,rep,name=dataRequired,proto3" json:"dataRequired,omitempty"`
-	RuntimeMsPer1000Pts float32  `protobuf:"fixed32,2,opt,name=runtimeMsPer1000Pts,proto3" json:"runtimeMsPer1000Pts,omitempty"`
+	RuntimeMsPer1000Pts float32  `protobuf:"fixed32,2,opt,name=runtimeMsPer1000Pts,proto3" json:"runtimeMsPer1000Pts,omitempty" bson:"runtimeMsPer1000Pts,truncate"`  
 	TimeStampUnixSec    uint32   `protobuf:"varint,3,opt,name=timeStampUnixSec,proto3" json:"timeStampUnixSec,omitempty"`
 }
 

@@ -249,8 +249,11 @@ func HandleExpressionWriteExecStatReq(req *protos.ExpressionWriteExecStatReq, hc
 
 	ctx := context.TODO()
 
-	// Find the expression
-	_, _, err := wsHelpers.GetUserObjectById[protos.DataExpression](true, req.Id, protos.ObjectType_OT_EXPRESSION, dbCollections.ExpressionsName, hctx)
+	// NOTE: This is special!
+	// We almost always have to make sure the user is an "editor" of the object in question, but here we're harvesting usage stats
+	// from anyones machine who can "view" the expression, so we only check view level permissions, and yet allow them to save
+	// runtime stats for it!
+	_, _, err := wsHelpers.GetUserObjectById[protos.DataExpression](false, req.Id, protos.ObjectType_OT_EXPRESSION, dbCollections.ExpressionsName, hctx)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +262,7 @@ func HandleExpressionWriteExecStatReq(req *protos.ExpressionWriteExecStatReq, hc
 	req.Stats.TimeStampUnixSec = uint32(hctx.Svcs.TimeStamper.GetTimeNowSec())
 	update := bson.D{
 		{"$set", bson.D{
-			{"recentExecStats", req.Stats},
+			{"recentexecstats", req.Stats},
 		}},
 	}
 

@@ -195,7 +195,7 @@ func migrateQuants(
 			}
 
 			if err := migrateQuant(jobSummary, "", coll, userContentBucket, destUserContentBucket, viewerGroupId, fs, dest); err != nil {
-				log.Fatalln(err)
+				fatalError(err)
 			}
 		}
 	}
@@ -211,7 +211,7 @@ func migrateQuants(
 		// path to the shared item
 		srcPath := SrcGetUserQuantPath("shared", shared.Params.DatasetID, "")
 		if err := migrateQuant(shared, srcPath, coll, userContentBucket, destUserContentBucket, userGroups["PIXL-FM"], fs, dest); err != nil {
-			log.Fatalf("migrateQuant failed for: %v. Error: %v", shared.JobID, err)
+			fatalError(fmt.Errorf("migrateQuant failed for: %v. Error: %v", shared.JobID, err))
 		}
 	}
 

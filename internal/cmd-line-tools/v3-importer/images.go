@@ -7,7 +7,6 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
-	"log"
 	"path"
 	"strings"
 	"sync"
@@ -23,14 +22,14 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func importImagesForDataset(datasetID string, dataBucket string, destDataBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
+func importImagesForDataset(datasetID string, srcBucket string, destDataBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
 	imagesColl := dest.Collection(dbCollections.ImagesName)
 
 	// Load the dataset bin file
 	s3Path := filepaths.GetDatasetFilePath(datasetID, filepaths.DatasetFileName)
-	fileBytes, err := fs.ReadObject(dataBucket, s3Path)
+	fileBytes, err := fs.ReadObject(srcBucket, s3Path)
 	if err != nil {
-		return fmt.Errorf("Failed to load dataset for %v, from: s3://%v/%v, error was: %v.", datasetID, dataBucket, s3Path, err)
+		return fmt.Errorf("Failed to load dataset for %v, from: s3://%v/%v, error was: %v.", datasetID, srcBucket, s3Path, err)
 	}
 
 	// Now decode the data & return it
@@ -50,12 +49,12 @@ func importImagesForDataset(datasetID string, dataBucket string, destDataBucket 
 			defer wg.Done()
 
 			// Image itself
-			if savedName, w, h, err := importAlignedImage(img, exprPB, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
-				log.Fatalln(err)
+			if savedName, w, h, err := importAlignedImage(img, exprPB, datasetID, srcBucket, destDataBucket, fs, imagesColl); err != nil {
+				fatalError(err)
 			} else {
 				// Import coordinates
 				if err := beamLocation.ImportBeamLocationToDB(savedName, datasetID, alignedIdx, exprPB, dest, &logger.StdOutLogger{}); err != nil {
-					log.Fatalln(err)
+					fatalError(err)
 				}
 
 				alignedImageSizes[savedName] = []uint32{w, h, uint32(alignedIdx)}
@@ -72,8 +71,8 @@ func importImagesForDataset(datasetID string, dataBucket string, destDataBucket 
 		wg2.Add(1)
 		go func(img *protos.Experiment_MatchedContextImageInfo) {
 			defer wg2.Done()
-			if _, err := importMatchedImage(img, alignedImageSizes, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
-				log.Fatalln(err)
+			if _, err := importMatchedImage(img, alignedImageSizes, datasetID, srcBucket, destDataBucket, fs, imagesColl); err != nil {
+				fatalError(err)
 			}
 		}(img)
 	}
@@ -82,8 +81,8 @@ func importImagesForDataset(datasetID string, dataBucket string, destDataBucket 
 		wg2.Add(1)
 		go func(img string) {
 			defer wg2.Done()
-			if _, err := importUnalignedImage(img, exprPB, datasetID, dataBucket, destDataBucket, fs, imagesColl); err != nil {
-				log.Fatalln(err)
+			if _, err := importUnalignedImage(img, exprPB, datasetID, srcBucket, destDataBucket, fs, imagesColl); err != nil {
+				fatalError(err)
 			}
 		}(img)
 	}
@@ -91,9 +90,7 @@ func importImagesForDataset(datasetID string, dataBucket string, destDataBucket 
 	// Wait for all
 	wg2.Wait()
 
-	// Write the dataset file out to destination
-	s3Path = filepaths.GetScanFilePath(datasetID, filepaths.DatasetFileName)
-	return fs.WriteObject(destDataBucket, s3Path, fileBytes)
+	return nil
 }
 
 func importAlignedImage(

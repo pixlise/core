@@ -213,6 +213,11 @@ func HandleScanDeleteReq(req *protos.ScanDeleteReq, hctx wsHelpers.HandlerContex
 		return nil, fmt.Errorf("ScanDelete %v - partially succeeded, as some files failed to delete: %v", req.ScanId, err)
 	}
 
+	err = hctx.Svcs.FS.DeleteObject(hctx.Svcs.Config.DatasetsBucket, filepaths.GetScanFilePath(req.ScanId, filepaths.DiffractionDBFileName))
+	if err != nil {
+		return nil, fmt.Errorf("ScanDelete %v - partially succeeded, as some files failed to delete: %v", req.ScanId, err)
+	}
+
 	// Notify of our scan change
 	//hctx.Svcs.Notifier.SysNotifyScanChanged(req.ScanId)
 

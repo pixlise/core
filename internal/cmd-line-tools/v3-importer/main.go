@@ -79,12 +79,12 @@ func main() {
 	// Connect to mongo
 	sourceMongoClient, err := mongoDBConnection.Connect(sess, sourceMongoSecret, iLog)
 	if err != nil {
-		log.Fatal(err)
+		fatalError(err)
 	}
 
 	destMongoClient, err := mongoDBConnection.Connect(sess, destMongoSecret, iLog)
 	if err != nil {
-		log.Fatal(err)
+		fatalError(err)
 	}
 
 	// Destination DB is the new pixlise one
@@ -97,7 +97,7 @@ func main() {
 	// Clear out ownership table first
 	err = destDB.Collection(dbCollections.OwnershipName).Drop(context.TODO())
 	if err != nil {
-		log.Fatal(err)
+		fatalError(err)
 	}
 
 	var listingWG sync.WaitGroup
@@ -111,7 +111,7 @@ func main() {
 		fmt.Println("==========================================")
 		err := migrateUsersDB(srcUserDB, destDB)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 
 		if len(auth0Domain) > 0 && len(auth0ClientId) > 0 && len(auth0Secret) > 0 {
@@ -120,7 +120,7 @@ func main() {
 			fmt.Println("==========================================")
 			userGroups, err = migrateAuth0UserGroups(auth0Domain, auth0ClientId, auth0Secret, destDB)
 			if err != nil {
-				log.Fatal(err)
+				fatalError(err)
 			}
 		}
 
@@ -129,7 +129,7 @@ func main() {
 		fmt.Println("==========================================")
 		err = migrateExpressionsDB(srcExprDB, destDB, userGroups)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 
 		fmt.Println("==========================================")
@@ -139,7 +139,7 @@ func main() {
 		fmt.Println("Datasets...")
 		err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB, limitToDatasetIDsList, userGroups)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 
 		fmt.Println("==========================================")
@@ -148,12 +148,12 @@ func main() {
 		fmt.Println("Detector Configs...")
 		err = migrateDetectorConfigs(configBucket, fs, destDB)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 		fmt.Println("Piquant Version...")
 		err = migratePiquantVersion(configBucket, fs, destDB)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 	}()
 
@@ -161,7 +161,7 @@ func main() {
 	fmt.Println("Piquant Configs...")
 	err = migratePiquantConfigs(configBucket, fs, destDB)
 	if err != nil {
-		log.Fatal(err)
+		fatalError(err)
 	}*/
 
 	userContentPaths := []string{}
@@ -172,7 +172,7 @@ func main() {
 		var err error
 		userContentPaths, err = fs.ListObjects(userContentBucket, filepaths.RootUserContent)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 		fmt.Printf("  Listed %v files\n", len(userContentPaths))
 	}()
@@ -191,7 +191,7 @@ func main() {
 		fmt.Println("Quant Z-stacks...")
 		err = migrateMultiQuants(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 	}()
 
@@ -201,7 +201,7 @@ func main() {
 		fmt.Println("Quants...")
 		err = migrateQuants(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB, destUserContentBucket, userGroups)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 	}()
 
@@ -211,7 +211,7 @@ func main() {
 		fmt.Println("Element Sets...")
 		err = migrateElementSets(userContentBucket, userContentPaths, fs, destDB, userGroups)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 	}()
 
@@ -221,7 +221,7 @@ func main() {
 		fmt.Println("ROIs...")
 		err = migrateROIs(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB, userGroups)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 	}()
 
@@ -231,7 +231,7 @@ func main() {
 		fmt.Println("RGB Mixes...")
 		err = migrateRGBMixes(userContentBucket, userContentPaths, fs, destDB, userGroups)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 	}()
 
@@ -241,7 +241,7 @@ func main() {
 		fmt.Println("Tags...")
 		err = migrateTags(userContentBucket, userContentPaths, fs, destDB)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 	}()
 
@@ -251,7 +251,7 @@ func main() {
 		fmt.Println("Diffraction Peak...")
 		err = migrateDiffraction(userContentBucket, userContentPaths, fs, destDB)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 	}()
 
@@ -261,7 +261,7 @@ func main() {
 		fmt.Println("View States...")
 		err = migrateViewStates(userContentBucket, userContentPaths, fs, destDB)
 		if err != nil {
-			log.Fatal(err)
+			fatalError(err)
 		}
 	}()
 
@@ -273,4 +273,8 @@ func main() {
 
 	fmt.Printf("Finished: %v\n", time.Now().String())
 	fmt.Printf("Runtime %v seconds\n", sec)
+}
+
+func fatalError(err error) {
+	log.Fatal(err)
 }

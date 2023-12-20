@@ -57,7 +57,7 @@ func migratePiquantConfigs(configBucket string, fs fileaccess.FileAccess, dest *
 
 	piquantConfigPaths, err := fs.ListObjects(configBucket, filepaths.RootDetectorConfig)
 	if err != nil {
-		log.Fatal(err)
+		fatalError(err)
 	}
 
 	// This one is directly compatible with the protobuf-defined struct!

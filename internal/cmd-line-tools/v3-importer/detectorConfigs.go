@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"path/filepath"
 	"strings"
 
@@ -23,7 +22,7 @@ func migrateDetectorConfigs(configBucket string, fs fileaccess.FileAccess, dest 
 
 	detectorConfigPaths, err := fs.ListObjects(configBucket, filepaths.RootDetectorConfig)
 	if err != nil {
-		log.Fatal(err)
+		fatalError(err)
 	}
 
 	// This one is directly compatible with the protobuf-defined struct!

@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
@@ -99,7 +99,7 @@ type SrcDatasetConfig struct {
 
 func migrateDatasets(
 	configBucket string,
-	dataBucket string,
+	srcBucket string,
 	destDataBucket string,
 	fs fileaccess.FileAccess,
 	dest *mongo.Database,
@@ -224,7 +224,7 @@ func migrateDatasets(
 
 			_, err := coll.InsertOne(context.TODO(), destItem)
 			if err != nil {
-				log.Fatalln(err)
+				fatalError(err)
 			}
 
 			// Each scan needs an ownership item to define who can view/edit it
@@ -232,18 +232,34 @@ func migrateDatasets(
 			// to differ from our random ones
 			err = saveOwnershipItem( /*"scan_"+*/ dataset.DatasetID, protos.ObjectType_OT_SCAN, "", memberGroup, "", uint32(dataset.CreationUnixTimeSec), dest)
 			if err != nil {
-				log.Fatalln(err)
+				fatalError(err)
 			}
 
-			err = importImagesForDataset(dataset.DatasetID, dataBucket, destDataBucket, fs, dest)
+			err = importImagesForDataset(dataset.DatasetID, srcBucket, destDataBucket, fs, dest)
 			if err != nil {
-				log.Fatalln(err)
+				fatalError(err)
+			}
+
+			// Copy dataset bin file
+			s3SourcePath := filepaths.GetDatasetFilePath(dataset.DatasetID, filepaths.DatasetFileName)
+			s3DestPath := filepaths.GetScanFilePath(dataset.DatasetID, filepaths.DatasetFileName)
+			err = fs.CopyObject(srcBucket, s3SourcePath, destDataBucket, s3DestPath)
+			if err != nil {
+				fatalError(err)
+			}
+
+			// Copy diffraction db bin file
+			s3SourcePath = filepaths.GetDatasetFilePath(dataset.DatasetID, filepaths.DiffractionDBFileName)
+			s3DestPath = filepaths.GetScanFilePath(dataset.DatasetID, filepaths.DiffractionDBFileName)
+			err = fs.CopyObject(srcBucket, s3SourcePath, destDataBucket, s3DestPath)
+			if err != nil {
+				fatalError(err)
 			}
 
 			// Set the default image
 			err = setDefaultImage(dataset.DatasetID, dataset.ContextImage, dest)
 			if err != nil {
-				log.Fatalln(err)
+				fatalError(err)
 			}
 
 			insertCount++

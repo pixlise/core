@@ -55,7 +55,7 @@ func s3Copy(fs fileaccess.FileAccess, srcBucket string, srcPaths []string, dstBu
 	var wg sync.WaitGroup
 
 	if len(srcPaths) != len(dstPaths) || len(srcPaths) != len(failOnError) {
-		log.Fatalf("s3Copy inputs not the same length for srcBucket %v, dstBucket %v\n", srcBucket, dstBucket)
+		fatalError(fmt.Errorf("s3Copy inputs not the same length for srcBucket %v, dstBucket %v\n", srcBucket, dstBucket))
 	}
 
 	// Copy each in its own thread
@@ -67,7 +67,7 @@ func s3Copy(fs fileaccess.FileAccess, srcBucket string, srcPaths []string, dstBu
 			bytes, err := fs.ReadObject(srcBucket, srcPath)
 			if err != nil {
 				if failOnError {
-					log.Fatalln(err)
+					fatalError(err)
 				} else {
 					log.Println(err)
 				}
@@ -76,7 +76,7 @@ func s3Copy(fs fileaccess.FileAccess, srcBucket string, srcPaths []string, dstBu
 			err = fs.WriteObject(dstBucket, dstPath, bytes)
 			if err != nil {
 				if failOnError {
-					log.Fatalln(err)
+					fatalError(err)
 				} else {
 					log.Println(err)
 				}
