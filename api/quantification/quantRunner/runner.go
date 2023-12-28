@@ -45,9 +45,15 @@ type PiquantParams struct {
 	Command           string   `json:"command"`
 }
 
+// MakePMCFileName - generates a name for the PMC list file based on a given node-numer
+//
+//	NOTE: nodes are 0-based whereas pmc filenames are 1-based,
+//		  so the first node is 0 and will work on pmcs in node00001.pmcs
+func MakePMCFileName(nodeNumber int) string {
+	return fmt.Sprintf("node%05d.pmcs", nodeNumber+1)
+}
+
 type QuantRunner interface {
-	// Requires the instance count. If PMC files are named node0001.pmcs to node0003.pmcs, instances
-	// should be 4, start with 1-based counting for host names
 	RunPiquant(piquantDockerImage string, params PiquantParams, pmcListNames []string, cfg config.APIConfig, requestorUserId string, log logger.ILogger) error
 }
 

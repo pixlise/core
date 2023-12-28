@@ -19,22 +19,10 @@
 package kubernetes
 
 import (
-	"bytes"
-	"context"
-	"fmt"
-	"io"
-	"math/rand"
 	"os"
 	"reflect"
-	"sync"
-	"time"
 
-	"github.com/pixlise/core/v3/api/config"
 	"github.com/pixlise/core/v3/core/logger"
-	"github.com/pixlise/core/v3/core/utils"
-	apiv1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -108,6 +96,10 @@ func (k *KubeHelper) Bootstrap(location string, apiLog logger.ILogger) {
 	k.Clientset = clientset
 }
 
+// NOTE: The following is all deprecated and should be removed once we're sure we don't need it anymore;
+// 			I believe that this was all put in place as a generic pod running interface but we don't really
+//			need or even want that. We want to run PIQUANT in a specific way, and we should do that directly.
+/*
 func (k *KubeHelper) RunPod(
 	cmd []string,
 	args []string,
@@ -286,3 +278,4 @@ func (k *KubeHelper) getPodObject(cmd []string, args []string, env map[string]st
 		},
 	}
 }
+*/

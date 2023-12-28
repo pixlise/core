@@ -70,7 +70,7 @@ func makePMCListFilesForQuantPMCs(
 			return pmcFiles, 0, fmt.Errorf("Error when preparing node PMC list: %v. Error: %v", i, err)
 		}
 
-		pmcListName, err := savePMCList(svcs, quantStartSettings.PiquantJobsBucket, contents, i+1, jobDataPath)
+		pmcListName, err := savePMCList(svcs, quantStartSettings.PiquantJobsBucket, contents, i, jobDataPath)
 		if err != nil {
 			return []string{}, 0, err
 		}

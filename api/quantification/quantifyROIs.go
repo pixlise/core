@@ -50,7 +50,7 @@ func makePMCListFilesForQuantROI(
 		return "", 0, rois, fmt.Errorf("Error when preparing quant ROI node list. Error: %v", err)
 	}
 
-	pmcListName, err := savePMCList(hctx.Svcs, params.PiquantJobsBucket, contents, 1, jobDataPath)
+	pmcListName, err := savePMCList(hctx.Svcs, params.PiquantJobsBucket, contents, 0, jobDataPath)
 	if err != nil {
 		return "", 0, rois, err
 	}

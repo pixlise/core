@@ -21,17 +21,19 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/pixlise/core/v3/api/quantification/quantRunner"
 	"github.com/pixlise/core/v3/api/services"
 )
 
+
 func savePMCList(svcs *services.APIServices, jobBucket string, contents string, nodeNumber int, jobDataPath string) (string, error) {
-	pmcListName := fmt.Sprintf("node%05d.pmcs", nodeNumber)
+	pmcListName := quantRunner.MakePMCFileName(nodeNumber)
 	savePath := path.Join(jobDataPath, pmcListName)
 
 	err := svcs.FS.WriteObject(jobBucket, savePath, []byte(contents))
 	if err != nil {
 		// Couldn't save it, no point continuing, we don't want a quantification with a section missing!
-		return pmcListName, fmt.Errorf("Error when writing node PMC list: %v. Error: %v", savePath, err)
+		return pmcListName, fmt.Errorf("error when writing node PMC list: %v. Error: %v", savePath, err)
 	}
 
 	return pmcListName, nil
