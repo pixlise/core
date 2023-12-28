@@ -4,9 +4,9 @@ on:
   workflow_call:
     inputs:
       version_format:
-        description: 'Version format string used for paulhatch/semantic-version'
+        description: "Version format string used for paulhatch/semantic-version"
         required: true
-        default: '${major}.${minor}.${patch}'
+        default: "${major}.${minor}.${patch}"
         type: string
 
 env:
@@ -33,14 +33,14 @@ jobs:
         id: version
         with:
           # The prefix to use to identify tags
-          tag_prefix: 'v'
+          tag_prefix: "v"
           # A string which, if present in a git commit, indicates that a change represents a
           # major (breaking) change, supports regular expressions wrapped with '/'
-          major_pattern: '(MAJOR)'
+          major_pattern: "(MAJOR)"
           # Same as above except indicating a minor change, supports regular expressions wrapped with '/'
-          minor_pattern: '(MINOR)'
+          minor_pattern: "(MINOR)"
           # A string to determine the format of the version output
-          version_format: '${{ inputs.version_format }}'
+          version_format: "${{ inputs.version_format }}"
           # Optional path to check for changes. If any changes are detected in the path the
           # 'changed' output will true. Enter multiple paths separated by spaces.
           #change_path: "src/my-service"
@@ -49,7 +49,7 @@ jobs:
           # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
           search_commit_body: false
           # The output method used to generate list of users, 'csv' or 'json'.
-          user_format_type: 'csv'
+          user_format_type: "csv"
 
   test:
     runs-on: ubuntu-latest
@@ -61,7 +61,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: '1.21.0'
+          go-version: "1.21.0"
       - name: Test
         run: echo $PIXLISE_API_TEST_ZENODO_URI && echo "Tests Off" # make test
         env:
@@ -90,7 +90,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: '1.21.0'
+          go-version: "1.21.0"
       - name: Print Version
         run: |
           echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
@@ -102,20 +102,20 @@ jobs:
           cd _out
           rm pixlise-api-linux
           wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
+          mkdir jobupdater datasourceupdater integrationtest dataimport
           # mkdir test-data
           # cp ../internal/cmdline-tools/import-integration-test/test-data/000000001-21-10-2022-15-37-00.zip ./test-data
-          # zip -q jobupdater-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem jobupdater-linux
+          # zip -q jobupdater/jobupdater-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem jobupdater-linux
           # rm jobupdater-linux
-          # zip -q datasourceupdater-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem datasourceupdater-linux
+          # zip -q datasourceupdater/datasourceupdater-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem datasourceupdater-linux
           # rm datasourceupdater-linux
           # zip -q integrationtest-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem integrationtest-linux
           # rm integrationtest-linux
-          zip -q dataimport-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem dataimport-linux
+          zip -q dataimport/dataimport-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem dataimport-linux
           rm dataimport-linux
-          # zip -q importtest-linux-${{ needs.version.outputs.version }}.zip importtest-linux test-data/000000001-21-10-2022-15-37-00.zip
+          # zip -q importtest/importtest-linux-${{ needs.version.outputs.version }}.zip importtest-linux test-data/000000001-21-10-2022-15-37-00.zip
           # rm importtest-linux
           aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
-
 
   docker:
     needs: [version, test]
@@ -142,7 +142,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@v2.8.1
         with:
-          cosign-release: 'v1.9.0'
+          cosign-release: "v1.9.0"
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
