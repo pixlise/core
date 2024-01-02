@@ -45,6 +45,10 @@ func migrateAuth0UserGroups(auth0Domain string, auth0ClientId string, auth0Secre
 			Id:   makeID(),
 			Name: group,
 			//CreatedUnixSec: ,
+			Viewers: &protos.UserGroupList{
+				UserIds:  []string{},
+				GroupIds: []string{},
+			},
 			Members: &protos.UserGroupList{
 				UserIds:  groupMembers,
 				GroupIds: []string{},
