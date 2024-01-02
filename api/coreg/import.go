@@ -49,10 +49,16 @@ func StartCoregImport(triggerUrl string, hctx wsHelpers.HandlerContext) (string,
 		return "", returnErr
 	}
 
-	hctx.Svcs.SQS.SendMessage(&sqs.SendMessageInput{
+	_, err = hctx.Svcs.SQS.SendMessage(&sqs.SendMessageInput{
 		MessageBody: aws.String(string(msg)),
 		QueueUrl:    aws.String(hctx.Svcs.Config.CoregSqsQueueUrl),
 	})
+
+	if err != nil {
+		returnErr := fmt.Errorf("Failed to trigger coreg job. ID: %v. Error: %v", jobId, err)
+		job.CompleteJob(jobId, false, returnErr.Error(), "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
+		return "", returnErr
+	}
 
 	return jobId, nil
 }
