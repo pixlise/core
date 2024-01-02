@@ -2,16 +2,20 @@ package wstestlib
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/utils"
 )
 
@@ -169,6 +173,16 @@ func compare(received any, expected any, ctx compareParams) error {
 			}
 		case string:
 			recValAsStr = recVal
+			if len(defMap) > 0 && len(preDef) == 0 && len(postDef) == 0 {
+				for cmd := range defMap {
+					// If valid, we'll see a map of ZIPCMP:<nothing> and PATH:<path> or other parameters along side it in defMap
+					if cmd == "ZIPCMP" {
+						// We have to unzip the result and compare to a directory specified
+						return zipCompare(defMap, recValAsStr)
+					}
+				}
+			}
+
 			expToCompare, err = compareExpectedString(expVal, recVal, ctx)
 			if err != nil {
 				return err
@@ -605,5 +619,98 @@ func compareList(defMap map[string]string, received any, expected any, ctx compa
 	}
 
 	// We see them as a match...
+	return nil
+}
+
+func zipCompare(defMap map[string]string, resultStr string) error {
+	expPath, ok := defMap["PATH"]
+	if !ok {
+		return errors.New("Expected PATH def for ZIPCMP")
+	}
+
+	// Unzip the result data so we can compare contents
+	resultDir, err := os.MkdirTemp("", "zipCompareData")
+	if err != nil {
+		return err
+	}
+
+	resultName := "resultZip"
+	resultZipPath := filepath.Join(resultDir, resultName+".zip")
+	// Result is base64 encoded... for some reason...
+	zipData, err := base64.StdEncoding.DecodeString(resultStr)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(resultZipPath, zipData, 0777)
+	if err != nil {
+		return err
+	}
+
+	resultUnzipDir := filepath.Join(resultDir, resultName)
+	resultFiles, err := utils.UnzipDirectory(resultZipPath, resultUnzipDir, false)
+	if err != nil {
+		return err
+	}
+
+	// Compare the output files with what's in our expected dir
+	fs := fileaccess.FSAccess{}
+	expFiles, err := fs.ListObjects(expPath, "")
+	if err != nil {
+		return err
+	}
+
+	if len(resultFiles) != len(expFiles) {
+		return fmt.Errorf("Expected %v files, unzipped %v files", len(expFiles), len(resultFiles))
+	}
+
+	// For now, this only works for the simple case of one file to compare! This is because the resultant file name might include
+	// an id in it so won't match the expected file exactly, so if there's only one file, we compare that and we're done
+	// but if there are multiple files we'll need more information to match the result vs expected file.
+	if len(resultFiles) != 1 {
+		return fmt.Errorf("For now, wstestlib only supports comparing zip outputs if there is just one file in the zip file.")
+	}
+
+	resultBytes, err := os.ReadFile(resultFiles[0])
+	if err != nil {
+		return fmt.Errorf("Failed to open result file from zip. Name: %v. Error: %v", resultFiles[0], err)
+	}
+
+	expFilePath := filepath.Join(expPath, expFiles[0])
+	expBytes, err := os.ReadFile(expFilePath)
+	if err != nil {
+		return fmt.Errorf("Failed to open expected file for compare. Name: %v. Error: %v", expFilePath, err)
+	}
+
+	if len(expBytes) != len(resultBytes) {
+		return fmt.Errorf("Expected data does not match result data for file: %v", resultFiles[0])
+	}
+
+	expStr := string(expBytes)
+	resultStrData := string(resultBytes)
+
+	// If we were told how many lines to skip in the comparison, do it
+	compareStartLine := 0
+	skipStr, ok := defMap["SKIPCSVLINES"]
+	if ok {
+		var convErr error
+		compareStartLine, convErr = strconv.Atoi(skipStr)
+		if convErr != nil {
+			return fmt.Errorf("SKIPCSVLINES contained invalid value: %v", skipStr)
+		}
+	}
+
+	expStrLines := strings.Split(expStr, "\n")
+	resultStrLines := strings.Split(resultStrData, "\n")
+
+	for c, expLine := range expStrLines {
+		if c < compareStartLine {
+			continue
+		}
+
+		if expLine != resultStrLines[c] {
+			return fmt.Errorf("ZipCompare failed for expected file: %v, result file: %v at expected file line %v.\nExpected \"%v\"\nResult   \"%v\"", expFilePath, resultFiles[0], c, expLine, resultStrLines[c])
+		}
+	}
+
 	return nil
 }

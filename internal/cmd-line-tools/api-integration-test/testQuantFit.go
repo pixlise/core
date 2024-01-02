@@ -1,7 +1,7 @@
 package main
 
 import (
-	b64 "encoding/base64"
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -20,7 +20,7 @@ func testQuantFit(apiHost string) {
 		Pass: test1Password,
 	})
 
-	exp64 := b64.StdEncoding.EncodeToString([]byte("   PIQUANT 3.2.16-master  Normal_Combined_AllPoints\nEnergy (keV), meas, calc, bkg, sigma, residual, DetCE, Ti_K, Ca_K, Rh_K_coh, Rh_L_coh, Rh_K_inc, Pileup, Rh_L_coh_Lb1\n-0.0154067, 0, 0, 0, 1.41421, 0, 0, 0, 0, 0, 0, 0, 0, 0\n-0.0075045, 0, 0, 0, 1.41421, 0, 0, 0, 0, 0, 0, 0, 0, 0\n0.000397676, 0, 0, 0, 1.41421, 0, 0, 0, 0, 0, 0, 0, 0, 0"))
+	exp64 := base64.StdEncoding.EncodeToString([]byte("   PIQUANT 3.2.16-master  Normal_Combined_AllPoints\nEnergy (keV), meas, calc, bkg, sigma, residual, DetCE, Ti_K, Ca_K, Rh_K_coh, Rh_L_coh, Rh_K_inc, Pileup, Rh_L_coh_Lb1\n-0.0154067, 0, 0, 0, 1.41421, 0, 0, 0, 0, 0, 0, 0, 0, 0\n-0.0075045, 0, 0, 0, 1.41421, 0, 0, 0, 0, 0, 0, 0, 0, 0\n0.000397676, 0, 0, 0, 1.41421, 0, 0, 0, 0, 0, 0, 0, 0, 0"))
 
 	// Snip off any garbage at the end
 	for c := 0; c < 2; c++ {

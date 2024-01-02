@@ -219,7 +219,7 @@ func HandleScanDeleteReq(req *protos.ScanDeleteReq, hctx wsHelpers.HandlerContex
 	}
 
 	// Notify of our scan change
-	//hctx.Svcs.Notifier.SysNotifyScanChanged(req.ScanId)
+	hctx.Svcs.Notifier.SysNotifyScanChanged(req.ScanId)
 
 	return &protos.ScanDeleteResp{}, nil
 }
@@ -254,7 +254,7 @@ func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.Handler
 	}
 
 	// Notify of our scan change
-	//hctx.Svcs.Notifier.SysNotifyScanChanged(req.ScanId)
+	hctx.Svcs.Notifier.SysNotifyScanChanged(req.ScanId)
 
 	return &protos.ScanMetaWriteResp{}, nil
 }
@@ -525,7 +525,7 @@ func (i *importUpdater) sendReimportUpdate(status *protos.JobStatus) {
 
 	if status.Status == protos.JobStatus_COMPLETE && status.EndUnixTimeSec > 0 {
 		// Notify of our scan change
-		//i.notifier.SysNotifyScanChanged(i.scanIdImported)
+		i.notifier.SysNotifyScanChanged(i.scanIdImported)
 	}
 }
 
@@ -558,6 +558,6 @@ func (i *importUpdater) sendImportUpdate(status *protos.JobStatus) {
 		}
 
 		// Notify of our scan change
-		//i.notifier.SysNotifyScanChanged(i.scanIdImported)
+		i.notifier.SysNotifyScanChanged(i.scanIdImported)
 	}
 }

@@ -54,6 +54,9 @@ func HandleQuantDeleteReq(req *protos.QuantDeleteReq, hctx wsHelpers.HandlerCont
 		hctx.Svcs.Log.Errorf("Failed to delete files from S3 when deleting quant: %v. File errors:\n%v", req.QuantId, strings.Join(errors, "\n"))
 	}
 
+	// Notify of the change
+	hctx.Svcs.Notifier.SysNotifyQuantChanged(req.QuantId)
+
 	return &protos.QuantDeleteResp{}, nil
 }
 

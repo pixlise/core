@@ -96,7 +96,7 @@ func testQuantCreate(apiHost string) {
 
 			now := time.Now().Format(timeFormat)
 			fmt.Printf(" %v   Quantify [dataset: %v, quant name: %v] with config: %v, PMC count: %v\n", now, datasetID, quantNames[i], detectorConfig[i], len(pmcList[i]))
-			runQuantification(i, apiHost, test1Username, test1Password, datasetID, pmcList[i], elementList, detectorConfig[i], quantNames[i], expectedFinalState[i])
+			runQuantificationTest(i, apiHost, test1Username, test1Password, datasetID, pmcList[i], elementList, detectorConfig[i], quantNames[i], expectedFinalState[i])
 		}(i, datasetID)
 	}
 
@@ -114,7 +114,7 @@ func testQuantCreate(apiHost string) {
 	fmt.Printf("---------------------------------------------------------\n\n")
 }
 
-func runQuantification(idx int, apiHost string, user string, pass string,
+func runQuantificationTest(idx int, apiHost string, user string, pass string,
 	scanId string, pmcList []int32, elementList []string, detectorConfig string, quantName string, expectedFinalState string) {
 	const maxRunTimeSec = 180
 
@@ -231,9 +231,17 @@ func runQuantification(idx int, apiHost string, user string, pass string,
 	if expectedFinalState == "COMPLETE" {
 		quantId := wstestlib.GetIdCreated(fmt.Sprintf("quantCreate%v", idx+1))
 
+		// Export the CSV
+		usr.AddSendReqAction(fmt.Sprintf("Export quant %v (should work)", quantName),
+			fmt.Sprintf(`{"exportFilesReq":{ "exportTypes": ["EDT_QUANT_CSV"], "quantId": "%v" }}`, quantId),
+			fmt.Sprintf(`{"msgId":2,"status":"WS_OK", "exportFilesResp":{
+				"zipData": "${ZIPCMP,SKIPCSVLINES=0,PATH=./test-files/quant-exp-output/%v}"
+			}}`, idx+1),
+		)
+
 		usr.AddSendReqAction(fmt.Sprintf("Delete quant %v (should work)", quantName),
 			fmt.Sprintf(`{"quantDeleteReq":{"quantId": "%v" }}`, quantId),
-			`{"msgId":2,"status":"WS_OK", "quantDeleteResp":{}}`,
+			`{"msgId":3,"status":"WS_OK", "quantDeleteResp":{}}`,
 		)
 
 		usr.CloseActionGroup([]string{}, 5000)

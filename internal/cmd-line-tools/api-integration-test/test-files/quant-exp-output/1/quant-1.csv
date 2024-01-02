@@ -1,0 +1,10 @@
+PIQUANT version: registry.gitlab.com/pixlise/piquant/runner:3.2.16 DetectorConfig: PIXL/PiquantConfigs/v5
+PMC, CaO_%, TiO2_%, CaO_int, TiO2_int, CaO_err, TiO2_err, total_counts, chisq, eVstart, eV/ch, filename, SCLK, RTT
+68, 0.0000, 0.0231, 0.0, 44.1, 0.0000, 0.0513, 26263, 2.34, -11.8, 7.9476, Normal_Combined, 0, 0
+69, 0.0016, 0.0000, 2.5, 0.0, 0.0104, 0.0000, 25827, 2.12, -11.8, 7.9410, Normal_Combined, 0, 0
+70, 0.0000, 0.0119, 0.0, 22.8, 0.0000, 0.0325, 25517, 2.04, -11.8, 7.9226, Normal_Combined, 0, 0
+71, 0.0220, 0.0349, 39.6, 39.8, 0.0497, 0.0648, 23847, 1.82, -25.0, 7.9326, Normal_Combined, 0, 0
+72, 0.0032, 0.0460, 6.7, 78.6, 0.0120, 0.0657, 22944, 1.62, -11.8, 7.8700, Normal_Combined, 0, 0
+73, 0.0000, 0.0693, 0.8, 132.7, 0.0000, 0.0862, 21736, 1.24, -11.8, 7.9226, Normal_Combined, 0, 0
+74, 0.0009, 0.0191, 2.0, 33.6, 0.0069, 0.0456, 20858, 1.21, -11.8, 7.9226, Normal_Combined, 0, 0
+75, 0.0000, 0.0126, 0.0, 24.2, 0.0000, 0.0338, 20194, 1.17, -11.8, 7.9601, Normal_Combined, 0, 0

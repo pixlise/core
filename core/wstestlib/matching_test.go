@@ -46,6 +46,8 @@ func Example_parseDefinitions() {
 	fmt.Println(parseDefinitions("${hello-"))
 	fmt.Println(parseDefinitions("${}"))
 	fmt.Println(parseDefinitions("no tokens!"))
+	fmt.Println(parseDefinitions("hello${LIST,MINLENGTH=4}"))
+	fmt.Println(parseDefinitions("hello${ZIPCMP,PATH=some/path/file.csv}"))
 
 	// Output:
 	// map[USERID:]   <nil>
@@ -55,6 +57,8 @@ func Example_parseDefinitions() {
 	// map[]   failed to find closing token for "}" in "${hello-"
 	// map[]   <nil>
 	// map[] no tokens!  <nil>
+	// map[LIST: MINLENGTH:4] hello  <nil>
+	// map[PATH:some/path/file.csv ZIPCMP:] hello  <nil>
 }
 
 func Example_compareExpectedString() {
