@@ -216,6 +216,7 @@ func watchJob(jobId string, watchUntilUnixSec uint32, db *mongo.Database, logger
 	}
 
 	activeJobs[jobId] = false
+	logger.Infof(">> Finish watching job: %v...", jobId)
 }
 
 func readJobStatus(jobId string, coll *mongo.Collection) (*protos.JobStatus, error) {

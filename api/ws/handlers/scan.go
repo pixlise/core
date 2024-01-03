@@ -305,7 +305,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 
 	formats := []string{"jpl-breadboard", "sbu-breadboard", "pixl-em"}
 	if !utils.ItemInSlice(req.Format, formats) {
-		return nil, fmt.Errorf("Unexpected format: \"%v\"", req.Format)
+		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Unexpected format: \"%v\"", req.Format))
 	}
 
 	s3PathStart := path.Join(filepaths.DatasetUploadRoot, datasetID)
@@ -322,7 +322,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	if len(existingPaths) > 0 {
 		err = fmt.Errorf("Dataset ID already exists: %v", datasetID)
 		logger.Errorf("%v", err)
-		return nil, err
+		return nil, errorwithstatus.MakeBadRequestError(err)
 	}
 
 	// Validate zip contents matches the format we were given

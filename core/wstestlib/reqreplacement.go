@@ -1,6 +1,10 @@
 package wstestlib
 
-import "fmt"
+import (
+	"encoding/base64"
+	"fmt"
+	"os"
+)
 
 // Replaces anything in the request that needs replacing. At time of writing
 // this only involves the ability to use $IDLOAD=name$, where we look up the
@@ -21,18 +25,31 @@ func doReqReplacements(req string, savedItemLookup map[string]string) (string, e
 		} else if len(defMap) == 1 {
 			// Process this item
 			for key, value := range defMap {
-				if key != "IDLOAD" {
-					return "", fmt.Errorf("Unknown definition used on request message: %v", key)
-				}
-				if len(value) <= 0 {
-					return "", fmt.Errorf("IDLOAD: Missing replacement id name: %v", key)
-				}
+				if key == "IDLOAD" {
+					if len(value) <= 0 {
+						return "", fmt.Errorf("IDLOAD: Missing replacement id name")
+					}
 
-				if replaceWith, ok := savedItemLookup[value]; !ok {
-					return "", fmt.Errorf("IDLOAD: No replacement text named: %v for request message: %v", value, req)
+					if replaceWith, ok := savedItemLookup[value]; !ok {
+						return "", fmt.Errorf("IDLOAD: No replacement text named: %v for request message: %v", value, req)
+					} else {
+						// Found it, do the replacement!
+						reqResult = pre + replaceWith + post
+					}
+				} else if key == "FILEBYTES" {
+					if len(value) <= 0 {
+						return "", fmt.Errorf("FILEBYTES: Missing file path")
+					}
+
+					// Read the file specified, include the bytes in the field encoded as base64
+					data, err := os.ReadFile(value)
+					if err != nil {
+						return "", fmt.Errorf(`Failed to read file into message field: %v`, req)
+					}
+
+					reqResult = pre + base64.StdEncoding.EncodeToString(data) + post
 				} else {
-					// Found it, do the replacement!
-					reqResult = pre + replaceWith + post
+					return "", fmt.Errorf("Unknown definition used on request message: %v", key)
 				}
 			}
 		} else {

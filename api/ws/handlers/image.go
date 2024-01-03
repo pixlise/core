@@ -177,7 +177,8 @@ func HandleImageSetDefaultReq(req *protos.ImageSetDefaultReq, hctx wsHelpers.Han
 		hctx.Svcs.Log.Errorf("ImageSetDefaultReq UpdateOne result had unexpected counts %+v id: %v", result, req.ScanId)
 	}
 
-	// TODO: Treat this like an image upload in terms of notification???
+	// Send out notifications so caches can be cleared
+	hctx.Svcs.Notifier.SysNotifyScanImagesChanged([]string{req.ScanId})
 
 	return &protos.ImageSetDefaultResp{}, nil
 }

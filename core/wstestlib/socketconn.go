@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -56,7 +57,17 @@ func (s *socketConn) connect(connectParams ConnectInfo, auth0Params Auth0Info) e
 	signal.Notify(s.interrupt, os.Interrupt)
 
 	// NOTE: not using wss for local...
-	wsUrl := url.URL{Scheme: "ws", Host: connectParams.Host, Path: "/ws", RawQuery: "token=" + token}
+	protocol := "ws"
+	hostUrl := connectParams.Host
+
+	if strings.HasPrefix(hostUrl, "https://") {
+		protocol = "wss"
+		hostUrl = strings.TrimPrefix(hostUrl, "https://")
+	} else {
+		hostUrl = strings.TrimPrefix(hostUrl, "http://")
+	}
+
+	wsUrl := url.URL{Scheme: protocol, Host: hostUrl, Path: "/ws", RawQuery: "token=" + token}
 	ws, resp, err := websocket.DefaultDialer.Dial(wsUrl.String(), nil)
 	if err != nil {
 		log.Fatalln("WS connection failed:", err)
@@ -167,14 +178,25 @@ func (s *socketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Au
 
 	// Get WS connection token
 	// NOTE: not using https for local...
-	wsConnectUrl := url.URL{Scheme: "http", Host: connectParams.Host, Path: "/ws-connect"}
+	protocol := "http"
+	hostUrl := connectParams.Host
+
+	if strings.HasPrefix(hostUrl, "https://") {
+		protocol = "https"
+		hostUrl = strings.TrimPrefix(hostUrl, "https://")
+	} else {
+		hostUrl = strings.TrimPrefix(hostUrl, "http://")
+	}
+
+	wsConnectUrl := url.URL{Scheme: protocol, Host: hostUrl, Path: "/ws-connect"}
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", wsConnectUrl.String(), nil)
-	req.Header.Set("Authorization", "Bearer "+s.JWT)
 	if err != nil {
 		return "", err
 	}
+
+	req.Header.Set("Authorization", "Bearer "+s.JWT)
 
 	resp, err := client.Do(req)
 	if err != nil {
