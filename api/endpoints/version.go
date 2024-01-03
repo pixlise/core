@@ -18,6 +18,9 @@
 package endpoints
 
 import (
+	"strings"
+
+	"github.com/pixlise/core/v3/api/piquant"
 	apiRouter "github.com/pixlise/core/v3/api/router"
 	"github.com/pixlise/core/v3/api/services"
 	"github.com/pixlise/core/v3/core/utils"
@@ -44,7 +47,7 @@ func getAPIVersion() string {
 	return ver
 }
 
-func getVersion() *protos.VersionResponse {
+func getVersion(svcs *services.APIServices) *protos.VersionResponse {
 	result := &protos.VersionResponse{}
 	result.Versions = []*protos.VersionResponse_Version{
 		{
@@ -53,42 +56,34 @@ func getVersion() *protos.VersionResponse {
 		},
 	}
 
-	/*
-		piquantVersion := ""
+	piquantVersion, err := piquant.GetPiquantVersion(svcs)
+	piquantVerString := "error"
+	if err == nil {
+		piquantVerString = piquantVersion.Version
 
-		ver, err := piquant.GetPiquantVersion(params.Svcs)
-		if err == nil {
-			parts := strings.Split(ver.Version, "/")
-			if len(parts) > 0 {
-				piquantVersion = parts[len(parts)-1]
-			}
-		} else {
-			return err
+		// If we can, just get the end
+		parts := strings.Split(piquantVerString, "/")
+		if len(parts) > 0 {
+			piquantVerString = parts[len(parts)-1]
 		}
+	}
 
-		if len(piquantVersion) > 0 {
-			ver := ComponentVersion{
-				Component:        "PIQUANT",
-				Version:          piquantVersion,
-				BuildUnixTimeSec: 0,
-			}
+	result.Versions = append(result.Versions, &protos.VersionResponse_Version{
+		Component: "PIQUANT",
+		Version:   piquantVerString,
+	})
 
-			result.Components = append(result.Components, ver)
-		} else {
-			return errors.New("Failed to determine configured PIQUANT version")
-		}
-	*/
 	return result
 }
 
 func GetVersionProtobuf(params apiRouter.ApiHandlerGenericPublicParams) error {
-	result := getVersion()
+	result := getVersion(params.Svcs)
 	utils.SendProtoBinary(params.Writer, result)
 	return nil
 }
 
 func GetVersionJSON(params apiRouter.ApiHandlerGenericPublicParams) error {
-	result := getVersion()
+	result := getVersion(params.Svcs)
 	utils.SendProtoJSON(params.Writer, result)
 	return nil
 }
