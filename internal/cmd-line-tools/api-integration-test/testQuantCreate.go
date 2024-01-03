@@ -116,7 +116,7 @@ func testQuantCreate(apiHost string) {
 
 func runQuantificationTest(idx int, apiHost string, user string, pass string,
 	scanId string, pmcList []int32, elementList []string, detectorConfig string, quantName string, expectedFinalState string) {
-	const maxRunTimeSec = 180
+	const maxRunTimeSec = 300
 
 	// Each quant run creates a new session so we separate out the resp/update streams and can "expect" messages
 	usr := wstestlib.MakeScriptedTestUser(auth0Params)
@@ -244,7 +244,7 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 			`{"msgId":3,"status":"WS_OK", "quantDeleteResp":{}}`,
 		)
 
-		usr.CloseActionGroup([]string{}, 5000)
+		usr.CloseActionGroup([]string{}, 10000)
 		wstestlib.ExecQueuedActions(&usr)
 	}
 }

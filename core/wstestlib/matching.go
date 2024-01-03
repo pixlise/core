@@ -682,7 +682,7 @@ func zipCompare(defMap map[string]string, resultStr string) error {
 	}
 
 	if len(expBytes) != len(resultBytes) {
-		return fmt.Errorf("Expected data does not match result data for file: %v", resultFiles[0])
+		return fmt.Errorf("Expected data does not match result data for file: %v, exp file: %v", resultFiles[0], expFilePath)
 	}
 
 	expStr := string(expBytes)
