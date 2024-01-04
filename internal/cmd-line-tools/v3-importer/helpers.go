@@ -21,18 +21,24 @@ func saveOwnershipItem(objectId string, objectType protos.ObjectType, editorUser
 		ObjectType:     objectType,
 		CreatorUserId:  editorUserId,
 		CreatedUnixSec: timeStampUnixSec,
-		//Viewers: ,
-		Editors: &protos.UserGroupList{},
+		Viewers: &protos.UserGroupList{
+			UserIds:  []string{},
+			GroupIds: []string{},
+		},
+		Editors: &protos.UserGroupList{
+			UserIds:  []string{},
+			GroupIds: []string{},
+		},
 	}
 
 	if len(editorUserId) > 0 {
-		ownerItem.Editors.UserIds = []string{editorUserId}
+		ownerItem.Editors.UserIds = append(ownerItem.Editors.UserIds, editorUserId)
 	}
 	if len(editorGroupId) > 0 {
-		ownerItem.Editors.GroupIds = []string{editorGroupId}
+		ownerItem.Editors.GroupIds = append(ownerItem.Editors.GroupIds, editorGroupId)
 	}
 	if len(viewerGroupId) > 0 {
-		ownerItem.Viewers = &protos.UserGroupList{GroupIds: []string{viewerGroupId}}
+		ownerItem.Viewers.GroupIds = append(ownerItem.Viewers.GroupIds, viewerGroupId)
 	}
 
 	result, err := dest.Collection(dbCollections.OwnershipName).InsertOne(context.TODO(), ownerItem)
@@ -64,7 +70,7 @@ func s3Copy(fs fileaccess.FileAccess, srcBucket string, srcPaths []string, dstBu
 		go func(srcBucket string, srcPath string, dstBucket string, dstPath string, failOnError bool) {
 			defer wg.Done()
 
-			bytes, err := fs.ReadObject(srcBucket, srcPath)
+			err := fs.CopyObject(srcBucket, srcPath, dstBucket, dstPaths[c])
 			if err != nil {
 				if failOnError {
 					fatalError(err)
@@ -73,16 +79,7 @@ func s3Copy(fs fileaccess.FileAccess, srcBucket string, srcPaths []string, dstBu
 				}
 			}
 
-			err = fs.WriteObject(dstBucket, dstPath, bytes)
-			if err != nil {
-				if failOnError {
-					fatalError(err)
-				} else {
-					log.Println(err)
-				}
-			}
-
-			fmt.Printf("  Wrote: s3://%v/%v\n", dstBucket, dstPath)
+			fmt.Printf("  Copied: s3://%v/%v --> s3://%v/%v\n", srcBucket, srcPath, dstBucket, dstPath)
 		}(srcBucket, srcPath, dstBucket, dstPaths[c], failOnError[c])
 	}
 

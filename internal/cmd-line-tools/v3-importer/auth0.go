@@ -37,7 +37,7 @@ func migrateAuth0UserGroups(auth0Domain string, auth0ClientId string, auth0Secre
 			}
 		}
 
-		strings.TrimPrefix(group, "access:")
+		group = strings.TrimPrefix(group, "access:")
 
 		dbGroup := &protos.UserGroupDB{
 			Id:   makeID(),
