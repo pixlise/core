@@ -129,9 +129,9 @@ func completeMarsViewerImportJob(jobId string, hctx wsHelpers.HandlerContext) {
 		// Find this in our bucket
 		ourCopyPath := ""
 		for _, ourWarpedImgPath := range coregResult.WarpedImageUrls {
-			if strings.HasSuffix(ourWarpedImgPath, warpedFileName) {
+			if strings.HasSuffix(ourWarpedImgPath.NewUri, warpedFileName) {
 				// We found it!
-				ourCopyPath = ourWarpedImgPath
+				ourCopyPath = ourWarpedImgPath.NewUri
 				break
 			}
 		}
