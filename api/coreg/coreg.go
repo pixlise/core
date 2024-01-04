@@ -22,4 +22,5 @@ type CoregJobResult struct {
 	MappedImageUrls  []CoregFile `json:"mappedImageUrls"`
 	WarpedImageUrls  []CoregFile `json:"warpedImageUrls"`
 	BaseImageUrl     CoregFile   `json:"baseImageUrl"`
+	AllCompleted     bool        `json:"allCompleted"`
 }
