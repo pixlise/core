@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -109,8 +111,41 @@ func completeMarsViewerImportJob(jobId string, hctx wsHelpers.HandlerContext) {
 	}
 
 	// At this point we should have everything ready to go - our own bucket should contain all images
-	// and we have the mars viewer export msg containing any points we require so lets import this image!
-	//coregResult.
+	// and we have the mars viewer export msg containing any points we require so lets import the warped images we received!
+	// Firstly, read the export from MV
+	marsViewerExport := protos.MarsViewerExport{}
+	INSERT_BUCKET_HERE := ""
+	err = hctx.Svcs.FS.ReadJSON(INSERT_BUCKET_HERE, coregResult.MarsViewerExportUrl, &marsViewerExport, false)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to read MarsViewer export json for: %v. Error: %v", jobId, err)
+		job.CompleteJob(jobId, false, msg, "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
+		return
+	}
+
+	// Loop through each warped image, read it, along with beam locations (in observation for it)
+	for _, warpedImg := range marsViewerExport.WarpedOverlayImages {
+		warpedFileName := path.Base(warpedImg.WarpedImageUrl)
+
+		// Find this in our bucket
+		ourCopyPath := ""
+		for _, ourWarpedImgPath := range coregResult.WarpedImageUrls {
+			if strings.HasSuffix(ourWarpedImgPath, warpedFileName) {
+				// We found it!
+				ourCopyPath = ourWarpedImgPath
+				break
+			}
+		}
+
+		if len(ourCopyPath) <= 0 {
+			msg := fmt.Sprintf("Failed to read warped image: %v for import job: %v", warpedFileName, jobId)
+			job.CompleteJob(jobId, false, msg, "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
+			return
+		}
+
+		// Grab any observations for it (?)
+
+		// Import this image into db along with beam locations, and image into S3
+	}
 
 	job.CompleteJob(jobId, true, "Import complete", "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
 }
