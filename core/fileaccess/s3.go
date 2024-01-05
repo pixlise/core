@@ -20,6 +20,7 @@ package fileaccess
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
 
@@ -214,4 +215,34 @@ func getPathsFromBucketContents(contents *s3.ListObjectsV2Output) []string {
 	}
 
 	return result
+}
+
+func GetBucketFromS3Url(url string) (string, error) {
+	trimmedUrl := strings.TrimPrefix(url, "s3://")
+	if trimmedUrl == url {
+		return "", fmt.Errorf("GetBucketFromS3Url parameter was not a valid S3 url: %v", url)
+	}
+
+	// Get the bit before the first slash, that's the bucket
+	slashPos := strings.Index(trimmedUrl, "/")
+	if slashPos <= 0 {
+		return "", fmt.Errorf("GetBucketFromS3Url failed to get bucket from S3 url: %v", url)
+	}
+
+	return trimmedUrl[0:slashPos], nil
+}
+
+func GetPathFromS3Url(url string) (string, error) {
+	trimmedUrl := strings.TrimPrefix(url, "s3://")
+	if trimmedUrl == url {
+		return "", fmt.Errorf("GetPathFromS3Url parameter was not a valid S3 url: %v", url)
+	}
+
+	// Get the bit before the first slash, that's the bucket
+	slashPos := strings.Index(trimmedUrl, "/")
+	if slashPos <= 0 {
+		return "", fmt.Errorf("GetPathFromS3Url failed to get path from S3 url: %v", url)
+	}
+
+	return trimmedUrl[slashPos+1:], nil
 }

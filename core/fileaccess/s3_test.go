@@ -78,3 +78,43 @@ func Example_S3ListingWithContinuation() {
 	// Output:
 	// <nil>, list: [Datasets/abc-123/summary.json Datasets/abc-123/node1.json Datasets/abc-123/params.json Datasets/abc-456/summary.json Datasets/abc-789/summary.json Datasets/abc-456/params.json Datasets/abc-456/output/combined.csv]
 }
+
+func Example_GetBucketFromS3Url() {
+	b, err := GetBucketFromS3Url("some/path/file.json")
+	fmt.Printf("%v|%v\n", b, err)
+
+	b, err = GetBucketFromS3Url("s3:///path/file.json")
+	fmt.Printf("%v|%v\n", b, err)
+
+	b, err = GetBucketFromS3Url("s3://bucket")
+	fmt.Printf("%v|%v\n", b, err)
+
+	b, err = GetBucketFromS3Url("s3://the_bucket/some/path.json")
+	fmt.Printf("%v|%v\n", b, err)
+
+	// Output:
+	// |GetBucketFromS3Url parameter was not a valid S3 url: some/path/file.json
+	// |GetBucketFromS3Url failed to get bucket from S3 url: s3:///path/file.json
+	// |GetBucketFromS3Url failed to get bucket from S3 url: s3://bucket
+	// the_bucket|<nil>
+}
+
+func Example_GetPathFromS3Url() {
+	p, err := GetPathFromS3Url("some/path/file.json")
+	fmt.Printf("%v|%v\n", p, err)
+
+	p, err = GetPathFromS3Url("s3:///path/file.json")
+	fmt.Printf("%v|%v\n", p, err)
+
+	p, err = GetPathFromS3Url("s3://bucket")
+	fmt.Printf("%v|%v\n", p, err)
+
+	p, err = GetPathFromS3Url("s3://the_bucket/some/path.json")
+	fmt.Printf("%v|%v\n", p, err)
+
+	// Output:
+	// |GetPathFromS3Url parameter was not a valid S3 url: some/path/file.json
+	// |GetPathFromS3Url failed to get path from S3 url: s3:///path/file.json
+	// |GetPathFromS3Url failed to get path from S3 url: s3://bucket
+	// some/path.json|<nil>
+}

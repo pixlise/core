@@ -14,6 +14,7 @@ import (
 	"github.com/pixlise/core/v3/api/job"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
+	"github.com/pixlise/core/v3/core/fileaccess"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -97,16 +98,14 @@ func completeMarsViewerImportJob(jobId string, hctx wsHelpers.HandlerContext) {
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.CoregJobCollection)
 	dbResult := coll.FindOne(ctx, bson.M{"_id": jobId}, options.FindOne())
 	if dbResult.Err() != nil {
-		msg := fmt.Sprintf("Failed to find Coreg Job completion record for: %v. Error: %v", jobId, dbResult.Err())
-		job.CompleteJob(jobId, false, msg, "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
+		failJob(fmt.Sprintf("Failed to find Coreg Job completion record for: %v. Error: %v", jobId, dbResult.Err()), jobId, hctx)
 		return
 	}
 
 	coregResult := CoregJobResult{}
 	err := dbResult.Decode(&coregResult)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to decode Coreg Job completion record for: %v. Error: %v", jobId, err)
-		job.CompleteJob(jobId, false, msg, "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
+		failJob(fmt.Sprintf("Failed to decode Coreg Job completion record for: %v. Error: %v", jobId, err), jobId, hctx)
 		return
 	}
 
@@ -114,8 +113,19 @@ func completeMarsViewerImportJob(jobId string, hctx wsHelpers.HandlerContext) {
 	// and we have the mars viewer export msg containing any points we require so lets import the warped images we received!
 	// Firstly, read the export from MV
 	marsViewerExport := protos.MarsViewerExport{}
-	INSERT_BUCKET_HERE := ""
-	err = hctx.Svcs.FS.ReadJSON(INSERT_BUCKET_HERE, coregResult.MarsViewerExportUrl, &marsViewerExport, false)
+	mvBucket, err := fileaccess.GetBucketFromS3Url(coregResult.MarsViewerExportUrl)
+	if err != nil {
+		failJob(fmt.Sprintf("Failed to read Coreg Job files for: %v. Error: %v", jobId, err), jobId, hctx)
+		return
+	}
+
+	mvPath, err := fileaccess.GetPathFromS3Url(coregResult.MarsViewerExportUrl)
+	if err != nil {
+		failJob(fmt.Sprintf("Failed to read Coreg Job files for: %v. Error: %v", jobId, err), jobId, hctx)
+		return
+	}
+
+	err = hctx.Svcs.FS.ReadJSON(mvBucket, mvPath, &marsViewerExport, false)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to read MarsViewer export json for: %v. Error: %v", jobId, err)
 		job.CompleteJob(jobId, false, msg, "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
@@ -137,8 +147,7 @@ func completeMarsViewerImportJob(jobId string, hctx wsHelpers.HandlerContext) {
 		}
 
 		if len(ourCopyPath) <= 0 {
-			msg := fmt.Sprintf("Failed to read warped image: %v for import job: %v", warpedFileName, jobId)
-			job.CompleteJob(jobId, false, msg, "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
+			failJob(fmt.Sprintf("Failed to read warped image: %v for import job: %v", warpedFileName, jobId), jobId, hctx)
 			return
 		}
 
@@ -148,4 +157,8 @@ func completeMarsViewerImportJob(jobId string, hctx wsHelpers.HandlerContext) {
 	}
 
 	job.CompleteJob(jobId, true, "Import complete", "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
+}
+
+func failJob(errMsg string, jobId string, hctx wsHelpers.HandlerContext) {
+	job.CompleteJob(jobId, false, errMsg, "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
 }
