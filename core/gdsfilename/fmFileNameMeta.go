@@ -196,6 +196,16 @@ func ParseFileName(fileName string) (FileNameMeta, error) {
 	return result, nil
 }
 
+func MakeComparableName(fileName string) string {
+	if len(fileName) != 58 || fileName[19:20] != "_" {
+		return ""
+	}
+
+	// Blank out the ProdType, version and the extension. This way we can compare images as strings
+	// even though they went through different parts of the pipeline and came out in different formats
+	return fileName[0:23] + "___" + fileName[26:48] + "___" + fileName[51:52] + "__.___"
+}
+
 // Run through all file names, return a map of file name->parsed meta data for the latest
 // files in the list. This is determined by looking at the versionStr and SCLK fields.
 // The "latest" file has the highest version, AND lowest SCLK value.

@@ -166,6 +166,26 @@ func Example_parseFileName() {
 	// SOL=0614|<nil>
 }
 
+func Example_MakeComparableName() {
+	m := MakeComparableName("file.txt")
+	fmt.Printf("%v\n", m)
+
+	m = MakeComparableName("PSFFD077T0637741109E000RPMAN001003600098356100640AAJ01.CSV")
+	fmt.Printf("%v\n", m)
+
+	m = MakeComparableName("PS__D077T0637741109_000RPM_N001003600098356100640__J01.CSV")
+	fmt.Printf("%v\n", m)
+
+	m = MakeComparableName("PCW_0920_0748651385_000FDR_N04500003226342450005075J01.IMG")
+	fmt.Printf("%v\n", m)
+
+	// Output:
+	//
+	//
+	// PS__D077T0637741109_000____N00100360009835610064___J__.___
+	// PCW_0920_0748651385_000____N04500003226342450005___J__.___
+}
+
 func Example_stringFileName() {
 	name := "PS__D077T0637741109_000RPM_N001003600098356100640__J01.CSV"
 	m, e := ParseFileName(name)
