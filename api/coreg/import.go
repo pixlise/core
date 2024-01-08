@@ -48,8 +48,8 @@ func StartCoregImport(triggerUrl string, hctx wsHelpers.HandlerContext) (string,
 		return "", returnErr
 	}
 
-	completeMarsViewerImportJob("coreg-9un1y0fv2gszftw3", hctx)
-	return "", nil
+	// completeMarsViewerImportJob("coreg-9un1y0fv2gszftw3", hctx)
+	// return "", nil
 
 	// We can now trigger the lambda
 	// NOTE: here we build the same structure that triggered us, but we exclude the points data so we don't exceed
