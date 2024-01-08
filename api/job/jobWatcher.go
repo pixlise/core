@@ -109,6 +109,8 @@ func CompleteJob(jobId string, success bool, message string, outputFilePath stri
 		status = protos.JobStatus_ERROR
 	}
 
+	logger.Infof("Job: %v completed with status: %v, message: %v", jobId, status.String(), message)
+
 	now := uint32(ts.GetTimeNowSec())
 
 	ctx := context.TODO()
@@ -146,7 +148,7 @@ func CompleteJob(jobId string, success bool, message string, outputFilePath stri
 	if replaceResult.MatchedCount != 1 && replaceResult.UpsertedCount != 1 {
 		logger.Errorf("CompleteJob result had unexpected counts %+v id: %v", replaceResult, jobId)
 	} else {
-		logger.Infof("UpdateJob: %v with status %v, message: %v", jobId, protos.JobStatus_Status_name[int32(status.Number())], message)
+		logger.Infof("CompleteJob: %v with status %v, message: %v", jobId, protos.JobStatus_Status_name[int32(status.Number())], message)
 	}
 
 	activeJobs[jobId] = false

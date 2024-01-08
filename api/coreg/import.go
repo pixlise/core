@@ -1,16 +1,20 @@
 package coreg
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/pixlise/core/v3/api/dbCollections"
+	"github.com/pixlise/core/v3/api/filepaths"
 	"github.com/pixlise/core/v3/api/job"
 	"github.com/pixlise/core/v3/api/ws/wsHelpers"
 	"github.com/pixlise/core/v3/core/errorwithstatus"
@@ -19,13 +23,11 @@ import (
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func StartCoregImport(triggerUrl string, hctx wsHelpers.HandlerContext) (string, error) {
-	completeMarsViewerImportJob("coreg-9un1y0fv2gszftw3", hctx)
-	return "", nil
-
 	if len(triggerUrl) <= 0 {
 		return "", errorwithstatus.MakeBadRequestError(errors.New("MarsViewerExport trigger Url is empty"))
 	}
@@ -45,6 +47,9 @@ func StartCoregImport(triggerUrl string, hctx wsHelpers.HandlerContext) (string,
 		hctx.Svcs.Log.Errorf("%v", returnErr)
 		return "", returnErr
 	}
+
+	completeMarsViewerImportJob("coreg-9un1y0fv2gszftw3", hctx)
+	return "", nil
 
 	// We can now trigger the lambda
 	// NOTE: here we build the same structure that triggered us, but we exclude the points data so we don't exceed
@@ -114,6 +119,8 @@ func completeMarsViewerImportJob(jobId string, hctx wsHelpers.HandlerContext) {
 		return
 	}
 
+	hctx.Svcs.Log.Infof("marsViewer import job %v importing from %v", jobId, coregResult.MarsViewerExportUrl)
+
 	// At this point we should have everything ready to go - our own bucket should contain all images
 	// and we have the mars viewer export msg containing any points we require so lets import the warped images we received!
 	// Firstly, read the export from MV
@@ -170,7 +177,7 @@ func completeMarsViewerImportJob(jobId string, hctx wsHelpers.HandlerContext) {
 		err = importNewImage(jobId, &coregResult, marsViewerExport, hctx)
 	} else {
 		// We are importing images/observations warped TO the base image in question
-		err = importImageWarpedToBase(jobId, ourBaseImage, ourBaseImageItem, baseRTT, &coregResult, marsViewerExport, hctx)
+		err = importWarpedToBase(jobId, ourBaseImage, ourBaseImageItem, baseRTT, &coregResult, marsViewerExport, hctx)
 	}
 
 	if err != nil {
@@ -185,7 +192,7 @@ func importNewImage(jobId string, coregResult *CoregJobResult, marsViewerExport 
 	return errors.New("Not implemented yet")
 }
 
-func importImageWarpedToBase(jobId string, baseImage string, ourBaseImageItem *protos.ScanImage, baseRtt string, coregResult *CoregJobResult, marsViewerExport *protos.MarsViewerExport, hctx wsHelpers.HandlerContext) error {
+func importWarpedToBase(jobId string, baseImage string, ourBaseImageItem *protos.ScanImage, baseRtt string, coregResult *CoregJobResult, marsViewerExport *protos.MarsViewerExport, hctx wsHelpers.HandlerContext) error {
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 
@@ -205,11 +212,18 @@ func importImageWarpedToBase(jobId string, baseImage string, ourBaseImageItem *p
 		return fmt.Errorf("Coreg import job %v failed to decode beams for base image %v. Error: %v", jobId, baseImage, err)
 	}
 
-	preProcessBeamCount := len(baseImageBeams.LocationPerScan)
+	locationsPerScan := map[string][]*protos.Coordinate2D{}
+	for _, locForScan := range baseImageBeams.LocationPerScan {
+		locationsPerScan[locForScan.ScanId] = locForScan.Locations
+	}
+
+	beamsChanged := false
 	associatedScanIds := ourBaseImageItem.AssociatedScanIds
 
 	for _, obs := range marsViewerExport.Observations {
 		if len(obs.TranslatedPoints) > 0 {
+			hctx.Svcs.Log.Infof("marsViewer import job %v importing observation for %v with %v points", jobId, obs.ContextImageUrl, len(obs.TranslatedPoints))
+
 			// We have new beam locations, find out which RTT this is for
 			rtt, _, err := getRTTAndMeta(obs.ContextImageUrl)
 			if err != nil {
@@ -224,7 +238,9 @@ func importImageWarpedToBase(jobId string, baseImage string, ourBaseImageItem *p
 			// Ensure we don't have any points already stored for this RTT
 			for _, locStored := range baseImageBeams.LocationPerScan {
 				if locStored.ScanId == rtt {
-					return fmt.Errorf("Coreg import job %v detected beam locations already stored for image %v and scan %v", jobId, baseImage, rtt)
+					// Print out the fact that we'll be replacing it...
+					hctx.Svcs.Log.Infof("Coreg is replacing beam locations for scan %v, image %v in job %v", rtt, baseImage, jobId)
+					//return fmt.Errorf("Coreg import job %v detected beam locations already stored for image %v and scan %v", jobId, baseImage, rtt)
 				}
 			}
 
@@ -267,10 +283,8 @@ func importImageWarpedToBase(jobId string, baseImage string, ourBaseImageItem *p
 			}
 
 			// Store for this RTT
-			baseImageBeams.LocationPerScan = append(baseImageBeams.LocationPerScan, &protos.ImageLocationsForScan{
-				ScanId:    rtt,
-				Locations: coords,
-			})
+			locationsPerScan[rtt] = coords
+			beamsChanged = true
 
 			// Also store an associated scan id
 			if !utils.ItemInSlice(rtt, associatedScanIds) {
@@ -280,14 +294,19 @@ func importImageWarpedToBase(jobId string, baseImage string, ourBaseImageItem *p
 	}
 
 	// If we have added beams, save
-	if preProcessBeamCount != len(baseImageBeams.LocationPerScan) {
+	if beamsChanged {
+		baseImageBeams.LocationPerScan = []*protos.ImageLocationsForScan{}
+		for rtt, coords := range locationsPerScan {
+			baseImageBeams.LocationPerScan = append(baseImageBeams.LocationPerScan, &protos.ImageLocationsForScan{ScanId: rtt, Locations: coords})
+		}
+
 		// TODO: Transaction for these 2?
 		result, err := coll.ReplaceOne(ctx, filter, &baseImageBeams, options.Replace())
 		if err != nil {
 			return fmt.Errorf("Coreg import job %v failed to save new beam locations: %v", jobId, err)
 		}
 
-		if result.ModifiedCount != 1 {
+		if result.MatchedCount != 1 {
 			hctx.Svcs.Log.Errorf("Coreg import job %v didn't insert new beam locations: %+v", jobId, result)
 		}
 
@@ -300,36 +319,105 @@ func importImageWarpedToBase(jobId string, baseImage string, ourBaseImageItem *p
 			return fmt.Errorf("Coreg import job %v failed to update image associated scans list: %v", jobId, baseImage)
 		}
 
-		if updImgResult.ModifiedCount != 1 {
-			hctx.Svcs.Log.Errorf("Coreg import job %v didn't update image associated scans list: %+v", jobId, result)
+		if updImgResult.MatchedCount != 1 {
+			hctx.Svcs.Log.Errorf("Coreg import job %v didn't update image associated scans list: %+v", jobId, updImgResult)
 		}
 	}
 
-	/*
-		// Loop through each warped image, read it, along with beam locations (in observation for it)
-		for _, warpedImg := range marsViewerExport.WarpedOverlayImages {
-			warpedFileName := path.Base(warpedImg.WarpedImageUrl)
-
-			// Find this in our bucket
-			ourCopyPath := ""
-			for _, ourWarpedImgPath := range coregResult.WarpedImageUrls {
-				if strings.HasSuffix(ourWarpedImgPath.NewUri, warpedFileName) {
-					// We found it!
-					ourCopyPath = ourWarpedImgPath.NewUri
-					break
-				}
+	// Loop through each warped image, read it, along with beam locations (in observation for it)
+	for _, item := range coregResult.WarpedImageUrls {
+		if item.Completed {
+			if err := importWarpedImage(item.NewUri, baseRtt, baseImage, hctx); err != nil {
+				return err
 			}
-
-			if len(ourCopyPath) <= 0 {
-				failJob(fmt.Sprintf("Failed to read warped image: %v for import job: %v", warpedFileName, jobId), jobId, hctx)
-				return
-			}
-
-			// Grab any observations for it (?)
-
-			// Import this image into db along with beam locations, and image into S3
 		}
-	*/
+	}
+
+	return nil
+}
+
+// NOTE: we expect URLs like this:
+// s3://m20-sstage-ids-crisp-imgcoregi/crisp_data/ICM-PCW_0920_0748651385_000RAS_N045000032263424500050-SC3_0921_0748732957_027RAS_N0450000SRLC11373_0000-0-C02-J01.VIC/67e92f8ba7cd38d07d969f910db5d1d3/crisp_data/ods/surface/sol/00921/ids/rdr/shrlc/warped-zoom_4.478153138946561-win_519_40_1232_1183-SN100D0-SC3_0921_0748732957_027RAS_N0450000SRLC11373_0000LMJ01-A.png
+
+func importWarpedImage(warpedImageUrl string, rttWarpedTo string, baseImage string, hctx wsHelpers.HandlerContext) error {
+	hctx.Svcs.Log.Infof("importWarpedImage: %v for RTT %v, image: %v...", warpedImageUrl, rttWarpedTo, baseImage)
+
+	// We need to:
+	// Add an item to DB for this image
+	// Add file to S3
+	warpedFileName := path.Base(warpedImageUrl)
+
+	// Expecting file name like this:
+	// warped-zoom_4.478153138946561-win_519_40_1232_1183-SN100D0-SC3_0921_0748732957_027RAS_N0450000SRLC11373_0000LMJ01-A.png
+
+	// Read the bytes
+	warpedSrcBucket, err := fileaccess.GetBucketFromS3Url(warpedImageUrl)
+	if err != nil {
+		return err
+	}
+	warpedSrcPath, err := fileaccess.GetPathFromS3Url(warpedImageUrl)
+	if err != nil {
+		return err
+	}
+
+	imgData, err := hctx.Svcs.FS.ReadObject(warpedSrcBucket, warpedSrcPath)
+	if err != nil {
+		return err
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(imgData))
+	if err != nil {
+		return err
+	}
+
+	matchInfo, err := readWarpedImageTransform(warpedFileName)
+	if err != nil {
+		return err
+	}
+
+	matchInfo.BeamImageFileName = baseImage
+
+	saveName := rttWarpedTo + "-" + warpedFileName
+	savePath := path.Join(rttWarpedTo, saveName)
+	scanImage := utils.MakeScanImage(
+		saveName,
+		savePath,
+		uint32(len(imgData)),
+		protos.ScanImageSource_SI_UPLOAD,
+		protos.ScanImagePurpose_SIP_VIEWING,
+		[]string{rttWarpedTo},
+		rttWarpedTo,
+		"",
+		matchInfo,
+		img)
+
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+
+	opt := options.Update().SetUpsert(true)
+	result, err := coll.UpdateByID(ctx, saveName, bson.D{{Key: "$set", Value: scanImage}}, opt)
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return errorwithstatus.MakeBadRequestError(fmt.Errorf("%v already exists", scanImage.Name))
+		}
+		return err
+	}
+
+	if result.MatchedCount != 1 {
+		hctx.Svcs.Log.Errorf("importWarpedImage failed to upsert DB image: %v. Result: %+v", scanImage.Name, result)
+	}
+
+	// Save the image to S3
+	s3Path := filepaths.GetImageFilePath(savePath)
+	err = hctx.Svcs.FS.WriteObject(hctx.Svcs.Config.DatasetsBucket, s3Path, imgData)
+	if err != nil {
+		// Failed to upload image data, so no point in having a DB entry now either...
+		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+		filter := bson.D{{"_id", saveName}}
+		delOpt := options.Delete()
+		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
+		return err
+	}
 
 	return nil
 }
@@ -375,4 +463,61 @@ func findImage(imageName string, imageRTT string, hctx wsHelpers.HandlerContext)
 	}
 
 	return "", nil, fmt.Errorf("Failed to find image: %v for scan %v", imageName, imageRTT)
+}
+
+// warped-zoom_4.478153138946561-win_519_40_1232_1183-SN100D0-SC3_0921_0748732957_027RAS_N0450000SRLC11373_0000LMJ01-A.png
+func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, error) {
+	parts := strings.Split(fileName, "-")
+
+	// Expecting:
+	// "warped"
+	// "zoom_<zoom info>"
+	// "win_<window info>"
+	// Don't know what SN100D0 is?
+	// And the original image file name
+	// Don't know what -A is though?
+	if len(parts) != 6 {
+		return nil, fmt.Errorf("Warped image name does not have expected components")
+	}
+
+	// Check each bit
+	if parts[0] != "warped" {
+		return nil, fmt.Errorf("Expected warped image name to start with warped-")
+	}
+
+	zoomPrefix := "zoom_"
+	if !strings.HasPrefix(parts[1], zoomPrefix) {
+		return nil, fmt.Errorf("Expected warped image name second part to contain zoom")
+	}
+
+	winPrefix := "win_"
+	if !strings.HasPrefix(parts[2], winPrefix) {
+		return nil, fmt.Errorf("Expected warped image name second part to contain window")
+	}
+
+	// Read the zoom and window
+	zoomStr := parts[1][len(zoomPrefix):] // Snipping number out of: zoom_4.478153138946561
+	zoom, err := strconv.ParseFloat(zoomStr, 64)
+	if err != nil {
+		return nil, fmt.Errorf("Expected warped image zoom to contain a float, found: %v", zoomStr)
+	}
+
+	winPartsStr := strings.Split(parts[2][len(winPrefix):], "_") // Snipping numbers out of: win_519_40_1232_1183
+	winParts := []int{}
+	for c, n := range winPartsStr {
+		winNum, err := strconv.Atoi(n)
+		if err != nil {
+			return nil, fmt.Errorf("Expected warped image window value %v to contain a number, found: %v", c+1, n)
+		}
+
+		winParts = append(winParts, winNum)
+	}
+
+	// At this point we should have enough to reconstruct the transform as we interpret it
+	return &protos.ImageMatchTransform{
+		XOffset: float32(winParts[0]),
+		YOffset: float32(winParts[2]),
+		XScale:  float32(zoom),
+		YScale:  float32(zoom),
+	}, nil
 }

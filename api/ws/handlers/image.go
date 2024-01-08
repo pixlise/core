@@ -362,9 +362,7 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 		}
 	}
 
-	opt := options.InsertOne()
-
-	result, err := coll.InsertOne(ctx, scanImage, opt)
+	result, err := coll.InsertOne(ctx, scanImage, options.InsertOne())
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
 			return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("%v already exists", scanImage.Name))
@@ -374,7 +372,6 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 
 	if result.InsertedID != scanImage.Name {
 		return nil, fmt.Errorf("HandleImageUploadReq wrote id %v, got back %v", scanImage.Name, result.InsertedID)
-		// Not the end of the world... don't error out here
 	}
 
 	// Save the image to S3
