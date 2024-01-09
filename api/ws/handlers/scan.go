@@ -23,6 +23,7 @@ import (
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/protobuf/proto"
 )
@@ -560,4 +561,72 @@ func (i *importUpdater) sendImportUpdate(status *protos.JobStatus) {
 		// Notify of our scan change
 		i.notifier.SysNotifyScanChanged(i.scanIdImported)
 	}
+}
+
+func HandleScanAutoShareReq(req *protos.ScanAutoShareReq, hctx wsHelpers.HandlerContext) (*protos.ScanAutoShareResp, error) {
+	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, 50); err != nil {
+		return nil, err
+	}
+
+	// We don't check for permissions here...
+	filter := bson.M{"_id": req.Id}
+
+	opts := options.FindOne()
+	ctx := context.TODO()
+
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ScanAutoShareName)
+	result := coll.FindOne(ctx, filter, opts)
+	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			return nil, errorwithstatus.MakeNotFoundError(req.Id)
+		}
+		return nil, result.Err()
+	}
+
+	item := &protos.ScanAutoShareEntry{}
+	err := result.Decode(item)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.ScanAutoShareResp{
+		Entry: item,
+	}, nil
+}
+
+func HandleScanAutoShareWriteReq(req *protos.ScanAutoShareWriteReq, hctx wsHelpers.HandlerContext) (*protos.ScanAutoShareWriteResp, error) {
+	if err := wsHelpers.CheckStringField(&req.Entry.Id, "Id", 1, 50); err != nil {
+		return nil, err
+	}
+
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ScanAutoShareName)
+
+	// We don't check for permissions here...
+
+	// If no permissions to assign, delete it
+	if req.Entry.Editors == nil && req.Entry.Viewers == nil {
+		// Just delete here
+		filter := bson.M{"_id": req.Entry.Id}
+		delResult, err := coll.DeleteOne(ctx, filter, options.Delete())
+		if err != nil {
+			return nil, err
+		}
+
+		if delResult.DeletedCount != 1 {
+			hctx.Svcs.Log.Errorf("HandleScanAutoShareWriteReq: delete for %v failed: %+v", req.Entry.Id, delResult)
+		}
+	} else {
+		opts := options.Update().SetUpsert(true)
+		result, err := coll.UpdateByID(ctx, req.Entry.Id, bson.D{{Key: "$set", Value: req.Entry}}, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		if result.MatchedCount != 1 {
+			hctx.Svcs.Log.Errorf("HandleScanAutoShareWriteReq: write for %v failed: %+v", req.Entry.Id, result)
+		}
+	}
+
+	return &protos.ScanAutoShareWriteResp{}, nil
 }

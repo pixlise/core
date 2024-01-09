@@ -24,7 +24,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pixlise/core/v3/api/dataimport/internal/dataConvertModels"
 	"github.com/pixlise/core/v3/api/dataimport/internal/importerutils"
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/api/specialUserIds"
@@ -55,8 +54,8 @@ func initTest(testDir string, autoShareCreatorId string, autoShareCreatorGroupEd
 
 	// Insert an item if configured to
 	if len(autoShareCreatorId) > 0 {
-		item := dataConvertModels.AutoShareConfigItem{
-			Sharer: autoShareCreatorId,
+		item := protos.ScanAutoShareEntry{
+			Id: autoShareCreatorId,
 			Editors: &protos.UserGroupList{
 				GroupIds: []string{autoShareCreatorGroupEditor},
 			},

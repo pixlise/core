@@ -333,6 +333,188 @@ func (x *ScanUploadUpd) GetStatus() *JobStatus {
 	return nil
 }
 
+// Editing who to auto-share a scan with
+// requires(EDIT_SCAN)
+type ScanAutoShareReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *ScanAutoShareReq) Reset() {
+	*x = ScanAutoShareReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_scan_msgs_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ScanAutoShareReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScanAutoShareReq) ProtoMessage() {}
+
+func (x *ScanAutoShareReq) ProtoReflect() protoreflect.Message {
+	mi := &file_scan_msgs_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScanAutoShareReq.ProtoReflect.Descriptor instead.
+func (*ScanAutoShareReq) Descriptor() ([]byte, []int) {
+	return file_scan_msgs_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ScanAutoShareReq) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type ScanAutoShareResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Entry *ScanAutoShareEntry `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
+}
+
+func (x *ScanAutoShareResp) Reset() {
+	*x = ScanAutoShareResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_scan_msgs_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ScanAutoShareResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScanAutoShareResp) ProtoMessage() {}
+
+func (x *ScanAutoShareResp) ProtoReflect() protoreflect.Message {
+	mi := &file_scan_msgs_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScanAutoShareResp.ProtoReflect.Descriptor instead.
+func (*ScanAutoShareResp) Descriptor() ([]byte, []int) {
+	return file_scan_msgs_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ScanAutoShareResp) GetEntry() *ScanAutoShareEntry {
+	if x != nil {
+		return x.Entry
+	}
+	return nil
+}
+
+// requires(EDIT_SCAN)
+type ScanAutoShareWriteReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Entry *ScanAutoShareEntry `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
+}
+
+func (x *ScanAutoShareWriteReq) Reset() {
+	*x = ScanAutoShareWriteReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_scan_msgs_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ScanAutoShareWriteReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScanAutoShareWriteReq) ProtoMessage() {}
+
+func (x *ScanAutoShareWriteReq) ProtoReflect() protoreflect.Message {
+	mi := &file_scan_msgs_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScanAutoShareWriteReq.ProtoReflect.Descriptor instead.
+func (*ScanAutoShareWriteReq) Descriptor() ([]byte, []int) {
+	return file_scan_msgs_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ScanAutoShareWriteReq) GetEntry() *ScanAutoShareEntry {
+	if x != nil {
+		return x.Entry
+	}
+	return nil
+}
+
+type ScanAutoShareWriteResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *ScanAutoShareWriteResp) Reset() {
+	*x = ScanAutoShareWriteResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_scan_msgs_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ScanAutoShareWriteResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScanAutoShareWriteResp) ProtoMessage() {}
+
+func (x *ScanAutoShareWriteResp) ProtoReflect() protoreflect.Message {
+	mi := &file_scan_msgs_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScanAutoShareWriteResp.ProtoReflect.Descriptor instead.
+func (*ScanAutoShareWriteResp) Descriptor() ([]byte, []int) {
+	return file_scan_msgs_proto_rawDescGZIP(), []int{9}
+}
+
 // This should trigger a ScanListUpd to go out
 // requires(EDIT_SCAN)
 type ScanMetaWriteReq struct {
@@ -348,7 +530,7 @@ type ScanMetaWriteReq struct {
 func (x *ScanMetaWriteReq) Reset() {
 	*x = ScanMetaWriteReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_scan_msgs_proto_msgTypes[6]
+		mi := &file_scan_msgs_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -361,7 +543,7 @@ func (x *ScanMetaWriteReq) String() string {
 func (*ScanMetaWriteReq) ProtoMessage() {}
 
 func (x *ScanMetaWriteReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[6]
+	mi := &file_scan_msgs_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -374,7 +556,7 @@ func (x *ScanMetaWriteReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanMetaWriteReq.ProtoReflect.Descriptor instead.
 func (*ScanMetaWriteReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{6}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ScanMetaWriteReq) GetScanId() string {
@@ -407,7 +589,7 @@ type ScanMetaWriteResp struct {
 func (x *ScanMetaWriteResp) Reset() {
 	*x = ScanMetaWriteResp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_scan_msgs_proto_msgTypes[7]
+		mi := &file_scan_msgs_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -420,7 +602,7 @@ func (x *ScanMetaWriteResp) String() string {
 func (*ScanMetaWriteResp) ProtoMessage() {}
 
 func (x *ScanMetaWriteResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[7]
+	mi := &file_scan_msgs_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -433,7 +615,7 @@ func (x *ScanMetaWriteResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanMetaWriteResp.ProtoReflect.Descriptor instead.
 func (*ScanMetaWriteResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{7}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{11}
 }
 
 // Triggering a re-import, should publish a ScanListUpd to go out
@@ -451,7 +633,7 @@ type ScanTriggerReImportReq struct {
 func (x *ScanTriggerReImportReq) Reset() {
 	*x = ScanTriggerReImportReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_scan_msgs_proto_msgTypes[8]
+		mi := &file_scan_msgs_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -464,7 +646,7 @@ func (x *ScanTriggerReImportReq) String() string {
 func (*ScanTriggerReImportReq) ProtoMessage() {}
 
 func (x *ScanTriggerReImportReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[8]
+	mi := &file_scan_msgs_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -477,7 +659,7 @@ func (x *ScanTriggerReImportReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanTriggerReImportReq.ProtoReflect.Descriptor instead.
 func (*ScanTriggerReImportReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{8}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ScanTriggerReImportReq) GetScanId() string {
@@ -498,7 +680,7 @@ type ScanTriggerReImportResp struct {
 func (x *ScanTriggerReImportResp) Reset() {
 	*x = ScanTriggerReImportResp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_scan_msgs_proto_msgTypes[9]
+		mi := &file_scan_msgs_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -511,7 +693,7 @@ func (x *ScanTriggerReImportResp) String() string {
 func (*ScanTriggerReImportResp) ProtoMessage() {}
 
 func (x *ScanTriggerReImportResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[9]
+	mi := &file_scan_msgs_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -524,7 +706,7 @@ func (x *ScanTriggerReImportResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanTriggerReImportResp.ProtoReflect.Descriptor instead.
 func (*ScanTriggerReImportResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{9}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ScanTriggerReImportResp) GetJobId() string {
@@ -545,7 +727,7 @@ type ScanTriggerReImportUpd struct {
 func (x *ScanTriggerReImportUpd) Reset() {
 	*x = ScanTriggerReImportUpd{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_scan_msgs_proto_msgTypes[10]
+		mi := &file_scan_msgs_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -558,7 +740,7 @@ func (x *ScanTriggerReImportUpd) String() string {
 func (*ScanTriggerReImportUpd) ProtoMessage() {}
 
 func (x *ScanTriggerReImportUpd) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[10]
+	mi := &file_scan_msgs_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -571,7 +753,7 @@ func (x *ScanTriggerReImportUpd) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanTriggerReImportUpd.ProtoReflect.Descriptor instead.
 func (*ScanTriggerReImportUpd) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{10}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ScanTriggerReImportUpd) GetStatus() *JobStatus {
@@ -593,7 +775,7 @@ type ScanMetaLabelsAndTypesReq struct {
 func (x *ScanMetaLabelsAndTypesReq) Reset() {
 	*x = ScanMetaLabelsAndTypesReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_scan_msgs_proto_msgTypes[11]
+		mi := &file_scan_msgs_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -606,7 +788,7 @@ func (x *ScanMetaLabelsAndTypesReq) String() string {
 func (*ScanMetaLabelsAndTypesReq) ProtoMessage() {}
 
 func (x *ScanMetaLabelsAndTypesReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[11]
+	mi := &file_scan_msgs_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -619,7 +801,7 @@ func (x *ScanMetaLabelsAndTypesReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanMetaLabelsAndTypesReq.ProtoReflect.Descriptor instead.
 func (*ScanMetaLabelsAndTypesReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{11}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ScanMetaLabelsAndTypesReq) GetScanId() string {
@@ -641,7 +823,7 @@ type ScanMetaLabelsAndTypesResp struct {
 func (x *ScanMetaLabelsAndTypesResp) Reset() {
 	*x = ScanMetaLabelsAndTypesResp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_scan_msgs_proto_msgTypes[12]
+		mi := &file_scan_msgs_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -654,7 +836,7 @@ func (x *ScanMetaLabelsAndTypesResp) String() string {
 func (*ScanMetaLabelsAndTypesResp) ProtoMessage() {}
 
 func (x *ScanMetaLabelsAndTypesResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[12]
+	mi := &file_scan_msgs_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -667,7 +849,7 @@ func (x *ScanMetaLabelsAndTypesResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanMetaLabelsAndTypesResp.ProtoReflect.Descriptor instead.
 func (*ScanMetaLabelsAndTypesResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{12}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ScanMetaLabelsAndTypesResp) GetMetaLabels() []string {
@@ -697,7 +879,7 @@ type ScanDeleteReq struct {
 func (x *ScanDeleteReq) Reset() {
 	*x = ScanDeleteReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_scan_msgs_proto_msgTypes[13]
+		mi := &file_scan_msgs_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -710,7 +892,7 @@ func (x *ScanDeleteReq) String() string {
 func (*ScanDeleteReq) ProtoMessage() {}
 
 func (x *ScanDeleteReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[13]
+	mi := &file_scan_msgs_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -723,7 +905,7 @@ func (x *ScanDeleteReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanDeleteReq.ProtoReflect.Descriptor instead.
 func (*ScanDeleteReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{13}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ScanDeleteReq) GetScanId() string {
@@ -749,7 +931,7 @@ type ScanDeleteResp struct {
 func (x *ScanDeleteResp) Reset() {
 	*x = ScanDeleteResp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_scan_msgs_proto_msgTypes[14]
+		mi := &file_scan_msgs_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -762,7 +944,7 @@ func (x *ScanDeleteResp) String() string {
 func (*ScanDeleteResp) ProtoMessage() {}
 
 func (x *ScanDeleteResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[14]
+	mi := &file_scan_msgs_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -775,7 +957,7 @@ func (x *ScanDeleteResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanDeleteResp.ProtoReflect.Descriptor instead.
 func (*ScanDeleteResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{14}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{18}
 }
 
 type ScanListReq_MinMaxInt struct {
@@ -790,7 +972,7 @@ type ScanListReq_MinMaxInt struct {
 func (x *ScanListReq_MinMaxInt) Reset() {
 	*x = ScanListReq_MinMaxInt{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_scan_msgs_proto_msgTypes[16]
+		mi := &file_scan_msgs_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -803,7 +985,7 @@ func (x *ScanListReq_MinMaxInt) String() string {
 func (*ScanListReq_MinMaxInt) ProtoMessage() {}
 
 func (x *ScanListReq_MinMaxInt) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[16]
+	mi := &file_scan_msgs_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -866,43 +1048,56 @@ var file_scan_msgs_proto_rawDesc = []byte{
 	0x62, 0x49, 0x64, 0x22, 0x33, 0x0a, 0x0d, 0x53, 0x63, 0x61, 0x6e, 0x55, 0x70, 0x6c, 0x6f, 0x61,
 	0x64, 0x55, 0x70, 0x64, 0x12, 0x22, 0x0a, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x0a, 0x2e, 0x4a, 0x6f, 0x62, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73,
-	0x52, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x22, 0x62, 0x0a, 0x10, 0x53, 0x63, 0x61, 0x6e,
-	0x4d, 0x65, 0x74, 0x61, 0x57, 0x72, 0x69, 0x74, 0x65, 0x52, 0x65, 0x71, 0x12, 0x16, 0x0a, 0x06,
-	0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x63,
-	0x61, 0x6e, 0x49, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65,
-	0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x13, 0x0a, 0x11,
-	0x53, 0x63, 0x61, 0x6e, 0x4d, 0x65, 0x74, 0x61, 0x57, 0x72, 0x69, 0x74, 0x65, 0x52, 0x65, 0x73,
-	0x70, 0x22, 0x30, 0x0a, 0x16, 0x53, 0x63, 0x61, 0x6e, 0x54, 0x72, 0x69, 0x67, 0x67, 0x65, 0x72,
-	0x52, 0x65, 0x49, 0x6d, 0x70, 0x6f, 0x72, 0x74, 0x52, 0x65, 0x71, 0x12, 0x16, 0x0a, 0x06, 0x73,
-	0x63, 0x61, 0x6e, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x63, 0x61,
-	0x6e, 0x49, 0x64, 0x22, 0x2f, 0x0a, 0x17, 0x53, 0x63, 0x61, 0x6e, 0x54, 0x72, 0x69, 0x67, 0x67,
-	0x65, 0x72, 0x52, 0x65, 0x49, 0x6d, 0x70, 0x6f, 0x72, 0x74, 0x52, 0x65, 0x73, 0x70, 0x12, 0x14,
-	0x0a, 0x05, 0x6a, 0x6f, 0x62, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x6a,
-	0x6f, 0x62, 0x49, 0x64, 0x22, 0x3c, 0x0a, 0x16, 0x53, 0x63, 0x61, 0x6e, 0x54, 0x72, 0x69, 0x67,
-	0x67, 0x65, 0x72, 0x52, 0x65, 0x49, 0x6d, 0x70, 0x6f, 0x72, 0x74, 0x55, 0x70, 0x64, 0x12, 0x22,
-	0x0a, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0a,
-	0x2e, 0x4a, 0x6f, 0x62, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x06, 0x73, 0x74, 0x61, 0x74,
-	0x75, 0x73, 0x22, 0x33, 0x0a, 0x19, 0x53, 0x63, 0x61, 0x6e, 0x4d, 0x65, 0x74, 0x61, 0x4c, 0x61,
-	0x62, 0x65, 0x6c, 0x73, 0x41, 0x6e, 0x64, 0x54, 0x79, 0x70, 0x65, 0x73, 0x52, 0x65, 0x71, 0x12,
-	0x16, 0x0a, 0x06, 0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x06, 0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x22, 0x6d, 0x0a, 0x1a, 0x53, 0x63, 0x61, 0x6e, 0x4d,
-	0x65, 0x74, 0x61, 0x4c, 0x61, 0x62, 0x65, 0x6c, 0x73, 0x41, 0x6e, 0x64, 0x54, 0x79, 0x70, 0x65,
-	0x73, 0x52, 0x65, 0x73, 0x70, 0x12, 0x1e, 0x0a, 0x0a, 0x6d, 0x65, 0x74, 0x61, 0x4c, 0x61, 0x62,
-	0x65, 0x6c, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0a, 0x6d, 0x65, 0x74, 0x61, 0x4c,
-	0x61, 0x62, 0x65, 0x6c, 0x73, 0x12, 0x2f, 0x0a, 0x09, 0x6d, 0x65, 0x74, 0x61, 0x54, 0x79, 0x70,
-	0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0e, 0x32, 0x11, 0x2e, 0x53, 0x63, 0x61, 0x6e, 0x4d,
-	0x65, 0x74, 0x61, 0x44, 0x61, 0x74, 0x61, 0x54, 0x79, 0x70, 0x65, 0x52, 0x09, 0x6d, 0x65, 0x74,
-	0x61, 0x54, 0x79, 0x70, 0x65, 0x73, 0x22, 0x61, 0x0a, 0x0d, 0x53, 0x63, 0x61, 0x6e, 0x44, 0x65,
-	0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x63, 0x61, 0x6e, 0x49,
-	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x12,
-	0x38, 0x0a, 0x17, 0x73, 0x63, 0x61, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x46, 0x6f, 0x72, 0x56, 0x65,
-	0x72, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x17, 0x73, 0x63, 0x61, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x46, 0x6f, 0x72, 0x56, 0x65, 0x72,
-	0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x10, 0x0a, 0x0e, 0x53, 0x63, 0x61,
-	0x6e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x42, 0x0a, 0x5a, 0x08, 0x2e,
-	0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x52, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x22, 0x22, 0x0a, 0x10, 0x53, 0x63, 0x61, 0x6e,
+	0x41, 0x75, 0x74, 0x6f, 0x53, 0x68, 0x61, 0x72, 0x65, 0x52, 0x65, 0x71, 0x12, 0x0e, 0x0a, 0x02,
+	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x3e, 0x0a, 0x11,
+	0x53, 0x63, 0x61, 0x6e, 0x41, 0x75, 0x74, 0x6f, 0x53, 0x68, 0x61, 0x72, 0x65, 0x52, 0x65, 0x73,
+	0x70, 0x12, 0x29, 0x0a, 0x05, 0x65, 0x6e, 0x74, 0x72, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x13, 0x2e, 0x53, 0x63, 0x61, 0x6e, 0x41, 0x75, 0x74, 0x6f, 0x53, 0x68, 0x61, 0x72, 0x65,
+	0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x05, 0x65, 0x6e, 0x74, 0x72, 0x79, 0x22, 0x42, 0x0a, 0x15,
+	0x53, 0x63, 0x61, 0x6e, 0x41, 0x75, 0x74, 0x6f, 0x53, 0x68, 0x61, 0x72, 0x65, 0x57, 0x72, 0x69,
+	0x74, 0x65, 0x52, 0x65, 0x71, 0x12, 0x29, 0x0a, 0x05, 0x65, 0x6e, 0x74, 0x72, 0x79, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x53, 0x63, 0x61, 0x6e, 0x41, 0x75, 0x74, 0x6f, 0x53,
+	0x68, 0x61, 0x72, 0x65, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x05, 0x65, 0x6e, 0x74, 0x72, 0x79,
+	0x22, 0x18, 0x0a, 0x16, 0x53, 0x63, 0x61, 0x6e, 0x41, 0x75, 0x74, 0x6f, 0x53, 0x68, 0x61, 0x72,
+	0x65, 0x57, 0x72, 0x69, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x22, 0x62, 0x0a, 0x10, 0x53, 0x63,
+	0x61, 0x6e, 0x4d, 0x65, 0x74, 0x61, 0x57, 0x72, 0x69, 0x74, 0x65, 0x52, 0x65, 0x71, 0x12, 0x16,
+	0x0a, 0x06, 0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06,
+	0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x20, 0x0a, 0x0b,
+	0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x13,
+	0x0a, 0x11, 0x53, 0x63, 0x61, 0x6e, 0x4d, 0x65, 0x74, 0x61, 0x57, 0x72, 0x69, 0x74, 0x65, 0x52,
+	0x65, 0x73, 0x70, 0x22, 0x30, 0x0a, 0x16, 0x53, 0x63, 0x61, 0x6e, 0x54, 0x72, 0x69, 0x67, 0x67,
+	0x65, 0x72, 0x52, 0x65, 0x49, 0x6d, 0x70, 0x6f, 0x72, 0x74, 0x52, 0x65, 0x71, 0x12, 0x16, 0x0a,
+	0x06, 0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73,
+	0x63, 0x61, 0x6e, 0x49, 0x64, 0x22, 0x2f, 0x0a, 0x17, 0x53, 0x63, 0x61, 0x6e, 0x54, 0x72, 0x69,
+	0x67, 0x67, 0x65, 0x72, 0x52, 0x65, 0x49, 0x6d, 0x70, 0x6f, 0x72, 0x74, 0x52, 0x65, 0x73, 0x70,
+	0x12, 0x14, 0x0a, 0x05, 0x6a, 0x6f, 0x62, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x05, 0x6a, 0x6f, 0x62, 0x49, 0x64, 0x22, 0x3c, 0x0a, 0x16, 0x53, 0x63, 0x61, 0x6e, 0x54, 0x72,
+	0x69, 0x67, 0x67, 0x65, 0x72, 0x52, 0x65, 0x49, 0x6d, 0x70, 0x6f, 0x72, 0x74, 0x55, 0x70, 0x64,
+	0x12, 0x22, 0x0a, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x0a, 0x2e, 0x4a, 0x6f, 0x62, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x06, 0x73, 0x74,
+	0x61, 0x74, 0x75, 0x73, 0x22, 0x33, 0x0a, 0x19, 0x53, 0x63, 0x61, 0x6e, 0x4d, 0x65, 0x74, 0x61,
+	0x4c, 0x61, 0x62, 0x65, 0x6c, 0x73, 0x41, 0x6e, 0x64, 0x54, 0x79, 0x70, 0x65, 0x73, 0x52, 0x65,
+	0x71, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x06, 0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x22, 0x6d, 0x0a, 0x1a, 0x53, 0x63, 0x61,
+	0x6e, 0x4d, 0x65, 0x74, 0x61, 0x4c, 0x61, 0x62, 0x65, 0x6c, 0x73, 0x41, 0x6e, 0x64, 0x54, 0x79,
+	0x70, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x12, 0x1e, 0x0a, 0x0a, 0x6d, 0x65, 0x74, 0x61, 0x4c,
+	0x61, 0x62, 0x65, 0x6c, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0a, 0x6d, 0x65, 0x74,
+	0x61, 0x4c, 0x61, 0x62, 0x65, 0x6c, 0x73, 0x12, 0x2f, 0x0a, 0x09, 0x6d, 0x65, 0x74, 0x61, 0x54,
+	0x79, 0x70, 0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0e, 0x32, 0x11, 0x2e, 0x53, 0x63, 0x61,
+	0x6e, 0x4d, 0x65, 0x74, 0x61, 0x44, 0x61, 0x74, 0x61, 0x54, 0x79, 0x70, 0x65, 0x52, 0x09, 0x6d,
+	0x65, 0x74, 0x61, 0x54, 0x79, 0x70, 0x65, 0x73, 0x22, 0x61, 0x0a, 0x0d, 0x53, 0x63, 0x61, 0x6e,
+	0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x63, 0x61,
+	0x6e, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x63, 0x61, 0x6e, 0x49,
+	0x64, 0x12, 0x38, 0x0a, 0x17, 0x73, 0x63, 0x61, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x46, 0x6f, 0x72,
+	0x56, 0x65, 0x72, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x17, 0x73, 0x63, 0x61, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x46, 0x6f, 0x72, 0x56,
+	0x65, 0x72, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x10, 0x0a, 0x0e, 0x53,
+	0x63, 0x61, 0x6e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x42, 0x0a, 0x5a,
+	0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -917,7 +1112,7 @@ func file_scan_msgs_proto_rawDescGZIP() []byte {
 	return file_scan_msgs_proto_rawDescData
 }
 
-var file_scan_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_scan_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_scan_msgs_proto_goTypes = []interface{}{
 	(*ScanListReq)(nil),                // 0: ScanListReq
 	(*ScanListResp)(nil),               // 1: ScanListResp
@@ -925,32 +1120,39 @@ var file_scan_msgs_proto_goTypes = []interface{}{
 	(*ScanUploadReq)(nil),              // 3: ScanUploadReq
 	(*ScanUploadResp)(nil),             // 4: ScanUploadResp
 	(*ScanUploadUpd)(nil),              // 5: ScanUploadUpd
-	(*ScanMetaWriteReq)(nil),           // 6: ScanMetaWriteReq
-	(*ScanMetaWriteResp)(nil),          // 7: ScanMetaWriteResp
-	(*ScanTriggerReImportReq)(nil),     // 8: ScanTriggerReImportReq
-	(*ScanTriggerReImportResp)(nil),    // 9: ScanTriggerReImportResp
-	(*ScanTriggerReImportUpd)(nil),     // 10: ScanTriggerReImportUpd
-	(*ScanMetaLabelsAndTypesReq)(nil),  // 11: ScanMetaLabelsAndTypesReq
-	(*ScanMetaLabelsAndTypesResp)(nil), // 12: ScanMetaLabelsAndTypesResp
-	(*ScanDeleteReq)(nil),              // 13: ScanDeleteReq
-	(*ScanDeleteResp)(nil),             // 14: ScanDeleteResp
-	nil,                                // 15: ScanListReq.SearchFiltersEntry
-	(*ScanListReq_MinMaxInt)(nil),      // 16: ScanListReq.MinMaxInt
-	(*ScanItem)(nil),                   // 17: ScanItem
-	(*JobStatus)(nil),                  // 18: JobStatus
-	(ScanMetaDataType)(0),              // 19: ScanMetaDataType
+	(*ScanAutoShareReq)(nil),           // 6: ScanAutoShareReq
+	(*ScanAutoShareResp)(nil),          // 7: ScanAutoShareResp
+	(*ScanAutoShareWriteReq)(nil),      // 8: ScanAutoShareWriteReq
+	(*ScanAutoShareWriteResp)(nil),     // 9: ScanAutoShareWriteResp
+	(*ScanMetaWriteReq)(nil),           // 10: ScanMetaWriteReq
+	(*ScanMetaWriteResp)(nil),          // 11: ScanMetaWriteResp
+	(*ScanTriggerReImportReq)(nil),     // 12: ScanTriggerReImportReq
+	(*ScanTriggerReImportResp)(nil),    // 13: ScanTriggerReImportResp
+	(*ScanTriggerReImportUpd)(nil),     // 14: ScanTriggerReImportUpd
+	(*ScanMetaLabelsAndTypesReq)(nil),  // 15: ScanMetaLabelsAndTypesReq
+	(*ScanMetaLabelsAndTypesResp)(nil), // 16: ScanMetaLabelsAndTypesResp
+	(*ScanDeleteReq)(nil),              // 17: ScanDeleteReq
+	(*ScanDeleteResp)(nil),             // 18: ScanDeleteResp
+	nil,                                // 19: ScanListReq.SearchFiltersEntry
+	(*ScanListReq_MinMaxInt)(nil),      // 20: ScanListReq.MinMaxInt
+	(*ScanItem)(nil),                   // 21: ScanItem
+	(*JobStatus)(nil),                  // 22: JobStatus
+	(*ScanAutoShareEntry)(nil),         // 23: ScanAutoShareEntry
+	(ScanMetaDataType)(0),              // 24: ScanMetaDataType
 }
 var file_scan_msgs_proto_depIdxs = []int32{
-	15, // 0: ScanListReq.searchFilters:type_name -> ScanListReq.SearchFiltersEntry
-	17, // 1: ScanListResp.scans:type_name -> ScanItem
-	18, // 2: ScanUploadUpd.status:type_name -> JobStatus
-	18, // 3: ScanTriggerReImportUpd.status:type_name -> JobStatus
-	19, // 4: ScanMetaLabelsAndTypesResp.metaTypes:type_name -> ScanMetaDataType
-	5,  // [5:5] is the sub-list for method output_type
-	5,  // [5:5] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	19, // 0: ScanListReq.searchFilters:type_name -> ScanListReq.SearchFiltersEntry
+	21, // 1: ScanListResp.scans:type_name -> ScanItem
+	22, // 2: ScanUploadUpd.status:type_name -> JobStatus
+	23, // 3: ScanAutoShareResp.entry:type_name -> ScanAutoShareEntry
+	23, // 4: ScanAutoShareWriteReq.entry:type_name -> ScanAutoShareEntry
+	22, // 5: ScanTriggerReImportUpd.status:type_name -> JobStatus
+	24, // 6: ScanMetaLabelsAndTypesResp.metaTypes:type_name -> ScanMetaDataType
+	7,  // [7:7] is the sub-list for method output_type
+	7,  // [7:7] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_scan_msgs_proto_init() }
@@ -1034,7 +1236,7 @@ func file_scan_msgs_proto_init() {
 			}
 		}
 		file_scan_msgs_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ScanMetaWriteReq); i {
+			switch v := v.(*ScanAutoShareReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1046,7 +1248,7 @@ func file_scan_msgs_proto_init() {
 			}
 		}
 		file_scan_msgs_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ScanMetaWriteResp); i {
+			switch v := v.(*ScanAutoShareResp); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1058,7 +1260,7 @@ func file_scan_msgs_proto_init() {
 			}
 		}
 		file_scan_msgs_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ScanTriggerReImportReq); i {
+			switch v := v.(*ScanAutoShareWriteReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1070,7 +1272,7 @@ func file_scan_msgs_proto_init() {
 			}
 		}
 		file_scan_msgs_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ScanTriggerReImportResp); i {
+			switch v := v.(*ScanAutoShareWriteResp); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1082,7 +1284,7 @@ func file_scan_msgs_proto_init() {
 			}
 		}
 		file_scan_msgs_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ScanTriggerReImportUpd); i {
+			switch v := v.(*ScanMetaWriteReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1094,7 +1296,7 @@ func file_scan_msgs_proto_init() {
 			}
 		}
 		file_scan_msgs_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ScanMetaLabelsAndTypesReq); i {
+			switch v := v.(*ScanMetaWriteResp); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1106,7 +1308,7 @@ func file_scan_msgs_proto_init() {
 			}
 		}
 		file_scan_msgs_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ScanMetaLabelsAndTypesResp); i {
+			switch v := v.(*ScanTriggerReImportReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1118,7 +1320,7 @@ func file_scan_msgs_proto_init() {
 			}
 		}
 		file_scan_msgs_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ScanDeleteReq); i {
+			switch v := v.(*ScanTriggerReImportResp); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1130,7 +1332,19 @@ func file_scan_msgs_proto_init() {
 			}
 		}
 		file_scan_msgs_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ScanDeleteResp); i {
+			switch v := v.(*ScanTriggerReImportUpd); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_scan_msgs_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ScanMetaLabelsAndTypesReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1142,6 +1356,42 @@ func file_scan_msgs_proto_init() {
 			}
 		}
 		file_scan_msgs_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ScanMetaLabelsAndTypesResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_scan_msgs_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ScanDeleteReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_scan_msgs_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ScanDeleteResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_scan_msgs_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ScanListReq_MinMaxInt); i {
 			case 0:
 				return &v.state
@@ -1160,7 +1410,7 @@ func file_scan_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_scan_msgs_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

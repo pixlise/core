@@ -279,7 +279,7 @@ func (s *PIXLISEDataSaver) Save(
 	coll := db.Collection(dbCollections.ScanAutoShareName)
 	optFind := options.FindOne()
 
-	autoShare := &dataConvertModels.AutoShareConfigItem{}
+	autoShare := &protos.ScanAutoShareEntry{}
 	sharer := data.CreatorUserId
 
 	if len(sharer) <= 0 {
