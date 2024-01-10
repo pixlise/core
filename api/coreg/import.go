@@ -48,9 +48,6 @@ func StartCoregImport(triggerUrl string, hctx wsHelpers.HandlerContext) (string,
 		return "", returnErr
 	}
 
-	// completeMarsViewerImportJob("coreg-9un1y0fv2gszftw3", hctx)
-	// return "", nil
-
 	// We can now trigger the lambda
 	// NOTE: here we build the same structure that triggered us, but we exclude the points data so we don't exceed
 	// the SQS 256kb limit. The lambda doesn't care about the points anyway, only we do once the lambda has completed!
@@ -465,7 +462,6 @@ func findImage(imageName string, imageRTT string, hctx wsHelpers.HandlerContext)
 	return "", nil, fmt.Errorf("Failed to find image: %v for scan %v", imageName, imageRTT)
 }
 
-// warped-zoom_4.478153138946561-win_519_40_1232_1183-SN100D0-SC3_0921_0748732957_027RAS_N0450000SRLC11373_0000LMJ01-A.png
 func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, error) {
 	parts := strings.Split(fileName, "-")
 
@@ -513,10 +509,15 @@ func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, err
 		winParts = append(winParts, winNum)
 	}
 
+	// win_... - this is stored as lines & samples, then width/height of the image
+	// so line = y, samples = x in our world
+	// Example: warped-zoom_4.478153138946561-win_519_40_1232_1183-SN100D0-SC3_0921_0748732957_027RAS_N0450000SRLC11373_0000LMJ01-A.png
+	// Has zoom factor 4.478153138946561 and x, y: (40, 519)
+
 	// At this point we should have enough to reconstruct the transform as we interpret it
 	return &protos.ImageMatchTransform{
-		XOffset: float32(winParts[0]),
-		YOffset: float32(winParts[2]),
+		XOffset: float32(winParts[1]),
+		YOffset: float32(winParts[0]),
 		XScale:  float32(zoom),
 		YScale:  float32(zoom),
 	}, nil
