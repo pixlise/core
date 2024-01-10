@@ -367,14 +367,14 @@ func importWarpedImage(warpedImageUrl string, rttWarpedTo string, baseImage stri
 		return err
 	}
 
-	matchInfo, err := readWarpedImageTransform(warpedFileName)
+	matchInfo, nicerSaveName, err := readWarpedImageTransform(warpedFileName)
 	if err != nil {
 		return err
 	}
 
 	matchInfo.BeamImageFileName = baseImage
 
-	saveName := rttWarpedTo + "-" + warpedFileName
+	saveName := rttWarpedTo + "-" + nicerSaveName
 	savePath := path.Join(rttWarpedTo, saveName)
 	scanImage := utils.MakeScanImage(
 		saveName,
@@ -462,7 +462,7 @@ func findImage(imageName string, imageRTT string, hctx wsHelpers.HandlerContext)
 	return "", nil, fmt.Errorf("Failed to find image: %v for scan %v", imageName, imageRTT)
 }
 
-func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, error) {
+func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, string, error) {
 	parts := strings.Split(fileName, "-")
 
 	// Expecting:
@@ -473,29 +473,29 @@ func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, err
 	// And the original image file name
 	// Don't know what -A is though?
 	if len(parts) != 6 {
-		return nil, fmt.Errorf("Warped image name does not have expected components")
+		return nil, "", fmt.Errorf("Warped image name does not have expected components")
 	}
 
 	// Check each bit
 	if parts[0] != "warped" {
-		return nil, fmt.Errorf("Expected warped image name to start with warped-")
+		return nil, "", fmt.Errorf("Expected warped image name to start with warped-")
 	}
 
 	zoomPrefix := "zoom_"
 	if !strings.HasPrefix(parts[1], zoomPrefix) {
-		return nil, fmt.Errorf("Expected warped image name second part to contain zoom")
+		return nil, "", fmt.Errorf("Expected warped image name second part to contain zoom")
 	}
 
 	winPrefix := "win_"
 	if !strings.HasPrefix(parts[2], winPrefix) {
-		return nil, fmt.Errorf("Expected warped image name second part to contain window")
+		return nil, "", fmt.Errorf("Expected warped image name second part to contain window")
 	}
 
 	// Read the zoom and window
 	zoomStr := parts[1][len(zoomPrefix):] // Snipping number out of: zoom_4.478153138946561
 	zoom, err := strconv.ParseFloat(zoomStr, 64)
 	if err != nil {
-		return nil, fmt.Errorf("Expected warped image zoom to contain a float, found: %v", zoomStr)
+		return nil, "", fmt.Errorf("Expected warped image zoom to contain a float, found: %v", zoomStr)
 	}
 
 	winPartsStr := strings.Split(parts[2][len(winPrefix):], "_") // Snipping numbers out of: win_519_40_1232_1183
@@ -503,7 +503,7 @@ func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, err
 	for c, n := range winPartsStr {
 		winNum, err := strconv.Atoi(n)
 		if err != nil {
-			return nil, fmt.Errorf("Expected warped image window value %v to contain a number, found: %v", c+1, n)
+			return nil, "", fmt.Errorf("Expected warped image window value %v to contain a number, found: %v", c+1, n)
 		}
 
 		winParts = append(winParts, winNum)
@@ -516,9 +516,15 @@ func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, err
 
 	// At this point we should have enough to reconstruct the transform as we interpret it
 	return &protos.ImageMatchTransform{
-		XOffset: float32(winParts[1]),
-		YOffset: float32(winParts[0]),
-		XScale:  float32(zoom),
-		YScale:  float32(zoom),
-	}, nil
+			XOffset: float32(winParts[1]),
+			YOffset: float32(winParts[0]),
+			XScale:  float32(zoom),
+			YScale:  float32(zoom),
+		},
+		// Provide a nicer file name to save as
+		// If this image is coregistered in other ways we don't want it to clash, but we also don't want to generate random chars
+		// for its name so it doesn't just proliferate (and a re-import can overwrite it). So lets try preserve what's likely to be
+		// unique in the file name - the x,y!
+		fmt.Sprintf("coreg-%v_%v-%v-%v", winParts[1], winParts[0], parts[4], parts[5]),
+		nil
 }
