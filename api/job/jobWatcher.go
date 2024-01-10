@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/pixlise/core/v3/api/dbCollections"
 	"github.com/pixlise/core/v3/core/idgen"
@@ -17,6 +18,7 @@ import (
 
 var jobUpdateIntervalSec = uint32(10)
 var activeJobs = map[string]bool{}
+var activeJobLock = sync.Mutex{}
 
 // Expected to be called by API to create the initial record of a job. It can then trigger it however it needs to
 // (eg AWS lambda or running PIQUANT nodes) and this sticks around monitoring the DB entry for changes, calling
@@ -151,6 +153,8 @@ func CompleteJob(jobId string, success bool, message string, outputFilePath stri
 		logger.Infof("CompleteJob: %v with status %v, message: %v", jobId, protos.JobStatus_Status_name[int32(status.Number())], message)
 	}
 
+	defer activeJobLock.Unlock()
+	activeJobLock.Lock()
 	activeJobs[jobId] = false
 	return nil
 }
@@ -217,6 +221,8 @@ func watchJob(jobId string, watchUntilUnixSec uint32, db *mongo.Database, logger
 		}
 	}
 
+	defer activeJobLock.Unlock()
+	activeJobLock.Lock()
 	activeJobs[jobId] = false
 	logger.Infof(">> Finish watching job: %v...", jobId)
 }
