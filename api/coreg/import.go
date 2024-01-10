@@ -173,9 +173,13 @@ func completeMarsViewerImportJob(jobId string, hctx wsHelpers.HandlerContext) {
 	ourBaseImage, ourBaseImageItem, err := findImage(marsViewerExport.BaseImageUrl, baseRTT, hctx)
 
 	if err != nil {
-		// We don't have this image. This means we're importing a new image with the observations transformed to it
-		err = importNewImage(jobId, &coregResult, marsViewerExport, hctx)
-	} else {
+		if err == mongo.ErrNoDocuments {
+			// We don't have this image. This means we're importing a new image with the observations transformed to it
+			ourBaseImage, ourBaseImageItem, err = importNewImage(jobId, marsViewerExport.BaseImageUrl, baseRTT, hctx)
+		}
+	}
+
+	if err == nil {
 		// We are importing images/observations warped TO the base image in question
 		err = importWarpedToBase(jobId, ourBaseImage, ourBaseImageItem, baseRTT, &coregResult, marsViewerExport, hctx)
 	}
@@ -188,8 +192,82 @@ func completeMarsViewerImportJob(jobId string, hctx wsHelpers.HandlerContext) {
 	job.CompleteJob(jobId, true, "Coreg import complete", "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
 }
 
-func importNewImage(jobId string, coregResult *CoregJobResult, marsViewerExport *protos.MarsViewerExport, hctx wsHelpers.HandlerContext) error {
-	return errors.New("Not implemented yet")
+func importNewImage(jobId string, imageUrl string, baseRTT string, hctx wsHelpers.HandlerContext) (string, *protos.ScanImage, error) {
+	// We're importing an image we haven't heard about before. Once this has been imported, we should be able to import the rest as normal
+	hctx.Svcs.Log.Infof("importNewImage: %v for RTT %v, job: %v...", imageUrl, baseRTT, jobId)
+
+	// We need to:
+	// Add an item to DB for this image
+	// Add file to S3
+	imageFileName := path.Base(imageUrl)
+
+	// Expecting file name like this:
+	// SC3_0614_0721480213_394RAS_N0301172SRLC10600_0000LMJ03.IMG
+	// Firstly, check that the image type is one that we support
+	imageExt := strings.ToUpper(path.Ext(imageUrl))
+	if imageExt != ".PNG" && imageExt != ".JPG" {
+		return "", nil, fmt.Errorf("Image file type not supported: %v", imageUrl)
+	}
+
+	// Read the bytes
+	imgBucket, err := fileaccess.GetBucketFromS3Url(imageUrl)
+	if err != nil {
+		return "", nil, err
+	}
+	imgPath, err := fileaccess.GetPathFromS3Url(imageUrl)
+	if err != nil {
+		return "", nil, err
+	}
+
+	imgData, err := hctx.Svcs.FS.ReadObject(imgBucket, imgPath)
+	if err != nil {
+		return "", nil, err
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(imgData))
+	if err != nil {
+		return "", nil, err
+	}
+
+	saveName := baseRTT + "-" + imageFileName
+	savePath := path.Join(baseRTT, saveName)
+	scanImage := utils.MakeScanImage(
+		saveName,
+		savePath,
+		uint32(len(imgData)),
+		protos.ScanImageSource_SI_UPLOAD,
+		protos.ScanImagePurpose_SIP_VIEWING,
+		[]string{baseRTT},
+		baseRTT,
+		"",
+		nil,
+		img)
+
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+
+	result, err := coll.InsertOne(ctx, scanImage, options.InsertOne())
+	if err != nil {
+		return "", nil, err
+	}
+
+	if result.InsertedID != scanImage.Name {
+		hctx.Svcs.Log.Errorf("importNewImage failed to insert DB image: %v. Result: %+v", scanImage.Name, result)
+	}
+
+	// Save the image to S3
+	s3Path := filepaths.GetImageFilePath(savePath)
+	err = hctx.Svcs.FS.WriteObject(hctx.Svcs.Config.DatasetsBucket, s3Path, imgData)
+	if err != nil {
+		// Failed to upload image data, so no point in having a DB entry now either...
+		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+		filter := bson.D{{"_id", saveName}}
+		delOpt := options.Delete()
+		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
+		return "", nil, err
+	}
+
+	return scanImage.Name, scanImage, err
 }
 
 func importWarpedToBase(jobId string, baseImage string, ourBaseImageItem *protos.ScanImage, baseRtt string, coregResult *CoregJobResult, marsViewerExport *protos.MarsViewerExport, hctx wsHelpers.HandlerContext) error {
