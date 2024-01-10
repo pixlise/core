@@ -70,7 +70,7 @@ func main() {
 	flag.StringVar(&auth0Params.Secret, "auth0Secret", "", "Auth0 secret for management API")
 	flag.StringVar(&auth0Params.Audience, "auth0Audience", "", "Auth0 audience")
 	flag.StringVar(&expectedAPIVersion, "expectedAPIVersion", "", "Expected API version (version not checked if blank)")
-	flag.StringVar(&testType, "testType", "endpoints", "Test type to run: endpoints, short")
+	flag.StringVar(&testType, "testType", "local", "Test type to run: local, env")
 
 	flag.StringVar(&test1Username, "test1Username", "", "Username of test account 1")
 	flag.StringVar(&test1Password, "test1Password", "", "Password of test account 1")
@@ -79,7 +79,7 @@ func main() {
 
 	flag.Parse()
 
-	if strings.Contains(apiHost, "pixlise.org") {
+	if strings.Contains(apiHost, "pixlise.org") && !strings.Contains(apiHost, "review.pixlise.org") {
 		fmt.Printf("Can't connect to an env for now: %v\n", apiHost)
 		return
 	}
@@ -109,21 +109,24 @@ func main() {
 		}
 	}
 
-	if testType != "endpoints" {
+	startTime := time.Now()
+
+	if testType == "env" {
+		runEnvTests(apiHost)
+	} else if testType == "local" {
+		// Connect to DB and drop the unit test database
+		db := wstestlib.GetDB()
+		err = db.Drop(context.TODO())
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		dbCollections.InitCollections(db, &logger.StdOutLogger{}, "")
+
+		runLocalTests(apiHost)
+	} else {
 		log.Fatal("Unexpected test type: " + testType)
 	}
-
-	// Connect to DB and drop the unit test database
-	db := wstestlib.GetDB()
-	err = db.Drop(context.TODO())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	dbCollections.InitCollections(db, &logger.StdOutLogger{}, "")
-
-	startTime := time.Now()
-	runTests(apiHost)
 
 	fmt.Println("\n==============================")
 
@@ -139,10 +142,31 @@ func main() {
 	os.Exit(1)
 }
 
-func runTests(apiHost string) {
+func runEnvTests(apiHost string) {
+	// Old env integration test:
+	// Login <== we already do this?
+	// Verify API version
+	// Check alerts pre quant (then again to make sure theyre cleared) <== we won't need to do this
+	// Dataset listing, check that more than X come down
+	// Download dataset file <== no longer applicable, but we could send a bunch of requests for a given scan
+	// Run quants, export+verify, delete
+	// Check alerts after quant runs <== we won't need to do this
+
+	testImports(apiHost)
+	// TODO: test quant create
+	// TODO: download all bits for a given dataset... all proto msgs + context image download(s)
+}
+
+func runLocalTests(apiHost string) {
 	testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
+	// testScanData(apiHost, 0 /*3 for proper testing*/)
+	// testQuants(apiHost)
+	// testDataModules(apiHost)
+	// Test log query (for data import)
+	// Run integration test against review env?
 
+	// *** NOT RUNNING THIS LOCALLY, NO LAMBDA IS STARTED *** testScanImport(apiHost)
 	testImageUpload(apiHost)
 	testImageMatchTransform(apiHost)
 	testSelectionMsgs(apiHost)
