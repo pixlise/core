@@ -28,6 +28,7 @@ within the project root directory. This will build a number of binary files that
 By default we build for Mac, Linux and Windows.
 
 ## Code Generation
+
 - go install github.com/favadi/protoc-go-inject-tag@latest
 - Run ./genproto.sh
 
