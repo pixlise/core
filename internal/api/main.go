@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"time"
 
@@ -45,7 +44,7 @@ func main() {
 		http.ListenAndServe(":2112", nil)
 	}()
 
-	rand.Seed(time.Now().UnixNano())
+	// Deprecated now: rand.Seed(time.Now().UnixNano())
 
 	// Turn off date+time prefixing of log msgs, we have timestamps captured in other ways
 	log.SetFlags(0)

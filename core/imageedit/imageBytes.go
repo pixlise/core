@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	"image/color"
 	"image/jpeg"
 	"image/png"
 )
@@ -32,4 +33,21 @@ func GetImageBytes(img image.Image, imgFormat string) ([]byte, error) {
 	}
 
 	return b.Bytes(), nil
+}
+
+func MakeImageFromRGBA(width int, height int, data []byte) image.Image {
+	i := image.NewRGBA(image.Rect(0, 0, width, height))
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			idx := (y*width + x) * 4
+			r := data[idx]
+			g := data[idx+1]
+			b := data[idx+2]
+			a := data[idx+3]
+			i.SetRGBA(x, y, color.RGBA{R: r, G: g, B: b, A: a})
+		}
+	}
+
+	return i
 }

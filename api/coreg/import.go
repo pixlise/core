@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/png"
 	"path"
 	"strconv"
 	"strings"
@@ -20,6 +21,8 @@ import (
 	"github.com/pixlise/core/v3/core/errorwithstatus"
 	"github.com/pixlise/core/v3/core/fileaccess"
 	"github.com/pixlise/core/v3/core/gdsfilename"
+	"github.com/pixlise/core/v3/core/imageedit"
+	"github.com/pixlise/core/v3/core/imgFormat"
 	"github.com/pixlise/core/v3/core/utils"
 	protos "github.com/pixlise/core/v3/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
@@ -49,6 +52,9 @@ func StartCoregImport(triggerUrl string, hctx wsHelpers.HandlerContext) (string,
 	}
 
 	// completeMarsViewerImportJob("coreg-9un1y0fv2gszftw3", hctx)
+	// completeMarsViewerImportJob("coreg-bjy6epclzutur900", hctx)
+	// completeMarsViewerImportJob("coreg-dy6kmc5r9rg5t2l7", hctx)
+	// completeMarsViewerImportJob("coreg-282g38pxwybbboqk", hctx)
 	// return "", nil
 
 	// We can now trigger the lambda
@@ -171,17 +177,25 @@ func completeMarsViewerImportJob(jobId string, hctx wsHelpers.HandlerContext) {
 
 	// Now we can try to find the corresponding image
 	ourBaseImage, ourBaseImageItem, err := findImage(marsViewerExport.BaseImageUrl, baseRTT, hctx)
+	baseImageLocs := &protos.ImageLocations{}
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			// We don't have this image. This means we're importing a new image with the observations transformed to it
-			ourBaseImage, ourBaseImageItem, err = importNewImage(jobId, marsViewerExport.BaseImageUrl, baseRTT, hctx)
+			if len(coregResult.BaseImageUrl.NewUri) <= 0 {
+				// We don't have the "new" base image to import, so fail here
+				failJob(fmt.Sprintf("Coreg import job %v failed, base image not available. Original: %v", jobId, coregResult.BaseImageUrl.OriginalUri), jobId, hctx)
+			}
+			ourBaseImage, ourBaseImageItem, baseImageLocs, err = importNewImage(jobId, coregResult.BaseImageUrl.NewUri, baseRTT, marsViewerExport, hctx)
 		}
+	} else {
+		// Read the locations
+		baseImageLocs, err = readExistingLocationsForImage(jobId, ourBaseImage, hctx)
 	}
 
 	if err == nil {
 		// We are importing images/observations warped TO the base image in question
-		err = importWarpedToBase(jobId, ourBaseImage, ourBaseImageItem, baseRTT, &coregResult, marsViewerExport, hctx)
+		err = importWarpedToBase(jobId, ourBaseImage, ourBaseImageItem, baseImageLocs, baseRTT, &coregResult, marsViewerExport, hctx)
 	}
 
 	if err != nil {
@@ -192,9 +206,28 @@ func completeMarsViewerImportJob(jobId string, hctx wsHelpers.HandlerContext) {
 	job.CompleteJob(jobId, true, "Coreg import complete", "", []string{}, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
 }
 
-func importNewImage(jobId string, imageUrl string, baseRTT string, hctx wsHelpers.HandlerContext) (string, *protos.ScanImage, error) {
+func importNewImage(jobId string, imageUrl string, baseRTT string, marsViewerExport *protos.MarsViewerExport, hctx wsHelpers.HandlerContext) (string, *protos.ScanImage, *protos.ImageLocations, error) {
 	// We're importing an image we haven't heard about before. Once this has been imported, we should be able to import the rest as normal
 	hctx.Svcs.Log.Infof("importNewImage: %v for RTT %v, job: %v...", imageUrl, baseRTT, jobId)
+
+	// Gather all "associated images" - any translated points that we'll be importing. We need to be associated with them
+	// so we can be shown on their context images
+	associatedScanIds := []string{baseRTT}
+	for _, obs := range marsViewerExport.Observations {
+		if len(obs.TranslatedPoints) > 0 {
+			contextMeta, err := gdsfilename.ParseFileName(path.Base(obs.ContextImageUrl))
+			if err != nil {
+				hctx.Svcs.Log.Errorf("importNewImage: Failed to read RTT from translated points context image file name: %v. Error: %v", obs.ContextImageUrl, err)
+			} else {
+				rtt, err := contextMeta.RTT()
+				if err != nil {
+					hctx.Svcs.Log.Errorf("importNewImage: Failed to decode RTT from translated points context image file name: %v. Error: %v", obs.ContextImageUrl, err)
+				} else {
+					associatedScanIds = append(associatedScanIds, rtt)
+				}
+			}
+		}
+	}
 
 	// We need to:
 	// Add an item to DB for this image
@@ -205,28 +238,52 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, hctx wsHelper
 	// SC3_0614_0721480213_394RAS_N0301172SRLC10600_0000LMJ03.IMG
 	// Firstly, check that the image type is one that we support
 	imageExt := strings.ToUpper(path.Ext(imageUrl))
-	if imageExt != ".PNG" && imageExt != ".JPG" {
-		return "", nil, fmt.Errorf("Image file type not supported: %v", imageUrl)
+	if imageExt != ".PNG" && imageExt != ".JPG" && imageExt != ".IMG" {
+		return "", nil, nil, fmt.Errorf("Image file type not supported: %v", imageUrl)
 	}
 
 	// Read the bytes
 	imgBucket, err := fileaccess.GetBucketFromS3Url(imageUrl)
 	if err != nil {
-		return "", nil, err
+		return "", nil, nil, err
 	}
 	imgPath, err := fileaccess.GetPathFromS3Url(imageUrl)
 	if err != nil {
-		return "", nil, err
+		return "", nil, nil, err
 	}
 
 	imgData, err := hctx.Svcs.FS.ReadObject(imgBucket, imgPath)
 	if err != nil {
-		return "", nil, err
+		return "", nil, nil, err
 	}
 
-	img, _, err := image.Decode(bytes.NewReader(imgData))
-	if err != nil {
-		return "", nil, err
+	var img image.Image
+
+	if imageExt == ".IMG" {
+		w, h, d, err := imgFormat.ReadIMGFile(imgData)
+		if err != nil {
+			return "", nil, nil, fmt.Errorf("Failed to read IMG file: %v. Error: %v", imageUrl, err)
+		}
+
+		img = imageedit.MakeImageFromRGBA(w, h, d)
+
+		// Change the file name! We're saving as PNG
+		imageFileName = imageFileName[0:len(imageFileName)-3] + "png"
+
+		// Meanwhile, create the PNG image so the data we write is the actual PNG
+		var buf bytes.Buffer
+
+		err = png.Encode(&buf, img)
+		if err != nil {
+			return "", nil, nil, fmt.Errorf("Failed to write PNG file for IMG file: %v. Error: %v", imageUrl, err)
+		}
+
+		imgData = buf.Bytes()
+	} else {
+		img, _, err = image.Decode(bytes.NewReader(imgData))
+		if err != nil {
+			return "", nil, nil, fmt.Errorf("Failed to read image file: %v. Error: %v", imageUrl, err)
+		}
 	}
 
 	saveName := baseRTT + "-" + imageFileName
@@ -237,22 +294,23 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, hctx wsHelper
 		uint32(len(imgData)),
 		protos.ScanImageSource_SI_UPLOAD,
 		protos.ScanImagePurpose_SIP_VIEWING,
-		[]string{baseRTT},
-		baseRTT,
+		associatedScanIds,
+		"", //baseRTT,
 		"",
 		nil,
 		img)
 
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+	opt := options.Update().SetUpsert(true)
 
-	result, err := coll.InsertOne(ctx, scanImage, options.InsertOne())
+	result, err := coll.UpdateByID(ctx, saveName, bson.D{{Key: "$set", Value: scanImage}}, opt)
 	if err != nil {
-		return "", nil, err
+		return "", nil, nil, err
 	}
 
-	if result.InsertedID != scanImage.Name {
-		hctx.Svcs.Log.Errorf("importNewImage failed to insert DB image: %v. Result: %+v", scanImage.Name, result)
+	if result.MatchedCount != 1 {
+		hctx.Svcs.Log.Errorf("importNewImage failed to upsert DB image: %v. Result: %+v", scanImage.Name, result)
 	}
 
 	// Save the image to S3
@@ -264,31 +322,54 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, hctx wsHelper
 		filter := bson.D{{"_id", saveName}}
 		delOpt := options.Delete()
 		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
-		return "", nil, err
+		return "", nil, nil, err
 	}
 
-	return scanImage.Name, scanImage, err
+	// Also insert a blank entry for beam locations for this image, as we're expecting to import scans for it
+	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
+	beamLocs := &protos.ImageLocations{
+		ImageName:       saveName,
+		LocationPerScan: []*protos.ImageLocationsForScan{},
+	}
+
+	beamResult, err := coll.UpdateByID(ctx, saveName, bson.D{{Key: "$set", Value: beamLocs}}, opt)
+	if err != nil {
+		return "", nil, nil, err
+	}
+
+	if beamResult.MatchedCount != 1 {
+		hctx.Svcs.Log.Errorf("importNewImage failed to upsert initial DB image beam locations: %v. Result: %+v", scanImage.Name, beamResult)
+	}
+
+	return scanImage.Name, scanImage, beamLocs, err
 }
 
-func importWarpedToBase(jobId string, baseImage string, ourBaseImageItem *protos.ScanImage, baseRtt string, coregResult *CoregJobResult, marsViewerExport *protos.MarsViewerExport, hctx wsHelpers.HandlerContext) error {
+func readExistingLocationsForImage(jobId string, image string, hctx wsHelpers.HandlerContext) (*protos.ImageLocations, error) {
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 
 	// We're adding to the beam locations for the base image! First, read the base image beam locations structure as there should
 	// already be one!
-	filter := bson.M{"_id": baseImage}
+	filter := bson.M{"_id": image}
 	baseImageBeamsResult := coll.FindOne(ctx, filter)
 
 	if baseImageBeamsResult.Err() != nil {
-		return fmt.Errorf("Coreg import job %v failed to read beams for base image %v. Error: %v", jobId, baseImage, baseImageBeamsResult.Err())
+		return nil, fmt.Errorf("Coreg import job %v failed to read beams for base image %v. Error: %v", jobId, image, baseImageBeamsResult.Err())
 	}
 
-	baseImageBeams := protos.ImageLocations{}
-	err := baseImageBeamsResult.Decode(&baseImageBeams)
+	baseImageBeams := &protos.ImageLocations{}
+	err := baseImageBeamsResult.Decode(baseImageBeams)
 
 	if err != nil {
-		return fmt.Errorf("Coreg import job %v failed to decode beams for base image %v. Error: %v", jobId, baseImage, err)
+		return nil, fmt.Errorf("Coreg import job %v failed to decode beams for base image %v. Error: %v", jobId, image, err)
 	}
+
+	return baseImageBeams, nil
+}
+
+func importWarpedToBase(jobId string, baseImage string, ourBaseImageItem *protos.ScanImage, baseImageBeams *protos.ImageLocations, baseRtt string, coregResult *CoregJobResult, marsViewerExport *protos.MarsViewerExport, hctx wsHelpers.HandlerContext) error {
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 
 	locationsPerScan := map[string][]*protos.Coordinate2D{}
 	for _, locForScan := range baseImageBeams.LocationPerScan {
@@ -379,6 +460,7 @@ func importWarpedToBase(jobId string, baseImage string, ourBaseImageItem *protos
 		}
 
 		// TODO: Transaction for these 2?
+		filter := bson.M{"_id": baseImage}
 		result, err := coll.ReplaceOne(ctx, filter, &baseImageBeams, options.Replace())
 		if err != nil {
 			return fmt.Errorf("Coreg import job %v failed to save new beam locations: %v", jobId, err)
@@ -540,7 +622,7 @@ func findImage(imageName string, imageRTT string, hctx wsHelpers.HandlerContext)
 		}
 	}
 
-	return "", nil, fmt.Errorf("Failed to find image: %v for scan %v", imageName, imageRTT)
+	return "", nil, mongo.ErrNoDocuments // fmt.Errorf("Failed to find image: %v for scan %v", imageName, imageRTT)
 }
 
 func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, string, error) {

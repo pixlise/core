@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"net/http"
 	"path"
 	"strings"
 
@@ -92,7 +93,19 @@ func HandleImageGetReq(req *protos.ImageGetReq, hctx wsHelpers.HandlerContext) (
 	for _, scanId := range img.AssociatedScanIds {
 		_, err := wsHelpers.CheckObjectAccess(false, scanId, protos.ObjectType_OT_SCAN, hctx)
 		if err != nil {
-			return nil, errorwithstatus.MakeUnauthorisedError(fmt.Errorf("User cannot access scan %v associated with image %v. Error: %v", scanId, req.ImageName, err))
+			handled := false
+			switch e := err.(type) {
+			case errorwithstatus.Error:
+				if e.Status() == http.StatusNotFound {
+					// Log the error instead
+					hctx.Svcs.Log.Errorf("ImageGetReq: Scan %v doesn't exist when checking for user access, allowing in case of scan not existing")
+					handled = true
+				}
+			}
+
+			if !handled {
+				return nil, errorwithstatus.MakeUnauthorisedError(fmt.Errorf("User cannot access scan %v associated with image %v. Error: %v", scanId, req.ImageName, err))
+			}
 		}
 	}
 
