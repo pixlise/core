@@ -167,6 +167,7 @@ func runLocalTests(apiHost string) {
 	// Run integration test against review env?
 
 	// *** NOT RUNNING THIS LOCALLY, NO LAMBDA IS STARTED *** testScanImport(apiHost)
+	testMemoisation(apiHost)
 	testImageUpload(apiHost)
 	testImageMatchTransform(apiHost)
 	testSelectionMsgs(apiHost)

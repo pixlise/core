@@ -279,7 +279,3 @@ func HandleExpressionWriteExecStatReq(req *protos.ExpressionWriteExecStatReq, hc
 
 	return &protos.ExpressionWriteExecStatResp{}, nil
 }
-
-func HandleExpressionWriteResultReq(req *protos.ExpressionWriteResultReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionWriteResultResp, error) {
-	return nil, errors.New("HandleExpressionWriteResultReq not implemented yet")
-}
