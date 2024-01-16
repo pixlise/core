@@ -34,7 +34,7 @@ func testMemoisation(apiHost string) {
 
 	u1.AddSendReqAction("Write memoisation (should succeed))",
 		fmt.Sprintf(`{"memoiseWriteReq":{"key": "%v", "data": "SGVsbG8="}}`, key),
-		`{"msgId":4,"status":"WS_OK","memoiseWriteResp":{}}`,
+		`{"msgId":4,"status":"WS_OK","memoiseWriteResp":{ "memoTimeUnixSec": "${SECAGO=5}" }}`,
 	)
 
 	u1.AddSendReqAction("Request memoisation (should succeed)",

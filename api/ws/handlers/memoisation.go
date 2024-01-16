@@ -54,9 +54,10 @@ func HandleMemoiseWriteReq(req *protos.MemoiseWriteReq, hctx wsHelpers.HandlerCo
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.MemoisedItemsName)
 	opt := options.Update().SetUpsert(true)
 
+	timestamp := uint32(hctx.Svcs.TimeStamper.GetTimeNowSec())
 	item := &protos.MemoisedItem{
 		Key:             req.Key,
-		MemoTimeUnixSec: uint32(hctx.Svcs.TimeStamper.GetTimeNowSec()),
+		MemoTimeUnixSec: timestamp,
 		Data:            req.Data,
 	}
 
@@ -69,5 +70,7 @@ func HandleMemoiseWriteReq(req *protos.MemoiseWriteReq, hctx wsHelpers.HandlerCo
 		hctx.Svcs.Log.Errorf("MemoiseWriteReq for: %v got unexpected DB write result: %+v", req.Key, result)
 	}
 
-	return &protos.MemoiseWriteResp{}, nil
+	return &protos.MemoiseWriteResp{
+		MemoTimeUnixSec: timestamp,
+	}, nil
 }
