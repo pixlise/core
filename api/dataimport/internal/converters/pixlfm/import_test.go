@@ -20,8 +20,8 @@ package pixlfm
 import (
 	"fmt"
 
-	"github.com/pixlise/core/v3/core/gdsfilename"
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/core/gdsfilename"
+	"github.com/pixlise/core/v4/core/logger"
 )
 
 func Example_GetByLowestSCLK() {

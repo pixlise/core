@@ -3,7 +3,7 @@ package quantification
 import (
 	"errors"
 
-	protos "github.com/pixlise/core/v3/generated-protos"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func calculateTotals[T int | int32 | uint32](quantFile *protos.Quantification, roiPMCs []T) (map[string]float32, error) {

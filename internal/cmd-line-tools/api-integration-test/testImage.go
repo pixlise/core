@@ -12,10 +12,10 @@ import (
 	"path"
 	"strings"
 
-	"github.com/pixlise/core/v3/api/filepaths"
-	"github.com/pixlise/core/v3/core/auth0login"
-	"github.com/pixlise/core/v3/core/wstestlib"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/filepaths"
+	"github.com/pixlise/core/v4/core/auth0login"
+	"github.com/pixlise/core/v4/core/wstestlib"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 const imagePath = "images/download/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"

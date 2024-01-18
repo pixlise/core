@@ -25,8 +25,8 @@ import (
 	"os/exec"
 	"sync"
 
-	"github.com/pixlise/core/v3/api/config"
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/api/config"
+	"github.com/pixlise/core/v4/core/logger"
 )
 
 ///////////////////////////////////////////////////////////////////////////////////////////

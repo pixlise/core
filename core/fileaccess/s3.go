@@ -29,7 +29,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/pixlise/core/v3/core/utils"
+	"github.com/pixlise/core/v4/core/utils"
 )
 
 // Implementation of file access using AWS S3

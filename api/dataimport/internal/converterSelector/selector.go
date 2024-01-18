@@ -22,14 +22,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pixlise/core/v3/api/dataimport/internal/converters/converter"
-	"github.com/pixlise/core/v3/api/dataimport/internal/converters/jplbreadboard"
-	"github.com/pixlise/core/v3/api/dataimport/internal/converters/pixlem"
-	"github.com/pixlise/core/v3/api/dataimport/internal/converters/pixlfm"
-	"github.com/pixlise/core/v3/api/dataimport/internal/converters/soff"
-	dataimportModel "github.com/pixlise/core/v3/api/dataimport/models"
-	"github.com/pixlise/core/v3/core/fileaccess"
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/api/dataimport/internal/converters/converter"
+	"github.com/pixlise/core/v4/api/dataimport/internal/converters/jplbreadboard"
+	"github.com/pixlise/core/v4/api/dataimport/internal/converters/pixlem"
+	"github.com/pixlise/core/v4/api/dataimport/internal/converters/pixlfm"
+	"github.com/pixlise/core/v4/api/dataimport/internal/converters/soff"
+	dataimportModel "github.com/pixlise/core/v4/api/dataimport/models"
+	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/logger"
 )
 
 // SelectDataConverter - Looks in specified path and determines what importer to use.

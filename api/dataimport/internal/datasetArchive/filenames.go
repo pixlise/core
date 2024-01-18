@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/v3/core/utils"
+	"github.com/pixlise/core/v4/core/utils"
 )
 
 // Implements functions that deal with file names or listings stored in S3

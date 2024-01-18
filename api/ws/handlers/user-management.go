@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	"github.com/pixlise/core/v3/core/auth0login"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/auth0login"
+	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gopkg.in/auth0.v4/management"
 )

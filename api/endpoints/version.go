@@ -20,11 +20,11 @@ package endpoints
 import (
 	"strings"
 
-	"github.com/pixlise/core/v3/api/piquant"
-	apiRouter "github.com/pixlise/core/v3/api/router"
-	"github.com/pixlise/core/v3/api/services"
-	"github.com/pixlise/core/v3/core/utils"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/piquant"
+	apiRouter "github.com/pixlise/core/v4/api/router"
+	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/core/utils"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

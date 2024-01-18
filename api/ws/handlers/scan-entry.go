@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func HandleScanEntryReq(req *protos.ScanEntryReq, hctx wsHelpers.HandlerContext) (*protos.ScanEntryResp, error) {

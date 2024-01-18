@@ -26,9 +26,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pixlise/core/v3/api/config"
-	"github.com/pixlise/core/v3/core/kubernetes"
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/api/config"
+	"github.com/pixlise/core/v4/core/kubernetes"
+	"github.com/pixlise/core/v4/core/logger"
 	batchv1 "k8s.io/api/batch/v1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"

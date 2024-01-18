@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"github.com/olahol/melody"
-	"github.com/pixlise/core/v3/api/dbCollections"
-	"github.com/pixlise/core/v3/core/utils"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/core/utils"
+	protos "github.com/pixlise/core/v4/generated-protos"
 	"google.golang.org/protobuf/proto"
 )
 

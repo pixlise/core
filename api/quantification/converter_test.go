@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pixlise/core/v3/core/logger"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/core/logger"
+	protos "github.com/pixlise/core/v4/generated-protos"
 	"google.golang.org/protobuf/proto"
 )
 

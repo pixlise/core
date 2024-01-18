@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/v3/core/fileaccess"
-	"github.com/pixlise/core/v3/core/utils"
+	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/utils"
 )
 
 type WSMessageHeader struct {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	protos "github.com/pixlise/core/v3/generated-protos"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func getDetectorMetaValue(metaLabel string, detector *protos.Experiment_Location_DetectorSpectrum, dataset *protos.Experiment) (protos.Experiment_MetaDataType, *protos.Experiment_Location_MetaDataItem, error) {

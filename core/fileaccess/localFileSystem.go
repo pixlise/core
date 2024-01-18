@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pixlise/core/v3/core/utils"
+	"github.com/pixlise/core/v4/core/utils"
 )
 
 // Implementation of file access using local file system

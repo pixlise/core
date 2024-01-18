@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pixlise/core/v3/api/dbCollections"
-	"github.com/pixlise/core/v3/api/filepaths"
-	"github.com/pixlise/core/v3/core/fileaccess"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/filepaths"
+	"github.com/pixlise/core/v4/core/fileaccess"
+	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

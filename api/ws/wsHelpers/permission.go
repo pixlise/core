@@ -3,7 +3,7 @@ package wsHelpers
 import (
 	"strings"
 
-	protos "github.com/pixlise/core/v3/generated-protos"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func HasPermission(userPermissions map[string]bool, toCheck protos.Permission) bool {

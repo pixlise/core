@@ -8,12 +8,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/pixlise/core/v3/api/services"
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	"github.com/pixlise/core/v3/core/awsutil"
-	"github.com/pixlise/core/v3/core/errorwithstatus"
-	"github.com/pixlise/core/v3/core/logger"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/awsutil"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
+	"github.com/pixlise/core/v4/core/logger"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func HandleLogReadReq(req *protos.LogReadReq, hctx wsHelpers.HandlerContext) (*protos.LogReadResp, error) {

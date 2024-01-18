@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/pixlise/core/v3/core/logger"
-	"github.com/pixlise/core/v3/core/utils"
+	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )

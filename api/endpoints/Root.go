@@ -20,8 +20,8 @@ package endpoints
 import (
 	"fmt"
 
-	apiRouter "github.com/pixlise/core/v3/api/router"
-	"github.com/pixlise/core/v3/api/services"
+	apiRouter "github.com/pixlise/core/v4/api/router"
+	"github.com/pixlise/core/v4/api/services"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

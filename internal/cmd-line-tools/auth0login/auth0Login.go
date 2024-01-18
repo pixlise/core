@@ -21,7 +21,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/pixlise/core/v3/core/auth0login"
+	"github.com/pixlise/core/v4/core/auth0login"
 )
 
 // This test program implements the Auth0 "resource-owner-password" flow documented here:

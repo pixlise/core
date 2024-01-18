@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pixlise/core/v3/api/dbCollections"
-	"github.com/pixlise/core/v3/api/filepaths"
-	"github.com/pixlise/core/v3/core/awsutil"
-	"github.com/pixlise/core/v3/core/fileaccess"
-	"github.com/pixlise/core/v3/core/logger"
-	"github.com/pixlise/core/v3/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/filepaths"
+	"github.com/pixlise/core/v4/core/awsutil"
+	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/mongoDBConnection"
 )
 
 var maxItemsToRead int

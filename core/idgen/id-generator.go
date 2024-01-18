@@ -17,7 +17,7 @@
 
 package idgen
 
-import "github.com/pixlise/core/v3/core/utils"
+import "github.com/pixlise/core/v4/core/utils"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Generation of random string IDs

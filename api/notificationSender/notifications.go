@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/pixlise/core/v3/api/ws"
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	"github.com/pixlise/core/v3/core/awsutil"
-	"github.com/pixlise/core/v3/core/logger"
-	"github.com/pixlise/core/v3/core/timestamper"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/ws"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/awsutil"
+	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/timestamper"
+	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

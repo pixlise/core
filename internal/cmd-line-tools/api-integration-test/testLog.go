@@ -1,6 +1,6 @@
 package main
 
-import "github.com/pixlise/core/v3/core/wstestlib"
+import "github.com/pixlise/core/v4/core/wstestlib"
 
 func testLogMsgs(apiHost string) {
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)

@@ -4,10 +4,10 @@ import (
 	"errors"
 	"path"
 
-	"github.com/pixlise/core/v3/api/dbCollections"
-	"github.com/pixlise/core/v3/api/quantification"
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/quantification"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func HandleQuantListReq(req *protos.QuantListReq, hctx wsHelpers.HandlerContext) (*protos.QuantListResp, error) {

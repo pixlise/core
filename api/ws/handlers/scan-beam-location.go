@@ -1,8 +1,8 @@
 package wsHandler
 
 import (
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func HandleScanBeamLocationsReq(req *protos.ScanBeamLocationsReq, hctx wsHelpers.HandlerContext) (*protos.ScanBeamLocationsResp, error) {

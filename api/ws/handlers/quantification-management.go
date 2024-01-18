@@ -6,10 +6,10 @@ import (
 	"path"
 	"strings"
 
-	"github.com/pixlise/core/v3/api/dbCollections"
-	"github.com/pixlise/core/v3/api/filepaths"
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/filepaths"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func HandleQuantBlessReq(req *protos.QuantBlessReq, hctx wsHelpers.HandlerContext) (*protos.QuantBlessResp, error) {

@@ -3,8 +3,8 @@ package ws
 import (
 	"net/http"
 
-	"github.com/pixlise/core/v3/core/errorwithstatus"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func makeRespStatus(err error) protos.ResponseStatus {

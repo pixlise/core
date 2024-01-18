@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 
-	"github.com/pixlise/core/v3/api/dbCollections"
-	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/core/fileaccess"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

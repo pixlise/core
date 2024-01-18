@@ -24,8 +24,8 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	apiRouter "github.com/pixlise/core/v3/api/router"
-	"github.com/pixlise/core/v3/core/awsutil"
+	apiRouter "github.com/pixlise/core/v4/api/router"
+	"github.com/pixlise/core/v4/core/awsutil"
 )
 
 func Example_version() {

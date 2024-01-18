@@ -3,7 +3,7 @@ package wsHelpers
 import (
 	"fmt"
 
-	"github.com/pixlise/core/v3/core/errorwithstatus"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
 )
 
 const IdFieldMaxLength = 16

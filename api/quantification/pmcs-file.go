@@ -21,10 +21,9 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/pixlise/core/v3/api/quantification/quantRunner"
-	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v4/api/quantification/quantRunner"
+	"github.com/pixlise/core/v4/api/services"
 )
-
 
 func savePMCList(svcs *services.APIServices, jobBucket string, contents string, nodeNumber int, jobDataPath string) (string, error) {
 	pmcListName := quantRunner.MakePMCFileName(nodeNumber)

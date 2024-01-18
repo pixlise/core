@@ -3,8 +3,8 @@ package wstestlib
 import (
 	"log"
 
-	"github.com/pixlise/core/v3/core/logger"
-	mongoDBConnection "github.com/pixlise/core/v3/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/core/logger"
+	mongoDBConnection "github.com/pixlise/core/v4/core/mongoDBConnection"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

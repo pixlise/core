@@ -29,7 +29,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pixlise/core/v3/api/config"
+	"github.com/pixlise/core/v4/api/config"
 	"gopkg.in/auth0.v4/management"
 )
 

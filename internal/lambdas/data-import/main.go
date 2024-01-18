@@ -24,11 +24,11 @@ import (
 	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/pixlise/core/v3/api/dataimport"
-	"github.com/pixlise/core/v3/core/awsutil"
-	"github.com/pixlise/core/v3/core/fileaccess"
-	"github.com/pixlise/core/v3/core/logger"
-	"github.com/pixlise/core/v3/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/api/dataimport"
+	"github.com/pixlise/core/v4/core/awsutil"
+	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/mongoDBConnection"
 )
 
 func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {

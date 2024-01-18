@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/v3/api/config"
-	"github.com/pixlise/core/v3/api/quantification/quantRunner"
-	"github.com/pixlise/core/v3/api/services"
-	"github.com/pixlise/core/v3/core/fileaccess"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/config"
+	"github.com/pixlise/core/v4/api/quantification/quantRunner"
+	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/core/fileaccess"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func makePMCListFilesForQuantPMCs(

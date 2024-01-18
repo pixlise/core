@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/core/logger"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

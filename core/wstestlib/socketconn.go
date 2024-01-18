@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/pixlise/core/v3/core/auth0login"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/core/auth0login"
+	protos "github.com/pixlise/core/v4/generated-protos"
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/square/go-jose.v2/jwt"
 )

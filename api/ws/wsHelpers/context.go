@@ -2,7 +2,7 @@ package wsHelpers
 
 import (
 	"github.com/olahol/melody"
-	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v4/api/services"
 )
 
 type HandlerContext struct {

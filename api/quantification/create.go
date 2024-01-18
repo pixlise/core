@@ -25,15 +25,15 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pixlise/core/v3/api/filepaths"
-	"github.com/pixlise/core/v3/api/job"
-	"github.com/pixlise/core/v3/api/piquant"
-	"github.com/pixlise/core/v3/api/quantification/quantRunner"
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	"github.com/pixlise/core/v3/core/fileaccess"
-	"github.com/pixlise/core/v3/core/logger"
-	"github.com/pixlise/core/v3/core/utils"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/filepaths"
+	"github.com/pixlise/core/v4/api/job"
+	"github.com/pixlise/core/v4/api/piquant"
+	"github.com/pixlise/core/v4/api/quantification/quantRunner"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/utils"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 // JobParamsFileName - File name of job params file

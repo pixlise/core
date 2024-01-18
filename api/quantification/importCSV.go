@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/pixlise/core/v3/api/filepaths"
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	"github.com/pixlise/core/v3/core/errorwithstatus"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/filepaths"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func ImportQuantCSV(

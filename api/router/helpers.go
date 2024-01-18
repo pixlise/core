@@ -24,9 +24,9 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/pixlise/core/v3/api/services"
-	"github.com/pixlise/core/v3/core/errorwithstatus"
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
+	"github.com/pixlise/core/v4/core/logger"
 )
 
 const HostParamName = "hostname"

@@ -24,7 +24,7 @@ import (
 	"net/http"
 
 	"github.com/auth0-community/go-auth0"
-	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v4/core/fileaccess"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 )

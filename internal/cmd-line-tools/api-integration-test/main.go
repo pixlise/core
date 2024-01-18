@@ -27,11 +27,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/v3/api/dbCollections"
-	"github.com/pixlise/core/v3/core/awsutil"
-	"github.com/pixlise/core/v3/core/fileaccess"
-	"github.com/pixlise/core/v3/core/logger"
-	"github.com/pixlise/core/v3/core/wstestlib"
+	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/core/awsutil"
+	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/wstestlib"
 )
 
 var auth0Params wstestlib.Auth0Info

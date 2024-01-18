@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pixlise/core/v3/core/wstestlib"
+	"github.com/pixlise/core/v4/core/wstestlib"
 )
 
 func testQuantFit(apiHost string) {

@@ -3,7 +3,7 @@ package quantification
 import (
 	"strings"
 
-	protos "github.com/pixlise/core/v3/generated-protos"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 // getWeightPercentColumnsInQuant - returns weight % columns, ones ending in _%

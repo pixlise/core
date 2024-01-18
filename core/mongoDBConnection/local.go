@@ -24,7 +24,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/core/logger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

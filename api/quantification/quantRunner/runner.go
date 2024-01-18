@@ -22,8 +22,8 @@ package quantRunner
 import (
 	"fmt"
 
-	"github.com/pixlise/core/v3/api/config"
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/api/config"
+	"github.com/pixlise/core/v4/core/logger"
 )
 
 // NOTE: these are all static params, the PMC list to process is passed in via the number at the end of the host name

@@ -1,7 +1,7 @@
 package quantification
 
 import (
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 )
 
 func checkQuantificationNameExists(name string, scanId string, hctx wsHelpers.HandlerContext) bool {

@@ -30,13 +30,13 @@ package services
 
 import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/pixlise/core/v3/api/config"
-	"github.com/pixlise/core/v3/core/awsutil"
-	"github.com/pixlise/core/v3/core/fileaccess"
-	"github.com/pixlise/core/v3/core/idgen"
-	"github.com/pixlise/core/v3/core/jwtparser"
-	"github.com/pixlise/core/v3/core/logger"
-	"github.com/pixlise/core/v3/core/timestamper"
+	"github.com/pixlise/core/v4/api/config"
+	"github.com/pixlise/core/v4/core/awsutil"
+	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/idgen"
+	"github.com/pixlise/core/v4/core/jwtparser"
+	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/timestamper"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

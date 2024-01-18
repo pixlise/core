@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	// "github.com/pixlise/core/v3/api/quantification"
-	"github.com/pixlise/core/v3/api/quantification"
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	"github.com/pixlise/core/v3/core/errorwithstatus"
-	// "github.com/pixlise/core/v3/core/errorwithstatus"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	// "github.com/pixlise/core/v4/api/quantification"
+	"github.com/pixlise/core/v4/api/quantification"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
+
+	// "github.com/pixlise/core/v4/core/errorwithstatus"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 // Users can also upload a compatible CSV file which we can convert into a quantification that's usable inside PIXLISE

@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pixlise/core/v3/api/dataimport/internal/dataConvertModels"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func makeSummaryFileContent(

@@ -23,7 +23,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/pixlise/core/v3/core/fileaccess"
+	"github.com/pixlise/core/v4/core/fileaccess"
 )
 
 // This package contains all file paths that the PIXLISE API should ever need to access. All been centralised

@@ -26,7 +26,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/core/logger"
 )
 
 // FileNameMeta See docs/PIXL_filename.docx

@@ -25,9 +25,9 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pixlise/core/v3/api/services"
-	"github.com/pixlise/core/v3/core/errorwithstatus"
-	"github.com/pixlise/core/v3/core/jwtparser"
+	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
+	"github.com/pixlise/core/v4/core/jwtparser"
 )
 
 const UrlStreamDownloadIndicator = "download"

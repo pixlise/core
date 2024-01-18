@@ -26,9 +26,9 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/pixlise/core/v3/api/services"
-	"github.com/pixlise/core/v3/core/jwtparser"
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/core/jwtparser"
+	"github.com/pixlise/core/v4/core/logger"
 )
 
 // How many chars of request body to display in logs

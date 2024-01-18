@@ -20,7 +20,7 @@ package apiRouter
 import (
 	"net/http"
 
-	"github.com/pixlise/core/v3/api/services"
+	"github.com/pixlise/core/v4/api/services"
 )
 
 // As with generic handler, but for public API endpoints ONLY

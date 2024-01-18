@@ -22,9 +22,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pixlise/core/v3/api/permission"
-	"github.com/pixlise/core/v3/core/jwtparser"
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/api/permission"
+	"github.com/pixlise/core/v4/core/jwtparser"
+	"github.com/pixlise/core/v4/core/logger"
 )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

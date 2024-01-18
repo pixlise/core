@@ -25,9 +25,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pixlise/core/v3/api/dataimport/internal/dataConvertModels"
-	"github.com/pixlise/core/v3/core/fileaccess"
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
+	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/logger"
 )
 
 func ReadMatchedImages(matchedPath string, beamLookup dataConvertModels.BeamLocationByPMC, jobLog logger.ILogger, fs fileaccess.FileAccess) ([]dataConvertModels.MatchedAlignedImageMeta, error) {

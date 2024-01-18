@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"image"
 
-	"github.com/pixlise/core/v3/core/wstestlib"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/core/wstestlib"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func testImageUpload(apiHost string) {

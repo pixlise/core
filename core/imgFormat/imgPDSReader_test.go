@@ -5,7 +5,7 @@ import (
 	"image/png"
 	"os"
 
-	"github.com/pixlise/core/v3/core/imageedit"
+	"github.com/pixlise/core/v4/core/imageedit"
 )
 
 func Example_findVICAR() {

@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/v3/api/config"
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	"github.com/pixlise/core/v3/core/fileaccess"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/config"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/fileaccess"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func makePMCListFilesForQuantROI(

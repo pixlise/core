@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pixlise/core/v3/core/utils"
-	"github.com/pixlise/core/v3/core/wstestlib"
+	"github.com/pixlise/core/v4/core/utils"
+	"github.com/pixlise/core/v4/core/wstestlib"
 )
 
 func testQuantCreate(apiHost string) {

@@ -5,12 +5,12 @@ import (
 	"time"
 
 	"github.com/olahol/melody"
-	apiRouter "github.com/pixlise/core/v3/api/router"
-	"github.com/pixlise/core/v3/api/services"
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	"github.com/pixlise/core/v3/core/jwtparser"
-	"github.com/pixlise/core/v3/core/utils"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	apiRouter "github.com/pixlise/core/v4/api/router"
+	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/jwtparser"
+	"github.com/pixlise/core/v4/core/utils"
+	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/protobuf/proto"
 )

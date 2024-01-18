@@ -3,9 +3,9 @@ package wsHandler
 import (
 	"fmt"
 
-	"github.com/pixlise/core/v3/api/ws/wsHelpers"
-	"github.com/pixlise/core/v3/core/indexcompression"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/indexcompression"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func HandleDetectedDiffractionPeaksReq(req *protos.DetectedDiffractionPeaksReq, hctx wsHelpers.HandlerContext) (*protos.DetectedDiffractionPeaksResp, error) {

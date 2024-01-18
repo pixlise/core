@@ -20,7 +20,7 @@ package endpoints
 import (
 	"fmt"
 
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/core/logger"
 )
 
 func Example_isMatch() {

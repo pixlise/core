@@ -20,8 +20,8 @@ package jplbreadboard
 import (
 	"fmt"
 
-	"github.com/pixlise/core/v3/api/dataimport/internal/dataConvertModels"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 // This is a specific feature for msa test data to generate a beam location when there isn't one

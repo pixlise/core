@@ -23,8 +23,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/v3/api/dataimport/internal/dataConvertModels"
-	"github.com/pixlise/core/v3/core/logger"
+	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
+	"github.com/pixlise/core/v4/core/logger"
 )
 
 // ReadBeamLocationsFile - Reads beam location CSV. Old style (expectMultipleIJ=false) or new multi-image IJ coord CSVs

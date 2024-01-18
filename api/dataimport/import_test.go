@@ -20,7 +20,7 @@ package dataimport
 import (
 	"fmt"
 
-	protos "github.com/pixlise/core/v3/generated-protos"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func Example_getUpdateType_NormalSpectra() {

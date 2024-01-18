@@ -1,4 +1,4 @@
-module github.com/pixlise/core/v3
+module github.com/pixlise/core/v4
 
 go 1.21
 

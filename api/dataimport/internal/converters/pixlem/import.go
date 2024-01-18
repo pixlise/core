@@ -22,10 +22,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pixlise/core/v3/api/dataimport/internal/converters/pixlfm"
-	"github.com/pixlise/core/v3/api/dataimport/internal/dataConvertModels"
-	"github.com/pixlise/core/v3/core/logger"
-	protos "github.com/pixlise/core/v3/generated-protos"
+	"github.com/pixlise/core/v4/api/dataimport/internal/converters/pixlfm"
+	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
+	"github.com/pixlise/core/v4/core/logger"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 // These are EM files, which we expect to be in the same format as FM but because they come from
