@@ -131,6 +131,8 @@ github.com/pixlise/core v0.0.0-20220907201358-9ea7be01240e h1:l1hrUK6J2QeCz//AQw
 github.com/pixlise/core v0.0.0-20220907201358-9ea7be01240e/go.mod h1:GLR1OglfSJ1DKQLJaf7J4zn1LSHXJtMlCX2dw/LnP94=
 github.com/pixlise/diffraction-peak-detection/v2 v2.0.2 h1:RxW1YV6CKZOiB1yHrLJe20bBvBkjfDmslD1a11E3trI=
 github.com/pixlise/diffraction-peak-detection/v2 v2.0.2/go.mod h1:FoJ2URzrSV8pzoXK0CDH4CP0IyhfeaEpTnYUmOKEDt0=
+github.com/pixlise/diffraction-peak-detection/v2 v2.0.3 h1:zdYZlkk+yCG1T2khfimCS3L4o3+Pt5uwiNePDzWwC3Q=
+github.com/pixlise/diffraction-peak-detection/v2 v2.0.3/go.mod h1:FoJ2URzrSV8pzoXK0CDH4CP0IyhfeaEpTnYUmOKEDt0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

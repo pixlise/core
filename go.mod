@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/olahol/melody v1.1.3
-	github.com/pixlise/diffraction-peak-detection/v2 v2.0.2
+	github.com/pixlise/diffraction-peak-detection/v2 v2.0.3
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.15.1
 	go.mongodb.org/mongo-driver v1.12.0
