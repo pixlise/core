@@ -56,22 +56,24 @@ func getVersion(svcs *services.APIServices) *protos.VersionResponse {
 		},
 	}
 
-	piquantVersion, err := piquant.GetPiquantVersion(svcs)
-	piquantVerString := "error"
-	if err == nil {
-		piquantVerString = piquantVersion.Version
+	if svcs.MongoDB != nil { // When running tests, this will be nil
+		piquantVersion, err := piquant.GetPiquantVersion(svcs)
+		piquantVerString := "error"
+		if err == nil {
+			piquantVerString = piquantVersion.Version
 
-		// If we can, just get the end
-		parts := strings.Split(piquantVerString, "/")
-		if len(parts) > 0 {
-			piquantVerString = parts[len(parts)-1]
+			// If we can, just get the end
+			parts := strings.Split(piquantVerString, "/")
+			if len(parts) > 0 {
+				piquantVerString = parts[len(parts)-1]
+			}
 		}
-	}
 
-	result.Versions = append(result.Versions, &protos.VersionResponse_Version{
-		Component: "PIQUANT",
-		Version:   piquantVerString,
-	})
+		result.Versions = append(result.Versions, &protos.VersionResponse_Version{
+			Component: "PIQUANT",
+			Version:   piquantVerString,
+		})
+	}
 
 	return result
 }
