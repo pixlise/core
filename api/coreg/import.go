@@ -626,6 +626,11 @@ func findImage(imageName string, imageRTT string, hctx wsHelpers.HandlerContext)
 }
 
 func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, string, error) {
+	ext := path.Ext(fileName)
+	if len(ext) > 0 {
+		fileName = fileName[0 : len(fileName)-len(ext)]
+	}
+
 	parts := strings.Split(fileName, "-")
 
 	// Expecting:
@@ -635,7 +640,8 @@ func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, str
 	// Don't know what SN100D0 is?
 	// And the original image file name
 	// Don't know what -A is though?
-	if len(parts) != 6 {
+	if len(parts) < 4 {
+		// We expect warped, zoom_, win_ and the file name at a bare minimum
 		return nil, "", fmt.Errorf("Warped image name does not have expected components")
 	}
 
@@ -652,6 +658,23 @@ func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, str
 	winPrefix := "win_"
 	if !strings.HasPrefix(parts[2], winPrefix) {
 		return nil, "", fmt.Errorf("Expected warped image name second part to contain window")
+	}
+
+	// Ensure we have the gds-formatted file name, and check if we have the optional -A or whatever at the end
+	endPiece := ""
+	if len(parts[len(parts)-1]) == 1 { // Just looking for A, eg ends in -A.png...
+		endPiece = "-" + parts[len(parts)-1]
+	}
+
+	gdsFileName := parts[len(parts)-1]
+	if len(endPiece) > 0 {
+		gdsFileName = parts[len(parts)-2]
+	}
+
+	// Verify that we got it
+	_, err := gdsfilename.ParseFileName(gdsFileName + ext)
+	if err != nil {
+		return nil, "", fmt.Errorf("Failed to find GDS file name section in image name: %v. Error: %v", gdsFileName, err)
 	}
 
 	// Read the zoom and window
@@ -688,6 +711,6 @@ func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, str
 		// If this image is coregistered in other ways we don't want it to clash, but we also don't want to generate random chars
 		// for its name so it doesn't just proliferate (and a re-import can overwrite it). So lets try preserve what's likely to be
 		// unique in the file name - the x,y!
-		fmt.Sprintf("coreg-%v_%v-%v-%v", winParts[1], winParts[0], parts[4], parts[5]),
+		fmt.Sprintf("coreg-%v_%v-%v%v%v", winParts[1], winParts[0], gdsFileName, endPiece, ext),
 		nil
 }
