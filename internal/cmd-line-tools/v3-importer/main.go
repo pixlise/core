@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -16,15 +15,20 @@ import (
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
+	protos "github.com/pixlise/core/v4/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var maxItemsToRead int
 var quantLogLimitCount int
 
-func main() {
-	rand.Seed(time.Now().UnixNano())
+var t0 = time.Now().UnixMilli()
 
-	t0 := time.Now().UnixMilli()
+func main() {
+	defer reportFailedTasks()
+	//rand.Seed(time.Now().UnixNano())
+
 	fmt.Printf("Started: %v\n", time.Now().String())
 
 	var sourceMongoSecret string
@@ -38,6 +42,15 @@ func main() {
 	var destEnvName string
 	var auth0Domain, auth0ClientId, auth0Secret string
 	var limitToDatasetIDs string
+	var migrateDatasetsEnabled bool
+	var migrateROIsEnabled bool
+	var migrateDiffractionPeaksEnabled bool
+	var migrateRGBMixesEnabled bool
+	var migrateTagsEnabled bool
+	var migrateQuantsEnabled bool
+	var migrateElementSetsEnabled bool
+	var migrateZStacksEnabled bool
+	var migrateExpressionsEnabled bool
 
 	flag.StringVar(&sourceMongoSecret, "sourceMongoSecret", "", "Source mongo DB secret")
 	flag.StringVar(&destMongoSecret, "destMongoSecret", "", "Destination mongo DB secret")
@@ -54,6 +67,15 @@ func main() {
 	flag.StringVar(&auth0Secret, "auth0Secret", "", "Auth0 secret for management API")
 	flag.StringVar(&limitToDatasetIDs, "limitToDatasetIDs", "", "Comma-separated dataset IDs to limit import to (for speed/testing)")
 	flag.IntVar(&quantLogLimitCount, "quantLogLimitCount", 0, "Limits how many log files are copied (for speed/testing)")
+	flag.BoolVar(&migrateDatasetsEnabled, "migrateDatasetsEnabled", true, "Should we migrate datasets?")
+	flag.BoolVar(&migrateROIsEnabled, "migrateROIsEnabled", true, "Should we migrate ROIs?")
+	flag.BoolVar(&migrateDiffractionPeaksEnabled, "migrateDiffractionPeaksEnabled", true, "Should we migrate Diffraction Peaks?")
+	flag.BoolVar(&migrateRGBMixesEnabled, "migrateRGBMixesEnabled", true, "Should we migrate RGB Mixes?")
+	flag.BoolVar(&migrateTagsEnabled, "migrateTagsEnabled", true, "Should we migrate Tags?")
+	flag.BoolVar(&migrateQuantsEnabled, "migrateQuantsEnabled", true, "Should we migrate Quants?")
+	flag.BoolVar(&migrateElementSetsEnabled, "migrateElementSetsEnabled", true, "Should we migrate Element Sets?")
+	flag.BoolVar(&migrateZStacksEnabled, "migrateZStacksEnabled", true, "Should we migrate Z-Stacks?")
+	flag.BoolVar(&migrateExpressionsEnabled, "migrateExpressionsEnabled", true, "Should we migrate expressions?")
 
 	flag.Parse()
 
@@ -94,10 +116,25 @@ func main() {
 	// Destination DB is the new pixlise one
 	destDB := destMongoClient.Database(mongoDBConnection.GetDatabaseName("pixlise", destEnvName))
 
-	// Clear out ownership table first
-	err = destDB.Collection(dbCollections.OwnershipName).Drop(context.TODO())
-	if err != nil {
-		fatalError(err)
+	// Clear out ownership table first, but only for the bits we're about to import
+	if migrateDatasetsEnabled {
+		clearOwnership(destDB, protos.ObjectType_OT_SCAN)
+	}
+	if migrateROIsEnabled {
+		clearOwnership(destDB, protos.ObjectType_OT_ROI)
+	}
+	if migrateRGBMixesEnabled {
+		clearOwnership(destDB, protos.ObjectType_OT_EXPRESSION_GROUP)
+	}
+	if migrateQuantsEnabled {
+		clearOwnership(destDB, protos.ObjectType_OT_QUANTIFICATION)
+	}
+	if migrateElementSetsEnabled {
+		clearOwnership(destDB, protos.ObjectType_OT_ELEMENT_SET)
+	}
+	if migrateExpressionsEnabled {
+		clearOwnership(destDB, protos.ObjectType_OT_EXPRESSION)
+		clearOwnership(destDB, protos.ObjectType_OT_DATA_MODULE)
 	}
 
 	var listingWG sync.WaitGroup
@@ -124,22 +161,30 @@ func main() {
 			}
 		}
 
-		fmt.Println("==========================================")
-		fmt.Println("Migrating data from old expressions DB...")
-		fmt.Println("==========================================")
-		err = migrateExpressionsDB(srcExprDB, destDB, userGroups)
-		if err != nil {
-			fatalError(err)
+		if migrateExpressionsEnabled {
+			fmt.Println("==========================================")
+			fmt.Println("Migrating data from old expressions DB...")
+			fmt.Println("==========================================")
+			err = migrateExpressionsDB(srcExprDB, destDB, userGroups)
+			if err != nil {
+				fatalError(err)
+			}
+		} else {
+			fmt.Println("Skipping migration of expressions...")
 		}
 
-		fmt.Println("==========================================")
-		fmt.Println("Migrating data from datasets bucket...")
-		fmt.Println("==========================================")
+		if migrateDatasetsEnabled {
+			fmt.Println("==========================================")
+			fmt.Println("Migrating data from datasets bucket...")
+			fmt.Println("==========================================")
 
-		fmt.Println("Datasets...")
-		err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB, limitToDatasetIDsList, userGroups)
-		if err != nil {
-			fatalError(err)
+			fmt.Println("Datasets...")
+			err = migrateDatasets(configBucket, dataBucket, destDataBucket, fs, destDB, limitToDatasetIDsList, userGroups)
+			if err != nil {
+				fatalError(err)
+			}
+		} else {
+			fmt.Println("Skipping migration of datasets...")
 		}
 
 		fmt.Println("==========================================")
@@ -185,76 +230,107 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fmt.Println("Quant Z-stacks...")
-		err = migrateMultiQuants(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB)
-		if err != nil {
-			fatalError(err)
-		}
-	}()
+	if migrateZStacksEnabled {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fmt.Println("Quant Z-stacks...")
+			err = migrateMultiQuants(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB)
+			if err != nil {
+				fatalError(err)
+			}
+		}()
+	} else {
+		fmt.Println("Skipping migration of z-stacks...")
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fmt.Println("Quants...")
-		err = migrateQuants(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB, destUserContentBucket, userGroups)
-		if err != nil {
-			fatalError(err)
-		}
-	}()
+	if migrateQuantsEnabled {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fmt.Println("Quants...")
+			err = migrateQuants(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB, destUserContentBucket, userGroups)
+			if err != nil {
+				fatalError(err)
+			}
+		}()
+	} else {
+		fmt.Println("Skipping migration of quants...")
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fmt.Println("Element Sets...")
-		err = migrateElementSets(userContentBucket, userContentPaths, fs, destDB, userGroups)
-		if err != nil {
-			fatalError(err)
-		}
-	}()
+	if migrateElementSetsEnabled {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fmt.Println("Element Sets...")
+			err = migrateElementSets(userContentBucket, userContentPaths, fs, destDB, userGroups)
+			if err != nil {
+				fatalError(err)
+			}
+		}()
+	} else {
+		fmt.Println("Skipping migration of element sets...")
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fmt.Println("ROIs...")
-		err = migrateROIs(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB, userGroups)
-		if err != nil {
-			fatalError(err)
-		}
-	}()
+	if migrateROIsEnabled {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fmt.Println("ROIs...")
+			err = migrateROIs(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB, userGroups)
+			if err != nil {
+				fatalError(err)
+			}
+		}()
+	} else {
+		fmt.Println("Skipping migration of ROIs...")
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fmt.Println("RGB Mixes...")
-		err = migrateRGBMixes(userContentBucket, userContentPaths, fs, destDB, userGroups)
-		if err != nil {
-			fatalError(err)
-		}
-	}()
+	if migrateRGBMixesEnabled {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fmt.Println("RGB Mixes...")
+			err = migrateRGBMixes(userContentBucket, userContentPaths, fs, destDB, userGroups)
+			if err != nil {
+				fatalError(err)
+			}
+		}()
+	} else {
+		fmt.Println("Skipping migration of RGB mixes...")
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fmt.Println("Tags...")
-		err = migrateTags(userContentBucket, userContentPaths, fs, destDB)
-		if err != nil {
-			fatalError(err)
-		}
-	}()
+	if migrateTagsEnabled {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fmt.Println("Tags...")
+			err = migrateTags(userContentBucket, userContentPaths, fs, destDB)
+			if err != nil {
+				fatalError(err)
+			}
+		}()
+	} else {
+		fmt.Println("Skipping migration of tags...")
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fmt.Println("Diffraction Peak...")
-		err = migrateDiffraction(userContentBucket, userContentPaths, fs, destDB)
-		if err != nil {
-			fatalError(err)
-		}
-	}()
+	if migrateDiffractionPeaksEnabled {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fmt.Println("Diffraction Peak...")
+			err = migrateDiffraction(userContentBucket, userContentPaths, fs, destDB)
+			if err != nil {
+				fatalError(err)
+			}
+		}()
+	} else {
+		fmt.Println("Skipping migration of diffraction peaks...")
+	}
 
+	// NOTE: we don't actually migrate them any more... new world is too different. Just left
+	// here for completeness/documentation of what was tried, and it does still clear the
+	// View States DB collection!
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -267,14 +343,25 @@ func main() {
 
 	// Wait for all
 	wg.Wait()
-
-	t1 := time.Now().UnixMilli()
-	sec := (t1 - t0) / 1000
-
-	fmt.Printf("Finished: %v\n", time.Now().String())
-	fmt.Printf("Runtime %v seconds\n", sec)
+	printFinishStats()
 }
 
 func fatalError(err error) {
+	printFinishStats()
 	log.Fatal(err)
+}
+
+func printFinishStats() {
+	t1 := time.Now().UnixMilli()
+	sec := (t1 - t0) / 1000
+	fmt.Printf("Runtime %v seconds\n", sec)
+}
+
+func clearOwnership(destDB *mongo.Database, objType protos.ObjectType) {
+	coll := destDB.Collection(dbCollections.OwnershipName)
+
+	_, err := coll.DeleteMany(context.TODO(), bson.M{"objectType": objType})
+	if err != nil {
+		fatalError(err)
+	}
 }

@@ -24,25 +24,25 @@ import (
 
 // Check the summary filename gets created correctly
 func Test_InitializeConfigWithFile(t *testing.T) {
-	want := "buildsBucket"
+	want := "datasetsBucket"
 	cfg, err := NewConfigFromFile("./test-data/example_config.json")
 	if err != nil {
 		t.Fatalf("Error initializing config: %v", err)
 	}
-	if cfg.BuildsBucket != want {
-		t.Errorf("cfg.BuildsBucket got %q; want: %q", cfg.BuildsBucket, want)
+	if cfg.DatasetsBucket != want {
+		t.Errorf("cfg.DatasetsBucket got %q; want: %q", cfg.DatasetsBucket, want)
 	}
 }
 
 // Check that the config can be overridden with Environment Variables
 func Test_OverrideConfigWithEnvVars(t *testing.T) {
-	want := "ENV-SET-BuildsBucket"
-	os.Setenv("PIXLISE_CONFIG_BuildsBucket", want)
+	want := "ENV-SET-DatasetsBucket"
+	os.Setenv("PIXLISE_CONFIG_DatasetsBucket", want)
 	cfg, err := NewConfigFromFile("./test-data/example_config.json")
 	if err != nil {
 		t.Fatalf("Error initializing config: %v", err)
 	}
-	if cfg.BuildsBucket != want {
-		t.Errorf("cfg.BuildsBucket got %q; want: %q", cfg.BuildsBucket, want)
+	if cfg.DatasetsBucket != want {
+		t.Errorf("cfg.DatasetsBucket got %q; want: %q", cfg.DatasetsBucket, want)
 	}
 }

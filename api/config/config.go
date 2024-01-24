@@ -44,7 +44,6 @@ type APIConfig struct {
 	Auth0ManagementSecret   string
 	Auth0NewUserRoleID      string
 
-	BuildsBucket string // Piquant download bucket
 	ConfigBucket string
 
 	CoresPerNode int32

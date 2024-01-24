@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"path"
 	"sync"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -95,6 +96,10 @@ func (s SrcSummaryFileData) GetRTT() string {
 
 type SrcDatasetConfig struct {
 	Datasets []SrcSummaryFileData `json:"datasets"`
+}
+
+func SrcGetDatasetFilePath(datasetID string, fileName string) string {
+	return path.Join("Datasets", datasetID, fileName)
 }
 
 func migrateDatasets(
@@ -241,7 +246,7 @@ func migrateDatasets(
 			}
 
 			// Copy dataset bin file
-			s3SourcePath := filepaths.GetDatasetFilePath(dataset.DatasetID, filepaths.DatasetFileName)
+			s3SourcePath := SrcGetDatasetFilePath(dataset.DatasetID, filepaths.DatasetFileName)
 			s3DestPath := filepaths.GetScanFilePath(dataset.DatasetID, filepaths.DatasetFileName)
 			err = fs.CopyObject(srcBucket, s3SourcePath, destDataBucket, s3DestPath)
 			if err != nil {
@@ -249,7 +254,7 @@ func migrateDatasets(
 			}
 
 			// Copy diffraction db bin file
-			s3SourcePath = filepaths.GetDatasetFilePath(dataset.DatasetID, filepaths.DiffractionDBFileName)
+			s3SourcePath = SrcGetDatasetFilePath(dataset.DatasetID, filepaths.DiffractionDBFileName)
 			s3DestPath = filepaths.GetScanFilePath(dataset.DatasetID, filepaths.DiffractionDBFileName)
 			err = fs.CopyObject(srcBucket, s3SourcePath, destDataBucket, s3DestPath)
 			if err != nil {

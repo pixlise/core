@@ -108,7 +108,7 @@ func importAlignedImage(
 		return "", 0, 0, fmt.Errorf("Expected only PNG or JPG image for Aligned image, got: %v", img.Image)
 	}
 
-	imgSave, imgBytes, err := getImportImage("aligned", img.Image, datasetID, dataBucket, fs, 0, 0)
+	imgSave, imgBytes, srcS3Path, err := getImportImage("aligned", img.Image, datasetID, dataBucket, fs, 0, 0)
 	if err != nil {
 		return "", 0, 0, err
 	}
@@ -139,7 +139,7 @@ func importAlignedImage(
 		}
 	}
 
-	return imgSave.Name, imgSave.Width, imgSave.Height, saveImage(imgSave, imagesColl, imgBytes, fs, destDataBucket, datasetID)
+	return imgSave.Name, imgSave.Width, imgSave.Height, saveImage(imgSave, imagesColl, imgBytes, fs, dataBucket, srcS3Path, destDataBucket, datasetID)
 }
 
 func importMatchedImage(
@@ -172,7 +172,7 @@ func importMatchedImage(
 		imageH = alignedImageH
 	}
 
-	imgSave, imgBytes, err := getImportImage("matched", img.Image, datasetID, dataBucket, fs, imageW, imageH)
+	imgSave, imgBytes, srcS3Path, err := getImportImage("matched", img.Image, datasetID, dataBucket, fs, imageW, imageH)
 	if err != nil {
 		return "", err
 	}
@@ -192,7 +192,7 @@ func importMatchedImage(
 		imgSave.Purpose = protos.ScanImagePurpose_SIP_MULTICHANNEL
 	}
 
-	return imgSave.Name, saveImage(imgSave, imagesColl, imgBytes, fs, destDataBucket, datasetID)
+	return imgSave.Name, saveImage(imgSave, imagesColl, imgBytes, fs, dataBucket, srcS3Path, destDataBucket, datasetID)
 }
 
 func isExt(fileName string, extNoDot string) bool {
@@ -208,32 +208,32 @@ func importUnalignedImage(
 	fs fileaccess.FileAccess,
 	imagesColl *mongo.Collection,
 ) (string, error) {
-	imgSave, imgBytes, err := getImportImage("unaligned", imgName, datasetID, dataBucket, fs, 0, 0)
+	imgSave, imgBytes, srcS3Path, err := getImportImage("unaligned", imgName, datasetID, dataBucket, fs, 0, 0)
 	if err != nil {
 		return "", err
 	}
 
 	imgSave.AssociatedScanIds = []string{datasetID}
 
-	return imgSave.Name, saveImage(imgSave, imagesColl, imgBytes, fs, destDataBucket, datasetID)
+	return imgSave.Name, saveImage(imgSave, imagesColl, imgBytes, fs, dataBucket, srcS3Path, destDataBucket, datasetID)
 }
 
 // Downloads the image and determines the size if passed in imageW==imageH==0
-func getImportImage(imgType string, imageName string, datasetID string, dataBucket string, fs fileaccess.FileAccess, imageW uint32, imageH uint32) (*protos.ScanImage, []byte, error) {
+func getImportImage(imgType string, imageName string, datasetID string, dataBucket string, fs fileaccess.FileAccess, imageW uint32, imageH uint32) (*protos.ScanImage, []byte, string, error) {
 	fmt.Printf("Importing scan: %v %v image: %v...\n", datasetID, imgType, imageName)
 
 	// Read the image file itself
 	s3Path := filepaths.GetDatasetFilePath(datasetID, imageName)
 	imgBytes, err := fs.ReadObject(dataBucket, s3Path)
 	if err != nil {
-		return nil, imgBytes, err
+		return nil, imgBytes, s3Path, err
 	}
 
 	// Open the image to determine the size
 	if imageW == 0 && imageH == 0 {
 		theImage, _, err := image.Decode(bytes.NewReader(imgBytes))
 		if err != nil {
-			return nil, imgBytes, fmt.Errorf("Failed to read image: %v. Error: %v", imageName, err)
+			return nil, imgBytes, s3Path, fmt.Errorf("Failed to read image: %v. Error: %v", imageName, err)
 		}
 
 		imageW = uint32(theImage.Bounds().Dx())
@@ -256,7 +256,7 @@ func getImportImage(imgType string, imageName string, datasetID string, dataBuck
 		//MatchInfo: ,
 	}
 
-	return imgSave, imgBytes, nil
+	return imgSave, imgBytes, s3Path, nil
 }
 
 func getImageSaveName(scanId string, imageName string) string {
@@ -274,6 +274,8 @@ func saveImage(
 	imagesColl *mongo.Collection,
 	imgBytes []byte,
 	fs fileaccess.FileAccess,
+	srcDataBucket string,
+	srcS3Path string,
 	destDataBucket string,
 	datasetID string,
 ) error {
@@ -292,5 +294,7 @@ func saveImage(
 
 	// Also write the image file to S3 destination
 	writePath := filepaths.GetImageFilePath(savePath)
-	return fs.WriteObject(destDataBucket, writePath, imgBytes)
+	// TODO: copy within AWS for speed
+	//return fs.WriteObject(destDataBucket, writePath, imgBytes)
+	return fs.CopyObject(srcDataBucket, srcS3Path, destDataBucket, writePath)
 }

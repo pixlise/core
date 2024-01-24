@@ -4,7 +4,6 @@
     "Auth0ManagementClientID": "clientId",
     "Auth0ManagementSecret": "clientSecret",
     "Auth0NewUserRoleID": "rol_ABC123abc456",
-    "BuildsBucket": "buildsBucket",
     "ConfigBucket": "configBucket",
     "CoresPerNode": 1,
     "DataSourceSNSTopic": "arn:aws:sns:us-east-1:123456789012:mytopic",

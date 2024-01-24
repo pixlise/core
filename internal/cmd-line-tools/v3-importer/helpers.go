@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"sync"
+	"time"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/core/fileaccess"
@@ -58,31 +58,22 @@ func makeID() string {
 }
 
 func s3Copy(fs fileaccess.FileAccess, srcBucket string, srcPaths []string, dstBucket string, dstPaths []string, failOnError []bool) {
-	var wg sync.WaitGroup
-
 	if len(srcPaths) != len(dstPaths) || len(srcPaths) != len(failOnError) {
 		fatalError(fmt.Errorf("s3Copy inputs not the same length for srcBucket %v, dstBucket %v\n", srcBucket, dstBucket))
 	}
 
 	// Copy each in its own thread
 	for c, srcPath := range srcPaths {
-		wg.Add(1)
-		go func(srcBucket string, srcPath string, dstBucket string, dstPath string, failOnError bool) {
-			defer wg.Done()
-
-			err := fs.CopyObject(srcBucket, srcPath, dstBucket, dstPaths[c])
-			if err != nil {
-				if failOnError {
-					fatalError(err)
-				} else {
-					log.Println(err)
-				}
+		err := fs.CopyObject(srcBucket, srcPath, dstBucket, dstPaths[c])
+		if err != nil {
+			if failOnError[c] {
+				fatalError(err)
+			} else {
+				log.Printf("CopyObject to s3://%v/%v ERROR: %v\n", dstBucket, dstPaths[c], err)
+				time.Sleep(2 * time.Second)
 			}
+		}
 
-			fmt.Printf("  Copied: s3://%v/%v --> s3://%v/%v\n", srcBucket, srcPath, dstBucket, dstPath)
-		}(srcBucket, srcPath, dstBucket, dstPaths[c], failOnError[c])
+		fmt.Printf("  Copied: s3://%v/%v --> s3://%v/%v\n", srcBucket, srcPath, dstBucket, dstPaths[c])
 	}
-
-	// Wait for all
-	wg.Wait()
 }

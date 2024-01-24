@@ -8,9 +8,12 @@ __debug_bin.exe
 api/ws/wsMessage.go
 /OLDCODE
 auth0dummy.go
+/local-mongo/dbseed/from-prod-Jan2024/
 /local-mongo/dbseed/migrated/
+/local-mongo/dbseed/migration-source/
 /local-mongo/dbseed/old/
 /local-mongo/dbseed/*.json
+/local-mongo/dbseed/*.sh
 /local-mongo/dbseed/json/
 /local-mongo/3repl/
 

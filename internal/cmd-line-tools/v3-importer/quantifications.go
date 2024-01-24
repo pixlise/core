@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
@@ -66,11 +67,11 @@ type SrcJobSummaryItem struct {
 
 const (
 	SrcJobStarting         SrcJobStatusValue = "starting"
-	SrcJobPreparingNodes                     = "preparing_nodes"
-	SrcJobNodesRunning                       = "nodes_running"
-	SrcJobGatheringResults                   = "gathering_results"
-	SrcJobComplete                           = "complete"
-	SrcJobError                              = "error"
+	SrcJobPreparingNodes   SrcJobStatusValue = "preparing_nodes"
+	SrcJobNodesRunning     SrcJobStatusValue = "nodes_running"
+	SrcJobGatheringResults SrcJobStatusValue = "gathering_results"
+	SrcJobComplete         SrcJobStatusValue = "complete"
+	SrcJobError            SrcJobStatusValue = "error"
 )
 
 func migrateQuants(
@@ -87,46 +88,49 @@ func migrateQuants(
 		return err
 	}
 
-	sharedItems := map[string]SrcJobSummaryItem{}
-
-	// First, find all the shared quants
-	for _, p := range userContentFiles {
-		if strings.Contains(p, "/Quantifications/summary-") && strings.HasPrefix(p, "UserContent/shared/") {
-			scanId := filepath.Base(filepath.Dir(filepath.Dir(p)))
-
-			if len(limitToDatasetIds) > 0 && !utils.ItemInSlice(scanId, limitToDatasetIds) {
-				fmt.Printf(" SKIPPING shared quant for dataset id: %v...\n", scanId)
-				continue
-			}
-
-			// Read this file
-			jobSummary := SrcJobSummaryItem{}
-			err := fs.ReadJSON(userContentBucket, p, &jobSummary, false)
-			if err != nil {
-				return err
-			}
-
-			// Example: UserContent/<user-id>/<dataset-id>/Quantification/summary-<quant-id>.json
-			quantId := filepath.Base(p)
-
-			// Snip off the summary- and .json
-			quantId = quantId[len("summary-") : len(quantId)-5]
-
-			// Store these till we're finished here
-			sharedItems[quantId] = jobSummary
-		}
+	// Read the summaries
+	quantSummaries, err := getQuantSummaryItems(userContentFiles, limitToDatasetIds, userContentBucket, fs)
+	if err != nil {
+		return err
 	}
 
-	userItems := map[string]SrcJobSummaryItem{}
+	// Managed shared vs user ones and match them when possible
+	removeDuplicatesWithShared(quantSummaries)
 
-	roiSetCount := 0
-	roisSetCount := 0
-	elementSetSetCount := 0
-	multiQuantCount := 0
+	// Display import stats
+	displayImportStats(quantSummaries)
+
+	// Now migrate what's left
+	migrateQuantItems(quantSummaries, userContentBucket, destUserContentBucket, userGroups, dest, fs)
+
+	return nil
+}
+
+type quantSummaryItem struct {
+	quantId         string
+	scanId          string
+	userIdFromPath  string
+	summaryPath     string
+	shared          bool
+	isOrphanedShare bool
+	summaryItem     *SrcJobSummaryItem
+}
+
+func getQuantSummaryItems(
+	userContentFiles []string,
+	limitToDatasetIds []string,
+	userContentBucket string,
+	fs fileaccess.FileAccess,
+) (map[string]quantSummaryItem, error) {
+	summariesNeeded := map[string]quantSummaryItem{}
 
 	for _, p := range userContentFiles {
-		if strings.Contains(p, "/Quantifications/summary-") && !strings.HasPrefix(p, "UserContent/shared/") {
+		if strings.Contains(p, "/Quantifications/summary-") {
 			// Example: UserContent/<user-id>/<dataset-id>/Quantification/summary-<quant-id>.json
+
+			// If user id is shared, this is a shared quant
+			shared := strings.HasPrefix(p, "UserContent/shared/")
+
 			quantId := filepath.Base(p)
 
 			// Snip off the summary- and .json
@@ -144,81 +148,263 @@ func migrateQuants(
 				continue
 			}
 
-			// Read this file
-			jobSummary := SrcJobSummaryItem{}
-			err := fs.ReadJSON(userContentBucket, p, &jobSummary, false)
-			if err != nil {
-				return err
+			// Make sure this is the first time we saw this id
+			if _, ok := summariesNeeded[p]; ok {
+				return nil, fmt.Errorf("Duplicate quantification ID: %v for path: %v", quantId, p)
 			}
 
-			// Update counts
-			if len(jobSummary.Params.RoiID) > 0 {
-				fmt.Printf("%v has RoiID set\n", p)
-				roiSetCount++
+			// We'll want this file!
+			summariesNeeded[quantId] = quantSummaryItem{
+				quantId,
+				scanId,
+				userIdFromPath,
+				p,
+				shared,
+				shared, // isOrphanedShare - assume they are all orphaned for now
+				nil,    // don't have the summary item yet, that's what we'll be reading!
 			}
-			if len(jobSummary.Params.RoiIDs) > 0 {
-				fmt.Printf("%v has RoiIDs set\n", p)
-				roisSetCount++
-			}
-			if len(jobSummary.Params.ElementSetID) > 0 {
-				elementSetSetCount++
-			}
-			if jobSummary.Params.QuantMode == SrcQuantModeCombinedMultiQuant || jobSummary.Params.QuantMode == SrcQuantModeABMultiQuant {
-				multiQuantCount++
-			}
+		}
+	}
 
-			// Paranoia, make sure both quant IDs match
-			if jobSummary.JobID != quantId {
-				return fmt.Errorf("Quant ID mismatch: path had %v, job summary file had %v. Path: %v", quantId, jobSummary.JobID, p)
-			}
-			if jobSummary.Params.DatasetID != scanId {
-				return fmt.Errorf("Quant Scan ID mismatch: path had %v, job summary file had %v. Path: %v", scanId, jobSummary.Params.DatasetID, p)
-			}
+	// Now that we've decided what to read, run some tasks to read them
+	summaryReads := make(chan quantSummaryItem, len(summariesNeeded))
 
-			// Write user quant to DB and also remember them for later...
-			if _, ok := userItems[quantId]; ok {
-				fmt.Printf("Duplicate quantification ID: %v\n", quantId)
-				continue
-			}
+	// Read them
+	var summaryItemsLock = sync.Mutex{}
+	jobSummaryItems := map[string]SrcJobSummaryItem{}
 
-			if jobSummary.Params.Creator.UserID != userIdFromPath {
-				fmt.Printf("Unexpected quant user: %v, path had id: %v. Path was: %v. Quant was likely copied to another user, skipping...\n" /*. Using quant user in output paths...\n"*/, jobSummary.Params.Creator.UserID, userIdFromPath, p)
-				//userIdFromPath = jobSummary.Params.Creator.UserID
-				continue
-			}
+	fmt.Printf("Reading %v job summary files in parallel...\n", len(summariesNeeded))
 
-			userItems[quantId] = jobSummary
+	var wg sync.WaitGroup
 
-			viewerGroupId := ""
-			if removeIfSharedQuant(jobSummary, sharedItems) {
-				viewerGroupId = userGroups["PIXL-FM"]
-			}
+	// Read several at a time
+	for w := 0; w < 10; w++ {
+		go jobSummaryReadWorker(&wg, summaryReads, &summaryItemsLock, jobSummaryItems, userContentBucket, fs)
+	}
 
-			if err := migrateQuant(jobSummary, "", coll, userContentBucket, destUserContentBucket, viewerGroupId, fs, dest); err != nil {
-				fatalError(err)
+	for _, item := range summariesNeeded {
+		summaryReads <- item
+	}
+
+	close(summaryReads)
+
+	wg.Wait()
+
+	fmt.Printf("Read %v job summary files. Processing...\n", len(summariesNeeded))
+
+	missingSummaryIds := []string{}
+
+	for id, item := range summariesNeeded {
+		summary, ok := jobSummaryItems[id]
+		if !ok {
+			missingSummaryIds = append(missingSummaryIds, id)
+		} else {
+			item.summaryItem = &summary
+
+			// Overwrite existing
+			summariesNeeded[id] = item
+		}
+	}
+
+	if len(missingSummaryIds) > 0 {
+		return nil, fmt.Errorf("Failed to find job summary for id: [%v]", strings.Join(missingSummaryIds, ","))
+	}
+
+	return summariesNeeded, nil
+}
+
+func removeDuplicatesWithShared(quants map[string]quantSummaryItem) {
+	// Find all the user vs shared ones
+	userQuants := map[string]quantSummaryItem{}
+	sharedQuants := map[string]quantSummaryItem{}
+	for id, quant := range quants {
+		if quant.shared {
+			sharedQuants[id] = quant
+		} else {
+			userQuants[id] = quant
+		}
+	}
+
+	// Now run through all user ones and remove them if they are already in shared
+	for id, quant := range userQuants {
+		sharedId := getSharedIdIfExists(quant, sharedQuants)
+		if len(sharedId) > 0 {
+			// This user quant is also shared (under a different ID)
+			// We delete the user copy and mark the shared one as matched-with-user (this way we can list
+			// orphaned shared ones, where user has deleted but shared one exists)
+			fmt.Printf("Found %v is user copy of shared %v. Removing user copy and marking shared as not-orphaned.", id, sharedId)
+
+			delete(quants, id)
+
+			sharedQuant, ok := quants[sharedId]
+			if !ok {
+				fatalError(fmt.Errorf("removeDuplicatesWithShared: Failed to find shared quant: %v", sharedId))
+			} else {
+				sharedQuant.isOrphanedShare = false
+				quants[sharedId] = sharedQuant
 			}
+		}
+	}
+}
+
+func displayImportStats(quants map[string]quantSummaryItem) {
+	roiSetCount := 0
+	roisSetCount := 0
+	elementSetSetCount := 0
+	multiQuantCount := 0
+	sharedCount := 0
+	sharedOrphanCount := 0
+
+	for id, quant := range quants {
+		jobSummary := quant.summaryItem
+
+		if quant.shared {
+			sharedCount++
+		}
+
+		if quant.isOrphanedShare {
+			if quant.shared {
+				sharedOrphanCount++
+			} else {
+				// sanity check
+				fatalError(fmt.Errorf("Found quant %v marked as not shared but orphaned", id))
+			}
+		}
+
+		// Update counts
+		if len(jobSummary.Params.RoiID) > 0 {
+			fmt.Printf("%v has RoiID set: %v\n", quant.summaryPath, jobSummary.Params.RoiID)
+			roiSetCount++
+		}
+		if len(jobSummary.Params.RoiIDs) > 0 {
+			fmt.Printf("%v has RoiIDs set: [%v]\n", quant.summaryPath, strings.Join(jobSummary.Params.RoiIDs, ","))
+			roisSetCount++
+		}
+		if len(jobSummary.Params.ElementSetID) > 0 {
+			elementSetSetCount++
+		}
+		if jobSummary.Params.QuantMode == SrcQuantModeCombinedMultiQuant || jobSummary.Params.QuantMode == SrcQuantModeABMultiQuant {
+			multiQuantCount++
+		}
+
+		// Paranoia, make sure both quant IDs match
+		if jobSummary.JobID != quant.quantId {
+			fatalError(fmt.Errorf("Quant ID mismatch: path had %v, job summary file had %v. Path: %v", quant.quantId, jobSummary.JobID, quant.summaryPath))
+		}
+		if jobSummary.Params.DatasetID != quant.scanId {
+			fatalError(fmt.Errorf("Quant Scan ID mismatch: path had %v, job summary file had %v. Path: %v", quant.scanId, jobSummary.Params.DatasetID, quant.summaryPath))
 		}
 	}
 
 	fmt.Printf("Quantification import results: roiID field count: %v, roiIDs field count: %v, elementSetID field count: %v, multiQuants: %v\n",
 		roiSetCount, roisSetCount, elementSetSetCount, multiQuantCount)
 
-	fmt.Printf("Quants inserted: %v\n", len(userItems))
-	fmt.Println("Adding the following orphaned Quants (shared but original not found):")
-	for _, shared := range sharedItems {
-		fmt.Printf(" - %v\n", shared.JobID)
-		// At this point, it's been shared, so no longer in the OutputFilePath dir that's in the summary. We override it with the real
-		// path to the shared item
-		srcPath := SrcGetUserQuantPath("shared", shared.Params.DatasetID, "")
-		if err := migrateQuant(shared, srcPath, coll, userContentBucket, destUserContentBucket, userGroups["PIXL-FM"], fs, dest); err != nil {
-			fatalError(fmt.Errorf("migrateQuant failed for: %v. Error: %v", shared.JobID, err))
-		}
-	}
-
-	return nil
+	fmt.Printf("Total quants read: %v, containing %v shared, of which %v are orphaned", len(quants), sharedCount, sharedOrphanCount)
 }
 
-func migrateQuant(jobSummary SrcJobSummaryItem, overrideSrcPath string, coll *mongo.Collection, userContentBucket string, destUserContentBucket string, viewerGroupId string, fs fileaccess.FileAccess, dest *mongo.Database) error {
+func migrateQuantItems(
+	quants map[string]quantSummaryItem,
+	userContentBucket string,
+	destUserContentBucket string,
+	userGroups map[string]string,
+	dest *mongo.Database,
+	fs fileaccess.FileAccess,
+) {
+	quantMigrationJobs := []quantMigrateJob{}
+
+	fmt.Printf("Migrating %v quants...", len(quants))
+
+	for id, quant := range quants {
+		if id != quant.quantId || id != quant.summaryItem.JobID {
+			fatalError(fmt.Errorf("migrateQuantItems: quant id mismatch between: stored Id: %v, quantId %v, retrieved job summary id: %v", id, quant.quantId, quant.summaryItem.JobID))
+		}
+
+		overrideSrcPath := ""
+		if quant.isOrphanedShare {
+			// For orphaned ones, we need to look up the path again
+			// NOT SURE WHY THIS IS EXACTLY, just following the last bit of code when rewriting... TODO: test me!
+			overrideSrcPath = SrcGetUserQuantPath("shared", quant.summaryItem.Params.DatasetID, "")
+		}
+
+		viewerGroupId := ""
+		if quant.shared {
+			viewerGroupId = userGroups["PIXL-FM"]
+		}
+
+		quantMigrationJobs = append(quantMigrationJobs, quantMigrateJob{
+			quant, overrideSrcPath, userContentBucket, destUserContentBucket, viewerGroupId,
+		})
+	}
+
+	var wg sync.WaitGroup
+
+	// Start a pool of quant migrators
+	jobs := make(chan quantMigrateJob, len(quantMigrationJobs))
+	for w := 0; w < 4; w++ {
+		go migrateQuantWorker(&wg, jobs, fs, dest)
+	}
+
+	// Add jobs!
+	for _, job := range quantMigrationJobs {
+		jobs <- job
+	}
+
+	close(jobs)
+
+	wg.Wait()
+
+	fmt.Printf("Quant migration of %v quants is complete!\n", len(quants))
+}
+
+func jobSummaryReadWorker(wg *sync.WaitGroup, summaries <-chan quantSummaryItem, summaryItemsLock *sync.Mutex, jobSummaryItems map[string]SrcJobSummaryItem, userContentBucket string, fs fileaccess.FileAccess) {
+	defer wg.Done()
+	wg.Add(1)
+
+	for s := range summaries {
+		jobSummary := SrcJobSummaryItem{}
+		err := fs.ReadJSON(userContentBucket, s.summaryPath, &jobSummary, false)
+		if err != nil {
+			fatalError(err)
+		}
+
+		// Save it in the waiting struct
+		//defer summaryItemsLock.Unlock()
+		summaryItemsLock.Lock()
+
+		// Ensure this doesn't already exist
+		if _, ok := jobSummaryItems[s.quantId]; ok {
+			fatalError(fmt.Errorf("jobSummaryReadWorker found %v already loaded", s.quantId))
+		}
+
+		jobSummaryItems[s.quantId] = jobSummary
+		summaryItemsLock.Unlock()
+
+		fmt.Printf("Summary (remaining %v): %v read OK\n", len(summaries), s.summaryPath)
+	}
+}
+
+type quantMigrateJob struct {
+	quant                 quantSummaryItem
+	overrideSrcPath       string
+	userContentBucket     string
+	destUserContentBucket string
+	viewerGroupId         string
+}
+
+func migrateQuantWorker(wg *sync.WaitGroup, jobs <-chan quantMigrateJob, fs fileaccess.FileAccess, dest *mongo.Database) {
+	defer wg.Done()
+	wg.Add(1)
+
+	for j := range jobs {
+		id := addImportTask(fmt.Sprintf("migrateQuant datasetID: %v, quantID: %v, jobOutputPath: %v", j.quant.scanId, j.quant.quantId, j.quant.summaryItem.OutputFilePath))
+		err := migrateQuant(*j.quant.summaryItem, j.overrideSrcPath, j.userContentBucket, j.destUserContentBucket, j.viewerGroupId, fs, dest)
+		finishImportTask(id, err)
+
+		fmt.Printf("Migrated (remaining: %v) quant id: %v.\n", len(jobs), j.quant.quantId)
+	}
+}
+
+func migrateQuant(jobSummary SrcJobSummaryItem, overrideSrcPath string, userContentBucket string, destUserContentBucket string, viewerGroupId string, fs fileaccess.FileAccess, dest *mongo.Database) error {
 	var jobStatus protos.JobStatus_Status
 
 	switch jobSummary.Status {
@@ -284,6 +470,7 @@ func migrateQuant(jobSummary SrcJobSummaryItem, overrideSrcPath string, coll *mo
 		},
 	}
 
+	coll := dest.Collection(dbCollections.QuantificationsName)
 	_, err := coll.InsertOne(context.TODO(), destQuant)
 	if err != nil {
 		return err
@@ -303,28 +490,20 @@ func migrateQuant(jobSummary SrcJobSummaryItem, overrideSrcPath string, coll *mo
 	return saveQuantFiles(jobSummary.Params.DatasetID, jobSummary.JobID, userContentBucket, srcPath, destUserContentBucket, destQuant.Status.OutputFilePath, fs)
 }
 
-func removeIfSharedQuant(jobSummary SrcJobSummaryItem, sharedQuantSummaries map[string]SrcJobSummaryItem) bool {
+func getSharedIdIfExists(userQuant quantSummaryItem, sharedQuantSummaries map[string]quantSummaryItem) string {
 	// Run through all shared quants and see if we find one that matches this one
-	for c, sharedItem := range sharedQuantSummaries {
-		if jobSummary.Params.DatasetID == sharedItem.Params.DatasetID &&
-			jobSummary.Params.Name == sharedItem.Params.Name &&
-			jobSummary.Params.QuantMode == sharedItem.Params.QuantMode &&
-			jobSummary.Params.Creator.UserID == sharedItem.Params.Creator.UserID &&
-			len(jobSummary.Params.Elements) == len(sharedItem.Params.Elements) {
-			// Finally, check that the elements array are equal
-			for c, elem := range jobSummary.Params.Elements {
-				if elem != sharedItem.Params.Elements[c] {
-					return false
-				}
-			}
-
-			// Remove this from the shared list
-			delete(sharedQuantSummaries, c)
-			return true
+	for id, sharedItem := range sharedQuantSummaries {
+		if userQuant.summaryItem.Params.DatasetID == sharedItem.summaryItem.Params.DatasetID &&
+			userQuant.summaryItem.Params.Name == sharedItem.summaryItem.Params.Name &&
+			userQuant.summaryItem.Params.QuantMode == sharedItem.summaryItem.Params.QuantMode &&
+			userQuant.summaryItem.Params.Creator.UserID == sharedItem.summaryItem.Params.Creator.UserID &&
+			len(userQuant.summaryItem.Params.Elements) == len(sharedItem.summaryItem.Params.Elements) &&
+			utils.SlicesEqual(userQuant.summaryItem.Params.Elements, sharedItem.summaryItem.Params.Elements) {
+			return id
 		}
 	}
 
-	return false
+	return ""
 }
 
 const quantificationSubPath = "Quantifications"
