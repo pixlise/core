@@ -360,8 +360,12 @@ func printFinishStats() {
 func clearOwnership(destDB *mongo.Database, objType protos.ObjectType) {
 	coll := destDB.Collection(dbCollections.OwnershipName)
 
-	_, err := coll.DeleteMany(context.TODO(), bson.M{"objectType": objType})
+	result, err := coll.DeleteMany(context.TODO(), bson.M{"objecttype": objType})
 	if err != nil {
 		fatalError(err)
+	}
+
+	if result.DeletedCount <= 0 {
+		log.Printf("Warning: Deleted 0 items from ownership collection for type: %v", objType)
 	}
 }
