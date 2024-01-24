@@ -20,13 +20,15 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/protobuf/proto"
+
+	"golang.org/x/image/tiff"
 )
 
 func importImagesForDataset(datasetID string, srcBucket string, destDataBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
 	imagesColl := dest.Collection(dbCollections.ImagesName)
 
 	// Load the dataset bin file
-	s3Path := filepaths.GetDatasetFilePath(datasetID, filepaths.DatasetFileName)
+	s3Path := SrcGetDatasetFilePath(datasetID, filepaths.DatasetFileName)
 	fileBytes, err := fs.ReadObject(srcBucket, s3Path)
 	if err != nil {
 		return fmt.Errorf("Failed to load dataset for %v, from: s3://%v/%v, error was: %v.", datasetID, srcBucket, s3Path, err)
@@ -48,14 +50,23 @@ func importImagesForDataset(datasetID string, srcBucket string, destDataBucket s
 		go func(alignedIdx int, img *protos.Experiment_ContextImageCoordinateInfo) {
 			defer wg.Done()
 
+			taskId := addImportTask(fmt.Sprintf("importAlignedImage datasetID: %v, image: %v", datasetID, img.Image))
+
 			// Image itself
-			if savedName, w, h, err := importAlignedImage(img, exprPB, datasetID, srcBucket, destDataBucket, fs, imagesColl); err != nil {
+			savedName, w, h, err := importAlignedImage(img, exprPB, datasetID, srcBucket, destDataBucket, fs, imagesColl)
+			/*if err != nil {
 				fatalError(err)
-			} else {
+			}*/
+			finishImportTask(taskId, err)
+
+			if err == nil {
+				taskId = addImportTask(fmt.Sprintf("ImportBeamLocationToDB datasetID: %v, image: %v, alignedIdx: %v", datasetID, savedName, alignedIdx))
 				// Import coordinates
-				if err := beamLocation.ImportBeamLocationToDB(savedName, datasetID, alignedIdx, exprPB, dest, &logger.StdOutLogger{}); err != nil {
+				err = beamLocation.ImportBeamLocationToDB(savedName, datasetID, alignedIdx, exprPB, dest, &logger.StdOutLogger{})
+				/*if err != nil {
 					fatalError(err)
-				}
+				}*/
+				finishImportTask(taskId, err)
 
 				alignedImageSizes[savedName] = []uint32{w, h, uint32(alignedIdx)}
 			}
@@ -71,9 +82,12 @@ func importImagesForDataset(datasetID string, srcBucket string, destDataBucket s
 		wg2.Add(1)
 		go func(img *protos.Experiment_MatchedContextImageInfo) {
 			defer wg2.Done()
-			if _, err := importMatchedImage(img, alignedImageSizes, datasetID, srcBucket, destDataBucket, fs, imagesColl); err != nil {
+			taskId := addImportTask(fmt.Sprintf("importMatchedImage datasetID: %v, img: %v", datasetID, img.Image))
+			_, err := importMatchedImage(img, alignedImageSizes, datasetID, srcBucket, destDataBucket, fs, imagesColl)
+			finishImportTask(taskId, err)
+			/*if err != nil {
 				fatalError(err)
-			}
+			}*/
 		}(img)
 	}
 
@@ -81,9 +95,12 @@ func importImagesForDataset(datasetID string, srcBucket string, destDataBucket s
 		wg2.Add(1)
 		go func(img string) {
 			defer wg2.Done()
-			if _, err := importUnalignedImage(img, exprPB, datasetID, srcBucket, destDataBucket, fs, imagesColl); err != nil {
+			taskId := addImportTask(fmt.Sprintf("importUnalignedImage datasetID: %v, img: %v", datasetID, img))
+			_, err := importUnalignedImage(img, exprPB, datasetID, srcBucket, destDataBucket, fs, imagesColl)
+			finishImportTask(taskId, err)
+			/*if err != nil {
 				fatalError(err)
-			}
+			}*/
 		}(img)
 	}
 
@@ -223,21 +240,40 @@ func getImportImage(imgType string, imageName string, datasetID string, dataBuck
 	fmt.Printf("Importing scan: %v %v image: %v...\n", datasetID, imgType, imageName)
 
 	// Read the image file itself
-	s3Path := filepaths.GetDatasetFilePath(datasetID, imageName)
+	s3Path := SrcGetDatasetFilePath(datasetID, imageName)
 	imgBytes, err := fs.ReadObject(dataBucket, s3Path)
 	if err != nil {
 		return nil, imgBytes, s3Path, err
 	}
 
 	// Open the image to determine the size
+	// NOTE: it may be a tif file!
 	if imageW == 0 && imageH == 0 {
-		theImage, _, err := image.Decode(bytes.NewReader(imgBytes))
-		if err != nil {
-			return nil, imgBytes, s3Path, fmt.Errorf("Failed to read image: %v. Error: %v", imageName, err)
-		}
+		if isExt(imageName, "tif") {
+			// First detected with: PCCR0095_0667226570_000MSA_N0010052000004530000075CD01.tif.
+			theImage, err := tiff.Decode(bytes.NewReader(imgBytes))
+			if err != nil {
+				// If we still can't open it, maybe it's one of our floating point RGBU TIF images. The tiff libary doesn't support these
+				// but we know the size already, so use that here
+				if err.Error() == "tiff: unsupported feature: sample format" {
+					imageW = 752
+					imageH = 580
+				} else {
+					return nil, imgBytes, s3Path, fmt.Errorf("Failed to decode TIF image: %v. Error: %v", imageName, err)
+				}
+			} else {
+				imageW = uint32(theImage.Bounds().Dx())
+				imageH = uint32(theImage.Bounds().Dy())
+			}
+		} else {
+			theImage, _, err := image.Decode(bytes.NewReader(imgBytes))
+			if err != nil {
+				return nil, imgBytes, s3Path, fmt.Errorf("Failed to read image: %v. Error: %v", imageName, err)
+			}
 
-		imageW = uint32(theImage.Bounds().Dx())
-		imageH = uint32(theImage.Bounds().Dy())
+			imageW = uint32(theImage.Bounds().Dx())
+			imageH = uint32(theImage.Bounds().Dy())
+		}
 	}
 
 	imageName = getImageSaveName(datasetID, imageName)
