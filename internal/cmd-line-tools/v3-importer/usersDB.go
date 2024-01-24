@@ -127,7 +127,7 @@ func migrateUsersDBUsers(src *mongo.Database, dest *mongo.Database) error {
 			destUser.NotificationSettings.TopicSettings = topics
 		}
 
-		destUsers = append(destUsers, destUser)
+		destUsers = append(destUsers, &destUser)
 	}
 
 	result, err := destColl.InsertMany(context.TODO(), destUsers)

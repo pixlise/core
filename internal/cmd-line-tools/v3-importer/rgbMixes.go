@@ -142,7 +142,7 @@ func migrateRGBMixes(userContentBucket string, userContentFiles []string, fs fil
 					return err
 				}
 
-				destGroups = append(destGroups, destGroup)
+				destGroups = append(destGroups, &destGroup)
 			}
 		}
 	}

@@ -199,7 +199,7 @@ func HandleScanDeleteReq(req *protos.ScanDeleteReq, hctx wsHelpers.HandlerContex
 	// Delete the dataset from DB and the file from S3
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ScansName)
-	delResult, err := coll.DeleteOne(ctx, bson.D{{"_id", req.ScanId}}, options.Delete())
+	delResult, err := coll.DeleteOne(ctx, bson.D{{Key: "_id", Value: req.ScanId}}, options.Delete())
 	if err != nil {
 		return nil, err
 	}

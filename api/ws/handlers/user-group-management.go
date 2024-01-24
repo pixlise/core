@@ -76,7 +76,7 @@ func HandleUserGroupDeleteReq(req *protos.UserGroupDeleteReq, hctx wsHelpers.Han
 	ctx := context.TODO()
 
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName)
-	filter := bson.M{"$or": []interface{}{bson.D{{"viewers.groupids", req.GroupId}}, bson.D{{"members.groupids", req.GroupId}}}}
+	filter := bson.M{"$or": []interface{}{bson.D{{Key: "viewers.groupids", Value: req.GroupId}}, bson.D{{Key: "members.groupids", Value: req.GroupId}}}}
 	opts := options.Find()
 	cursor, err := coll.Find(ctx, filter, opts)
 	if err != nil {
@@ -142,7 +142,7 @@ func HandleUserGroupSetNameReq(req *protos.UserGroupSetNameReq, hctx wsHelpers.H
 	}
 
 	// Update the name
-	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName).UpdateByID(ctx, req.GroupId, bson.D{{Key: "$set", Value: bson.D{{"name", req.Name}}}})
+	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName).UpdateByID(ctx, req.GroupId, bson.D{{Key: "$set", Value: bson.D{{Key: "name", Value: req.Name}}}})
 	if err != nil {
 		return nil, err
 	}

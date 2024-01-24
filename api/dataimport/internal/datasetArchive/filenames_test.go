@@ -52,7 +52,7 @@ func Example_decodeManualUploadPath() {
 	// , [], Manual upload path invalid: dataset-addons/invalid.txt
 }
 
-func Example_DecodeArchiveFileName() {
+func Example_decodeArchiveFileName() {
 	// Just a simple one
 	id, ts, e := DecodeArchiveFileName("161677829-12-06-2022-06-41-00.zip")
 	fmt.Printf("%v, %v, %v\n", id, ts, e)

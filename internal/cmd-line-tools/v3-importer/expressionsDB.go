@@ -207,7 +207,7 @@ func migrateExpressionsDBExpressions(src *mongo.Database, dest *mongo.Database, 
 
 		// TODO: zenodo
 
-		destExprs = append(destExprs, destExpr)
+		destExprs = append(destExprs, &destExpr)
 	}
 
 	result, err := destColl.InsertMany(context.TODO(), destExprs)
@@ -262,7 +262,7 @@ func migrateExpressionsDBModules(src *mongo.Database, dest *mongo.Database, pixl
 			return err
 		}
 
-		destModules = append(destModules, destMod)
+		destModules = append(destModules, &destMod)
 	}
 
 	result, err := destColl.InsertMany(context.TODO(), destModules)
@@ -335,7 +335,7 @@ func migrateExpressionsDBModuleVersions(src *mongo.Database, dest *mongo.Databas
 
 		// TODO: zenodo
 
-		destModuleVers = append(destModuleVers, destModVer)
+		destModuleVers = append(destModuleVers, &destModVer)
 	}
 
 	result, err := destColl.InsertMany(context.TODO(), destModuleVers)

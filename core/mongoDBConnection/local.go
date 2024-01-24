@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/pixlise/core/v4/core/logger"
 	"go.mongodb.org/mongo-driver/bson"
@@ -41,20 +40,14 @@ func connectToLocalMongoDB(log logger.ILogger) (*mongo.Client, error) {
 		mongoUri = "mongodb://localhost"
 	}
 	//ctx := context.Background()
-	client, err := mongo.NewClient(options.Client().ApplyURI(mongoUri).SetMonitor(cmdMonitor))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoUri).SetMonitor(cmdMonitor))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create new local mongo DB connection: %v", err)
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
-	err = client.Connect(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// Try to ping the DB to confirm connection
 	var result bson.M
-	err = client.Database("admin").RunCommand(context.TODO(), bson.D{{"ping", 1}}).Decode(&result)
+	err = client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Decode(&result)
 	if err != nil {
 		return nil, err
 	}

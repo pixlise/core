@@ -20,7 +20,7 @@ package filepaths
 import "fmt"
 
 // Check the summary filename gets created correctly
-func Example_MakeQuantSummaryFileName() {
+func Example_makeQuantSummaryFileName() {
 	fn := MakeQuantSummaryFileName("myquantid")
 
 	fmt.Printf("%v", fn)

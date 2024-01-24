@@ -50,7 +50,7 @@ Assumptions:
     Nodes = 72630 / 7200 = 10 nodes... seems reasonable
 */
 
-func Example_EstimateNodeCount() {
+func Example_estimateNodeCount() {
 	// Based on experimental runs in: https://github.com/pixlise/core/-/issues/113
 
 	// Can only use the ones where we had allcoation of 7.5 set in kubernetes, because the others weren't maxing out cores
@@ -108,7 +108,7 @@ func Example_EstimateNodeCount() {
 	// 6
 }
 
-func Example_FilesPerNode() {
+func Example_filesPerNode() {
 	fmt.Println(FilesPerNode(8088, 5))
 	fmt.Println(FilesPerNode(8068, 3))
 

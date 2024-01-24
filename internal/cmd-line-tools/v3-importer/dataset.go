@@ -227,7 +227,7 @@ func migrateDatasets(
 				memberGroup = userGroups["JPL Breadboard"]
 			}
 
-			_, err := coll.InsertOne(context.TODO(), destItem)
+			_, err := coll.InsertOne(context.TODO(), &destItem)
 			if err != nil {
 				fatalError(err)
 			}

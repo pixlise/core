@@ -71,7 +71,7 @@ func UpdateJob(jobId string, status protos.JobStatus_Status, message string, log
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.JobStatusName)
 
-	filter := bson.D{{"_id", jobId}}
+	filter := bson.D{{Key: "_id", Value: jobId}}
 	opt := options.Replace()
 
 	jobStatus := &protos.JobStatus{
@@ -118,7 +118,7 @@ func CompleteJob(jobId string, success bool, message string, outputFilePath stri
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.JobStatusName)
 
-	filter := bson.D{{"_id", jobId}}
+	filter := bson.D{{Key: "_id", Value: jobId}}
 	opt := options.Replace()
 
 	jobStatus := &protos.JobStatus{

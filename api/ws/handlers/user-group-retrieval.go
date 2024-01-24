@@ -103,12 +103,12 @@ func HandleUserGroupListJoinableReq(req *protos.UserGroupListJoinableReq, hctx w
 	// opts := options.Find()
 	// Since we want only summary data, specify less fields to retrieve
 	opts := options.Find().SetProjection(bson.D{
-		{"_id", true},
-		{"name", true},
-		{"description", true},
-		{"adminuserids", true},
-		{"lastuserjoinedunixsec", true},
-		{"uniqueusercount", true},
+		{Key: "_id", Value: true},
+		{Key: "name", Value: true},
+		{Key: "description", Value: true},
+		{Key: "adminuserids", Value: true},
+		{Key: "lastuserjoinedunixsec", Value: true},
+		{Key: "uniqueusercount", Value: true},
 	})
 	cursor, err := coll.Find(ctx, filter, opts)
 	if err != nil {

@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-func Example_DecodeIndexList() {
+func Example_decodeIndexList() {
 	fmt.Println(DecodeIndexList([]int32{5}, 4))
 	fmt.Println(DecodeIndexList([]int32{5}, 5))
 	fmt.Println(DecodeIndexList([]int32{5}, 6))
@@ -50,7 +50,7 @@ func Example_DecodeIndexList() {
 	// [1 3 5 12 2] <nil>
 }
 
-func Example_EncodeIndexList() {
+func Example_encodeIndexList() {
 	fmt.Println(EncodeIndexList([]uint32{9, 22, 8}))
 	fmt.Println(EncodeIndexList([]uint32{9, 7, 9, 8}))
 	fmt.Println(EncodeIndexList([]uint32{9, 7, 8, 7}))

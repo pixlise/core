@@ -319,7 +319,7 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, marsViewerExp
 	if err != nil {
 		// Failed to upload image data, so no point in having a DB entry now either...
 		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
-		filter := bson.D{{"_id", saveName}}
+		filter := bson.D{{Key: "_id", Value: saveName}}
 		delOpt := options.Delete()
 		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
 		return "", nil, nil, err
@@ -573,7 +573,7 @@ func importWarpedImage(warpedImageUrl string, rttWarpedTo string, baseImage stri
 	if err != nil {
 		// Failed to upload image data, so no point in having a DB entry now either...
 		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
-		filter := bson.D{{"_id", saveName}}
+		filter := bson.D{{Key: "_id", Value: saveName}}
 		delOpt := options.Delete()
 		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
 		return err

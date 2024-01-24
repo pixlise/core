@@ -31,7 +31,7 @@ func HandleRegionOfInterestGetReq(req *protos.RegionOfInterestGetReq, hctx wsHel
 	if req.IsMIST {
 		// Fetch from MIST table and add to dbItem
 		mistItem := &protos.MistROIItem{}
-		err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).FindOne(context.TODO(), bson.D{{"_id", req.Id}}).Decode(&mistItem)
+		err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).FindOne(context.TODO(), bson.D{{Key: "_id", Value: req.Id}}).Decode(&mistItem)
 		if err != nil {
 			return nil, err
 		}
@@ -47,7 +47,7 @@ func HandleRegionOfInterestGetReq(req *protos.RegionOfInterestGetReq, hctx wsHel
 func HandleRegionOfInterestDeleteReq(req *protos.RegionOfInterestDeleteReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestDeleteResp, error) {
 	if req.IsMIST {
 		// Delete from MIST table
-		_, err := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).DeleteOne(context.TODO(), bson.D{{"_id", req.Id}})
+		_, err := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).DeleteOne(context.TODO(), bson.D{{Key: "_id", Value: req.Id}})
 		if err != nil {
 			return nil, err
 		}
@@ -67,14 +67,14 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 
 	// Since we want only summary data, specify less fields to retrieve
 	opts := options.Find().SetProjection(bson.D{
-		{"_id", true},
-		{"scanid", true},
-		{"name", true},
-		{"description", true},
-		{"imagename", true},
-		{"tags", true},
-		{"modifiedunixsec", true},
-		{"ismist", true},
+		{Key: "_id", Value: true},
+		{Key: "scanid", Value: true},
+		{Key: "name", Value: true},
+		{Key: "description", Value: true},
+		{Key: "imagename", Value: true},
+		{Key: "tags", Value: true},
+		{Key: "modifiedunixsec", Value: true},
+		{Key: "ismist", Value: true},
 	})
 
 	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName).Find(context.TODO(), filter, opts)
@@ -100,7 +100,7 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 		if req.IsMIST {
 			// Fetch from MIST table and add to item
 			mistItem := &protos.MistROIItem{}
-			err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).FindOne(context.TODO(), bson.D{{"_id", item.Id}}).Decode(&mistItem)
+			err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).FindOne(context.TODO(), bson.D{{Key: "_id", Value: item.Id}}).Decode(&mistItem)
 			if err != nil {
 				return nil, err
 			}
@@ -111,7 +111,7 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 		// Look up display settings and add to item if found (otherwise leave nil)
 		userROIId := formROIUserConfigID(hctx.SessUser.User, item.Id)
 		displaySettings := &protos.ROIItemDisplaySettings{}
-		err = hctx.Svcs.MongoDB.Collection(dbCollections.UserROIDisplaySettings).FindOne(context.TODO(), bson.D{{"_id", userROIId}}).Decode(&displaySettings)
+		err = hctx.Svcs.MongoDB.Collection(dbCollections.UserROIDisplaySettings).FindOne(context.TODO(), bson.D{{Key: "_id", Value: userROIId}}).Decode(&displaySettings)
 		if err != nil && err != mongo.ErrNoDocuments {
 			return nil, err
 		}

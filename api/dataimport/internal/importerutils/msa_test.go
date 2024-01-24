@@ -23,7 +23,7 @@ import (
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 )
 
-func Example_ReadMSAFileLines() {
+func Example_readMSAFileLines() {
 	data := []string{"#SOMETHING:123", "#PMC: 3001", "#DATATYPE: Y", "#NCOLUMNS: 2", "#NPOINTS : 3", "#SPECTRUM", "0", "23", "991231"}
 	items, err := ReadMSAFileLines(data, false, true, false)
 	fmt.Println(err)
@@ -57,7 +57,7 @@ func Example_ReadMSAFileLines() {
 	//  meta [DATATYPE:YY/s DETECTOR_ID:B/s NCOLUMNS:2/s NPOINTS:3/s PMC:3001/i SOMETHING:123/s] spectrum [0 0 991231]
 }
 
-func Example_ReadMSAFileLines_Single() {
+func Example_readMSAFileLines_Single() {
 	data := []string{"#SOMETHING:123", "#PMC: 3001", "#DATATYPE: Y", "#NCOLUMNS: 1", "#DETECTOR_ID: A", "#NPOINTS : 3", "#SPECTRUM", "0", "23", "991231"}
 	items, err := ReadMSAFileLines(data, true, true, false)
 	fmt.Printf("A|%v|%v\n", items[0].ToString(), err)

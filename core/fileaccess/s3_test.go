@@ -25,7 +25,7 @@ import (
 	"github.com/pixlise/core/v4/core/awsutil"
 )
 
-func Example_S3ListingWithContinuation() {
+func Example_s3ListingWithContinuation() {
 	const bucket = "dev-pixlise-data"
 	const listPath = "Datasets/"
 
@@ -79,7 +79,7 @@ func Example_S3ListingWithContinuation() {
 	// <nil>, list: [Datasets/abc-123/summary.json Datasets/abc-123/node1.json Datasets/abc-123/params.json Datasets/abc-456/summary.json Datasets/abc-789/summary.json Datasets/abc-456/params.json Datasets/abc-456/output/combined.csv]
 }
 
-func Example_GetBucketFromS3Url() {
+func Example_getBucketFromS3Url() {
 	b, err := GetBucketFromS3Url("some/path/file.json")
 	fmt.Printf("%v|%v\n", b, err)
 
@@ -99,7 +99,7 @@ func Example_GetBucketFromS3Url() {
 	// the_bucket|<nil>
 }
 
-func Example_GetPathFromS3Url() {
+func Example_getPathFromS3Url() {
 	p, err := GetPathFromS3Url("some/path/file.json")
 	fmt.Printf("%v|%v\n", p, err)
 

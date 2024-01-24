@@ -167,7 +167,7 @@ func modifyGroupMembershipList(groupId string, opGroupId string, opUserId string
 	}
 
 	// We're allowed to edit, so do it
-	result, err := coll.UpdateByID(ctx, groupId, bson.D{{Key: dbOp, Value: bson.D{{dbField, checkId}}}})
+	result, err := coll.UpdateByID(ctx, groupId, bson.D{{Key: dbOp, Value: bson.D{{Key: dbField, Value: checkId}}}})
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func modifyGroupMembershipList(groupId string, opGroupId string, opUserId string
 		hctx.Svcs.Log.Errorf("UserGroup %v %v result had unexpected counts %+v id: %v", dbOp, dbField, result, checkId)
 	}
 
-	_, err = coll.UpdateByID(ctx, groupId, bson.D{{Key: "$set", Value: bson.D{{"lastuserjoinedunixsec", uint32(hctx.Svcs.TimeStamper.GetTimeNowSec())}}}})
+	_, err = coll.UpdateByID(ctx, groupId, bson.D{{Key: "$set", Value: bson.D{{Key: "lastuserjoinedunixsec", Value: uint32(hctx.Svcs.TimeStamper.GetTimeNowSec())}}}})
 	if err != nil {
 		return nil, err
 	}

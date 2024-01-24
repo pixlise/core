@@ -43,7 +43,7 @@ func createEmptyDeposition(zenodoURI string, accessToken string) (*protos.Zenodo
 	return &response, nil
 }
 
-func uploadFileContentsToZenodo(deposition protos.ZenodoDepositionResponse, filename string, contents *bytes.Buffer, accessToken string) (*protos.ZenodoFileUploadResponse, error) {
+func uploadFileContentsToZenodo(deposition *protos.ZenodoDepositionResponse, filename string, contents *bytes.Buffer, accessToken string) (*protos.ZenodoFileUploadResponse, error) {
 	emptyResponse := protos.ZenodoFileUploadResponse{}
 
 	uploadUrl := deposition.Links.Bucket + "/" + filename + "?access_token=" + accessToken
@@ -74,7 +74,7 @@ func uploadFileContentsToZenodo(deposition protos.ZenodoDepositionResponse, file
 	return &fileUploadResponse, nil
 }
 
-func uploadModuleToZenodo(deposition protos.ZenodoDepositionResponse, module protos.DataModule, accessToken string) (*protos.ZenodoFileUploadResponse, error) {
+func uploadModuleToZenodo(deposition *protos.ZenodoDepositionResponse, module *protos.DataModule, accessToken string) (*protos.ZenodoFileUploadResponse, error) {
 	zenodoResponse := protos.ZenodoFileUploadResponse{}
 
 	filename := module.Id + ".json"
@@ -91,7 +91,7 @@ func uploadModuleToZenodo(deposition protos.ZenodoDepositionResponse, module pro
 	return fileUploadResponse, nil
 }
 
-func uploadExpressionZipToZenodo(deposition protos.ZenodoDepositionResponse, filename string, zipFile string, accessToken string) (*protos.ZenodoFileUploadResponse, error) {
+func uploadExpressionZipToZenodo(deposition *protos.ZenodoDepositionResponse, filename string, zipFile string, accessToken string) (*protos.ZenodoFileUploadResponse, error) {
 	zenodoResponse := protos.ZenodoFileUploadResponse{}
 
 	fileUploadResponse, err := uploadFileContentsToZenodo(deposition, filename, bytes.NewBuffer([]byte(zipFile)), accessToken)
@@ -102,7 +102,7 @@ func uploadExpressionZipToZenodo(deposition protos.ZenodoDepositionResponse, fil
 	return fileUploadResponse, nil
 }
 
-func uploadMetadataToDeposition(deposition protos.ZenodoDepositionResponse, metadata map[string]interface{}, accessToken string) (*protos.ZenodoMetaResponse, error) {
+func uploadMetadataToDeposition(deposition *protos.ZenodoDepositionResponse, metadata map[string]interface{}, accessToken string) (*protos.ZenodoMetaResponse, error) {
 	emptyResponse := protos.ZenodoMetaResponse{}
 
 	metadataJson, err := json.Marshal(metadata)
@@ -138,7 +138,7 @@ func uploadMetadataToDeposition(deposition protos.ZenodoDepositionResponse, meta
 	return &metaResponseObj, nil
 }
 
-func addMetadataToDeposition(deposition protos.ZenodoDepositionResponse, doiMetadata protos.DOIMetadata, accessToken string) (*protos.ZenodoMetaResponse, error) {
+func addMetadataToDeposition(deposition *protos.ZenodoDepositionResponse, doiMetadata *protos.DOIMetadata, accessToken string) (*protos.ZenodoMetaResponse, error) {
 	// API fails if any empty keys are included, so we need to remove them
 
 	metadata := map[string]interface{}{
@@ -224,7 +224,7 @@ func addMetadataToDeposition(deposition protos.ZenodoDepositionResponse, doiMeta
 	return uploadMetadataToDeposition(deposition, metadata, accessToken)
 }
 
-func publishDeposition(deposition protos.ZenodoDepositionResponse, accessToken string) (*protos.ZenodoPublishResponse, error) {
+func publishDeposition(deposition *protos.ZenodoDepositionResponse, accessToken string) (*protos.ZenodoPublishResponse, error) {
 	publishURL := deposition.Links.Publish + "?access_token=" + accessToken
 	publishReq, err := http.NewRequest(http.MethodPost, publishURL, bytes.NewBuffer([]byte("{}")))
 	if err != nil {
@@ -253,7 +253,7 @@ func publishDeposition(deposition protos.ZenodoDepositionResponse, accessToken s
 	return &zenodoResponse, nil
 }
 
-func PublishModuleToZenodo(module protos.DataModule, metadata protos.DOIMetadata, zenodoURI string, zenodoToken string) (*protos.ZenodoPublishResponse, error) {
+func PublishModuleToZenodo(module *protos.DataModule, metadata *protos.DOIMetadata, zenodoURI string, zenodoToken string) (*protos.ZenodoPublishResponse, error) {
 	if zenodoURI == "" {
 		return nil, errors.New("ZENODO_URI not found")
 	}
@@ -267,17 +267,17 @@ func PublishModuleToZenodo(module protos.DataModule, metadata protos.DOIMetadata
 		return nil, err
 	}
 
-	_, err = uploadModuleToZenodo(*deposition, module, zenodoToken)
+	_, err = uploadModuleToZenodo(deposition, module, zenodoToken)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = addMetadataToDeposition(*deposition, metadata, zenodoToken)
+	_, err = addMetadataToDeposition(deposition, metadata, zenodoToken)
 	if err != nil {
 		return nil, err
 	}
 
-	publishResponse, err := publishDeposition(*deposition, zenodoToken)
+	publishResponse, err := publishDeposition(deposition, zenodoToken)
 	if err != nil {
 		return nil, err
 	}
@@ -285,14 +285,14 @@ func PublishModuleToZenodo(module protos.DataModule, metadata protos.DOIMetadata
 	return publishResponse, nil
 }
 
-func PublishExpressionToZenodo(id string, output string, metadata protos.DOIMetadata, mongo *mongo.Database, zenodoURI string, zenodoToken string) (*protos.ZenodoPublishResponse, error) {
+func PublishExpressionToZenodo(id string, output string, metadata *protos.DOIMetadata, mongo *mongo.Database, zenodoURI string, zenodoToken string) (*protos.ZenodoPublishResponse, error) {
 	deposition, err := createEmptyDeposition(zenodoURI, zenodoToken)
 	if err != nil {
 		return nil, err
 	}
 
 	filename := id + ".zip"
-	_, err = uploadExpressionZipToZenodo(*deposition, filename, output, zenodoToken)
+	_, err = uploadExpressionZipToZenodo(deposition, filename, output, zenodoToken)
 	if err != nil {
 		return nil, err
 	}
@@ -304,12 +304,12 @@ func PublishExpressionToZenodo(id string, output string, metadata protos.DOIMeta
 		return nil, err
 	}
 
-	_, err = addMetadataToDeposition(*deposition, metadata, zenodoToken)
+	_, err = addMetadataToDeposition(deposition, metadata, zenodoToken)
 	if err != nil {
 		return nil, err
 	}
 
-	publishResponse, err := publishDeposition(*deposition, zenodoToken)
+	publishResponse, err := publishDeposition(deposition, zenodoToken)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +333,7 @@ func HandlePublishExpressionToZenodoReq(req *protos.PublishExpressionToZenodoReq
 		return nil, errors.New("ZENODO_ACCESS_TOKEN not found")
 	}
 
-	publishResponse, err := PublishExpressionToZenodo(req.Id, req.Output, *req.Metadata, hctx.Svcs.MongoDB, zenodoURI, zenodoToken)
+	publishResponse, err := PublishExpressionToZenodo(req.Id, req.Output, req.Metadata, hctx.Svcs.MongoDB, zenodoURI, zenodoToken)
 	if err != nil {
 		return nil, err
 	}
@@ -364,9 +364,10 @@ func HandlePublishExpressionToZenodoReq(req *protos.PublishExpressionToZenodoReq
 		Doi: &metadata,
 	}, nil
 }
+
 func HandleZenodoDOIGetReq(req *protos.ZenodoDOIGetReq, hctx wsHelpers.HandlerContext) (*protos.ZenodoDOIGetResp, error) {
 	metadata := &protos.DOIMetadata{}
-	err := hctx.Svcs.MongoDB.Collection(dbCollections.DOIName).FindOne(context.TODO(), bson.D{{"_id", req.Id}}).Decode(&metadata)
+	err := hctx.Svcs.MongoDB.Collection(dbCollections.DOIName).FindOne(context.TODO(), bson.D{{Key: "_id", Value: req.Id}}).Decode(&metadata)
 	if err != nil {
 		return nil, err
 	}

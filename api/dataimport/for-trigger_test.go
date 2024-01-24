@@ -68,7 +68,7 @@ func initTest(testDir string, autoShareCreatorId string, autoShareCreatorGroupEd
 }
 
 // Import unknown dataset (simulate trigger by OCS pipeline), file goes to archive, then all files downloaded from archive, dataset create fails due to unknown data type
-func Example_ImportForTrigger_OCS_Archive_BadData() {
+func Example_importForTrigger_OCS_Archive_BadData() {
 	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Archive_BadData", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
 
 	// In case it ran before, delete the file from dataset bucket, otherwise we will end for the wrong reason
@@ -142,7 +142,7 @@ func Example_ImportForTrigger_OCS_Archive_BadData() {
 }
 
 // Import FM-style (simulate trigger by OCS pipeline), file already in archive, so should do nothing
-func Example_ImportForTrigger_OCS_Archive_Exists() {
+func Example_importForTrigger_OCS_Archive_Exists() {
 	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Archive_Exists", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
 	trigger := `{
 	"Records": [
@@ -232,7 +232,7 @@ func printArchiveOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database
 }
 
 // Import FM-style (simulate trigger by OCS pipeline), file goes to archive, then all files downloaded from archive and dataset created
-func Example_ImportForTrigger_OCS_Archive_OK() {
+func Example_importForTrigger_OCS_Archive_OK() {
 	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Archive_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
 	// In case it ran before, delete the file from dataset bucket, otherwise we will end for the wrong reason
 	os.Remove(datasetBucket + "/Archive/048300551-27-06-2021-09-52-25.zip")
@@ -298,7 +298,7 @@ func Example_ImportForTrigger_OCS_Archive_OK() {
 }
 
 // Import FM-style (simulate trigger by dataset edit screen), should create dataset with custom name+image
-func Example_ImportForTrigger_OCS_DatasetEdit() {
+func Example_importForTrigger_OCS_DatasetEdit() {
 	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Archive_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
 
 	// To save from checking in 2 sets of the same zip files for this and Example_ImportForTrigger_OCS_Archive_OK, here we copy
@@ -386,7 +386,7 @@ func printManualOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database,
 }
 
 // Import a breadboard dataset from manual uploaded zip file
-func Example_ImportForTrigger_Manual_JPL() {
+func Example_importForTrigger_Manual_JPL() {
 	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Manual_OK", specialUserIds.JPLImport, "JPLTestUserGroupId")
 
 	trigger := `{
@@ -418,7 +418,7 @@ func Example_ImportForTrigger_Manual_JPL() {
 }
 
 // Import a breadboard dataset from manual uploaded zip file
-func Example_ImportForTrigger_Manual_SBU() {
+func Example_importForTrigger_Manual_SBU() {
 	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Manual_OK2", specialUserIds.SBUImport, "SBUTestUserGroupId")
 
 	trigger := `{
@@ -467,7 +467,7 @@ func Test_ImportForTrigger_Manual_SBU_NoAutoShare(t *testing.T) {
 }
 
 // Import a breadboard dataset from manual uploaded zip file
-func Example_ImportForTrigger_Manual_EM() {
+func Example_importForTrigger_Manual_EM() {
 	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("ManualEM_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
 
 	trigger := `{
@@ -501,7 +501,7 @@ func Example_ImportForTrigger_Manual_EM() {
 /* NOT TESTED YET, because it's not done yet!
 
 // Import a breadboard dataset from manual uploaded zip file, including custom name+image
-func Example_ImportForTrigger_Manual_DatasetEdit() {
+func Example_importForTrigger_Manual_DatasetEdit() {
 	remoteFS, log, envName, configBucket, datasetBucket, manualBucket := initTest("Manual_Edit")
 
 	trigger := `{

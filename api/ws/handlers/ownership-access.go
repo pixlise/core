@@ -102,13 +102,13 @@ func HandleObjectEditAccessReq(req *protos.ObjectEditAccessReq, hctx wsHelpers.H
 
 	// Form DB update
 	update := bson.D{
-		{"viewers", bson.D{
-			{"userids", viewerUserIds},
-			{"groupids", viewerGroupsIds},
+		{Key: "viewers", Value: bson.D{
+			{Key: "userids", Value: viewerUserIds},
+			{Key: "groupids", Value: viewerGroupsIds},
 		}},
-		{"editors", bson.D{
-			{"userids", editorUsersIds},
-			{"groupids", editorGroupsIds},
+		{Key: "editors", Value: bson.D{
+			{Key: "userids", Value: editorUsersIds},
+			{Key: "groupids", Value: editorGroupsIds},
 		}},
 	}
 

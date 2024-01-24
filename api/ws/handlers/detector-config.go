@@ -32,7 +32,7 @@ func HandleDetectorConfigListReq(req *protos.DetectorConfigListReq, hctx wsHelpe
 
 	filter := bson.D{}
 	opts := options.Find().SetProjection(bson.D{
-		{"id", true},
+		{Key: "id", Value: true},
 	})
 	cursor, err := coll.Find(context.TODO(), filter, opts)
 

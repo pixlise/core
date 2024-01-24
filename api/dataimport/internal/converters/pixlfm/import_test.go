@@ -24,7 +24,7 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 )
 
-func Example_GetByLowestSCLK() {
+func Example_getByLowestSCLK() {
 	files := []string{
 		"PS__0866_0743796726_000RFS__04200003036943412155___J01_2582.MSA",
 		"PS__0865_0743764558_000RFS__04200003036943410004___J01.CSV",

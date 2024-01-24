@@ -166,18 +166,18 @@ func getLatestModuleVersion(moduleID string, db *mongo.Database) (*protos.Semant
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.ModuleVersionsName)
 	cursor, err := coll.Aggregate(ctx, bson.A{
-		bson.D{{"$match", bson.D{{"moduleid", moduleID}}}},
+		bson.D{{Key: "$match", Value: bson.D{{Key: "moduleid", Value: moduleID}}}},
 		bson.D{
-			{"$sort",
-				bson.D{
-					{"version.major", -1},
-					{"version.minor", -1},
-					{"version.patch", -1},
+			{Key: "$sort",
+				Value: bson.D{
+					{Key: "version.major", Value: -1},
+					{Key: "version.minor", Value: -1},
+					{Key: "version.patch", Value: -1},
 				},
 			},
 		},
-		bson.D{{"$limit", 1}},
-		bson.D{{"$project", bson.D{{"version", 1}}}},
+		bson.D{{Key: "$limit", Value: 1}},
+		bson.D{{Key: "$project", Value: bson.D{{Key: "version", Value: 1}}}},
 	})
 
 	if err != nil {
@@ -200,10 +200,10 @@ func getModuleVersions(moduleID string, db *mongo.Database) ([]*protos.DataModul
 
 	filter := bson.D{primitive.E{Key: "moduleid", Value: moduleID}}
 	opts := options.Find().SetProjection(bson.D{
-		{"version", true},
-		{"tags", true},
-		{"comments", true},
-		{"timestampunixsec", true},
+		{Key: "version", Value: true},
+		{Key: "tags", Value: true},
+		{Key: "comments", Value: true},
+		{Key: "timestampunixsec", Value: true},
 	})
 
 	cursor, err := coll.Find(ctx, filter, opts)

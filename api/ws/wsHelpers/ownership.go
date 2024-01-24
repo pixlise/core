@@ -100,24 +100,24 @@ func CheckObjectAccessForUser(requireEdit bool, objectId string, objectType prot
 // Returns a map of object id->creator user id
 func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, hctx HandlerContext) (map[string]*protos.OwnershipItem, error) {
 	idLookups := []interface{}{
-		bson.D{{"editors.userids", hctx.SessUser.User.Id}},
+		bson.D{{Key: "editors.userids", Value: hctx.SessUser.User.Id}},
 	}
 	if !requireEdit {
-		idLookups = append(idLookups, bson.D{{"viewers.userids", hctx.SessUser.User.Id}})
+		idLookups = append(idLookups, bson.D{{Key: "viewers.userids", Value: hctx.SessUser.User.Id}})
 	}
 
 	// Add the group IDs
 	for _, groupId := range hctx.SessUser.MemberOfGroupIds {
-		idLookups = append(idLookups, bson.D{{"editors.groupids", groupId}})
+		idLookups = append(idLookups, bson.D{{Key: "editors.groupids", Value: groupId}})
 		if !requireEdit {
-			idLookups = append(idLookups, bson.D{{"viewers.groupids", groupId}})
+			idLookups = append(idLookups, bson.D{{Key: "viewers.groupids", Value: groupId}})
 		}
 	}
 
 	filter := bson.D{
 		{
-			"$and", []interface{}{
-				bson.D{{"objecttype", objectType}},
+			Key: "$and", Value: []interface{}{
+				bson.D{{Key: "objecttype", Value: objectType}},
 				bson.M{"$or": idLookups},
 			},
 		},
@@ -147,17 +147,17 @@ func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, hctx Hand
 
 func ListGroupAccessibleIDs(requireEdit bool, objectType protos.ObjectType, groupID string, mongoDB *mongo.Database) (map[string]*protos.OwnershipItem, error) {
 	idLookups := []interface{}{
-		bson.D{{"editors.groupids", groupID}},
+		bson.D{{Key: "editors.groupids", Value: groupID}},
 	}
 
 	if !requireEdit {
-		idLookups = append(idLookups, bson.D{{"viewers.groupids", groupID}})
+		idLookups = append(idLookups, bson.D{{Key: "viewers.groupids", Value: groupID}})
 	}
 
 	filter := bson.D{
 		{
-			"$and", []interface{}{
-				bson.D{{"objecttype", objectType}},
+			Key: "$and", Value: []interface{}{
+				bson.D{{Key: "objecttype", Value: objectType}},
 				bson.M{"$or": idLookups},
 			},
 		},

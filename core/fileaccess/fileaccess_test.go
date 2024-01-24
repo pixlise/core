@@ -222,7 +222,7 @@ func Example_s3() {
 	// Delete bucket errors: <nil>
 }
 
-func Example_MakeValidObjectName() {
+func Example_makeValidObjectName() {
 	fmt.Println(MakeValidObjectName("my file!", true))
 	fmt.Println(MakeValidObjectName("this/path/to.bin", true))
 	fmt.Println(MakeValidObjectName("Hope \"this\" isn't too $expensive", true))
@@ -243,7 +243,7 @@ func Example_MakeValidObjectName() {
 	// This-file_is_it
 }
 
-func Example_IsValidObjectName() {
+func Example_isValidObjectName() {
 	fmt.Println(IsValidObjectName("name"))
 	fmt.Println(IsValidObjectName("Name With Spaces"))
 	fmt.Println(IsValidObjectName("Name With Spaces"))

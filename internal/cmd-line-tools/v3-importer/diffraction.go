@@ -69,7 +69,7 @@ func migrateManualDiffractionPeaks(userContentBucket string, userContentFiles []
 						// CreatorUserId: None of the existing values had ownership data
 					}
 
-					destItems = append(destItems, destItem)
+					destItems = append(destItems, &destItem)
 				}
 			}
 		}
@@ -121,7 +121,7 @@ func migrateDiffractionDetectedPeakStatuses(userContentBucket string, userConten
 					ScanId:   scanId,
 					Statuses: statuses,
 				}
-				destItems = append(destItems, destItem)
+				destItems = append(destItems, &destItem)
 			}
 		}
 	}

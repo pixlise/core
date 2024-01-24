@@ -102,7 +102,7 @@ func migrateElementSets(userContentBucket string, userContentFiles []string, fs 
 					return err
 				}
 
-				destSets = append(destSets, destSet)
+				destSets = append(destSets, &destSet)
 			}
 		}
 	}

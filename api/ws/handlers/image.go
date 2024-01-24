@@ -172,14 +172,10 @@ func HandleImageSetDefaultReq(req *protos.ImageSetDefaultReq, hctx wsHelpers.Han
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ScanDefaultImagesName)
 
-	filter := bson.D{{"_id", req.ScanId}}
+	filter := bson.D{{Key: "_id", Value: req.ScanId}}
 	opt := options.Update().SetUpsert(true)
 
-	data := bson.D{
-		{"$set", bson.D{
-			{"defaultimagefilename", req.DefaultImageFileName},
-		}},
-	}
+	data := bson.D{{Key: "$set", Value: bson.D{{Key: "defaultimagefilename", Value: req.DefaultImageFileName}}}}
 
 	result, err := coll.UpdateOne(ctx, filter, data, opt)
 	if err != nil {
@@ -221,7 +217,7 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 	}
 
 	// If it's the default image in any scan, we can't delete it
-	filter := bson.D{{"defaultimagefilename", img.Path}}
+	filter := bson.D{{Key: "defaultimagefilename", Value: img.Path}}
 	opt := options.Find()
 	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ScanDefaultImagesName)
 
@@ -265,7 +261,7 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 
 	// Delete from Images collection
 	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
-	filter = bson.D{{"_id", req.Name}}
+	filter = bson.D{{Key: "_id", Value: req.Name}}
 	delOpt := options.Delete()
 	_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
 	if err != nil {
@@ -393,7 +389,7 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 	if err != nil {
 		// Failed to upload image data, so no point in having a DB entry now either...
 		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
-		filter := bson.D{{"_id", saveName}}
+		filter := bson.D{{Key: "_id", Value: saveName}}
 		delOpt := options.Delete()
 		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
 		return nil, err
@@ -470,8 +466,8 @@ func HandleImageSetMatchTransformReq(req *protos.ImageSetMatchTransformReq, hctx
 	// Write it back
 	opt := options.Update()
 	data := bson.D{
-		{"$set", bson.D{
-			{"matchinfo", img.MatchInfo},
+		{Key: "$set", Value: bson.D{
+			{Key: "matchinfo", Value: img.MatchInfo},
 		}},
 	}
 

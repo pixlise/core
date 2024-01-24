@@ -19,7 +19,7 @@ package output
 
 import "fmt"
 
-func Example_RLEncode() {
+func Example_rleEncode() {
 
 	data := []int{0, 0, 4, 2, 2, 2, 3, 0}
 
@@ -31,7 +31,7 @@ func Example_RLEncode() {
 	// [0 2 4 1 2 3 3 1 0 1]
 }
 
-func Example_ZeroRunEncode() {
+func Example_zeroRunEncode() {
 	data := []int64{0, 0, 4, 2, 0, 0, 0, 0, 3, 0}
 
 	encoded := zeroRunEncode(data)

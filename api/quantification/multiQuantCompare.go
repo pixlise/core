@@ -19,7 +19,7 @@ func MultiQuantCompare(reqRoiId string, roiPMCs []int32, quantIds []string, expr
 
 	if reqRoiId != "RemainingPoints" {
 		coll := hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName)
-		roiResult := coll.FindOne(context.TODO(), bson.D{{"_id", reqRoiId}}, options.FindOne())
+		roiResult := coll.FindOne(context.TODO(), bson.D{{Key: "_id", Value: reqRoiId}}, options.FindOne())
 		if roiResult.Err() != nil {
 			return nil, roiResult.Err()
 		}

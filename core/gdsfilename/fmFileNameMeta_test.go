@@ -166,7 +166,7 @@ func Example_parseFileName() {
 	// SOL=0614|<nil>
 }
 
-func Example_MakeComparableName() {
+func Example_makeComparableName() {
 	m := MakeComparableName("file.txt")
 	fmt.Printf("%v\n", m)
 

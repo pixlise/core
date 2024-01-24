@@ -160,7 +160,7 @@ func MultiQuantCombinedCSV(
 		} else {
 			// Read from DB
 			coll := hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName)
-			roiResult := coll.FindOne(context.TODO(), bson.D{{"_id", zItem.RoiId}}, options.FindOne())
+			roiResult := coll.FindOne(context.TODO(), bson.D{{Key: "_id", Value: zItem.RoiId}}, options.FindOne())
 			if roiResult.Err() != nil {
 				if roiResult.Err() == mongo.ErrNoDocuments {
 					return result, errorwithstatus.MakeNotFoundError(zItem.RoiId)

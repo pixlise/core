@@ -290,7 +290,7 @@ func (s *PIXLISEDataSaver) Save(
 
 	jobLog.Infof("Looking up auto-share group(s) for: \"%v\"", sharer)
 
-	autoShareResult := coll.FindOne(context.TODO(), bson.D{{"_id", sharer}}, optFind)
+	autoShareResult := coll.FindOne(context.TODO(), bson.D{{Key: "_id", Value: sharer}}, optFind)
 	if autoShareResult.Err() != nil {
 		// We couldn't find someone to auto-share it with, if we don't have anyone to share with, just fail here
 		if autoShareResult.Err() == mongo.ErrNoDocuments {
@@ -349,7 +349,7 @@ func (s *PIXLISEDataSaver) Save(
 	coll = db.Collection(dbCollections.ScansName)
 	opt := options.Update().SetUpsert(true)
 
-	result, err := coll.UpdateOne(context.TODO(), bson.D{{"_id", summaryData.Id}}, bson.D{{"$set", summaryData}}, opt)
+	result, err := coll.UpdateOne(context.TODO(), bson.D{{Key: "_id", Value: summaryData.Id}}, bson.D{{Key: "$set", Value: summaryData}}, opt)
 
 	if err != nil {
 		jobLog.Errorf("Failed to write summary to DB: %v", err)
@@ -367,7 +367,7 @@ func (s *PIXLISEDataSaver) Save(
 	coll = db.Collection(dbCollections.OwnershipName)
 	opt = options.Update().SetUpsert(true)
 
-	result, err = coll.UpdateOne(context.TODO(), bson.D{{"_id", ownerItem.Id}}, bson.D{{"$set", ownerItem}}, opt)
+	result, err = coll.UpdateOne(context.TODO(), bson.D{{Key: "_id", Value: ownerItem.Id}}, bson.D{{Key: "$set", Value: ownerItem}}, opt)
 	if err != nil {
 		jobLog.Errorf("Failed to write ownership item to DB: %v", err)
 		return err

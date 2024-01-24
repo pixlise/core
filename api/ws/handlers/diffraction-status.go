@@ -98,7 +98,7 @@ func HandleDiffractionPeakStatusDeleteReq(req *protos.DiffractionPeakStatusDelet
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.DiffractionDetectedPeakStatusesName)
 
 	// Delete the given item from the map stored for given scan ID
-	dbResult, err := coll.UpdateByID(ctx, req.ScanId, bson.D{{Key: "$unset", Value: bson.D{{"statuses." + req.DiffractionPeakId, ""}}}})
+	dbResult, err := coll.UpdateByID(ctx, req.ScanId, bson.D{{Key: "$unset", Value: bson.D{{Key: "statuses." + req.DiffractionPeakId, Value: ""}}}})
 
 	if err != nil {
 		return nil, err

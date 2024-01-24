@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/pixlise/core/v4/core/logger"
 	"go.mongodb.org/mongo-driver/bson"
@@ -61,7 +60,8 @@ func connectToRemoteMongoDB(
 
 	cmdMonitor := makeMongoCommandMonitor(iLog)
 
-	client, err = mongo.NewClient(
+	client, err = mongo.Connect(
+		context.TODO(),
 		options.Client().
 			ApplyURI(connectionURI).
 			SetMonitor(cmdMonitor).
@@ -80,15 +80,9 @@ func connectToRemoteMongoDB(
 		return nil, fmt.Errorf("Failed to create new mongo DB connection: %v", err)
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
-	err = client.Connect(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// Try to ping the DB to confirm connection
 	var result bson.M
-	err = client.Database("admin").RunCommand(context.TODO(), bson.D{{"ping", 1}}).Decode(&result)
+	err = client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Decode(&result)
 	if err != nil {
 		return nil, err
 	}

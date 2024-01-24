@@ -39,13 +39,13 @@ func HandleExpressionListReq(req *protos.ExpressionListReq, hctx wsHelpers.Handl
 
 	// Since we want only summary data, specify less fields to retrieve
 	opts := options.Find().SetProjection(bson.D{
-		{"_id", true},
-		{"name", true},
-		{"sourcelanguage", true},
-		{"comments", true},
-		{"tags", true},
-		{"modulereferences", true},
-		{"modifiedunixsec", true},
+		{Key: "_id", Value: true},
+		{Key: "name", Value: true},
+		{Key: "sourcelanguage", Value: true},
+		{Key: "comments", Value: true},
+		{Key: "tags", Value: true},
+		{Key: "modulereferences", Value: true},
+		{Key: "modifiedunixsec", Value: true},
 	})
 
 	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.ExpressionsName).Find(context.TODO(), filter, opts)
@@ -260,14 +260,10 @@ func HandleExpressionWriteExecStatReq(req *protos.ExpressionWriteExecStatReq, hc
 
 	// Replace its recent exec stats with the one given to us
 	req.Stats.TimeStampUnixSec = uint32(hctx.Svcs.TimeStamper.GetTimeNowSec())
-	update := bson.D{
-		{"$set", bson.D{
-			{"recentexecstats", req.Stats},
-		}},
-	}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "recentexecstats", Value: req.Stats}}}}
 
 	// It's valid, update the DB
-	filter := bson.D{{"_id", req.Id}}
+	filter := bson.D{{Key: "_id", Value: req.Id}}
 	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.ExpressionsName).UpdateOne(ctx, filter, update)
 	if err != nil {
 		return nil, err

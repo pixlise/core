@@ -41,7 +41,7 @@ func migrateDetectorConfigs(configBucket string, fs fileaccess.FileAccess, dest 
 
 			cfg.Id = name
 
-			destCfgs = append(destCfgs, cfg)
+			destCfgs = append(destCfgs, &cfg)
 		}
 	}
 
