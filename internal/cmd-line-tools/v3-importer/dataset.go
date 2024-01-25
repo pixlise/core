@@ -279,6 +279,10 @@ func migrateDatasets(
 }
 
 func setDefaultImage(scanId string, image string, db *mongo.Database) error {
+	if len(image) <= 0 {
+		return nil // nothing to store
+	}
+
 	coll := db.Collection(dbCollections.ScanDefaultImagesName)
 
 	// Check if we need to prefix the name
