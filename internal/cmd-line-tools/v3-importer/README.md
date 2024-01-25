@@ -19,9 +19,11 @@ These we can copy by hand from the prod DocumentDB and imported into the locally
 
 ### Command line arguments
 
-Arguments are passed by the VS code launch configuration in as "args". Clearly, this can be run as a command line tool but given the ability to debug, the large number of parameters and niceness of it being reproducabile, running from VS code makes sense.
+Arguments are passed by the VS code launch configuration in as "args". Clearly, this can be run as a command line tool but given the ability to debug, log output colouring, the large number of parameters and niceness of it being reproducabile, running from VS code makes sense.
 
 There is a list of dataset IDs to import (so we can exclude bad datasets), and also note that there are flags that can be passed to limit what kinds of data are being imported, for example in case you want to re-run only the importing of datasets and not quants.
+
+One special argument to note is *jsonImportDir* - this allows specifying a directory of JSON files (named <collection>.json) that are to be imported into the collection named in the file name. If this has happened already, it will fail with a duplicate key error and a warning will be printed but the rest of the migration will continue. This was added to supplement the data from old prod because we had some test data that was useful only to PIXLISE v4 that we wanted to include in any new environments.
 
 This is an example VS code launch config used (with keys/bucket names removed):
 ```
@@ -67,7 +69,8 @@ This is an example VS code launch config used (with keys/bucket names removed):
         "-migrateQuantsEnabled=true",
         "-migrateElementSetsEnabled=true",
         "-migrateZStacksEnabled=true",
-        "-migrateExpressionsEnabled=true"
+        "-migrateExpressionsEnabled=true",
+        "-jsonImportDir", "json-data"
     ]
 }
 ```

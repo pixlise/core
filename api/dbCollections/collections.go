@@ -1,6 +1,9 @@
 package dbCollections
 
 // All the DB collection names, so there's no confusion among all our code, also one place to rename
+
+// NOTE DON'T FORGET TO UPDATE GetAllCollections() BELOW!!!
+
 const CoregJobCollection = "coregJobs"
 const DetectorConfigsName = "detectorConfigs"
 const DiffractionDetectedPeakStatusesName = "diffractionDetectedPeakStatuses"
@@ -34,3 +37,41 @@ const UserROIDisplaySettings = "userROIDisplaySettings"
 const UsersName = "users"
 const ViewStatesName = "viewStates"
 const WidgetDataName = "widgetData"
+
+func GetAllCollections() []string {
+	return []string{
+		CoregJobCollection,
+		DetectorConfigsName,
+		DiffractionDetectedPeakStatusesName,
+		DiffractionManualPeaksName,
+		DOIName,
+		ElementSetsName,
+		ExpressionGroupsName,
+		ExpressionsName,
+		ImageBeamLocationsName,
+		ImagesName,
+		JobStatusName,
+		MemoisedItemsName,
+		MistROIsName,
+		ModulesName,
+		ModuleVersionsName,
+		NotificationsName,
+		OwnershipName,
+		PiquantVersionName,
+		QuantificationsName,
+		QuantificationZStacksName,
+		RegionsOfInterestName,
+		ScanAutoShareName,
+		ScanDefaultImagesName,
+		ScansName,
+		ScreenConfigurationName,
+		SelectionName,
+		TagsName,
+		UserGroupJoinRequestsName,
+		UserGroupsName,
+		UserROIDisplaySettings,
+		UsersName,
+		ViewStatesName,
+		WidgetDataName,
+	}
+}

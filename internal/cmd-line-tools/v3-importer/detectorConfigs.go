@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func migrateDetectorConfigs(configBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
+func migrateDetectorConfigs(configBucket string, destConfigBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
 	coll := dest.Collection(dbCollections.DetectorConfigsName)
 	err := coll.Drop(context.TODO())
 	if err != nil {
@@ -51,5 +51,15 @@ func migrateDetectorConfigs(configBucket string, fs fileaccess.FileAccess, dest 
 	}
 
 	fmt.Printf("Detector configs inserted: %v\n", len(result.InsertedIDs))
+
+	// Copy to the destination bucket too
+	failOnError := make([]bool, len(detectorConfigPaths))
+	for c := range failOnError {
+		failOnError[c] = true
+	}
+
+	s3Copy(fs, configBucket, detectorConfigPaths, destConfigBucket, detectorConfigPaths, failOnError)
+	fmt.Printf("%v detector config files copied to dest bucket: %v\n", len(detectorConfigPaths), destConfigBucket)
+
 	return nil
 }

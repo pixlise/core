@@ -1,0 +1,96 @@
+[{
+    "_id": "grp-lgv38cs4d7b6ncvm",
+    "name": "Silica Mafics Ternary",
+    "groupitems": [
+      {
+        "expressionid": "qycs4b0jspdwa2nf",
+        "rangemin": 0,
+        "rangemax": 0
+      },
+      {
+        "expressionid": "83ualude5nkecvsj",
+        "rangemin": 0,
+        "rangemax": 0
+      },
+      {
+        "expressionid": "qcfxis04wgc7j88f",
+        "rangemin": 0,
+        "rangemax": 0
+      }
+    ],
+    "tags": null,
+    "modifiedunixsec": 1703034927,
+    "description": ""
+  },
+  {
+    "_id": "grp-n9hpvoqdearo8xii",
+    "name": "Silicate-Sulfate Ternary",
+    "groupitems": [
+      {
+        "expressionid": "83ualude5nkecvsj",
+        "rangemin": 0,
+        "rangemax": 0
+      },
+      {
+        "expressionid": "inqplb4eimjkxktd",
+        "rangemin": 0,
+        "rangemax": 0
+      },
+      {
+        "expressionid": "qele6a20u9f8ru87",
+        "rangemin": 0,
+        "rangemax": 0
+      }
+    ],
+    "tags": null,
+    "modifiedunixsec": 1703034262,
+    "description": "For facies discrimination"
+  },
+  {
+    "_id": "grp-nf5tofzvgc492j39",
+    "name": "Alumina Mafics Ternary",
+    "groupitems": [
+      {
+        "expressionid": "qycs4b0jspdwa2nf",
+        "rangemin": 0,
+        "rangemax": 0
+      },
+      {
+        "expressionid": "83ualude5nkecvsj",
+        "rangemin": 0,
+        "rangemax": 0
+      },
+      {
+        "expressionid": "72n3k3wvtv2gaqoc",
+        "rangemin": 0,
+        "rangemax": 0
+      }
+    ],
+    "tags": null,
+    "modifiedunixsec": 1703034606,
+    "description": ""
+  },
+  {
+    "_id": "grp-yruqdljdpg3paisb",
+    "name": "Si-Fe-Mg Ternary",
+    "groupitems": [
+      {
+        "expressionid": "ftxfg2llmayz1ibk",
+        "rangemin": 0,
+        "rangemax": 0
+      },
+      {
+        "expressionid": "7x8dy5a647tngkw5",
+        "rangemin": 0,
+        "rangemax": 0
+      },
+      {
+        "expressionid": "qcfxis04wgc7j88f",
+        "rangemin": 0,
+        "rangemax": 0
+      }
+    ],
+    "tags": null,
+    "modifiedunixsec": 1703033837,
+    "description": ""
+  }]

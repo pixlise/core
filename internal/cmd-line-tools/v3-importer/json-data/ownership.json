@@ -1,0 +1,60 @@
+[{
+    "_id": "grp-lgv38cs4d7b6ncvm",
+    "objecttype": 4,
+    "creatoruserid": "auth0|5e5fb621f078450d6a435034",
+    "createdunixsec": 1703034927,
+    "viewers": null,
+    "editors": {
+      "userids": [
+        "auth0|5e5fb621f078450d6a435034",
+        "auth0|5de45d85ca40070f421a3a34",
+        "auth0|6227d96292150a0069117483"
+      ],
+      "groupids": null
+    }
+  },
+  {
+    "_id": "grp-n9hpvoqdearo8xii",
+    "objecttype": 4,
+    "creatoruserid": "auth0|5e5fb621f078450d6a435034",
+    "createdunixsec": 1703034262,
+    "viewers": null,
+    "editors": {
+      "userids": [
+        "auth0|5e5fb621f078450d6a435034",
+        "auth0|5de45d85ca40070f421a3a34",
+        "auth0|6227d96292150a0069117483"
+      ],
+      "groupids": null
+    }
+  },
+  {
+    "_id": "grp-nf5tofzvgc492j39",
+    "objecttype": 4,
+    "creatoruserid": "auth0|5e5fb621f078450d6a435034",
+    "createdunixsec": 1703034606,
+    "viewers": null,
+    "editors": {
+      "userids": [
+        "auth0|5e5fb621f078450d6a435034",
+        "auth0|5de45d85ca40070f421a3a34",
+        "auth0|6227d96292150a0069117483"
+      ],
+      "groupids": null
+    }
+  },
+  {
+    "_id": "grp-yruqdljdpg3paisb",
+    "objecttype": 4,
+    "creatoruserid": "auth0|5e5fb621f078450d6a435034",
+    "createdunixsec": 1703033837,
+    "viewers": null,
+    "editors": {
+      "userids": [
+        "auth0|5e5fb621f078450d6a435034",
+        "auth0|5de45d85ca40070f421a3a34",
+        "auth0|6227d96292150a0069117483"
+      ],
+      "groupids": null
+    }
+  }]

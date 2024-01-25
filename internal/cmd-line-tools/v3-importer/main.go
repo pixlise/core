@@ -36,6 +36,7 @@ func main() {
 	var dataBucket string
 	var destDataBucket string
 	var configBucket string
+	var destConfigBucket string
 	var userContentBucket string
 	var destUserContentBucket string
 	var srcEnvName string
@@ -51,6 +52,7 @@ func main() {
 	var migrateElementSetsEnabled bool
 	var migrateZStacksEnabled bool
 	var migrateExpressionsEnabled bool
+	var jsonImportDir string
 
 	flag.StringVar(&sourceMongoSecret, "sourceMongoSecret", "", "Source mongo DB secret")
 	flag.StringVar(&destMongoSecret, "destMongoSecret", "", "Destination mongo DB secret")
@@ -59,6 +61,7 @@ func main() {
 	flag.StringVar(&userContentBucket, "userContentBucket", "", "User content bucket")
 	flag.StringVar(&destUserContentBucket, "destUserContentBucket", "", "Destination user content bucket")
 	flag.StringVar(&configBucket, "configBucket", "", "Config bucket")
+	flag.StringVar(&destConfigBucket, "destConfigBucket", "", "Destination config bucket (some files are copied)")
 	flag.StringVar(&srcEnvName, "srcEnvName", "", "Source Environment Name")
 	flag.StringVar(&destEnvName, "destEnvName", "", "Destination Environment Name")
 	flag.IntVar(&maxItemsToRead, "maxItems", 0, "Max number of items to read into any table, 0=unlimited")
@@ -76,8 +79,42 @@ func main() {
 	flag.BoolVar(&migrateElementSetsEnabled, "migrateElementSetsEnabled", true, "Should we migrate Element Sets?")
 	flag.BoolVar(&migrateZStacksEnabled, "migrateZStacksEnabled", true, "Should we migrate Z-Stacks?")
 	flag.BoolVar(&migrateExpressionsEnabled, "migrateExpressionsEnabled", true, "Should we migrate expressions?")
+	flag.StringVar(&jsonImportDir, "jsonImportDir", "", "If not empty, this is expected to be a directory to read JSON data into DB from. File names must be collection name.")
 
 	flag.Parse()
+
+	// Check they're not empty
+	checkNotEmpty := []string{
+		dataBucket,
+		destDataBucket,
+		configBucket,
+		destConfigBucket,
+		userContentBucket,
+		destUserContentBucket,
+		srcEnvName,
+		destEnvName,
+		auth0Domain,
+		auth0ClientId,
+		auth0Secret,
+	}
+	checkNotEmptyName := []string{
+		"dataBucket",
+		"destDataBucket",
+		"configBucket",
+		"destConfigBucket",
+		"userContentBucket",
+		"destUserContentBucket",
+		"srcEnvName",
+		"destEnvName",
+		"auth0Domain",
+		"auth0ClientId",
+		"auth0Secret",
+	}
+	for c, s := range checkNotEmpty {
+		if len(s) <= 0 {
+			log.Fatalf("Parameter: %v was empty", checkNotEmptyName[c])
+		}
+	}
 
 	limitToDatasetIDsList := strings.Split(limitToDatasetIDs, ",")
 
@@ -188,13 +225,24 @@ func main() {
 		}
 
 		fmt.Println("==========================================")
-		fmt.Println("Migrating data from config bucket...")
+		fmt.Printf("Importing JSON files from %v\n", jsonImportDir)
 		fmt.Println("==========================================")
-		fmt.Println("Detector Configs...")
-		err = migrateDetectorConfigs(configBucket, fs, destDB)
+		err = importJSONFiles(jsonImportDir, destDB)
 		if err != nil {
 			fatalError(err)
 		}
+
+		fmt.Println("==========================================")
+		fmt.Println("Migrating data from config bucket...")
+		fmt.Println("==========================================")
+		fmt.Println("Detector Configs...")
+		err = migrateDetectorConfigs(configBucket, destConfigBucket, fs, destDB)
+		if err != nil {
+			fatalError(err)
+		}
+		fmt.Println("PIXLISE/PIQUANT Config files...")
+		migrateConfigs(configBucket, destConfigBucket, fs) // fatalError called if any fail
+
 		fmt.Println("Piquant Version...")
 		err = migratePiquantVersion(configBucket, fs, destDB)
 		if err != nil {
