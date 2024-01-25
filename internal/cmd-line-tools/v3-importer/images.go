@@ -45,6 +45,7 @@ func importImagesForDataset(datasetID string, srcBucket string, destDataBucket s
 
 	// Read all images and save an image record, while also saving location info if there is any...
 	alignedImageSizes := map[string][]uint32{}
+	var alignedImgMutex sync.Mutex
 	for alignedIdx, img := range exprPB.AlignedContextImages {
 		wg.Add(1)
 		go func(alignedIdx int, img *protos.Experiment_ContextImageCoordinateInfo) {
@@ -68,7 +69,9 @@ func importImagesForDataset(datasetID string, srcBucket string, destDataBucket s
 				}*/
 				finishImportTask(taskId, err)
 
+				alignedImgMutex.Lock()
 				alignedImageSizes[savedName] = []uint32{w, h, uint32(alignedIdx)}
+				alignedImgMutex.Unlock()
 			}
 		}(alignedIdx, img)
 	}
