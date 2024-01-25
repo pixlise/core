@@ -179,7 +179,7 @@ func getQuantSummaryItems(
 
 	// Read several at a time
 	for w := 0; w < 10; w++ {
-		go jobSummaryReadWorker(&wg, summaryReads, &summaryItemsLock, jobSummaryItems, userContentBucket, fs)
+		go jobSummaryReadWorker(w, &wg, summaryReads, &summaryItemsLock, jobSummaryItems, userContentBucket, fs)
 	}
 
 	for _, item := range summariesNeeded {
@@ -299,7 +299,7 @@ func displayImportStats(quants map[string]quantSummaryItem) {
 	fmt.Printf("Quantification import results: roiID field count: %v, roiIDs field count: %v, elementSetID field count: %v, multiQuants: %v\n",
 		roiSetCount, roisSetCount, elementSetSetCount, multiQuantCount)
 
-	fmt.Printf("Total quants read: %v, containing %v shared, of which %v are orphaned", len(quants), sharedCount, sharedOrphanCount)
+	fmt.Printf("Total quants read: %v, containing %v shared, of which %v are orphaned\n", len(quants), sharedCount, sharedOrphanCount)
 }
 
 func migrateQuantItems(
@@ -312,7 +312,7 @@ func migrateQuantItems(
 ) {
 	quantMigrationJobs := []quantMigrateJob{}
 
-	fmt.Printf("Migrating %v quants...", len(quants))
+	fmt.Printf("Migrating %v quants...\n", len(quants))
 
 	for id, quant := range quants {
 		if id != quant.quantId || id != quant.summaryItem.JobID {
@@ -336,28 +336,29 @@ func migrateQuantItems(
 		})
 	}
 
-	var wg sync.WaitGroup
-
 	// Start a pool of quant migrators
 	jobs := make(chan quantMigrateJob, len(quantMigrationJobs))
-	for w := 0; w < 4; w++ {
-		go migrateQuantWorker(&wg, jobs, fs, dest)
-	}
+	results := make(chan string, len(quantMigrationJobs))
 
 	// Add jobs!
 	for _, job := range quantMigrationJobs {
 		jobs <- job
 	}
 
+	for w := 0; w < 4; w++ {
+		go migrateQuantWorker(w, jobs, results, fs, dest)
+	}
+
 	close(jobs)
 
-	wg.Wait()
+	for x := 0; x < len(quantMigrationJobs); x++ {
+		<-results
+	}
 
 	fmt.Printf("Quant migration of %v quants is complete!\n", len(quants))
 }
 
-func jobSummaryReadWorker(wg *sync.WaitGroup, summaries <-chan quantSummaryItem, summaryItemsLock *sync.Mutex, jobSummaryItems map[string]SrcJobSummaryItem, userContentBucket string, fs fileaccess.FileAccess) {
-	defer wg.Done()
+func jobSummaryReadWorker(threadId int, wg *sync.WaitGroup, summaries <-chan quantSummaryItem, summaryItemsLock *sync.Mutex, jobSummaryItems map[string]SrcJobSummaryItem, userContentBucket string, fs fileaccess.FileAccess) {
 	wg.Add(1)
 
 	for s := range summaries {
@@ -379,8 +380,10 @@ func jobSummaryReadWorker(wg *sync.WaitGroup, summaries <-chan quantSummaryItem,
 		jobSummaryItems[s.quantId] = jobSummary
 		summaryItemsLock.Unlock()
 
-		fmt.Printf("Summary (remaining %v): %v read OK\n", len(summaries), s.summaryPath)
+		fmt.Printf(" [%v] Summary (remaining %v): %v read OK\n", threadId, len(summaries), s.summaryPath)
 	}
+
+	wg.Done()
 }
 
 type quantMigrateJob struct {
@@ -391,16 +394,14 @@ type quantMigrateJob struct {
 	viewerGroupId         string
 }
 
-func migrateQuantWorker(wg *sync.WaitGroup, jobs <-chan quantMigrateJob, fs fileaccess.FileAccess, dest *mongo.Database) {
-	defer wg.Done()
-	wg.Add(1)
-
+func migrateQuantWorker(threadId int, jobs <-chan quantMigrateJob, results chan<- string, fs fileaccess.FileAccess, dest *mongo.Database) {
 	for j := range jobs {
 		id := addImportTask(fmt.Sprintf("migrateQuant datasetID: %v, quantID: %v, jobOutputPath: %v", j.quant.scanId, j.quant.quantId, j.quant.summaryItem.OutputFilePath))
 		err := migrateQuant(*j.quant.summaryItem, j.overrideSrcPath, j.userContentBucket, j.destUserContentBucket, j.viewerGroupId, fs, dest)
 		finishImportTask(id, err)
 
-		fmt.Printf("Migrated (remaining: %v) quant id: %v.\n", len(jobs), j.quant.quantId)
+		fmt.Printf(" [%v] Migrated (remaining: %v) quant id: %v.\n", threadId, len(jobs), j.quant.quantId)
+		results <- j.quant.quantId
 	}
 }
 

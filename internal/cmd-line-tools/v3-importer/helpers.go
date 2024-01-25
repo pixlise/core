@@ -49,7 +49,7 @@ func saveOwnershipItem(objectId string, objectType protos.ObjectType, editorUser
 		return fmt.Errorf("Ownership insert for object %v %v inserted different id %v", objectType, objectId, result.InsertedID)
 	}
 
-	fmt.Printf(" saving ownership: %v, type: %v, editorUser: %v, editorGroup: %v, viewerGroup: %v\n", objectId, objectType, editorUserId, editorGroupId, viewerGroupId)
+	//fmt.Printf(" saving ownership: %v, type: %v, editorUser: %v, editorGroup: %v, viewerGroup: %v\n", objectId, objectType, editorUserId, editorGroupId, viewerGroupId)
 	return nil
 }
 
@@ -74,6 +74,6 @@ func s3Copy(fs fileaccess.FileAccess, srcBucket string, srcPaths []string, dstBu
 			}
 		}
 
-		fmt.Printf("  Copied: s3://%v/%v --> s3://%v/%v\n", srcBucket, srcPath, dstBucket, dstPaths[c])
+		fmt.Printf("  Copied: s3://%v/%v \n      --> s3://%v/%v\n", srcBucket, srcPath, dstBucket, dstPaths[c])
 	}
 }
