@@ -252,6 +252,7 @@ func (s *SOFFImport) Import(importPath string, pseudoIntensityRangesPath string,
 		datasetIDExpected,
 		protos.ScanInstrument_PIXL_FM,
 		"",
+		1, // TODO: resolve how we work out beam version via SOFF files
 		jobLog,
 	)
 

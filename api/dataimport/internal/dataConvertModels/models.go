@@ -242,6 +242,9 @@ type OutputData struct {
 
 	// Who created this dataset
 	CreatorUserId string
+
+	// Beam generator version number
+	BeamVersion uint32
 }
 
 // EnsurePMC - allocates an item to store data for the given PMC if doesn't already exist
