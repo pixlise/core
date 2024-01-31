@@ -102,6 +102,7 @@ func MakeFMDatasetOutput(
 	datasetIDExpected string,
 	overrideInstrument protos.ScanInstrument,
 	overrideDetector string,
+	beamVersion uint32,
 	log logger.ILogger,
 ) (*dataConvertModels.OutputData, error) {
 	// Now that all have been read, combine the bulk/max spectra into our lookup
@@ -174,6 +175,7 @@ func MakeFMDatasetOutput(
 		DISCOImages:          discoImages,
 		MatchedAlignedImages: matchedAlignedImages,
 		CreatorUserId:        specialUserIds.PIXLISESystemUserId, // Auto-importing FM datasets, we don't show a creator... TODO: what about EM though??
+		BeamVersion:          beamVersion,
 	}
 
 	data.SetPMCData(beamLookup, hkData, locSpectraLookup, contextImgsPerPMC, pseudoIntensityData, map[int32]string{})

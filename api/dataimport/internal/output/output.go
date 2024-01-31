@@ -319,7 +319,11 @@ func (s *PIXLISEDataSaver) Save(
 	// as we switched to storing them in DB (to allow import of other images with a corresponding set of beam locations)
 	// Redundant, but this is how it evolved...
 	for idx, imgItem := range exp.AlignedContextImages {
-		err := beamLocation.ImportBeamLocationToDB(imgItem.Image, data.DatasetID, idx, &exp, db, jobLog)
+		beamVer := data.BeamVersion
+		if beamVer < 1 {
+			beamVer = 1
+		}
+		err := beamLocation.ImportBeamLocationToDB(imgItem.Image, data.DatasetID, beamVer, idx, &exp, db, jobLog)
 		if err != nil {
 			return fmt.Errorf("Failed to import beam locations for image %v into DB. Error: %v", imgItem.Image, err)
 		}
