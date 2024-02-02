@@ -2,141 +2,12 @@ package notificationSender
 
 import (
 	"fmt"
-	"path"
 
-	"github.com/pixlise/core/v4/api/ws"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/awsutil"
-	"github.com/pixlise/core/v4/core/logger"
-	"github.com/pixlise/core/v4/core/timestamper"
+	"github.com/pixlise/core/v4/core/singleinstance"
 	protos "github.com/pixlise/core/v4/generated-protos"
-	"go.mongodb.org/mongo-driver/mongo"
 )
-
-type NotificationSender struct {
-	db          *mongo.Database
-	timestamper timestamper.ITimeStamper // So we can mock time.Now()
-	log         logger.ILogger
-	envRootURL  string
-	ws          *ws.WSHandler
-}
-
-func MakeNotificationSender(db *mongo.Database, timestamper timestamper.ITimeStamper, log logger.ILogger, envRootURL string, ws *ws.WSHandler) *NotificationSender {
-	return &NotificationSender{
-		db:          db,
-		timestamper: timestamper,
-		log:         log,
-		ws:          ws,
-	}
-}
-
-func (n *NotificationSender) NotifyNewScan(scanName string, scanId string) {
-	notifMsg := &protos.UserNotificationUpd{
-		Notification: &protos.UserNotification{
-			Subject:          fmt.Sprintf("New scan imported: %v", scanName),
-			Contents:         fmt.Sprintf("A new scan named %v was just imported. Scan ID is: %v", scanName, scanId),
-			From:             "Data Importer",
-			TimeStampUnixSec: uint32(n.timestamper.GetTimeNowSec()),
-			ActionLink:       path.Join(n.envRootURL, "?q="+scanId),
-			Meta:             map[string]string{},
-		},
-	}
-
-	n.sendNotificationToObjectUsers(notifMsg, scanId)
-}
-
-func (n *NotificationSender) NotifyUpdatedScan(scanName string, scanId string) {
-	notifMsg := &protos.UserNotificationUpd{
-		Notification: &protos.UserNotification{
-			Subject:          fmt.Sprintf("Updated scan: %v", scanName),
-			Contents:         fmt.Sprintf("The scan named %v, which you have access to, was just updated. Scan ID is: %v", scanName, scanId),
-			From:             "Data Importer",
-			TimeStampUnixSec: uint32(n.timestamper.GetTimeNowSec()),
-			ActionLink:       path.Join(n.envRootURL, "?q="+scanId),
-			Meta:             map[string]string{},
-		},
-	}
-
-	n.sendNotificationToObjectUsers(notifMsg, scanId)
-}
-
-func (n *NotificationSender) SysNotifyScanChanged(scanId string) {
-
-}
-
-func (n *NotificationSender) NotifyNewScanImage(scanName string, scanId string, imageName string) {
-	notifMsg := &protos.UserNotificationUpd{
-		Notification: &protos.UserNotification{
-			Subject:          fmt.Sprintf("New image added to scan: %v", scanName),
-			Contents:         fmt.Sprintf("A new image named %v was added to scan: %v (id: %v)", imageName, scanName, scanId),
-			From:             "Data Importer",
-			TimeStampUnixSec: uint32(n.timestamper.GetTimeNowSec()),
-			ActionLink:       path.Join(n.envRootURL, "?q="+scanId+"&image="+imageName),
-			Meta:             map[string]string{},
-		},
-	}
-
-	n.sendNotificationToObjectUsers(notifMsg, scanId)
-}
-
-func (n *NotificationSender) SysNotifyScanImagesChanged(scanIds []string) {
-
-}
-
-func (n *NotificationSender) NotifyNewQuant(uploaded bool, quantId string, quantName string, status string, scanName string, scanId string) {
-	notifMsg := &protos.UserNotificationUpd{
-		Notification: &protos.UserNotification{
-			Subject:          fmt.Sprintf("Quantification %v has completed with status: %v", quantName, status),
-			Contents:         fmt.Sprintf("A quantification named %v (id: %v) has completed with status %v. This quantification is for the scan named: %v", quantName, quantId, status, scanName),
-			From:             "Data Importer",
-			TimeStampUnixSec: uint32(n.timestamper.GetTimeNowSec()),
-			ActionLink:       path.Join(n.envRootURL, "?q="+scanId+"&quant="+quantId),
-			Meta:             map[string]string{},
-		},
-	}
-
-	n.sendNotificationToObjectUsers(notifMsg, quantId)
-}
-
-func (n *NotificationSender) SysNotifyQuantChanged(quantId string) {
-
-}
-
-func (n *NotificationSender) NotifyObjectShared(objectType string, objectId string, objectName, sharerName string) {
-	notifMsg := &protos.UserNotificationUpd{
-		Notification: &protos.UserNotification{
-			Subject:          fmt.Sprintf("%v was just shared", objectType),
-			Contents:         fmt.Sprintf("An object of type %v named %v was just shared by %v", objectType, objectName, sharerName),
-			From:             "PIXLISE back-end",
-			TimeStampUnixSec: uint32(n.timestamper.GetTimeNowSec()),
-			ActionLink:       "",
-			Meta:             map[string]string{},
-		},
-	}
-
-	n.sendNotificationToObjectUsers(notifMsg, objectId)
-}
-
-func (n *NotificationSender) NotifyUserGroupMessage(subject string, message string, groupId string, groupName string, sender string) {
-	notifMsg := &protos.UserNotificationUpd{
-		Notification: &protos.UserNotification{
-			Subject:          subject,
-			Contents:         fmt.Sprintf("%v\nThis message was sent by %v to group %v", message, sender, groupName),
-			From:             sender,
-			TimeStampUnixSec: uint32(n.timestamper.GetTimeNowSec()),
-			ActionLink:       "",
-			Meta:             map[string]string{},
-		},
-	}
-
-	userIds, err := wsHelpers.GetUserIdsForGroup([]string{groupId}, n.db)
-	if err != nil {
-		n.log.Errorf("Failed to get user ids for group: %v. Error: %v", groupId, err)
-		return
-	}
-
-	n.sendNotification(notifMsg, userIds)
-}
 
 func (n *NotificationSender) sendNotificationToObjectUsers(notifMsg *protos.UserNotificationUpd, objectId string) {
 	userIds, err := wsHelpers.FindUserIdsFor(objectId, n.db)
@@ -145,21 +16,28 @@ func (n *NotificationSender) sendNotificationToObjectUsers(notifMsg *protos.User
 		return
 	}
 
-	n.sendNotification(notifMsg, userIds)
+	n.sendNotification(objectId, notifMsg, userIds)
 }
 
-func (n *NotificationSender) sendNotification(notifMsg *protos.UserNotificationUpd, userIds []string) {
+// SourceId must be an id that is unique across API instances so we can decide on one instance to send emails from!
+func (n *NotificationSender) sendNotification(sourceId string, notifMsg *protos.UserNotificationUpd, userIds []string) {
 	// Loop through each user, if we have them connected, notify directly, otherwise email
-	sessions, noSessionUserIds := n.ws.GetSessionForUsersIfExists(userIds)
+	sessions, _ := n.ws.GetSessionForUsersIfExists(userIds)
 	for _, session := range sessions {
 		msg := &protos.WSMessage{Contents: &protos.WSMessage_UserNotificationUpd{UserNotificationUpd: notifMsg}}
 		wsHelpers.SendForSession(session, msg)
 	}
 
-	// Email the rest
-	for _, emailUserId := range noSessionUserIds {
-		n.sendEmail(notifMsg.Notification, emailUserId)
-	}
+	// Email the rest, but only from ONE instance of our API!
+	singleinstance.HandleOnce(sourceId, n.instanceId, func(sourceId string) {
+		// NOTE: At this point we have no way to exclude emails for those sessions we have already sent
+		//       web socket notifications to because multiple API instances have done the above job, but
+		//       email sending is being done by one instance which doesn't have a list of all sessions
+		//       connected to all APIs, so here we email all interested parties.
+		for _, emailUserId := range userIds {
+			n.sendEmail(notifMsg.Notification, emailUserId)
+		}
+	}, n.db, n.timestamper, n.log)
 }
 
 func (n *NotificationSender) sendEmail(notif *protos.UserNotification, userId string) {

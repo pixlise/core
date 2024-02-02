@@ -30,11 +30,11 @@ import (
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/converterSelector"
 	"github.com/pixlise/core/v4/api/dataimport/internal/datasetArchive"
-	"github.com/pixlise/core/v4/api/dataimport/internal/importerutils"
 	"github.com/pixlise/core/v4/api/dataimport/internal/output"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/scan"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	diffractionDetector "github.com/pixlise/diffraction-peak-detection/v2/detection"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -72,7 +72,7 @@ func ImportDataset(
 
 	// Read previously saved dataset summary file, so we have something to compare against to see what changes
 	// we will need to notify on
-	oldSummary, errOldSummary := importerutils.ReadScanItem(datasetID, db)
+	oldSummary, errOldSummary := scan.ReadScanItem(datasetID, db)
 	if err != nil {
 		// NOTE: we don't die here, we may be importing for the first time! Just log and continue
 		//return workingDir, savedSummary, "", false, err
@@ -140,7 +140,7 @@ func ImportDataset(
 	updatenotificationtype := "unknown"
 
 	if errOldSummary == nil { // don't do this if the old summary couldn't be read!
-		savedSummary, err = importerutils.ReadScanItem(datasetID, db)
+		savedSummary, err = scan.ReadScanItem(datasetID, db)
 		if err != nil {
 			return workingDir, savedSummary, "", false, err
 		}

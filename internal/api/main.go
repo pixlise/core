@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns"
@@ -13,9 +14,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/config"
+	"github.com/pixlise/core/v4/api/dataimport"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/endpoints"
 	"github.com/pixlise/core/v4/api/filepaths"
+	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/api/notificationSender"
 	"github.com/pixlise/core/v4/api/permission"
 	apiRouter "github.com/pixlise/core/v4/api/router"
@@ -28,9 +31,13 @@ import (
 	"github.com/pixlise/core/v4/core/jwtparser"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/core/scan"
+	"github.com/pixlise/core/v4/core/singleinstance"
 	"github.com/pixlise/core/v4/core/timestamper"
 	"github.com/pixlise/core/v4/core/utils"
+	protos "github.com/pixlise/core/v4/generated-protos"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func main() {
@@ -45,6 +52,9 @@ func main() {
 	}()
 
 	// Deprecated now: rand.Seed(time.Now().UnixNano())
+
+	// Invent an instance ID
+	instanceId := utils.RandStringBytesMaskImpr(16)
 
 	// Turn off date+time prefixing of log msgs, we have timestamps captured in other ways
 	log.SetFlags(0)
@@ -83,7 +93,7 @@ func main() {
 	fmt.Printf("Web socket config: %+v\n", m.Config)
 	ws := ws.MakeWSHandler(m, svcs)
 
-	svcs.Notifier = notificationSender.MakeNotificationSender(svcs.MongoDB, svcs.TimeStamper, svcs.Log, svcs.Config.EnvironmentName, ws)
+	svcs.Notifier = notificationSender.MakeNotificationSender(instanceId, svcs.MongoDB, svcs.TimeStamper, svcs.Log, svcs.Config.EnvironmentName, ws)
 
 	// Create event handlers for websocket
 	m.HandleConnect(ws.HandleConnect)
@@ -141,6 +151,17 @@ func main() {
 
 	// Now also log this to the world...
 	svcs.Log.Infof("API version \"%v\" started...", services.ApiVersion)
+
+	// Start listening for job status changes for auto-import-*
+	handler := autoImportHandler{
+		instanceId,
+		svcs.Notifier,
+		svcs.MongoDB,
+		svcs.TimeStamper,
+		svcs.Log,
+	}
+
+	job.ListenForExternalTriggeredJobs(dataimport.JobIDAutoImportPrefix, handler.handleAutoImportJobStatus, svcs.MongoDB, svcs.Log)
 
 	log.Fatal(
 		http.ListenAndServe(":8080",
@@ -247,4 +268,54 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 	}
 
 	return svcs
+}
+
+type autoImportHandler struct {
+	instanceId string
+	notifier   services.INotifier
+	db         *mongo.Database
+	ts         timestamper.ITimeStamper
+	logger     logger.ILogger
+}
+
+func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
+	// If we find a job has completed, check that it's an auto-triggered job, and if so, we can notify out to all our connected
+	// clients about this jobs creation. We will also want to email all PIXLISE users interested in this, but for that we have
+	// to resolve which of our multiple API instances will do that!
+
+	if !strings.HasPrefix(status.JobId, dataimport.JobIDAutoImportPrefix) {
+		h.logger.Errorf("handleAutoImportJobStatus got unexpected non-external id: %v", status.JobId)
+		return // Just in case...
+	}
+
+	// Make sure it's a scan!
+	if status.JobType != protos.JobStatus_JT_IMPORT_SCAN && status.JobType != protos.JobStatus_JT_REIMPORT_SCAN {
+		h.logger.Errorf("handleAutoImportJobStatus got unexpected job type: %+v", status)
+		return
+	}
+
+	if status.Status == protos.JobStatus_COMPLETE {
+		h.notifier.SysNotifyScanChanged(status.JobItemId)
+
+		// Read the scan...
+		scan, err := scan.ReadScanItem(status.JobItemId, h.db)
+		if err != nil {
+			h.logger.Errorf("handleAutoImportJobStatus failed to read scan for id: %v, job id: %v", status.JobItemId, status.JobId)
+			return
+		}
+
+		// Determine if it's a new scan or an update
+		if status.JobType == protos.JobStatus_JT_IMPORT_SCAN {
+			h.notifier.NotifyNewScan(scan.Title, scan.Id)
+
+			// At this point, we can run a new quantification. Note however that we have to ensure this is only done by 1 active
+			// API instance, so we don't end up running the quant on each instance!
+			singleinstance.HandleOnce(scan.Id+"-quant", h.instanceId, func(sourceId string) {
+				runAutoQuantifications(scan.Id)
+			}, h.db, h.ts, h.logger)
+
+		} else if status.JobType == protos.JobStatus_JT_REIMPORT_SCAN {
+			h.notifier.NotifyUpdatedScan(scan.Title, scan.Id)
+		}
+	}
 }

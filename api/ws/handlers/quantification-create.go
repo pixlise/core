@@ -2,6 +2,7 @@ package wsHandler
 
 import (
 	"errors"
+	"fmt"
 	"path"
 	"strings"
 	"sync"
@@ -9,9 +10,12 @@ import (
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/quantification"
+	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
+	"github.com/pixlise/core/v4/core/scan"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerContext) (*protos.QuantCreateResp, error) {
@@ -37,8 +41,11 @@ func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerCont
 	var wg sync.WaitGroup
 
 	i := quantJobUpdater{
+		req.Params,
 		hctx.Session,
 		hctx.Melody,
+		hctx.Svcs.Notifier,
+		hctx.Svcs.MongoDB,
 	}
 
 	status, err := quantification.CreateJob(req.Params, hctx.SessUser.User.Id, hctx, &wg, i.sendQuantJobUpdate)
@@ -67,8 +74,11 @@ func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerCont
 }
 
 type quantJobUpdater struct {
-	session *melody.Session
-	melody  *melody.Melody
+	params   *protos.QuantCreateParams
+	session  *melody.Session
+	melody   *melody.Melody
+	notifier services.INotifier
+	db       *mongo.Database
 }
 
 func (i *quantJobUpdater) sendQuantJobUpdate(status *protos.JobStatus) {
@@ -81,4 +91,15 @@ func (i *quantJobUpdater) sendQuantJobUpdate(status *protos.JobStatus) {
 	}
 
 	wsHelpers.SendForSession(i.session, &wsUpd)
+
+	// If the job has completed, notify out
+	if status.Status == protos.JobStatus_COMPLETE {
+		scan, err := scan.ReadScanItem(i.params.ScanId, i.db)
+		if err != nil {
+			fmt.Errorf("sendQuantJobUpdate for completed job failed to read scan: %v", i.params.ScanId)
+			return
+		}
+
+		i.notifier.NotifyNewQuant(false, status.JobItemId, i.params.Name, "Complete", scan.Title, i.params.ScanId)
+	}
 }

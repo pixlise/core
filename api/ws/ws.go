@@ -186,7 +186,7 @@ func (ws *WSHandler) HandleMessage(s *melody.Session, msg []byte) {
 	}
 }
 
-// For a a list of user ids, this returns all the sessions we have for them, and a list of user ids we didn't find sessions for
+// For a list of user ids, this returns all the sessions we have for them, and a list of user ids we didn't find sessions for
 func (ws *WSHandler) GetSessionForUsersIfExists(userIds []string) ([]*melody.Session, []string) {
 	result := []*melody.Session{}
 	sessions, err := ws.melody.Sessions()

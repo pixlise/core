@@ -20,6 +20,7 @@ import (
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/indexcompression"
+	"github.com/pixlise/core/v4/core/scan"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
@@ -270,9 +271,10 @@ func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHel
 		hctx.Melody,
 		hctx.Svcs.Notifier,
 		req.ScanId,
+		hctx.Svcs.MongoDB,
 	}
 
-	jobStatus, err := job.AddJob("reimport", uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendReimportUpdate)
+	jobStatus, err := job.AddJob("reimport", protos.JobStatus_JT_REIMPORT_SCAN, req.ScanId, uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendReimportUpdate)
 	jobId := ""
 	if jobStatus != nil {
 		jobId = jobStatus.JobId
@@ -480,10 +482,11 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 		hctx.Melody,
 		hctx.Svcs.Notifier,
 		datasetID,
+		hctx.Svcs.MongoDB,
 	}
 
 	// Add a job watcher for this
-	jobStatus, err := job.AddJob("import", uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendImportUpdate)
+	jobStatus, err := job.AddJob("import", protos.JobStatus_JT_IMPORT_SCAN, datasetID, uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendImportUpdate)
 	jobId := ""
 	if jobStatus != nil {
 		jobId = jobStatus.JobId
@@ -511,6 +514,7 @@ type importUpdater struct {
 	melody         *melody.Melody
 	notifier       services.INotifier
 	scanIdImported string
+	db             *mongo.Database
 }
 
 func (i *importUpdater) sendReimportUpdate(status *protos.JobStatus) {
@@ -527,6 +531,15 @@ func (i *importUpdater) sendReimportUpdate(status *protos.JobStatus) {
 	if status.Status == protos.JobStatus_COMPLETE && status.EndUnixTimeSec > 0 {
 		// Notify of our scan change
 		i.notifier.SysNotifyScanChanged(i.scanIdImported)
+
+		// Notify users
+		scan, err := scan.ReadScanItem(status.JobItemId, i.db)
+		if err != nil {
+			fmt.Errorf("sendImportUpdate failed to read scan for id: %v, job id: %v", status.JobItemId, status.JobId)
+			return
+		}
+
+		i.notifier.NotifyUpdatedScan(scan.Title, scan.Id)
 	}
 }
 
@@ -560,6 +573,14 @@ func (i *importUpdater) sendImportUpdate(status *protos.JobStatus) {
 
 		// Notify of our scan change
 		i.notifier.SysNotifyScanChanged(i.scanIdImported)
+
+		scan, err := scan.ReadScanItem(status.JobItemId, i.db)
+		if err != nil {
+			fmt.Errorf("sendImportUpdate failed to read scan for id: %v, job id: %v", status.JobItemId, status.JobId)
+			return
+		}
+
+		i.notifier.NotifyNewScan(scan.Title, scan.Id)
 	}
 }
 

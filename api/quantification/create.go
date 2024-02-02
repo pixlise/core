@@ -60,7 +60,7 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, h
 		// Make the name and ID the same, and start with something that stands out
 		jobId = fmt.Sprintf("cmd-%v-%s", createParams.Command, hctx.Svcs.IDGen.GenObjectID())
 	} else {
-		jobStatus, err = job.AddJob("quant", uint32(svcs.Config.ImportJobMaxTimeSec), svcs.MongoDB, svcs.IDGen, svcs.TimeStamper, svcs.Log, sendUpdate)
+		jobStatus, err = job.AddJob("quant", protos.JobStatus_JT_RUN_QUANT, "", uint32(svcs.Config.ImportJobMaxTimeSec), svcs.MongoDB, svcs.IDGen, svcs.TimeStamper, svcs.Log, sendUpdate)
 		if jobStatus != nil {
 			jobId = jobStatus.JobId
 		}
