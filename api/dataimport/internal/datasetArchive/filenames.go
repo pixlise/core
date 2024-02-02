@@ -67,7 +67,7 @@ func DecodeArchiveFileName(fileName string) (string, int, error) {
 		return "", 0, errors.New("DecodeArchiveFileName unexpected file name: " + fileName)
 	}
 	// splits[0] is the dataset ID, splits[1] is "the rest"
-	datasetID := splits[0]
+	datasetID := path.Base(splits[0]) // Just in case it's in a subdir of the bucket
 
 	// Remove file extension:
 	strTimestamp := splits[1]
