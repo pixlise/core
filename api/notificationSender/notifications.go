@@ -7,7 +7,21 @@ import (
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/singleinstance"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"google.golang.org/protobuf/proto"
 )
+
+func (n *NotificationSender) sendSysNotification(sysNotification *protos.SysNotificationUpd) {
+	wsSysNotify := protos.WSMessage{
+		Contents: &protos.WSMessage_SysNotificationUpd{
+			SysNotificationUpd: sysNotification,
+		},
+	}
+
+	bytes, err := proto.Marshal(&wsSysNotify)
+	if err == nil {
+		n.melody.BroadcastBinary(bytes)
+	}
+}
 
 func (n *NotificationSender) sendNotificationToObjectUsers(notifMsg *protos.UserNotificationUpd, objectId string) {
 	userIds, err := wsHelpers.FindUserIdsFor(objectId, n.db)

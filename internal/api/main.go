@@ -93,7 +93,7 @@ func main() {
 	fmt.Printf("Web socket config: %+v\n", m.Config)
 	ws := ws.MakeWSHandler(m, svcs)
 
-	svcs.Notifier = notificationSender.MakeNotificationSender(instanceId, svcs.MongoDB, svcs.TimeStamper, svcs.Log, svcs.Config.EnvironmentName, ws)
+	svcs.Notifier = notificationSender.MakeNotificationSender(instanceId, svcs.MongoDB, svcs.TimeStamper, svcs.Log, svcs.Config.EnvironmentName, ws, m)
 
 	// Create event handlers for websocket
 	m.HandleConnect(ws.HandleConnect)

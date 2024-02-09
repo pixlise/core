@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/ws"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/logger"
@@ -19,15 +20,17 @@ type NotificationSender struct {
 	log         logger.ILogger
 	envRootURL  string
 	ws          *ws.WSHandler
+	melody      *melody.Melody
 }
 
-func MakeNotificationSender(instanceId string, db *mongo.Database, timestamper timestamper.ITimeStamper, log logger.ILogger, envRootURL string, ws *ws.WSHandler) *NotificationSender {
+func MakeNotificationSender(instanceId string, db *mongo.Database, timestamper timestamper.ITimeStamper, log logger.ILogger, envRootURL string, ws *ws.WSHandler, melody *melody.Melody) *NotificationSender {
 	return &NotificationSender{
 		instanceId:  instanceId,
 		db:          db,
 		timestamper: timestamper,
 		log:         log,
 		ws:          ws,
+		melody:      melody,
 	}
 }
 
@@ -62,7 +65,12 @@ func (n *NotificationSender) NotifyUpdatedScan(scanName string, scanId string) {
 }
 
 func (n *NotificationSender) SysNotifyScanChanged(scanId string) {
-	// #3861, notify client of changes that are relevant to cache clearing
+	wsSysNotify := &protos.SysNotificationUpd{
+		Reason:  protos.SysNotifyReason_SNR_SCAN,
+		ScanIds: []string{scanId},
+	}
+
+	n.sendSysNotification(wsSysNotify)
 }
 
 func (n *NotificationSender) NotifyNewScanImage(scanName string, scanId string, imageName string) {
@@ -81,7 +89,12 @@ func (n *NotificationSender) NotifyNewScanImage(scanName string, scanId string, 
 }
 
 func (n *NotificationSender) SysNotifyScanImagesChanged(scanIds []string) {
-	// #3861, notify client of changes that are relevant to cache clearing
+	wsSysNotify := &protos.SysNotificationUpd{
+		Reason:  protos.SysNotifyReason_SNR_IMAGE,
+		ScanIds: scanIds,
+	}
+
+	n.sendSysNotification(wsSysNotify)
 }
 
 func (n *NotificationSender) NotifyNewQuant(uploaded bool, quantId string, quantName string, status string, scanName string, scanId string) {
@@ -100,7 +113,12 @@ func (n *NotificationSender) NotifyNewQuant(uploaded bool, quantId string, quant
 }
 
 func (n *NotificationSender) SysNotifyQuantChanged(quantId string) {
-	// #3861, notify client of changes that are relevant to cache clearing
+	wsSysNotify := &protos.SysNotificationUpd{
+		Reason:  protos.SysNotifyReason_SNR_QUANT,
+		QuantId: quantId,
+	}
+
+	n.sendSysNotification(wsSysNotify)
 }
 
 func (n *NotificationSender) NotifyObjectShared(objectType string, objectId string, objectName, sharerName string) {
