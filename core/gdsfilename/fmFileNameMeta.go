@@ -31,7 +31,7 @@ import (
 
 // FileNameMeta See docs/PIXL_filename.docx
 type FileNameMeta struct {
-	instrument         string // PC=PIXL MCC, PE=PIXL engineering, PS=PIXL spectrometer
+	Instrument         string // PC=PIXL MCC, PE=PIXL engineering, PS=PIXL spectrometer
 	ColourFilter       string // R=red, G=green, B=blue, W=multiple, U=UV, D=SLI-A(dense), S=SLI-B(sparse), _=N/A, M=greyscale (PIXL MCC)
 	special            string // Only images, otherwise _. If image, this is user defined special processing copy of an image, eg remove shadows. Ad-hoc, can look up in a DB
 	primaryTimestamp   string // ____=out of range, cruise=Year-DOY(A-Z=2017-2042, 01-365 DOY), surface=SOL 4 integers, ground test either SOL, Year-DOY or DOY-Year
@@ -68,7 +68,7 @@ func (m *FileNameMeta) SetVersionStr(versionStr string) {
 
 func (m FileNameMeta) PMC() (int32, error) {
 	// PMC is only stored by PIXL
-	if m.instrument != "PC" && m.instrument != "PE" && m.instrument != "PS" {
+	if m.Instrument != "PC" && m.Instrument != "PE" && m.Instrument != "PS" {
 		return 0, errors.New("PMC only stored for PIXL files")
 	}
 	i, err := strconv.Atoi(m.camSpecific)
@@ -114,14 +114,14 @@ func (m FileNameMeta) Drive() (int32, error) {
 	return stringToDriveID(m.driveStr)
 }
 
-func (m FileNameMeta) version() (int32, error) {
+func (m FileNameMeta) Version() (int32, error) {
 	return stringToVersion(m.versionStr)
 }
 
 func (m FileNameMeta) ToString() string {
 	var s strings.Builder
 
-	s.WriteString(m.instrument)
+	s.WriteString(m.Instrument)
 	s.WriteString(m.ColourFilter)
 	s.WriteString(m.special)
 	s.WriteString(m.primaryTimestamp)
@@ -145,7 +145,7 @@ func (m FileNameMeta) ToString() string {
 }
 
 func (m *FileNameMeta) SetInstrumentType(instrumentType string) {
-	m.instrument = instrumentType
+	m.Instrument = instrumentType
 }
 
 // ParseFileName
@@ -170,7 +170,7 @@ func ParseFileName(fileName string) (FileNameMeta, error) {
 
 	// Read anything we can get out of the file name
 	// See docs/PIXL_filename.docx
-	result.instrument = fileName[0:2]
+	result.Instrument = fileName[0:2]
 	result.ColourFilter = fileName[2:3]
 	result.special = fileName[3:4]
 	result.primaryTimestamp = fileName[4:8]
@@ -224,7 +224,7 @@ func GetLatestFileVersions(fileNames []string, jobLog logger.ILogger) map[string
 
 			// Store the key as all the fields we're NOT interested in comparing:
 			// this way if we have 2 TIF files with different PMCs, we won't think we need to ignore some due to versioning
-			nonVerFields := ext + meta.instrument + meta.ColourFilter + meta.ProdType + meta.siteStr + meta.driveStr + meta.seqRTT + meta.camSpecific + meta.downsample + meta.compression + meta.Producer
+			nonVerFields := ext + meta.Instrument + meta.ColourFilter + meta.ProdType + meta.siteStr + meta.driveStr + meta.seqRTT + meta.camSpecific + meta.downsample + meta.compression + meta.Producer
 
 			if _, ok := byNonVerFields[nonVerFields]; !ok {
 				// Add an empty map for this
@@ -248,7 +248,7 @@ func GetLatestFileVersions(fileNames []string, jobLog logger.ILogger) map[string
 			if err != nil {
 				jobLog.Infof("Failed to parse SCLK for \"%v\": %v\n", name, err)
 			}
-			metaVersion, err := meta.version()
+			metaVersion, err := meta.Version()
 			if err != nil {
 				jobLog.Infof("Failed to parse version for \"%v\": %v\n", name, err)
 			}
