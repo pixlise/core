@@ -1,8 +1,6 @@
 package wstestlib
 
 import (
-	"log"
-
 	"github.com/pixlise/core/v4/core/logger"
 	mongoDBConnection "github.com/pixlise/core/v4/core/mongoDBConnection"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,7 +16,9 @@ func GetDB() *mongo.Database {
 
 		client, err := mongoDBConnection.Connect(nil, "", &logger)
 		if err != nil {
-			log.Fatal(err)
+			// This meant it was hard to catch when it was failing because DB not running locally
+			//log.Fatal(err)
+			panic(err)
 		}
 
 		dbName := mongoDBConnection.GetDatabaseName("pixlise", "unittest")

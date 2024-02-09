@@ -33,7 +33,7 @@ func HandleElementSetGetReq(req *protos.ElementSetGetReq, hctx wsHelpers.Handler
 }
 
 func HandleElementSetListReq(req *protos.ElementSetListReq, hctx wsHelpers.HandlerContext) (*protos.ElementSetListResp, error) {
-	idToOwner, err := wsHelpers.ListAccessibleIDs(false, protos.ObjectType_OT_ELEMENT_SET, hctx)
+	idToOwner, err := wsHelpers.ListAccessibleIDs(false, protos.ObjectType_OT_ELEMENT_SET, hctx.Svcs, hctx.SessUser)
 	if err != nil {
 		return nil, err
 	}

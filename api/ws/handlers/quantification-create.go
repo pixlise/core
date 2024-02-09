@@ -6,7 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/quantification"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
@@ -36,12 +35,9 @@ func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerCont
 	// Run the quantification job
 	var wg sync.WaitGroup
 
-	i := quantJobUpdater{
-		hctx.Session,
-		hctx.Melody,
-	}
+	i := quantification.MakeQuantJobUpdater(req.Params, hctx.Session, hctx.Svcs.Notifier, hctx.Svcs.MongoDB)
 
-	status, err := quantification.CreateJob(req.Params, hctx.SessUser.User.Id, hctx, &wg, i.sendQuantJobUpdate)
+	status, err := quantification.CreateJob(req.Params, hctx.SessUser.User.Id, hctx.Svcs, &hctx.SessUser, &wg, i.SendQuantJobUpdate)
 
 	if err != nil {
 		return nil, err
@@ -64,21 +60,4 @@ func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerCont
 	}
 
 	return &protos.QuantCreateResp{ResultData: bytes}, nil
-}
-
-type quantJobUpdater struct {
-	session *melody.Session
-	melody  *melody.Melody
-}
-
-func (i *quantJobUpdater) sendQuantJobUpdate(status *protos.JobStatus) {
-	wsUpd := protos.WSMessage{
-		Contents: &protos.WSMessage_QuantCreateUpd{
-			QuantCreateUpd: &protos.QuantCreateUpd{
-				Status: status,
-			},
-		},
-	}
-
-	wsHelpers.SendForSession(i.session, &wsUpd)
 }

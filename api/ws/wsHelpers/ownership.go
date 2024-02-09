@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/timestamper"
 	"github.com/pixlise/core/v4/core/utils"
@@ -98,16 +99,16 @@ func CheckObjectAccessForUser(requireEdit bool, objectId string, objectType prot
 // Gets all object IDs which the user has access to - if requireEdit is true, it checks for edit access
 // otherwise just checks for view access
 // Returns a map of object id->creator user id
-func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, hctx HandlerContext) (map[string]*protos.OwnershipItem, error) {
+func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, svcs *services.APIServices, requestorSession SessionUser) (map[string]*protos.OwnershipItem, error) {
 	idLookups := []interface{}{
-		bson.D{{Key: "editors.userids", Value: hctx.SessUser.User.Id}},
+		bson.D{{Key: "editors.userids", Value: requestorSession.User.Id}},
 	}
 	if !requireEdit {
-		idLookups = append(idLookups, bson.D{{Key: "viewers.userids", Value: hctx.SessUser.User.Id}})
+		idLookups = append(idLookups, bson.D{{Key: "viewers.userids", Value: requestorSession.User.Id}})
 	}
 
 	// Add the group IDs
-	for _, groupId := range hctx.SessUser.MemberOfGroupIds {
+	for _, groupId := range requestorSession.MemberOfGroupIds {
 		idLookups = append(idLookups, bson.D{{Key: "editors.groupids", Value: groupId}})
 		if !requireEdit {
 			idLookups = append(idLookups, bson.D{{Key: "viewers.groupids", Value: groupId}})
@@ -126,7 +127,7 @@ func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, hctx Hand
 	result := map[string]*protos.OwnershipItem{}
 
 	opts := options.Find() //.SetProjection(bson.D{{"_id", true}})
-	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).Find(context.TODO(), filter, opts)
+	cursor, err := svcs.MongoDB.Collection(dbCollections.OwnershipName).Find(context.TODO(), filter, opts)
 	if err != nil {
 		return nil, err
 	}

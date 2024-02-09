@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,7 +22,14 @@ type roiItemWithPMCs struct {
 
 var allPointsROIId = "AllPoints"
 
-func getROIs(quantCommand string, scanId string, roiIds []string, hctx wsHelpers.HandlerContext, locIdxToPMCLookup map[int32]int32, dataset *protos.Experiment) ([]roiItemWithPMCs, error) {
+func getROIs(
+	quantCommand string,
+	scanId string,
+	roiIds []string,
+	svcs *services.APIServices,
+	requestorSession *wsHelpers.SessionUser,
+	locIdxToPMCLookup map[int32]int32,
+	dataset *protos.Experiment) ([]roiItemWithPMCs, error) {
 	result := []roiItemWithPMCs{}
 	var err error
 
@@ -35,27 +43,42 @@ func getROIs(quantCommand string, scanId string, roiIds []string, hctx wsHelpers
 		}
 	}
 
-	// Read ROI IDs accessible to this user
-	idToOwner, err := wsHelpers.ListAccessibleIDs(false, protos.ObjectType_OT_ROI, hctx)
-
-	// Make sure all the ones we're after are in this list
 	queryROIs := []string{}
 	needAllPoints := false
-	for _, roiId := range roiIds {
-		if roiId != allPointsROIId {
-			if _, ok := idToOwner[roiId]; !ok {
-				return result, fmt.Errorf("User %v does not have permission to access ROI %v", hctx.SessUser.User.Id, roiId)
+
+	if requestorSession != nil {
+		// Read ROI IDs accessible to this user
+		idToOwner, err := wsHelpers.ListAccessibleIDs(false, protos.ObjectType_OT_ROI, svcs, *requestorSession)
+		if err != nil {
+			return nil, err
+		}
+
+		// Make sure all the ones we're after are in this list
+		for _, roiId := range roiIds {
+			if roiId != allPointsROIId {
+				if _, ok := idToOwner[roiId]; !ok {
+					return result, fmt.Errorf("User %v does not have permission to access ROI %v", requestorSession.User.Id, roiId)
+				} else {
+					queryROIs = append(queryROIs, roiId)
+				}
 			} else {
-				queryROIs = append(queryROIs, roiId)
+				needAllPoints = true
 			}
-		} else {
-			needAllPoints = true
+		}
+	} else {
+		// Not requesting from the POV of a user, so we're just reading these...
+		for _, roiId := range roiIds {
+			queryROIs = append(queryROIs, roiId)
+
+			if roiId == allPointsROIId {
+				needAllPoints = true
+			}
 		}
 	}
 
 	filter := bson.M{"_id": bson.M{"$in": queryROIs}}
 
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName)
+	coll := svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName)
 	cursor, err := coll.Find(context.TODO(), filter, options.Find())
 	if err != nil {
 		return nil, err

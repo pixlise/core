@@ -270,7 +270,7 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 
 	//Verify delImgResult.DeletedCount == 1 ???
 
-	// TODO: for any associated scans or origin scans, we send out: hctx.Svcs.Notifier.SysNotifyScanImagesChanged()
+	// For any associated scans or origin scans, we send notify out
 	scanIds := []string{}
 	for _, assocScanId := range img.AssociatedScanIds {
 		scanIds = append(scanIds, assocScanId)
@@ -403,7 +403,7 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 	}
 
 	// Notify of our successful image addition
-	//hctx.Svcs.Notifier.NotifyNewScanImage(req.OriginScanId, req.OriginScanId, saveName)
+	hctx.Svcs.Notifier.NotifyNewScanImage(req.OriginScanId, req.OriginScanId, saveName)
 
 	return &protos.ImageUploadResp{}, nil
 }

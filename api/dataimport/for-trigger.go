@@ -20,17 +20,20 @@
 package dataimport
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/datasetArchive"
+	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/timestamper"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Structure returned after importing
@@ -119,10 +122,9 @@ func ImportForTrigger(
 	result.DatasetTitle = importedSummary.Title
 
 	if err != nil {
-		completeJobState(jobId, false, err.Error(), "", []string{}, db, &ts, log)
-		log.Errorf("%v", err)
+		completeJobState(jobId, false, result.DatasetID, err.Error(), "", []string{}, db, &ts, log)
 	} else {
-		completeJobState(jobId, true, "Imported successfully", "", []string{}, db, &ts, log)
+		completeJobState(jobId, true, result.DatasetID, "Imported successfully", "", []string{}, db, &ts, log)
 	}
 
 	// NOTE: We are now passing this responsibility to the caller, because we're very trusting... And they may want
@@ -137,22 +139,63 @@ func updateJobState(jobId string, status protos.JobStatus_Status, message string
 	// NOTE: We only do this if we're NOT an auto-import job. Those are not triggered by the API
 	// so don't need to write job states to DB because nothing would pick it up anyway. It'd fail
 	// anyway because the API normally writes the initial job state
-	if !strings.HasPrefix(jobId, jobIDAutoImportPrefix) {
+	if !strings.HasPrefix(jobId, JobIDAutoImportPrefix) {
 		job.UpdateJob(jobId, status, message, logId, db, ts, logger)
 	} else {
 		logger.Infof("Job %v status: %v. Message: %v", jobId, status, message)
 	}
 }
 
-func completeJobState(jobId string, success bool, message string, outputFilePath string, otherLogFiles []string, db *mongo.Database, ts timestamper.ITimeStamper, logger logger.ILogger) {
-	// NOTE: We only do this if we're NOT an auto-import job. Those are not triggered by the API
-	// so don't need to write job states to DB because nothing would pick it up anyway. It'd fail
-	// anyway because the API normally writes the initial job state
-	if !strings.HasPrefix(jobId, jobIDAutoImportPrefix) {
-		job.CompleteJob(jobId, true, message, outputFilePath, otherLogFiles, db, ts, logger)
+func completeJobState(jobId string, success bool, scanId string, message string, outputFilePath string, otherLogFiles []string, db *mongo.Database, ts timestamper.ITimeStamper, logger logger.ILogger) {
+	if !strings.HasPrefix(jobId, JobIDAutoImportPrefix) {
+		// NOTE: We only do this if we're NOT an auto-import job. Those are not triggered by the API
+		// so don't need to write job states to DB because nothing would pick it up anyway. It'd fail
+		// anyway because the API normally writes the initial job state
+		job.CompleteJob(jobId, success, message, outputFilePath, otherLogFiles, db, ts, logger)
 	} else {
 		if success {
 			logger.Infof("Job %v complete: %v. Output path: %v", jobId, message, outputFilePath)
+
+			// We are an externally (to the API) triggered import, and the DB doesn't yet contain a job status
+			// entry for us. Now that we're finished, we write a "complete" state into the DB so any APIs running
+			// can pick it up and send notifications as needed
+			ctx := context.TODO()
+			coll := db.Collection(dbCollections.JobStatusName)
+
+			opt := options.InsertOne()
+
+			status := protos.JobStatus_COMPLETE
+			if !success {
+				status = protos.JobStatus_ERROR
+			}
+
+			now := uint32(ts.GetTimeNowSec())
+
+			jobStatus := &protos.JobStatus{
+				JobId:                 jobId,
+				Status:                status,
+				Message:               message,
+				JobItemId:             scanId,
+				JobType:               protos.JobStatus_JT_IMPORT_SCAN,
+				LogId:                 "",
+				StartUnixTimeSec:      0,
+				LastUpdateUnixTimeSec: now,
+				EndUnixTimeSec:        now,
+				OutputFilePath:        outputFilePath,
+				OtherLogFiles:         otherLogFiles,
+			}
+
+			insertResult, err := coll.InsertOne(ctx, jobStatus, opt)
+			if err != nil {
+				logger.Errorf("%v", err)
+			} else {
+				// Check that it was inserted
+				if insertResult.InsertedID != jobId {
+					logger.Errorf("completeJobState expected inserted ID: %v, got: %v", jobId, insertResult.InsertedID)
+				} else {
+					logger.Infof("completeJobState wrote completed state for externally triggered import: %v", jobId)
+				}
+			}
 		} else {
 			logger.Errorf("Job %v Failed: %v", jobId, message)
 		}

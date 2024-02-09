@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/sns"
@@ -13,11 +14,14 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/config"
+	"github.com/pixlise/core/v4/api/dataimport"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/endpoints"
 	"github.com/pixlise/core/v4/api/filepaths"
+	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/api/notificationSender"
 	"github.com/pixlise/core/v4/api/permission"
+	"github.com/pixlise/core/v4/api/quantification"
 	apiRouter "github.com/pixlise/core/v4/api/router"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws"
@@ -28,8 +32,11 @@ import (
 	"github.com/pixlise/core/v4/core/jwtparser"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/core/scan"
+	"github.com/pixlise/core/v4/core/singleinstance"
 	"github.com/pixlise/core/v4/core/timestamper"
 	"github.com/pixlise/core/v4/core/utils"
+	protos "github.com/pixlise/core/v4/generated-protos"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -45,6 +52,9 @@ func main() {
 	}()
 
 	// Deprecated now: rand.Seed(time.Now().UnixNano())
+
+	// Invent an instance ID
+	instanceId := utils.RandStringBytesMaskImpr(16)
 
 	// Turn off date+time prefixing of log msgs, we have timestamps captured in other ways
 	log.SetFlags(0)
@@ -83,7 +93,7 @@ func main() {
 	fmt.Printf("Web socket config: %+v\n", m.Config)
 	ws := ws.MakeWSHandler(m, svcs)
 
-	svcs.Notifier = notificationSender.MakeNotificationSender(svcs.MongoDB, svcs.TimeStamper, svcs.Log, svcs.Config.EnvironmentName, ws)
+	svcs.Notifier = notificationSender.MakeNotificationSender(instanceId, svcs.MongoDB, svcs.TimeStamper, svcs.Log, svcs.Config.EnvironmentName, ws)
 
 	// Create event handlers for websocket
 	m.HandleConnect(ws.HandleConnect)
@@ -141,6 +151,14 @@ func main() {
 
 	// Now also log this to the world...
 	svcs.Log.Infof("API version \"%v\" started...", services.ApiVersion)
+
+	// Start listening for job status changes for auto-import-*
+	handler := autoImportHandler{
+		instanceId,
+		svcs,
+	}
+
+	job.ListenForExternalTriggeredJobs(dataimport.JobIDAutoImportPrefix, handler.handleAutoImportJobStatus, svcs.MongoDB, svcs.Log)
 
 	log.Fatal(
 		http.ListenAndServe(":8080",
@@ -247,4 +265,67 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 	}
 
 	return svcs
+}
+
+type autoImportHandler struct {
+	instanceId string
+	svcs       *services.APIServices
+}
+
+func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
+	// If we find a job has completed, check that it's an auto-triggered job, and if so, we can notify out to all our connected
+	// clients about this jobs creation. We will also want to email all PIXLISE users interested in this, but for that we have
+	// to resolve which of our multiple API instances will do that!
+
+	if !strings.HasPrefix(status.JobId, dataimport.JobIDAutoImportPrefix) {
+		h.svcs.Log.Errorf("handleAutoImportJobStatus got unexpected non-external id: %v", status.JobId)
+		return // Just in case...
+	}
+
+	// Make sure it's a scan!
+	if status.JobType != protos.JobStatus_JT_IMPORT_SCAN && status.JobType != protos.JobStatus_JT_REIMPORT_SCAN {
+		h.svcs.Log.Errorf("handleAutoImportJobStatus got unexpected job type: %+v", status)
+		return
+	}
+
+	if status.Status == protos.JobStatus_COMPLETE {
+		h.svcs.Notifier.SysNotifyScanChanged(status.JobItemId)
+
+		// Read the scan...
+		scan, err := scan.ReadScanItem(status.JobItemId, h.svcs.MongoDB)
+		if err != nil {
+			h.svcs.Log.Errorf("handleAutoImportJobStatus failed to read scan for id: %v, job id: %v", status.JobItemId, status.JobId)
+			return
+		}
+
+		// If the scan is not yet "complete", don't notify. For example, if we got a downlink without all spectra delivered (partial downlinks)
+		if normalSpectraCount, ok := scan.ContentCounts["NormalSpectra"]; !ok {
+			h.svcs.Log.Errorf("handleAutoImportJobStatus failed to get NormalSpectra count for scan: %v, job id: %v", status.JobItemId, status.JobId)
+			return
+		} else {
+			if pseudoCount, ok2 := scan.ContentCounts["PseudoIntensities"]; !ok2 {
+				h.svcs.Log.Errorf("handleAutoImportJobStatus failed to get PseudoIntensities count for scan: %v, job id: %v", status.JobItemId, status.JobId)
+			} else {
+				// Only FM and EM datasets will have pseudo intensities, if it's one of those, we check that we have all normal spectra downloaded
+				if (scan.Instrument == protos.ScanInstrument_PIXL_FM || scan.Instrument == protos.ScanInstrument_PIXL_EM) && normalSpectraCount != pseudoCount {
+					h.svcs.Log.Errorf("handleAutoImportJobStatus scan %v not complete, pseudo intensity count: %v, normal spectra count: %v, job id: %v. New scan notification not sent", status.JobItemId, pseudoCount, normalSpectraCount, status.JobId)
+					return
+				}
+			}
+		}
+
+		// Determine if it's a new scan or an update
+		if status.JobType == protos.JobStatus_JT_IMPORT_SCAN {
+			h.svcs.Notifier.NotifyNewScan(scan.Title, scan.Id)
+
+			// At this point, we can run a new quantification. Note however that we have to ensure this is only done by 1 active
+			// API instance, so we don't end up running the quant on each instance!
+			singleinstance.HandleOnce(scan.Id+"-quant", h.instanceId, func(sourceId string) {
+				quantification.RunAutoQuantifications(scan.Id, h.svcs)
+			}, h.svcs.MongoDB, h.svcs.TimeStamper, h.svcs.Log)
+
+		} else if status.JobType == protos.JobStatus_JT_REIMPORT_SCAN {
+			h.svcs.Notifier.NotifyUpdatedScan(scan.Title, scan.Id)
+		}
+	}
 }

@@ -24,11 +24,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pixlise/core/v4/api/dataimport/internal/importerutils"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/specialUserIds"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/scan"
 	"github.com/pixlise/core/v4/core/wstestlib"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -218,7 +218,7 @@ func printArchiveOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database
 	}
 
 	// Dump contents of summary file, this verifies most things imported as expected
-	summary, err := importerutils.ReadScanItem("048300551", db)
+	summary, err := scan.ReadScanItem("048300551", db)
 	if err != nil {
 		fmt.Println("Failed to read dataset summary file")
 		return
@@ -372,7 +372,7 @@ func printManualOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database,
 	}
 
 	// Dump contents of summary file, this verifies most things imported as expected
-	summary, err := importerutils.ReadScanItem(datasetId, db)
+	summary, err := scan.ReadScanItem(datasetId, db)
 	if err != nil {
 		fmt.Println("Failed to read dataset summary file")
 	} else {

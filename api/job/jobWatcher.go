@@ -16,25 +16,30 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var jobUpdateIntervalSec = uint32(10)
 var activeJobs = map[string]bool{}
 var activeJobLock = sync.Mutex{}
 
 // Expected to be called by API to create the initial record of a job. It can then trigger it however it needs to
 // (eg AWS lambda or running PIQUANT nodes) and this sticks around monitoring the DB entry for changes, calling
 // the sendUpdate callback function on change. Returns the snapshot of the "added" job that was saved
-func AddJob(idPrefix string, jobTimeoutSec uint32, db *mongo.Database, idgen idgen.IDGenerator, ts timestamper.ITimeStamper, logger logger.ILogger, sendUpdate func(*protos.JobStatus)) (*protos.JobStatus, error) {
+func AddJob(idPrefix string, jobType protos.JobStatus_JobType, jobItemId string, jobTimeoutSec uint32, db *mongo.Database, idgen idgen.IDGenerator, ts timestamper.ITimeStamper, logger logger.ILogger, sendUpdate func(*protos.JobStatus)) (*protos.JobStatus, error) {
 	// Generate a new job Id that this job will write to
 	// which we also return to the caller, so they can track what happens
 	// with this async task
 	jobId := fmt.Sprintf("%v-%s", idPrefix, idgen.GenObjectID())
 	now := uint32(ts.GetTimeNowSec())
 
+	if len(jobItemId) <= 0 {
+		jobItemId = jobId
+	}
+
 	job := &protos.JobStatus{
 		JobId:            jobId,
 		Status:           protos.JobStatus_STARTING,
 		StartUnixTimeSec: now,
 		OtherLogFiles:    []string{},
+		JobType:          jobType,
+		JobItemId:        jobItemId,
 	}
 
 	if _, ok := activeJobs[jobId]; ok {
@@ -61,102 +66,8 @@ func AddJob(idPrefix string, jobTimeoutSec uint32, db *mongo.Database, idgen idg
 	// Start a thread to watch this job
 	go watchJob(jobId, watchUntilUnixSec, db, logger, ts, sendUpdate)
 
-	logger.Infof("AddJob: %v", jobId)
+	logger.Infof("AddJob: %v of type: %v working on item id: %v", jobId, jobType, jobItemId)
 	return job, nil
-}
-
-// Expected to be called from the thing running the job. This updates the DB status, which hopefully the go thread started by
-// AddJob will notice and fire off an update
-func UpdateJob(jobId string, status protos.JobStatus_Status, message string, logId string, db *mongo.Database, ts timestamper.ITimeStamper, logger logger.ILogger) error {
-	ctx := context.TODO()
-	coll := db.Collection(dbCollections.JobStatusName)
-
-	filter := bson.D{{Key: "_id", Value: jobId}}
-	opt := options.Replace()
-
-	jobStatus := &protos.JobStatus{
-		JobId:                 jobId,
-		Status:                status,
-		Message:               message,
-		LogId:                 logId,
-		LastUpdateUnixTimeSec: uint32(ts.GetTimeNowSec()),
-	}
-
-	existingStatus, err := readJobStatus(jobId, coll)
-	if err != nil {
-		logger.Errorf("Failed to read existing job status when writing UpdateJob %v: %v", jobId, err)
-	} else {
-		jobStatus.StartUnixTimeSec = existingStatus.StartUnixTimeSec
-	}
-
-	replaceResult, err := coll.ReplaceOne(ctx, filter, jobStatus, opt)
-	if err != nil {
-		logger.Errorf("UpdateJob %v: %v", jobId, err)
-		return err
-	}
-
-	if replaceResult.MatchedCount != 1 && replaceResult.UpsertedCount != 1 {
-		logger.Errorf("UpdateJob result had unexpected counts %+v id: %v", replaceResult, jobId)
-	} else {
-		logger.Infof("UpdateJob: %v with status %v, message: %v", jobId, protos.JobStatus_Status_name[int32(status.Number())], message)
-	}
-
-	return nil
-}
-
-// Expected to be called from the thing running the job. This allows setting some output fields
-func CompleteJob(jobId string, success bool, message string, outputFilePath string, otherLogFiles []string, db *mongo.Database, ts timestamper.ITimeStamper, logger logger.ILogger) error {
-	status := protos.JobStatus_COMPLETE
-	if !success {
-		status = protos.JobStatus_ERROR
-	}
-
-	logger.Infof("Job: %v completed with status: %v, message: %v", jobId, status.String(), message)
-
-	now := uint32(ts.GetTimeNowSec())
-
-	ctx := context.TODO()
-	coll := db.Collection(dbCollections.JobStatusName)
-
-	filter := bson.D{{Key: "_id", Value: jobId}}
-	opt := options.Replace()
-
-	jobStatus := &protos.JobStatus{
-		JobId:                 jobId,
-		Status:                status,
-		Message:               message,
-		LogId:                 "",
-		StartUnixTimeSec:      0,
-		LastUpdateUnixTimeSec: now,
-		EndUnixTimeSec:        now,
-		OutputFilePath:        outputFilePath,
-		OtherLogFiles:         otherLogFiles,
-	}
-
-	existingStatus, err := readJobStatus(jobId, coll)
-	if err != nil {
-		logger.Errorf("Failed to read existing job status when writing CompleteJob %v: %v", jobId, err)
-	} else {
-		jobStatus.LogId = existingStatus.LogId
-		jobStatus.StartUnixTimeSec = existingStatus.StartUnixTimeSec
-	}
-
-	replaceResult, err := coll.ReplaceOne(ctx, filter, jobStatus, opt)
-	if err != nil {
-		logger.Errorf("CompleteJob %v: %v", jobId, err)
-		return err
-	}
-
-	if replaceResult.MatchedCount != 1 && replaceResult.UpsertedCount != 1 {
-		logger.Errorf("CompleteJob result had unexpected counts %+v id: %v", replaceResult, jobId)
-	} else {
-		logger.Infof("CompleteJob: %v with status %v, message: %v", jobId, protos.JobStatus_Status_name[int32(status.Number())], message)
-	}
-
-	defer activeJobLock.Unlock()
-	activeJobLock.Lock()
-	activeJobs[jobId] = false
-	return nil
 }
 
 func watchJob(jobId string, watchUntilUnixSec uint32, db *mongo.Database, logger logger.ILogger, ts timestamper.ITimeStamper, sendUpdate func(*protos.JobStatus)) {

@@ -57,8 +57,11 @@ func Example_decodeArchiveFileName() {
 	id, ts, e := DecodeArchiveFileName("161677829-12-06-2022-06-41-00.zip")
 	fmt.Printf("%v, %v, %v\n", id, ts, e)
 
-	// Should accept paths too
+	// Should accept paths too but snip the path off!
 	id, ts, e = DecodeArchiveFileName("/Archive/161677829-12-06-2022-06-41-00.zip")
+	fmt.Printf("%v, %v, %v\n", id, ts, e)
+
+	id, ts, e = DecodeArchiveFileName("data/161677829-12-06-2022-06-41-00.zip")
 	fmt.Printf("%v, %v, %v\n", id, ts, e)
 
 	// FAIL: just a timestamp
@@ -75,7 +78,8 @@ func Example_decodeArchiveFileName() {
 
 	// Output:
 	// 161677829, 1655016060, <nil>
-	// /Archive/161677829, 1655016060, <nil>
+	// 161677829, 1655016060, <nil>
+	// 161677829, 1655016060, <nil>
 	// , 0, DecodeArchiveFileName "12-06-2022-06-41-00.zip" error: parsing time "06-2022-06-41-00": month out of range
 	// , 0, DecodeArchiveFileName unexpected file name: readme.txt
 	// , 0, DecodeArchiveFileName unexpected file name: /Archive/readme.txt

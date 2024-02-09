@@ -89,7 +89,7 @@ func MakeFilter(
 	hctx HandlerContext) (bson.M, map[string]*protos.OwnershipItem, error) {
 
 	// Firstly, get the list of ids that are accessible to this user, based on ownership
-	idToOwner, err := ListAccessibleIDs(false, objectType, hctx)
+	idToOwner, err := ListAccessibleIDs(false, objectType, hctx.Svcs, hctx.SessUser)
 	if err != nil {
 		return nil, idToOwner, err
 	}

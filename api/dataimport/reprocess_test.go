@@ -147,6 +147,60 @@ func Example_decodeImportTrigger_OCS2() {
 	// Err: "<nil>"
 }
 
+// Trigger from when a new zip arrives from the pipeline but pipeline stores it in a subdir of the bucket
+func Example_decodeImportTrigger_OCS3() {
+	trigger := `{
+    "Records": [
+        {
+            "eventVersion": "2.1",
+            "eventSource": "aws:s3",
+            "awsRegion": "us-east-1",
+            "eventTime": "2022-09-25T14:33:49.456Z",
+            "eventName": "ObjectCreated:Put",
+            "userIdentity": {
+                "principalId": "AWS:AIDA6AOWGDOHF37MOKWLS"
+            },
+            "requestParameters": {
+                "sourceIPAddress": "3.12.95.94"
+            },
+            "responseElements": {
+                "x-amz-request-id": "K811ZDJ52EYBJ8P2",
+                "x-amz-id-2": "R7bGQ2fOjvSZHkHez700w3wRVpn32nmr6jVPVYhKtNE2c2KYOmgm9hjmOA5WSQFh8faLRe6fHAmANKSTNRhwCq7Xgol0DgX4"
+            },
+            "s3": {
+                "s3SchemaVersion": "1.0",
+                "configurationId": "OTBjMjZmYzAtYThlOC00OWRmLWIwMzUtODkyZDk0YmRhNzkz",
+                "bucket": {
+                    "name": "prodpipeline-rawdata202c7bd0-o40ktu17o2oj",
+                    "ownerIdentity": {
+                        "principalId": "AP902Y0PI20DF"
+                    },
+                    "arn": "arn:aws:s3:::prodpipeline-rawdata202c7bd0-o40ktu17o2oj"
+                },
+                "object": {
+                    "key": "data/197329413-25-09-2022-14-33-39.zip",
+                    "size": 1388,
+                    "eTag": "932bda7d32c05d90ecc550d061862994",
+                    "sequencer": "00633066CD68A4BF43"
+                }
+            }
+        }
+    ]
+}`
+
+	sourceBucket, sourceFilePath, datasetID, jobID, err := decodeImportTrigger([]byte(trigger))
+
+	// NOTE: we're only checking the length of the log ID because it's a timestamp+random chars. Other code has this stubbed out but here it's probably sufficient
+	fmt.Printf("Source Bucket: \"%v\"\nSource file: \"%v\"\nDataset: \"%v\"\nJob Str Len: \"%v\"\nErr: \"%v\"\n", sourceBucket, sourceFilePath, datasetID, len(jobID), err)
+
+	// Output:
+	// Source Bucket: "prodpipeline-rawdata202c7bd0-o40ktu17o2oj"
+	// Source file: "data/197329413-25-09-2022-14-33-39.zip"
+	// Dataset: "197329413"
+	// Job Str Len: "43"
+	// Err: "<nil>"
+}
+
 func Example_decodeImportTrigger_ManualBadMsg() {
 	trigger := `{
 	"weird": "message"

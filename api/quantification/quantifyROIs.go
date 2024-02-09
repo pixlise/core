@@ -8,13 +8,15 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v4/api/config"
+	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func makePMCListFilesForQuantROI(
-	hctx wsHelpers.HandlerContext,
+	svcs *services.APIServices,
+	requestorSession *wsHelpers.SessionUser,
 	combinedSpectra bool,
 	cfg config.APIConfig,
 	datasetFileName string,
@@ -29,7 +31,7 @@ func makePMCListFilesForQuantROI(
 		return "", 0, []roiItemWithPMCs{}, err
 	}
 
-	rois, err := getROIs(params.UserParams.Command, params.UserParams.ScanId, params.UserParams.RoiIDs, hctx, locIdxToPMCLookup, dataset)
+	rois, err := getROIs(params.UserParams.Command, params.UserParams.ScanId, params.UserParams.RoiIDs, svcs, requestorSession, locIdxToPMCLookup, dataset)
 	if err != nil {
 		return "", 0, rois, err
 	}
@@ -50,7 +52,7 @@ func makePMCListFilesForQuantROI(
 		return "", 0, rois, fmt.Errorf("Error when preparing quant ROI node list. Error: %v", err)
 	}
 
-	pmcListName, err := savePMCList(hctx.Svcs, params.PiquantJobsBucket, contents, 0, jobDataPath)
+	pmcListName, err := savePMCList(svcs, params.PiquantJobsBucket, contents, 0, jobDataPath)
 	if err != nil {
 		return "", 0, rois, err
 	}

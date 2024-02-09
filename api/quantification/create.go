@@ -29,6 +29,7 @@ import (
 	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/api/piquant"
 	"github.com/pixlise/core/v4/api/quantification/quantRunner"
+	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
@@ -40,9 +41,7 @@ import (
 const JobParamsFileName = "params.json"
 
 // CreateJob - creates a new quantification job
-func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, hctx wsHelpers.HandlerContext, wg *sync.WaitGroup, sendUpdate func(*protos.JobStatus)) (*protos.JobStatus, error) {
-	svcs := hctx.Svcs
-
+func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, svcs *services.APIServices, sessUser *wsHelpers.SessionUser, wg *sync.WaitGroup, sendUpdate func(*protos.JobStatus)) (*protos.JobStatus, error) {
 	// Get configured PIQUANT docker container
 	piquantVersion, err := piquant.GetPiquantVersion(svcs)
 
@@ -58,16 +57,16 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, h
 	jobId := ""
 	if createParams.Command != "map" {
 		// Make the name and ID the same, and start with something that stands out
-		jobId = fmt.Sprintf("cmd-%v-%s", createParams.Command, hctx.Svcs.IDGen.GenObjectID())
+		jobId = fmt.Sprintf("cmd-%v-%s", createParams.Command, svcs.IDGen.GenObjectID())
 	} else {
-		jobStatus, err = job.AddJob("quant", uint32(svcs.Config.ImportJobMaxTimeSec), svcs.MongoDB, svcs.IDGen, svcs.TimeStamper, svcs.Log, sendUpdate)
+		jobStatus, err = job.AddJob("quant", protos.JobStatus_JT_RUN_QUANT, "", uint32(svcs.Config.ImportJobMaxTimeSec), svcs.MongoDB, svcs.IDGen, svcs.TimeStamper, svcs.Log, sendUpdate)
 		if jobStatus != nil {
 			jobId = jobStatus.JobId
 		}
 
 		if err != nil || len(jobId) < 0 {
 			returnErr := fmt.Errorf("Failed to add job watcher for quant Job ID: %v. Error was: %v", jobId, err)
-			hctx.Svcs.Log.Errorf("%v", returnErr)
+			svcs.Log.Errorf("%v", returnErr)
 			return nil, returnErr
 		}
 	}
@@ -107,7 +106,8 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, h
 	r := quantNodeRunner{
 		jobId:              jobId,
 		quantStartSettings: params,
-		hctx:               hctx,
+		svcs:               svcs,
+		sessUser:           sessUser,
 	}
 
 	go r.triggerPiquantNodes(wg)
@@ -118,9 +118,10 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, h
 type quantNodeRunner struct {
 	jobId              string
 	quantStartSettings *protos.QuantStartingParameters
-	hctx               wsHelpers.HandlerContext
+	svcs               *services.APIServices
 	isJob              bool
 	logId              string
+	sessUser           *wsHelpers.SessionUser
 }
 
 // This should be triggered as a go routine from quant creation endpoint so we can return a job id there quickly and do the processing offline
@@ -132,7 +133,7 @@ func (r *quantNodeRunner) triggerPiquantNodes(wg *sync.WaitGroup) {
 	// TODO: figure out log id!
 	r.logId = r.jobId
 
-	svcs := r.hctx.Svcs
+	svcs := r.svcs
 	userParams := r.quantStartSettings.UserParams
 
 	jobRoot := filepaths.GetJobDataPath(userParams.ScanId, "", "")
@@ -195,7 +196,7 @@ func (r *quantNodeRunner) triggerPiquantNodes(wg *sync.WaitGroup) {
 	}
 	if quantByROI {
 		pmcFile := ""
-		pmcFile, spectraPerNode, rois, err = makePMCListFilesForQuantROI(r.hctx, combined, svcs.Config, datasetFileName, jobDataPath, r.quantStartSettings, dataset)
+		pmcFile, spectraPerNode, rois, err = makePMCListFilesForQuantROI(svcs, r.sessUser, combined, svcs.Config, datasetFileName, jobDataPath, r.quantStartSettings, dataset)
 		pmcFiles = []string{pmcFile}
 	} else {
 		pmcFiles, spectraPerNode, err = makePMCListFilesForQuantPMCs(svcs, combined, svcs.Config, datasetFileName, jobDataPath, r.quantStartSettings, dataset)
@@ -396,16 +397,16 @@ func (r *quantNodeRunner) triggerPiquantNodes(wg *sync.WaitGroup) {
 
 func (r *quantNodeRunner) updateJobState(status protos.JobStatus_Status, message string) {
 	if r.isJob {
-		job.UpdateJob(r.jobId, status, message, r.logId, r.hctx.Svcs.MongoDB, r.hctx.Svcs.TimeStamper, r.hctx.Svcs.Log)
+		job.UpdateJob(r.jobId, status, message, r.logId, r.svcs.MongoDB, r.svcs.TimeStamper, r.svcs.Log)
 	} else {
 		// Just log
-		r.hctx.Svcs.Log.Infof("Job %v state: %v, message: %v", r.jobId, status, message)
+		r.svcs.Log.Infof("Job %v state: %v, message: %v", r.jobId, status, message)
 	}
 }
 
 func (r *quantNodeRunner) completeJobState(success bool, message string, outputFilePath string, otherLogFiles []string) {
 	if r.isJob {
-		job.CompleteJob(r.jobId, success, message, outputFilePath, otherLogFiles, r.hctx.Svcs.MongoDB, r.hctx.Svcs.TimeStamper, r.hctx.Svcs.Log)
+		job.CompleteJob(r.jobId, success, message, outputFilePath, otherLogFiles, r.svcs.MongoDB, r.svcs.TimeStamper, r.svcs.Log)
 	} else {
 		// Just log
 		status := protos.JobStatus_COMPLETE
@@ -413,7 +414,7 @@ func (r *quantNodeRunner) completeJobState(success bool, message string, outputF
 			status = protos.JobStatus_ERROR
 		}
 
-		r.hctx.Svcs.Log.Infof("Job complete: %v state: %v, message: %v", r.jobId, status, message)
+		r.svcs.Log.Infof("Job complete: %v state: %v, message: %v", r.jobId, status, message)
 	}
 }
 
