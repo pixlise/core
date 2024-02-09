@@ -21,6 +21,7 @@ import (
 	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/api/notificationSender"
 	"github.com/pixlise/core/v4/api/permission"
+	"github.com/pixlise/core/v4/api/quantification"
 	apiRouter "github.com/pixlise/core/v4/api/router"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws"
@@ -37,7 +38,6 @@ import (
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func main() {
@@ -155,10 +155,7 @@ func main() {
 	// Start listening for job status changes for auto-import-*
 	handler := autoImportHandler{
 		instanceId,
-		svcs.Notifier,
-		svcs.MongoDB,
-		svcs.TimeStamper,
-		svcs.Log,
+		svcs,
 	}
 
 	job.ListenForExternalTriggeredJobs(dataimport.JobIDAutoImportPrefix, handler.handleAutoImportJobStatus, svcs.MongoDB, svcs.Log)
@@ -272,10 +269,7 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 
 type autoImportHandler struct {
 	instanceId string
-	notifier   services.INotifier
-	db         *mongo.Database
-	ts         timestamper.ITimeStamper
-	logger     logger.ILogger
+	svcs       *services.APIServices
 }
 
 func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
@@ -284,38 +278,54 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 	// to resolve which of our multiple API instances will do that!
 
 	if !strings.HasPrefix(status.JobId, dataimport.JobIDAutoImportPrefix) {
-		h.logger.Errorf("handleAutoImportJobStatus got unexpected non-external id: %v", status.JobId)
+		h.svcs.Log.Errorf("handleAutoImportJobStatus got unexpected non-external id: %v", status.JobId)
 		return // Just in case...
 	}
 
 	// Make sure it's a scan!
 	if status.JobType != protos.JobStatus_JT_IMPORT_SCAN && status.JobType != protos.JobStatus_JT_REIMPORT_SCAN {
-		h.logger.Errorf("handleAutoImportJobStatus got unexpected job type: %+v", status)
+		h.svcs.Log.Errorf("handleAutoImportJobStatus got unexpected job type: %+v", status)
 		return
 	}
 
 	if status.Status == protos.JobStatus_COMPLETE {
-		h.notifier.SysNotifyScanChanged(status.JobItemId)
+		h.svcs.Notifier.SysNotifyScanChanged(status.JobItemId)
 
 		// Read the scan...
-		scan, err := scan.ReadScanItem(status.JobItemId, h.db)
+		scan, err := scan.ReadScanItem(status.JobItemId, h.svcs.MongoDB)
 		if err != nil {
-			h.logger.Errorf("handleAutoImportJobStatus failed to read scan for id: %v, job id: %v", status.JobItemId, status.JobId)
+			h.svcs.Log.Errorf("handleAutoImportJobStatus failed to read scan for id: %v, job id: %v", status.JobItemId, status.JobId)
 			return
+		}
+
+		// If the scan is not yet "complete", don't notify. For example, if we got a downlink without all spectra delivered (partial downlinks)
+		if normalSpectraCount, ok := scan.ContentCounts["NormalSpectra"]; !ok {
+			h.svcs.Log.Errorf("handleAutoImportJobStatus failed to get NormalSpectra count for scan: %v, job id: %v", status.JobItemId, status.JobId)
+			return
+		} else {
+			if pseudoCount, ok2 := scan.ContentCounts["PseudoIntensities"]; !ok2 {
+				h.svcs.Log.Errorf("handleAutoImportJobStatus failed to get PseudoIntensities count for scan: %v, job id: %v", status.JobItemId, status.JobId)
+			} else {
+				// Only FM and EM datasets will have pseudo intensities, if it's one of those, we check that we have all normal spectra downloaded
+				if (scan.Instrument == protos.ScanInstrument_PIXL_FM || scan.Instrument == protos.ScanInstrument_PIXL_EM) && normalSpectraCount != pseudoCount {
+					h.svcs.Log.Errorf("handleAutoImportJobStatus scan %v not complete, pseudo intensity count: %v, normal spectra count: %v, job id: %v. New scan notification not sent", status.JobItemId, pseudoCount, normalSpectraCount, status.JobId)
+					return
+				}
+			}
 		}
 
 		// Determine if it's a new scan or an update
 		if status.JobType == protos.JobStatus_JT_IMPORT_SCAN {
-			h.notifier.NotifyNewScan(scan.Title, scan.Id)
+			h.svcs.Notifier.NotifyNewScan(scan.Title, scan.Id)
 
 			// At this point, we can run a new quantification. Note however that we have to ensure this is only done by 1 active
 			// API instance, so we don't end up running the quant on each instance!
 			singleinstance.HandleOnce(scan.Id+"-quant", h.instanceId, func(sourceId string) {
-				runAutoQuantifications(scan.Id)
-			}, h.db, h.ts, h.logger)
+				quantification.RunAutoQuantifications(scan.Id, h.svcs)
+			}, h.svcs.MongoDB, h.svcs.TimeStamper, h.svcs.Log)
 
 		} else if status.JobType == protos.JobStatus_JT_REIMPORT_SCAN {
-			h.notifier.NotifyUpdatedScan(scan.Title, scan.Id)
+			h.svcs.Notifier.NotifyUpdatedScan(scan.Title, scan.Id)
 		}
 	}
 }

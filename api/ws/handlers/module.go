@@ -84,7 +84,7 @@ func HandleDataModuleGetReq(req *protos.DataModuleGetReq, hctx wsHelpers.Handler
 }
 
 func HandleDataModuleListReq(req *protos.DataModuleListReq, hctx wsHelpers.HandlerContext) (*protos.DataModuleListResp, error) {
-	idToOwner, err := wsHelpers.ListAccessibleIDs(false, protos.ObjectType_OT_DATA_MODULE, hctx)
+	idToOwner, err := wsHelpers.ListAccessibleIDs(false, protos.ObjectType_OT_DATA_MODULE, hctx.Svcs, hctx.SessUser)
 	if err != nil {
 		return nil, err
 	}
