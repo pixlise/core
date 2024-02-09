@@ -142,7 +142,9 @@ func main() {
 
 		var result dataimport.ImportResult
 		result, err = dataimport.ImportForTrigger([]byte(*argTrigger), "cmd-line", *argConfigBucket, *argDatasetBucket, *argManualUploadBucket, db, ilog, remoteFS)
-		result.Logger.Close()
+		if result.Logger != nil {
+			result.Logger.Close()
+		}
 		fmt.Printf("Importer reported changes: \"%v\", isUpdate: %v\n", result.WhatChanged, result.IsUpdate)
 
 	default:
