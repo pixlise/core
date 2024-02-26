@@ -310,6 +310,20 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 		return nil, err
 	}
 
+	// Read the scan to confirm it's valid, and also so we have the instrument to save for beams (if needed)
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ScansName)
+	scanResult := coll.FindOne(ctx, bson.M{"_id": req.OriginScanId}, options.FindOne())
+	if scanResult.Err() != nil {
+		return nil, errorwithstatus.MakeNotFoundError(req.OriginScanId)
+	}
+
+	scan := &protos.ScanItem{}
+	err = scanResult.Decode(scan)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to decode scan: %v. Error: %v", req.OriginScanId, err)
+	}
+
 	db := hctx.Svcs.MongoDB
 
 	// Save image meta in collection
@@ -343,8 +357,7 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 		req.GetBeamImageRef(),
 		img)
 
-	ctx := context.TODO()
-	coll := db.Collection(dbCollections.ImagesName)
+	coll = db.Collection(dbCollections.ImagesName)
 
 	// If this is the first image added to a dataset that has no images (and hence no beam location ij's), generate ij's here so the image can be
 	// aligned to them. The image will refer to itself as the owner of the ij's it's matching and will be able to have a transform too
@@ -396,7 +409,7 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 	}
 
 	if generateCoords {
-		err = generateIJs(saveName, req.OriginScanId, hctx)
+		err = generateIJs(saveName, req.OriginScanId, scan.Instrument, hctx)
 		if err != nil {
 			return nil, err
 		}
