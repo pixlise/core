@@ -404,6 +404,7 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 
 	// Notify of our successful image addition
 	hctx.Svcs.Notifier.NotifyNewScanImage(req.OriginScanId, req.OriginScanId, saveName)
+	hctx.Svcs.Notifier.SysNotifyScanImagesChanged([]string{req.OriginScanId})
 
 	return &protos.ImageUploadResp{}, nil
 }

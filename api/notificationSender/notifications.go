@@ -10,10 +10,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (n *NotificationSender) sendSysNotification(sysNotification *protos.SysNotificationUpd) {
+func (n *NotificationSender) sendSysNotification(sysNotification *protos.NotificationUpd) {
 	wsSysNotify := protos.WSMessage{
-		Contents: &protos.WSMessage_SysNotificationUpd{
-			SysNotificationUpd: sysNotification,
+		Contents: &protos.WSMessage_NotificationUpd{
+			NotificationUpd: sysNotification,
 		},
 	}
 
@@ -23,7 +23,7 @@ func (n *NotificationSender) sendSysNotification(sysNotification *protos.SysNoti
 	}
 }
 
-func (n *NotificationSender) sendNotificationToObjectUsers(notifMsg *protos.UserNotificationUpd, objectId string) {
+func (n *NotificationSender) sendNotificationToObjectUsers(notifMsg *protos.NotificationUpd, objectId string) {
 	userIds, err := wsHelpers.FindUserIdsFor(objectId, n.db)
 	if err != nil {
 		n.log.Errorf("Failed to get user ids for object: %v. Error: %v", objectId, err)
@@ -34,11 +34,11 @@ func (n *NotificationSender) sendNotificationToObjectUsers(notifMsg *protos.User
 }
 
 // SourceId must be an id that is unique across API instances so we can decide on one instance to send emails from!
-func (n *NotificationSender) sendNotification(sourceId string, notifMsg *protos.UserNotificationUpd, userIds []string) {
+func (n *NotificationSender) sendNotification(sourceId string, notifMsg *protos.NotificationUpd, userIds []string) {
 	// Loop through each user, if we have them connected, notify directly, otherwise email
 	sessions, _ := n.ws.GetSessionForUsersIfExists(userIds)
 	for _, session := range sessions {
-		msg := &protos.WSMessage{Contents: &protos.WSMessage_UserNotificationUpd{UserNotificationUpd: notifMsg}}
+		msg := &protos.WSMessage{Contents: &protos.WSMessage_NotificationUpd{NotificationUpd: notifMsg}}
 		wsHelpers.SendForSession(session, msg)
 	}
 
@@ -54,7 +54,7 @@ func (n *NotificationSender) sendNotification(sourceId string, notifMsg *protos.
 	}, n.db, n.timestamper, n.log)
 }
 
-func (n *NotificationSender) sendEmail(notif *protos.UserNotification, userId string) {
+func (n *NotificationSender) sendEmail(notif *protos.Notification, userId string) {
 	// Find the email address
 	user, err := wsHelpers.GetDBUser(userId, n.db)
 	if err != nil {

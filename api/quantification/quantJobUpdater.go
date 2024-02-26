@@ -56,6 +56,7 @@ func (i *QuantJobUpdater) SendQuantJobUpdate(status *protos.JobStatus) {
 			return
 		}
 
-		i.notifier.NotifyNewQuant(false, status.JobItemId, i.params.Name, "Complete", scan.Title, i.params.ScanId)
+		i.notifier.NotifyNewQuant(false, status.JobId, i.params.Name, "Complete", scan.Title, i.params.ScanId)
+		i.notifier.SysNotifyQuantChanged(status.JobId)
 	}
 }

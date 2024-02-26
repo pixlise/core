@@ -35,14 +35,14 @@ func MakeNotificationSender(instanceId string, db *mongo.Database, timestamper t
 }
 
 func (n *NotificationSender) NotifyNewScan(scanName string, scanId string) {
-	notifMsg := &protos.UserNotificationUpd{
-		Notification: &protos.UserNotification{
+	notifMsg := &protos.NotificationUpd{
+		Notification: &protos.Notification{
+			NotificationType: protos.NotificationType_NT_USER_MESSAGE,
 			Subject:          fmt.Sprintf("New scan imported: %v", scanName),
 			Contents:         fmt.Sprintf("A new scan named %v was just imported. Scan ID is: %v", scanName, scanId),
 			From:             "Data Importer",
 			TimeStampUnixSec: uint32(n.timestamper.GetTimeNowSec()),
 			ActionLink:       path.Join(n.envRootURL, "?q="+scanId),
-			Meta:             map[string]string{},
 		},
 	}
 
@@ -50,14 +50,14 @@ func (n *NotificationSender) NotifyNewScan(scanName string, scanId string) {
 }
 
 func (n *NotificationSender) NotifyUpdatedScan(scanName string, scanId string) {
-	notifMsg := &protos.UserNotificationUpd{
-		Notification: &protos.UserNotification{
+	notifMsg := &protos.NotificationUpd{
+		Notification: &protos.Notification{
+			NotificationType: protos.NotificationType_NT_USER_MESSAGE,
 			Subject:          fmt.Sprintf("Updated scan: %v", scanName),
 			Contents:         fmt.Sprintf("The scan named %v, which you have access to, was just updated. Scan ID is: %v", scanName, scanId),
 			From:             "Data Importer",
 			TimeStampUnixSec: uint32(n.timestamper.GetTimeNowSec()),
 			ActionLink:       path.Join(n.envRootURL, "?q="+scanId),
-			Meta:             map[string]string{},
 		},
 	}
 
@@ -65,23 +65,25 @@ func (n *NotificationSender) NotifyUpdatedScan(scanName string, scanId string) {
 }
 
 func (n *NotificationSender) SysNotifyScanChanged(scanId string) {
-	wsSysNotify := &protos.SysNotificationUpd{
-		Reason:  protos.SysNotifyReason_SNR_SCAN,
-		ScanIds: []string{scanId},
+	wsSysNotify := &protos.NotificationUpd{
+		Notification: &protos.Notification{
+			NotificationType: protos.NotificationType_NT_SYS_DATA_CHANGED,
+			ScanIds:          []string{scanId},
+		},
 	}
 
 	n.sendSysNotification(wsSysNotify)
 }
 
 func (n *NotificationSender) NotifyNewScanImage(scanName string, scanId string, imageName string) {
-	notifMsg := &protos.UserNotificationUpd{
-		Notification: &protos.UserNotification{
+	notifMsg := &protos.NotificationUpd{
+		Notification: &protos.Notification{
+			NotificationType: protos.NotificationType_NT_USER_MESSAGE,
 			Subject:          fmt.Sprintf("New image added to scan: %v", scanName),
 			Contents:         fmt.Sprintf("A new image named %v was added to scan: %v (id: %v)", imageName, scanName, scanId),
 			From:             "Data Importer",
 			TimeStampUnixSec: uint32(n.timestamper.GetTimeNowSec()),
 			ActionLink:       path.Join(n.envRootURL, "?q="+scanId+"&image="+imageName),
-			Meta:             map[string]string{},
 		},
 	}
 
@@ -89,23 +91,25 @@ func (n *NotificationSender) NotifyNewScanImage(scanName string, scanId string, 
 }
 
 func (n *NotificationSender) SysNotifyScanImagesChanged(scanIds []string) {
-	wsSysNotify := &protos.SysNotificationUpd{
-		Reason:  protos.SysNotifyReason_SNR_IMAGE,
-		ScanIds: scanIds,
+	wsSysNotify := &protos.NotificationUpd{
+		Notification: &protos.Notification{
+			NotificationType: protos.NotificationType_NT_SYS_DATA_CHANGED,
+			ScanIds:          scanIds,
+		},
 	}
 
 	n.sendSysNotification(wsSysNotify)
 }
 
 func (n *NotificationSender) NotifyNewQuant(uploaded bool, quantId string, quantName string, status string, scanName string, scanId string) {
-	notifMsg := &protos.UserNotificationUpd{
-		Notification: &protos.UserNotification{
+	notifMsg := &protos.NotificationUpd{
+		Notification: &protos.Notification{
+			NotificationType: protos.NotificationType_NT_USER_MESSAGE,
 			Subject:          fmt.Sprintf("Quantification %v has completed with status: %v", quantName, status),
 			Contents:         fmt.Sprintf("A quantification named %v (id: %v) has completed with status %v. This quantification is for the scan named: %v", quantName, quantId, status, scanName),
 			From:             "Data Importer",
 			TimeStampUnixSec: uint32(n.timestamper.GetTimeNowSec()),
 			ActionLink:       path.Join(n.envRootURL, "?q="+scanId+"&quant="+quantId),
-			Meta:             map[string]string{},
 		},
 	}
 
@@ -113,23 +117,25 @@ func (n *NotificationSender) NotifyNewQuant(uploaded bool, quantId string, quant
 }
 
 func (n *NotificationSender) SysNotifyQuantChanged(quantId string) {
-	wsSysNotify := &protos.SysNotificationUpd{
-		Reason:  protos.SysNotifyReason_SNR_QUANT,
-		QuantId: quantId,
+	wsSysNotify := &protos.NotificationUpd{
+		Notification: &protos.Notification{
+			NotificationType: protos.NotificationType_NT_SYS_DATA_CHANGED,
+			QuantId:          quantId,
+		},
 	}
 
 	n.sendSysNotification(wsSysNotify)
 }
 
 func (n *NotificationSender) NotifyObjectShared(objectType string, objectId string, objectName, sharerName string) {
-	notifMsg := &protos.UserNotificationUpd{
-		Notification: &protos.UserNotification{
+	notifMsg := &protos.NotificationUpd{
+		Notification: &protos.Notification{
+			NotificationType: protos.NotificationType_NT_USER_MESSAGE,
 			Subject:          fmt.Sprintf("%v was just shared", objectType),
 			Contents:         fmt.Sprintf("An object of type %v named %v was just shared by %v", objectType, objectName, sharerName),
 			From:             "PIXLISE back-end",
 			TimeStampUnixSec: uint32(n.timestamper.GetTimeNowSec()),
 			ActionLink:       "",
-			Meta:             map[string]string{},
 		},
 	}
 
@@ -137,14 +143,14 @@ func (n *NotificationSender) NotifyObjectShared(objectType string, objectId stri
 }
 
 func (n *NotificationSender) NotifyUserGroupMessage(subject string, message string, groupId string, groupName string, sender string) {
-	notifMsg := &protos.UserNotificationUpd{
-		Notification: &protos.UserNotification{
+	notifMsg := &protos.NotificationUpd{
+		Notification: &protos.Notification{
+			NotificationType: protos.NotificationType_NT_USER_MESSAGE,
 			Subject:          subject,
 			Contents:         fmt.Sprintf("%v\nThis message was sent by %v to group %v", message, sender, groupName),
 			From:             sender,
 			TimeStampUnixSec: uint32(n.timestamper.GetTimeNowSec()),
 			ActionLink:       "",
-			Meta:             map[string]string{},
 		},
 	}
 

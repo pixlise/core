@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func SendNotification(userIds []string, notification *protos.UserNotification, hctx HandlerContext) error {
+func SendNotification(userIds []string, notification *protos.Notification, hctx HandlerContext) error {
 	if len(userIds) <= 0 {
 		return errors.New("attempted to send notification with empty user list")
 	}
@@ -22,8 +22,8 @@ func SendNotification(userIds []string, notification *protos.UserNotification, h
 
 	// Create an update message to send
 	wsMsg := protos.WSMessage{
-		Contents: &protos.WSMessage_UserNotificationUpd{
-			UserNotificationUpd: &protos.UserNotificationUpd{
+		Contents: &protos.WSMessage_NotificationUpd{
+			NotificationUpd: &protos.NotificationUpd{
 				Notification: notification,
 			},
 		},
@@ -104,11 +104,23 @@ func SendNotification(userIds []string, notification *protos.UserNotification, h
 	return nil
 }
 
-func saveForUser(userId string, notification *protos.UserNotification, hctx HandlerContext) error {
+func saveForUser(userId string, notification *protos.Notification, hctx HandlerContext) error {
 	// Make a copy which has the user id set
-	toSave := &protos.UserNotificationDB{
-		DestUserId:   userId,
-		Notification: notification,
+	toSave := &protos.Notification{
+		DestUserId: userId,
+
+		Id:               notification.Id,
+		DestUserGroupId:  notification.DestUserGroupId,
+		MaxSecToExpiry:   notification.MaxSecToExpiry,
+		Subject:          notification.Subject,
+		Contents:         notification.Contents,
+		From:             notification.From,
+		TimeStampUnixSec: notification.TimeStampUnixSec,
+		ActionLink:       notification.ActionLink,
+		NotificationType: notification.NotificationType,
+		ScanIds:          notification.ScanIds,
+		ImageName:        notification.ImageName,
+		QuantId:          notification.QuantId,
 	}
 	_, err := hctx.Svcs.MongoDB.Collection(dbCollections.NotificationsName).InsertOne(context.TODO(), toSave)
 	return err
