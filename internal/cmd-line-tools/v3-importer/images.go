@@ -24,7 +24,7 @@ import (
 	"golang.org/x/image/tiff"
 )
 
-func importImagesForDataset(datasetID string, srcBucket string, destDataBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
+func importImagesForDataset(datasetID string, instrument protos.ScanInstrument, srcBucket string, destDataBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
 	imagesColl := dest.Collection(dbCollections.ImagesName)
 
 	// Load the dataset bin file
@@ -68,7 +68,7 @@ func importImagesForDataset(datasetID string, srcBucket string, destDataBucket s
 
 				taskId = addImportTask(fmt.Sprintf("ImportBeamLocationToDB datasetID: %v, image: %v, beamVersion: %v, alignedIdx: %v", datasetID, savedName, beamVersion, alignedIdx))
 				// Import coordinates
-				err = beamLocation.ImportBeamLocationToDB(savedName, datasetID, beamVersion, alignedIdx, exprPB, dest, &logger.StdOutLogger{})
+				err = beamLocation.ImportBeamLocationToDB(savedName, instrument, datasetID, beamVersion, alignedIdx, exprPB, dest, &logger.StdOutLogger{})
 				/*if err != nil {
 					fatalError(err)
 				}*/

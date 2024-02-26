@@ -240,7 +240,7 @@ func migrateDatasets(
 				fatalError(err)
 			}
 
-			err = importImagesForDataset(dataset.DatasetID, srcBucket, destDataBucket, fs, dest)
+			err = importImagesForDataset(dataset.DatasetID, instrument, srcBucket, destDataBucket, fs, dest)
 			if err != nil {
 				fatalError(err)
 			}
