@@ -158,7 +158,7 @@ func main() {
 		svcs,
 	}
 
-	job.ListenForExternalTriggeredJobs(dataimport.JobIDAutoImportPrefix, handler.handleAutoImportJobStatus, svcs.MongoDB, svcs.Log)
+	go job.ListenForExternalTriggeredJobs(dataimport.JobIDAutoImportPrefix, handler.handleAutoImportJobStatus, svcs.MongoDB, svcs.Log)
 
 	log.Fatal(
 		http.ListenAndServe(":8080",
