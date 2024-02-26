@@ -36,10 +36,9 @@ type actionItem struct {
 // where we may want to send multiple requests out and
 // capture all the randomly-ordered responses/updates
 type actionGroup struct {
-	actions                   []actionItem
-	expectedMessages          []string
-	ignoredMessageMatchString string // We ignore msgs received that match this string
-	timeoutMs                 int
+	actions          []actionItem
+	expectedMessages []string
+	timeoutMs        int
 }
 
 type ScriptedTestUser struct {
@@ -109,19 +108,15 @@ func (s *ScriptedTestUser) addAction(action actionItem) {
 
 	if s.tempGroup == nil {
 		s.tempGroup = &actionGroup{
-			actions:                   []actionItem{},
-			expectedMessages:          []string{},
-			ignoredMessageMatchString: "",
+			actions:          []actionItem{},
+			expectedMessages: []string{},
 		}
 	}
 
 	s.tempGroup.actions = append(s.tempGroup.actions, action)
 }
 
-// Originally we only had CloseActionGroup but quants being run in parallel by tests, and the API broadcasting out NT_SYS_DATA_CHANGED notifications
-// for the quants in questions means we needed the ability to run a bunch of actions and ignore messages that contained something (eg the notification
-// type above). This is because for each quant, we'd receive notifications of the other quants finishing, and wouldn't know their order!
-func (s *ScriptedTestUser) CloseActionGroupWithIgnoredMsgList(expectedMsgs []string, ignoredMessageMatchString string, timeoutMs int) {
+func (s *ScriptedTestUser) CloseActionGroup(expectedMsgs []string, timeoutMs int) {
 	// Close a group
 	if s.tempGroup == nil {
 		log.Fatal("Cannot add expected responses")
@@ -129,7 +124,6 @@ func (s *ScriptedTestUser) CloseActionGroupWithIgnoredMsgList(expectedMsgs []str
 
 	// Add responses to the group
 	s.tempGroup.expectedMessages = expectedMsgs
-	s.tempGroup.ignoredMessageMatchString = ignoredMessageMatchString
 	s.tempGroup.timeoutMs = timeoutMs
 
 	// Also add the expected messages from each action
@@ -148,10 +142,6 @@ func (s *ScriptedTestUser) CloseActionGroupWithIgnoredMsgList(expectedMsgs []str
 
 	// Clear it
 	s.tempGroup = nil
-}
-
-func (s *ScriptedTestUser) CloseActionGroup(expectedMsgs []string, timeoutMs int) {
-	s.CloseActionGroupWithIgnoredMsgList(expectedMsgs, "", timeoutMs)
 }
 
 func GetIdCreated(name string) string {
@@ -306,13 +296,7 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 		}
 
 		if !matched {
-			// See if it matches our ignore string
-			if len(group.ignoredMessageMatchString) > 0 && strings.Contains(msgStr, group.ignoredMessageMatchString) {
-				// TODO: this print statement is probably redundant...
-				fmt.Printf("Received unmatched message, but it did match ignoredMessageMatchString: %v. Message: %v\n", group.ignoredMessageMatchString, msgStr)
-			} else {
-				return fmt.Errorf("Received unmatched message: %v\nErrors encountered:\n%v\n", prettyReceivedMsgStr, matchErrors)
-			}
+			return fmt.Errorf("Received unmatched message: %v\nErrors encountered:\n%v\n", prettyReceivedMsgStr, matchErrors)
 		}
 	}
 

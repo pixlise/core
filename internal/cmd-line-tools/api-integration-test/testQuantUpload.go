@@ -229,7 +229,10 @@ func testQuantUpload(apiHost string) {
 		fmt.Sprintf(`{"msgId":5,"status":"WS_NOT_FOUND", "errorText": "%v not found", "quantGetResp":{}}`, wstestlib.GetIdCreated("uploadedQuantId")),
 	)
 
-	u1.CloseActionGroup([]string{}, 5000)
+	u1.CloseActionGroup([]string{
+		`{"notificationUpd": {"notification": { "notificationType": "NT_SYS_DATA_CHANGED", "quantId":"${IDCHK=uploadedQuantId}"}}}`,
+	}, 5000)
+
 	wstestlib.ExecQueuedActions(&u1)
 
 	items, err = apiStorageFileAccess.ListObjects(apiUsersBucket, filepaths.RootQuantificationPath+"/"+scanId+"/")

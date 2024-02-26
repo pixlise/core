@@ -1666,10 +1666,7 @@ func testJoinRequestNotificationLive(apiHost string) {
 				"from": "PIXLISE API",
 				"timeStampUnixSec": "${SECAGO=5}",
 				"actionLink": "/user-group/join-requests",
-				"meta": {
-					"requestorId": "%v",
-					"type": "join-group-request"
-				}
+				"requestorUserId": "%v"
 			}
 		}
 	}`, u1.GetUserId())}, userGroupWaitTime)

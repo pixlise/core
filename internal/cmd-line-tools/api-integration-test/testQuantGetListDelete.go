@@ -593,6 +593,8 @@ func testQuantGetListDelete(apiHost string) {
 		fmt.Sprintf(`{"msgId":12,"status":"WS_NOT_FOUND", "errorText": "%v not found", "quantGetResp":{}}`, quantId),
 	)
 
-	u1.CloseActionGroup([]string{}, 5000)
+	u1.CloseActionGroup([]string{
+		fmt.Sprintf(`{"notificationUpd": {"notification": { "notificationType": "NT_SYS_DATA_CHANGED", "quantId":"%v"}}}`, quantId),
+	}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 }
