@@ -36,9 +36,10 @@ type actionItem struct {
 // where we may want to send multiple requests out and
 // capture all the randomly-ordered responses/updates
 type actionGroup struct {
-	actions          []actionItem
-	expectedMessages []string
-	timeoutMs        int
+	actions                   []actionItem
+	expectedMessages          []string
+	ignoredMessageMatchString string // We ignore msgs received that match this string
+	timeoutMs                 int
 }
 
 type ScriptedTestUser struct {
@@ -108,15 +109,19 @@ func (s *ScriptedTestUser) addAction(action actionItem) {
 
 	if s.tempGroup == nil {
 		s.tempGroup = &actionGroup{
-			actions:          []actionItem{},
-			expectedMessages: []string{},
+			actions:                   []actionItem{},
+			expectedMessages:          []string{},
+			ignoredMessageMatchString: "",
 		}
 	}
 
 	s.tempGroup.actions = append(s.tempGroup.actions, action)
 }
 
-func (s *ScriptedTestUser) CloseActionGroup(expectedMsgs []string, timeoutMs int) {
+// Originally we only had CloseActionGroup but quants being run in parallel by tests, and the API broadcasting out NT_SYS_DATA_CHANGED notifications
+// for the quants in questions means we needed the ability to run a bunch of actions and ignore messages that contained something (eg the notification
+// type above). This is because for each quant, we'd receive notifications of the other quants finishing, and wouldn't know their order!
+func (s *ScriptedTestUser) CloseActionGroupWithIgnoredMsgList(expectedMsgs []string, ignoredMessageMatchString string, timeoutMs int) {
 	// Close a group
 	if s.tempGroup == nil {
 		log.Fatal("Cannot add expected responses")
@@ -124,6 +129,7 @@ func (s *ScriptedTestUser) CloseActionGroup(expectedMsgs []string, timeoutMs int
 
 	// Add responses to the group
 	s.tempGroup.expectedMessages = expectedMsgs
+	s.tempGroup.ignoredMessageMatchString = ignoredMessageMatchString
 	s.tempGroup.timeoutMs = timeoutMs
 
 	// Also add the expected messages from each action
@@ -142,6 +148,10 @@ func (s *ScriptedTestUser) CloseActionGroup(expectedMsgs []string, timeoutMs int
 
 	// Clear it
 	s.tempGroup = nil
+}
+
+func (s *ScriptedTestUser) CloseActionGroup(expectedMsgs []string, timeoutMs int) {
+	s.CloseActionGroupWithIgnoredMsgList(expectedMsgs, "", timeoutMs)
 }
 
 func GetIdCreated(name string) string {
@@ -261,6 +271,11 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 		}
 		msgStr := string(b)
 
+		if len(group.expectedMessages) <= 0 {
+			// If we've run out of expected messages in the mean time...
+			return fmt.Errorf("Received unexpected message: %v\n", msgStr)
+		}
+
 		var matched bool
 		var prettyReceivedMsgStr string
 		var idMatched bool
@@ -274,7 +289,8 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 				// If ids were matched, we know not to scan any further
 				if idMatched {
 					matched = true
-					fmt.Printf("%v\n", err)
+					// TODO: this print statement is probably redundant...
+					//fmt.Printf("idMatched: %v\n", err)
 					break
 				} else {
 					matchErrors = append(matchErrors, err)
@@ -290,7 +306,13 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 		}
 
 		if !matched {
-			return fmt.Errorf("Received unmatched message: %v\nErrors encountered:\n%v\n", prettyReceivedMsgStr, matchErrors)
+			// See if it matches our ignore string
+			if len(group.ignoredMessageMatchString) > 0 && strings.Contains(msgStr, group.ignoredMessageMatchString) {
+				// TODO: this print statement is probably redundant...
+				fmt.Printf("Received unmatched message, but it did match ignoredMessageMatchString: %v. Message: %v\n", group.ignoredMessageMatchString, msgStr)
+			} else {
+				return fmt.Errorf("Received unmatched message: %v\nErrors encountered:\n%v\n", prettyReceivedMsgStr, matchErrors)
+			}
 		}
 	}
 
@@ -298,7 +320,7 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 
 	// Should have none left
 	if len(group.expectedMessages) > 0 {
-		return fmt.Errorf("Failed to find match for %v expected messages", len(group.expectedMessages))
+		return fmt.Errorf("Failed to find match for %v expected messages:\n%v", len(group.expectedMessages), strings.Join(group.expectedMessages, "\n"))
 	}
 
 	return nil

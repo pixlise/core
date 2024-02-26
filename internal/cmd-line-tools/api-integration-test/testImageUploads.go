@@ -187,7 +187,25 @@ func testImageUpload(apiHost string) {
 	}`, scanId, scanId, scanId),
 	)
 
-	u1.CloseActionGroup([]string{}, 5000)
+	u1.CloseActionGroup([]string{`{"notificationUpd": {
+        "notification": {
+			"notificationType": "NT_USER_MESSAGE",
+            "subject": "New image added to scan: 048300551",
+            "contents": "A new image named 048300551-file_Name.png was added to scan: 048300551 (id: 048300551)",
+            "from": "Data Importer",
+			"timeStampUnixSec": "${SECAGO=10}",
+            "actionLink": "?q=048300551&image=048300551-file_Name.png"
+        }
+    }}`,
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`}, 10000)
 	wstestlib.ExecQueuedActions(&u1)
 
 	// Download image data
@@ -224,6 +242,18 @@ func testImageUpload(apiHost string) {
 		}`,
 	)
 
+	u1.CloseActionGroup([]string{
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
+
 	// Try to delete
 	u1.AddSendReqAction("Delete uploaded image, should fail because it's default",
 		`{"imageDeleteReq":{
@@ -257,7 +287,25 @@ func testImageUpload(apiHost string) {
 			"imageDeleteResp": {}
 		}`,
 	)
-	u1.CloseActionGroup([]string{}, 5000)
+	u1.CloseActionGroup([]string{
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`,
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 }
 
@@ -341,6 +389,30 @@ func testImageMatchTransform(apiHost string) {
 		}`,
 	)
 
+	u1.CloseActionGroup([]string{
+		`{
+			"notificationUpd": {
+				"notification": {
+					"notificationType": "NT_USER_MESSAGE",
+					"subject": "New image added to scan: 048300551",
+					"contents": "A new image named 048300551-file_Name.png was added to scan: 048300551 (id: 048300551)",
+					"from": "Data Importer",
+					"timeStampUnixSec": "${SECAGO=10}",
+					"actionLink": "?q=048300551&image=048300551-file_Name.png"
+				}
+			}
+		}`,
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`}, 10000)
+	wstestlib.ExecQueuedActions(&u1)
+
 	u1.AddSendReqAction("SetImageMatchTransform - should succeed",
 		`{"imageSetMatchTransformReq":{
 			"imageName": "048300551-file_Name.png",
@@ -371,6 +443,18 @@ func testImageMatchTransform(apiHost string) {
 		}`,
 	)
 
+	u1.CloseActionGroup([]string{
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`}, 10000)
+	wstestlib.ExecQueuedActions(&u1)
+
 	// Re-upload as matched image
 	u1.AddSendReqAction("Upload Matched OK",
 		fmt.Sprintf(`{"imageUploadReq":{
@@ -391,6 +475,30 @@ func testImageMatchTransform(apiHost string) {
 			"imageUploadResp": {}
 		}`,
 	)
+
+	u1.CloseActionGroup([]string{
+		`{
+			"notificationUpd": {
+				"notification": {
+					"notificationType": "NT_USER_MESSAGE",
+					"subject": "New image added to scan: 048300551",
+					"contents": "A new image named 048300551-file_Name.png was added to scan: 048300551 (id: 048300551)",
+					"from": "Data Importer",
+					"timeStampUnixSec": "${SECAGO=10}",
+					"actionLink": "?q=048300551&image=048300551-file_Name.png"
+				}
+			}
+		}`,
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`}, 10000)
+	wstestlib.ExecQueuedActions(&u1)
 
 	// Set transform again
 	u1.AddSendReqAction("SetImageMatchTransform - should succeed",

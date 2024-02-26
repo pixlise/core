@@ -321,7 +321,7 @@ func testScanDataBadId(apiHost string, actionMsg string) string {
 		Pass: test1Password,
 	})
 
-	u1.AddSendReqAction(actionMsg+" (not found)",
+	u1.AddSendReqAction("non-existant-scan pseudo (not found)",
 		`{"pseudoIntensityReq":{"scanId": "non-existant-scan", "entries": {"indexes": [100,-1,104]}}}`,
 		`{"msgId":1, "status": "WS_NOT_FOUND",
 			"errorText": "non-existant-scan not found",
@@ -329,7 +329,7 @@ func testScanDataBadId(apiHost string, actionMsg string) string {
 		}`,
 	)
 
-	u1.AddSendReqAction(actionMsg+" (not found)",
+	u1.AddSendReqAction("non-existant-scan spectra (1) (not found)",
 		`{"spectrumReq":{"scanId": "non-existant-scan", "entries": {"indexes": [100,-1,104]}}}`,
 		`{"msgId":2, "status": "WS_NOT_FOUND",
 			"errorText": "non-existant-scan not found",
@@ -337,7 +337,7 @@ func testScanDataBadId(apiHost string, actionMsg string) string {
 		}`,
 	)
 
-	u1.AddSendReqAction(actionMsg+" (not found)",
+	u1.AddSendReqAction("non-existant-scan spectra (2) (not found)",
 		`{"spectrumReq":{"scanId": "non-existant-scan", "bulkSum": true, "maxValue": true}}`,
 		`{"msgId":3, "status": "WS_NOT_FOUND",
 			"errorText": "non-existant-scan not found",
@@ -345,7 +345,7 @@ func testScanDataBadId(apiHost string, actionMsg string) string {
 		}`,
 	)
 
-	u1.AddSendReqAction("scan meta write (not found)",
+	u1.AddSendReqAction("non-existant-scan meta write (not found)",
 		`{"scanMetaWriteReq":{"scanId": "non-existant-scan", "title": "Something", "description": "The blah"}}`,
 		`{"msgId":4,
 			"status": "WS_NOT_FOUND",
@@ -1511,7 +1511,29 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 		}`,
 	)
 
-	u1.CloseActionGroup([]string{}, scanWaitTime)
+	expectedMsgs := []string{
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}}`,
+	}
+
+	if editAllowed {
+		expectedMsgs = append(expectedMsgs, `{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}}`)
+	}
+
+	u1.CloseActionGroup(expectedMsgs, scanWaitTime)
 	wstestlib.ExecQueuedActions(&u1)
 
 	// Test the GET HTTP endpoint, this has nothing to do with users/websockets above

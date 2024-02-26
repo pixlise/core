@@ -1587,8 +1587,8 @@ func testJoinRequestNotificationLive(apiHost string) {
 
 	// Subscribe for notifications too
 	u2.AddSendReqAction("Subscribe to notifications for u2",
-		`{"userNotificationReq":{}}`,
-		`{"msgId":2,"status":"WS_OK","userNotificationResp":{}}`,
+		`{"notificationReq":{}}`,
+		`{"msgId":2,"status":"WS_OK","notificationResp":{}}`,
 	)
 
 	u2.CloseActionGroup([]string{}, userGroupWaitTime)
@@ -1658,8 +1658,9 @@ func testJoinRequestNotificationLive(apiHost string) {
 	// Expecting to see an update here...
 	u2.CloseActionGroup([]string{
 		fmt.Sprintf(`{
-		"userNotificationUpd": {
+		"notificationUpd": {
 			"notification": {
+				"notificationType": "NT_JOIN_GROUP_REQUEST",
 				"subject": "${REGEXMATCH=.+has requested to join group M2020 Science}",
 				"contents": "${REGEXMATCH=You are being sent this because you are an administrator of PIXLISE user group M2020 Science.+}",
 				"from": "PIXLISE API",
@@ -1743,8 +1744,8 @@ func testJoinRequestNotificationAfterConnect(apiHost string) {
 
 	// Request notifications, which should deliver the notification from DB
 	u2.AddSendReqAction("Subscribe to notifications for u2",
-		`{"userNotificationReq":{}}`,
-		`{"msgId":2,"status":"WS_OK","userNotificationResp":{}}`,
+		`{"notificationReq":{}}`,
+		`{"msgId":2,"status":"WS_OK","notificationResp":{}}`,
 	)
 
 	u2.AddSendReqAction("Request to join created group 5 id",
