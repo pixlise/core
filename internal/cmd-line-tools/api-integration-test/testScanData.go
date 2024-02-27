@@ -1369,7 +1369,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 			"imageListResp":{
 				"images": [
 					{
-						"name": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+						"imagePath": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 						"source": "SI_INSTRUMENT",
 						"width": 752,
 						"height": 580,
@@ -1378,11 +1378,10 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 						"associatedScanIds": [
 							"048300551"
 						],
-						"originScanId": "048300551",
-						"path": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"
+						"originScanId": "048300551"
 					},
 					{
-						"name": "PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
+						"imagePath": "048300551/PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
 						"source": "SI_INSTRUMENT",
 						"width": 752,
 						"height": 580,
@@ -1391,8 +1390,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 						"associatedScanIds": [
 							"048300551"
 						],
-						"originScanId": "048300551",
-						"path": "048300551/PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png"
+						"originScanId": "048300551"
 					}
 				]
 			}
@@ -1431,11 +1429,11 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 	)
 
 	u1.AddSendReqAction("imageBeamLocationsReq (should work)",
-		`{"imageBeamLocationsReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
+		`{"imageBeamLocationsReq":{"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
 		`{"msgId":13, "status": "WS_OK",
 			"imageBeamLocationsResp":{
 				"locations": {
-					"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+					"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 					"locationPerScan": [
 						{
 							"scanId": "048300551",
@@ -1490,7 +1488,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 	)
 
 	u1.AddSendReqAction("set default image",
-		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "some/path/to/the-image.png"}}`,
+		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
 		`{"msgId":16,
 			"status": "WS_OK",
 			"imageSetDefaultResp": {}
@@ -1502,7 +1500,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 			"status": "WS_OK",
 			"imageGetDefaultResp": {
 				"defaultImagesPerScanId": {
-					"048300551": "some/path/to/the-image.png"
+					"048300551": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"
 				}
 			}
 		}`,
