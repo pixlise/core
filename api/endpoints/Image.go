@@ -71,7 +71,7 @@ func addFileNameSuffix(name string, suffix string) string {
 func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, string, string, string, int, error) {
 	// Path elements
 	scanID := params.PathParams[ScanIdentifier]
-	requestedFileName := params.PathParams[FileNameIdentifier]
+	requestedFileName := path.Join(scanID, params.PathParams[FileNameIdentifier])
 
 	// Check access to each associated scan. The user should already have a web socket open by this point, so we can
 	// look to see if there is a cached copy of their user group membership. If we don't find one, we stop
@@ -154,9 +154,9 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 	// Check if the file exists, as we may be able to generate a version of the underlying file to satisfy the request
 	var s3Path string
 	if minWidthPx > 0 || showLocations {
-		s3Path = filepaths.GetImageCacheFilePath(path.Join(scanID, finalFileName))
+		s3Path = filepaths.GetImageCacheFilePath(finalFileName)
 	} else {
-		s3Path = filepaths.GetImageFilePath(path.Join(scanID, finalFileName))
+		s3Path = filepaths.GetImageFilePath(finalFileName)
 	}
 
 	_, err = params.Svcs.S3.HeadObject(&s3.HeadObjectInput{
@@ -167,7 +167,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 		if minWidthPx > 0 || showLocations {
 			// If the file doesn't exist, check if the base file name exists, because we may just need to generate
 			// a modified version of it
-			genS3Path := filepaths.GetImageFilePath(path.Join(scanID, requestedFileName))
+			genS3Path := filepaths.GetImageFilePath(requestedFileName)
 
 			// Original file exists, generate this modified copy and cache it back in S3 for the rest of this
 			// function to find!

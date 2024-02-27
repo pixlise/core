@@ -80,7 +80,7 @@ func (n *NotificationSender) NotifyNewScanImage(scanName string, scanId string, 
 		Notification: &protos.Notification{
 			NotificationType: protos.NotificationType_NT_USER_MESSAGE,
 			Subject:          fmt.Sprintf("New image added to scan: %v", scanName),
-			Contents:         fmt.Sprintf("A new image named %v was added to scan: %v (id: %v)", imageName, scanName, scanId),
+			Contents:         fmt.Sprintf("A new image named %v was added to scan: %v (id: %v)", path.Base(imageName), scanName, scanId),
 			From:             "Data Importer",
 			TimeStampUnixSec: uint32(n.timestamper.GetTimeNowSec()),
 			ActionLink:       path.Join(n.envRootURL, "?q="+scanId+"&image="+imageName),

@@ -286,10 +286,8 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, marsViewerExp
 		}
 	}
 
-	saveName := baseRTT + "-" + imageFileName
-	savePath := path.Join(baseRTT, saveName)
+	savePath := path.Join(baseRTT, imageFileName)
 	scanImage := utils.MakeScanImage(
-		saveName,
 		savePath,
 		uint32(len(imgData)),
 		protos.ScanImageSource_SI_UPLOAD,
@@ -304,13 +302,13 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, marsViewerExp
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
 	opt := options.Update().SetUpsert(true)
 
-	result, err := coll.UpdateByID(ctx, saveName, bson.D{{Key: "$set", Value: scanImage}}, opt)
+	result, err := coll.UpdateByID(ctx, scanImage.ImagePath, bson.D{{Key: "$set", Value: scanImage}}, opt)
 	if err != nil {
 		return "", nil, nil, err
 	}
 
 	if result.MatchedCount != 1 {
-		hctx.Svcs.Log.Errorf("importNewImage failed to upsert DB image: %v. Result: %+v", scanImage.Name, result)
+		hctx.Svcs.Log.Errorf("importNewImage failed to upsert DB image: %v. Result: %+v", scanImage.ImagePath, result)
 	}
 
 	// Save the image to S3
@@ -319,7 +317,7 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, marsViewerExp
 	if err != nil {
 		// Failed to upload image data, so no point in having a DB entry now either...
 		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
-		filter := bson.D{{Key: "_id", Value: saveName}}
+		filter := bson.D{{Key: "_id", Value: scanImage.ImagePath}}
 		delOpt := options.Delete()
 		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
 		return "", nil, nil, err
@@ -328,20 +326,20 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, marsViewerExp
 	// Also insert a blank entry for beam locations for this image, as we're expecting to import scans for it
 	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 	beamLocs := &protos.ImageLocations{
-		ImageName:       saveName,
+		ImageName:       scanImage.ImagePath,
 		LocationPerScan: []*protos.ImageLocationsForScan{},
 	}
 
-	beamResult, err := coll.UpdateByID(ctx, saveName, bson.D{{Key: "$set", Value: beamLocs}}, opt)
+	beamResult, err := coll.UpdateByID(ctx, scanImage.ImagePath, bson.D{{Key: "$set", Value: beamLocs}}, opt)
 	if err != nil {
 		return "", nil, nil, err
 	}
 
 	if beamResult.MatchedCount != 1 {
-		hctx.Svcs.Log.Errorf("importNewImage failed to upsert initial DB image beam locations: %v. Result: %+v", scanImage.Name, beamResult)
+		hctx.Svcs.Log.Errorf("importNewImage failed to upsert initial DB image beam locations: %v. Result: %+v", scanImage.ImagePath, beamResult)
 	}
 
-	return scanImage.Name, scanImage, beamLocs, err
+	return scanImage.ImagePath, scanImage, beamLocs, err
 }
 
 func readExistingLocationsForImage(jobId string, image string, hctx wsHelpers.HandlerContext) (*protos.ImageLocations, error) {
@@ -537,10 +535,8 @@ func importWarpedImage(warpedImageUrl string, rttWarpedTo string, baseImage stri
 
 	matchInfo.BeamImageFileName = baseImage
 
-	saveName := rttWarpedTo + "-" + nicerSaveName
-	savePath := path.Join(rttWarpedTo, saveName)
+	savePath := path.Join(rttWarpedTo, nicerSaveName)
 	scanImage := utils.MakeScanImage(
-		saveName,
 		savePath,
 		uint32(len(imgData)),
 		protos.ScanImageSource_SI_UPLOAD,
@@ -555,16 +551,16 @@ func importWarpedImage(warpedImageUrl string, rttWarpedTo string, baseImage stri
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
 
 	opt := options.Update().SetUpsert(true)
-	result, err := coll.UpdateByID(ctx, saveName, bson.D{{Key: "$set", Value: scanImage}}, opt)
+	result, err := coll.UpdateByID(ctx, scanImage.ImagePath, bson.D{{Key: "$set", Value: scanImage}}, opt)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			return errorwithstatus.MakeBadRequestError(fmt.Errorf("%v already exists", scanImage.Name))
+			return errorwithstatus.MakeBadRequestError(fmt.Errorf("%v already exists", scanImage.ImagePath))
 		}
 		return err
 	}
 
 	if result.MatchedCount != 1 {
-		hctx.Svcs.Log.Errorf("importWarpedImage failed to upsert DB image: %v. Result: %+v", scanImage.Name, result)
+		hctx.Svcs.Log.Errorf("importWarpedImage failed to upsert DB image: %v. Result: %+v", scanImage.ImagePath, result)
 	}
 
 	// Save the image to S3
@@ -573,7 +569,7 @@ func importWarpedImage(warpedImageUrl string, rttWarpedTo string, baseImage stri
 	if err != nil {
 		// Failed to upload image data, so no point in having a DB entry now either...
 		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
-		filter := bson.D{{Key: "_id", Value: saveName}}
+		filter := bson.D{{Key: "_id", Value: scanImage.ImagePath}}
 		delOpt := options.Delete()
 		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
 		return err
@@ -615,16 +611,17 @@ func findImage(imageName string, imageRTT string, hctx wsHelpers.HandlerContext)
 	comparableBaseName := gdsfilename.MakeComparableName(path.Base(imageName))
 
 	for _, item := range items {
-		comparableName := gdsfilename.MakeComparableName(item.Name)
+		comparableName := gdsfilename.MakeComparableName(path.Base(item.ImagePath))
 
 		if comparableName == comparableBaseName {
-			return item.Name, item, nil
+			return item.ImagePath, item, nil
 		}
 	}
 
 	return "", nil, mongo.ErrNoDocuments // fmt.Errorf("Failed to find image: %v for scan %v", imageName, imageRTT)
 }
 
+// NOTE: make sure to only pass the file name, not a path like scanid/file.png
 func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, string, error) {
 	ext := path.Ext(fileName)
 	if len(ext) > 0 {

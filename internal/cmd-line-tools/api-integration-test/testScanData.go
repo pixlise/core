@@ -144,7 +144,7 @@ func seedDBScanData(scan *protos.ScanItem) string {
 func seedImages() {
 	imgs := []interface{}{
 		&protos.ScanImage{
-			Name:              "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+			ImagePath:         "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 			Source:            1,
 			Width:             752,
 			Height:            580,
@@ -153,11 +153,10 @@ func seedImages() {
 			AssociatedScanIds: []string{"048300551"},
 			OriginScanId:      "048300551",
 			OriginImageURL:    "",
-			Path:              "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 			//"matchinfo": null
 		},
 		&protos.ScanImage{
-			Name:              "PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
+			ImagePath:         "048300551/PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
 			Source:            1,
 			Width:             752,
 			Height:            580,
@@ -166,7 +165,6 @@ func seedImages() {
 			AssociatedScanIds: []string{"048300551"},
 			OriginScanId:      "048300551",
 			OriginImageURL:    "",
-			Path:              "048300551/PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
 		},
 	}
 
@@ -191,7 +189,7 @@ func seedImages() {
 func seedImageLocations() {
 	locs := []interface{}{
 		&protos.ImageLocations{
-			ImageName: "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+			ImageName: "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 			LocationPerScan: []*protos.ImageLocationsForScan{
 				{
 					ScanId: "048300551",
@@ -448,10 +446,10 @@ func testScanDataNoPermission(apiHost string) {
 	)
 
 	u1.AddSendReqAction("imageGetReq (expect no permission)",
-		`{"imageGetReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
+		`{"imageGetReq":{"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
 		`{"msgId":9,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "User cannot access scan 048300551 associated with image PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png. Error: View access denied for: 048300551",
+			"errorText": "User cannot access scan 048300551 associated with image 048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png. Error: View access denied for: 048300551",
 			"imageGetResp":{}
 		}`,
 	)
@@ -1402,12 +1400,12 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 	)
 
 	u1.AddSendReqAction("imageGetReq (should work)",
-		`{"imageGetReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
+		`{"imageGetReq":{"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
 		`{"msgId":11,
 			"status": "WS_OK",
 			"imageGetResp":{
 				"image": {
-					"name": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+					"imagePath": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 					"source": "SI_INSTRUMENT",
 					"width": 752,
 					"height": 580,
@@ -1416,8 +1414,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 					"associatedScanIds": [
 						"048300551"
 					],
-					"originScanId": "048300551",
-					"path": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"
+					"originScanId": "048300551"
 				}
 			}
 		}`,

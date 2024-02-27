@@ -279,8 +279,7 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 				// If ids were matched, we know not to scan any further
 				if idMatched {
 					matched = true
-					// TODO: this print statement is probably redundant...
-					//fmt.Printf("idMatched: %v\n", err)
+					fmt.Printf("idMatched with error: %v\n", err)
 					break
 				} else {
 					matchErrors = append(matchErrors, err)

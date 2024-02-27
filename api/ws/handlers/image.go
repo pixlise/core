@@ -168,9 +168,20 @@ func HandleImageSetDefaultReq(req *protos.ImageSetDefaultReq, hctx wsHelpers.Han
 		return nil, err
 	}
 
-	// Write to DB
+	// Make sure it exists at least in our DB
 	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ScanDefaultImagesName)
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+
+	imgResult := coll.FindOne(ctx, bson.M{"_id": req.DefaultImageFileName})
+	if imgResult.Err() != nil {
+		if imgResult.Err() == mongo.ErrNoDocuments {
+			return nil, errorwithstatus.MakeNotFoundError(req.DefaultImageFileName)
+		}
+		return nil, imgResult.Err()
+	}
+
+	// Write to DB
+	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ScanDefaultImagesName)
 
 	filter := bson.D{{Key: "_id", Value: req.ScanId}}
 	opt := options.Update().SetUpsert(true)
@@ -217,7 +228,7 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 	}
 
 	// If it's the default image in any scan, we can't delete it
-	filter := bson.D{{Key: "defaultimagefilename", Value: img.Path}}
+	filter := bson.D{{Key: "defaultimagefilename", Value: img.ImagePath}}
 	opt := options.Find()
 	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ScanDefaultImagesName)
 
@@ -242,7 +253,7 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 	}
 
 	// Delete anything related to this image
-	s3Path := filepaths.GetImageFilePath(img.Path)
+	s3Path := filepaths.GetImageFilePath(img.ImagePath)
 	err = hctx.Svcs.FS.DeleteObject(hctx.Svcs.Config.DatasetsBucket, s3Path)
 	if err != nil {
 		// Just log, but continue
@@ -250,7 +261,7 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 	}
 
 	// And the cached files
-	files, err := hctx.Svcs.FS.ListObjects(hctx.Svcs.Config.DatasetsBucket, path.Join(filepaths.DatasetImageCacheRoot, img.Path))
+	files, err := hctx.Svcs.FS.ListObjects(hctx.Svcs.Config.DatasetsBucket, path.Join(filepaths.DatasetImageCacheRoot, img.ImagePath))
 	for _, fileName := range files {
 		err = hctx.Svcs.FS.DeleteObject(hctx.Svcs.Config.DatasetsBucket, fileName)
 		if err != nil {
@@ -343,10 +354,8 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 	}
 
 	// We make the names more unique this way...
-	saveName := req.OriginScanId + "-" + req.Name
-	savePath := path.Join(req.OriginScanId, saveName)
+	savePath := path.Join(req.OriginScanId, req.Name)
 	scanImage := utils.MakeScanImage(
-		saveName,
 		savePath,
 		uint32(len(req.ImageData)),
 		protos.ScanImageSource_SI_UPLOAD,
@@ -376,7 +385,7 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 	if generateCoords && scanImage.MatchInfo == nil {
 		// Set a beam transform
 		scanImage.MatchInfo = &protos.ImageMatchTransform{
-			BeamImageFileName: saveName,
+			BeamImageFileName: scanImage.ImagePath,
 			XOffset:           0,
 			YOffset:           0,
 			XScale:            1,
@@ -387,13 +396,13 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 	result, err := coll.InsertOne(ctx, scanImage, options.InsertOne())
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("%v already exists", scanImage.Name))
+			return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("%v already exists", scanImage.ImagePath))
 		}
 		return nil, err
 	}
 
-	if result.InsertedID != scanImage.Name {
-		return nil, fmt.Errorf("HandleImageUploadReq wrote id %v, got back %v", scanImage.Name, result.InsertedID)
+	if result.InsertedID != scanImage.ImagePath {
+		return nil, fmt.Errorf("HandleImageUploadReq wrote id %v, got back %v", scanImage.ImagePath, result.InsertedID)
 	}
 
 	// Save the image to S3
@@ -402,21 +411,21 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 	if err != nil {
 		// Failed to upload image data, so no point in having a DB entry now either...
 		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
-		filter := bson.D{{Key: "_id", Value: saveName}}
+		filter := bson.D{{Key: "_id", Value: scanImage.ImagePath}}
 		delOpt := options.Delete()
 		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
 		return nil, err
 	}
 
 	if generateCoords {
-		err = generateIJs(saveName, req.OriginScanId, scan.Instrument, hctx)
+		err = generateIJs(scanImage.ImagePath, req.OriginScanId, scan.Instrument, hctx)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// Notify of our successful image addition
-	hctx.Svcs.Notifier.NotifyNewScanImage(req.OriginScanId, req.OriginScanId, saveName)
+	hctx.Svcs.Notifier.NotifyNewScanImage(req.OriginScanId, req.OriginScanId, scanImage.ImagePath)
 	hctx.Svcs.Notifier.SysNotifyScanImagesChanged([]string{req.OriginScanId})
 
 	return &protos.ImageUploadResp{}, nil

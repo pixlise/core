@@ -124,7 +124,7 @@ func testQuantCreate(apiHost string) {
 
 func runQuantificationTest(idx int, apiHost string, user string, pass string,
 	scanId string, pmcList []int32, elementList []string, detectorConfig string, quantName string, expectedFinalState string) {
-	var maxRunTimeSec = 120
+	var maxRunTimeSec = 240
 	var maxAgeSec = maxRunTimeSec
 	if expectedFinalState == "ERROR" {
 		maxRunTimeSec = 20

@@ -164,7 +164,7 @@ func importAlignedImage(
 		}
 	}
 
-	return imgSave.Name, imgSave.Width, imgSave.Height, saveImage(imgSave, imagesColl, imgBytes, fs, dataBucket, srcS3Path, destDataBucket, datasetID)
+	return imgSave.ImagePath, imgSave.Width, imgSave.Height, saveImage(imgSave, imagesColl, imgBytes, fs, dataBucket, srcS3Path, destDataBucket)
 }
 
 func importMatchedImage(
@@ -217,7 +217,7 @@ func importMatchedImage(
 		imgSave.Purpose = protos.ScanImagePurpose_SIP_MULTICHANNEL
 	}
 
-	return imgSave.Name, saveImage(imgSave, imagesColl, imgBytes, fs, dataBucket, srcS3Path, destDataBucket, datasetID)
+	return imgSave.ImagePath, saveImage(imgSave, imagesColl, imgBytes, fs, dataBucket, srcS3Path, destDataBucket)
 }
 
 func isExt(fileName string, extNoDot string) bool {
@@ -240,7 +240,7 @@ func importUnalignedImage(
 
 	imgSave.AssociatedScanIds = []string{datasetID}
 
-	return imgSave.Name, saveImage(imgSave, imagesColl, imgBytes, fs, dataBucket, srcS3Path, destDataBucket, datasetID)
+	return imgSave.ImagePath, saveImage(imgSave, imagesColl, imgBytes, fs, dataBucket, srcS3Path, destDataBucket)
 }
 
 // Downloads the image and determines the size if passed in imageW==imageH==0
@@ -284,10 +284,8 @@ func getImportImage(imgType string, imageName string, datasetID string, dataBuck
 		}
 	}
 
-	imageName = getImageSaveName(datasetID, imageName)
-
 	imgSave := &protos.ScanImage{
-		Name:              imageName,
+		ImagePath:         path.Join(datasetID, imageName),
 		Source:            protos.ScanImageSource_SI_UPLOAD,
 		Width:             imageW,
 		Height:            imageH,
@@ -303,16 +301,6 @@ func getImportImage(imgType string, imageName string, datasetID string, dataBuck
 	return imgSave, imgBytes, s3Path, nil
 }
 
-func getImageSaveName(scanId string, imageName string) string {
-	// If the image name can't be parsed as a gds filename, we prepend the dataset ID to make it more unique. This is not done
-	// on GDS filenames because they would already contain the RTT making them unique, and we also want to keep those
-	// searchable/equivalent to names in Mars Viewer
-	if fields, err := gdsfilename.ParseFileName(imageName); err != nil || fields.Producer == "D" || fields.ProdType == "MSA" || fields.ProdType == "VIS" {
-		imageName = scanId + "-" + imageName
-	}
-	return imageName
-}
-
 func saveImage(
 	imgSave *protos.ScanImage,
 	imagesColl *mongo.Collection,
@@ -321,23 +309,18 @@ func saveImage(
 	srcDataBucket string,
 	srcS3Path string,
 	destDataBucket string,
-	datasetID string,
 ) error {
-	// Work out where we'll save it
-	savePath := path.Join(datasetID, imgSave.Name)
-	imgSave.Path = savePath
-
 	// Write the new image record to DB
 	result, err := imagesColl.InsertOne(context.TODO(), imgSave)
 	if err != nil {
 		return err
 	}
-	if result.InsertedID != imgSave.Name {
-		return fmt.Errorf("Image insert for %v inserted different id %v", imgSave.Name, result.InsertedID)
+	if result.InsertedID != imgSave.ImagePath {
+		return fmt.Errorf("Image insert for %v inserted different id %v", imgSave.ImagePath, result.InsertedID)
 	}
 
 	// Also write the image file to S3 destination
-	writePath := filepaths.GetImageFilePath(savePath)
+	writePath := filepaths.GetImageFilePath(imgSave.ImagePath)
 	// TODO: copy within AWS for speed
 	//return fs.WriteObject(destDataBucket, writePath, imgBytes)
 	return fs.CopyObject(srcDataBucket, srcS3Path, destDataBucket, writePath)
