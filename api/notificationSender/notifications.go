@@ -118,22 +118,26 @@ func (n *NotificationSender) sendNotification(sourceId string, topicId string, n
 	// Send UI notifications to whoevere is connected
 	// NOTE: This won't work reliably in prod at present because users may be connected to another instance of the API and wouldn't
 	//       receive this. There's a card for building a cross-API notification situation here.
-	sessions, _ := n.ws.GetSessionForUsersIfExists(uiNotificationUsers)
-	for _, session := range sessions {
-		msg := &protos.WSMessage{Contents: &protos.WSMessage_NotificationUpd{NotificationUpd: notifMsg}}
-		wsHelpers.SendForSession(session, msg)
+	if len(uiNotificationUsers) > 0 {
+		sessions, _ := n.ws.GetSessionForUsersIfExists(uiNotificationUsers)
+		for _, session := range sessions {
+			msg := &protos.WSMessage{Contents: &protos.WSMessage_NotificationUpd{NotificationUpd: notifMsg}}
+			wsHelpers.SendForSession(session, msg)
+		}
 	}
 
 	// Send emails, but only from ONE instance of our API!
-	singleinstance.HandleOnce(sourceId, n.instanceId, func(sourceId string) {
-		// NOTE: At this point we have no way to exclude emails for those sessions we have already sent
-		//       web socket notifications to because multiple API instances have done the above job, but
-		//       email sending is being done by one instance which doesn't have a list of all sessions
-		//       connected to all APIs, so here we email all interested parties.
-		for _, emailUserId := range userIds {
-			n.sendEmail(notifMsg.Notification, emailUserId)
-		}
-	}, n.db, n.timestamper, n.log)
+	if len(emailNotificationUsers) > 0 {
+		singleinstance.HandleOnce(sourceId, n.instanceId, func(sourceId string) {
+			// NOTE: At this point we have no way to exclude emails for those sessions we have already sent
+			//       web socket notifications to because multiple API instances have done the above job, but
+			//       email sending is being done by one instance which doesn't have a list of all sessions
+			//       connected to all APIs, so here we email all interested parties.
+			for _, emailUserId := range emailNotificationUsers {
+				n.sendEmail(notifMsg.Notification, emailUserId)
+			}
+		}, n.db, n.timestamper, n.log)
+	}
 }
 
 func (n *NotificationSender) sendEmail(notif *protos.Notification, userId string) {

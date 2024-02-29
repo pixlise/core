@@ -34,5 +34,5 @@ type INotifier interface {
 	NotifyUserGroupMessage(subject string, message string, notificationType protos.NotificationType, actionLink string, groupId string, groupName string, sender string)
 
 	// Sending a message to a list of users, eg when sending out notifications to an admin group
-	NotifyUserMessage(subject string, message string, notificationType protos.NotificationType, actionLink string, destUserIds []string, sender string)
+	NotifyUserMessage(subject string, message string, notificationType protos.NotificationType, actionLink string, requestorUserId string, destUserIds []string, sender string)
 }

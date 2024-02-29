@@ -9,17 +9,16 @@ import (
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func HandleUserNotificationSettingsReq(req *protos.UserNotificationSettingsReq, hctx wsHelpers.HandlerContext) (*protos.UserNotificationSettingsResp, error) {
-	notificationSettings, err := getUserNotificationSettingsNotNil(hctx.SessUser.User.Id, hctx.Svcs.MongoDB)
+	userDBItem, err := wsHelpers.GetDBUser(hctx.SessUser.User.Id, hctx.Svcs.MongoDB)
 	if err != nil {
 		return nil, err
 	}
 
 	return &protos.UserNotificationSettingsResp{
-		Notifications: notificationSettings,
+		Notifications: userDBItem.NotificationSettings,
 	}, nil
 }
 
@@ -42,19 +41,4 @@ func HandleUserNotificationSettingsWriteReq(req *protos.UserNotificationSettings
 	}
 
 	return &protos.UserNotificationSettingsWriteResp{}, nil
-}
-
-func getUserNotificationSettingsNotNil(userId string, db *mongo.Database) (*protos.UserNotificationSettings, error) {
-	userDBItem, err := wsHelpers.GetDBUser(userId, db)
-	if err != nil {
-		return nil, err
-	}
-
-	if userDBItem.NotificationSettings == nil {
-		userDBItem.NotificationSettings = &protos.UserNotificationSettings{
-			TopicSettings: map[string]protos.NotificationMethod{},
-		}
-	}
-
-	return userDBItem.NotificationSettings, nil
 }

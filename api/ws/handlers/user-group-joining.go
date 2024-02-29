@@ -62,6 +62,7 @@ func HandleUserGroupJoinReq(req *protos.UserGroupJoinReq, hctx wsHelpers.Handler
 A user named %v has just requested to join the group as a %v`, group.Name, hctx.SessUser.User.Name, intent),
 		protos.NotificationType_NT_JOIN_GROUP_REQUEST,
 		"/user-group/join-requests", // TODO clarify
+		hctx.SessUser.User.Id,
 		group.AdminUserIds,
 		"PIXLISE API",
 	)
