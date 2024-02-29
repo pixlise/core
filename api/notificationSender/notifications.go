@@ -71,9 +71,15 @@ func (n *NotificationSender) sendNotificationToObjectUsers(topic string, notifMs
 
 // SourceId must be an id that is unique across API instances so we can decide on one instance to send emails from!
 func (n *NotificationSender) sendNotification(sourceId string, topicId string, notifMsg *protos.NotificationUpd, userIds []string) {
+	if len(userIds) <= 0 {
+		n.log.Errorf("No users to send notification \"%v\" to!", notifMsg.Notification.Subject)
+		return
+	}
+
 	// Ensure the notification has a unique ID from here, because we're sending/storing them and may need dismissability
-	if len(notifMsg.Notification.Id) <= 0 {
-		notifMsg.Notification.Id = n.idgen.GenObjectID()
+	origId := notifMsg.Notification.Id
+	if len(origId) <= 0 {
+		origId = n.idgen.GenObjectID()
 	}
 
 	// Ensure other fields are set too
@@ -87,7 +93,7 @@ func (n *NotificationSender) sendNotification(sourceId string, topicId string, n
 		// Write it to DB if needed
 		err := n.saveNotificationToDB(userId, notifMsg.Notification)
 		if err != nil {
-			n.log.Errorf("Failed to save notification to DB for user: %v. Notification was: %+v", userId, notifMsg.Notification)
+			n.log.Errorf("Failed to save notification to DB for user: %v. Error: \"%v\". Notification was: %+v", userId, err, notifMsg.Notification)
 		}
 
 		user, err := wsHelpers.GetDBUser(userId, n.db)
@@ -121,14 +127,26 @@ func (n *NotificationSender) sendNotification(sourceId string, topicId string, n
 	if len(uiNotificationUsers) > 0 {
 		sessions, _ := n.ws.GetSessionForUsersIfExists(uiNotificationUsers)
 		for _, session := range sessions {
-			msg := &protos.WSMessage{Contents: &protos.WSMessage_NotificationUpd{NotificationUpd: notifMsg}}
-			wsHelpers.SendForSession(session, msg)
+			// Send it with a unique ID for this user
+			sessUser, err := wsHelpers.GetSessionUser(session)
+			if err != nil {
+				notifMsg.Notification.Id = origId + "-" + sessUser.User.Id
+				msg := &protos.WSMessage{Contents: &protos.WSMessage_NotificationUpd{NotificationUpd: notifMsg}}
+
+				n.log.Infof("Sending UI notification: %v, with id: %v to user: %v", notifMsg.Notification.Subject, notifMsg.Notification.Id, sessUser.User.Id)
+				wsHelpers.SendForSession(session, msg)
+			} else {
+				n.log.Errorf("Error: %v - notification not sent!", err)
+			}
 		}
 	}
 
 	// Send emails, but only from ONE instance of our API!
 	if len(emailNotificationUsers) > 0 {
 		singleinstance.HandleOnce(sourceId, n.instanceId, func(sourceId string) {
+			// ID is not relevant here...
+			notifMsg.Notification.Id = ""
+
 			// NOTE: At this point we have no way to exclude emails for those sessions we have already sent
 			//       web socket notifications to because multiple API instances have done the above job, but
 			//       email sending is being done by one instance which doesn't have a list of all sessions
@@ -179,6 +197,7 @@ func (n *NotificationSender) sendEmail(notif *protos.Notification, userId string
 </html>
 `, notif.Subject, user.Info.Name, notif.Contents, unsub)
 
+	n.log.Infof("Sending email notification: %v, with id: %v to user: %v, email: %v", notif.Subject, notif.Id, user.Info.Id, user.Info.Email)
 	awsutil.SESSendEmail(user.Info.Email, "UTF-8", text, html, notif.Subject, "info@mail.pixlise.org", []string{}, []string{})
 }
 

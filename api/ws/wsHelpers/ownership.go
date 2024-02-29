@@ -287,7 +287,7 @@ func GetUserIdsForGroup(groupIds []string, mongoDB *mongo.Database) ([]string, e
 		return []string{}, err
 	}
 
-	groups := []*protos.UserGroup{}
+	groups := []*protos.UserGroupDB{}
 	err = cursor.All(context.TODO(), &groups)
 	if err != nil {
 		return []string{}, err
@@ -296,20 +296,20 @@ func GetUserIdsForGroup(groupIds []string, mongoDB *mongo.Database) ([]string, e
 	userIds := []string{}
 	for _, group := range groups {
 		// Pull in the users
-		for _, user := range group.Viewers.Users {
-			userIds = append(userIds, user.Id)
+		for _, userId := range group.Viewers.UserIds {
+			userIds = append(userIds, userId)
 		}
-		for _, user := range group.Members.Users {
-			userIds = append(userIds, user.Id)
+		for _, userId := range group.Members.UserIds {
+			userIds = append(userIds, userId)
 		}
 
 		// Recurse into groups
 		groupIds := []string{}
-		for _, group := range group.Viewers.Groups {
-			groupIds = append(groupIds, group.Id)
+		for _, groupId := range group.Viewers.GroupIds {
+			groupIds = append(groupIds, groupId)
 		}
-		for _, group := range group.Members.Groups {
-			groupIds = append(groupIds, group.Id)
+		for _, groupId := range group.Members.GroupIds {
+			groupIds = append(groupIds, groupId)
 		}
 
 		usersForGroup, err := GetUserIdsForGroup(groupIds, mongoDB)
