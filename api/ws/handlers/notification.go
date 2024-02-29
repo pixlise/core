@@ -103,6 +103,7 @@ func HandleSendUserNotificationReq(req *protos.SendUserNotificationReq, hctx wsH
 			req.Notification.Contents,
 			notificationType,
 			req.Notification.ActionLink,
+			"",
 			req.UserIds,
 			hctx.SessUser.User.Name,
 		)

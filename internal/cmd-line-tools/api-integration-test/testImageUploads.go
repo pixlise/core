@@ -22,12 +22,27 @@ import (
 	"fmt"
 	"image"
 
+	"github.com/pixlise/core/v4/api/notificationSender"
 	"github.com/pixlise/core/v4/core/wstestlib"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func testImageUpload(apiHost string) {
+func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	scanId := seedDBScanData(scan_Naltsos)
+	seedDBUserNotifications(map[string]*protos.UserNotificationSettings{
+		userId1: {
+			TopicSettings: map[string]protos.NotificationMethod{
+				notificationSender.NOTIF_TOPIC_SCAN_NEW:  protos.NotificationMethod_NOTIF_BOTH,
+				notificationSender.NOTIF_TOPIC_IMAGE_NEW: protos.NotificationMethod_NOTIF_BOTH,
+			},
+		},
+		userId2: {
+			TopicSettings: map[string]protos.NotificationMethod{
+				notificationSender.NOTIF_TOPIC_SCAN_NEW:  protos.NotificationMethod_NOTIF_BOTH,
+				notificationSender.NOTIF_TOPIC_IMAGE_NEW: protos.NotificationMethod_NOTIF_BOTH,
+			},
+		},
+	})
 
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
 	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
@@ -202,6 +217,7 @@ func testImageUpload(apiHost string) {
 
 	u1.CloseActionGroup([]string{`{"notificationUpd": {
         "notification": {
+			"id": "${IGNORE}",
 			"notificationType": "NT_USER_MESSAGE",
             "subject": "New image added to scan: 048300551",
             "contents": "A new image named file_Name.png was added to scan: 048300551 (id: 048300551)",
@@ -212,6 +228,7 @@ func testImageUpload(apiHost string) {
     }}`,
 		`{"notificationUpd": {
         "notification": {
+			"id": "${IGNORE}",
 			"notificationType": "NT_USER_MESSAGE",
             "subject": "New image added to scan: 048300551",
             "contents": "A new image named another.png was added to scan: 048300551 (id: 048300551)",
@@ -434,6 +451,7 @@ func testImageMatchTransform(apiHost string) {
 		`{
 			"notificationUpd": {
 				"notification": {
+					"id": "${IGNORE}",
 					"notificationType": "NT_USER_MESSAGE",
 					"subject": "New image added to scan: 048300551",
 					"contents": "A new image named file_Name.png was added to scan: 048300551 (id: 048300551)",
@@ -521,6 +539,7 @@ func testImageMatchTransform(apiHost string) {
 		`{
 			"notificationUpd": {
 				"notification": {
+					"id": "${IGNORE}",
 					"notificationType": "NT_USER_MESSAGE",
 					"subject": "New image added to scan: 048300551",
 					"contents": "A new image named file_Name.png was added to scan: 048300551 (id: 048300551)",

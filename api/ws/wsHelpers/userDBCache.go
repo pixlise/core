@@ -23,6 +23,12 @@ func GetDBUser(userId string, db *mongo.Database) (*protos.UserDBItem, error) {
 		return nil, err
 	}
 
+	if userDBItem.NotificationSettings == nil {
+		userDBItem.NotificationSettings = &protos.UserNotificationSettings{
+			TopicSettings: map[string]protos.NotificationMethod{},
+		}
+	}
+
 	return &userDBItem, nil
 }
 

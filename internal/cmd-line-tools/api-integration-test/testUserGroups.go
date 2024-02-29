@@ -1660,6 +1660,7 @@ func testJoinRequestNotificationLive(apiHost string) {
 		fmt.Sprintf(`{
 		"notificationUpd": {
 			"notification": {
+				"id": "${IDSAVE=joinNotification6}",
 				"notificationType": "NT_JOIN_GROUP_REQUEST",
 				"subject": "${REGEXMATCH=.+has requested to join group M2020 Science}",
 				"contents": "${REGEXMATCH=You are being sent this because you are an administrator of PIXLISE user group M2020 Science.+}",
@@ -1672,14 +1673,20 @@ func testJoinRequestNotificationLive(apiHost string) {
 	}`, u1.GetUserId())}, userGroupWaitTime)
 	wstestlib.ExecQueuedActions(&u2)
 
-	u2.AddSendReqAction("Request to join created group 4 id",
+	u2.AddSendReqAction("Ignore join group request 6",
 		`{"userGroupIgnoreJoinReq":{"groupId": "${IDLOAD=createdGroupId6}", "requestId": "${IDLOAD=createdJoinReqId6}"}}`,
 		`{"msgId":5,"status":"WS_OK","userGroupIgnoreJoinResp":{}}`,
 	)
 
+	// Also dismiss the notification - for now this is manual, we may automate this in future
+	u2.AddSendReqAction("Dismiss notification",
+		`{"notificationDismissReq":{"id": "${IDLOAD=joinNotification6}"}}`,
+		`{"msgId":6,"status": "WS_OK","notificationDismissResp":{}}`,
+	)
+
 	u2.AddSendReqAction("Ensure admin has no join requests",
 		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId6}"}}`,
-		`{"msgId":6,
+		`{"msgId":7,
 			"status":"WS_OK",
 			"userGroupJoinListResp":{}}`,
 	)
@@ -1742,7 +1749,20 @@ func testJoinRequestNotificationAfterConnect(apiHost string) {
 	// Request notifications, which should deliver the notification from DB
 	u2.AddSendReqAction("Subscribe to notifications for u2",
 		`{"notificationReq":{}}`,
-		`{"msgId":2,"status":"WS_OK","notificationResp":{}}`,
+		`{"msgId":2,"status":"WS_OK","notificationResp":{
+			"notification": [
+				{
+					"id": "${IGNORE}",
+					"destUserId": "${USERID}",
+					"subject": "${REGEXMATCH=.+has requested to join group M2020 Engineers}",
+					"contents": "${REGEXMATCH=You are being sent this because you are an administrator of PIXLISE user group M2020 Engineers.+}",
+					"from": "PIXLISE API",
+					"timeStampUnixSec": "${SECAGO=5}",
+					"actionLink": "/user-group/join-requests",
+					"notificationType": "NT_JOIN_GROUP_REQUEST"
+				}
+			]
+		}}`,
 	)
 
 	u2.AddSendReqAction("Request to join created group 5 id",

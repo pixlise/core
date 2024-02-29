@@ -9,6 +9,8 @@ import (
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/core/wstestlib"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func testScanData(apiHost string, groupDepth int) {
@@ -139,6 +141,44 @@ func seedDBScanData(scan *protos.ScanItem) string {
 	}
 
 	return scan.Id
+}
+
+func seedDBUserNotifications(userSettings map[string]*protos.UserNotificationSettings) {
+	db := wstestlib.GetDB()
+	coll := db.Collection(dbCollections.UsersName)
+	ctx := context.TODO()
+
+	cursor, err := coll.Find(ctx, bson.D{}, options.Find())
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	users := []*protos.UserDBItem{}
+	err = cursor.All(ctx, &users)
+	if err != nil {
+		return
+	}
+
+	usersToSave := []interface{}{}
+	for _, user := range users {
+		if setting := userSettings[user.Id]; setting != nil {
+			user.NotificationSettings = setting
+		}
+
+		usersToSave = append(usersToSave, user)
+	}
+
+	// Clear the table
+	err = coll.Drop(ctx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// Write the new ones out
+	_, err = coll.InsertMany(ctx, usersToSave)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func seedImages() {

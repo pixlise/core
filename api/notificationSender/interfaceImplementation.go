@@ -160,14 +160,15 @@ func (n *NotificationSender) NotifyUserGroupMessage(subject string, message stri
 	n.sendNotification(subject, "", notifMsg, userIds)
 }
 
-func (n *NotificationSender) NotifyUserMessage(subject string, message string, notificationType protos.NotificationType, actionLink string, destUserIds []string, sender string) {
+func (n *NotificationSender) NotifyUserMessage(subject string, message string, notificationType protos.NotificationType, actionLink string, requestorUserId string, destUserIds []string, sender string) {
 	notifMsg := &protos.NotificationUpd{
 		Notification: &protos.Notification{
-			NotificationType: protos.NotificationType_NT_USER_MESSAGE,
+			NotificationType: notificationType,
 			Subject:          subject,
 			Contents:         fmt.Sprintf("%v\nThis message was sent by %v", message, sender),
 			From:             sender,
-			ActionLink:       "",
+			ActionLink:       actionLink,
+			RequestorUserId:  requestorUserId,
 		},
 	}
 
