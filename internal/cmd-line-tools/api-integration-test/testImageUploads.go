@@ -149,6 +149,20 @@ func testImageUpload(apiHost string) {
 		}`,
 	)
 
+	// Upload another so we can switch default images
+	u1.AddSendReqAction("Upload OK",
+		fmt.Sprintf(`{"imageUploadReq":{
+			"name": "another.png",
+			"imageData": "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAIAAAACDbGyAAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw1AUhU/TiqIVEQuKOGSoTnZREcdSxSJYKG2FVh1MXvoHTRqSFBdHwbXg4M9i1cHFWVcHV0EQ/AFxdXFSdJES70sKLWJ8cHkf571zuO8+QGhUmGoGooCqWUYqHhOzuVWx+xV9GEaAalBipp5IL2bgub7u4eP7XYRned/7c/UreZMBPpE4ynTDIt4gnt20dM77xCFWkhTic+JJgxokfuS67PIb56LDAs8MGZnUPHGIWCx2sNzBrGSoxDPEYUXVKF/Iuqxw3uKsVmqs1Sd/YTCvraS5TjWGOJaQQBIiZNRQRgUWIrRrpJhI0XnMwz/q+JPkkslVBiPHAqpQITl+8D/4PVuzMD3lJgVjQNeLbX+MA927QLNu29/Htt08AfzPwJXW9lcbwNwn6fW2Fj4CBraBi+u2Ju8BlzvAyJMuGZIj+amEQgF4P6NvygFDt0Dvmju31jlOH4AMzWr5Bjg4BCaKlL3u8e6ezrn9e6c1vx9+a3KrJcLc2QAAAAlwSFlzAAAuIwAALiMBeKU/dgAAAAd0SU1FB+cLFwQYLiRP4ucAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAPklEQVQI1zXLsQ0AMQzDQGYZ1YGnNZDCy2QXewt9ETy7K7hsA8DM3Huxbbu7M1MSD+ccSQAPe+93UVURwd8HumEiarSzGIIAAAAASUVORK5CYII=",
+			"originScanId": "%v"
+		}}`, scanId),
+		`{
+			"msgId": 9,
+			"status": "WS_OK",
+			"imageUploadResp": {}
+		}`,
+	)
+
 	// Duplicate upload should fail
 	u1.AddSendReqAction("Duplicate upload should fail",
 		fmt.Sprintf(`{"imageUploadReq":{
@@ -157,21 +171,20 @@ func testImageUpload(apiHost string) {
 			"originScanId": "%v"
 		}}`, scanId),
 		`{
-			"msgId": 9,
+			"msgId": 10,
 			"status": "WS_BAD_REQUEST",
-			"errorText": "048300551-file_Name.png already exists",
+			"errorText": "048300551/file_Name.png already exists",
 			"imageUploadResp": {}
 		}`,
 	)
 
 	// Get the image
 	u1.AddSendReqAction("Get uploaded image",
-		`{"imageGetReq":{"imageName": "048300551-file_Name.png"}}`,
-		fmt.Sprintf(`{"msgId": 10,
+		`{"imageGetReq":{"imageName": "048300551/file_Name.png"}}`,
+		fmt.Sprintf(`{"msgId": 11,
 		"status": "WS_OK",
 		"imageGetResp":{
 			"image": {
-				"name": "048300551-file_Name.png",
 				"source": "SI_UPLOAD",
 				"width": 5,
 				"height": 5,
@@ -181,17 +194,54 @@ func testImageUpload(apiHost string) {
 					"%v"
 				],
 				"originScanId": "%v",
-				"path": "%v/048300551-file_Name.png"
+				"imagePath": "%v/file_Name.png"
 			}
 		}
 	}`, scanId, scanId, scanId),
 	)
 
-	u1.CloseActionGroup([]string{}, 5000)
+	u1.CloseActionGroup([]string{`{"notificationUpd": {
+        "notification": {
+			"notificationType": "NT_USER_MESSAGE",
+            "subject": "New image added to scan: 048300551",
+            "contents": "A new image named file_Name.png was added to scan: 048300551 (id: 048300551)",
+            "from": "Data Importer",
+			"timeStampUnixSec": "${SECAGO=10}",
+            "actionLink": "?q=048300551&image=048300551/file_Name.png"
+        }
+    }}`,
+		`{"notificationUpd": {
+        "notification": {
+			"notificationType": "NT_USER_MESSAGE",
+            "subject": "New image added to scan: 048300551",
+            "contents": "A new image named another.png was added to scan: 048300551 (id: 048300551)",
+            "from": "Data Importer",
+			"timeStampUnixSec": "${SECAGO=10}",
+            "actionLink": "?q=048300551&image=048300551/another.png"
+        }
+    }}`,
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`,
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`}, 10000)
 	wstestlib.ExecQueuedActions(&u1)
 
 	// Download image data
-	status, body, err := doGet("http", apiHost, fmt.Sprintf("images/download/%v/048300551-file_Name.png", scanId), "", imageGetJWT)
+	status, body, err := doGet("http", apiHost, fmt.Sprintf("images/download/%v/file_Name.png", scanId), "", imageGetJWT)
 	failIf(err != nil, err)
 	img, format, err := image.Decode(bytes.NewReader(body))
 	var imgW, imgH int
@@ -204,7 +254,7 @@ func testImageUpload(apiHost string) {
 	)
 
 	// Download a scaled version (forcing generation of cached scaled image)
-	status, body, err = doGet("http", apiHost, fmt.Sprintf("images/download/%v/048300551-file_Name.png", scanId), "minwidth=2", imageGetJWT)
+	status, body, err = doGet("http", apiHost, fmt.Sprintf("images/download/%v/file_Name.png", scanId), "minwidth=2", imageGetJWT)
 	failIf(err != nil, err)
 	img, format, err = image.Decode(bytes.NewReader(body))
 	if img != nil {
@@ -217,22 +267,43 @@ func testImageUpload(apiHost string) {
 
 	// Set it as default image
 	u1.AddSendReqAction("set default image",
-		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "048300551/048300551-file_Name.png"}}`,
-		`{"msgId":11,
+		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "048300551/file_Name.png"}}`,
+		`{"msgId":12,
 			"status": "WS_OK",
 			"imageSetDefaultResp": {}
 		}`,
 	)
 
+	u1.AddSendReqAction("set non-existant default image (should fail)",
+		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "048300551/doesnt-exist.png"}}`,
+		`{"msgId":13,
+			"status": "WS_NOT_FOUND",
+			"errorText": "048300551/doesnt-exist.png not found",
+			"imageSetDefaultResp": {}
+		}`,
+	)
+
+	u1.CloseActionGroup([]string{
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
+
 	// Try to delete
 	u1.AddSendReqAction("Delete uploaded image, should fail because it's default",
 		`{"imageDeleteReq":{
-		"name": "048300551-file_Name.png"
+		"name": "048300551/file_Name.png"
 	}}`,
 		`{
-		"msgId": 12,
+		"msgId": 14,
 		"status": "WS_BAD_REQUEST",
-		"errorText": "Cannot delete image: \"048300551-file_Name.png\" because it is the default image for scans: [048300551]",
+		"errorText": "Cannot delete image: \"048300551/file_Name.png\" because it is the default image for scans: [048300551]",
 		"imageDeleteResp": {}
 	}`,
 	)
@@ -240,7 +311,7 @@ func testImageUpload(apiHost string) {
 	// Unset default image
 	u1.AddSendReqAction("set default image",
 		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "048300551/another.png"}}`,
-		`{"msgId":13,
+		`{"msgId":15,
 		"status": "WS_OK",
 		"imageSetDefaultResp": {}
 	}`,
@@ -249,15 +320,33 @@ func testImageUpload(apiHost string) {
 	// Delete uploaded image
 	u1.AddSendReqAction("Delete uploaded image",
 		`{"imageDeleteReq":{
-			"name": "048300551-file_Name.png"
+			"name": "048300551/file_Name.png"
 		}}`,
 		`{
-			"msgId": 14,
+			"msgId": 16,
 			"status": "WS_OK",
 			"imageDeleteResp": {}
 		}`,
 	)
-	u1.CloseActionGroup([]string{}, 5000)
+	u1.CloseActionGroup([]string{
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`,
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 }
 
@@ -276,7 +365,7 @@ func testImageMatchTransform(apiHost string) {
 
 	u1.AddSendReqAction("SetImageMatchTransform - should fail, missing transform",
 		`{"imageSetMatchTransformReq":{
-			"imageName": "file_Name.png"
+			"imageName": "048300551/file_Name.png"
 		}}`,
 		`{
 			"msgId": 1,
@@ -288,7 +377,7 @@ func testImageMatchTransform(apiHost string) {
 
 	u1.AddSendReqAction("SetImageMatchTransform - should fail, bad transform",
 		`{"imageSetMatchTransformReq":{
-			"imageName": "file_Name.png",
+			"imageName": "048300551/file_Name.png",
 			"transform": {
 				"beamImageFileName": "beamImage.png",
 				"xOffset": -1,
@@ -307,7 +396,7 @@ func testImageMatchTransform(apiHost string) {
 
 	u1.AddSendReqAction("SetImageMatchTransform - should fail, bad image",
 		`{"imageSetMatchTransformReq":{
-			"imageName": "048300551-file_Name.png",
+			"imageName": "048300551/file_Name.png",
 			"transform": {
 				"beamImageFileName": "beamImage.png",
 				"xOffset": -1,
@@ -318,7 +407,7 @@ func testImageMatchTransform(apiHost string) {
 		`{
 			"msgId": 3,
 			"status": "WS_NOT_FOUND",
-			"errorText": "048300551-file_Name.png not found",
+			"errorText": "048300551/file_Name.png not found",
 			"imageSetMatchTransformResp": {}
 		}`,
 	)
@@ -341,9 +430,33 @@ func testImageMatchTransform(apiHost string) {
 		}`,
 	)
 
+	u1.CloseActionGroup([]string{
+		`{
+			"notificationUpd": {
+				"notification": {
+					"notificationType": "NT_USER_MESSAGE",
+					"subject": "New image added to scan: 048300551",
+					"contents": "A new image named file_Name.png was added to scan: 048300551 (id: 048300551)",
+					"from": "Data Importer",
+					"timeStampUnixSec": "${SECAGO=10}",
+					"actionLink": "?q=048300551&image=048300551/file_Name.png"
+				}
+			}
+		}`,
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`}, 10000)
+	wstestlib.ExecQueuedActions(&u1)
+
 	u1.AddSendReqAction("SetImageMatchTransform - should succeed",
 		`{"imageSetMatchTransformReq":{
-			"imageName": "048300551-file_Name.png",
+			"imageName": "048300551/file_Name.png",
 			"transform": {
 				"beamImageFileName": "beamImage.png",
 				"xOffset": -1,
@@ -354,7 +467,7 @@ func testImageMatchTransform(apiHost string) {
 		`{
 			"msgId": 5,
 			"status": "WS_SERVER_ERROR",
-			"errorText": "Failed edit transform for image 048300551-file_Name.png - it is not a matched image",
+			"errorText": "Failed edit transform for image 048300551/file_Name.png - it is not a matched image",
 			"imageSetMatchTransformResp": {}
 		}`,
 	)
@@ -362,7 +475,7 @@ func testImageMatchTransform(apiHost string) {
 	// Delete image
 	u1.AddSendReqAction("Delete uploaded image",
 		`{"imageDeleteReq":{
-			"name": "048300551-file_Name.png"
+			"name": "048300551/file_Name.png"
 		}}`,
 		`{
 			"msgId": 6,
@@ -370,6 +483,18 @@ func testImageMatchTransform(apiHost string) {
 			"imageDeleteResp": {}
 		}`,
 	)
+
+	u1.CloseActionGroup([]string{
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`}, 10000)
+	wstestlib.ExecQueuedActions(&u1)
 
 	// Re-upload as matched image
 	u1.AddSendReqAction("Upload Matched OK",
@@ -392,10 +517,34 @@ func testImageMatchTransform(apiHost string) {
 		}`,
 	)
 
+	u1.CloseActionGroup([]string{
+		`{
+			"notificationUpd": {
+				"notification": {
+					"notificationType": "NT_USER_MESSAGE",
+					"subject": "New image added to scan: 048300551",
+					"contents": "A new image named file_Name.png was added to scan: 048300551 (id: 048300551)",
+					"from": "Data Importer",
+					"timeStampUnixSec": "${SECAGO=10}",
+					"actionLink": "?q=048300551&image=048300551/file_Name.png"
+				}
+			}
+		}`,
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`}, 10000)
+	wstestlib.ExecQueuedActions(&u1)
+
 	// Set transform again
 	u1.AddSendReqAction("SetImageMatchTransform - should succeed",
 		`{"imageSetMatchTransformReq":{
-			"imageName": "048300551-file_Name.png",
+			"imageName": "048300551/file_Name.png",
 			"transform": {
 				"beamImageFileName": "beamImage.png",
 				"xOffset": -1,
@@ -412,7 +561,7 @@ func testImageMatchTransform(apiHost string) {
 
 	u1.AddSendReqAction("SetImageMatchTransform - overwrite should succeed",
 		`{"imageSetMatchTransformReq":{
-			"imageName": "048300551-file_Name.png",
+			"imageName": "048300551/file_Name.png",
 			"transform": {
 				"beamImageFileName": "beamImage.png",
 				"xOffset": -1,
@@ -430,14 +579,14 @@ func testImageMatchTransform(apiHost string) {
 
 	u1.AddSendReqAction("ImageGetReq - should succeed",
 		`{"imageGetReq":{
-			"imageName": "048300551-file_Name.png"
+			"imageName": "048300551/file_Name.png"
 		}}`,
 		`{
 			"msgId": 10,
 			"status": "WS_OK",
 			"imageGetResp": {
 				"image": {
-					"name": "048300551-file_Name.png",
+					"imagePath": "048300551/file_Name.png",
 					"source": "SI_UPLOAD",
 					"width": 5,
 					"height": 5,
@@ -447,7 +596,6 @@ func testImageMatchTransform(apiHost string) {
 						"048300551"
 					],
 					"originScanId": "048300551",
-					"path": "048300551/048300551-file_Name.png",
 					"matchInfo": {
 						"beamImageFileName": "match_image.png",
 						"xOffset": -1,

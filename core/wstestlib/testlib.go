@@ -261,6 +261,11 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 		}
 		msgStr := string(b)
 
+		if len(group.expectedMessages) <= 0 {
+			// If we've run out of expected messages in the mean time...
+			return fmt.Errorf("Received unexpected message: %v\n", msgStr)
+		}
+
 		var matched bool
 		var prettyReceivedMsgStr string
 		var idMatched bool
@@ -274,7 +279,7 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 				// If ids were matched, we know not to scan any further
 				if idMatched {
 					matched = true
-					fmt.Printf("%v\n", err)
+					fmt.Printf("idMatched with error: %v\n", err)
 					break
 				} else {
 					matchErrors = append(matchErrors, err)
@@ -298,7 +303,7 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 
 	// Should have none left
 	if len(group.expectedMessages) > 0 {
-		return fmt.Errorf("Failed to find match for %v expected messages", len(group.expectedMessages))
+		return fmt.Errorf("Failed to find match for %v expected messages:\n%v", len(group.expectedMessages), strings.Join(group.expectedMessages, "\n"))
 	}
 
 	return nil

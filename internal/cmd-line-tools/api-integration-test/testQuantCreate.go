@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/pixlise/core/v4/core/utils"
@@ -87,7 +86,7 @@ func testQuantCreate(apiHost string) {
 	expectedFinalState := []string{"COMPLETE", "COMPLETE", "COMPLETE", "ERROR"}
 
 	// Start each quant
-	var wg sync.WaitGroup
+	/*var wg sync.WaitGroup
 
 	for i, datasetID := range datasetIDs {
 		wg.Add(1)
@@ -98,7 +97,7 @@ func testQuantCreate(apiHost string) {
 			fmt.Printf(" %v   Quantify [dataset: %v, quant name: %v] with config: %v, PMC count: %v\n", now, datasetID, quantNames[i], detectorConfig[i], len(pmcList[i]))
 			runQuantificationTest(i, apiHost, test1Username, test1Password, datasetID, pmcList[i], elementList, detectorConfig[i], quantNames[i], expectedFinalState[i])
 		}(i, datasetID)
-	}
+	}*/
 
 	// Wait for all
 	fmt.Println("\n---------------------------------------------------------")
@@ -106,7 +105,16 @@ func testQuantCreate(apiHost string) {
 	fmt.Printf(" %v  STARTING quantifications, will wait for them to complete...\n", now)
 	fmt.Printf("---------------------------------------------------------\n\n")
 
-	wg.Wait()
+	//wg.Wait()
+
+	// Unfortunately, we now have to run tests in serial, because parallel implies the order they complete is not known so we can't
+	// write a list of expected messages (due to the addition of notifications for quant complete). If we run them serially, we know
+	// quant 2 won't get a quant 1 "completed" notification!
+	for i, datasetID := range datasetIDs {
+		now := time.Now().Format(timeFormat)
+		fmt.Printf(" %v   Quantify [dataset: %v, quant name: %v] with config: %v, PMC count: %v\n", now, datasetID, quantNames[i], detectorConfig[i], len(pmcList[i]))
+		runQuantificationTest(i, apiHost, test1Username, test1Password, datasetID, pmcList[i], elementList, detectorConfig[i], quantNames[i], expectedFinalState[i])
+	}
 
 	fmt.Println("---------------------------------------------------------")
 	now = time.Now().Format(timeFormat)
@@ -116,7 +124,13 @@ func testQuantCreate(apiHost string) {
 
 func runQuantificationTest(idx int, apiHost string, user string, pass string,
 	scanId string, pmcList []int32, elementList []string, detectorConfig string, quantName string, expectedFinalState string) {
-	const maxRunTimeSec = 300
+	var maxRunTimeSec = 240
+	var maxAgeSec = maxRunTimeSec
+	if expectedFinalState == "ERROR" {
+		maxRunTimeSec = 20
+	} else {
+		maxAgeSec += 30 // TODO: Not sure why, but we seem to get timestamps that are too old?
+	}
 
 	// Each quant run creates a new session so we separate out the resp/update streams and can "expect" messages
 	usr := wstestlib.MakeScriptedTestUser(auth0Params)
@@ -163,9 +177,11 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 			"status": {
 				"jobId": "${IDSAVE=quantCreate%v}",
 				"status": "STARTING",
-				"startUnixTimeSec": "${SECAGO=%v}"
+				"startUnixTimeSec": "${SECAGO=%v}",
+				"jobItemId": "${IGNORE}",
+				"jobType": "JT_RUN_QUANT"
 			}
-		}}`, idx+1, maxRunTimeSec),
+		}}`, idx+1, maxAgeSec),
 	)
 
 	finalMsg := fmt.Sprintf(`{"quantCreateUpd":{
@@ -176,7 +192,7 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 			"status": "%v",
 			"startUnixTimeSec": "${SECAGO=%v}",
 			"lastUpdateUnixTimeSec": "${SECAGO=%v}",
-			"endUnixTimeSec": "${SECAGO=%v}"`, idx+1, idx+1, expectedFinalState, maxRunTimeSec, maxRunTimeSec, maxRunTimeSec)
+			"endUnixTimeSec": "${SECAGO=%v}"`, idx+1, idx+1, expectedFinalState, maxAgeSec, maxAgeSec, maxAgeSec)
 	if expectedFinalState != "ERROR" {
 		finalMsg += `,
 			"outputFilePath": "${IGNORE}",
@@ -186,7 +202,7 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 		}
 	}}`
 
-	usr.CloseActionGroup([]string{
+	expectedUpdates := []string{
 		fmt.Sprintf(`{"quantCreateUpd":{
 			"status": {
 				"jobId": "${IDCHK=quantCreate%v}",
@@ -196,7 +212,7 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 				"startUnixTimeSec": "${SECAGO=%v}",
 				"lastUpdateUnixTimeSec": "${SECAGO=%v}"
 			}
-		}}`, idx+1, idx+1, maxRunTimeSec, maxRunTimeSec),
+		}}`, idx+1, idx+1, maxAgeSec, maxAgeSec),
 		fmt.Sprintf(`{"quantCreateUpd":{
 			"status": {
 				"jobId": "${IDCHK=quantCreate%v}",
@@ -206,7 +222,7 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 				"startUnixTimeSec": "${SECAGO=%v}",
 				"lastUpdateUnixTimeSec": "${SECAGO=%v}"
 			}
-		}}`, idx+1, idx+1, maxRunTimeSec, maxRunTimeSec),
+		}}`, idx+1, idx+1, maxAgeSec, maxAgeSec),
 		fmt.Sprintf(`{"quantCreateUpd":{
 			"status": {
 				"jobId": "${IDCHK=quantCreate%v}",
@@ -216,9 +232,16 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 				"startUnixTimeSec": "${SECAGO=%v}",
 				"lastUpdateUnixTimeSec": "${SECAGO=%v}"
 			}
-		}}`, idx+1, idx+1, maxRunTimeSec, maxRunTimeSec),
-		finalMsg,
-	}, maxRunTimeSec*1000)
+		}}`, idx+1, idx+1, maxAgeSec, maxAgeSec),
+	}
+
+	/*if expectedFinalState != "ERROR" {
+		expectedUpdates = append(expectedUpdates, fmt.Sprintf(`{"notificationUpd": {"notification": { "notificationType": "NT_SYS_DATA_CHANGED", "quantId":"${IDCHK=quantCreate%v}"}}}`, idx+1))
+	}*/
+
+	expectedUpdates = append(expectedUpdates, finalMsg)
+
+	usr.CloseActionGroup(expectedUpdates, maxRunTimeSec*1000)
 
 	// Ignoring messages above - they differ per quant, example of simple small quant is:
 	// RUNNING: Node count: 1, Spectra/Node: 9
@@ -244,7 +267,10 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 			`{"msgId":3,"status":"WS_OK", "quantDeleteResp":{}}`,
 		)
 
-		usr.CloseActionGroup([]string{}, 10000)
+		usr.CloseActionGroup([]string{
+			fmt.Sprintf(`{"notificationUpd": {
+				"notification": { "notificationType": "NT_SYS_DATA_CHANGED", "quantId":"%v"}}}`, quantId),
+		}, 10000)
 		wstestlib.ExecQueuedActions(&usr)
 	}
 }

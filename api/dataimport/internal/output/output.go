@@ -323,7 +323,7 @@ func (s *PIXLISEDataSaver) Save(
 		if beamVer < 1 {
 			beamVer = 1
 		}
-		err := beamLocation.ImportBeamLocationToDB(imgItem.Image, data.DatasetID, beamVer, idx, &exp, db, jobLog)
+		err := beamLocation.ImportBeamLocationToDB(imgItem.Image, data.Instrument, data.DatasetID, beamVer, idx, &exp, db, jobLog)
 		if err != nil {
 			return fmt.Errorf("Failed to import beam locations for image %v into DB. Error: %v", imgItem.Image, err)
 		}
@@ -657,7 +657,7 @@ func insertImageDBEntryForImage(
 	saveName := filepath.Base(imagePath)
 	savePath := path.Join(originScanId, saveName)
 
-	img := utils.MakeScanImage(saveName, savePath, uint32(stats.Size()), source, purpose, associatedScanIds, originScanId, originImageURL, matchInfo, imgFile)
+	img := utils.MakeScanImage(savePath, uint32(stats.Size()), source, purpose, associatedScanIds, originScanId, originImageURL, matchInfo, imgFile)
 	return insertImageDBEntry(db, img, jobLog)
 }
 
@@ -678,8 +678,8 @@ func insertImageDBEntry(db *mongo.Database, image *protos.ScanImage, jobLog logg
 		return err
 	}
 
-	if result.InsertedID != image.Name {
-		jobLog.Errorf("insertImageDBEntry wrote id %v, got back %v", image.Name, result.InsertedID)
+	if result.InsertedID != image.ImagePath {
+		jobLog.Errorf("insertImageDBEntry wrote id %v, got back %v", image.ImagePath, result.InsertedID)
 		// Not the end of the world... don't error out here
 	}
 

@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func ImportBeamLocationToDB(imgName string, forScanId string, beamVersion uint32, ijIndex int, fromExprPB *protos.Experiment, db *mongo.Database, logger logger.ILogger) error {
+func ImportBeamLocationToDB(imgName string, instrument protos.ScanInstrument, forScanId string, beamVersion uint32, ijIndex int, fromExprPB *protos.Experiment, db *mongo.Database, logger logger.ILogger) error {
 	imagesColl := db.Collection(dbCollections.ImageBeamLocationsName)
 
 	beams := &protos.ImageLocations{
@@ -41,6 +41,7 @@ func ImportBeamLocationToDB(imgName string, forScanId string, beamVersion uint32
 
 	beams.LocationPerScan = append(beams.LocationPerScan, &protos.ImageLocationsForScan{
 		ScanId:      forScanId,
+		Instrument:  instrument,
 		BeamVersion: beamVersion,
 		Locations:   ijs,
 	})

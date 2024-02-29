@@ -1,34 +1,130 @@
 package notificationSender
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/singleinstance"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"google.golang.org/protobuf/proto"
 )
 
-func (n *NotificationSender) sendNotificationToObjectUsers(notifMsg *protos.UserNotificationUpd, objectId string) {
+// NOTE: This must be in sync with the client! It saves user notification settings with topic strings
+//
+//	and these have to match what the UI is setting for the topic field or the user setting lookup
+//	will fail and we won't send out that notification
+//
+// At time of writing, these are defined in:
+//
+//	pixlise-ui\client\src\app\modules\settings\models\notification.model.ts
+var NOTIF_TOPIC_SCAN_NEW = "New Dataset Available"
+var NOTIF_TOPIC_SCAN_UPDATED = "Dataset Updated"
+var NOTIF_TOPIC_QUANT_COMPLETE = "Qunatification Complete"
+var NOTIF_TOPIC_IMAGE_NEW = "New Image For Dataset"
+var NOTIF_TOPIC_OBJECT_SHARED = "Object Shared"
+
+func (n *NotificationSender) sendSysNotification(sysNotification *protos.NotificationUpd) {
+	wsSysNotify := protos.WSMessage{
+		Contents: &protos.WSMessage_NotificationUpd{
+			NotificationUpd: sysNotification,
+		},
+	}
+
+	bytes, err := proto.Marshal(&wsSysNotify)
+	if err == nil {
+		n.melody.BroadcastBinary(bytes)
+	}
+
+	/* For reference, we also had another implementation using broadcasting with filters:
+
+	callback := func(sess *melody.Session) bool {
+		usr, err := GetSessionUser(sess)
+		if err != nil {
+			hctx.Svcs.Log.Errorf("Failed to determine session user id when broadcasting: %v", sess)
+			return false // not sending here
+		}
+
+		if we need to send {
+			return true
+		}
+
+		// User is not in the list of save vs send, so don't send
+		return false
+	}
+
+	err = hctx.Melody.BroadcastBinaryFilter(bytes, callback)
+	*/
+}
+
+func (n *NotificationSender) sendNotificationToObjectUsers(topic string, notifMsg *protos.NotificationUpd, objectId string) {
 	userIds, err := wsHelpers.FindUserIdsFor(objectId, n.db)
 	if err != nil {
 		n.log.Errorf("Failed to get user ids for object: %v. Error: %v", objectId, err)
 		return
 	}
 
-	n.sendNotification(objectId, notifMsg, userIds)
+	n.sendNotification(objectId, topic, notifMsg, userIds)
 }
 
 // SourceId must be an id that is unique across API instances so we can decide on one instance to send emails from!
-func (n *NotificationSender) sendNotification(sourceId string, notifMsg *protos.UserNotificationUpd, userIds []string) {
-	// Loop through each user, if we have them connected, notify directly, otherwise email
-	sessions, _ := n.ws.GetSessionForUsersIfExists(userIds)
+func (n *NotificationSender) sendNotification(sourceId string, topicId string, notifMsg *protos.NotificationUpd, userIds []string) {
+	// Ensure the notification has a unique ID from here, because we're sending/storing them and may need dismissability
+	if len(notifMsg.Notification.Id) <= 0 {
+		notifMsg.Notification.Id = n.idgen.GenObjectID()
+	}
+
+	// Ensure other fields are set too
+	notifMsg.Notification.TimeStampUnixSec = uint32(n.timestamper.GetTimeNowSec())
+
+	// Retrieve notification settings for each user, save the user IDs in separate lists for UI vs email notifications
+	uiNotificationUsers := []string{}
+	emailNotificationUsers := []string{}
+
+	for _, userId := range userIds {
+		// Write it to DB if needed
+		err := n.saveNotificationToDB(userId, notifMsg.Notification)
+		if err != nil {
+			n.log.Errorf("Failed to save notification to DB for user: %v. Notification was: %+v", userId, notifMsg.Notification)
+		}
+
+		user, err := wsHelpers.GetDBUser(userId, n.db)
+		if err != nil {
+			n.log.Errorf("Failed to retrieve user %v when sending notification. Nothing sent. Error was: %v", userId, err)
+		} else {
+			// Check what kind of notification this user requires. NOTE if the topic is empty, we assume it's UI only
+			if len(topicId) <= 0 {
+				uiNotificationUsers = append(uiNotificationUsers, userId)
+			} else {
+				method := user.NotificationSettings.TopicSettings[topicId]
+
+				if method == protos.NotificationMethod_NOTIF_BOTH || method == protos.NotificationMethod_NOTIF_EMAIL {
+					emailNotificationUsers = append(emailNotificationUsers, userId)
+				}
+
+				if method == protos.NotificationMethod_NOTIF_BOTH || method == protos.NotificationMethod_NOTIF_UI {
+					uiNotificationUsers = append(uiNotificationUsers, userId)
+				}
+
+				if method == protos.NotificationMethod_NOTIF_NONE {
+					n.log.Infof("Skipping notification of topic: %v to user %v because they have this topic turned off", topicId, userId)
+				}
+			}
+		}
+	}
+
+	// Send UI notifications to whoevere is connected
+	// NOTE: This won't work reliably in prod at present because users may be connected to another instance of the API and wouldn't
+	//       receive this. There's a card for building a cross-API notification situation here.
+	sessions, _ := n.ws.GetSessionForUsersIfExists(uiNotificationUsers)
 	for _, session := range sessions {
-		msg := &protos.WSMessage{Contents: &protos.WSMessage_UserNotificationUpd{UserNotificationUpd: notifMsg}}
+		msg := &protos.WSMessage{Contents: &protos.WSMessage_NotificationUpd{NotificationUpd: notifMsg}}
 		wsHelpers.SendForSession(session, msg)
 	}
 
-	// Email the rest, but only from ONE instance of our API!
+	// Send emails, but only from ONE instance of our API!
 	singleinstance.HandleOnce(sourceId, n.instanceId, func(sourceId string) {
 		// NOTE: At this point we have no way to exclude emails for those sessions we have already sent
 		//       web socket notifications to because multiple API instances have done the above job, but
@@ -40,7 +136,7 @@ func (n *NotificationSender) sendNotification(sourceId string, notifMsg *protos.
 	}, n.db, n.timestamper, n.log)
 }
 
-func (n *NotificationSender) sendEmail(notif *protos.UserNotification, userId string) {
+func (n *NotificationSender) sendEmail(notif *protos.Notification, userId string) {
 	// Find the email address
 	user, err := wsHelpers.GetDBUser(userId, n.db)
 	if err != nil {
@@ -80,4 +176,26 @@ func (n *NotificationSender) sendEmail(notif *protos.UserNotification, userId st
 `, notif.Subject, user.Info.Name, notif.Contents, unsub)
 
 	awsutil.SESSendEmail(user.Info.Email, "UTF-8", text, html, notif.Subject, "info@mail.pixlise.org", []string{}, []string{})
+}
+
+func (n *NotificationSender) saveNotificationToDB(destUserId string, notification *protos.Notification) error {
+	// Make a copy which has the user id set
+	toSave := &protos.Notification{
+		DestUserId: destUserId,
+
+		Id:               notification.Id,
+		DestUserGroupId:  notification.DestUserGroupId,
+		MaxSecToExpiry:   notification.MaxSecToExpiry,
+		Subject:          notification.Subject,
+		Contents:         notification.Contents,
+		From:             notification.From,
+		TimeStampUnixSec: notification.TimeStampUnixSec,
+		ActionLink:       notification.ActionLink,
+		NotificationType: notification.NotificationType,
+		ScanIds:          notification.ScanIds,
+		ImageName:        notification.ImageName,
+		QuantId:          notification.QuantId,
+	}
+	_, err := n.db.Collection(dbCollections.NotificationsName).InsertOne(context.TODO(), toSave)
+	return err
 }

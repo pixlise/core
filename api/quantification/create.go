@@ -100,7 +100,9 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, s
 		return nil, err
 	}
 
-	wg.Add(1)
+	if wg != nil {
+		wg.Add(1)
+	}
 
 	// Trigger task to start in a go routine, so we don't block!
 	r := quantNodeRunner{
@@ -126,7 +128,9 @@ type quantNodeRunner struct {
 
 // This should be triggered as a go routine from quant creation endpoint so we can return a job id there quickly and do the processing offline
 func (r *quantNodeRunner) triggerPiquantNodes(wg *sync.WaitGroup) {
-	defer wg.Done()
+	if wg != nil {
+		defer wg.Done()
+	}
 
 	r.isJob = r.quantStartSettings.UserParams.Command == "map"
 

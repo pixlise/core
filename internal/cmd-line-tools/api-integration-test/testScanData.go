@@ -144,7 +144,7 @@ func seedDBScanData(scan *protos.ScanItem) string {
 func seedImages() {
 	imgs := []interface{}{
 		&protos.ScanImage{
-			Name:              "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+			ImagePath:         "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 			Source:            1,
 			Width:             752,
 			Height:            580,
@@ -153,11 +153,10 @@ func seedImages() {
 			AssociatedScanIds: []string{"048300551"},
 			OriginScanId:      "048300551",
 			OriginImageURL:    "",
-			Path:              "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 			//"matchinfo": null
 		},
 		&protos.ScanImage{
-			Name:              "PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
+			ImagePath:         "048300551/PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
 			Source:            1,
 			Width:             752,
 			Height:            580,
@@ -166,7 +165,6 @@ func seedImages() {
 			AssociatedScanIds: []string{"048300551"},
 			OriginScanId:      "048300551",
 			OriginImageURL:    "",
-			Path:              "048300551/PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
 		},
 	}
 
@@ -191,7 +189,7 @@ func seedImages() {
 func seedImageLocations() {
 	locs := []interface{}{
 		&protos.ImageLocations{
-			ImageName: "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+			ImageName: "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 			LocationPerScan: []*protos.ImageLocationsForScan{
 				{
 					ScanId: "048300551",
@@ -321,7 +319,7 @@ func testScanDataBadId(apiHost string, actionMsg string) string {
 		Pass: test1Password,
 	})
 
-	u1.AddSendReqAction(actionMsg+" (not found)",
+	u1.AddSendReqAction("non-existant-scan pseudo (not found)",
 		`{"pseudoIntensityReq":{"scanId": "non-existant-scan", "entries": {"indexes": [100,-1,104]}}}`,
 		`{"msgId":1, "status": "WS_NOT_FOUND",
 			"errorText": "non-existant-scan not found",
@@ -329,7 +327,7 @@ func testScanDataBadId(apiHost string, actionMsg string) string {
 		}`,
 	)
 
-	u1.AddSendReqAction(actionMsg+" (not found)",
+	u1.AddSendReqAction("non-existant-scan spectra (1) (not found)",
 		`{"spectrumReq":{"scanId": "non-existant-scan", "entries": {"indexes": [100,-1,104]}}}`,
 		`{"msgId":2, "status": "WS_NOT_FOUND",
 			"errorText": "non-existant-scan not found",
@@ -337,7 +335,7 @@ func testScanDataBadId(apiHost string, actionMsg string) string {
 		}`,
 	)
 
-	u1.AddSendReqAction(actionMsg+" (not found)",
+	u1.AddSendReqAction("non-existant-scan spectra (2) (not found)",
 		`{"spectrumReq":{"scanId": "non-existant-scan", "bulkSum": true, "maxValue": true}}`,
 		`{"msgId":3, "status": "WS_NOT_FOUND",
 			"errorText": "non-existant-scan not found",
@@ -345,7 +343,7 @@ func testScanDataBadId(apiHost string, actionMsg string) string {
 		}`,
 	)
 
-	u1.AddSendReqAction("scan meta write (not found)",
+	u1.AddSendReqAction("non-existant-scan meta write (not found)",
 		`{"scanMetaWriteReq":{"scanId": "non-existant-scan", "title": "Something", "description": "The blah"}}`,
 		`{"msgId":4,
 			"status": "WS_NOT_FOUND",
@@ -448,10 +446,10 @@ func testScanDataNoPermission(apiHost string) {
 	)
 
 	u1.AddSendReqAction("imageGetReq (expect no permission)",
-		`{"imageGetReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
+		`{"imageGetReq":{"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
 		`{"msgId":9,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "User cannot access scan 048300551 associated with image PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png. Error: View access denied for: 048300551",
+			"errorText": "User cannot access scan 048300551 associated with image 048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png. Error: View access denied for: 048300551",
 			"imageGetResp":{}
 		}`,
 	)
@@ -1371,7 +1369,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 			"imageListResp":{
 				"images": [
 					{
-						"name": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+						"imagePath": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 						"source": "SI_INSTRUMENT",
 						"width": 752,
 						"height": 580,
@@ -1380,11 +1378,10 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 						"associatedScanIds": [
 							"048300551"
 						],
-						"originScanId": "048300551",
-						"path": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"
+						"originScanId": "048300551"
 					},
 					{
-						"name": "PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
+						"imagePath": "048300551/PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
 						"source": "SI_INSTRUMENT",
 						"width": 752,
 						"height": 580,
@@ -1393,8 +1390,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 						"associatedScanIds": [
 							"048300551"
 						],
-						"originScanId": "048300551",
-						"path": "048300551/PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png"
+						"originScanId": "048300551"
 					}
 				]
 			}
@@ -1402,12 +1398,12 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 	)
 
 	u1.AddSendReqAction("imageGetReq (should work)",
-		`{"imageGetReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
+		`{"imageGetReq":{"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
 		`{"msgId":11,
 			"status": "WS_OK",
 			"imageGetResp":{
 				"image": {
-					"name": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+					"imagePath": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 					"source": "SI_INSTRUMENT",
 					"width": 752,
 					"height": 580,
@@ -1416,8 +1412,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 					"associatedScanIds": [
 						"048300551"
 					],
-					"originScanId": "048300551",
-					"path": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"
+					"originScanId": "048300551"
 				}
 			}
 		}`,
@@ -1434,11 +1429,11 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 	)
 
 	u1.AddSendReqAction("imageBeamLocationsReq (should work)",
-		`{"imageBeamLocationsReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
+		`{"imageBeamLocationsReq":{"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
 		`{"msgId":13, "status": "WS_OK",
 			"imageBeamLocationsResp":{
 				"locations": {
-					"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+					"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 					"locationPerScan": [
 						{
 							"scanId": "048300551",
@@ -1493,7 +1488,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 	)
 
 	u1.AddSendReqAction("set default image",
-		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "some/path/to/the-image.png"}}`,
+		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
 		`{"msgId":16,
 			"status": "WS_OK",
 			"imageSetDefaultResp": {}
@@ -1505,13 +1500,35 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 			"status": "WS_OK",
 			"imageGetDefaultResp": {
 				"defaultImagesPerScanId": {
-					"048300551": "some/path/to/the-image.png"
+					"048300551": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"
 				}
 			}
 		}`,
 	)
 
-	u1.CloseActionGroup([]string{}, scanWaitTime)
+	expectedMsgs := []string{
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}}`,
+	}
+
+	if editAllowed {
+		expectedMsgs = append(expectedMsgs, `{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}}`)
+	}
+
+	u1.CloseActionGroup(expectedMsgs, scanWaitTime)
 	wstestlib.ExecQueuedActions(&u1)
 
 	// Test the GET HTTP endpoint, this has nothing to do with users/websockets above

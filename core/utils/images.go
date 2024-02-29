@@ -103,7 +103,6 @@ func WritePNGImageFile(pathPrefix string, img image.Image) error {
 }
 
 func MakeScanImage(
-	imgName string,
 	imgPath string,
 	fileSize uint32,
 	source protos.ScanImageSource,
@@ -114,7 +113,7 @@ func MakeScanImage(
 	matchInfo *protos.ImageMatchTransform,
 	img image.Image) *protos.ScanImage {
 	result := &protos.ScanImage{
-		Name: imgName,
+		ImagePath: imgPath,
 
 		Source:   source,
 		Width:    uint32(img.Bounds().Dx()),
@@ -125,8 +124,6 @@ func MakeScanImage(
 		AssociatedScanIds: associatedScanIds,
 		OriginScanId:      originScanId,
 		OriginImageURL:    originImageURL,
-
-		Path: imgPath,
 
 		MatchInfo: matchInfo,
 	}

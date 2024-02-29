@@ -3,7 +3,6 @@ package quantification
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/services"
@@ -53,8 +52,6 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
 	}
 
 	// Start all the quants
-	var wg sync.WaitGroup
-
 	for c, name := range quantNames {
 		for _, m := range quantModes {
 			params := &protos.QuantCreateParams{
@@ -72,7 +69,7 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
 			}
 
 			i := MakeQuantJobUpdater(params, nil, svcs.Notifier, svcs.MongoDB)
-			_, err := CreateJob(params, specialUserIds.PIXLISESystemUserId, svcs, nil, &wg, i.SendQuantJobUpdate)
+			_, err := CreateJob(params, specialUserIds.PIXLISESystemUserId, svcs, nil, nil, i.SendQuantJobUpdate)
 			if err != nil {
 				svcs.Log.Errorf("AutoQuant failed to create quant job: %v. Error: %v", params.Name, err)
 				return
