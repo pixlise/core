@@ -1,5 +1,7 @@
 package services
 
+import protos "github.com/pixlise/core/v4/generated-protos"
+
 type INotifier interface {
 	// When a scan downlinks, or is uploaded by a user
 	NotifyNewScan(scanName string, scanId string)
@@ -29,5 +31,8 @@ type INotifier interface {
 	NotifyObjectShared(objectType string, objectId string, objectName, sharerName string)
 
 	// When a user sends a message to the group they belong to
-	NotifyUserGroupMessage(subject string, message string, groupId string, groupName string, sender string)
+	NotifyUserGroupMessage(subject string, message string, notificationType protos.NotificationType, actionLink string, groupId string, groupName string, sender string)
+
+	// Sending a message to a list of users, eg when sending out notifications to an admin group
+	NotifyUserMessage(subject string, message string, notificationType protos.NotificationType, actionLink string, destUserIds []string, sender string)
 }

@@ -55,16 +55,16 @@ func HandleUserGroupJoinReq(req *protos.UserGroupJoinReq, hctx wsHelpers.Handler
 	if req.AsMember {
 		intent = "member"
 	}
-	/*err =*/ wsHelpers.SendNotification(group.AdminUserIds, &protos.Notification{
-		Subject: fmt.Sprintf("%v has requested to join group %v", hctx.SessUser.User.Name, group.Name),
-		Contents: fmt.Sprintf(`You are being sent this because you are an administrator of PIXLISE user group %v.
+
+	hctx.Svcs.Notifier.NotifyUserMessage(
+		fmt.Sprintf("%v has requested to join group %v", hctx.SessUser.User.Name, group.Name),
+		fmt.Sprintf(`You are being sent this because you are an administrator of PIXLISE user group %v.
 A user named %v has just requested to join the group as a %v`, group.Name, hctx.SessUser.User.Name, intent),
-		From: "PIXLISE API",
-		// TimeStampUnixSec filled out automatically
-		ActionLink:       "/user-group/join-requests", // TODO clarify
-		NotificationType: protos.NotificationType_NT_JOIN_GROUP_REQUEST,
-		RequestorUserId:  hctx.SessUser.User.Id,
-	}, hctx)
+		protos.NotificationType_NT_JOIN_GROUP_REQUEST,
+		"/user-group/join-requests", // TODO clarify
+		group.AdminUserIds,
+		"PIXLISE API",
+	)
 
 	return &protos.UserGroupJoinResp{}, nil
 }

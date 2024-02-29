@@ -2,12 +2,13 @@ package wsHandler
 
 import (
 	"context"
-	"errors"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -41,7 +42,21 @@ func HandleNotificationReq(req *protos.NotificationReq, hctx wsHelpers.HandlerCo
 }
 
 func HandleNotificationDismissReq(req *protos.NotificationDismissReq, hctx wsHelpers.HandlerContext) (*protos.NotificationDismissResp, error) {
-	return nil, errors.New("HandleNotificationDismissReq not implemented yet")
+	// Find this in the DB and clear it
+	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+
+	_, err := hctx.Svcs.MongoDB.Collection(dbCollections.NotificationsName).DeleteOne(context.TODO(), bson.D{{Key: "_id", Value: req.Id}}, options.Delete())
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errorwithstatus.MakeNotFoundError(req.Id)
+		}
+
+		return nil, err
+	}
+
+	return &protos.NotificationDismissResp{}, nil
 }
 
 func HandleSendUserNotificationReq(req *protos.SendUserNotificationReq, hctx wsHelpers.HandlerContext) (*protos.SendUserNotificationResp, error) {
@@ -64,5 +79,34 @@ func HandleSendUserNotificationReq(req *protos.SendUserNotificationReq, hctx wsH
 	//
 	// Custom notification - someone could type a notification and send to a user/group. From field should say who it's from so receivers could filter it
 
-	return nil, errors.New("HandleSendUserNotificationReq not implemented yet")
+	notificationType := req.Notification.NotificationType
+	if notificationType == protos.NotificationType_NT_UNKNOWN {
+		notificationType = protos.NotificationType_NT_USER_MESSAGE
+	}
+
+	for _, groupId := range req.GroupIds {
+		hctx.Svcs.Notifier.NotifyUserGroupMessage(
+			req.Notification.Subject,
+			req.Notification.Contents,
+			notificationType,
+			req.Notification.ActionLink,
+			groupId,
+			groupId, // TODO: look up group name
+			hctx.SessUser.User.Name,
+		)
+	}
+
+	// Send to users too
+	if len(req.UserIds) > 0 {
+		hctx.Svcs.Notifier.NotifyUserMessage(
+			req.Notification.Subject,
+			req.Notification.Contents,
+			notificationType,
+			req.Notification.ActionLink,
+			req.UserIds,
+			hctx.SessUser.User.Name,
+		)
+	}
+
+	return &protos.SendUserNotificationResp{}, nil
 }
