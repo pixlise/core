@@ -72,6 +72,7 @@ func (NotificationMethod) EnumDescriptor() ([]byte, []int) {
 	return file_user_notification_settings_proto_rawDescGZIP(), []int{0}
 }
 
+// NOTE: Need to ensure topic name (string key in map) is the same across all users of these messages!
 type UserNotificationSettings struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

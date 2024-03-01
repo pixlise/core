@@ -2,6 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
 
 	"github.com/pixlise/core/v4/core/wstestlib"
 )
@@ -62,27 +68,79 @@ func testImports(apiHost string) {
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 
-	testScanImport(u1)
+	testScanImport(apiHost, u1)
 	testImageImport(u1)
 	testScanDelete(u1)
 
 	// TODO: Test/simulate a FM downlink
 }
 
-func testScanImport(u1 wstestlib.ScriptedTestUser) {
+func doPut(scheme string, apiHost string, path string, query string, body io.Reader, jwt string) (int, []byte, error) {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	wsConnectUrl := url.URL{Scheme: scheme, Host: apiHost, Path: path, RawQuery: query}
+
+	client := &http.Client{}
+	req, err := http.NewRequest("PUT", wsConnectUrl.String(), body)
+	req.Header.Set("Authorization", "Bearer "+jwt)
+	if err != nil {
+		return 0, []byte{}, err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, []byte{}, err
+	}
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, []byte{}, err
+	}
+
+	return resp.StatusCode, b, err
+}
+
+func testScanImport(apiHost string, u1 wstestlib.ScriptedTestUser) {
 	// Test bad upload scenarios
-	u1.AddSendReqAction("Upload scan for format (should fail)",
-		`{"scanUploadReq":{"id":"bad1", "format": "dtu-breadboard", "zippedData": "abcd"}}`,
+	u1.AddSendReqAction("Upload scan for format (should fail, bad format)",
+		`{"scanUploadReq":{"id":"bad1", "format": "dtu-breadboard", "zipFileName": "abcd.zip"}}`,
 		`{"msgId":7,
 			"status":"WS_BAD_REQUEST",
 			"errorText":"Unexpected format: \"dtu-breadboard\"",
 			"scanUploadResp":{}}`,
 	)
 
+	u1.AddSendReqAction("Upload scan for format (should fail, bad zip)",
+		`{"scanUploadReq":{"id":"bad1", "format": "dtu-breadboard", "zipFileName": "abcd.zip"}}`,
+		`{"msgId":8,
+			"status":"WS_BAD_REQUEST",
+			"errorText":"Unexpected format: \"dtu-breadboard\"",
+			"scanUploadResp":{}}`,
+	)
+
+	u1.CloseActionGroup([]string{}, 10000)
+	wstestlib.ExecQueuedActions(&u1)
+
+	// Now upload the zip file!
+	f, err := os.Open("./test-files/scan-uploads/upload_kingscourt.zip")
+	if err != nil {
+		log.Fatal(err)
+	}
+	statusCode, _, err := doPut("http", apiHost, "/scan", "scan=upload1&filename=abcd.zip", f, imageGetJWT)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if statusCode != 200 {
+		log.Fatalf("Status code for image put was: %v", statusCode)
+	}
+
 	// Test a simple upload of a breadboard zip
 	u1.AddSendReqAction("Upload scan (should succeed)",
-		`{"scanUploadReq":{"id":"upload1", "format": "sbu-breadboard", "zippedData": "${FILEBYTES=./test-files/scan-uploads/upload_kingscourt.zip}"}}`,
-		`{"msgId":8,"status":"WS_OK","scanUploadResp":{
+		`{"scanUploadReq":{"id":"upload1", "format": "sbu-breadboard", "zipFileName": "abcd.zip"}}`,
+		`{"msgId":9,"status":"WS_OK","scanUploadResp":{
 			"jobId": "${IDSAVE=breadboardImportJobId}"
 		}}`,
 	)
@@ -136,7 +194,7 @@ func testScanImport(u1 wstestlib.ScriptedTestUser) {
 	// Make sure it appeared in the list of scans
 	u1.AddSendReqAction("List scans expecting new upload",
 		`{"scanListReq":{}}`,
-		`{"msgId":9,
+		`{"msgId":10,
 			"status":"WS_OK",
 			"scanListResp":{"scans": [
 				{
@@ -187,14 +245,14 @@ func testImageImport(u1 wstestlib.ScriptedTestUser) {
 			"associatedScanIds": ["${IDLOAD=breadboardImportScanId}"],
 			"originScanId": "${IDLOAD=breadboardImportScanId}"
 		}}`,
-		`{"msgId":10,
+		`{"msgId":11,
 			"status":"WS_OK",
 			"imageUploadResp":{}}`,
 	)
 
 	u1.AddSendReqAction("List scans expecting new upload+1 image",
 		`{"scanListReq":{}}`,
-		`{"msgId":11,
+		`{"msgId":12,
 			"status":"WS_OK",
 			"scanListResp":{"scans": [
 				{
@@ -240,7 +298,7 @@ func testScanDelete(u1 wstestlib.ScriptedTestUser) {
 	// Now delete it
 	u1.AddSendReqAction("Delete new upload (should fail, bad verification)",
 		`{"scanDeleteReq":{"scanId": "${IDLOAD=breadboardImportScanId}", "scanNameForVerification": "My new upload"}}`,
-		fmt.Sprintf(`{"msgId":12,
+		fmt.Sprintf(`{"msgId":13,
 			"status": "WS_BAD_REQUEST",
 			"errorText": "Specified title did not match scan title of: \"%v\"",
 			"scanDeleteResp":{}}`, wstestlib.GetIdCreated("breadboardImportScanId")),
@@ -248,7 +306,7 @@ func testScanDelete(u1 wstestlib.ScriptedTestUser) {
 
 	u1.AddSendReqAction("Delete new upload",
 		`{"scanDeleteReq":{"scanId": "${IDLOAD=breadboardImportScanId}", "scanNameForVerification": "${IDLOAD=breadboardImportScanId}"}}`,
-		`{"msgId":13,
+		`{"msgId":14,
 			"status":"WS_OK",
 			"scanDeleteResp":{}}`,
 	)
@@ -256,7 +314,7 @@ func testScanDelete(u1 wstestlib.ScriptedTestUser) {
 	// Check
 	u1.AddSendReqAction("List scans expecting new upload",
 		`{"scanListReq":{}}`,
-		`{"msgId":14,
+		`{"msgId":15,
 			"status":"WS_OK",
 			"scanListResp":{}}`,
 	)
