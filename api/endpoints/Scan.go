@@ -51,28 +51,14 @@ func PutScanData(params apiRouter.ApiHandlerGenericParams) error {
 	s3PathStart := path.Join(filepaths.DatasetUploadRoot, scanId)
 
 	// NOTE: We overwrite any previous attempts without worry!
-	/*
-		// Check if this exists already...
-		existingPaths, err := params.Svcs.FS.ListObjects(destBucket, s3PathStart)
-		if err != nil {
-			err = fmt.Errorf("Failed to list existing files for dataset ID: %v. Error: %v", scanId, err)
-			params.Svcs.Log.Errorf("%v", err)
-			return err
-		}
 
-		// If there are any existing paths, we stop here
-		if len(existingPaths) > 0 {
-			err = fmt.Errorf("Dataset ID already exists: %v", scanId)
-			params.Svcs.Log.Errorf("%v", err)
-			return errorwithstatus.MakeBadRequestError(err)
-		}
-	*/
 	// Read in body
 	zippedData, err := io.ReadAll(params.Request.Body)
 	if err != nil {
 		return err
 	}
 
+	params.Svcs.Log.Infof("PutScan: Read zip %v for scan %v uploaded: %v bytes", fileName, scanId, len(zippedData))
 	savePath := path.Join(s3PathStart, fileName)
 
 	err = params.Svcs.FS.WriteObject(destBucket, savePath, zippedData)
@@ -80,6 +66,6 @@ func PutScanData(params apiRouter.ApiHandlerGenericParams) error {
 		return err
 	}
 
-	params.Svcs.Log.Debugf("  Wrote: s3://%v/%v", destBucket, savePath)
+	params.Svcs.Log.Infof("PutScan: Wrote: s3://%v/%v", destBucket, savePath)
 	return nil
 }
