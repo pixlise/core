@@ -19,6 +19,7 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
 	ctx := context.TODO()
 	coll := svcs.MongoDB.Collection(dbCollections.QuantificationsName)
 
+	// TODO: Make these configuration parameters!
 	quantNames := []string{"AutoQuant-PDS", "AutoQuant-PIXL"}
 	quantModes := []string{quantModeCombinedAB, quantModeSeparateAB}
 	quantElements := [][]string{
