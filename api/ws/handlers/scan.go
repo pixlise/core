@@ -310,7 +310,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	destBucket := hctx.Svcs.Config.ManualUploadBucket
 	fs := hctx.Svcs.FS
 	logger := hctx.Svcs.Log
-	logger.Debugf("Dataset create started for format: %v, id: %v", req.Id, req.Format)
+	logger.Infof("Dataset create started for format: %v, id: %v", req.Id, req.Format)
 
 	// Validate the dataset ID - can't contain funny characters because it ends up as an S3 path
 	// NOTE: we also turn space to _ here! Having spaces in the path broke quants because the
@@ -400,7 +400,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 		if err != nil {
 			return nil, err
 		}
-		logger.Debugf("  Wrote: s3://%v/%v", destBucket, savePath)
+		logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
 	} else {
 		// Expecting flat zip of MSA files
 		count := 0
@@ -431,7 +431,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 		if err != nil {
 			return nil, err
 		}
-		logger.Debugf("  Wrote: s3://%v/%v", destBucket, savePath)
+		logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
 
 		// Now save detector info
 		savePath = path.Join(s3PathStart, "import.json")
@@ -480,7 +480,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 		if err != nil {
 			return nil, err
 		}
-		logger.Debugf("  Wrote: s3://%v/%v", destBucket, savePath)
+		logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
 	}
 
 	// Save detector info
@@ -499,7 +499,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	if err != nil {
 		return nil, err
 	}
-	logger.Debugf("  Wrote: s3://%v/%v", destBucket, savePath)
+	logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
 
 	i := importUpdater{
 		hctx.Session,
