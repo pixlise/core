@@ -292,7 +292,21 @@ func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHel
 	return &protos.ScanTriggerReImportResp{JobId: jobId}, err
 }
 
+// NOTE: before this is sent, we expect the PUT /scan endpoint to have been called and a zip uploaded already
+//
+//	The same parameters passed there (scan id & file name) must be used with this request otherwise we
+//	won't look up the zip correctly and fail.
 func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContext) (*protos.ScanUploadResp, error) {
+	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, 50); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&req.Format, "Format", 1, 50); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&req.ZipFileName, "ZipFileName", 1, 100); err != nil {
+		return nil, err
+	}
+
 	destBucket := hctx.Svcs.Config.ManualUploadBucket
 	fs := hctx.Svcs.FS
 	logger := hctx.Svcs.Log
@@ -303,9 +317,6 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	// quant summary file was written with a + instead of a space?!
 	datasetID := fileaccess.MakeValidObjectName(req.Id, false)
 
-	// Append a few random chars to make it more unique
-	datasetID += "_" + utils.RandStringBytesMaskImpr(6)
-
 	formats := []string{"jpl-breadboard", "sbu-breadboard", "pixl-em"}
 	if !utils.ItemInSlice(req.Format, formats) {
 		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Unexpected format: \"%v\"", req.Format))
@@ -313,23 +324,36 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 
 	s3PathStart := path.Join(filepaths.DatasetUploadRoot, datasetID)
 
-	// Check if this exists already...
-	existingPaths, err := fs.ListObjects(destBucket, s3PathStart)
-	if err != nil {
-		err = fmt.Errorf("Failed to list existing files for dataset ID: %v. Error: %v", datasetID, err)
-		logger.Errorf("%v", err)
-		return nil, err
-	}
+	// Append a few random chars to make it more unique from this point on
+	datasetID += "_" + utils.RandStringBytesMaskImpr(6)
 
-	// If there are any existing paths, we stop here
-	if len(existingPaths) > 0 {
-		err = fmt.Errorf("Dataset ID already exists: %v", datasetID)
-		logger.Errorf("%v", err)
-		return nil, errorwithstatus.MakeBadRequestError(err)
+	// We don't need to check anything beyond does this file exist?
+	/*
+		// Check if this exists already...
+		existingPaths, err := fs.ListObjects(destBucket, s3PathStart)
+		if err != nil {
+			err = fmt.Errorf("Failed to list existing files for dataset ID: %v. Error: %v", datasetID, err)
+			logger.Errorf("%v", err)
+			return nil, err
+		}
+
+		// If there are any existing paths, we stop here
+		if len(existingPaths) > 0 {
+			err = fmt.Errorf("Dataset ID already exists: %v", datasetID)
+			logger.Errorf("%v", err)
+			return nil, errorwithstatus.MakeBadRequestError(err)
+		}
+	*/
+
+	// Read the zip that was expected to be uploaded
+	zipPath := path.Join(s3PathStart, req.ZipFileName)
+	zippedData, err := hctx.Svcs.FS.ReadObject(destBucket, zipPath)
+	if err != nil {
+		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Failed to import, zip file not found: %v", zipPath))
 	}
 
 	// Validate zip contents matches the format we were given
-	zipReader, err := zip.NewReader(bytes.NewReader(req.ZippedData), int64(len(req.ZippedData)))
+	zipReader, err := zip.NewReader(bytes.NewReader(zippedData), int64(len(zippedData)))
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +396,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 
 		// Save the contents as a zip file in the uploads area
 		savePath := path.Join(s3PathStart, "data.zip")
-		err = fs.WriteObject(destBucket, savePath, req.ZippedData)
+		err = fs.WriteObject(destBucket, savePath, zippedData)
 		if err != nil {
 			return nil, err
 		}
@@ -403,7 +427,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 
 		// Save the contents as a zip file in the uploads area
 		savePath := path.Join(s3PathStart, "spectra.zip")
-		err = fs.WriteObject(destBucket, savePath, req.ZippedData)
+		err = fs.WriteObject(destBucket, savePath, zippedData)
 		if err != nil {
 			return nil, err
 		}
