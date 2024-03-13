@@ -266,14 +266,14 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, d
 	defer close(status)
 	paramsJSON, err := json.Marshal(params)
 	if err != nil {
-		r.kubeHelper.Log.Errorf("Failed to serialise JSON params for node: %v", params.PMCListName)
+		r.kubeHelper.Log.Errorf("Failed to serialise JSON params for node: %v", jobId)
 		return
 	}
 	paramsStr := string(paramsJSON)
 	jobSpec := getJobObject(params, paramsStr, dockerImage, jobId, namespace, requestorUserId, count)
 	job, err := r.kubeHelper.Clientset.BatchV1().Jobs(jobSpec.Namespace).Create(context.Background(), jobSpec, metav1.CreateOptions{})
 	if err != nil {
-		r.kubeHelper.Log.Errorf("Job create failed for: %v. namespace: %v, count: %v", params.PMCListName, namespace, count)
+		r.kubeHelper.Log.Errorf("Job create failed for: %v. namespace: %v, count: %v", jobId, namespace, count)
 		r.fatalErrors <- err
 		return
 	}
@@ -283,7 +283,7 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, d
 		time.Sleep(5 * time.Second)
 		jobStatus, err := r.getJobStatus(job.Namespace, job.Name)
 		if err != nil {
-			r.kubeHelper.Log.Errorf("Failed to get job status for: %v. namespace: %v, count: %v", params.PMCListName, namespace, count)
+			r.kubeHelper.Log.Errorf("Failed to get job status for: %v. namespace: %v, count: %v", jobId, namespace, count)
 			r.fatalErrors <- err
 			return
 		}
