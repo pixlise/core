@@ -33,11 +33,9 @@ build-linux:
 	echo "sha: ${GITHUB_SHA}"
 	GOOS=linux GOARCH=amd64 go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
 	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -v -o ./_out/pixlise-api-linux ./internal/api
-#	GOOS=linux GOARCH=amd64 go build -v -o ./_out/jobupdater-linux ./internal/lambdas/quant-job-updater
-#	GOOS=linux GOARCH=amd64 go build -v -o ./_out/datasourceupdater-linux ./internal/lambdas/dataset-tile-updater
-#	GOOS=linux GOARCH=amd64 go build -v -o ./_out/integrationtest-linux ./internal/cmdline-tools/api-integration-test
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -v -o ./_out/dataimport-linux ./internal/lambdas/data-import
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -v -o ./_out/bootstrap ./internal/lambdas/data-import
 #	GOOS=linux GOARCH=amd64 go build -v -o ./_out/importtest-linux ./internal/cmdline-tools/import-integration-test
+#	GOOS=linux GOARCH=amd64 go build -v -o ./_out/integrationtest-linux ./internal/cmdline-tools/api-integration-test
 
 # build-mac:
 # 	GOPRIVATE=github.com/pixlise GOOS=darwin GOARCH=amd64 go build -ldflags "-X services.ApiVersion=${BUILD_VERSION} -X services.GitHash=${GITHUB_SHA}" -v -o ./_out/pixlise-api-mac ./internal/api
