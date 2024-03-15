@@ -19,6 +19,7 @@ package converterSelector
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -85,10 +86,12 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 	}
 
 	// Log the paths to help us diagnose issues...
-	log.Infof("SelectDataConverter path listing:")
+	// Print it in one log message
+	logMsg := "SelectDataConverter path listing:"
 	for c, item := range items {
-		log.Infof("  %v. %v", c+1, item)
+		logMsg += fmt.Sprintf("\n  %v. %v\n", c+1, item)
 	}
+	log.Infof(logMsg)
 
 	// Unknown
 	return nil, errors.New("Failed to determine dataset type to import.")

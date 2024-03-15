@@ -36,7 +36,7 @@ func MakeWSHandler(m *melody.Melody, svcs *services.APIServices) *WSHandler {
 }
 
 func (ws *WSHandler) clearOldTokens() {
-	nowSec := time.Now().Unix() // TODO: use GetTimeNowSec
+	nowSec := ws.svcs.TimeStamper.GetTimeNowSec()
 	for token, usr := range ws.connectTokens {
 		if usr.expiryUnixSec < nowSec {
 			delete(ws.connectTokens, token)
@@ -48,7 +48,7 @@ func (ws *WSHandler) HandleBeginWSConnection(params apiRouter.ApiHandlerGenericP
 	// Generate a token that is valid for a short time
 	token := utils.RandStringBytesMaskImpr(32)
 
-	expirySec := time.Now().Unix() + 10 // TODO: use GetTimeNowSec
+	expirySec := ws.svcs.TimeStamper.GetTimeNowSec() + 10
 
 	// Clear out old ones, now is a good a time as any!
 	ws.clearOldTokens()
@@ -90,7 +90,7 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 		}
 
 		if conn, ok := ws.connectTokens[token[0]]; !ok {
-			fmt.Printf("WS connect failed for INVALID token: %v\n", token)
+			fmt.Printf("WS connect failed for UNKNOWN token: %v\n", token)
 			s.CloseWithMsg([]byte("Invalid token"))
 			return
 		} else {
