@@ -389,12 +389,12 @@ func testAddRemoveUserAsGroupMember(u2 wstestlib.ScriptedTestUser, nonAdminUserI
 func testUserGroupAdminAdd(u2 wstestlib.ScriptedTestUser, nonAdminUserId string) {
 	// Edits by admin of group
 	u2.AddSendReqAction("Add admin user to bad group id",
-		`{"userGroupAddAdminReq":{"groupId": "way-too-long-group-id", "adminUserId": "u123"}}`,
+		`{"userGroupAddAdminReq":{"groupId": "way-too-long-group-id-way-too-long-group-id-way-too-long-group-id-way-too-long-group-id", "adminUserId": "u123"}}`,
 		`{"msgId":15,"status":"WS_BAD_REQUEST","errorText": "GroupId is too long","userGroupAddAdminResp":{}}`,
 	)
 
 	u2.AddSendReqAction("Add bad admin user id to group id",
-		`{"userGroupAddAdminReq":{"groupId": "non-existant", "adminUserId": "admin-user-id-that-is-way-too-long even-for-auth0"}}`,
+		`{"userGroupAddAdminReq":{"groupId": "non-existant", "adminUserId": "admin-user-id-that-is-way-too-long even-for-auth0-admin-user-id-that-is-way-too-long even-for-auth0"}}`,
 		`{"msgId":16,"status":"WS_BAD_REQUEST","errorText": "AdminUserId is too long","userGroupAddAdminResp":{}}`,
 	)
 

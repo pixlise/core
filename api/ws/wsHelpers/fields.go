@@ -6,9 +6,9 @@ import (
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 )
 
-const IdFieldMaxLength = 16
+const IdFieldMaxLength = 32
 const Auth0UserIdFieldMaxLength = 32
-const DescriptionFieldMaxLength = 512
+const DescriptionFieldMaxLength = 1024 * 5
 const SourceCodeMaxLength = 1024 * 1024 * 5 // Trying to be very generous here, but maybe this is not enough?
 const TagListMaxLength = 100
 
