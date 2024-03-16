@@ -40,7 +40,7 @@ func connectToLocalMongoDB(log logger.ILogger) (*mongo.Client, error) {
 		mongoUri = "mongodb://localhost"
 	}
 	//ctx := context.Background()
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoUri).SetMonitor(cmdMonitor))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoUri).SetMonitor(cmdMonitor).SetDirect(true))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create new local mongo DB connection: %v", err)
 	}
