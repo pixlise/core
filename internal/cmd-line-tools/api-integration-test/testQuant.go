@@ -13,11 +13,7 @@ import (
 func testQuants(apiHost string, runPiquantTests bool) {
 	if runPiquantTests {
 		testQuantCreate(apiHost)
-	}
-
-	testMultiQuant(apiHost)
-
-	if runPiquantTests {
+		testMultiQuant(apiHost)
 		testQuantFit(apiHost)
 	}
 
