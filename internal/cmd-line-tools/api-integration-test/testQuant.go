@@ -10,10 +10,17 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func testQuants(apiHost string) {
-	testQuantCreate(apiHost)
+func testQuants(apiHost string, runPiquantTests bool) {
+	if runPiquantTests {
+		testQuantCreate(apiHost)
+	}
+
 	testMultiQuant(apiHost)
-	testQuantFit(apiHost)
+
+	if runPiquantTests {
+		testQuantFit(apiHost)
+	}
+
 	testQuantUpload(apiHost)
 	testQuantGetListDelete(apiHost)
 }

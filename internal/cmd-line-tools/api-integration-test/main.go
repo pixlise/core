@@ -113,7 +113,7 @@ func main() {
 
 	if testType == "env" {
 		runEnvTests(apiHost)
-	} else if testType == "local" {
+	} else if testType == "local" || testType == "ci" {
 		// Connect to DB and drop the unit test database
 		db := wstestlib.GetDB()
 		err = db.Drop(context.TODO())
@@ -123,7 +123,7 @@ func main() {
 
 		dbCollections.InitCollections(db, &logger.StdOutLogger{}, "")
 
-		runLocalTests(apiHost)
+		runLocalTests(apiHost, testType == "ci")
 	} else {
 		log.Fatal("Unexpected test type: " + testType)
 	}
@@ -157,7 +157,7 @@ func runEnvTests(apiHost string) {
 	// TODO: download all bits for a given dataset... all proto msgs + context image download(s)
 }
 
-func runLocalTests(apiHost string) {
+func runLocalTests(apiHost string, isCI bool) {
 	testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
 	// testScanData(apiHost, 0 /*3 for proper testing*/)
@@ -172,7 +172,7 @@ func runLocalTests(apiHost string) {
 	testMemoisation(apiHost)
 	testImageMatchTransform(apiHost)
 	testSelectionMsgs(apiHost)
-	testQuants(apiHost)
+	testQuants(apiHost, !isCI) // We only run the tests that need to start PIQUANT outside of CI for now
 	testDiffractionManualPeaks(apiHost)
 	testDiffractionStatus(apiHost)
 	testPiquantMsgs(apiHost)
