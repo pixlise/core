@@ -77,8 +77,8 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: "1.21.0"
-      - name: Test
-        run: make test
+      - name: Unit Test
+        run: make unittest
         env:
           PIXLISE_API_TEST_AUTH0_CLIENT_ID: ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }}
           PIXLISE_API_TEST_AUTH0_DOMAIN: ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }}
@@ -89,7 +89,22 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_DEFAULT_REGION: us-east-1
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
+      - name: Integration Test
+        run: |
+          make integrationtest
+          ./api-service &
+          sleep 5
+          ./internal/cmd-line-tools/api-integration-test/tester -apiHost http://localhost:8080 -apiDBSecret "" -datasetBucket "integration-test-data-pixlise" -usersBucket "integration-test-users-pixlise" -auth0Domain ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }} -auth0ClientId ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }} -auth0Secret ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }} -auth0Audience "pixlise-backend" -expectedAPIVersion "" -testType "local" -test1Username "test1@pixlise.org" -test1Password "TheRemarkablesKawarau!" -test2Username "test2@pixlise.org" -test2Password "TrebleConeRaffils!"
+        env:
+          PIXLISE_API_TEST_AUTH0_CLIENT_ID: ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }}
+          PIXLISE_API_TEST_AUTH0_DOMAIN: ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }}
+          PIXLISE_API_TEST_AUTH0_SECRET: ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }}
+          PIXLISE_API_TEST_AUTH0_NEWUSER_ROLE_ID: ${{ secrets.PIXLISE_API_TEST_AUTH0_NEWUSER_ROLE_ID }}
+          PIXLISE_API_TEST_ZENODO_URI: ${{ secrets.ZENODO_URI }}
+          PIXLISE_API_TEST_ZENODO_ACCESS_TOKEN: ${{ secrets.ZENODO_ACCESS_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   build:
     runs-on: ubuntu-latest
     needs: [version]
