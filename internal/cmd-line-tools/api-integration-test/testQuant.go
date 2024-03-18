@@ -15,9 +15,9 @@ func testQuants(apiHost string, runPiquantTests bool) {
 		testQuantCreate(apiHost)
 		testMultiQuant(apiHost)
 		testQuantFit(apiHost)
+		testQuantUpload(apiHost)
 	}
 
-	testQuantUpload(apiHost)
 	testQuantGetListDelete(apiHost)
 }
 
