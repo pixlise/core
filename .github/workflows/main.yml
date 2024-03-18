@@ -92,10 +92,14 @@ jobs:
       - name: Integration Test
         run: |
           make integrationtest
-          ./api-service &
+          ./api-service -customConfigPath ./integration-test-config.json" &
           sleep 5
-          ./internal/cmd-line-tools/api-integration-test/tester -apiHost http://localhost:8080 -apiDBSecret "" -datasetBucket "integration-test-data-pixlise" -usersBucket "integration-test-users-pixlise" -auth0Domain ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }} -auth0ClientId ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }} -auth0Secret ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }} -auth0Audience "pixlise-backend" -expectedAPIVersion "" -testType "local" -test1Username "test1@pixlise.org" -test1Password "TheRemarkablesKawarau!" -test2Username "test2@pixlise.org" -test2Password "TrebleConeRaffils!"
+          ./internal/cmd-line-tools/api-integration-test/tester -apiHost http://localhost:8080 -apiDBSecret "" -datasetBucket "integration-test-data-pixlise" -usersBucket "integration-test-users-pixlise" -auth0Domain ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }} -auth0ClientId ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }} -auth0Secret ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }} -auth0Audience "pixlise-backend" -expectedAPIVersion "" -testType "local" -test1Username "test1@pixlise.org" -test1Password  ${{ secrets.TEST_USER_1_PASSWORD }} -test2Username "test2@pixlise.org" -test2Password ${{ secrets.TEST_USER_2_PASSWORD }}
         env:
+          PIXLISE_Auth0Domain: ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }}
+          PIXLISE_ZenodoAccessToken: ${{ secrets.ZENODO_ACCESS_TOKEN }}
+          PIXLISE_Auth0ManagementClientID": ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }}
+          PIXLISE_Auth0ManagementSecret": ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }}
           PIXLISE_API_TEST_AUTH0_CLIENT_ID: ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }}
           PIXLISE_API_TEST_AUTH0_DOMAIN: ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }}
           PIXLISE_API_TEST_AUTH0_SECRET: ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }}
