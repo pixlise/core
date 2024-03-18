@@ -43,7 +43,7 @@ func HandleNotificationReq(req *protos.NotificationReq, hctx wsHelpers.HandlerCo
 
 func HandleNotificationDismissReq(req *protos.NotificationDismissReq, hctx wsHelpers.HandlerContext) (*protos.NotificationDismissResp, error) {
 	// Find this in the DB and clear it
-	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, wsHelpers.IdFieldMaxLength); err != nil {
+	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, wsHelpers.IdFieldMaxLength*2); err != nil {
 		return nil, err
 	}
 
