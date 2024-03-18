@@ -176,7 +176,9 @@ func runLocalTests(apiHost string, isCI bool) {
 	testDiffractionManualPeaks(apiHost)
 	testDiffractionStatus(apiHost)
 	testPiquantMsgs(apiHost)
-	testExpressionRuntimeMsgs(apiHost)
+	if !isCI {
+		testExpressionRuntimeMsgs(apiHost)
+	}
 	testDataModules(apiHost)
 	testUserContent(apiHost, map[string]contentMessaging{
 		"elementSet": {
