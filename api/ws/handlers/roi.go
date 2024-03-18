@@ -278,7 +278,7 @@ func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROII
 	// Once created, these can't be set to empty
 	if roi.ScanEntryIndexesEncoded != nil && !utils.SlicesEqual(dbItem.ScanEntryIndexesEncoded, roi.ScanEntryIndexesEncoded) {
 		dbItem.ScanEntryIndexesEncoded = roi.ScanEntryIndexesEncoded
-		update = append(update, bson.E{Key: "ScanEntryIndexesEncoded", Value: roi.ScanEntryIndexesEncoded})
+		update = append(update, bson.E{Key: "scanentryindexesencoded", Value: roi.ScanEntryIndexesEncoded})
 	}
 
 	// Once created, these can't be set to empty
@@ -310,7 +310,7 @@ func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROII
 	}
 
 	if result.MatchedCount != 1 {
-		hctx.Svcs.Log.Errorf("ROI UpdateByID result had unexpected counts %+v id: %v", result, roi.Id)
+		hctx.Svcs.Log.Errorf("ROI UpdateByID result had unexpected counts %v id: %v", result, roi.Id)
 	}
 
 	// Return the merged item we validated, which in theory is in the DB now
