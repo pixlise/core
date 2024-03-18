@@ -1305,15 +1305,15 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 			"scanBeamLocationsResp":{
 				"beamLocations": [
 					{
-						"x": -0.151088,
-						"y": 0.131007,
-						"z": 0.246569
+						"x": -0.150853,
+						"y": 0.131032,
+						"z": 0.246621
 					},
 					{},
 					{
-						"x": -0.135994,
-						"y": 0.131017,
-						"z": 0.249705
+						"x": -0.135756,
+						"y": 0.131042,
+						"z": 0.249732
 					},
 					{}
 				]
