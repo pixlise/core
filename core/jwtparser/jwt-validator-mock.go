@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"gopkg.in/square/go-jose.v2/jwt"
+	"github.com/go-jose/go-jose/v4/jwt"
 )
 
 type MockJWTValidator struct {

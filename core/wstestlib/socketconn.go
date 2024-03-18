@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/gorilla/websocket"
 	"github.com/pixlise/core/v4/core/auth0login"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"google.golang.org/protobuf/proto"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 type ConnectInfo struct {

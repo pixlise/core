@@ -24,9 +24,9 @@ import (
 	"net/http"
 
 	"github.com/auth0-community/go-auth0"
+	"github.com/go-jose/go-jose/v4"
+	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/pixlise/core/v4/core/fileaccess"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 const apiAudience = "pixlise-backend"
@@ -48,7 +48,7 @@ func InitJWTValidator(auth0Domain string, configBucket string, pemPath string, f
 	secretProvider := auth0.NewKeyProvider(secret)
 	audience := []string{apiAudience}
 
-	configuration := auth0.NewConfiguration(secretProvider, audience, "https://"+auth0Domain+"/", jose.RS256)
+	configuration := auth0.NewConfiguration(secretProvider, audience, "https://"+auth0Domain+"/", jose.SignatureAlgorithm(jose.RS256))
 
 	return auth0.NewValidator(configuration, nil), nil
 
