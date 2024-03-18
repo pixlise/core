@@ -80,10 +80,6 @@ jobs:
       - name: Unit Test
         run: make unittest
         env:
-          PIXLISE_API_TEST_AUTH0_CLIENT_ID: ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }}
-          PIXLISE_API_TEST_AUTH0_DOMAIN: ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }}
-          PIXLISE_API_TEST_AUTH0_SECRET: ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }}
-          PIXLISE_API_TEST_AUTH0_NEWUSER_ROLE_ID: ${{ secrets.PIXLISE_API_TEST_AUTH0_NEWUSER_ROLE_ID }}
           PIXLISE_API_TEST_ZENODO_URI: ${{ secrets.ZENODO_URI }}
           PIXLISE_API_TEST_ZENODO_ACCESS_TOKEN: ${{ secrets.ZENODO_ACCESS_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -99,12 +95,8 @@ jobs:
         env:
           PIXLISE_Auth0Domain: ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }}
           PIXLISE_ZenodoAccessToken: ${{ secrets.ZENODO_ACCESS_TOKEN }}
-          PIXLISE_Auth0ManagementClientID": ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }}
-          PIXLISE_Auth0ManagementSecret": ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }}
-          PIXLISE_API_TEST_AUTH0_CLIENT_ID: ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }}
-          PIXLISE_API_TEST_AUTH0_DOMAIN: ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }}
-          PIXLISE_API_TEST_AUTH0_SECRET: ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }}
-          PIXLISE_API_TEST_AUTH0_NEWUSER_ROLE_ID: ${{ secrets.PIXLISE_API_TEST_AUTH0_NEWUSER_ROLE_ID }}
+          PIXLISE_Auth0ManagementClientID: ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }}
+          PIXLISE_Auth0ManagementSecret: ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }}
           PIXLISE_API_TEST_ZENODO_URI: ${{ secrets.ZENODO_URI }}
           PIXLISE_API_TEST_ZENODO_ACCESS_TOKEN: ${{ secrets.ZENODO_ACCESS_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
