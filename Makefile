@@ -20,7 +20,7 @@ test: ## Run unittests
 	go install github.com/favadi/protoc-go-inject-tag@latest
 	go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
 	protoc-go-inject-tag -remove_tag_comment -input="./generated-protos/*.pb.go"
-	go test -p 1 -v ./...
+	go test ./...
 
 codegen:
 	./genproto.sh checkgen
