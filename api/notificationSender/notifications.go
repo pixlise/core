@@ -91,7 +91,7 @@ func (n *NotificationSender) sendNotification(sourceId string, topicId string, n
 
 	for _, userId := range userIds {
 		// Write it to DB if needed
-		err := n.saveNotificationToDB(userId, notifMsg.Notification)
+		err := n.saveNotificationToDB(origId, userId, notifMsg.Notification)
 		if err != nil {
 			n.log.Errorf("Failed to save notification to DB for user: %v. Error: \"%v\". Notification was: %+v", userId, err, notifMsg.Notification)
 		}
@@ -129,7 +129,7 @@ func (n *NotificationSender) sendNotification(sourceId string, topicId string, n
 		for _, session := range sessions {
 			// Send it with a unique ID for this user
 			sessUser, err := wsHelpers.GetSessionUser(session)
-			if err != nil {
+			if err == nil {
 				notifMsg.Notification.Id = origId + "-" + sessUser.User.Id
 				msg := &protos.WSMessage{Contents: &protos.WSMessage_NotificationUpd{NotificationUpd: notifMsg}}
 
@@ -201,12 +201,12 @@ func (n *NotificationSender) sendEmail(notif *protos.Notification, userId string
 	awsutil.SESSendEmail(user.Info.Email, "UTF-8", text, html, notif.Subject, "info@mail.pixlise.org", []string{}, []string{})
 }
 
-func (n *NotificationSender) saveNotificationToDB(destUserId string, notification *protos.Notification) error {
+func (n *NotificationSender) saveNotificationToDB(notifId string, destUserId string, notification *protos.Notification) error {
 	// Make a copy which has the user id set
 	toSave := &protos.Notification{
 		DestUserId: destUserId,
 
-		Id:               notification.Id,
+		Id:               notifId + "-" + destUserId,
 		DestUserGroupId:  notification.DestUserGroupId,
 		MaxSecToExpiry:   notification.MaxSecToExpiry,
 		Subject:          notification.Subject,

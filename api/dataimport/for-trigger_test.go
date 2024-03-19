@@ -67,6 +67,14 @@ func initTest(testDir string, autoShareCreatorId string, autoShareCreatorGroupEd
 	return remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db
 }
 
+/*
+func startTestWithMockMongo(name string, t *testing.T, testFunc func(mt *mtest.T)) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run(name, testFunc)
+}
+*/
 // Import unknown dataset (simulate trigger by OCS pipeline), file goes to archive, then all files downloaded from archive, dataset create fails due to unknown data type
 func Example_importForTrigger_OCS_Archive_BadData() {
 	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Archive_BadData", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
