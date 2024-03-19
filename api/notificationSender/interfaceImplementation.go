@@ -141,6 +141,12 @@ func (n *NotificationSender) NotifyObjectShared(objectType string, objectId stri
 }
 
 func (n *NotificationSender) NotifyUserGroupMessage(subject string, message string, notificationType protos.NotificationType, actionLink string, groupId string, groupName string, sender string) {
+	userIds, err := wsHelpers.GetUserIdsForGroup([]string{groupId}, n.db)
+	if err != nil {
+		n.log.Errorf("Failed to get user ids for group: %v. Error: %v", groupId, err)
+		return
+	}
+
 	notifMsg := &protos.NotificationUpd{
 		Notification: &protos.Notification{
 			NotificationType: notificationType,
@@ -149,12 +155,6 @@ func (n *NotificationSender) NotifyUserGroupMessage(subject string, message stri
 			From:             sender,
 			ActionLink:       actionLink,
 		},
-	}
-
-	userIds, err := wsHelpers.GetUserIdsForGroup([]string{groupId}, n.db)
-	if err != nil {
-		n.log.Errorf("Failed to get user ids for group: %v. Error: %v", groupId, err)
-		return
 	}
 
 	n.sendNotification(subject, "", notifMsg, userIds)

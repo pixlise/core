@@ -4,23 +4,30 @@ PROJECT_NAME := core
 PKG := github.com/pixlise/$(PROJECT_NAME)
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
 
-.PHONY: all build clean test lint
+.PHONY: all build clean unittest integrationtest lint
 
-all: codegen build test lint
+all: codegen build unittest integrationtest lint
 
 lint: ## Lint the files
 	echo "${PKG}"
 	#golint -set_exit_status ${PKG_LIST}
 	golint ${PKG_LIST}
 
-test: ## Run unittests
+unittest: ## Run unittests
 	pwd
 	cd ..
 	mkdir -p _out
 	go install github.com/favadi/protoc-go-inject-tag@latest
 	go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
 	protoc-go-inject-tag -remove_tag_comment -input="./generated-protos/*.pb.go"
-	go test -p 1 -v ./...
+	go test -v ./...
+
+integrationtest:
+	mkdir -p _out
+	echo "version: ${BUILD_VERSION}"
+	echo "sha: ${GITHUB_SHA}"
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -v -o ./api-service ./internal/api
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -v -o ./internal/cmd-line-tools/api-integration-test/tester ./internal/cmd-line-tools/api-integration-test
 
 codegen:
 	./genproto.sh checkgen

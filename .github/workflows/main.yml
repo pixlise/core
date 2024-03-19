@@ -53,6 +53,21 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    needs: [version]
+    # services:
+    #   mongodb:
+    #     image: mongo:4.0.28
+    #     #env:
+    #       #MONGO_INITDB_ROOT_USERNAME: admin
+    #       #MONGO_INITDB_ROOT_PASSWORD: admin
+    #       #MONGO_INITDB_DATABASE: APP-DATABASE
+    #     ports:
+    #       - 27017:27017
+    #     options: >-
+    #       --health-cmd mongo
+    #       --health-interval 10s
+    #       --health-timeout 5s
+    #       --health-retries 5
     steps:
       - uses: actions/checkout@v3
         with:
@@ -62,22 +77,41 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: "1.21.0"
-      - name: Test
-        run: echo $PIXLISE_API_TEST_ZENODO_URI && echo "Tests Off" # make test
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.10.0
+        with:
+          mongodb-version: 4.0.28
+          mongodb-replica-set: test
+          mongodb-port: 27017
+      - name: Unit Test
+        run: make unittest
         env:
-          PIXLISE_API_TEST_AUTH0_CLIENT_ID: ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }}
-          PIXLISE_API_TEST_AUTH0_DOMAIN: ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }}
-          PIXLISE_API_TEST_AUTH0_SECRET: ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }}
-          PIXLISE_API_TEST_AUTH0_NEWUSER_ROLE_ID: ${{ secrets.PIXLISE_API_TEST_AUTH0_NEWUSER_ROLE_ID }}
-          PIXLISE_API_TEST_ZENODO_URI: ${{ secrets.ZENODO_URI }}
-          PIXLISE_API_TEST_ZENODO_ACCESS_TOKEN: ${{ secrets.ZENODO_ACCESS_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
+      - name: Integration Test
+        run: |
+          make integrationtest
+          ./api-service -customConfigPath ./integration-test-config.json &
+          sleep 5
+          #pwd
+          #ls
+          cd ./internal/cmd-line-tools/api-integration-test
+          #pwd
+          #ls
+          #echo ./tester -apiHost localhost:8080 -datasetBucket "integration-test-data-pixlise" -usersBucket "integration-test-users-pixlise" -auth0Domain ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }} -auth0ClientId ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }} -auth0Secret ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }} -auth0Audience "pixlise-backend" -testType "ci" -test1Username "test1@pixlise.org" -test1Password ${{ secrets.TEST_USER_1_PASSWORD }} -test2Username "test2@pixlise.org" -test2Password ${{ secrets.TEST_USER_2_PASSWORD }}
+          ./tester -apiHost localhost:8080 -datasetBucket "integration-test-data-pixlise" -usersBucket "integration-test-users-pixlise" -auth0Domain ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }} -auth0ClientId ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }} -auth0Secret ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }} -auth0Audience "pixlise-backend" -testType "ci" -test1Username "test1@pixlise.org" -test1Password ${{ secrets.TEST_USER_1_PASSWORD }} -test2Username "test2@pixlise.org" -test2Password ${{ secrets.TEST_USER_2_PASSWORD }}
+        env:
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PIXLISE_CONFIG_Auth0Domain: ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }}
+          PIXLISE_CONFIG_Auth0ManagementClientID: ${{ secrets.PIXLISE_API_MGMT_AUTH0_CLIENT_ID }}
+          PIXLISE_CONFIG_Auth0ManagementSecret: ${{ secrets.PIXLISE_API_MGMT_AUTH0_SECRET }}
+          PIXLISE_CONFIG_ZenodoAccessToken: ${{ secrets.ZENODO_ACCESS_TOKEN }}
   build:
     runs-on: ubuntu-latest
-    needs: [version, test]
+    needs: [version]
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_DEFAULT_REGION: us-east-1
@@ -114,7 +148,7 @@ jobs:
           aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
 
   docker:
-    needs: [version, test]
+    needs: [version]
     runs-on: ubuntu-latest
     permissions:
       contents: read

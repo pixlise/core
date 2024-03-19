@@ -192,6 +192,7 @@ func loadConfig() config.APIConfig {
 	}
 
 	cfgStr := string(cfgJSON)
+	log.Println("API startup configuration:")
 	log.Println(cfgStr)
 	return cfg
 }

@@ -1,0 +1,29 @@
+{
+    "MaxQuantNodes": 20,
+    "AWSBucketRegion": "us-east-1",
+    "AWSCloudwatchRegion": "us-east-1",
+    "EnvironmentName": "unittest",
+    "LogLevel": 1,
+    "CoresPerNode": 4,
+    "PiquantDockerImage": "registry.gitlab.com/pixlise/piquant/runner:3.2.17",
+    "QuantNamespace": "unittest",
+    "QuantExecutor": "docker",
+    "SentryEndpoint": "",
+
+    "DatasetsBucket": "integration-test-data-pixlise",
+    "UsersBucket": "integration-test-users-pixlise",
+    "ConfigBucket": "integration-test-config-pixlise",
+    "PiquantJobsBucket": "integration-test-jobs-pixlise",
+    "ManualUploadBucket": "integration-test-upload-pixlise",
+
+    "BuildsBucket": "",
+    "DataSourceSNSTopic": "",
+
+	"WSWriteWaitMs": 10000,
+	"WSPongWaitMs": 60000,
+	"WSPingPeriodMs": 54000,
+	"WSMaxMessageSize": 40000,
+	"WSMessageBufferSize": 256,
+    
+	"ZenodoURI": "https://sandbox.zenodo.org"
+}

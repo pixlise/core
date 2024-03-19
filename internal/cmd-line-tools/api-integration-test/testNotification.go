@@ -117,7 +117,7 @@ func testNotification(apiHost string) (string, string) {
 		`{"msgId": 4, "status": "WS_OK", "notificationResp": {
 				"notification": [
 					{
-						"id": "${IDSAVE=notificationId}",
+						"id": "${IDCHK=notificationId}",
 						"destUserId": "${USERID}",
 						"subject": "test subject",
 						"contents": "The body\nThis message was sent by test2@pixlise.org - WS Integration Test",
