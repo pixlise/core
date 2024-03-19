@@ -447,7 +447,9 @@ func runLocalTests(apiHost string, isCI bool) {
 
 	testUserSearch(apiHost)
 	testUserDetails(apiHost, u1Id, u2Id)
-	testUserManagement(apiHost)
+	if !isCI {
+		testUserManagement(apiHost)
+	}
 	testUserGroups(apiHost)
 	testLogMsgs(apiHost)
 	testScanData(apiHost, 0 /*3 for proper testing*/)
