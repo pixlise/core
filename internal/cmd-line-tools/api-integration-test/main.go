@@ -174,12 +174,14 @@ func runLocalTests(apiHost string, isCI bool) {
 	testSelectionMsgs(apiHost)
 	testQuants(apiHost, !isCI) // We only run the tests that need to start PIQUANT outside of CI for now
 	testDiffractionManualPeaks(apiHost)
+	time.Sleep(5 * time.Second)
 	testDiffractionStatus(apiHost)
 	testPiquantMsgs(apiHost)
 	if !isCI {
 		testExpressionRuntimeMsgs(apiHost)
 	}
 	testDataModules(apiHost)
+	time.Sleep(5 * time.Second)
 	testUserContent(apiHost, map[string]contentMessaging{
 		"elementSet": {
 			itemName: "elementSet",
@@ -445,18 +447,22 @@ func runLocalTests(apiHost string, isCI bool) {
 		},
 	})
 
+	time.Sleep(5 * time.Second)
 	testUserSearch(apiHost)
 	testUserDetails(apiHost, u1Id, u2Id)
 	if !isCI {
 		testUserManagement(apiHost)
 	}
 	testUserGroups(apiHost)
+	time.Sleep(5 * time.Second)
 	testLogMsgs(apiHost)
 	testScanData(apiHost, 0 /*3 for proper testing*/)
+	time.Sleep(5 * time.Second)
 	testDetectorConfig(apiHost)
 
 	testTags(apiHost)
 	testROIUserConfiguration(apiHost)
+	time.Sleep(5 * time.Second)
 	testScreenConfiguration(apiHost)
 	testWidgetData(apiHost)
 
