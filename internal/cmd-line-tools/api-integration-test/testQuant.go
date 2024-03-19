@@ -13,11 +13,11 @@ import (
 func testQuants(apiHost string, runPiquantTests bool) {
 	if runPiquantTests {
 		testQuantCreate(apiHost)
-		testMultiQuant(apiHost)
 		testQuantFit(apiHost)
-		testQuantUpload(apiHost)
 	}
 
+	testMultiQuant(apiHost)
+	testQuantUpload(apiHost)
 	testQuantGetListDelete(apiHost)
 }
 

@@ -96,7 +96,7 @@ jobs:
           sleep 5
           #pwd
           #ls
-          #cd ./internal/cmd-line-tools/api-integration-test
+          cd ./internal/cmd-line-tools/api-integration-test
           #pwd
           #ls
           #echo ./tester -apiHost localhost:8080 -datasetBucket "integration-test-data-pixlise" -usersBucket "integration-test-users-pixlise" -auth0Domain ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }} -auth0ClientId ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }} -auth0Secret ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }} -auth0Audience "pixlise-backend" -testType "ci" -test1Username "test1@pixlise.org" -test1Password ${{ secrets.TEST_USER_1_PASSWORD }} -test2Username "test2@pixlise.org" -test2Password ${{ secrets.TEST_USER_2_PASSWORD }}
