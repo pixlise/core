@@ -183,19 +183,19 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 
 		u2.AddSendReqAction(fmt.Sprintf("%v Get created item for user 2", msgName),
 			fmt.Sprintf(`{"%vGetReq": { "id": "${IDLOAD=%vCreated1}"}}`, msgName, msgName),
-			fmt.Sprintf(`{"msgId":%v, "status": "WS_NO_PERMISSION", "errorText": "View access denied for: %v", "%vGetResp":{}}`, u2ExpectedRespSeqNo, createdId, msgName),
+			fmt.Sprintf(`{"msgId":%v, "status": "WS_NO_PERMISSION", "errorText": "View access denied for: %v (%v)", "%vGetResp":{}}`, u2ExpectedRespSeqNo, msgContents.objectType, createdId, msgName),
 		)
 		u2ExpectedRespSeqNo++
 
 		u2.AddSendReqAction(fmt.Sprintf("%v Get permissions for user 1's created item", msgName),
 			fmt.Sprintf(`{"getOwnershipReq": { "objectId": "${IDLOAD=%vCreated1}", "objectType": "%v"}}`, msgName, msgContents.objectType),
-			fmt.Sprintf(`{"msgId":%v,"status":"WS_NO_PERMISSION","errorText": "View access denied for: %v","getOwnershipResp":{}}`, u2ExpectedRespSeqNo, createdId),
+			fmt.Sprintf(`{"msgId":%v,"status":"WS_NO_PERMISSION","errorText": "View access denied for: %v (%v)","getOwnershipResp":{}}`, u2ExpectedRespSeqNo, msgContents.objectType, createdId),
 		)
 		u2ExpectedRespSeqNo++
 
 		u2.AddSendReqAction(fmt.Sprintf("%v Share user 1s created item", msgName),
 			fmt.Sprintf(`{"objectEditAccessReq": { "objectId": "${IDLOAD=%vCreated1}", "objectType": "%v", "addViewers": { "userIds": [ "%v" ] }}}`, msgName, msgContents.objectType, u2.GetUserId()),
-			fmt.Sprintf(`{"msgId":%v,"status":"WS_NO_PERMISSION","errorText": "Edit access denied for: %v","objectEditAccessResp":{}}`, u2ExpectedRespSeqNo, createdId),
+			fmt.Sprintf(`{"msgId":%v,"status":"WS_NO_PERMISSION","errorText": "Edit access denied for: %v (%v)","objectEditAccessResp":{}}`, u2ExpectedRespSeqNo, msgContents.objectType, createdId),
 		)
 		u2ExpectedRespSeqNo++
 	}
@@ -492,8 +492,8 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 					"name": "User1 Item Edited by User2"
 				}
 			}}`, msgName, msgContents.itemName, msgName),
-			fmt.Sprintf(`{"msgId":%v, "status":"WS_NO_PERMISSION", "errorText": "Edit access denied for: %v", "%vWriteResp":{}}`,
-				u2ExpectedRespSeqNo, createdId, msgName),
+			fmt.Sprintf(`{"msgId":%v, "status":"WS_NO_PERMISSION", "errorText": "Edit access denied for: %v (%v)", "%vWriteResp":{}}`,
+				u2ExpectedRespSeqNo, msgContents.objectType, createdId, msgName),
 		)
 		u2ExpectedRespSeqNo++
 	}

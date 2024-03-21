@@ -127,7 +127,7 @@ func testQuantGetListDelete(apiHost string) {
 		fmt.Sprintf(`{"quantGetReq":{"quantId": "%v"}}`, quantId),
 		fmt.Sprintf(`{
 			"msgId":4,"status":"WS_NO_PERMISSION",
-			"errorText": "View access denied for: %v", "quantGetResp":{}}`, quantId),
+			"errorText": "View access denied for: OT_QUANTIFICATION (%v)", "quantGetResp":{}}`, quantId),
 	)
 
 	u1.CloseActionGroup([]string{}, 5000)
@@ -551,7 +551,7 @@ func testQuantGetListDelete(apiHost string) {
 
 	u1.AddSendReqAction("Delete quant (should fail, we're viewers!)",
 		fmt.Sprintf(`{"quantDeleteReq":{"quantId": "%v" }}`, quantId),
-		fmt.Sprintf(`{"msgId":10,"status":"WS_NO_PERMISSION", "errorText": "Edit access denied for: %v", "quantDeleteResp":{}}`, quantId),
+		fmt.Sprintf(`{"msgId":10,"status":"WS_NO_PERMISSION", "errorText": "Edit access denied for: OT_QUANTIFICATION (%v)", "quantDeleteResp":{}}`, quantId),
 	)
 
 	u1.CloseActionGroup([]string{}, 5000)
@@ -574,7 +574,7 @@ func testQuantGetListDelete(apiHost string) {
 		fmt.Sprintf(`{"quantGetReq":{"quantId": "%v"}}`, quantId),
 		fmt.Sprintf(`{
 			"msgId":2,"status":"WS_NO_PERMISSION",
-			"errorText": "View access denied for: %v", "quantGetResp":{}}`, quantId),
+			"errorText": "View access denied for: OT_QUANTIFICATION (%v)", "quantGetResp":{}}`, quantId),
 	)
 
 	u2.CloseActionGroup([]string{}, 5000)

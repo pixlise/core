@@ -139,7 +139,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		`{
 			"msgId": 7,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "View access denied for: 048300551",
+			"errorText": "View access denied for: OT_SCAN (048300551)",
 			"imageUploadResp": {}
 		}`,
 	)

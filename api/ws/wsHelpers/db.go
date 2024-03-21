@@ -74,6 +74,10 @@ func GetUserObjectById[T any](forEditing bool, objectId string, objectType proto
 
 	result := hctx.Svcs.MongoDB.Collection(collectionName).FindOne(context.TODO(), bson.M{"_id": objectId})
 	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			return nil, nil, errorwithstatus.MakeNotFoundError(objectId)
+		}
+
 		return nil, nil, result.Err()
 	}
 
