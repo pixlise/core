@@ -415,7 +415,7 @@ func testScanDataNoPermission(apiHost string) {
 		`{
 			"msgId": 1,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "View access denied for: 048300551",
+			"errorText": "View access denied for: OT_SCAN (048300551)",
 			"pseudoIntensityResp": {}
 		}`,
 	)
@@ -425,7 +425,7 @@ func testScanDataNoPermission(apiHost string) {
 		`{
 			"msgId": 2,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "View access denied for: 048300551",
+			"errorText": "View access denied for: OT_SCAN (048300551)",
 			"spectrumResp": {}
 		}`,
 	)
@@ -435,7 +435,7 @@ func testScanDataNoPermission(apiHost string) {
 		`{
 			"msgId": 3,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "View access denied for: 048300551",
+			"errorText": "View access denied for: OT_SCAN (048300551)",
 			"spectrumResp": {}
 		}`,
 	)
@@ -444,7 +444,7 @@ func testScanDataNoPermission(apiHost string) {
 		`{"scanMetaLabelsAndTypesReq":{"scanId": "048300551"}}`,
 		`{"msgId":4,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "View access denied for: 048300551",
+			"errorText": "View access denied for: OT_SCAN (048300551)",
 			"scanMetaLabelsAndTypesResp":{}
 		}`,
 	)
@@ -453,7 +453,7 @@ func testScanDataNoPermission(apiHost string) {
 		`{"scanEntryReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
 		`{"msgId":5,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "View access denied for: 048300551",
+			"errorText": "View access denied for: OT_SCAN (048300551)",
 			"scanEntryResp":{}
 		}`,
 	)
@@ -462,7 +462,7 @@ func testScanDataNoPermission(apiHost string) {
 		`{"scanEntryMetadataReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
 		`{"msgId":6,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "View access denied for: 048300551",
+			"errorText": "View access denied for: OT_SCAN (048300551)",
 			"scanEntryMetadataResp":{}
 		}`,
 	)
@@ -471,7 +471,7 @@ func testScanDataNoPermission(apiHost string) {
 		`{"scanBeamLocationsReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
 		`{"msgId":7,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "View access denied for: 048300551",
+			"errorText": "View access denied for: OT_SCAN (048300551)",
 			"scanBeamLocationsResp":{}
 		}`,
 	)
@@ -480,7 +480,7 @@ func testScanDataNoPermission(apiHost string) {
 		`{"imageListReq":{"scanIds": ["048300551"]}}`,
 		`{"msgId":8,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "View access denied for: 048300551",
+			"errorText": "View access denied for: OT_SCAN (048300551)",
 			"imageListResp":{}
 		}`,
 	)
@@ -489,7 +489,7 @@ func testScanDataNoPermission(apiHost string) {
 		`{"imageGetReq":{"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
 		`{"msgId":9,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "User cannot access scan 048300551 associated with image 048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png. Error: View access denied for: 048300551",
+			"errorText": "User cannot access scan 048300551 associated with image 048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png. Error: View access denied for: OT_SCAN (048300551)",
 			"imageGetResp":{}
 		}`,
 	)
@@ -498,7 +498,7 @@ func testScanDataNoPermission(apiHost string) {
 		`{"detectedDiffractionPeaksReq":{"scanId": "048300551", "entries": {"indexes": [128,-1,131]}}}`,
 		`{"msgId":10,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "View access denied for: 048300551",
+			"errorText": "View access denied for: OT_SCAN (048300551)",
 			"detectedDiffractionPeaksResp":{}
 		}`,
 	)
@@ -507,7 +507,7 @@ func testScanDataNoPermission(apiHost string) {
 		`{"scanMetaWriteReq":{"scanId": "048300551", "title": "Something", "description": "The blah"}}`,
 		`{"msgId":11,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "Edit access denied for: 048300551",
+			"errorText": "Edit access denied for: OT_SCAN (048300551)",
 			"scanMetaWriteResp": {}
 		}`,
 	)
@@ -517,7 +517,7 @@ func testScanDataNoPermission(apiHost string) {
 			`{"imageBeamLocationsReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
 			`{"msgId":9,
 				"status": "WS_NO_PERMISSION",
-				"errorText": "View access denied for: 048300551",
+				"errorText": "View access denied for: OT_SCAN (048300551)",
 				"imageBeamLocationsResp":{}
 			}`,
 		)
@@ -1511,7 +1511,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 			`{"scanMetaWriteReq":{"scanId": "048300551", "title": "Something", "description": "The blah"}}`,
 			`{"msgId":14,
 				"status": "WS_NO_PERMISSION",
-				"errorText": "Edit access denied for: 048300551",
+				"errorText": "Edit access denied for: OT_SCAN (048300551)",
 				"scanMetaWriteResp": {}
 			}`,
 		)

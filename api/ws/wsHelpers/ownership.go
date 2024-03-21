@@ -93,7 +93,7 @@ func CheckObjectAccessForUser(requireEdit bool, objectId string, objectType prot
 	}
 
 	// Access denied
-	return nil, errorwithstatus.MakeUnauthorisedError(fmt.Errorf("%v access denied for: %v", accessType, objectId))
+	return nil, errorwithstatus.MakeUnauthorisedError(fmt.Errorf("%v access denied for: %v (%v)", accessType, objectType.String(), objectId))
 }
 
 // Gets all object IDs which the user has access to - if requireEdit is true, it checks for edit access
