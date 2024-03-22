@@ -112,6 +112,11 @@ func testExpressionRuntimeMsgs(apiHost string) {
 		`{"msgId":5,"status":"WS_OK", "expressionDeleteResp":{}}`,
 	)
 
+	u1.AddSendReqAction("Read expression back expecting runtime stats",
+		`{"expressionGetReq":{ "id": "non-existant-id"}}`,
+		`{"msgId": 6, "status":"WS_NOT_FOUND", "errorText": "non-existant-id not found", "expressionGetResp":{}}`,
+	)
+
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 }
