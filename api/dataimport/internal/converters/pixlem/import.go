@@ -19,6 +19,7 @@ package pixlem
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -44,7 +45,7 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 		if entry.IsDir() {
 			// If it's not the first one, we can't do this
 			if len(subdir) > 0 {
-				return nil, "", errors.New("Found multiple subdirs, expected one in: " + importPath)
+				return nil, "", fmt.Errorf("Found multiple subdirs (\"%v\", \"%v\"), expected one in: \"%v\"", subdir, entry.Name(), importPath)
 			}
 			subdir = entry.Name()
 		}
