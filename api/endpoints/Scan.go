@@ -51,6 +51,19 @@ func PutScanData(params apiRouter.ApiHandlerGenericParams) error {
 	s3PathStart := path.Join(filepaths.DatasetUploadRoot, scanId)
 
 	// NOTE: We overwrite any previous attempts without worry!
+	existing, err := params.Svcs.FS.ListObjects(destBucket, s3PathStart+"/")
+	if err == nil && len(existing) > 0 {
+		// Delete all that exists
+		msg := fmt.Sprintf("PutScan for \"%v\": Deleting existing file...\n", scanId)
+		for _, existingItem := range existing {
+			msg += existingItem + "\n"
+			if err := params.Svcs.FS.DeleteObject(destBucket, existingItem); err != nil {
+				return fmt.Errorf("Failed to delete: \"%v\", error: %v", existing, err)
+			}
+		}
+
+		params.Svcs.Log.Infof(msg)
+	}
 
 	// Read in body
 	zippedData, err := io.ReadAll(params.Request.Body)

@@ -492,6 +492,24 @@ func Example_ImportForTrigger_Manual_SBU_NoAutoShare() {
 	// <nil>|{"id":"test1234sbu","title":"test1234sbu","dataTypes":[{"dataType":"SD_XRF","count":2520}],"instrument":"SBU_BREADBOARD","instrumentConfig":"StonyBrookBreadboard","meta":{"DriveID":"0","RTT":"","SCLK":"0","SOL":"","Site":"","SiteID":"0","Target":"","TargetID":"0"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":2520,"PseudoIntensities":0},"creatorUserId":"SBUImport"}
 }
 
+/* Didnt get this working when the above was changed. Problem is this still generates the user name: SBUImport, so the
+   premise of the test fails because it doesn't end up with no user id at that point!
+func Test_ImportForTrigger_Manual_SBU_NoAutoShare_FailForPipeline(t *testing.T) {
+	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Manual_OK2", "", "")
+
+	trigger := `{
+	"datasetID": "test1234sbu",
+	"jobID": "dataimport-unittest123sbu"
+}`
+
+	_, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+
+	// Make sure we got the error
+	if !strings.HasSuffix(err.Error(), "Cannot work out groups to auto-share imported dataset with") {
+		t.Errorf("ImportForTrigger didnt return expected error")
+	}
+}
+*/
 // Import a breadboard dataset from manual uploaded zip file
 func Example_importForTrigger_Manual_EM() {
 	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("ManualEM_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
