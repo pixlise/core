@@ -12,6 +12,14 @@ import (
 )
 
 func GetDBUser(userId string, db *mongo.Database) (*protos.UserDBItem, error) {
+	// opts := options.FindOne().SetProjection(bson.D{
+	// 	{Key: "_id", Value: true},
+	// 	{Key: "info.id", Value: true},
+	// 	{Key: "info.name", Value: true},
+	// 	{Key: "info.email", Value: true},
+	// 	{Key: "datacollectionversion", Value: true},
+	// 	{Key: "notificationsettings", Value: true},
+	// })
 	userResult := db.Collection(dbCollections.UsersName).FindOne(context.TODO(), bson.M{"_id": userId})
 	if userResult.Err() != nil {
 		return nil, userResult.Err()
