@@ -334,7 +334,7 @@ func (s *PIXLISEDataSaver) Save(
 		if beamVer < 1 {
 			beamVer = 1
 		}
-		err := beamLocation.ImportBeamLocationToDB(imgItem.Image, data.Instrument, data.DatasetID, beamVer, idx, &exp, db, jobLog)
+		err := beamLocation.ImportBeamLocationToDB(path.Join(data.DatasetID, imgItem.Image), data.Instrument, data.DatasetID, beamVer, idx, &exp, db, jobLog)
 		if err != nil {
 			return fmt.Errorf("Failed to import beam locations for image %v into DB. Error: %v", imgItem.Image, err)
 		}
