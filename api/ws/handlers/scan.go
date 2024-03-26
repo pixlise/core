@@ -394,13 +394,16 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 			return nil, fmt.Errorf("Zip file missing RFS sub-directory")
 		}
 
-		// Save the contents as a zip file in the uploads area
-		savePath := path.Join(s3PathStart, "data.zip")
-		err = fs.WriteObject(destBucket, savePath, zippedData)
-		if err != nil {
-			return nil, err
-		}
-		logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
+		// NOTE: we just downloaded the zip from here, no point uploading it again!
+		/*
+			// Save the contents as a zip file in the uploads area
+			savePath := path.Join(s3PathStart, "data.zip")
+			err = fs.WriteObject(destBucket, savePath, zippedData)
+			if err != nil {
+				return nil, err
+			}
+			logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
+		*/
 	} else {
 		// Expecting flat zip of MSA files
 		count := 0
