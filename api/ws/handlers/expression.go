@@ -110,10 +110,7 @@ func createExpression(expr *protos.DataExpression, hctx wsHelpers.HandlerContext
 	expr.Id = id
 
 	// We need to create an ownership item along with it
-	ownerItem, err := wsHelpers.MakeOwnerForWrite(id, protos.ObjectType_OT_EXPRESSION, hctx.SessUser.User.Id, hctx.Svcs.TimeStamper.GetTimeNowSec())
-	if err != nil {
-		return nil, err
-	}
+	ownerItem := wsHelpers.MakeOwnerForWrite(id, protos.ObjectType_OT_EXPRESSION, hctx.SessUser.User.Id, hctx.Svcs.TimeStamper.GetTimeNowSec())
 
 	expr.ModifiedUnixSec = ownerItem.CreatedUnixSec
 

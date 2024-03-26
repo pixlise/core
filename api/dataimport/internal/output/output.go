@@ -318,6 +318,10 @@ func (s *PIXLISEDataSaver) Save(
 
 	// We work out the default file name when copying output images now... because if there isn't one, we may pick one during that process.
 	defaultContextImage, err := copyImagesToOutput(contextImageSrcPath, []string{data.DatasetID}, data.DatasetID, outputImagesPath, data, db, jobLog)
+	if err != nil {
+		return err
+	}
+
 	exp.MainContextImage = defaultContextImage
 
 	// Set any matched aligned images - this happens after copyImagesToOutput because file names may be modified by it depending on formats
@@ -359,7 +363,7 @@ func (s *PIXLISEDataSaver) Save(
 
 	summaryData := makeSummaryFileContent(&exp, data.DatasetID, data.Instrument, data.Meta, int(fi.Size()), creationUnixTimeSec, data.CreatorUserId)
 
-	jobLog.Infof("Writing summary to DB...")
+	jobLog.Infof("Writing summary to DB for %v...", summaryData.Id)
 
 	coll = db.Collection(dbCollections.ScansName)
 	opt := options.Update().SetUpsert(true)
@@ -374,7 +378,7 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	// Set ownership
-	ownerItem, err := wsHelpers.MakeOwnerForWrite(summaryData.Id, protos.ObjectType_OT_SCAN, summaryData.CreatorUserId, creationUnixTimeSec)
+	ownerItem := wsHelpers.MakeOwnerForWrite(summaryData.Id, protos.ObjectType_OT_SCAN, summaryData.CreatorUserId, creationUnixTimeSec)
 
 	ownerItem.Viewers = autoShare.Viewers
 	ownerItem.Editors = autoShare.Editors
@@ -382,6 +386,7 @@ func (s *PIXLISEDataSaver) Save(
 	coll = db.Collection(dbCollections.OwnershipName)
 	opt = options.Update().SetUpsert(true)
 
+	jobLog.Infof("Writing ownership to DB for scan %v...", ownerItem.Id)
 	result, err = coll.UpdateOne(context.TODO(), bson.D{{Key: "_id", Value: ownerItem.Id}}, bson.D{{Key: "$set", Value: ownerItem}}, opt)
 	if err != nil {
 		jobLog.Errorf("Failed to write ownership item to DB: %v", err)
@@ -408,10 +413,13 @@ func insertDefaultImage(db *mongo.Database, scanId string, defaultImage string, 
 	coll := db.Collection(dbCollections.ScanDefaultImagesName)
 	opt := options.InsertOne()
 
-	defaultImageResult, err := coll.InsertOne(context.TODO(), &protos.ScanImageDefaultDB{ScanId: scanId, DefaultImageFileName: path.Join(scanId, defaultImage)}, opt)
+	imgPath := path.Join(scanId, defaultImage)
+	jobLog.Infof("Writing default image %v to DB for scan %v...", imgPath, scanId)
+	defaultImageResult, err := coll.InsertOne(context.TODO(), &protos.ScanImageDefaultDB{ScanId: scanId, DefaultImageFileName: imgPath}, opt)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
 			// Don't overwrite, so we're OK with this
+			jobLog.Infof("Default image for scan %v already exists, not overwriting existing one in case of user edit.", scanId)
 			return nil
 		}
 		return err
