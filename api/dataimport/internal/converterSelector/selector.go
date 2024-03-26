@@ -50,6 +50,7 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 		}
 	*/
 	// Check if it's a PIXL FM style dataset
+	log.Infof("Checking path \"%v\" for PIXL FM structure...", importPath)
 	pathType, err := pixlfm.DetectPIXLFMStructure(importPath)
 	if len(pathType) > 0 && err == nil {
 		// We know it's a PIXL FM type dataset... it'll later be determined which one
@@ -75,10 +76,14 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 	var detectorFile dataimportModel.DetectorChoice
 	err = localFS.ReadJSON(detPath, "", &detectorFile, false)
 	if err == nil {
+		log.Infof("Loaded detector.json...")
+
 		// We found it, work out based on what's in there
 		if strings.HasSuffix(detectorFile.Detector, "-breadboard") {
+			log.Infof("Assuming breadboard dataset...")
 			return jplbreadboard.MSATestData{}, nil
 		} else if detectorFile.Detector == "pixl-em" {
+			log.Infof("Assuming PIXL EM dataset...")
 			return pixlem.PIXLEM{}, nil
 		}
 	} else {
