@@ -305,8 +305,9 @@ func (s *PIXLISEDataSaver) Save(
 			} else {
 				return fmt.Errorf("Cannot work out groups to auto-share imported dataset with")
 			}
+		} else {
+			return autoShareResult.Err()
 		}
-		return autoShareResult.Err()
 	} else {
 		err := autoShareResult.Decode(autoShare)
 
