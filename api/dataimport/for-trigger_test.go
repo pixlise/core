@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"testing"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/specialUserIds"
@@ -373,6 +372,7 @@ func printManualOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database,
 		"WARNING: No main context image determined",
 		"Diffraction db saved successfully",
 		"Warning: No import.json found, defaults will be used",
+		"No auto-share destination found, so only importing user will be able to access this dataset.",
 	}
 
 	for _, msg := range requiredLogs {
@@ -422,6 +422,7 @@ func Example_importForTrigger_Manual_JPL() {
 	// Logged "WARNING: No main context image determined": true
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Warning: No import.json found, defaults will be used": true
+	// Logged "No auto-share destination found, so only importing user will be able to access this dataset.": false
 	// <nil>|{"id":"test1234","title":"test1234","dataTypes":[{"dataType":"SD_XRF","count":2520}],"instrument":"JPL_BREADBOARD","instrumentConfig":"Breadboard","meta":{"DriveID":"0","RTT":"","SCLK":"0","SOL":"","Site":"","SiteID":"0","Target":"","TargetID":"0"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":2520,"PseudoIntensities":0},"creatorUserId":"JPLImport"}
 }
 
@@ -454,11 +455,12 @@ func Example_importForTrigger_Manual_SBU() {
 	// Logged "WARNING: No main context image determined": true
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Warning: No import.json found, defaults will be used": false
+	// Logged "No auto-share destination found, so only importing user will be able to access this dataset.": false
 	// <nil>|{"id":"test1234sbu","title":"test1234sbu","dataTypes":[{"dataType":"SD_XRF","count":2520}],"instrument":"SBU_BREADBOARD","instrumentConfig":"StonyBrookBreadboard","meta":{"DriveID":"0","RTT":"","SCLK":"0","SOL":"","Site":"","SiteID":"0","Target":"","TargetID":"0"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":2520,"PseudoIntensities":0},"creatorUserId":"SBUImport"}
 }
 
 // Import a breadboard dataset from manual uploaded zip file
-func Test_ImportForTrigger_Manual_SBU_NoAutoShare(t *testing.T) {
+func Example_ImportForTrigger_Manual_SBU_NoAutoShare() {
 	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Manual_OK2", specialUserIds.JPLImport, "JPLTestUserGroupId")
 
 	trigger := `{
@@ -466,12 +468,28 @@ func Test_ImportForTrigger_Manual_SBU_NoAutoShare(t *testing.T) {
 	"jobID": "dataimport-unittest123sbu"
 }`
 
-	_, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
 
-	// Make sure we got the error
-	if !strings.HasSuffix(err.Error(), "Cannot work out groups to auto-share imported dataset with") {
-		t.Errorf("ImportForTrigger didnt return expected error")
-	}
+	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
+
+	printManualOKLogOutput(log, db, "test1234sbu", 4)
+
+	// Output:
+	// Errors: <nil>, changes: unknown, isUpdate: false
+	// Logged "Downloading archived zip files...": true
+	// Logged "Downloaded 0 zip files, unzipped 0 files": true
+	// Logged "No zip files found in archive, dataset may have been manually uploaded. Trying to download...": true
+	// Logged "Dataset test1234sbu downloaded 4 files from manual upload area": true
+	// Logged "Downloading pseudo-intensity ranges...": true
+	// Logged "Downloading user customisation files...": true
+	// Logged "Reading 1261 files from spectrum directory...": true
+	// Logged "Reading spectrum [1135/1260] 90%": true
+	// Logged "PMC 1261 has 4 MSA/spectrum entries": true
+	// Logged "WARNING: No main context image determined": true
+	// Logged "Diffraction db saved successfully": true
+	// Logged "Warning: No import.json found, defaults will be used": false
+	// Logged "No auto-share destination found, so only importing user will be able to access this dataset.": true
+	// <nil>|{"id":"test1234sbu","title":"test1234sbu","dataTypes":[{"dataType":"SD_XRF","count":2520}],"instrument":"SBU_BREADBOARD","instrumentConfig":"StonyBrookBreadboard","meta":{"DriveID":"0","RTT":"","SCLK":"0","SOL":"","Site":"","SiteID":"0","Target":"","TargetID":"0"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":2520,"PseudoIntensities":0},"creatorUserId":"SBUImport"}
 }
 
 // Import a breadboard dataset from manual uploaded zip file
@@ -503,6 +521,7 @@ func Example_importForTrigger_Manual_EM() {
 	// Logged "WARNING: No main context image determined": false
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Warning: No import.json found, defaults will be used": false
+	// Logged "No auto-share destination found, so only importing user will be able to access this dataset.": false
 	// <nil>|{"id":"048300551","title":"048300551","dataTypes":[{"dataType":"SD_IMAGE","count":4},{"dataType":"SD_XRF","count":242}],"instrument":"PIXL_EM","instrumentConfig":"PIXL-EM-E2E","meta":{"DriveID":"1712","RTT":"048300551","SCLK":"678031418","SOL":"0125","Site":"","SiteID":"4","Target":"","TargetID":"?"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":242,"PseudoIntensities":121},"creatorUserId":"PIXLISEImport"}
 }
 
