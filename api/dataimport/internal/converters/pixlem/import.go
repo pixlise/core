@@ -18,10 +18,6 @@
 package pixlem
 
 import (
-	"errors"
-	"os"
-	"path/filepath"
-
 	"github.com/pixlise/core/v4/api/dataimport/internal/converters/pixlfm"
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 	"github.com/pixlise/core/v4/core/logger"
@@ -36,31 +32,11 @@ type PIXLEM struct {
 }
 
 func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, datasetIDExpected string, log logger.ILogger) (*dataConvertModels.OutputData, string, error) {
-	// Find the subdir
-	subdir := ""
-
-	c, _ := os.ReadDir(importPath)
-	for _, entry := range c {
-		if entry.IsDir() {
-			// If it's not the first one, we can't do this
-			if len(subdir) > 0 {
-				return nil, "", errors.New("Found multiple subdirs, expected one in: " + importPath)
-			}
-			subdir = entry.Name()
-		}
-	}
-
-	if len(subdir) <= 0 {
-		return nil, "", errors.New("Failed to find PIXL data subdir in: " + importPath)
-	}
-
-	// Form the actual path to the files
-	subImportPath := filepath.Join(importPath, subdir)
 	fmImporter := pixlfm.PIXLFM{}
 
 	// Override importers group and detector
 	fmImporter.SetOverrides(protos.ScanInstrument_PIXL_EM, "PIXL-EM-E2E")
 
 	// Now we can import it like normal
-	return fmImporter.Import(subImportPath, pseudoIntensityRangesPath, datasetIDExpected, log)
+	return fmImporter.Import(importPath, pseudoIntensityRangesPath, datasetIDExpected, log)
 }
