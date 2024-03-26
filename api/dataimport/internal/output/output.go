@@ -294,7 +294,17 @@ func (s *PIXLISEDataSaver) Save(
 	if autoShareResult.Err() != nil {
 		// We couldn't find someone to auto-share it with, if we don't have anyone to share with, just fail here
 		if autoShareResult.Err() == mongo.ErrNoDocuments {
-			return fmt.Errorf("Cannot work out groups to auto-share imported dataset with")
+			// If the user has no auto-share destination configured, share with just the user - BUT if we're
+			// not dealing with a user here, we must be importing via the pipeline, in which case it should've
+			// been configured to share already...
+			if len(data.CreatorUserId) > 0 {
+				jobLog.Infof("No auto-share destination found, so only importing user will be able to access this dataset.")
+				autoShare.Id = data.CreatorUserId
+				autoShare.Viewers = &protos.UserGroupList{UserIds: []string{}, GroupIds: []string{}}
+				autoShare.Editors = &protos.UserGroupList{UserIds: []string{data.CreatorUserId}, GroupIds: []string{}}
+			} else {
+				return fmt.Errorf("Cannot work out groups to auto-share imported dataset with")
+			}
 		}
 		return autoShareResult.Err()
 	} else {
