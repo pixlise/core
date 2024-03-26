@@ -408,7 +408,7 @@ func insertDefaultImage(db *mongo.Database, scanId string, defaultImage string, 
 	coll := db.Collection(dbCollections.ScanDefaultImagesName)
 	opt := options.InsertOne()
 
-	defaultImageResult, err := coll.InsertOne(context.TODO(), &protos.ScanImageDefaultDB{ScanId: scanId, DefaultImageFileName: defaultImage}, opt)
+	defaultImageResult, err := coll.InsertOne(context.TODO(), &protos.ScanImageDefaultDB{ScanId: scanId, DefaultImageFileName: path.Join(scanId, defaultImage)}, opt)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
 			// Don't overwrite, so we're OK with this
