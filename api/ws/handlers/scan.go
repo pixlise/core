@@ -310,7 +310,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	destBucket := hctx.Svcs.Config.ManualUploadBucket
 	fs := hctx.Svcs.FS
 	logger := hctx.Svcs.Log
-	logger.Infof("Dataset create started for format: %v, id: %v", req.Id, req.Format)
+	logger.Infof("Dataset create started for format: %v, id: %v", req.Format, req.Id)
 
 	// Validate the dataset ID - can't contain funny characters because it ends up as an S3 path
 	// NOTE: we also turn space to _ here! Having spaces in the path broke quants because the
@@ -325,7 +325,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	s3PathStart := path.Join(filepaths.DatasetUploadRoot, datasetID)
 
 	// Append a few random chars to make it more unique from this point on
-	datasetID += "_" + utils.RandStringBytesMaskImpr(6)
+	//datasetID += "_" + utils.RandStringBytesMaskImpr(6)
 
 	// We don't need to check anything beyond does this file exist?
 	/*
