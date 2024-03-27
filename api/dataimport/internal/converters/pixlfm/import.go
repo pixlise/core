@@ -272,6 +272,8 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 					return nil, "", err
 				}
 				// Stop after first file
+				log.Infof("Extracting metadata from file name: %v", file)
+				log.Infof("Meta extracted: %v", housekeepingFileNameMeta.ToString())
 				break
 			}
 		case "pseudoIntensityDir":
