@@ -257,10 +257,15 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, marsViewerExp
 		return "", nil, nil, err
 	}
 
+	imgWidth := uint32(0)
+	imgHeight := uint32(0)
+
 	var img image.Image
 
 	if imageExt == ".IMG" {
 		w, h, d, err := imgFormat.ReadIMGFile(imgData)
+		imgWidth = uint32(w)
+		imgHeight = uint32(h)
 		if err != nil {
 			return "", nil, nil, fmt.Errorf("Failed to read IMG file: %v. Error: %v", imageUrl, err)
 		}
@@ -280,7 +285,7 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, marsViewerExp
 
 		imgData = buf.Bytes()
 	} else {
-		img, _, err = image.Decode(bytes.NewReader(imgData))
+		imgWidth, imgHeight, err = utils.ReadImageDimensions(path.Base(imgPath), imgData)
 		if err != nil {
 			return "", nil, nil, fmt.Errorf("Failed to read image file: %v. Error: %v", imageUrl, err)
 		}
@@ -296,7 +301,9 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, marsViewerExp
 		"", //baseRTT,
 		"",
 		nil,
-		img)
+		imgWidth,
+		imgHeight,
+	)
 
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
@@ -523,7 +530,7 @@ func importWarpedImage(warpedImageUrl string, rttWarpedTo string, baseImage stri
 		return err
 	}
 
-	img, _, err := image.Decode(bytes.NewReader(imgData))
+	imgWidth, imgHeight, err := utils.ReadImageDimensions(path.Base(warpedSrcPath), imgData)
 	if err != nil {
 		return err
 	}
@@ -545,7 +552,9 @@ func importWarpedImage(warpedImageUrl string, rttWarpedTo string, baseImage stri
 		rttWarpedTo,
 		"",
 		matchInfo,
-		img)
+		imgWidth,
+		imgHeight,
+	)
 
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)

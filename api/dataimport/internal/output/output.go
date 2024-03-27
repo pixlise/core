@@ -319,7 +319,7 @@ func (s *PIXLISEDataSaver) Save(
 	// We work out the default file name when copying output images now... because if there isn't one, we may pick one during that process.
 	defaultContextImage, err := copyImagesToOutput(contextImageSrcPath, []string{data.DatasetID}, data.DatasetID, outputImagesPath, data, db, jobLog)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error copying images: %v", err)
 	}
 
 	exp.MainContextImage = defaultContextImage
@@ -664,19 +664,36 @@ func insertImageDBEntryForImage(
 	matchInfo *protos.ImageMatchTransform,
 	jobLog logger.ILogger) error {
 	// Read the image - we used to only copy files around but here we need to open it for meta data
-	imgFile, err := utils.ReadImageFile(imagePath)
+	imgbytes, err := os.ReadFile(imagePath)
 	if err != nil {
 		return err
 	}
 
-	//defer imgFile.Close()
+	imgWidth, imgHeight, err := utils.ReadImageDimensions(imagePath, imgbytes)
+	if err != nil {
+		return err
+	}
 
 	stats, err := os.Stat(imagePath)
+	if err != nil {
+		return err
+	}
 
 	saveName := filepath.Base(imagePath)
 	savePath := path.Join(originScanId, saveName)
 
-	img := utils.MakeScanImage(savePath, uint32(stats.Size()), source, purpose, associatedScanIds, originScanId, originImageURL, matchInfo, imgFile)
+	img := utils.MakeScanImage(
+		savePath,
+		uint32(stats.Size()),
+		source,
+		purpose,
+		associatedScanIds,
+		originScanId,
+		originImageURL,
+		matchInfo,
+		imgWidth,
+		imgHeight,
+	)
 	return insertImageDBEntry(db, img, jobLog)
 }
 
