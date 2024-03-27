@@ -382,12 +382,7 @@ func (r *quantNodeRunner) triggerPiquantNodes(wg *sync.WaitGroup) {
 		},
 	}
 
-	ownerItem, err := wsHelpers.MakeOwnerForWrite(r.jobId, protos.ObjectType_OT_QUANTIFICATION, r.quantStartSettings.RequestorUserId, now)
-	if err != nil {
-		msg := fmt.Sprintf("Failed to create ownership info for quant job %v. Error was: %v", r.jobId, err)
-		r.completeJobState(false, msg, quantOutPath, piquantLogList)
-		return
-	}
+	ownerItem := wsHelpers.MakeOwnerForWrite(r.jobId, protos.ObjectType_OT_QUANTIFICATION, r.quantStartSettings.RequestorUserId, now)
 
 	err = writeQuantAndOwnershipToDB(summary, ownerItem, svcs.MongoDB)
 	if err != nil {

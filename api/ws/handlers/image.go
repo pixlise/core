@@ -1,11 +1,9 @@
 package wsHandler
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"image"
 	"net/http"
 	"path"
 	"strings"
@@ -338,7 +336,7 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 	db := hctx.Svcs.MongoDB
 
 	// Save image meta in collection
-	img, _, err := image.Decode(bytes.NewReader(req.ImageData))
+	imgWidth, imgHeight, err := utils.ReadImageDimensions(req.Name, req.ImageData)
 	if err != nil {
 		return nil, err
 	}
@@ -364,7 +362,9 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 		req.OriginScanId,
 		"",
 		req.GetBeamImageRef(),
-		img)
+		imgWidth,
+		imgHeight,
+	)
 
 	coll = db.Collection(dbCollections.ImagesName)
 

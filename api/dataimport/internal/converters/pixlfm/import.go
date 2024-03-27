@@ -85,11 +85,13 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 	rgbuImgDir := fileStructure{}
 	discoImgDir := fileStructure{}
 
+	log.Infof("Checking path \"%v\" for FM dataset type", importPath)
 	pathType, err := DetectPIXLFMStructure(importPath)
 	if err != nil {
 		return nil, "", err
 	}
 
+	log.Infof("Found path \"%v\" is of type %v", importPath, pathType)
 	if pathType == "DataDrive" {
 		// This is the official way we receive PIXL FM data from Mars
 		// We expect these directories to exist...
@@ -270,6 +272,8 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 					return nil, "", err
 				}
 				// Stop after first file
+				log.Infof("Extracting metadata from file name: %v", file)
+				log.Infof("Meta extracted: %v", housekeepingFileNameMeta.ToString())
 				break
 			}
 		case "pseudoIntensityDir":

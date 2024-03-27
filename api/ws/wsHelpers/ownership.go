@@ -15,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, creatorUserId string, createTimeUnixSec int64) (*protos.OwnershipItem, error) {
+func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, creatorUserId string, createTimeUnixSec int64) *protos.OwnershipItem {
 	ownerItem := &protos.OwnershipItem{
 		Id:             objectId,
 		ObjectType:     objectType,
@@ -30,7 +30,7 @@ func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, creatorUse
 		}
 	}
 
-	return ownerItem, nil
+	return ownerItem
 }
 
 // Checks object access - if requireEdit is true, it checks for edit access
@@ -185,7 +185,7 @@ func ListGroupAccessibleIDs(requireEdit bool, objectType protos.ObjectType, grou
 	return result, nil
 }
 
-func MakeOwnerSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, db *mongo.Database, ts timestamper.ITimeStamper) *protos.OwnershipSummary {
+func FetchOwnershipSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, db *mongo.Database, ts timestamper.ITimeStamper, fullDetails bool) *protos.OwnershipSummary {
 	user, err := getUserInfo(ownership.CreatorUserId, db, ts)
 	result := &protos.OwnershipSummary{
 		CreatedUnixSec: ownership.CreatedUnixSec,
@@ -237,7 +237,21 @@ func MakeOwnerSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, 
 	}
 
 	result.SharedWithOthers = result.ViewerUserCount > 0 || result.ViewerGroupCount > 0 || result.EditorUserCount > 0 || result.EditorGroupCount > 0
+
+	// Hide more data intensive fields if we don't care
+	if !fullDetails {
+		result.CreatorUser.IconURL = ""
+	}
+
 	return result
+}
+
+func MakeOwnerSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, db *mongo.Database, ts timestamper.ITimeStamper) *protos.OwnershipSummary {
+	return FetchOwnershipSummary(ownership, sessionUser, db, ts, false)
+}
+
+func MakeFullOwnerSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, db *mongo.Database, ts timestamper.ITimeStamper) *protos.OwnershipSummary {
+	return FetchOwnershipSummary(ownership, sessionUser, db, ts, true)
 }
 
 func FindUserIdsFor(objectId string, mongoDB *mongo.Database) ([]string, error) {

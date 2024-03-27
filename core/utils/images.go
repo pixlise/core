@@ -28,18 +28,21 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func ReadImageFile(path string) (image.Image, error) {
-	// Load the full context image from test data
-	imgbytes, err := os.ReadFile(path)
+// Returns width, height and error
+func ReadImageDimensions(imageName string, imgBytes []byte) (uint32, uint32, error) {
+	// Try to read the image
+	img, _, err := image.Decode(bytes.NewReader(imgBytes))
 	if err != nil {
-		return nil, err
-	}
+		// Failed, maybe it's a RGBU TIF image
+		upperName := strings.ToUpper(imageName)
+		if strings.Contains(err.Error(), "sample format") && (strings.Contains(upperName, "VIS_") || strings.Contains(upperName, "MSA_")) && strings.HasSuffix(upperName, ".TIF") {
+			// We can't read these tif files, but it's an RGBU image, and they have a known resolution - the same as our MCC images
+			return 752, 580, nil
+		}
 
-	img, _, err := image.Decode(bytes.NewReader(imgbytes))
-	if err != nil {
-		return nil, err
+		return 0, 0, err
 	}
-	return img, nil
+	return uint32(img.Bounds().Dx()), uint32(img.Bounds().Dy()), nil
 }
 
 func ImagesEqual(aPath, bPath string) error {
@@ -111,13 +114,14 @@ func MakeScanImage(
 	originScanId string,
 	originImageURL string,
 	matchInfo *protos.ImageMatchTransform,
-	img image.Image) *protos.ScanImage {
+	width uint32,
+	height uint32) *protos.ScanImage {
 	result := &protos.ScanImage{
 		ImagePath: imgPath,
 
 		Source:   source,
-		Width:    uint32(img.Bounds().Dx()),
-		Height:   uint32(img.Bounds().Dy()),
+		Width:    width,
+		Height:   height,
 		FileSize: fileSize,
 		Purpose:  purpose,
 

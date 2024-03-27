@@ -294,9 +294,20 @@ func (s *PIXLISEDataSaver) Save(
 	if autoShareResult.Err() != nil {
 		// We couldn't find someone to auto-share it with, if we don't have anyone to share with, just fail here
 		if autoShareResult.Err() == mongo.ErrNoDocuments {
-			return fmt.Errorf("Cannot work out groups to auto-share imported dataset with")
+			// If the user has no auto-share destination configured, share with just the user - BUT if we're
+			// not dealing with a user here, we must be importing via the pipeline, in which case it should've
+			// been configured to share already...
+			if len(data.CreatorUserId) > 0 {
+				jobLog.Infof("No auto-share destination found, so only importing user will be able to access this dataset.")
+				autoShare.Id = data.CreatorUserId
+				autoShare.Viewers = &protos.UserGroupList{UserIds: []string{}, GroupIds: []string{}}
+				autoShare.Editors = &protos.UserGroupList{UserIds: []string{data.CreatorUserId}, GroupIds: []string{}}
+			} else {
+				return fmt.Errorf("Cannot work out groups to auto-share imported dataset with")
+			}
+		} else {
+			return autoShareResult.Err()
 		}
-		return autoShareResult.Err()
 	} else {
 		err := autoShareResult.Decode(autoShare)
 
@@ -307,6 +318,10 @@ func (s *PIXLISEDataSaver) Save(
 
 	// We work out the default file name when copying output images now... because if there isn't one, we may pick one during that process.
 	defaultContextImage, err := copyImagesToOutput(contextImageSrcPath, []string{data.DatasetID}, data.DatasetID, outputImagesPath, data, db, jobLog)
+	if err != nil {
+		return fmt.Errorf("Error copying images: %v", err)
+	}
+
 	exp.MainContextImage = defaultContextImage
 
 	// Set any matched aligned images - this happens after copyImagesToOutput because file names may be modified by it depending on formats
@@ -323,7 +338,7 @@ func (s *PIXLISEDataSaver) Save(
 		if beamVer < 1 {
 			beamVer = 1
 		}
-		err := beamLocation.ImportBeamLocationToDB(imgItem.Image, data.Instrument, data.DatasetID, beamVer, idx, &exp, db, jobLog)
+		err := beamLocation.ImportBeamLocationToDB(path.Join(data.DatasetID, imgItem.Image), data.Instrument, data.DatasetID, beamVer, idx, &exp, db, jobLog)
 		if err != nil {
 			return fmt.Errorf("Failed to import beam locations for image %v into DB. Error: %v", imgItem.Image, err)
 		}
@@ -348,7 +363,7 @@ func (s *PIXLISEDataSaver) Save(
 
 	summaryData := makeSummaryFileContent(&exp, data.DatasetID, data.Instrument, data.Meta, int(fi.Size()), creationUnixTimeSec, data.CreatorUserId)
 
-	jobLog.Infof("Writing summary to DB...")
+	jobLog.Infof("Writing summary to DB for %v...", summaryData.Id)
 
 	coll = db.Collection(dbCollections.ScansName)
 	opt := options.Update().SetUpsert(true)
@@ -363,7 +378,7 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	// Set ownership
-	ownerItem, err := wsHelpers.MakeOwnerForWrite(summaryData.Id, protos.ObjectType_OT_SCAN, summaryData.CreatorUserId, creationUnixTimeSec)
+	ownerItem := wsHelpers.MakeOwnerForWrite(summaryData.Id, protos.ObjectType_OT_SCAN, summaryData.CreatorUserId, creationUnixTimeSec)
 
 	ownerItem.Viewers = autoShare.Viewers
 	ownerItem.Editors = autoShare.Editors
@@ -371,6 +386,7 @@ func (s *PIXLISEDataSaver) Save(
 	coll = db.Collection(dbCollections.OwnershipName)
 	opt = options.Update().SetUpsert(true)
 
+	jobLog.Infof("Writing ownership to DB for scan %v...", ownerItem.Id)
 	result, err = coll.UpdateOne(context.TODO(), bson.D{{Key: "_id", Value: ownerItem.Id}}, bson.D{{Key: "$set", Value: ownerItem}}, opt)
 	if err != nil {
 		jobLog.Errorf("Failed to write ownership item to DB: %v", err)
@@ -397,10 +413,13 @@ func insertDefaultImage(db *mongo.Database, scanId string, defaultImage string, 
 	coll := db.Collection(dbCollections.ScanDefaultImagesName)
 	opt := options.InsertOne()
 
-	defaultImageResult, err := coll.InsertOne(context.TODO(), &protos.ScanImageDefaultDB{ScanId: scanId, DefaultImageFileName: defaultImage}, opt)
+	imgPath := path.Join(scanId, defaultImage)
+	jobLog.Infof("Writing default image %v to DB for scan %v...", imgPath, scanId)
+	defaultImageResult, err := coll.InsertOne(context.TODO(), &protos.ScanImageDefaultDB{ScanId: scanId, DefaultImageFileName: imgPath}, opt)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
 			// Don't overwrite, so we're OK with this
+			jobLog.Infof("Default image for scan %v already exists, not overwriting existing one in case of user edit.", scanId)
 			return nil
 		}
 		return err
@@ -645,19 +664,36 @@ func insertImageDBEntryForImage(
 	matchInfo *protos.ImageMatchTransform,
 	jobLog logger.ILogger) error {
 	// Read the image - we used to only copy files around but here we need to open it for meta data
-	imgFile, err := utils.ReadImageFile(imagePath)
+	imgbytes, err := os.ReadFile(imagePath)
 	if err != nil {
 		return err
 	}
 
-	//defer imgFile.Close()
+	imgWidth, imgHeight, err := utils.ReadImageDimensions(imagePath, imgbytes)
+	if err != nil {
+		return err
+	}
 
 	stats, err := os.Stat(imagePath)
+	if err != nil {
+		return err
+	}
 
 	saveName := filepath.Base(imagePath)
 	savePath := path.Join(originScanId, saveName)
 
-	img := utils.MakeScanImage(savePath, uint32(stats.Size()), source, purpose, associatedScanIds, originScanId, originImageURL, matchInfo, imgFile)
+	img := utils.MakeScanImage(
+		savePath,
+		uint32(stats.Size()),
+		source,
+		purpose,
+		associatedScanIds,
+		originScanId,
+		originImageURL,
+		matchInfo,
+		imgWidth,
+		imgHeight,
+	)
 	return insertImageDBEntry(db, img, jobLog)
 }
 

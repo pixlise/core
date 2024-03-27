@@ -106,10 +106,7 @@ func createExpressionGroup(egroup *protos.ExpressionGroup, hctx wsHelpers.Handle
 	egroup.Id = id
 
 	// We need to create an ownership item along with it
-	ownerItem, err := wsHelpers.MakeOwnerForWrite(id, protos.ObjectType_OT_EXPRESSION_GROUP, hctx.SessUser.User.Id, hctx.Svcs.TimeStamper.GetTimeNowSec())
-	if err != nil {
-		return nil, err
-	}
+	ownerItem := wsHelpers.MakeOwnerForWrite(id, protos.ObjectType_OT_EXPRESSION_GROUP, hctx.SessUser.User.Id, hctx.Svcs.TimeStamper.GetTimeNowSec())
 
 	egroup.ModifiedUnixSec = ownerItem.CreatedUnixSec
 

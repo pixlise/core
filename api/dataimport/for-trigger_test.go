@@ -20,15 +20,16 @@ package dataimport
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"strings"
-	"testing"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/specialUserIds"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/scan"
+	"github.com/pixlise/core/v4/core/utils"
 	"github.com/pixlise/core/v4/core/wstestlib"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -206,7 +207,7 @@ func Example_importForTrigger_OCS_Archive_Exists() {
 	// Log shows exists in archive: true
 }
 
-func printArchiveOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database) {
+func printArchiveOKLogOutput(logger *logger.StdOutLoggerForTest, db *mongo.Database) {
 	// Ensure these log msgs appeared...
 	requiredLogs := []string{
 		"Downloading archived zip files...",
@@ -222,7 +223,7 @@ func printArchiveOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database
 	}
 
 	for _, msg := range requiredLogs {
-		fmt.Printf("Logged \"%v\": %v\n", msg, log.LogContains(msg))
+		fmt.Printf("Logged \"%v\": %v\n", msg, logger.LogContains(msg))
 	}
 
 	// Dump contents of summary file, this verifies most things imported as expected
@@ -235,8 +236,10 @@ func printArchiveOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database
 	summary.TimestampUnixSec = 0
 
 	b, err := protojson.Marshal(summary)
-	s := strings.ReplaceAll(string(b), " ", "")
-	fmt.Printf("%v|%v\n", err, s)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	fmt.Printf("%v|%v\n", err, utils.MakeDeterministicJSON(b, true))
 }
 
 // Import FM-style (simulate trigger by OCS pipeline), file goes to archive, then all files downloaded from archive and dataset created
@@ -302,7 +305,7 @@ func Example_importForTrigger_OCS_Archive_OK() {
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Applying custom title: Naltsos": true
 	// Logged "Matched aligned image: PCCR0577_0718181212_000MSA_N029000020073728500030LUD01.tif, offset(0, 0), scale(1, 1). Match for aligned index: 0": true
-	// <nil>|{"id":"048300551","title":"Naltsos","dataTypes":[{"dataType":"SD_IMAGE","count":5},{"dataType":"SD_RGBU","count":1},{"dataType":"SD_XRF","count":242}],"instrument":"PIXL_FM","instrumentConfig":"PIXL","meta":{"DriveID":"1712","RTT":"048300551","SCLK":"678031418","SOL":"0125","Site":"","SiteID":"4","Target":"","TargetID":"?"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":242,"PseudoIntensities":121},"creatorUserId":"PIXLISEImport"}
+	// <nil>|{"contentCounts": {"BulkSpectra": 2,"DwellSpectra": 0,"MaxSpectra": 2,"NormalSpectra": 242,"PseudoIntensities": 121},"creatorUserId": "PIXLISEImport","dataTypes": [{"count": 5,"dataType": "SD_IMAGE"},{"count": 1,"dataType": "SD_RGBU"},{"count": 242,"dataType": "SD_XRF"}],"id": "048300551","instrument": "PIXL_FM","instrumentConfig": "PIXL","meta": {"DriveId": "1712","RTT": "048300551","SCLK": "678031418","Site": "","SiteId": "4","Sol": "0125","Target": "","TargetId": "?"},"title": "Naltsos"}
 }
 
 // Import FM-style (simulate trigger by dataset edit screen), should create dataset with custom name+image
@@ -355,7 +358,7 @@ func Example_importForTrigger_OCS_DatasetEdit() {
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Applying custom title: Naltsos": true
 	// Logged "Matched aligned image: PCCR0577_0718181212_000MSA_N029000020073728500030LUD01.tif, offset(0, 0), scale(1, 1). Match for aligned index: 0": true
-	// <nil>|{"id":"048300551","title":"Naltsos","dataTypes":[{"dataType":"SD_IMAGE","count":5},{"dataType":"SD_RGBU","count":1},{"dataType":"SD_XRF","count":242}],"instrument":"PIXL_FM","instrumentConfig":"PIXL","meta":{"DriveID":"1712","RTT":"048300551","SCLK":"678031418","SOL":"0125","Site":"","SiteID":"4","Target":"","TargetID":"?"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":242,"PseudoIntensities":121},"creatorUserId":"PIXLISEImport"}
+	// <nil>|{"contentCounts": {"BulkSpectra": 2,"DwellSpectra": 0,"MaxSpectra": 2,"NormalSpectra": 242,"PseudoIntensities": 121},"creatorUserId": "PIXLISEImport","dataTypes": [{"count": 5,"dataType": "SD_IMAGE"},{"count": 1,"dataType": "SD_RGBU"},{"count": 242,"dataType": "SD_XRF"}],"id": "048300551","instrument": "PIXL_FM","instrumentConfig": "PIXL","meta": {"DriveId": "1712","RTT": "048300551","SCLK": "678031418","Site": "","SiteId": "4","Sol": "0125","Target": "","TargetId": "?"},"title": "Naltsos"}
 }
 
 func printManualOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database, datasetId string, fileCount uint32) {
@@ -373,6 +376,7 @@ func printManualOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database,
 		"WARNING: No main context image determined",
 		"Diffraction db saved successfully",
 		"Warning: No import.json found, defaults will be used",
+		"No auto-share destination found, so only importing user will be able to access this dataset.",
 	}
 
 	for _, msg := range requiredLogs {
@@ -422,7 +426,8 @@ func Example_importForTrigger_Manual_JPL() {
 	// Logged "WARNING: No main context image determined": true
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Warning: No import.json found, defaults will be used": true
-	// <nil>|{"id":"test1234","title":"test1234","dataTypes":[{"dataType":"SD_XRF","count":2520}],"instrument":"JPL_BREADBOARD","instrumentConfig":"Breadboard","meta":{"DriveID":"0","RTT":"","SCLK":"0","SOL":"","Site":"","SiteID":"0","Target":"","TargetID":"0"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":2520,"PseudoIntensities":0},"creatorUserId":"JPLImport"}
+	// Logged "No auto-share destination found, so only importing user will be able to access this dataset.": false
+	// <nil>|{"id":"test1234","title":"test1234","dataTypes":[{"dataType":"SD_XRF","count":2520}],"instrument":"JPL_BREADBOARD","instrumentConfig":"Breadboard","meta":{"DriveId":"0","RTT":"","SCLK":"0","Site":"","SiteId":"0","Sol":"","Target":"","TargetId":"0"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":2520,"PseudoIntensities":0},"creatorUserId":"JPLImport"}
 }
 
 // Import a breadboard dataset from manual uploaded zip file
@@ -454,12 +459,47 @@ func Example_importForTrigger_Manual_SBU() {
 	// Logged "WARNING: No main context image determined": true
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Warning: No import.json found, defaults will be used": false
-	// <nil>|{"id":"test1234sbu","title":"test1234sbu","dataTypes":[{"dataType":"SD_XRF","count":2520}],"instrument":"SBU_BREADBOARD","instrumentConfig":"StonyBrookBreadboard","meta":{"DriveID":"0","RTT":"","SCLK":"0","SOL":"","Site":"","SiteID":"0","Target":"","TargetID":"0"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":2520,"PseudoIntensities":0},"creatorUserId":"SBUImport"}
+	// Logged "No auto-share destination found, so only importing user will be able to access this dataset.": false
+	// <nil>|{"id":"test1234sbu","title":"test1234sbu","dataTypes":[{"dataType":"SD_XRF","count":2520}],"instrument":"SBU_BREADBOARD","instrumentConfig":"StonyBrookBreadboard","meta":{"DriveId":"0","RTT":"","SCLK":"0","Site":"","SiteId":"0","Sol":"","Target":"","TargetId":"0"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":2520,"PseudoIntensities":0},"creatorUserId":"SBUImport"}
 }
 
 // Import a breadboard dataset from manual uploaded zip file
-func Test_ImportForTrigger_Manual_SBU_NoAutoShare(t *testing.T) {
+func Example_ImportForTrigger_Manual_SBU_NoAutoShare() {
 	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Manual_OK2", specialUserIds.JPLImport, "JPLTestUserGroupId")
+
+	trigger := `{
+	"datasetID": "test1234sbu",
+	"jobID": "dataimport-unittest123sbu"
+}`
+
+	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+
+	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
+
+	printManualOKLogOutput(log, db, "test1234sbu", 4)
+
+	// Output:
+	// Errors: <nil>, changes: unknown, isUpdate: false
+	// Logged "Downloading archived zip files...": true
+	// Logged "Downloaded 0 zip files, unzipped 0 files": true
+	// Logged "No zip files found in archive, dataset may have been manually uploaded. Trying to download...": true
+	// Logged "Dataset test1234sbu downloaded 4 files from manual upload area": true
+	// Logged "Downloading pseudo-intensity ranges...": true
+	// Logged "Downloading user customisation files...": true
+	// Logged "Reading 1261 files from spectrum directory...": true
+	// Logged "Reading spectrum [1135/1260] 90%": true
+	// Logged "PMC 1261 has 4 MSA/spectrum entries": true
+	// Logged "WARNING: No main context image determined": true
+	// Logged "Diffraction db saved successfully": true
+	// Logged "Warning: No import.json found, defaults will be used": false
+	// Logged "No auto-share destination found, so only importing user will be able to access this dataset.": true
+	// <nil>|{"id":"test1234sbu","title":"test1234sbu","dataTypes":[{"dataType":"SD_XRF","count":2520}],"instrument":"SBU_BREADBOARD","instrumentConfig":"StonyBrookBreadboard","meta":{"DriveId":"0","RTT":"","SCLK":"0","Site":"","SiteId":"0","Sol":"","Target":"","TargetId":"0"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":2520,"PseudoIntensities":0},"creatorUserId":"SBUImport"}
+}
+
+/* Didnt get this working when the above was changed. Problem is this still generates the user name: SBUImport, so the
+   premise of the test fails because it doesn't end up with no user id at that point!
+func Test_ImportForTrigger_Manual_SBU_NoAutoShare_FailForPipeline(t *testing.T) {
+	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Manual_OK2", "", "")
 
 	trigger := `{
 	"datasetID": "test1234sbu",
@@ -473,7 +513,7 @@ func Test_ImportForTrigger_Manual_SBU_NoAutoShare(t *testing.T) {
 		t.Errorf("ImportForTrigger didnt return expected error")
 	}
 }
-
+*/
 // Import a breadboard dataset from manual uploaded zip file
 func Example_importForTrigger_Manual_EM() {
 	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("ManualEM_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
@@ -503,7 +543,8 @@ func Example_importForTrigger_Manual_EM() {
 	// Logged "WARNING: No main context image determined": false
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Warning: No import.json found, defaults will be used": false
-	// <nil>|{"id":"048300551","title":"048300551","dataTypes":[{"dataType":"SD_IMAGE","count":4},{"dataType":"SD_XRF","count":242}],"instrument":"PIXL_EM","instrumentConfig":"PIXL-EM-E2E","meta":{"DriveID":"1712","RTT":"048300551","SCLK":"678031418","SOL":"0125","Site":"","SiteID":"4","Target":"","TargetID":"?"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":242,"PseudoIntensities":121},"creatorUserId":"PIXLISEImport"}
+	// Logged "No auto-share destination found, so only importing user will be able to access this dataset.": false
+	// <nil>|{"id":"048300551","title":"048300551","dataTypes":[{"dataType":"SD_IMAGE","count":4},{"dataType":"SD_XRF","count":242}],"instrument":"PIXL_EM","instrumentConfig":"PIXL-EM-E2E","meta":{"DriveId":"1712","RTT":"048300551","SCLK":"678031418","Site":"","SiteId":"4","Sol":"0125","Target":"","TargetId":"?"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":242,"PseudoIntensities":121},"creatorUserId":"PIXLISEImport"}
 }
 
 /* NOT TESTED YET, because it's not done yet!

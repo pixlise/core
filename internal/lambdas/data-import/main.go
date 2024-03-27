@@ -25,6 +25,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/pixlise/core/v4/api/dataimport"
+	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
@@ -32,6 +33,8 @@ import (
 )
 
 func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
+	fmt.Printf("Data Importer Lambda version: %v\n", services.ApiVersion)
+
 	configBucket := os.Getenv("CONFIG_BUCKET")
 	datasetBucket := os.Getenv("DATASETS_BUCKET")
 	manualBucket := os.Getenv("MANUAL_BUCKET")
