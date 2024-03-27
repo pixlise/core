@@ -92,9 +92,9 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 
 	// Log the paths to help us diagnose issues...
 	// Print it in one log message
-	logMsg := "SelectDataConverter path listing:"
+	logMsg := "SelectDataConverter path listing:\n"
 	for c, item := range items {
-		logMsg += fmt.Sprintf("\n  %v. %v\n", c+1, item)
+		logMsg += fmt.Sprintf("  %v. %v\n", c+1, item)
 	}
 	log.Infof(logMsg)
 

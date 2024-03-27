@@ -262,10 +262,7 @@ func createModule(name string, comments string, intialSourceCode string, tags []
 	}
 
 	// We need to create an ownership item along with it
-	ownerItem, err := wsHelpers.MakeOwnerForWrite(modId, protos.ObjectType_OT_DATA_MODULE, hctx.SessUser.User.Id, hctx.Svcs.TimeStamper.GetTimeNowSec())
-	if err != nil {
-		return nil, err
-	}
+	ownerItem := wsHelpers.MakeOwnerForWrite(modId, protos.ObjectType_OT_DATA_MODULE, hctx.SessUser.User.Id, hctx.Svcs.TimeStamper.GetTimeNowSec())
 
 	module.ModifiedUnixSec = ownerItem.CreatedUnixSec
 

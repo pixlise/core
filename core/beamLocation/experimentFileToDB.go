@@ -47,6 +47,8 @@ func ImportBeamLocationToDB(imgName string, instrument protos.ScanInstrument, fo
 	})
 
 	opt := options.Replace().SetUpsert(true)
+	logger.Infof("Writing beam location to DB for image: %v, and scan: %v, instrument: %v, beamVersion: %v", imgName, forScanId, instrument, beamVersion)
+
 	result, err := imagesColl.ReplaceOne(context.TODO(), bson.M{"_id": imgName}, beams, opt)
 	if err != nil {
 		return err

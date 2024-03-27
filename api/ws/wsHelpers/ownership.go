@@ -15,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, creatorUserId string, createTimeUnixSec int64) (*protos.OwnershipItem, error) {
+func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, creatorUserId string, createTimeUnixSec int64) *protos.OwnershipItem {
 	ownerItem := &protos.OwnershipItem{
 		Id:             objectId,
 		ObjectType:     objectType,
@@ -30,7 +30,7 @@ func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, creatorUse
 		}
 	}
 
-	return ownerItem, nil
+	return ownerItem
 }
 
 // Checks object access - if requireEdit is true, it checks for edit access
