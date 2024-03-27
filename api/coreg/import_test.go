@@ -1,10 +1,10 @@
 package coreg
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 
+	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -16,16 +16,7 @@ func printWarpXform(xform *protos.ImageMatchTransform, name string, err error) {
 		log.Fatalln(err)
 	} else {
 		// Proto isn't deterministic, so we read as JSON and write it back out again
-		var anyJson map[string]interface{}
-		err = json.Unmarshal(b, &anyJson)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		b, err = json.MarshalIndent(anyJson, "", " ")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		fmt.Printf("%v\n", string(b))
+		fmt.Printf("%v\n", utils.MakeDeterministicJSON(b, false))
 	}
 }
 
