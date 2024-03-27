@@ -67,12 +67,12 @@ func makeSummaryFileContent(
 	}
 
 	saveMeta := map[string]string{
-		"TargetID": exp.TargetId,
-		"SiteID":   fmt.Sprintf("%v", meta.SiteID),
-		"DriveID":  fmt.Sprintf("%v", meta.DriveID),
+		"TargetId": exp.TargetId,
+		"SiteId":   fmt.Sprintf("%v", meta.SiteID),
+		"DriveId":  fmt.Sprintf("%v", meta.DriveID),
 		"Target":   meta.Target,
 		"Site":     meta.Site,
-		"SOL":      meta.SOL,
+		"Sol":      meta.SOL,
 		"RTT":      meta.RTT,
 		"SCLK":     fmt.Sprintf("%v", meta.SCLK),
 	}
