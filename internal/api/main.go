@@ -310,7 +310,8 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 				h.svcs.Log.Errorf("handleAutoImportJobStatus failed to get PseudoIntensities count for scan: %v, job id: %v", status.JobItemId, status.JobId)
 			} else {
 				// Only FM and EM datasets will have pseudo intensities, if it's one of those, we check that we have all normal spectra downloaded
-				if (scan.Instrument == protos.ScanInstrument_PIXL_FM || scan.Instrument == protos.ScanInstrument_PIXL_EM) && normalSpectraCount != pseudoCount {
+				// NOTE: we're expecting normal spectra to be twice that of psuedo-intensities, because we have A and B detectors!
+				if (scan.Instrument == protos.ScanInstrument_PIXL_FM || scan.Instrument == protos.ScanInstrument_PIXL_EM) && normalSpectraCount/2 != pseudoCount {
 					h.svcs.Log.Errorf("handleAutoImportJobStatus scan %v not complete, pseudo intensity count: %v, normal spectra count: %v, job id: %v. New scan notification not sent", status.JobItemId, pseudoCount, normalSpectraCount, status.JobId)
 					return
 				}
