@@ -486,6 +486,205 @@ func (*ExpressionWriteExecStatResp) Descriptor() ([]byte, []int) {
 	return file_expression_msgs_proto_rawDescGZIP(), []int{9}
 }
 
+// The user is configuring an expression for their own use, but not editing it
+// requires(EDIT_OWN_USER)
+type ExpressionDisplaySettingsWriteReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id              string                     `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	DisplaySettings *ExpressionDisplaySettings `protobuf:"bytes,2,opt,name=displaySettings,proto3" json:"displaySettings,omitempty"`
+}
+
+func (x *ExpressionDisplaySettingsWriteReq) Reset() {
+	*x = ExpressionDisplaySettingsWriteReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_expression_msgs_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ExpressionDisplaySettingsWriteReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExpressionDisplaySettingsWriteReq) ProtoMessage() {}
+
+func (x *ExpressionDisplaySettingsWriteReq) ProtoReflect() protoreflect.Message {
+	mi := &file_expression_msgs_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExpressionDisplaySettingsWriteReq.ProtoReflect.Descriptor instead.
+func (*ExpressionDisplaySettingsWriteReq) Descriptor() ([]byte, []int) {
+	return file_expression_msgs_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ExpressionDisplaySettingsWriteReq) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ExpressionDisplaySettingsWriteReq) GetDisplaySettings() *ExpressionDisplaySettings {
+	if x != nil {
+		return x.DisplaySettings
+	}
+	return nil
+}
+
+type ExpressionDisplaySettingsWriteResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	DisplaySettings *ExpressionDisplaySettings `protobuf:"bytes,1,opt,name=displaySettings,proto3" json:"displaySettings,omitempty"`
+}
+
+func (x *ExpressionDisplaySettingsWriteResp) Reset() {
+	*x = ExpressionDisplaySettingsWriteResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_expression_msgs_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ExpressionDisplaySettingsWriteResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExpressionDisplaySettingsWriteResp) ProtoMessage() {}
+
+func (x *ExpressionDisplaySettingsWriteResp) ProtoReflect() protoreflect.Message {
+	mi := &file_expression_msgs_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExpressionDisplaySettingsWriteResp.ProtoReflect.Descriptor instead.
+func (*ExpressionDisplaySettingsWriteResp) Descriptor() ([]byte, []int) {
+	return file_expression_msgs_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ExpressionDisplaySettingsWriteResp) GetDisplaySettings() *ExpressionDisplaySettings {
+	if x != nil {
+		return x.DisplaySettings
+	}
+	return nil
+}
+
+// requires(NONE)
+type ExpressionDisplaySettingsGetReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *ExpressionDisplaySettingsGetReq) Reset() {
+	*x = ExpressionDisplaySettingsGetReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_expression_msgs_proto_msgTypes[12]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ExpressionDisplaySettingsGetReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExpressionDisplaySettingsGetReq) ProtoMessage() {}
+
+func (x *ExpressionDisplaySettingsGetReq) ProtoReflect() protoreflect.Message {
+	mi := &file_expression_msgs_proto_msgTypes[12]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExpressionDisplaySettingsGetReq.ProtoReflect.Descriptor instead.
+func (*ExpressionDisplaySettingsGetReq) Descriptor() ([]byte, []int) {
+	return file_expression_msgs_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ExpressionDisplaySettingsGetReq) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type ExpressionDisplaySettingsGetResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	DisplaySettings *ExpressionDisplaySettings `protobuf:"bytes,1,opt,name=displaySettings,proto3" json:"displaySettings,omitempty"`
+}
+
+func (x *ExpressionDisplaySettingsGetResp) Reset() {
+	*x = ExpressionDisplaySettingsGetResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_expression_msgs_proto_msgTypes[13]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ExpressionDisplaySettingsGetResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExpressionDisplaySettingsGetResp) ProtoMessage() {}
+
+func (x *ExpressionDisplaySettingsGetResp) ProtoReflect() protoreflect.Message {
+	mi := &file_expression_msgs_proto_msgTypes[13]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExpressionDisplaySettingsGetResp.ProtoReflect.Descriptor instead.
+func (*ExpressionDisplaySettingsGetResp) Descriptor() ([]byte, []int) {
+	return file_expression_msgs_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ExpressionDisplaySettingsGetResp) GetDisplaySettings() *ExpressionDisplaySettings {
+	if x != nil {
+		return x.DisplaySettings
+	}
+	return nil
+}
+
 var File_expression_msgs_proto protoreflect.FileDescriptor
 
 var file_expression_msgs_proto_rawDesc = []byte{
@@ -535,8 +734,33 @@ var file_expression_msgs_proto_rawDesc = []byte{
 	0x61, 0x74, 0x61, 0x45, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x45, 0x78, 0x65,
 	0x63, 0x53, 0x74, 0x61, 0x74, 0x73, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x73, 0x22, 0x1d, 0x0a,
 	0x1b, 0x45, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x57, 0x72, 0x69, 0x74, 0x65,
-	0x45, 0x78, 0x65, 0x63, 0x53, 0x74, 0x61, 0x74, 0x52, 0x65, 0x73, 0x70, 0x42, 0x0a, 0x5a, 0x08,
-	0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x45, 0x78, 0x65, 0x63, 0x53, 0x74, 0x61, 0x74, 0x52, 0x65, 0x73, 0x70, 0x22, 0x79, 0x0a, 0x21,
+	0x45, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x44, 0x69, 0x73, 0x70, 0x6c, 0x61,
+	0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x57, 0x72, 0x69, 0x74, 0x65, 0x52, 0x65,
+	0x71, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69,
+	0x64, 0x12, 0x44, 0x0a, 0x0f, 0x64, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x53, 0x65, 0x74, 0x74,
+	0x69, 0x6e, 0x67, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x45, 0x78, 0x70,
+	0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x44, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x53, 0x65,
+	0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x0f, 0x64, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x53,
+	0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x22, 0x6a, 0x0a, 0x22, 0x45, 0x78, 0x70, 0x72, 0x65,
+	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x44, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x53, 0x65, 0x74, 0x74,
+	0x69, 0x6e, 0x67, 0x73, 0x57, 0x72, 0x69, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x12, 0x44, 0x0a,
+	0x0f, 0x64, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x45, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73,
+	0x69, 0x6f, 0x6e, 0x44, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e,
+	0x67, 0x73, 0x52, 0x0f, 0x64, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69,
+	0x6e, 0x67, 0x73, 0x22, 0x31, 0x0a, 0x1f, 0x45, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f,
+	0x6e, 0x44, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73,
+	0x47, 0x65, 0x74, 0x52, 0x65, 0x71, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x68, 0x0a, 0x20, 0x45, 0x78, 0x70, 0x72, 0x65, 0x73,
+	0x73, 0x69, 0x6f, 0x6e, 0x44, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69,
+	0x6e, 0x67, 0x73, 0x47, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x12, 0x44, 0x0a, 0x0f, 0x64, 0x69,
+	0x73, 0x70, 0x6c, 0x61, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x45, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e,
+	0x44, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x52,
+	0x0f, 0x64, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73,
+	0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -551,36 +775,44 @@ func file_expression_msgs_proto_rawDescGZIP() []byte {
 	return file_expression_msgs_proto_rawDescData
 }
 
-var file_expression_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_expression_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_expression_msgs_proto_goTypes = []interface{}{
-	(*ExpressionListReq)(nil),           // 0: ExpressionListReq
-	(*ExpressionListResp)(nil),          // 1: ExpressionListResp
-	(*ExpressionGetReq)(nil),            // 2: ExpressionGetReq
-	(*ExpressionGetResp)(nil),           // 3: ExpressionGetResp
-	(*ExpressionWriteReq)(nil),          // 4: ExpressionWriteReq
-	(*ExpressionWriteResp)(nil),         // 5: ExpressionWriteResp
-	(*ExpressionDeleteReq)(nil),         // 6: ExpressionDeleteReq
-	(*ExpressionDeleteResp)(nil),        // 7: ExpressionDeleteResp
-	(*ExpressionWriteExecStatReq)(nil),  // 8: ExpressionWriteExecStatReq
-	(*ExpressionWriteExecStatResp)(nil), // 9: ExpressionWriteExecStatResp
-	nil,                                 // 10: ExpressionListResp.ExpressionsEntry
-	(*SearchParams)(nil),                // 11: SearchParams
-	(*DataExpression)(nil),              // 12: DataExpression
-	(*DataExpressionExecStats)(nil),     // 13: DataExpressionExecStats
+	(*ExpressionListReq)(nil),                  // 0: ExpressionListReq
+	(*ExpressionListResp)(nil),                 // 1: ExpressionListResp
+	(*ExpressionGetReq)(nil),                   // 2: ExpressionGetReq
+	(*ExpressionGetResp)(nil),                  // 3: ExpressionGetResp
+	(*ExpressionWriteReq)(nil),                 // 4: ExpressionWriteReq
+	(*ExpressionWriteResp)(nil),                // 5: ExpressionWriteResp
+	(*ExpressionDeleteReq)(nil),                // 6: ExpressionDeleteReq
+	(*ExpressionDeleteResp)(nil),               // 7: ExpressionDeleteResp
+	(*ExpressionWriteExecStatReq)(nil),         // 8: ExpressionWriteExecStatReq
+	(*ExpressionWriteExecStatResp)(nil),        // 9: ExpressionWriteExecStatResp
+	(*ExpressionDisplaySettingsWriteReq)(nil),  // 10: ExpressionDisplaySettingsWriteReq
+	(*ExpressionDisplaySettingsWriteResp)(nil), // 11: ExpressionDisplaySettingsWriteResp
+	(*ExpressionDisplaySettingsGetReq)(nil),    // 12: ExpressionDisplaySettingsGetReq
+	(*ExpressionDisplaySettingsGetResp)(nil),   // 13: ExpressionDisplaySettingsGetResp
+	nil,                                        // 14: ExpressionListResp.ExpressionsEntry
+	(*SearchParams)(nil),                       // 15: SearchParams
+	(*DataExpression)(nil),                     // 16: DataExpression
+	(*DataExpressionExecStats)(nil),            // 17: DataExpressionExecStats
+	(*ExpressionDisplaySettings)(nil),          // 18: ExpressionDisplaySettings
 }
 var file_expression_msgs_proto_depIdxs = []int32{
-	11, // 0: ExpressionListReq.searchParams:type_name -> SearchParams
-	10, // 1: ExpressionListResp.expressions:type_name -> ExpressionListResp.ExpressionsEntry
-	12, // 2: ExpressionGetResp.expression:type_name -> DataExpression
-	12, // 3: ExpressionWriteReq.expression:type_name -> DataExpression
-	12, // 4: ExpressionWriteResp.expression:type_name -> DataExpression
-	13, // 5: ExpressionWriteExecStatReq.stats:type_name -> DataExpressionExecStats
-	12, // 6: ExpressionListResp.ExpressionsEntry.value:type_name -> DataExpression
-	7,  // [7:7] is the sub-list for method output_type
-	7,  // [7:7] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	15, // 0: ExpressionListReq.searchParams:type_name -> SearchParams
+	14, // 1: ExpressionListResp.expressions:type_name -> ExpressionListResp.ExpressionsEntry
+	16, // 2: ExpressionGetResp.expression:type_name -> DataExpression
+	16, // 3: ExpressionWriteReq.expression:type_name -> DataExpression
+	16, // 4: ExpressionWriteResp.expression:type_name -> DataExpression
+	17, // 5: ExpressionWriteExecStatReq.stats:type_name -> DataExpressionExecStats
+	18, // 6: ExpressionDisplaySettingsWriteReq.displaySettings:type_name -> ExpressionDisplaySettings
+	18, // 7: ExpressionDisplaySettingsWriteResp.displaySettings:type_name -> ExpressionDisplaySettings
+	18, // 8: ExpressionDisplaySettingsGetResp.displaySettings:type_name -> ExpressionDisplaySettings
+	16, // 9: ExpressionListResp.ExpressionsEntry.value:type_name -> DataExpression
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_expression_msgs_proto_init() }
@@ -711,6 +943,54 @@ func file_expression_msgs_proto_init() {
 				return nil
 			}
 		}
+		file_expression_msgs_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ExpressionDisplaySettingsWriteReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_expression_msgs_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ExpressionDisplaySettingsWriteResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_expression_msgs_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ExpressionDisplaySettingsGetReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_expression_msgs_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ExpressionDisplaySettingsGetResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -718,7 +998,7 @@ func file_expression_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_expression_msgs_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
