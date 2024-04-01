@@ -24,6 +24,7 @@ func InitCollections(db *mongo.Database, iLog logger.ILogger, environment string
 		RegionsOfInterestName,
 		ScreenConfigurationName,
 		UserROIDisplaySettings,
+		UserExpressionDisplaySettings,
 		WidgetDataName,
 	}
 
