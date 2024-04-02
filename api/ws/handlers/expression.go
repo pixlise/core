@@ -272,3 +272,111 @@ func HandleExpressionWriteExecStatReq(req *protos.ExpressionWriteExecStatReq, hc
 
 	return &protos.ExpressionWriteExecStatResp{}, nil
 }
+
+func formExpressionDisplaySettingsID(user *protos.UserInfo, expressionId string) string {
+	return user.Id + "-" + expressionId
+}
+
+func HandleExpressionDisplaySettingsGetReq(req *protos.ExpressionDisplaySettingsGetReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionDisplaySettingsGetResp, error) {
+	// Validate request
+	if len(req.Id) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Expression ID must be specified"))
+	}
+
+	if hctx.SessUser.User.Id == "" {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("User must be logged in"))
+	}
+
+	displaySettingsId := formExpressionDisplaySettingsID(hctx.SessUser.User, req.Id)
+
+	// Get the display settings
+	displaySettings := &protos.ExpressionDisplaySettings{}
+	err := hctx.Svcs.MongoDB.Collection(dbCollections.UserExpressionDisplaySettings).FindOne(context.Background(), bson.M{"_id": displaySettingsId}).Decode(&displaySettings)
+	if err != nil {
+		// We don't care about errors. If it doesn't exist, we just return a blank one
+		return &protos.ExpressionDisplaySettingsGetResp{
+			DisplaySettings: &protos.ExpressionDisplaySettings{Id: req.Id},
+		}, nil
+	}
+
+	// Set the ID back before returning it
+	displaySettings.Id = req.Id
+	return &protos.ExpressionDisplaySettingsGetResp{
+		DisplaySettings: displaySettings,
+	}, nil
+}
+
+func HandleExpressionDisplaySettingsWriteReq(req *protos.ExpressionDisplaySettingsWriteReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionDisplaySettingsWriteResp, error) {
+	if len(req.Id) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Expression ID must be specified"))
+	}
+
+	if req.DisplaySettings == nil {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("DisplaySettings must be specified"))
+	}
+
+	if hctx.SessUser.User.Id == "" {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("User must be logged in"))
+	}
+
+	displaySettingsId := formExpressionDisplaySettingsID(hctx.SessUser.User, req.Id)
+
+	// Check if the display settings already exist
+	filter := bson.M{"_id": displaySettingsId}
+	opts := options.Find().SetProjection(bson.M{"_id": true})
+	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.UserExpressionDisplaySettings).Find(context.TODO(), filter, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	existingIds := []*IdOnly{}
+	err = cursor.All(context.TODO(), &existingIds)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update the display settings
+	ctx := context.TODO()
+	sess, err := hctx.Svcs.MongoDB.Client().StartSession()
+	if err != nil {
+		return nil, err
+	}
+	defer sess.EndSession(ctx)
+
+	wc := writeconcern.New(writeconcern.WMajority())
+	rc := readconcern.Snapshot()
+	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
+
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		var err error
+
+		if len(existingIds) > 0 {
+			_, err = hctx.Svcs.MongoDB.Collection(dbCollections.UserExpressionDisplaySettings).UpdateByID(sessCtx, displaySettingsId, bson.D{{
+				Key: "$set",
+				Value: bson.D{
+					{Key: "colourRamp", Value: req.DisplaySettings.ColourRamp},
+				},
+			}})
+		} else {
+			_, err = hctx.Svcs.MongoDB.Collection(dbCollections.UserExpressionDisplaySettings).InsertOne(sessCtx, &protos.ExpressionDisplaySettings{
+				Id:         displaySettingsId,
+				ColourRamp: req.DisplaySettings.ColourRamp,
+			})
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+
+	_, err = sess.WithTransaction(ctx, callback, txnOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.ExpressionDisplaySettingsWriteResp{
+		DisplaySettings: req.DisplaySettings,
+	}, nil
+}

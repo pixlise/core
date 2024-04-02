@@ -313,6 +313,61 @@ func (x *ExpressionResultItem) GetValues() []float32 {
 	return nil
 }
 
+type ExpressionDisplaySettings struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id         string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" bson:"_id,omitempty"`  
+	ColourRamp string `protobuf:"bytes,2,opt,name=colourRamp,proto3" json:"colourRamp,omitempty"`
+}
+
+func (x *ExpressionDisplaySettings) Reset() {
+	*x = ExpressionDisplaySettings{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_expressions_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ExpressionDisplaySettings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExpressionDisplaySettings) ProtoMessage() {}
+
+func (x *ExpressionDisplaySettings) ProtoReflect() protoreflect.Message {
+	mi := &file_expressions_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExpressionDisplaySettings.ProtoReflect.Descriptor instead.
+func (*ExpressionDisplaySettings) Descriptor() ([]byte, []int) {
+	return file_expressions_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ExpressionDisplaySettings) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ExpressionDisplaySettings) GetColourRamp() string {
+	if x != nil {
+		return x.ColourRamp
+	}
+	return ""
+}
+
 var File_expressions_proto protoreflect.FileDescriptor
 
 var file_expressions_proto_rawDesc = []byte{
@@ -364,8 +419,13 @@ var file_expressions_proto_rawDesc = []byte{
 	0x1a, 0x0a, 0x08, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x05, 0x52, 0x08, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x16, 0x0a, 0x06, 0x76,
 	0x61, 0x6c, 0x75, 0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x02, 0x52, 0x06, 0x76, 0x61, 0x6c,
-	0x75, 0x65, 0x73, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62,
-	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x75, 0x65, 0x73, 0x22, 0x4b, 0x0a, 0x19, 0x45, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f,
+	0x6e, 0x44, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73,
+	0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64,
+	0x12, 0x1e, 0x0a, 0x0a, 0x63, 0x6f, 0x6c, 0x6f, 0x75, 0x72, 0x52, 0x61, 0x6d, 0x70, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x63, 0x6f, 0x6c, 0x6f, 0x75, 0x72, 0x52, 0x61, 0x6d, 0x70,
+	0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -380,20 +440,21 @@ func file_expressions_proto_rawDescGZIP() []byte {
 	return file_expressions_proto_rawDescData
 }
 
-var file_expressions_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_expressions_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_expressions_proto_goTypes = []interface{}{
-	(*DataExpression)(nil),          // 0: DataExpression
-	(*ModuleReference)(nil),         // 1: ModuleReference
-	(*DataExpressionExecStats)(nil), // 2: DataExpressionExecStats
-	(*ExpressionResultItem)(nil),    // 3: ExpressionResultItem
-	(*OwnershipSummary)(nil),        // 4: OwnershipSummary
-	(*SemanticVersion)(nil),         // 5: SemanticVersion
+	(*DataExpression)(nil),            // 0: DataExpression
+	(*ModuleReference)(nil),           // 1: ModuleReference
+	(*DataExpressionExecStats)(nil),   // 2: DataExpressionExecStats
+	(*ExpressionResultItem)(nil),      // 3: ExpressionResultItem
+	(*ExpressionDisplaySettings)(nil), // 4: ExpressionDisplaySettings
+	(*OwnershipSummary)(nil),          // 5: OwnershipSummary
+	(*SemanticVersion)(nil),           // 6: SemanticVersion
 }
 var file_expressions_proto_depIdxs = []int32{
 	1, // 0: DataExpression.moduleReferences:type_name -> ModuleReference
 	2, // 1: DataExpression.recentExecStats:type_name -> DataExpressionExecStats
-	4, // 2: DataExpression.owner:type_name -> OwnershipSummary
-	5, // 3: ModuleReference.version:type_name -> SemanticVersion
+	5, // 2: DataExpression.owner:type_name -> OwnershipSummary
+	6, // 3: ModuleReference.version:type_name -> SemanticVersion
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
@@ -457,6 +518,18 @@ func file_expressions_proto_init() {
 				return nil
 			}
 		}
+		file_expressions_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ExpressionDisplaySettings); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -464,7 +537,7 @@ func file_expressions_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_expressions_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
