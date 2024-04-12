@@ -110,6 +110,29 @@ func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) (
 	}, nil
 }
 
+func HandleScanGetReq(req *protos.ScanGetReq, hctx wsHelpers.HandlerContext) (*protos.ScanGetResp, error) {
+	// Check that we have an id, current user, and display settings
+	if len(req.Id) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Scan ID must be specified"))
+	}
+
+	if hctx.SessUser.User.Id == "" {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("User must be logged in"))
+	}
+
+	// Check user has access
+	dbItem, owner, err := wsHelpers.GetUserObjectById[protos.ScanItem](true, req.Id, protos.ObjectType_OT_SCAN, dbCollections.ScansName, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+
+	return &protos.ScanGetResp{
+		Scan: dbItem,
+	}, nil
+}
+
 func HandleScanMetaLabelsAndTypesReq(req *protos.ScanMetaLabelsAndTypesReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaLabelsAndTypesResp, error) {
 	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
 	if err != nil {
