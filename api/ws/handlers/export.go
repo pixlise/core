@@ -2,7 +2,6 @@ package wsHandler
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path"
 
@@ -15,7 +14,7 @@ import (
 
 func HandleExportFilesReq(req *protos.ExportFilesReq, hctx wsHelpers.HandlerContext) (*protos.ExportFilesResp, error) {
 	if len(req.ExportTypes) <= 0 {
-		return nil, errors.New("No export types specified")
+		return nil, errors.New("no export types specified")
 	}
 
 	// For now we only allow exporting one thing...
@@ -30,6 +29,7 @@ func HandleExportFilesReq(req *protos.ExportFilesReq, hctx wsHelpers.HandlerCont
 		return nil, err
 	}
 
+	files := make([]*protos.ExportFile, 0)
 	for _, expType := range req.ExportTypes {
 		if expType == protos.ExportDataType_EDT_QUANT_CSV {
 			// Read from DB
@@ -52,20 +52,15 @@ func HandleExportFilesReq(req *protos.ExportFilesReq, hctx wsHelpers.HandlerCont
 				return nil, err
 			}
 
-			// Return this in a zip
-			quantWritePath := path.Join(zipRoot, quantFileName)
-			err = os.WriteFile(quantWritePath, fileBytes, os.ModePerm)
-
-			if err != nil {
-				return nil, fmt.Errorf("Failed to write %v to export. Error: %v", quantFileName, err)
-			}
+			files = append(files, &protos.ExportFile{
+				Name:      quantFileName,
+				Extension: "csv",
+				Content:   fileBytes,
+			})
+		} else {
+			return nil, errors.New("Unsupported export type")
 		}
 	}
 
-	zipBytes, err := utils.ZipDirectory(zipRoot)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create zip of export data. Error: %v", err)
-	}
-
-	return &protos.ExportFilesResp{ZipData: zipBytes}, nil
+	return &protos.ExportFilesResp{Files: files}, nil
 }
