@@ -3,7 +3,9 @@ package wsHandler
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
@@ -102,10 +104,11 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 			mistItem := &protos.MistROIItem{}
 			err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).FindOne(context.TODO(), bson.D{{Key: "_id", Value: item.Id}}).Decode(&mistItem)
 			if err != nil {
-				return nil, err
+				fmt.Printf("Error decoding MIST ROI item (%v) during listing: %v\n", item.Id, err)
+				sentry.CaptureMessage(fmt.Sprintf("Error decoding MIST ROI item (%v) during listing: %v\n", item.Id, err))
+			} else {
+				item.MistROIItem = mistItem
 			}
-
-			item.MistROIItem = mistItem
 		}
 
 		// Look up display settings and add to item if found (otherwise leave nil)
@@ -166,7 +169,7 @@ func validateROI(roi *protos.ROIItem) error {
 	return nil
 }
 
-func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, needMistEntry bool) (*protos.ROIItem, error) {
+func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, needMistEntry bool, editors *protos.UserGroupList, viewers *protos.UserGroupList) (*protos.ROIItem, error) {
 	ctx := context.TODO()
 
 	// It's a new item, check these fields...
@@ -181,6 +184,22 @@ func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, needMistEntry
 
 	// We need to create an ownership item along with it
 	ownerItem := wsHelpers.MakeOwnerForWrite(id, protos.ObjectType_OT_ROI, hctx.SessUser.User.Id, hctx.Svcs.TimeStamper.GetTimeNowSec())
+	if editors != nil {
+		if ownerItem.Editors == nil {
+			ownerItem.Editors = &protos.UserGroupList{}
+		}
+
+		ownerItem.Editors.UserIds = editors.UserIds
+		ownerItem.Editors.GroupIds = editors.GroupIds
+	}
+
+	if viewers != nil {
+		if ownerItem.Viewers == nil {
+			ownerItem.Viewers = &protos.UserGroupList{}
+		}
+		ownerItem.Viewers.UserIds = viewers.UserIds
+		ownerItem.Viewers.GroupIds = viewers.GroupIds
+	}
 
 	roi.ModifiedUnixSec = ownerItem.CreatedUnixSec
 
@@ -242,12 +261,39 @@ func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, needMistEntry
 	return roi, nil
 }
 
-func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext) (*protos.ROIItem, error) {
+func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, editors *protos.UserGroupList, viewers *protos.UserGroupList) (*protos.ROIItem, error) {
 	ctx := context.TODO()
 
 	dbItem, owner, err := wsHelpers.GetUserObjectById[protos.ROIItem](true, roi.Id, protos.ObjectType_OT_ROI, dbCollections.RegionsOfInterestName, hctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check if we need to update the ownership
+	if editors != nil || viewers != nil {
+		if editors != nil {
+			if owner.Editors == nil {
+				owner.Editors = &protos.UserGroupList{}
+			}
+
+			owner.Editors.UserIds = editors.UserIds
+			owner.Editors.GroupIds = editors.GroupIds
+		}
+
+		if viewers != nil {
+			if owner.Viewers == nil {
+				owner.Viewers = &protos.UserGroupList{}
+			}
+
+			owner.Viewers.UserIds = viewers.UserIds
+			owner.Viewers.GroupIds = viewers.GroupIds
+		}
+
+		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).UpdateByID(ctx, roi.Id, bson.D{{Key: "$set", Value: owner}})
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	// Some fields can't change
@@ -329,12 +375,12 @@ func HandleRegionOfInterestWriteReq(req *protos.RegionOfInterestWriteReq, hctx w
 
 	var err error
 	if len(req.RegionOfInterest.Id) <= 0 {
-		item, err = createROI(req.RegionOfInterest, hctx, req.IsMIST)
+		item, err = createROI(req.RegionOfInterest, hctx, req.IsMIST, nil, nil)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		item, err = updateROI(req.RegionOfInterest, hctx)
+		item, err = updateROI(req.RegionOfInterest, hctx, nil, nil)
 	}
 	if err != nil {
 		return nil, err
@@ -379,6 +425,37 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 		if err != nil {
 			return nil, err
 		}
+
+		// Delete the ownership items for the MIST ROIs
+		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteMany(context.TODO(), bson.M{"_id": bson.M{"$in": mistIdList}})
+		if err != nil {
+			return nil, err
+		}
+
+		// Delete the ROI display settings for the MIST ROIs
+		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.UserROIDisplaySettings).DeleteMany(context.TODO(), bson.M{"_id": bson.M{"$in": mistIdList}})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	editors := &protos.UserGroupList{
+		UserIds:  []string{},
+		GroupIds: []string{},
+	}
+	viewers := &protos.UserGroupList{
+		UserIds:  []string{},
+		GroupIds: []string{},
+	}
+
+	if req.Editors != nil {
+		editors.UserIds = req.Editors.UserIds
+		editors.GroupIds = req.Editors.GroupIds
+	}
+
+	if req.Viewers != nil {
+		viewers.UserIds = req.Viewers.UserIds
+		viewers.GroupIds = req.Viewers.GroupIds
 	}
 
 	writtenROIs := []*protos.ROIItem{}
@@ -387,12 +464,42 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 		item.IsMIST = req.IsMIST
 
 		var err error
-		if len(item.Id) > 0 && req.Overwrite {
+		if len(item.Id) > 0 && req.Overwrite && (req.MistROIScanIdsToDelete == nil || len(req.MistROIScanIdsToDelete) == 0) {
 			// Overwrite existing ROI
-			item, err = updateROI(item, hctx)
+			item, err = updateROI(item, hctx, editors, viewers)
 			if err != nil {
 				return nil, err
 			}
+		} else if req.Overwrite && len(item.Id) <= 0 && req.IsMIST && item.MistROIItem != nil {
+			// We're overwriting by name, so we need to find the existing ROI
+			filter := bson.M{"scanid": item.ScanId, "classificationtrail": item.MistROIItem.ClassificationTrail}
+			opts := options.Find().SetProjection(bson.M{"_id": true})
+			cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).Find(context.TODO(), filter, opts)
+			if err != nil {
+				return nil, err
+			}
+
+			ids := []*IdOnly{}
+			err = cursor.All(context.TODO(), &ids)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(ids) > 0 {
+				// Overwrite existing ROI
+				item.Id = ids[0].Id
+				item, err = updateROI(item, hctx, editors, viewers)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				// Create new ROI
+				item, err = createROI(item, hctx, req.IsMIST, editors, viewers)
+				if err != nil {
+					return nil, err
+				}
+			}
+
 		} else if req.SkipDuplicates {
 			// If id is not empty, but we're not overwriting, so skip this ROI
 			// If id is empty and this is a MIST ROI, we need to check if this ROI already exists
@@ -416,7 +523,7 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 					continue
 				} else {
 					// Create new ROI
-					item, err = createROI(item, hctx, req.IsMIST)
+					item, err = createROI(item, hctx, req.IsMIST, editors, viewers)
 					if err != nil {
 						return nil, err
 					}
@@ -425,7 +532,7 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 
 		} else {
 			// Create new ROI
-			item, err = createROI(item, hctx, req.IsMIST)
+			item, err = createROI(item, hctx, req.IsMIST, editors, viewers)
 			if err != nil {
 				return nil, err
 			}
@@ -462,7 +569,7 @@ func HandleRegionOfInterestBulkDuplicateReq(req *protos.RegionOfInterestBulkDupl
 		item.IsMIST = req.IsMIST
 
 		// Create new ROI
-		newROI, err := createROI(item, hctx, req.IsMIST)
+		newROI, err := createROI(item, hctx, req.IsMIST, nil, nil)
 		if err != nil {
 			return nil, err
 		}

@@ -20,11 +20,11 @@ func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, creatorUse
 		Id:             objectId,
 		ObjectType:     objectType,
 		CreatedUnixSec: uint32(createTimeUnixSec),
+		CreatorUserId:  "",
 	}
 
 	if len(creatorUserId) > 0 {
 		ownerItem.CreatorUserId = creatorUserId
-		//ownerItem.Viewers
 		ownerItem.Editors = &protos.UserGroupList{
 			UserIds: []string{creatorUserId},
 		}
@@ -199,7 +199,8 @@ func FetchOwnershipSummary(ownership *protos.OwnershipItem, sessionUser SessionU
 		}
 	}
 
-	result.CanEdit = string(result.CreatorUser.Id) == string(sessionUser.User.Id)
+	// Still have to be an editor even if you're the creator
+	result.CanEdit = false
 
 	if ownership.Viewers != nil {
 		result.ViewerUserCount = uint32(len(ownership.Viewers.UserIds))
