@@ -21,19 +21,10 @@ func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, creatorUse
 		ObjectType:     objectType,
 		CreatedUnixSec: uint32(createTimeUnixSec),
 		CreatorUserId:  "",
-		Editors: &protos.UserGroupList{
-			UserIds:  []string{},
-			GroupIds: []string{},
-		},
-		Viewers: &protos.UserGroupList{
-			UserIds:  []string{},
-			GroupIds: []string{},
-		},
 	}
 
 	if len(creatorUserId) > 0 {
 		ownerItem.CreatorUserId = creatorUserId
-		//ownerItem.Viewers
 		ownerItem.Editors = &protos.UserGroupList{
 			UserIds: []string{creatorUserId},
 		}

@@ -182,11 +182,18 @@ func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, needMistEntry
 	// We need to create an ownership item along with it
 	ownerItem := wsHelpers.MakeOwnerForWrite(id, protos.ObjectType_OT_ROI, hctx.SessUser.User.Id, hctx.Svcs.TimeStamper.GetTimeNowSec())
 	if editors != nil {
+		if ownerItem.Editors == nil {
+			ownerItem.Editors = &protos.UserGroupList{}
+		}
+
 		ownerItem.Editors.UserIds = editors.UserIds
 		ownerItem.Editors.GroupIds = editors.GroupIds
 	}
 
 	if viewers != nil {
+		if ownerItem.Viewers == nil {
+			ownerItem.Viewers = &protos.UserGroupList{}
+		}
 		ownerItem.Viewers.UserIds = viewers.UserIds
 		ownerItem.Viewers.GroupIds = viewers.GroupIds
 	}
@@ -262,11 +269,19 @@ func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, editors *prot
 	// Check if we need to update the ownership
 	if editors != nil || viewers != nil {
 		if editors != nil {
+			if owner.Editors == nil {
+				owner.Editors = &protos.UserGroupList{}
+			}
+
 			owner.Editors.UserIds = editors.UserIds
 			owner.Editors.GroupIds = editors.GroupIds
 		}
 
 		if viewers != nil {
+			if owner.Viewers == nil {
+				owner.Viewers = &protos.UserGroupList{}
+			}
+
 			owner.Viewers.UserIds = viewers.UserIds
 			owner.Viewers.GroupIds = viewers.GroupIds
 		}
