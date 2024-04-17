@@ -3,7 +3,9 @@ package wsHandler
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
@@ -102,10 +104,11 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 			mistItem := &protos.MistROIItem{}
 			err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).FindOne(context.TODO(), bson.D{{Key: "_id", Value: item.Id}}).Decode(&mistItem)
 			if err != nil {
-				return nil, err
+				fmt.Printf("Error decoding MIST ROI item (%v) during listing: %v\n", item.Id, err)
+				sentry.CaptureMessage(fmt.Sprintf("Error decoding MIST ROI item (%v) during listing: %v\n", item.Id, err))
+			} else {
+				item.MistROIItem = mistItem
 			}
-
-			item.MistROIItem = mistItem
 		}
 
 		// Look up display settings and add to item if found (otherwise leave nil)
