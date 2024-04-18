@@ -37,10 +37,10 @@ func MakeOwnerForWrite(objectId string, objectType protos.ObjectType, creatorUse
 // otherwise just checks for view access. Returns an error if it failed to determine
 // or if access is not granted, returns error formed with MakeUnauthorisedError
 func CheckObjectAccess(requireEdit bool, objectId string, objectType protos.ObjectType, hctx HandlerContext) (*protos.OwnershipItem, error) {
-	return CheckObjectAccessForUser(requireEdit, objectId, objectType, hctx.SessUser.User.Id, hctx.SessUser.MemberOfGroupIds, hctx.Svcs.MongoDB)
+	return CheckObjectAccessForUser(requireEdit, objectId, objectType, hctx.SessUser.User.Id, hctx.SessUser.MemberOfGroupIds, hctx.SessUser.ViewerOfGroupIds, hctx.Svcs.MongoDB)
 }
 
-func CheckObjectAccessForUser(requireEdit bool, objectId string, objectType protos.ObjectType, userId string, memberOfGroupIds []string, db *mongo.Database) (*protos.OwnershipItem, error) {
+func CheckObjectAccessForUser(requireEdit bool, objectId string, objectType protos.ObjectType, userId string, memberOfGroupIds []string, viewerOfGroupIds []string, db *mongo.Database) (*protos.OwnershipItem, error) {
 	ownerCollectionId := objectId
 
 	result := db.Collection(dbCollections.OwnershipName).FindOne(context.TODO(), bson.M{"_id": ownerCollectionId})
@@ -88,6 +88,15 @@ func CheckObjectAccessForUser(requireEdit bool, objectId string, objectType prot
 						return ownership, nil // User has access via group it belongs to
 					}
 				}
+
+				if !requireEdit {
+					// If we don't require editing, check if the user is a viewer of any of the groups too
+					for _, groupId := range viewerOfGroupIds {
+						if utils.ItemInSlice(groupId, toCheckItem.GroupIds) {
+							return ownership, nil // User has access via group it belongs to
+						}
+					}
+				}
 			}
 		}
 	}
@@ -107,11 +116,18 @@ func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, svcs *ser
 		idLookups = append(idLookups, bson.D{{Key: "viewers.userids", Value: requestorSession.User.Id}})
 	}
 
-	// Add the group IDs
-	for _, groupId := range requestorSession.MemberOfGroupIds {
-		idLookups = append(idLookups, bson.D{{Key: "editors.groupids", Value: groupId}})
-		if !requireEdit {
+	// If we don't require editing, then we just care if the uesr can see the ID
+	if !requireEdit {
+		allGroupsUserIsIn := append(requestorSession.MemberOfGroupIds, requestorSession.ViewerOfGroupIds...)
+
+		for _, groupId := range allGroupsUserIsIn {
+			idLookups = append(idLookups, bson.D{{Key: "editors.groupids", Value: groupId}})
 			idLookups = append(idLookups, bson.D{{Key: "viewers.groupids", Value: groupId}})
+		}
+	} else {
+		// If we require editing, then we only care if the user can edit the ID
+		for _, groupId := range requestorSession.MemberOfGroupIds {
+			idLookups = append(idLookups, bson.D{{Key: "editors.groupids", Value: groupId}})
 		}
 	}
 
@@ -198,9 +214,6 @@ func FetchOwnershipSummary(ownership *protos.OwnershipItem, sessionUser SessionU
 			Id: ownership.CreatorUserId,
 		}
 	}
-
-	// Still have to be an editor even if you're the creator
-	result.CanEdit = false
 
 	if ownership.Viewers != nil {
 		result.ViewerUserCount = uint32(len(ownership.Viewers.UserIds))
