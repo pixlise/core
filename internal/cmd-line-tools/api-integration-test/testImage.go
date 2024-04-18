@@ -148,7 +148,7 @@ func testImageGet_NoMembership(apiHost string, jwt string) {
 	status, body, err := doGet("http", apiHost, imagePath, "", jwt)
 
 	failIf(err != nil, err)
-	failIf(string(body) != "User group membership not found, can't determine permissions\n" || status != 400, fmt.Errorf("Unexpected response! Status %v, body: %v", status, string(body)))
+	failIf(string(body) != "User has no group membership, can't determine permissions\n" || status != 400, fmt.Errorf("Unexpected response! Status %v, body: %v", status, string(body)))
 }
 
 func testImageGet_OK(apiHost string, jwt string) {
