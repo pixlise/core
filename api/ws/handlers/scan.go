@@ -256,6 +256,9 @@ func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.Handler
 	if err := wsHelpers.CheckStringField(&req.Description, "Description", 1, 600); err != nil {
 		return nil, err
 	}
+	if err := wsHelpers.CheckFieldLength(req.Tags, "Tags", 0, 10); err != nil {
+		return nil, err
+	}
 
 	_, err := wsHelpers.CheckObjectAccess(true, req.ScanId, protos.ObjectType_OT_SCAN, hctx)
 	if err != nil {
@@ -267,7 +270,11 @@ func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.Handler
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ScansName)
 
-	update := bson.D{bson.E{Key: "title", Value: req.Title}, bson.E{Key: "description", Value: req.Description}}
+	update := bson.D{
+		bson.E{Key: "title", Value: req.Title},
+		bson.E{Key: "description", Value: req.Description},
+		bson.E{Key: "tags", Value: req.Tags},
+	}
 
 	result, err := coll.UpdateByID(ctx, req.ScanId, bson.D{{Key: "$set", Value: update}})
 	if err != nil {
