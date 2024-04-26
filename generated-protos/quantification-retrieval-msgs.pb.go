@@ -20,6 +20,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type QuantOutputType int32
+
+const (
+	QuantOutputType_QO_UNKNOWN QuantOutputType = 0 // https://protobuf.dev/programming-guides/dos-donts/ says specify an unknown as 0
+	QuantOutputType_QO_DATA    QuantOutputType = 1
+	QuantOutputType_QO_LOG     QuantOutputType = 2
+)
+
+// Enum value maps for QuantOutputType.
+var (
+	QuantOutputType_name = map[int32]string{
+		0: "QO_UNKNOWN",
+		1: "QO_DATA",
+		2: "QO_LOG",
+	}
+	QuantOutputType_value = map[string]int32{
+		"QO_UNKNOWN": 0,
+		"QO_DATA":    1,
+		"QO_LOG":     2,
+	}
+)
+
+func (x QuantOutputType) Enum() *QuantOutputType {
+	p := new(QuantOutputType)
+	*p = x
+	return p
+}
+
+func (x QuantOutputType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (QuantOutputType) Descriptor() protoreflect.EnumDescriptor {
+	return file_quantification_retrieval_msgs_proto_enumTypes[0].Descriptor()
+}
+
+func (QuantOutputType) Type() protoreflect.EnumType {
+	return &file_quantification_retrieval_msgs_proto_enumTypes[0]
+}
+
+func (x QuantOutputType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use QuantOutputType.Descriptor instead.
+func (QuantOutputType) EnumDescriptor() ([]byte, []int) {
+	return file_quantification_retrieval_msgs_proto_rawDescGZIP(), []int{0}
+}
+
 // requires(NONE)
 type QuantListReq struct {
 	state         protoimpl.MessageState
@@ -231,6 +280,10 @@ type QuantLastOutputGetReq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
+
+	OutputType     QuantOutputType `protobuf:"varint,1,opt,name=outputType,proto3,enum=QuantOutputType" json:"outputType,omitempty"`
+	ScanId         string          `protobuf:"bytes,2,opt,name=scanId,proto3" json:"scanId,omitempty"`
+	PiquantCommand string          `protobuf:"bytes,3,opt,name=piquantCommand,proto3" json:"piquantCommand,omitempty"`
 }
 
 func (x *QuantLastOutputGetReq) Reset() {
@@ -265,10 +318,33 @@ func (*QuantLastOutputGetReq) Descriptor() ([]byte, []int) {
 	return file_quantification_retrieval_msgs_proto_rawDescGZIP(), []int{4}
 }
 
+func (x *QuantLastOutputGetReq) GetOutputType() QuantOutputType {
+	if x != nil {
+		return x.OutputType
+	}
+	return QuantOutputType_QO_UNKNOWN
+}
+
+func (x *QuantLastOutputGetReq) GetScanId() string {
+	if x != nil {
+		return x.ScanId
+	}
+	return ""
+}
+
+func (x *QuantLastOutputGetReq) GetPiquantCommand() string {
+	if x != nil {
+		return x.PiquantCommand
+	}
+	return ""
+}
+
 type QuantLastOutputGetResp struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
+
+	Output string `protobuf:"bytes,1,opt,name=output,proto3" json:"output,omitempty"`
 }
 
 func (x *QuantLastOutputGetResp) Reset() {
@@ -303,6 +379,13 @@ func (*QuantLastOutputGetResp) Descriptor() ([]byte, []int) {
 	return file_quantification_retrieval_msgs_proto_rawDescGZIP(), []int{5}
 }
 
+func (x *QuantLastOutputGetResp) GetOutput() string {
+	if x != nil {
+		return x.Output
+	}
+	return ""
+}
+
 var File_quantification_retrieval_msgs_proto protoreflect.FileDescriptor
 
 var file_quantification_retrieval_msgs_proto_rawDesc = []byte{
@@ -332,11 +415,23 @@ var file_quantification_retrieval_msgs_proto_rawDesc = []byte{
 	0x61, 0x72, 0x79, 0x52, 0x07, 0x73, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x12, 0x23, 0x0a, 0x04,
 	0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x51, 0x75, 0x61,
 	0x6e, 0x74, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x04, 0x64, 0x61, 0x74,
-	0x61, 0x22, 0x17, 0x0a, 0x15, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4c, 0x61, 0x73, 0x74, 0x4f, 0x75,
-	0x74, 0x70, 0x75, 0x74, 0x47, 0x65, 0x74, 0x52, 0x65, 0x71, 0x22, 0x18, 0x0a, 0x16, 0x51, 0x75,
-	0x61, 0x6e, 0x74, 0x4c, 0x61, 0x73, 0x74, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x47, 0x65, 0x74,
-	0x52, 0x65, 0x73, 0x70, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73,
-	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x22, 0x89, 0x01, 0x0a, 0x15, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4c, 0x61, 0x73, 0x74, 0x4f,
+	0x75, 0x74, 0x70, 0x75, 0x74, 0x47, 0x65, 0x74, 0x52, 0x65, 0x71, 0x12, 0x30, 0x0a, 0x0a, 0x6f,
+	0x75, 0x74, 0x70, 0x75, 0x74, 0x54, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32,
+	0x10, 0x2e, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x54, 0x79, 0x70,
+	0x65, 0x52, 0x0a, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x54, 0x79, 0x70, 0x65, 0x12, 0x16, 0x0a,
+	0x06, 0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73,
+	0x63, 0x61, 0x6e, 0x49, 0x64, 0x12, 0x26, 0x0a, 0x0e, 0x70, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74,
+	0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x70,
+	0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x22, 0x30, 0x0a,
+	0x16, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4c, 0x61, 0x73, 0x74, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74,
+	0x47, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x12, 0x16, 0x0a, 0x06, 0x6f, 0x75, 0x74, 0x70, 0x75,
+	0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x2a,
+	0x3a, 0x0a, 0x0f, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x54, 0x79,
+	0x70, 0x65, 0x12, 0x0e, 0x0a, 0x0a, 0x51, 0x4f, 0x5f, 0x55, 0x4e, 0x4b, 0x4e, 0x4f, 0x57, 0x4e,
+	0x10, 0x00, 0x12, 0x0b, 0x0a, 0x07, 0x51, 0x4f, 0x5f, 0x44, 0x41, 0x54, 0x41, 0x10, 0x01, 0x12,
+	0x0a, 0x0a, 0x06, 0x51, 0x4f, 0x5f, 0x4c, 0x4f, 0x47, 0x10, 0x02, 0x42, 0x0a, 0x5a, 0x08, 0x2e,
+	0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -351,28 +446,31 @@ func file_quantification_retrieval_msgs_proto_rawDescGZIP() []byte {
 	return file_quantification_retrieval_msgs_proto_rawDescData
 }
 
+var file_quantification_retrieval_msgs_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_quantification_retrieval_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_quantification_retrieval_msgs_proto_goTypes = []interface{}{
-	(*QuantListReq)(nil),           // 0: QuantListReq
-	(*QuantListResp)(nil),          // 1: QuantListResp
-	(*QuantGetReq)(nil),            // 2: QuantGetReq
-	(*QuantGetResp)(nil),           // 3: QuantGetResp
-	(*QuantLastOutputGetReq)(nil),  // 4: QuantLastOutputGetReq
-	(*QuantLastOutputGetResp)(nil), // 5: QuantLastOutputGetResp
-	(*SearchParams)(nil),           // 6: SearchParams
-	(*QuantificationSummary)(nil),  // 7: QuantificationSummary
-	(*Quantification)(nil),         // 8: Quantification
+	(QuantOutputType)(0),           // 0: QuantOutputType
+	(*QuantListReq)(nil),           // 1: QuantListReq
+	(*QuantListResp)(nil),          // 2: QuantListResp
+	(*QuantGetReq)(nil),            // 3: QuantGetReq
+	(*QuantGetResp)(nil),           // 4: QuantGetResp
+	(*QuantLastOutputGetReq)(nil),  // 5: QuantLastOutputGetReq
+	(*QuantLastOutputGetResp)(nil), // 6: QuantLastOutputGetResp
+	(*SearchParams)(nil),           // 7: SearchParams
+	(*QuantificationSummary)(nil),  // 8: QuantificationSummary
+	(*Quantification)(nil),         // 9: Quantification
 }
 var file_quantification_retrieval_msgs_proto_depIdxs = []int32{
-	6, // 0: QuantListReq.searchParams:type_name -> SearchParams
-	7, // 1: QuantListResp.quants:type_name -> QuantificationSummary
-	7, // 2: QuantGetResp.summary:type_name -> QuantificationSummary
-	8, // 3: QuantGetResp.data:type_name -> Quantification
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	7, // 0: QuantListReq.searchParams:type_name -> SearchParams
+	8, // 1: QuantListResp.quants:type_name -> QuantificationSummary
+	8, // 2: QuantGetResp.summary:type_name -> QuantificationSummary
+	9, // 3: QuantGetResp.data:type_name -> Quantification
+	0, // 4: QuantLastOutputGetReq.outputType:type_name -> QuantOutputType
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_quantification_retrieval_msgs_proto_init() }
@@ -462,13 +560,14 @@ func file_quantification_retrieval_msgs_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_quantification_retrieval_msgs_proto_rawDesc,
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_quantification_retrieval_msgs_proto_goTypes,
 		DependencyIndexes: file_quantification_retrieval_msgs_proto_depIdxs,
+		EnumInfos:         file_quantification_retrieval_msgs_proto_enumTypes,
 		MessageInfos:      file_quantification_retrieval_msgs_proto_msgTypes,
 	}.Build()
 	File_quantification_retrieval_msgs_proto = out.File
