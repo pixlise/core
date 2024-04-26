@@ -83,7 +83,13 @@ func HandleQuantLastOutputGetReq(req *protos.QuantLastOutputGetReq, hctx wsHelpe
 
 	result, err := hctx.Svcs.FS.ReadObject(hctx.Svcs.Config.UsersBucket, s3Path)
 	if err != nil {
-		return nil, err
+		if hctx.Svcs.FS.IsNotFoundError(err) {
+			// Just return empty
+			result = []byte{}
+			err = nil
+		} else {
+			return nil, err
+		}
 	}
 
 	return &protos.QuantLastOutputGetResp{Output: string(result)}, nil
