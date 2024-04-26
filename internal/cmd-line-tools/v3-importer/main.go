@@ -398,19 +398,6 @@ func main() {
 		fmt.Println("Skipping migration of diffraction peaks...")
 	}
 
-	// NOTE: we don't actually migrate them any more... new world is too different. Just left
-	// here for completeness/documentation of what was tried, and it does still clear the
-	// View States DB collection!
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fmt.Println("View States...")
-		err = migrateViewStates(userContentBucket, userContentPaths, fs, destDB)
-		if err != nil {
-			fatalError(err)
-		}
-	}()
-
 	// Wait for all
 	wg.Wait()
 	printFinishStats()
