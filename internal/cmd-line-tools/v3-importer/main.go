@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -52,7 +53,10 @@ func main() {
 	var migrateElementSetsEnabled bool
 	var migrateZStacksEnabled bool
 	var migrateExpressionsEnabled bool
+	var fixROISharingMode bool
+	var fixROIIndexesMode bool
 	var jsonImportDir string
+	var migrateOrphanedSharedROIsFile string
 
 	flag.StringVar(&sourceMongoSecret, "sourceMongoSecret", "", "Source mongo DB secret")
 	flag.StringVar(&destMongoSecret, "destMongoSecret", "", "Destination mongo DB secret")
@@ -79,6 +83,9 @@ func main() {
 	flag.BoolVar(&migrateElementSetsEnabled, "migrateElementSetsEnabled", true, "Should we migrate Element Sets?")
 	flag.BoolVar(&migrateZStacksEnabled, "migrateZStacksEnabled", true, "Should we migrate Z-Stacks?")
 	flag.BoolVar(&migrateExpressionsEnabled, "migrateExpressionsEnabled", true, "Should we migrate expressions?")
+	flag.BoolVar(&fixROISharingMode, "fixROISharingMode", false, "Fixing ROI sharing states (this is a whole separate mode, won't migrate other things)")
+	flag.BoolVar(&fixROIIndexesMode, "fixROIIndexesMode", false, "Fixing ROI indexes (this is a whole separate mode, won't migrate other things)")
+	flag.StringVar(&migrateOrphanedSharedROIsFile, "migrateOrphanedSharedROIsFile", "", "Migrates shared ROIs whose id exists in the file (this is a whole separate mode, won't migrate other things)")
 	flag.StringVar(&jsonImportDir, "jsonImportDir", "", "If not empty, this is expected to be a directory to read JSON data into DB from. File names must be collection name.")
 
 	flag.Parse()
@@ -152,6 +159,21 @@ func main() {
 
 	// Destination DB is the new pixlise one
 	destDB := destMongoClient.Database(mongoDBConnection.GetDatabaseName("pixlise", destEnvName))
+
+	if fixROISharingMode {
+		fixROISharing(auth0Domain, auth0ClientId, auth0Secret, fs, userContentBucket, limitToDatasetIDsList, destDB)
+		return
+	}
+
+	if fixROIIndexesMode {
+		fixROIIndexes(dataBucket, fs, destDB)
+		return
+	}
+
+	if len(migrateOrphanedSharedROIsFile) > 0 {
+		runMigrateOrphanedSharedROIs(migrateOrphanedSharedROIsFile, fs, userContentBucket, limitToDatasetIDsList, destDB)
+		return
+	}
 
 	// Clear out ownership table first, but only for the bits we're about to import
 	if migrateDatasetsEnabled {
@@ -376,19 +398,6 @@ func main() {
 		fmt.Println("Skipping migration of diffraction peaks...")
 	}
 
-	// NOTE: we don't actually migrate them any more... new world is too different. Just left
-	// here for completeness/documentation of what was tried, and it does still clear the
-	// View States DB collection!
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fmt.Println("View States...")
-		err = migrateViewStates(userContentBucket, userContentPaths, fs, destDB)
-		if err != nil {
-			fatalError(err)
-		}
-	}()
-
 	// Wait for all
 	wg.Wait()
 	printFinishStats()
@@ -416,4 +425,68 @@ func clearOwnership(destDB *mongo.Database, objType protos.ObjectType) {
 	if result.DeletedCount <= 0 {
 		log.Printf("Warning: Deleted 0 items from ownership collection for type: %v", objType)
 	}
+}
+
+func fixROISharing(auth0Domain, auth0ClientId, auth0Secret string, fs fileaccess.S3Access, userContentBucket string, limitToDatasetIDsList []string, destDB *mongo.Database) {
+	userGroups, err := migrateAuth0UserGroups(auth0Domain, auth0ClientId, auth0Secret, destDB)
+	if err != nil {
+		fatalError(err)
+	}
+
+	/*
+		var listingWG sync.WaitGroup
+		listingWG.Add(1)
+
+		userContentPaths := []string{}
+		go func() {
+			defer listingWG.Done()
+			// List all of S3 user contents
+			fmt.Println("Listing user contents from S3...")
+			var err error
+			userContentPaths, err = fs.ListObjects(userContentBucket, filepaths.RootUserContent)
+			if err != nil {
+				fatalError(err)
+			}
+			fmt.Printf("  Listed %v files\n", len(userContentPaths))
+		}()
+
+		listingWG.Wait()
+
+
+		paths := strings.Join(userContentPaths, "\n")
+		err = os.WriteFile("roi-all-s3paths.txt", []byte(paths), 0777)
+		if err != nil {
+			fatalError(err)
+		}
+	*/
+
+	paths, err := os.ReadFile("roi-all-s3paths.txt")
+	if err != nil {
+		fatalError(err)
+	}
+
+	userContentPaths := strings.Split(string(paths), "\n")
+
+	err = migrateROIShares(userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB, userGroups)
+	if err != nil {
+		fatalError(err)
+	}
+}
+
+func runMigrateOrphanedSharedROIs(sharedIdsToMigrateFile string, fs fileaccess.S3Access, userContentBucket string, limitToDatasetIDsList []string, destDB *mongo.Database) {
+	paths, err := os.ReadFile("roi-all-s3paths.txt")
+	if err != nil {
+		fatalError(err)
+	}
+
+	userContentPaths := strings.Split(string(paths), "\n")
+
+	sharedIdsToMigrateFileContents, err := os.ReadFile(sharedIdsToMigrateFile)
+	if err != nil {
+		fatalError(err)
+	}
+
+	sharedIdsToMigrate := strings.Split(string(sharedIdsToMigrateFileContents), "\n")
+
+	migrateOrphanedSharedROIs(sharedIdsToMigrate, userContentBucket, userContentPaths, limitToDatasetIDsList, fs, destDB, "m3l7kzikydo35znm")
 }

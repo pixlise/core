@@ -1,10 +1,11 @@
 package wsHandler
 
 import (
-	"errors"
+	"fmt"
 	"path"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/quantification"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -57,5 +58,40 @@ func HandleQuantGetReq(req *protos.QuantGetReq, hctx wsHelpers.HandlerContext) (
 }
 
 func HandleQuantLastOutputGetReq(req *protos.QuantLastOutputGetReq, hctx wsHelpers.HandlerContext) (*protos.QuantLastOutputGetResp, error) {
-	return nil, errors.New("HandleQuantLastOutputGetReq not implemented yet")
+	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+
+	if req.PiquantCommand != "quant" {
+		return nil, fmt.Errorf("PiquantCommand must be quant") // for now!
+	}
+
+	if req.OutputType != protos.QuantOutputType_QO_DATA && req.OutputType != protos.QuantOutputType_QO_LOG {
+		return nil, fmt.Errorf("Invalid OutputType")
+	}
+
+	// Get the file name
+	fileName := ""
+	if req.OutputType == protos.QuantOutputType_QO_DATA {
+		fileName = filepaths.QuantLastOutputFileName + ".csv" // quant only supplies this
+	} else {
+		fileName = filepaths.QuantLastOutputLogName
+	}
+
+	// Get the path to stream
+	s3Path := filepaths.GetUserLastPiquantOutputPath(hctx.SessUser.User.Id, req.ScanId, req.PiquantCommand, fileName)
+
+	result, err := hctx.Svcs.FS.ReadObject(hctx.Svcs.Config.UsersBucket, s3Path)
+	if err != nil {
+		if hctx.Svcs.FS.IsNotFoundError(err) {
+			// Just return empty
+			result = []byte{}
+			err = nil
+		} else {
+			return nil, err
+		}
+	}
+
+	return &protos.QuantLastOutputGetResp{Output: string(result)}, nil
+
 }

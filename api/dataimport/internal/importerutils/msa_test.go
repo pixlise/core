@@ -19,13 +19,46 @@ package importerutils
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 )
 
 func Example_readMSAFileLines() {
-	data := []string{"#SOMETHING:123", "#PMC: 3001", "#DATATYPE: Y", "#NCOLUMNS: 2", "#NPOINTS : 3", "#SPECTRUM", "0", "23", "991231"}
+	data := strings.Split(`
+	#TITLE       AMASE_23-G23A
+	#OWNER       : Stony Brook
+	#DATE        : 04-18-2024
+	#TIME        : 04:05:02
+	#NPOINTS     : 4096
+	#NCOLUMNS     : 2
+	#XUNITS      :  eV
+	#YUNITS      :  COUNTS
+	#DATATYPE    :  YY
+	#XPERCHAN    :  9.9799, 10.1633    eV per channel
+	#OFFSET      :  ,   -8.5912, -9.6341    eV of first channel
+	#SIGNALTYPE  :  XRF
+	#COMMENT     : 20 min purge, 175 microA, 28 kV, He trickle purge, 5 x 14 mm scan, 0.1 step size, 10s dwell 
+	#COMMENT     : 
+	#XPOSITION   :    4.599
+	#YPOSITION   :    1.900
+	#ZPOSITION   :    0.000
+	#LIVETIME    :    1.9,   11.0
+	#REALTIME    :    2.0,   12.0
+	#SPECTRUM    :
+	0, 0
+	0, 0
+	0, 0
+	0, 0
+	0, 0
+	0, 0
+	0, 0`, "\n")
+
 	items, err := ReadMSAFileLines(data, false, true, false)
+	fmt.Println(err)
+
+	data = []string{"#SOMETHING:123", "#PMC: 3001", "#DATATYPE: Y", "#NCOLUMNS: 2", "#NPOINTS : 3", "#SPECTRUM", "0", "23", "991231"}
+	items, err = ReadMSAFileLines(data, false, true, false)
 	fmt.Println(err)
 
 	data = []string{"#SOMETHING:123", "#PMC: 3001", "#DATATYPE: YY", "#NCOLUMNS: 1", "#NPOINTS : 3", "#SPECTRUM", "0", "23", "991231"}
@@ -47,6 +80,7 @@ func Example_readMSAFileLines() {
 	fmt.Printf(" %v\n", items[1].ToString())
 
 	// Output:
+	// Failed to parse metadata line: #TITLE       AMASE_23-G23A
 	// Expected DATATYPE "YY" in MSA metadata
 	// Expected NCOLUMNS "2" in MSA metadata
 	// Unexpected DETECTOR_ID in multi-detector MSA
