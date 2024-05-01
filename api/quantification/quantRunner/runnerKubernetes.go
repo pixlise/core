@@ -94,7 +94,7 @@ func (r *kubernetesRunner) RunPiquant(piquantDockerImage string, params PiquantP
 	}
 }
 
-// getJobObject generates a Kubernetes Job Manifest for running piquant.
+// makeJobObject generates a Kubernetes Job Manifest for running piquant.
 // It takes in the following parameters:
 // - params: a PiquantParams struct containing all parameters needed by piquant
 // - paramsStr: json string of the above parameters
@@ -103,12 +103,16 @@ func (r *kubernetesRunner) RunPiquant(piquantDockerImage string, params PiquantP
 // - namespace: a string specifying the namespace in which the job should be created
 // - requestorUserId: a string specifying the user ID of the requestor
 // - numPods: an integer specifying the number of pods to create for the job
-func getJobObject(params PiquantParams, paramsStr, dockerImage, jobId, namespace, requestorUserId string, numPods int) *batchv1.Job {
+func makeJobObject(params PiquantParams, paramsStr, dockerImage, jobId, namespace, requestorUserId string, numPods int) *batchv1.Job {
 	imagePullSecret := apiv1.LocalObjectReference{Name: "api-auth"}
 	application := "piquant-runner"
 	name := fmt.Sprintf("piquant-%s", params.Command)
+
+	// Max time job can run for
+	jobTTLSec := int64(25 * 60)
+
 	// Seconds after job finishes before it is deleted
-	jobTtl := 60
+	postJobTTLSec := int32(5 * 60)
 
 	// Set the serviceaccount for the piquant pods based on namespace
 	// Piquant Fit commands will run in the same namespace and share a service account
@@ -127,7 +131,6 @@ func getJobObject(params PiquantParams, paramsStr, dockerImage, jobId, namespace
 	// Pointer management for kubernetes API
 	nPods := int32(numPods)
 	cm := batchv1.IndexedCompletion
-	ttl := int32(jobTtl)
 
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -150,7 +153,8 @@ func getJobObject(params PiquantParams, paramsStr, dockerImage, jobId, namespace
 			Completions:             &nPods,
 			Parallelism:             &nPods,
 			CompletionMode:          &cm,
-			TTLSecondsAfterFinished: &ttl,
+			TTLSecondsAfterFinished: &postJobTTLSec,
+			ActiveDeadlineSeconds:   &jobTTLSec,
 			Template: apiv1.PodTemplateSpec{
 				Spec: apiv1.PodSpec{
 					ImagePullSecrets:   []apiv1.LocalObjectReference{imagePullSecret},
@@ -191,11 +195,7 @@ func getJobObject(params PiquantParams, paramsStr, dockerImage, jobId, namespace
 
 func (r *kubernetesRunner) getJobStatus(namespace, jobId string) (jobStatus batchv1.JobStatus, err error) {
 	job, err := r.kubeHelper.Clientset.BatchV1().Jobs(namespace).Get(context.Background(), jobId, metav1.GetOptions{})
-	if err != nil {
-		return jobStatus, err
-	}
-	jobStatus = job.Status
-	return
+	return job.Status, err
 }
 
 func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, dockerImage, requestorUserId string, count int, status chan string) {
@@ -206,27 +206,42 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, d
 		return
 	}
 	paramsStr := string(paramsJSON)
-	jobSpec := getJobObject(params, paramsStr, dockerImage, jobId, namespace, requestorUserId, count)
+	jobSpec := makeJobObject(params, paramsStr, dockerImage, jobId, namespace, requestorUserId, count)
+
+	r.kubeHelper.Log.Infof("runQuantJob creating job for namespace %v, svc account %v: %v", jobSpec.Namespace, jobSpec.Spec.Template.Spec.ServiceAccountName, paramsStr)
+
 	job, err := r.kubeHelper.Clientset.BatchV1().Jobs(jobSpec.Namespace).Create(context.Background(), jobSpec, metav1.CreateOptions{})
 	if err != nil {
 		r.kubeHelper.Log.Errorf("Job create failed for: %v. namespace: %v, count: %v", jobId, namespace, count)
 		r.fatalErrors <- err
 		return
 	}
+
 	// Query the status of the job and report on the number of completed pods
-	completed := false
-	for !completed {
+	startTS := time.Now().Unix()
+
+	for {
 		time.Sleep(5 * time.Second)
+
 		jobStatus, err := r.getJobStatus(job.Namespace, job.Name)
 		if err != nil {
 			r.kubeHelper.Log.Errorf("Failed to get job status for: %v. namespace: %v, count: %v", jobId, namespace, count)
 			r.fatalErrors <- err
 			return
 		}
-		statusMsg := fmt.Sprintf("%v/%v", jobStatus.Succeeded, count)
+		statusMsg := fmt.Sprintf("Success %v, Fail %v, Active %v of %v", jobStatus.Succeeded, jobStatus.Failed, jobStatus.Active, count)
 		status <- statusMsg
 		if jobStatus.Succeeded == int32(count) {
-			completed = true
+			break
+		}
+
+		// If we've been whining for too long, stop logging
+		if time.Now().Unix()-startTS > 30*60 {
+			statusMsg := fmt.Sprintf("Timed out monitoring job %v/%v, considering it failed.", namespace, jobId)
+			r.kubeHelper.Log.Errorf(statusMsg)
+
+			status <- statusMsg
+			break
 		}
 	}
 }
