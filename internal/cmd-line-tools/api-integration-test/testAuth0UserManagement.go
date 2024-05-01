@@ -49,6 +49,7 @@ func testUserManagementFunctionality(apiHost string, userIdToEdit string) {
 			}}`, knownRoleNoPermissions, knownRoleUnassignedUser),
 	)
 
+	// Allow long ago login, we might be caching JWTs to run test
 	u2.AddSendReqAction("List all users",
 		`{"userListReq":{}}`,
 		`{"msgId":2, "status": "WS_OK",
@@ -67,7 +68,7 @@ func testUserManagementFunctionality(apiHost string, userIdToEdit string) {
 							"email": "${REGEXMATCH=.+@pixlise\\.org}"
 						},
 						"createdUnixSec": "${SECAFTER=1688083200}",
-						"lastLoginUnixSec": "${SECAGO=10}"
+						"lastLoginUnixSec": "${SECAGO=180}"
 					}
 				]
 			}

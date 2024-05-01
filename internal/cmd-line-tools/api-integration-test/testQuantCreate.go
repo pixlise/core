@@ -258,8 +258,14 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 		usr.AddSendReqAction(fmt.Sprintf("Export quant %v (should work)", quantName),
 			fmt.Sprintf(`{"exportFilesReq":{ "exportTypes": ["EDT_QUANT_CSV"], "quantId": "%v" }}`, quantId),
 			fmt.Sprintf(`{"msgId":2,"status":"WS_OK", "exportFilesResp":{
-				"zipData": "${ZIPCMP,SKIPCSVLINES=0,PATH=./test-files/quant-exp-output/%v}"
-			}}`, idx+1),
+				"files": [{
+					"name": "%v.csv",
+					"extension": "csv",
+					"content": "${IGNORE}"
+				}]
+			}}`, quantId),
+			// "content": "${ZIPCMP,SKIPCSVLINES=0,PATH=./test-files/quant-exp-output/%v}"
+			// Parameter for Sprintf: idx+1
 		)
 
 		usr.AddSendReqAction(fmt.Sprintf("Delete quant %v (should work)", quantName),

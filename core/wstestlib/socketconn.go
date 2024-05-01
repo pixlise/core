@@ -155,12 +155,28 @@ func (s *socketConn) disconnect() error {
 	return nil
 }
 
+// So we don't spam Auth0 and get rate limited (and thereby fail tests), we store the last known JWT of given connect params
+var cachedJWT = map[string]string{}
+
+func ClearJWTCache() {
+	cachedJWT = map[string]string{}
+}
+
 func (s *socketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Auth0Info) (string, error) {
-	var err error
-	s.JWT, err = auth0login.GetJWT(connectParams.User, connectParams.Pass,
-		auth0Params.ClientId, auth0Params.Secret, auth0Params.Domain, "http://localhost:4200/authenticate", auth0Params.Audience, "openid profile email")
-	if err != nil {
-		return "", err
+	// Try find it
+	cacheKey := connectParams.Host + "-" + connectParams.User + "-" + connectParams.Pass
+	if jwt, ok := cachedJWT[cacheKey]; !ok {
+		jwt, err := auth0login.GetJWT(connectParams.User, connectParams.Pass,
+			auth0Params.ClientId, auth0Params.Secret, auth0Params.Domain, "http://localhost:4200/authenticate", auth0Params.Audience, "openid profile email")
+		if err != nil {
+			return "", err
+		}
+
+		// Cache it!
+		cachedJWT[cacheKey] = jwt
+		s.JWT = jwt
+	} else {
+		s.JWT = jwt
 	}
 
 	// Parse the JWT to get our user ID
