@@ -18,6 +18,9 @@ type SrcPiquantVersionConfig struct {
 	Creator            SrcUserInfo `json:"creator"`
 }
 
+// Config contains the docker container to use for PIQUANT. Separate from config.json because users can configure this in UI
+const piquantVersionFileName = "piquant-version.json"
+
 func migratePiquantVersion(configBucket string, fs fileaccess.FileAccess, dest *mongo.Database) error {
 	coll := dest.Collection(dbCollections.PiquantVersionName)
 	err := coll.Drop(context.TODO())
@@ -26,7 +29,7 @@ func migratePiquantVersion(configBucket string, fs fileaccess.FileAccess, dest *
 	}
 
 	ver := SrcPiquantVersionConfig{}
-	err = fs.ReadJSON(configBucket, filepaths.GetConfigFilePath(filepaths.PiquantVersionFileName), &ver, false)
+	err = fs.ReadJSON(configBucket, filepaths.GetConfigFilePath(piquantVersionFileName), &ver, false)
 	if err != nil {
 		return err
 	}

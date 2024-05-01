@@ -21,9 +21,6 @@ package filepaths
 
 import (
 	"path"
-	"strings"
-
-	"github.com/pixlise/core/v4/core/fileaccess"
 )
 
 // This package contains all file paths that the PIXLISE API should ever need to access. All been centralised
@@ -104,11 +101,6 @@ const RootDetectorConfig = "DetectorConfig"
 //     TODO: remove that
 const PiquantConfigSubDir = "PiquantConfigs"
 
-// Get a PIXLISE detector config file path given the config name
-func GetDetectorConfigFilePath(configName string) string {
-	return path.Join(RootDetectorConfig, configName, "pixlise-config.json")
-}
-
 // Get a detector config path (used by PIQUANT) given the config name, version and optionally a file name. If file name is blank
 // then the directory path above it is returned
 func GetDetectorConfigPath(configName string, version string, fileName string) string {
@@ -138,82 +130,12 @@ const RootPixliseConfigPath = "PixliseConfig"
 // Auth0 PEM file which API uses to verify JWTs
 const Auth0PemFileName = "auth0.pem"
 
-// Gets dataset list file (which UI shows as tiles).
-// NOTE: This is regenerated every time Datasets/ changes by lambda function: dataset-tile-updater
-func GetDatasetListPath() string {
-	return GetConfigFilePath("datasets.json")
-}
-
-func GetDatasetsAuthPath() string {
-	return GetConfigFilePath("datasets-auth.json")
-}
-
-func GetPublicObjectsPath() string {
-	return GetConfigFilePath("public-objects.json")
-}
-
-// Config contains the docker container to use for PIQUANT. Separate from config.json because users can configure this in UI
-const PiquantVersionFileName = "piquant-version.json"
-
-// Contains a list of Dataset IDs to ignore when generating dataset tiles. This is hand
-// maintained, only used when we have a bad dataset is downloaded that will never be usable
-// This way we can prevent it from being written to <Config bucket>/PixliseConfig/datasets.json
-// Just a work-around for having OCS fetcher put files there without our control. If a bad
-// dataset download happens, there's no point in showing a broken tile for it forever!
-const BadDatasetIDsFile = "bad-dataset-ids.json"
-
 // Getting a config file path relative to the root of the bucket
 func GetConfigFilePath(fileName string) string {
 	return path.Join(RootPixliseConfigPath, fileName)
 }
 
-////////////////////////////////////////////////////////////////////////////////////
-// User Content Bucket
-////////////////////////////////////////////////////////////////////////////////////
-
-/*
-Root directory for bucket containing all user-created content
-  - UserContent/
-  - ----<user-id>/
-  - --------ElementSets.json - User created element sets
-  - --------DataExpressions.json - User created expressions
-  - --------RGBMixes.json - User created RGB mixes
-  - --------<dataset-id>/
-  - ------------ROI.json - User created ROIs
-  - ------------Tags.json - Dataset tags
-  - ------------SpectrumAnnotation.json
-  - ------------multi-quant-z-stack.json - The current z-stack on multi-quant panel
-  - ------------Quantifications/
-  - ----------------<quant-id>.bin - The combined.csv file converted to protobuf binary format by quant-converter
-  - ----------------<quant-id>.csv - Copied from Job Bucket/JobData/<job-id>/output/combined.csv
-  - ----------------<quant-id>-logs/ - Copied from Job Bucket/JobData/<job-id>/piquant-logs/
-  - ----------------summary-<quant-id>.json - Quant summary file
-  - ------------LastPiquantOutput/ - Last output of fit command
-  - ------------ViewState/ - User view states for each dataset. This stores UI info about how the view was configured
-  - ----------------quantification.json - The quantification loaded on UI top toolbar
-  - ----------------roi.json - Colours assigned to ROIs on the UI
-  - ----------------selection.json - The users current selection of PMCs and/or pixels on UI
-  - ----------------analysisLayout.json - What widgets go where, top row/bottom row
-  - -----------------<panel-type>-<location>.json - States of various UI panels and where they are
-  - -----------------  See: GetViewStatePath()
-  - -----------------  Workspaces/
-  - --------------------<workspace-name>.json - View state files (like up one directory) flattened to a file and given a workspace name. Note the file also contains the workspace name, the file name may have been modified for saving, eg removal of /
-  - --------------------  See: GetWorkspacePath()
-  - --------------------  WorkspaceCollections/
-  - --------------------<collection-name>.json
-  - --------------------  See: GetCollectionPath()
-  - ----shared/ - All shared objects go here. Kind of like if they belong to a user called "shared". NOTE: User diffraction/roughness files are shared by default!
-*/
 const RootUserContent = "UserContent"
-const elementSetFile = "ElementSets.json"
-const rgbMixFile = "RGBMixes.json"
-const roiFile = "ROI.json"
-const tagFile = "Tags.json"
-
-// Multi-quant z-stack file name
-const MultiQuantZStackFile = "multi-quant-z-stack.json"
-
-const annotationFile = "SpectrumAnnotation.json"
 
 const RootQuantificationPath = "Quantifications"
 
@@ -224,8 +146,6 @@ func GetQuantPath(userId string, scanId string, fileName string) string {
 	return path.Join(RootQuantificationPath, scanId, userId)
 }
 
-const quantLastOutputSubPath = "LastPiquantOutput"
-
 // File name of last piquant output (used with fit command). Extension added as needed
 const QuantLastOutputFileName = "output_data"
 
@@ -233,32 +153,13 @@ const QuantLastOutputFileName = "output_data"
 const QuantLastOutputLogName = "output.log"
 
 // Retrieve path for last outputs, eg last run fit command (command is actually "quant"), sits in here with its log file
+const rootLastQuantOutput = "LastQuantOutput"
+
 func GetUserLastPiquantOutputPath(userID string, datasetID string, piquantCommand string, fileName string) string {
 	if len(fileName) > 0 {
-		return path.Join(RootUserContent, userID, datasetID, quantLastOutputSubPath, piquantCommand, fileName)
+		return path.Join(rootLastQuantOutput, datasetID, userID, piquantCommand, fileName)
 	}
-	return path.Join(RootUserContent, userID, datasetID, quantLastOutputSubPath, piquantCommand)
-}
-
-const viewStatePath = "ViewState"
-
-// TODO: Move files directly in ViewState/ into their own directory, eg Last/ because
-// currently we have to check what we're deleting if resetting view state for example
-
-// Sub-dir containing all workspaces. These are saved copies of view states
-const ViewStateSavedSubpath = "Workspaces"
-
-// Sub-dir containing all workspace collections. These are flat files containing all workspaces they were created from
-const ViewStateCollectionsSubpath = "WorkspaceCollections"
-
-// Gets user content file path by user id and file name
-func GetUserContentPath(userID string, fileName string) string {
-	return path.Join(RootUserContent, userID, fileName)
-}
-
-// Gets user content file path for a given dataset id. Also requires user id, and the file name
-func GetUserContentDatasetPath(userID string, datasetID string, fileName string) string {
-	return path.Join(RootUserContent, userID, datasetID, fileName)
+	return path.Join(rootLastQuantOutput, datasetID, userID, piquantCommand)
 }
 
 // Name of user manually entered diffraction peaks file. NOTE: this file only exists as a shared file!
@@ -268,13 +169,6 @@ const DiffractionPeakManualFileName = "manual-diffraction-peaks.json"
 // but users can view a peak and mark it with a status, eg to delete it because it's not a real diffraction peak
 // OTE: this file only exists as a shared file!
 const DiffractionPeakStatusFileName = "diffraction-peak-statuses.json"
-
-/*
-Root directory containing all user activity stored, to track clicks and user flows for research purposes
-  - Activity/
-  - -----------<datestamp>/<GUID>.json - User activity files (things captured by middleware logger)
-*/
-const RootUserActivity = "Activity"
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Job Bucket
@@ -314,42 +208,6 @@ func GetJobDataPath(datasetID string, jobID string, fileName string) string {
 	return path.Join(RootJobData, datasetID)
 }
 
-/*
-Root directory for all job statuses. These are stored separately to JobData so we can easily list all jobs and
-query their statuses
-  - JobStatus/
-  - ----<dataset-id>/<job-id>-status.json
-*/
-const RootJobStatus = "JobStatus"
-
-// Job status file name suffix. Appended to the job ID
-const JobStatusSuffix = "-status.json"
-
-// Retrieves the path of a job status file for given dataset id and job id. If job id is blank, this just
-// returns the root of all job statuses for the given datset id
-func GetJobStatusPath(datasetID string, jobID string) string {
-	if len(jobID) <= 0 {
-		return path.Join(RootJobStatus, datasetID)
-	}
-	return path.Join(RootJobStatus, datasetID, jobID+JobStatusSuffix)
-}
-
-/*
-Root directory for all job summaries. This is stored separately to JobData so we can easily list all jobs
-and get their metadata (summary) files
-  - JobSummaries/
-  - ----<dataset-id>-jobs.json - Summary files describing all jobs for a dataset
-*/
-const RootJobSummaries = "JobSummaries"
-
-// Job summary file name suffix. Appended to dataset ID
-const JobSummarySuffix = "-jobs.json"
-
-// Gets the job summary path for a given dataset ID
-func GetJobSummaryPath(datasetID string) string {
-	return path.Join(RootJobSummaries, datasetID+JobSummarySuffix)
-}
-
 ////////////////////////////////////////////////////////////////////////////////////
 // Artifacts Manual Upload Data Source Bucket
 ////////////////////////////////////////////////////////////////////////////////////
@@ -372,21 +230,6 @@ const DatasetCustomRoot = "dataset-addons"
 // File name for dataset custom meta file containing the title and other settings
 const DatasetCustomMetaFileName = "custom-meta.json"
 
-// Get the custom meta file path for a given dataset ID
-func GetCustomMetaPath(datasetID string) string {
-	return path.Join(DatasetCustomRoot, datasetID, DatasetCustomMetaFileName)
-}
-
-// Get the custom image path for a given dataset ID. Note imageType must be one of UNALIGNED, MATCHED or RGBU
-func GetCustomImagePath(datasetID string, imgType string, fileName string) string {
-	// NOTE: We assume imgType is valid!
-	s3Path := path.Join(DatasetCustomRoot, datasetID, strings.ToUpper(imgType))
-	if len(fileName) > 0 {
-		s3Path = path.Join(s3Path, fileName)
-	}
-	return s3Path
-}
-
 /*
 Root directory to store uploaded dataset "raw" artifacts. These are then read by dataset importer
 to create a dataset in the dataset bucket
@@ -399,101 +242,9 @@ to create a dataset in the dataset bucket
 */
 const DatasetUploadRoot = "UploadedDatasets"
 
-// Gets the path to a file in the dataset upload area, for a given dataset id and file name
-func GetDatasetUploadPath(datasetID string, fileName string) string {
-	return path.Join(DatasetUploadRoot, datasetID, fileName)
-}
-
-////////////////////////////////////////////////////////////////////////////////////
-// Artifacts Built Bucket - where we go to download built PIQUANT, etc
-////////////////////////////////////////////////////////////////////////////////////
-
-/*
-PIQUANT binaries root file - this kind of went unused and is likely not working because
-our build process doesn't write to the bucket any more
-  - piquant/
-  - ----piquant-linux-*.zip - Built PIQUANT executables (zipped)
-*/
-const PiquantDownloadPath = "piquant"
-
-////////////////////////////////////////////////////////////////////////////////////
-// Some specific helper functions for better searchability/grouping
-////////////////////////////////////////////////////////////////////////////////////
-
-// Getting element set file path for a user
-func GetElementSetPath(userID string) string {
-	return GetUserContentPath(userID, elementSetFile)
-}
-
-// Getting RGB mix file path for a user
-func GetRGBMixPath(userID string) string {
-	return GetUserContentPath(userID, rgbMixFile)
-}
-
-// Getting ROI file path for a user and dataset
-func GetROIPath(userID string, datasetID string) string {
-	return GetUserContentDatasetPath(userID, datasetID, roiFile)
-}
-
-// Getting tag file path for a user
-func GetTagPath(userID string) string {
-	return GetUserContentPath(userID, tagFile)
-}
-
-// Getting multi-quant z-stack file path for a user and dataset
-func GetMultiQuantZStackPath(userID string, datasetID string) string {
-	return GetUserContentDatasetPath(userID, datasetID, MultiQuantZStackFile)
-}
-
-// Getting spectrum annotations file path for a user and dataset
-func GetAnnotationsPath(userID string, datasetID string) string {
-	return GetUserContentDatasetPath(userID, datasetID, annotationFile)
-}
-
-// Getting view state file path for a user, dataset and file name. Note if file name is blank, this just returns the directory
-func GetViewStatePath(userID string, datasetID string, fileName string) string {
-	if len(fileName) <= 0 {
-		// Just return the root of this
-		return path.Join(RootUserContent, userID, datasetID, viewStatePath)
-	}
-	return path.Join(RootUserContent, userID, datasetID, viewStatePath, fileName+".json")
-}
-
-// Getting workspace file path for a user, dataset and workspace ID. Note if id is blank, this just returns the directory
-// Validates ids to make sure they are valid (because the id is actually part of the file name)
-func GetWorkspacePath(userID string, datasetID string, id string) string {
-	if len(id) <= 0 {
-		// Just return the root of this
-		return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateSavedSubpath)
-	}
-	// ensure it's a valid file name
-	id = fileaccess.MakeValidObjectName(id, true)
-	return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateSavedSubpath, id+".json")
-}
-
-// Getting collection file path for a user, dataset and workspace ID. Note if id is blank, this just returns the directory
-// Validates ids to make sure they are valid (because the id is actually part of the file name)
-func GetCollectionPath(userID string, datasetID string, id string) string {
-	if len(id) <= 0 {
-		// Just return the root of this
-		return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateCollectionsSubpath)
-	}
-	// ensure it's a valid file name
-	id = fileaccess.MakeValidObjectName(id, true)
-	return path.Join(RootUserContent, userID, datasetID, viewStatePath, ViewStateCollectionsSubpath, id+".json")
-}
-
 ////////////////////////////////////////////////////////////////////////////////////
 // Helpers for forming certain file names
 ////////////////////////////////////////////////////////////////////////////////////
-
-// QuantSummaryFilePrefix - summary files are summary-<jobid>.json
-const QuantSummaryFilePrefix = "summary-"
-
-// MakeQuantSummaryFileName - Given a quant ID, generates the file name: summary-<jobid>.json (use this for searchability/consistency)
-func MakeQuantSummaryFileName(quantID string) string {
-	return QuantSummaryFilePrefix + quantID + ".json"
-}
 
 // QuantFileSuffix - quant files are <jobid>.bin
 const QuantFileSuffix = ".bin"
