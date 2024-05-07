@@ -453,7 +453,7 @@ func runLocalTests(apiHost string, isCI bool) {
 	}
 	testUserGroups(apiHost)
 	testLogMsgs(apiHost)
-	testScanData(apiHost, 0 /*3 for proper testing*/)
+	testScanData(apiHost, 2 /*3 for proper testing*/)
 	testDetectorConfig(apiHost)
 
 	testTags(apiHost)

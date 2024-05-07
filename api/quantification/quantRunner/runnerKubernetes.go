@@ -210,6 +210,8 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 	// Query the status of the job and report on the number of completed pods
 	startTS := time.Now().Unix()
 
+	lastStatusMsg := ""
+
 	for {
 		time.Sleep(5 * time.Second)
 
@@ -219,8 +221,19 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 			r.fatalErrors <- err
 			return
 		}
-		statusMsg := fmt.Sprintf("Success %v, Fail %v, Active %v, Ready %v of %v", jobStatus.Succeeded, jobStatus.Failed, jobStatus.Active, jobStatus.Ready, count)
-		status <- statusMsg
+
+		ready := int32(0)
+		if jobStatus.Ready != nil {
+			ready = *jobStatus.Ready
+		}
+		statusMsg := fmt.Sprintf("Success %v, Fail %v, Active %v, Ready %v of %v", jobStatus.Succeeded, jobStatus.Failed, jobStatus.Active, ready, count)
+
+		// Only send out a status if there's something new
+		if lastStatusMsg != statusMsg {
+			status <- statusMsg
+			lastStatusMsg = statusMsg
+		}
+
 		if jobStatus.Succeeded == int32(count) {
 			break
 		}
