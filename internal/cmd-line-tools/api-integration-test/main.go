@@ -79,7 +79,7 @@ func main() {
 
 	flag.Parse()
 
-	if strings.Contains(apiHost, "pixlise.org") && !strings.Contains(apiHost, "review.pixlise.org") {
+	if strings.Contains(apiHost, "pixlise.org") && !strings.Contains(apiHost, "review.pixlise.org") && !strings.Contains(apiHost, "dev-api.pixlise.org") {
 		fmt.Printf("Can't connect to an env for now: %v\n", apiHost)
 		return
 	}
@@ -161,10 +161,11 @@ func runLocalTests(apiHost string, isCI bool) {
 	testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
 	// testScanData(apiHost, 0 /*3 for proper testing*/)
-	// testQuants(apiHost)
+	//testQuantFit(apiHost) //testQuants(apiHost, true)
 	// testDataModules(apiHost)
 	// Test log query (for data import)
 	// Run integration test against review env?
+	//return
 
 	// *** NOT RUNNING THIS LOCALLY, NO LAMBDA IS STARTED *** testScanImport(apiHost)
 	u1Id, u2Id := testNotification(apiHost)
