@@ -2,6 +2,7 @@ package wsHandler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -14,36 +15,57 @@ import (
 )
 
 func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpers.HandlerContext) (*protos.ImageBeamLocationsResp, error) {
-	if err := wsHelpers.CheckStringField(&req.ImageName, "ImageName", 1, 255); err != nil {
-		return nil, err
-	}
-
 	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
-
-	// Read the image and check that the user has access to all scans associated with it
-	result := coll.FindOne(ctx, bson.M{"_id": req.ImageName})
-	if result.Err() != nil {
-		if result.Err() == mongo.ErrNoDocuments {
-			return nil, errorwithstatus.MakeNotFoundError(req.ImageName)
-		}
-		return nil, result.Err()
-	}
-
 	locs := protos.ImageLocations{}
-	err := result.Decode(&locs)
-	if err != nil {
-		return nil, err
-	}
 
-	if len(locs.LocationPerScan) <= 0 {
-		return nil, fmt.Errorf("No beams defined for image: %v", req.ImageName)
-	}
+	// If we have generateForScanId set, we don't want to have an image name!
+	if len(req.GenerateForScanId) > 0 {
+		if len(req.ImageName) > 0 {
+			return nil, errorwithstatus.MakeBadRequestError(errors.New("Expected empty image name for request with GenerateForScanId set"))
+		}
 
-	for _, scanLocs := range locs.LocationPerScan {
-		_, err := wsHelpers.CheckObjectAccess(false, scanLocs.ScanId, protos.ObjectType_OT_SCAN, hctx)
+		// Check user has access to this scan
+		_, err := wsHelpers.CheckObjectAccess(false, req.GenerateForScanId, protos.ObjectType_OT_SCAN, hctx)
 		if err != nil {
 			return nil, err
+		}
+
+		// Generate away! NOTE: empty image name implies this won't write to DB
+		ijs, err := generateIJs("", req.GenerateForScanId, instrument, hctx)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// We MUST have an image name in this case
+		if err := wsHelpers.CheckStringField(&req.ImageName, "ImageName", 1, 255); err != nil {
+			return nil, err
+		}
+
+		coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
+
+		// Read the image and check that the user has access to all scans associated with it
+		result := coll.FindOne(ctx, bson.M{"_id": req.ImageName})
+		if result.Err() != nil {
+			if result.Err() == mongo.ErrNoDocuments {
+				return nil, errorwithstatus.MakeNotFoundError(req.ImageName)
+			}
+			return nil, result.Err()
+		}
+
+		err := result.Decode(&locs)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(locs.LocationPerScan) <= 0 {
+			return nil, fmt.Errorf("No beams defined for image: %v", req.ImageName)
+		}
+
+		for _, scanLocs := range locs.LocationPerScan {
+			_, err := wsHelpers.CheckObjectAccess(false, scanLocs.ScanId, protos.ObjectType_OT_SCAN, hctx)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -83,16 +105,18 @@ func generateIJs(imageName string, scanId string, instrument protos.ScanInstrume
 		}},
 	}
 
-	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
+	if len(imageName) > 0 {
+		ctx := context.TODO()
+		coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 
-	result, err := coll.InsertOne(ctx, &locs, options.InsertOne())
-	if err != nil {
-		return err
-	}
+		result, err := coll.InsertOne(ctx, &locs, options.InsertOne())
+		if err != nil {
+			return err
+		}
 
-	if result.InsertedID != imageName {
-		return fmt.Errorf("Inserting generated beam IJs, expected id: %v, got: %v", imageName, result.InsertedID)
+		if result.InsertedID != imageName {
+			return fmt.Errorf("Inserting generated beam IJs, expected id: %v, got: %v", imageName, result.InsertedID)
+		}
 	}
 
 	return nil
