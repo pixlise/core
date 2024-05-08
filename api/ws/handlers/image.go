@@ -418,7 +418,7 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 	}
 
 	if generateCoords {
-		err = generateIJs(scanImage.ImagePath, req.OriginScanId, scan.Instrument, hctx)
+		_, err = generateIJs(scanImage.ImagePath, req.OriginScanId, scan.Instrument, hctx)
 		if err != nil {
 			return nil, err
 		}

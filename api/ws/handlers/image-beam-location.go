@@ -16,7 +16,7 @@ import (
 
 func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpers.HandlerContext) (*protos.ImageBeamLocationsResp, error) {
 	ctx := context.TODO()
-	locs := protos.ImageLocations{}
+	var locs *protos.ImageLocations
 
 	// If we have generateForScanId set, we don't want to have an image name!
 	if len(req.GenerateForScanId) > 0 {
@@ -30,8 +30,21 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 			return nil, err
 		}
 
+		// Read the scan item so we get the right instrument
+		coll := hctx.Svcs.MongoDB.Collection(dbCollections.ScansName)
+		scanResult := coll.FindOne(ctx, bson.M{"_id": req.GenerateForScanId}, options.FindOne())
+		if scanResult.Err() != nil {
+			return nil, errorwithstatus.MakeNotFoundError(req.GenerateForScanId)
+		}
+
+		scan := &protos.ScanItem{}
+		err = scanResult.Decode(scan)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to decode scan: %v. Error: %v", req.GenerateForScanId, err)
+		}
+
 		// Generate away! NOTE: empty image name implies this won't write to DB
-		ijs, err := generateIJs("", req.GenerateForScanId, instrument, hctx)
+		locs, err = generateIJs("", req.GenerateForScanId, scan.Instrument, hctx)
 		if err != nil {
 			return nil, err
 		}
@@ -71,20 +84,24 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 
 	// Return the coordinates from DB record
 	return &protos.ImageBeamLocationsResp{
-		Locations: &locs,
+		Locations: locs,
 	}, nil
 }
 
-func generateIJs(imageName string, scanId string, instrument protos.ScanInstrument, hctx wsHelpers.HandlerContext) error {
+func generateIJs(imageName string, scanId string, instrument protos.ScanInstrument, hctx wsHelpers.HandlerContext) (*protos.ImageLocations, error) {
 	hctx.Svcs.Log.Infof("Generating IJ's for image: %v, scan: %v...", imageName, scanId)
 	// Read the dataset file
 	exprPB, err := wsHelpers.ReadDatasetFile(scanId, hctx.Svcs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Generate coordinates
-	scale := float32(100.0) // We scale XY up by this much to make them not be bunched up so much, so the image doesn't have to scale down too much (it's a bit arbitrary)
+	scale := float32(1)
+
+	if len(imageName) > 0 {
+		scale = 100 // We scale XY up by this much to make them not be bunched up so much, so the image doesn't have to scale down too much (it's a bit arbitrary)
+	}
 
 	coords := []*protos.Coordinate2D{}
 	for _, loc := range exprPB.Locations {
@@ -111,13 +128,13 @@ func generateIJs(imageName string, scanId string, instrument protos.ScanInstrume
 
 		result, err := coll.InsertOne(ctx, &locs, options.InsertOne())
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if result.InsertedID != imageName {
-			return fmt.Errorf("Inserting generated beam IJs, expected id: %v, got: %v", imageName, result.InsertedID)
+			return nil, fmt.Errorf("Inserting generated beam IJs, expected id: %v, got: %v", imageName, result.InsertedID)
 		}
 	}
 
-	return nil
+	return &locs, nil
 }
