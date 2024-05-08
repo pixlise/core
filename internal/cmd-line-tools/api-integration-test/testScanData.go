@@ -52,7 +52,7 @@ func testScanData(apiHost string, groupDepth int) {
 	wstestlib.RunFullAccessTest(apiHost, userId, groupDepth, noAccessTest, accessTest)
 }
 
-const scanWaitTime = 60 * 1000 * 10
+const scanWaitTime = 60 * 1000 // why was this set to 10min initially? * 10
 
 var scan_Naltsos = &protos.ScanItem{
 	Id:    "048300551",

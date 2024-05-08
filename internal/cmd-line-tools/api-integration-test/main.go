@@ -160,9 +160,6 @@ func runEnvTests(apiHost string) {
 func runLocalTests(apiHost string, isCI bool) {
 	testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
-	// testScanData(apiHost, 0 /*3 for proper testing*/)
-	// testQuants(apiHost)
-	// testDataModules(apiHost)
 	// Test log query (for data import)
 	// Run integration test against review env?
 
@@ -174,14 +171,12 @@ func runLocalTests(apiHost string, isCI bool) {
 	testSelectionMsgs(apiHost)
 	testQuants(apiHost, !isCI) // We only run the tests that need to start PIQUANT outside of CI for now
 	testDiffractionManualPeaks(apiHost)
-	time.Sleep(5 * time.Second)
 	testDiffractionStatus(apiHost)
 	testPiquantMsgs(apiHost)
 	if !isCI {
 		testExpressionRuntimeMsgs(apiHost)
 	}
 	testDataModules(apiHost)
-	time.Sleep(5 * time.Second)
 	testUserContent(apiHost, map[string]contentMessaging{
 		"elementSet": {
 			itemName: "elementSet",
@@ -447,22 +442,19 @@ func runLocalTests(apiHost string, isCI bool) {
 		},
 	})
 
-	time.Sleep(5 * time.Second)
 	testUserSearch(apiHost)
 	testUserDetails(apiHost, u1Id, u2Id)
 	if !isCI {
+		wstestlib.ClearJWTCache()
 		testUserManagement(apiHost)
 	}
 	testUserGroups(apiHost)
-	time.Sleep(5 * time.Second)
 	testLogMsgs(apiHost)
-	testScanData(apiHost, 0 /*3 for proper testing*/)
-	time.Sleep(5 * time.Second)
+	testScanData(apiHost, 3) // 3 takes about 5 minutes, 2 is quicker, 1 or less isn't testing enough user->group permission hops
 	testDetectorConfig(apiHost)
 
 	testTags(apiHost)
 	testROIUserConfiguration(apiHost)
-	time.Sleep(5 * time.Second)
 	testScreenConfiguration(apiHost)
 	testWidgetData(apiHost)
 
