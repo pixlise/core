@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"strings"
-	"time"
 
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
@@ -24,6 +23,7 @@ func RunFullAccessTest(apiHost string, userId string, groupDepth int, noAccessCa
 		for viewOrEdit := 0; viewOrEdit < viewEditCount; viewOrEdit++ {
 			// Call back for no access test - in case we want to try the "cleared" scenario - without access permissions set up
 			if noAccessCallback != nil {
+				//ClearJWTCache()
 				noAccessCallback(apiHost)
 			}
 
@@ -85,6 +85,7 @@ func RunFullAccessTest(apiHost string, userId string, groupDepth int, noAccessCa
 
 					if viewOrMember == 0 {
 						group.Viewers = groupList
+						ownerViewOrEdit = 0 // If anything in the chain involves being a viewer, we can't expect the overall "edit" permission to be allowed
 					} else {
 						group.Members = groupList
 					}
@@ -100,14 +101,15 @@ func RunFullAccessTest(apiHost string, userId string, groupDepth int, noAccessCa
 			}
 
 			// Call back for the actual access test
+			//ClearJWTCache()
 			accessCheckCallback(apiHost, what, ownership[0], ownership[1], groups, ownerViewOrEdit == 1)
-
-			// Occasionally pause to not trip auth0 login frequency
-			if loginCount > 9 {
-				fmt.Println("Wait to not rate limit Auth0...")
-				time.Sleep(time.Duration(13) * time.Second)
-			}
-
+			/*
+				// Occasionally pause to not trip auth0 login frequency
+				if loginCount > 9 {
+					fmt.Println("Wait to not rate limit Auth0...")
+					time.Sleep(time.Duration(13) * time.Second)
+				}
+			*/
 			loginCount += 2
 
 			fmt.Printf("Login count: %v...\n", loginCount)

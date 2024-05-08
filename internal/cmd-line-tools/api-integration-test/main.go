@@ -160,9 +160,6 @@ func runEnvTests(apiHost string) {
 func runLocalTests(apiHost string, isCI bool) {
 	testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
-	// testScanData(apiHost, 0 /*3 for proper testing*/)
-	// testQuants(apiHost)
-	// testDataModules(apiHost)
 	// Test log query (for data import)
 	// Run integration test against review env?
 
@@ -453,7 +450,7 @@ func runLocalTests(apiHost string, isCI bool) {
 	}
 	testUserGroups(apiHost)
 	testLogMsgs(apiHost)
-	testScanData(apiHost, 2 /*3 for proper testing*/)
+	testScanData(apiHost, 3) // 3 takes about 5 minutes, 2 is quicker, 1 or less isn't testing enough user->group permission hops
 	testDetectorConfig(apiHost)
 
 	testTags(apiHost)
