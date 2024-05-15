@@ -16,23 +16,23 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-func HandleElementSetDeleteReq(req *protos.ElementSetDeleteReq, hctx wsHelpers.HandlerContext) (*protos.ElementSetDeleteResp, error) {
+func HandleElementSetDeleteReq(req *protos.ElementSetDeleteReq, hctx wsHelpers.HandlerContext) ([]*protos.ElementSetDeleteResp, error) {
 	return wsHelpers.DeleteUserObject[protos.ElementSetDeleteResp](req.Id, protos.ObjectType_OT_ELEMENT_SET, dbCollections.ElementSetsName, hctx)
 }
 
-func HandleElementSetGetReq(req *protos.ElementSetGetReq, hctx wsHelpers.HandlerContext) (*protos.ElementSetGetResp, error) {
+func HandleElementSetGetReq(req *protos.ElementSetGetReq, hctx wsHelpers.HandlerContext) ([]*protos.ElementSetGetResp, error) {
 	dbItem, owner, err := wsHelpers.GetUserObjectById[protos.ElementSet](false, req.Id, protos.ObjectType_OT_ELEMENT_SET, dbCollections.ElementSetsName, hctx)
 	if err != nil {
 		return nil, err
 	}
 
 	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
-	return &protos.ElementSetGetResp{
+	return []*protos.ElementSetGetResp{&protos.ElementSetGetResp{
 		ElementSet: dbItem,
-	}, nil
+	}}, nil
 }
 
-func HandleElementSetListReq(req *protos.ElementSetListReq, hctx wsHelpers.HandlerContext) (*protos.ElementSetListResp, error) {
+func HandleElementSetListReq(req *protos.ElementSetListReq, hctx wsHelpers.HandlerContext) ([]*protos.ElementSetListResp, error) {
 	idToOwner, err := wsHelpers.ListAccessibleIDs(false, protos.ObjectType_OT_ELEMENT_SET, hctx.Svcs, hctx.SessUser)
 	if err != nil {
 		return nil, err
@@ -75,9 +75,9 @@ func HandleElementSetListReq(req *protos.ElementSetListReq, hctx wsHelpers.Handl
 		itemMap[item.Id] = summary
 	}
 
-	return &protos.ElementSetListResp{
+	return []*protos.ElementSetListResp{&protos.ElementSetListResp{
 		ElementSets: itemMap,
-	}, nil
+	}}, nil
 }
 
 func validateElementSet(elementSet *protos.ElementSet) error {
@@ -183,7 +183,7 @@ func updateElementSet(elementSet *protos.ElementSet, hctx wsHelpers.HandlerConte
 	return dbItem, nil
 }
 
-func HandleElementSetWriteReq(req *protos.ElementSetWriteReq, hctx wsHelpers.HandlerContext) (*protos.ElementSetWriteResp, error) {
+func HandleElementSetWriteReq(req *protos.ElementSetWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.ElementSetWriteResp, error) {
 	// Owner should never be accepted from API
 	if req.ElementSet.Owner != nil {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("Owner must be empty for write messages"))
@@ -201,7 +201,7 @@ func HandleElementSetWriteReq(req *protos.ElementSetWriteReq, hctx wsHelpers.Han
 		return nil, err
 	}
 
-	return &protos.ElementSetWriteResp{
+	return []*protos.ElementSetWriteResp{&protos.ElementSetWriteResp{
 		ElementSet: item,
-	}, nil
+	}}, nil
 }

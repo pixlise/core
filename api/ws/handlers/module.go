@@ -19,7 +19,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-func HandleDataModuleGetReq(req *protos.DataModuleGetReq, hctx wsHelpers.HandlerContext) (*protos.DataModuleGetResp, error) {
+func HandleDataModuleGetReq(req *protos.DataModuleGetReq, hctx wsHelpers.HandlerContext) ([]*protos.DataModuleGetResp, error) {
 	dbItem, owner, err := wsHelpers.GetUserObjectById[protos.DataModuleDB](false, req.Id, protos.ObjectType_OT_DATA_MODULE, dbCollections.ModulesName, hctx)
 	if err != nil {
 		return nil, err
@@ -78,12 +78,12 @@ func HandleDataModuleGetReq(req *protos.DataModuleGetReq, hctx wsHelpers.Handler
 		module.Versions = append(module.Versions, moduleVersion)
 	}
 
-	return &protos.DataModuleGetResp{
+	return []*protos.DataModuleGetResp{&protos.DataModuleGetResp{
 		Module: module,
-	}, nil
+	}}, nil
 }
 
-func HandleDataModuleListReq(req *protos.DataModuleListReq, hctx wsHelpers.HandlerContext) (*protos.DataModuleListResp, error) {
+func HandleDataModuleListReq(req *protos.DataModuleListReq, hctx wsHelpers.HandlerContext) ([]*protos.DataModuleListResp, error) {
 	idToOwner, err := wsHelpers.ListAccessibleIDs(false, protos.ObjectType_OT_DATA_MODULE, hctx.Svcs, hctx.SessUser)
 	if err != nil {
 		return nil, err
@@ -137,9 +137,9 @@ func HandleDataModuleListReq(req *protos.DataModuleListReq, hctx wsHelpers.Handl
 		itemMap[item.Id] = itemWire
 	}
 
-	return &protos.DataModuleListResp{
+	return []*protos.DataModuleListResp{&protos.DataModuleListResp{
 		Modules: itemMap,
-	}, nil
+	}}, nil
 }
 
 func getModuleVersion(moduleID string, version *protos.SemanticVersion, db *mongo.Database) (*protos.DataModuleVersion, error) {
@@ -386,7 +386,7 @@ func updateModule(id string, name string, comments string, hctx wsHelpers.Handle
 	return result, nil
 }
 
-func HandleDataModuleWriteReq(req *protos.DataModuleWriteReq, hctx wsHelpers.HandlerContext) (*protos.DataModuleWriteResp, error) {
+func HandleDataModuleWriteReq(req *protos.DataModuleWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.DataModuleWriteResp, error) {
 	var item *protos.DataModule
 	var err error
 
@@ -403,9 +403,9 @@ func HandleDataModuleWriteReq(req *protos.DataModuleWriteReq, hctx wsHelpers.Han
 		return nil, err
 	}
 
-	return &protos.DataModuleWriteResp{
+	return []*protos.DataModuleWriteResp{&protos.DataModuleWriteResp{
 		Module: item,
-	}, nil
+	}}, nil
 }
 
 // Some validation functions
@@ -423,7 +423,7 @@ func isValidModuleName(name string) bool {
 	return match
 }
 
-func HandleDataModuleAddVersionReq(req *protos.DataModuleAddVersionReq, hctx wsHelpers.HandlerContext) (*protos.DataModuleAddVersionResp, error) {
+func HandleDataModuleAddVersionReq(req *protos.DataModuleAddVersionReq, hctx wsHelpers.HandlerContext) ([]*protos.DataModuleAddVersionResp, error) {
 	// Check that the version update field is a valid value
 	if !utils.ItemInSlice(req.VersionUpdate, []protos.VersionField{protos.VersionField_MV_MAJOR, protos.VersionField_MV_MINOR, protos.VersionField_MV_PATCH}) {
 		return nil, fmt.Errorf("Invalid version update field: %v", req.VersionUpdate)
@@ -533,7 +533,7 @@ func HandleDataModuleAddVersionReq(req *protos.DataModuleAddVersionReq, hctx wsH
 		module.Versions = append(module.Versions, returnVersion)
 	}
 
-	return &protos.DataModuleAddVersionResp{
+	return []*protos.DataModuleAddVersionResp{&protos.DataModuleAddVersionResp{
 		Module: module,
-	}, nil
+	}}, nil
 }

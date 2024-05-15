@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupCreateResp, error) {
+func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupCreateResp, error) {
 	// Should only be called if we have admin rights, no other permission issues here
 	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 50); err != nil {
 		return nil, err
@@ -64,10 +64,10 @@ func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.Han
 		return nil, err
 	}
 
-	return &protos.UserGroupCreateResp{Group: groupSend}, nil
+	return []*protos.UserGroupCreateResp{&protos.UserGroupCreateResp{Group: groupSend}}, nil
 }
 
-func HandleUserGroupDeleteReq(req *protos.UserGroupDeleteReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupDeleteResp, error) {
+func HandleUserGroupDeleteReq(req *protos.UserGroupDeleteReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupDeleteResp, error) {
 	// Should only be called if we have admin rights, no other permission issues here
 	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
@@ -111,10 +111,10 @@ func HandleUserGroupDeleteReq(req *protos.UserGroupDeleteReq, hctx wsHelpers.Han
 		hctx.Svcs.Log.Errorf("UserGroup Delete result had unexpected counts %+v id: %v", result, req.GroupId)
 	}
 
-	return &protos.UserGroupDeleteResp{}, nil
+	return []*protos.UserGroupDeleteResp{&protos.UserGroupDeleteResp{}}, nil
 }
 
-func HandleUserGroupSetNameReq(req *protos.UserGroupSetNameReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupSetNameResp, error) {
+func HandleUserGroupSetNameReq(req *protos.UserGroupSetNameReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupSetNameResp, error) {
 	// Should only be called if we have admin rights, no other permission issues here
 	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func HandleUserGroupSetNameReq(req *protos.UserGroupSetNameReq, hctx wsHelpers.H
 		return nil, err
 	}
 
-	return &protos.UserGroupSetNameResp{Group: groupSend}, nil
+	return []*protos.UserGroupSetNameResp{&protos.UserGroupSetNameResp{Group: groupSend}}, nil
 }
 
 func checkUserGroupNameExists(name string, ctx context.Context, coll *mongo.Collection) (bool, error, *mongo.SingleResult) {

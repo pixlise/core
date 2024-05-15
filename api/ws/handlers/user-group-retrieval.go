@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleUserGroupListReq(req *protos.UserGroupListReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupListResp, error) {
+func HandleUserGroupListReq(req *protos.UserGroupListReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupListResp, error) {
 	// Should only be called if we have admin rights, so other permission issues here
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
@@ -53,13 +53,13 @@ func HandleUserGroupListReq(req *protos.UserGroupListReq, hctx wsHelpers.Handler
 		})
 	}
 
-	return &protos.UserGroupListResp{
+	return []*protos.UserGroupListResp{&protos.UserGroupListResp{
 		GroupInfos: groupInfos,
-	}, nil
+	}}, nil
 }
 
 // Getting an individual user group - this should only be allowed for PIXLISE_ADMIN permissioned users, or group admins
-func HandleUserGroupReq(req *protos.UserGroupReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupResp, error) {
+func HandleUserGroupReq(req *protos.UserGroupReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupResp, error) {
 	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -89,12 +89,12 @@ func HandleUserGroupReq(req *protos.UserGroupReq, hctx wsHelpers.HandlerContext)
 		return nil, err
 	}
 
-	return &protos.UserGroupResp{
+	return []*protos.UserGroupResp{&protos.UserGroupResp{
 		Group: decGroup,
-	}, nil
+	}}, nil
 }
 
-func HandleUserGroupListJoinableReq(req *protos.UserGroupListJoinableReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupListJoinableResp, error) {
+func HandleUserGroupListJoinableReq(req *protos.UserGroupListJoinableReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupListJoinableResp, error) {
 	// Should only be called if we have admin rights, so other permission issues here
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
@@ -175,7 +175,7 @@ func HandleUserGroupListJoinableReq(req *protos.UserGroupListJoinableReq, hctx w
 		})
 	}
 
-	return &protos.UserGroupListJoinableResp{
+	return []*protos.UserGroupListJoinableResp{&protos.UserGroupListJoinableResp{
 		Groups: groupSummaries,
-	}, nil
+	}}, nil
 }

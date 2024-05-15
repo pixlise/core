@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleDiffractionPeakStatusListReq(req *protos.DiffractionPeakStatusListReq, hctx wsHelpers.HandlerContext) (*protos.DiffractionPeakStatusListResp, error) {
+func HandleDiffractionPeakStatusListReq(req *protos.DiffractionPeakStatusListReq, hctx wsHelpers.HandlerContext) ([]*protos.DiffractionPeakStatusListResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -27,13 +27,13 @@ func HandleDiffractionPeakStatusListReq(req *protos.DiffractionPeakStatusListReq
 	if dbResult.Err() != nil {
 		if dbResult.Err() == mongo.ErrNoDocuments {
 			// Silent error, just return empty
-			return &protos.DiffractionPeakStatusListResp{
+			return []*protos.DiffractionPeakStatusListResp{&protos.DiffractionPeakStatusListResp{
 				PeakStatuses: &protos.DetectedDiffractionPeakStatuses{
 					Id:       req.ScanId,
 					ScanId:   req.ScanId,
 					Statuses: map[string]*protos.DetectedDiffractionPeakStatuses_PeakStatus{},
 				},
-			}, nil
+			}}, nil
 		}
 		return nil, dbResult.Err()
 	}
@@ -44,14 +44,14 @@ func HandleDiffractionPeakStatusListReq(req *protos.DiffractionPeakStatusListReq
 		return nil, err
 	}
 
-	return &protos.DiffractionPeakStatusListResp{
+	return []*protos.DiffractionPeakStatusListResp{&protos.DiffractionPeakStatusListResp{
 		PeakStatuses: &result,
-	}, nil
+	}}, nil
 }
 
 // NOTE: ScanId isn't checked to see if it's a real scan upon insertion!
 
-func HandleDiffractionPeakStatusWriteReq(req *protos.DiffractionPeakStatusWriteReq, hctx wsHelpers.HandlerContext) (*protos.DiffractionPeakStatusWriteResp, error) {
+func HandleDiffractionPeakStatusWriteReq(req *protos.DiffractionPeakStatusWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.DiffractionPeakStatusWriteResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -83,10 +83,10 @@ func HandleDiffractionPeakStatusWriteReq(req *protos.DiffractionPeakStatusWriteR
 		hctx.Svcs.Log.Errorf("DiffractionPeakStatusWriteReq UpdateByID result had unexpected counts %+v", dbResult)
 	}
 
-	return &protos.DiffractionPeakStatusWriteResp{}, nil
+	return []*protos.DiffractionPeakStatusWriteResp{&protos.DiffractionPeakStatusWriteResp{}}, nil
 }
 
-func HandleDiffractionPeakStatusDeleteReq(req *protos.DiffractionPeakStatusDeleteReq, hctx wsHelpers.HandlerContext) (*protos.DiffractionPeakStatusDeleteResp, error) {
+func HandleDiffractionPeakStatusDeleteReq(req *protos.DiffractionPeakStatusDeleteReq, hctx wsHelpers.HandlerContext) ([]*protos.DiffractionPeakStatusDeleteResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -110,5 +110,5 @@ func HandleDiffractionPeakStatusDeleteReq(req *protos.DiffractionPeakStatusDelet
 		//hctx.Svcs.Log.Errorf("DiffractionPeakStatusDeleteReq UpdateByID result had unexpected counts %+v", dbResult)
 	}
 
-	return &protos.DiffractionPeakStatusDeleteResp{}, nil
+	return []*protos.DiffractionPeakStatusDeleteResp{&protos.DiffractionPeakStatusDeleteResp{}}, nil
 }

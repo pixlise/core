@@ -29,7 +29,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) (*protos.ScanListResp, error) {
+func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) ([]*protos.ScanListResp, error) {
 	idToOwner, err := wsHelpers.ListAccessibleIDs(false, protos.ObjectType_OT_SCAN, hctx.Svcs, hctx.SessUser)
 	if err != nil {
 		return nil, err
@@ -105,12 +105,12 @@ func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) (
 		return nil, err
 	}
 
-	return &protos.ScanListResp{
+	return []*protos.ScanListResp{&protos.ScanListResp{
 		Scans: scans,
-	}, nil
+	}}, nil
 }
 
-func HandleScanGetReq(req *protos.ScanGetReq, hctx wsHelpers.HandlerContext) (*protos.ScanGetResp, error) {
+func HandleScanGetReq(req *protos.ScanGetReq, hctx wsHelpers.HandlerContext) ([]*protos.ScanGetResp, error) {
 	// Check that we have an id, current user, and display settings
 	if len(req.Id) <= 0 {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("Scan ID must be specified"))
@@ -128,12 +128,12 @@ func HandleScanGetReq(req *protos.ScanGetReq, hctx wsHelpers.HandlerContext) (*p
 
 	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 
-	return &protos.ScanGetResp{
+	return []*protos.ScanGetResp{&protos.ScanGetResp{
 		Scan: dbItem,
-	}, nil
+	}}, nil
 }
 
-func HandleScanMetaLabelsAndTypesReq(req *protos.ScanMetaLabelsAndTypesReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaLabelsAndTypesResp, error) {
+func HandleScanMetaLabelsAndTypesReq(req *protos.ScanMetaLabelsAndTypesReq, hctx wsHelpers.HandlerContext) ([]*protos.ScanMetaLabelsAndTypesResp, error) {
 	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
 	if err != nil {
 		return nil, err
@@ -151,10 +151,10 @@ func HandleScanMetaLabelsAndTypesReq(req *protos.ScanMetaLabelsAndTypesReq, hctx
 		types = append(types, tScan)
 	}
 
-	return &protos.ScanMetaLabelsAndTypesResp{
+	return []*protos.ScanMetaLabelsAndTypesResp{&protos.ScanMetaLabelsAndTypesResp{
 		MetaLabels: exprPB.MetaLabels,
 		MetaTypes:  types,
-	}, nil
+	}}, nil
 }
 
 // Utility to call for any Req message that involves serving data out of a dataset.bin file
@@ -201,7 +201,7 @@ func beginDatasetFileReq(scanId string, hctx wsHelpers.HandlerContext) (*protos.
 	return exprPB, nil
 }
 
-func HandleScanDeleteReq(req *protos.ScanDeleteReq, hctx wsHelpers.HandlerContext) (*protos.ScanDeleteResp, error) {
+func HandleScanDeleteReq(req *protos.ScanDeleteReq, hctx wsHelpers.HandlerContext) ([]*protos.ScanDeleteResp, error) {
 	// Check user has access
 	dbItem, _, err := wsHelpers.GetUserObjectById[protos.ScanItem](true, req.ScanId, protos.ObjectType_OT_SCAN, dbCollections.ScansName, hctx)
 	if err != nil {
@@ -246,10 +246,10 @@ func HandleScanDeleteReq(req *protos.ScanDeleteReq, hctx wsHelpers.HandlerContex
 	// Notify of our scan change
 	hctx.Svcs.Notifier.SysNotifyScanChanged(req.ScanId)
 
-	return &protos.ScanDeleteResp{}, nil
+	return []*protos.ScanDeleteResp{&protos.ScanDeleteResp{}}, nil
 }
 
-func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.HandlerContext) (*protos.ScanMetaWriteResp, error) {
+func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.ScanMetaWriteResp, error) {
 	if err := wsHelpers.CheckStringField(&req.Title, "Title", 1, 100); err != nil {
 		return nil, err
 	}
@@ -288,10 +288,10 @@ func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.Handler
 	// Notify of our scan change
 	hctx.Svcs.Notifier.SysNotifyScanChanged(req.ScanId)
 
-	return &protos.ScanMetaWriteResp{}, nil
+	return []*protos.ScanMetaWriteResp{&protos.ScanMetaWriteResp{}}, nil
 }
 
-func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHelpers.HandlerContext) (*protos.ScanTriggerReImportResp, error) {
+func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHelpers.HandlerContext) ([]*protos.ScanTriggerReImportResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, 50); err != nil {
 		return nil, err
 	}
@@ -319,14 +319,14 @@ func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHel
 	result, err := dataimport.TriggerDatasetReprocessViaSNS(hctx.Svcs.SNS, jobId, req.ScanId, hctx.Svcs.Config.DataSourceSNSTopic)
 
 	hctx.Svcs.Log.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Job ID: %v", result, jobId)
-	return &protos.ScanTriggerReImportResp{JobId: jobId}, err
+	return []*protos.ScanTriggerReImportResp{&protos.ScanTriggerReImportResp{JobId: jobId}}, err
 }
 
 // NOTE: before this is sent, we expect the PUT /scan endpoint to have been called and a zip uploaded already
 //
 //	The same parameters passed there (scan id & file name) must be used with this request otherwise we
 //	won't look up the zip correctly and fail.
-func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContext) (*protos.ScanUploadResp, error) {
+func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContext) ([]*protos.ScanUploadResp, error) {
 	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, 50); err != nil {
 		return nil, err
 	}
@@ -563,7 +563,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 
 	logger.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Job ID: %v", result, jobId)
 
-	return &protos.ScanUploadResp{JobId: jobId}, nil
+	return []*protos.ScanUploadResp{&protos.ScanUploadResp{JobId: jobId}}, nil
 }
 
 type importUpdater struct {
@@ -641,7 +641,7 @@ func (i *importUpdater) sendImportUpdate(status *protos.JobStatus) {
 	}
 }
 
-func HandleScanAutoShareReq(req *protos.ScanAutoShareReq, hctx wsHelpers.HandlerContext) (*protos.ScanAutoShareResp, error) {
+func HandleScanAutoShareReq(req *protos.ScanAutoShareReq, hctx wsHelpers.HandlerContext) ([]*protos.ScanAutoShareResp, error) {
 	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, 50); err != nil {
 		return nil, err
 	}
@@ -667,12 +667,12 @@ func HandleScanAutoShareReq(req *protos.ScanAutoShareReq, hctx wsHelpers.Handler
 		return nil, err
 	}
 
-	return &protos.ScanAutoShareResp{
+	return []*protos.ScanAutoShareResp{&protos.ScanAutoShareResp{
 		Entry: item,
-	}, nil
+	}}, nil
 }
 
-func HandleScanAutoShareWriteReq(req *protos.ScanAutoShareWriteReq, hctx wsHelpers.HandlerContext) (*protos.ScanAutoShareWriteResp, error) {
+func HandleScanAutoShareWriteReq(req *protos.ScanAutoShareWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.ScanAutoShareWriteResp, error) {
 	if err := wsHelpers.CheckStringField(&req.Entry.Id, "Id", 1, 50); err != nil {
 		return nil, err
 	}
@@ -706,5 +706,5 @@ func HandleScanAutoShareWriteReq(req *protos.ScanAutoShareWriteReq, hctx wsHelpe
 		}
 	}
 
-	return &protos.ScanAutoShareWriteResp{}, nil
+	return []*protos.ScanAutoShareWriteResp{&protos.ScanAutoShareWriteResp{}}, nil
 }

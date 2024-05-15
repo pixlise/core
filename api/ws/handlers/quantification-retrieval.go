@@ -11,7 +11,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func HandleQuantListReq(req *protos.QuantListReq, hctx wsHelpers.HandlerContext) (*protos.QuantListResp, error) {
+func HandleQuantListReq(req *protos.QuantListReq, hctx wsHelpers.HandlerContext) ([]*protos.QuantListResp, error) {
 	items, idToOwner, err := quantification.ListUserQuants(req.SearchParams, hctx)
 	if err != nil {
 		return nil, err
@@ -25,12 +25,12 @@ func HandleQuantListReq(req *protos.QuantListReq, hctx wsHelpers.HandlerContext)
 		quants = append(quants, item)
 	}
 
-	return &protos.QuantListResp{
+	return []*protos.QuantListResp{&protos.QuantListResp{
 		Quants: quants,
-	}, nil
+	}}, nil
 }
 
-func HandleQuantGetReq(req *protos.QuantGetReq, hctx wsHelpers.HandlerContext) (*protos.QuantGetResp, error) {
+func HandleQuantGetReq(req *protos.QuantGetReq, hctx wsHelpers.HandlerContext) ([]*protos.QuantGetResp, error) {
 	dbItem, ownerItem, err := wsHelpers.GetUserObjectById[protos.QuantificationSummary](false, req.QuantId, protos.ObjectType_OT_QUANTIFICATION, dbCollections.QuantificationsName, hctx)
 	if err != nil {
 		return nil, err
@@ -51,13 +51,13 @@ func HandleQuantGetReq(req *protos.QuantGetReq, hctx wsHelpers.HandlerContext) (
 
 	dbItem.Owner = wsHelpers.MakeOwnerSummary(ownerItem, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 
-	return &protos.QuantGetResp{
+	return []*protos.QuantGetResp{&protos.QuantGetResp{
 		Summary: dbItem,
 		Data:    quant,
-	}, nil
+	}}, nil
 }
 
-func HandleQuantLastOutputGetReq(req *protos.QuantLastOutputGetReq, hctx wsHelpers.HandlerContext) (*protos.QuantLastOutputGetResp, error) {
+func HandleQuantLastOutputGetReq(req *protos.QuantLastOutputGetReq, hctx wsHelpers.HandlerContext) ([]*protos.QuantLastOutputGetResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -92,6 +92,6 @@ func HandleQuantLastOutputGetReq(req *protos.QuantLastOutputGetReq, hctx wsHelpe
 		}
 	}
 
-	return &protos.QuantLastOutputGetResp{Output: string(result)}, nil
+	return []*protos.QuantLastOutputGetResp{&protos.QuantLastOutputGetResp{Output: string(result)}}, nil
 
 }

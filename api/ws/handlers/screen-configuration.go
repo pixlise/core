@@ -26,7 +26,7 @@ func formWidgetId(widget *protos.WidgetLayoutConfiguration, screenConfigId strin
 	return screenConfigId + "-" + fmt.Sprint(layoutIndex) + "-" + positionId
 }
 
-func HandleScreenConfigurationGetReq(req *protos.ScreenConfigurationGetReq, hctx wsHelpers.HandlerContext) (*protos.ScreenConfigurationGetResp, error) {
+func HandleScreenConfigurationGetReq(req *protos.ScreenConfigurationGetReq, hctx wsHelpers.HandlerContext) ([]*protos.ScreenConfigurationGetResp, error) {
 	configId := ""
 	if req.Id != "" {
 		configId = req.Id
@@ -46,12 +46,12 @@ func HandleScreenConfigurationGetReq(req *protos.ScreenConfigurationGetReq, hctx
 
 	screenConfig.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 
-	return &protos.ScreenConfigurationGetResp{
+	return []*protos.ScreenConfigurationGetResp{&protos.ScreenConfigurationGetResp{
 		ScreenConfiguration: screenConfig,
-	}, nil
+	}}, nil
 }
 
-func HandleScreenConfigurationListReq(req *protos.ScreenConfigurationListReq, hctx wsHelpers.HandlerContext) (*protos.ScreenConfigurationListResp, error) {
+func HandleScreenConfigurationListReq(req *protos.ScreenConfigurationListReq, hctx wsHelpers.HandlerContext) ([]*protos.ScreenConfigurationListResp, error) {
 	filter, idToOwner, err := wsHelpers.MakeFilter(req.SearchParams, false, protos.ObjectType_OT_SCREEN_CONFIG, hctx)
 	if err != nil {
 		return nil, err
@@ -80,9 +80,9 @@ func HandleScreenConfigurationListReq(req *protos.ScreenConfigurationListReq, hc
 		screenConfig.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 	}
 
-	return &protos.ScreenConfigurationListResp{
+	return []*protos.ScreenConfigurationListResp{&protos.ScreenConfigurationListResp{
 		ScreenConfigurations: result,
-	}, nil
+	}}, nil
 }
 
 func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsHelpers.HandlerContext, updateExisting bool) (*protos.ScreenConfiguration, error) {
@@ -268,7 +268,7 @@ func loadWidgetsForScreenConfiguration(screenConfig *protos.ScreenConfiguration,
 	return screenConfig, nil
 }
 
-func HandleScreenConfigurationWriteReq(req *protos.ScreenConfigurationWriteReq, hctx wsHelpers.HandlerContext) (*protos.ScreenConfigurationWriteResp, error) {
+func HandleScreenConfigurationWriteReq(req *protos.ScreenConfigurationWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.ScreenConfigurationWriteResp, error) {
 	if req.ScreenConfiguration == nil {
 		return nil, errors.New("screen configuration must be specified")
 	}
@@ -307,12 +307,12 @@ func HandleScreenConfigurationWriteReq(req *protos.ScreenConfigurationWriteReq, 
 		return nil, err
 	}
 
-	return &protos.ScreenConfigurationWriteResp{
+	return []*protos.ScreenConfigurationWriteResp{&protos.ScreenConfigurationWriteResp{
 		ScreenConfiguration: screenConfig,
-	}, nil
+	}}, nil
 }
 
-func HandleScreenConfigurationDeleteReq(req *protos.ScreenConfigurationDeleteReq, hctx wsHelpers.HandlerContext) (*protos.ScreenConfigurationDeleteResp, error) {
+func HandleScreenConfigurationDeleteReq(req *protos.ScreenConfigurationDeleteReq, hctx wsHelpers.HandlerContext) ([]*protos.ScreenConfigurationDeleteResp, error) {
 	if req.Id == "" {
 		return nil, errors.New("screen configuration id must be specified")
 	}
@@ -373,7 +373,7 @@ func HandleScreenConfigurationDeleteReq(req *protos.ScreenConfigurationDeleteReq
 		return nil, err
 	}
 
-	return &protos.ScreenConfigurationDeleteResp{
+	return []*protos.ScreenConfigurationDeleteResp{&protos.ScreenConfigurationDeleteResp{
 		Id: req.Id,
-	}, nil
+	}}, nil
 }

@@ -13,7 +13,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerContext) (*protos.QuantCreateResp, error) {
+func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerContext) ([]*protos.QuantCreateResp, error) {
 	err := quantification.IsValidCreateParam(req.Params, hctx)
 	if err != nil {
 		return nil, errorwithstatus.MakeBadRequestError(err)
@@ -46,7 +46,7 @@ func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerCont
 	// If it's NOT a map command, we wait around for the result and pass it back in the response
 	// but for map commands, we just pass back the generated job status
 	if req.Params.Command == "map" {
-		return &protos.QuantCreateResp{Status: status}, nil
+		return []*protos.QuantCreateResp{&protos.QuantCreateResp{Status: status}}, nil
 	}
 
 	// Wait around for the output file to appear, or for the job to end up in an error state
@@ -59,5 +59,5 @@ func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerCont
 		return nil, errors.New("PIQUANT command: " + req.Params.Command + " failed.")
 	}
 
-	return &protos.QuantCreateResp{ResultData: bytes}, nil
+	return []*protos.QuantCreateResp{&protos.QuantCreateResp{ResultData: bytes}}, nil
 }

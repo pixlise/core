@@ -14,7 +14,7 @@ import (
 )
 
 // Anyone can retrieve a quant z-stack if they have quant messaging permissions
-func HandleQuantCombineListGetReq(req *protos.QuantCombineListGetReq, hctx wsHelpers.HandlerContext) (*protos.QuantCombineListGetResp, error) {
+func HandleQuantCombineListGetReq(req *protos.QuantCombineListGetReq, hctx wsHelpers.HandlerContext) ([]*protos.QuantCombineListGetResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -39,13 +39,13 @@ func HandleQuantCombineListGetReq(req *protos.QuantCombineListGetReq, hctx wsHel
 		return nil, err
 	}
 
-	return &protos.QuantCombineListGetResp{
+	return []*protos.QuantCombineListGetResp{&protos.QuantCombineListGetResp{
 		List: resultItem.List,
-	}, nil
+	}}, nil
 }
 
 // Anyone can save a quant z-stack if they have quant messaging permissions
-func HandleQuantCombineListWriteReq(req *protos.QuantCombineListWriteReq, hctx wsHelpers.HandlerContext) (*protos.QuantCombineListWriteResp, error) {
+func HandleQuantCombineListWriteReq(req *protos.QuantCombineListWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.QuantCombineListWriteResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -74,10 +74,10 @@ func HandleQuantCombineListWriteReq(req *protos.QuantCombineListWriteReq, hctx w
 		hctx.Svcs.Log.Errorf("MultiQuant Z-Stack insert %v inserted different id %v", zId, result.InsertedID)
 	}
 
-	return &protos.QuantCombineListWriteResp{}, nil
+	return []*protos.QuantCombineListWriteResp{&protos.QuantCombineListWriteResp{}}, nil
 }
 
-func HandleMultiQuantCompareReq(req *protos.MultiQuantCompareReq, hctx wsHelpers.HandlerContext) (*protos.MultiQuantCompareResp, error) {
+func HandleMultiQuantCompareReq(req *protos.MultiQuantCompareReq, hctx wsHelpers.HandlerContext) ([]*protos.MultiQuantCompareResp, error) {
 	// req.ScanId is checked in beginDatasetFileReq
 
 	if len(req.QuantIds) <= 0 {
@@ -101,13 +101,13 @@ func HandleMultiQuantCompareReq(req *protos.MultiQuantCompareReq, hctx wsHelpers
 		return nil, err
 	}
 
-	return &protos.MultiQuantCompareResp{
+	return []*protos.MultiQuantCompareResp{&protos.MultiQuantCompareResp{
 		RoiId:       req.ReqRoiId,
 		QuantTables: tables,
-	}, nil
+	}}, nil
 }
 
-func HandleQuantCombineReq(req *protos.QuantCombineReq, hctx wsHelpers.HandlerContext) (*protos.QuantCombineResp, error) {
+func HandleQuantCombineReq(req *protos.QuantCombineReq, hctx wsHelpers.HandlerContext) ([]*protos.QuantCombineResp, error) {
 	// Simple validation
 
 	// NOTE: if only asking for a summary, we don't care about name being empty
@@ -132,11 +132,11 @@ func HandleQuantCombineReq(req *protos.QuantCombineReq, hctx wsHelpers.HandlerCo
 	if req.SummaryOnly {
 		// We return a summary instead of forming a CSV
 		summary := quantification.FormMultiQuantSummary(multiQuantData.DataPerDetectorPerPMC, multiQuantData.AllColumns, multiQuantData.PMCCount)
-		return &protos.QuantCombineResp{
+		return []*protos.QuantCombineResp{&protos.QuantCombineResp{
 			CombineResult: &protos.QuantCombineResp_Summary{
 				Summary: summary,
 			},
-		}, nil
+		}}, nil
 	}
 
 	// Form a CSV
@@ -152,9 +152,9 @@ func HandleQuantCombineReq(req *protos.QuantCombineReq, hctx wsHelpers.HandlerCo
 		return nil, err
 	}
 
-	return &protos.QuantCombineResp{
+	return []*protos.QuantCombineResp{&protos.QuantCombineResp{
 		CombineResult: &protos.QuantCombineResp_JobId{
 			JobId: quantId,
 		},
-	}, nil
+	}}, nil
 }
