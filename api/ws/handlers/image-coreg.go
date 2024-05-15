@@ -6,7 +6,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func HandleImportMarsViewerImageReq(req *protos.ImportMarsViewerImageReq, hctx wsHelpers.HandlerContext) (*protos.ImportMarsViewerImageResp, error) {
+func HandleImportMarsViewerImageReq(req *protos.ImportMarsViewerImageReq, hctx wsHelpers.HandlerContext) ([]*protos.ImportMarsViewerImageResp, error) {
 	jobId := ""
 	var err error
 
@@ -15,7 +15,7 @@ func HandleImportMarsViewerImageReq(req *protos.ImportMarsViewerImageReq, hctx w
 		return nil, err
 	}
 
-	return &protos.ImportMarsViewerImageResp{
+	return []*protos.ImportMarsViewerImageResp{&protos.ImportMarsViewerImageResp{
 		JobId: jobId,
-	}, nil
+	}}, nil
 }

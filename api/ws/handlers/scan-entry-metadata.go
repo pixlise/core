@@ -7,7 +7,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func HandleScanEntryMetadataReq(req *protos.ScanEntryMetadataReq, hctx wsHelpers.HandlerContext) (*protos.ScanEntryMetadataResp, error) {
+func HandleScanEntryMetadataReq(req *protos.ScanEntryMetadataReq, hctx wsHelpers.HandlerContext) ([]*protos.ScanEntryMetadataResp, error) {
 	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func HandleScanEntryMetadataReq(req *protos.ScanEntryMetadataReq, hctx wsHelpers
 		entryMetas = append(entryMetas, metaSave)
 	}
 
-	return &protos.ScanEntryMetadataResp{
+	return []*protos.ScanEntryMetadataResp{&protos.ScanEntryMetadataResp{
 		Entries: entryMetas,
-	}, nil
+	}}, nil
 }

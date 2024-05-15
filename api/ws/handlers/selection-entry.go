@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleSelectedScanEntriesReq(req *protos.SelectedScanEntriesReq, hctx wsHelpers.HandlerContext) (*protos.SelectedScanEntriesResp, error) {
+func HandleSelectedScanEntriesReq(req *protos.SelectedScanEntriesReq, hctx wsHelpers.HandlerContext) ([]*protos.SelectedScanEntriesResp, error) {
 	// We read multiple scans and assemble a single response
 	// If any have an error, we error the whole thing out
 
@@ -37,13 +37,13 @@ func HandleSelectedScanEntriesReq(req *protos.SelectedScanEntriesReq, hctx wsHel
 		result[scanId] = idxs
 	}
 
-	return &protos.SelectedScanEntriesResp{
+	return []*protos.SelectedScanEntriesResp{&protos.SelectedScanEntriesResp{
 		ScanIdEntryIndexes: result,
-	}, nil
+	}}, nil
 }
 
 // Allowing user to save multiple scans worth of entry indexes in one message
-func HandleSelectedScanEntriesWriteReq(req *protos.SelectedScanEntriesWriteReq, hctx wsHelpers.HandlerContext) (*protos.SelectedScanEntriesWriteResp, error) {
+func HandleSelectedScanEntriesWriteReq(req *protos.SelectedScanEntriesWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.SelectedScanEntriesWriteResp, error) {
 	// Cap it though for performance...
 	if len(req.ScanIdEntryIndexes) > 10 {
 		return nil, errors.New("Too many ScanIds written")
@@ -56,7 +56,7 @@ func HandleSelectedScanEntriesWriteReq(req *protos.SelectedScanEntriesWriteReq, 
 		}
 	}
 
-	return &protos.SelectedScanEntriesWriteResp{}, nil
+	return []*protos.SelectedScanEntriesWriteResp{&protos.SelectedScanEntriesWriteResp{}}, nil
 }
 
 func readSelection(id string, db *mongo.Database) (*protos.ScanEntryRange, error) {

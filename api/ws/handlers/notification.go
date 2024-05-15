@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleNotificationReq(req *protos.NotificationReq, hctx wsHelpers.HandlerContext) (*protos.NotificationResp, error) {
+func HandleNotificationReq(req *protos.NotificationReq, hctx wsHelpers.HandlerContext) ([]*protos.NotificationResp, error) {
 	// Triggers a "subscription" to receive updates containing notifications for the session user
 	// Could implement a "silent" mode, specify param in request, tell API to not send notifications for a certain period
 
@@ -36,12 +36,12 @@ func HandleNotificationReq(req *protos.NotificationReq, hctx wsHelpers.HandlerCo
 	}
 
 	// Return the outstanding notifications
-	return &protos.NotificationResp{
+	return []*protos.NotificationResp{&protos.NotificationResp{
 		Notification: notifications,
-	}, nil
+	}}, nil
 }
 
-func HandleNotificationDismissReq(req *protos.NotificationDismissReq, hctx wsHelpers.HandlerContext) (*protos.NotificationDismissResp, error) {
+func HandleNotificationDismissReq(req *protos.NotificationDismissReq, hctx wsHelpers.HandlerContext) ([]*protos.NotificationDismissResp, error) {
 	// Find this in the DB and clear it
 	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, wsHelpers.IdFieldMaxLength*2); err != nil {
 		return nil, err
@@ -56,10 +56,10 @@ func HandleNotificationDismissReq(req *protos.NotificationDismissReq, hctx wsHel
 		return nil, err
 	}
 
-	return &protos.NotificationDismissResp{}, nil
+	return []*protos.NotificationDismissResp{&protos.NotificationDismissResp{}}, nil
 }
 
-func HandleSendUserNotificationReq(req *protos.SendUserNotificationReq, hctx wsHelpers.HandlerContext) (*protos.SendUserNotificationResp, error) {
+func HandleSendUserNotificationReq(req *protos.SendUserNotificationReq, hctx wsHelpers.HandlerContext) ([]*protos.SendUserNotificationResp, error) {
 	// Send from a user, need to define destination, could be group/user ids?
 	// Probably messaging, subject+content, can send as email if not connected?
 	// Think of load balance issue with multiple APIs running
@@ -109,5 +109,5 @@ func HandleSendUserNotificationReq(req *protos.SendUserNotificationReq, hctx wsH
 		)
 	}
 
-	return &protos.SendUserNotificationResp{}, nil
+	return []*protos.SendUserNotificationResp{&protos.SendUserNotificationResp{}}, nil
 }

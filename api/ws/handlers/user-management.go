@@ -13,7 +13,7 @@ import (
 
 // /////////////////////////////////////////////////////////////////////
 // Listing users from Auth0
-func HandleUserListReq(req *protos.UserListReq, hctx wsHelpers.HandlerContext) (*protos.UserListResp, error) {
+func HandleUserListReq(req *protos.UserListReq, hctx wsHelpers.HandlerContext) ([]*protos.UserListResp, error) {
 	auth0API, err := auth0login.InitAuth0ManagementAPI(hctx.Svcs.Config)
 	if err != nil {
 		return nil, err
@@ -40,12 +40,12 @@ func HandleUserListReq(req *protos.UserListReq, hctx wsHelpers.HandlerContext) (
 		page++
 	}
 
-	return &protos.UserListResp{Details: users}, err
+	return []*protos.UserListResp{&protos.UserListResp{Details: users}}, err
 }
 
 // /////////////////////////////////////////////////////////////////////
 // Getting a users roles
-func HandleUserRolesListReq(req *protos.UserRolesListReq, hctx wsHelpers.HandlerContext) (*protos.UserRolesListResp, error) {
+func HandleUserRolesListReq(req *protos.UserRolesListReq, hctx wsHelpers.HandlerContext) ([]*protos.UserRolesListResp, error) {
 	if err := wsHelpers.CheckStringField(&req.UserId, "UserId", 5, wsHelpers.Auth0UserIdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -60,14 +60,14 @@ func HandleUserRolesListReq(req *protos.UserRolesListReq, hctx wsHelpers.Handler
 		return nil, err
 	}
 
-	return &protos.UserRolesListResp{
+	return []*protos.UserRolesListResp{&protos.UserRolesListResp{
 		Roles: makeRoleList(gotRoles),
-	}, nil
+	}}, nil
 }
 
 // /////////////////////////////////////////////////////////////////////
 // Managing a users roles
-func HandleUserAddRoleReq(req *protos.UserAddRoleReq, hctx wsHelpers.HandlerContext) (*protos.UserAddRoleResp, error) {
+func HandleUserAddRoleReq(req *protos.UserAddRoleReq, hctx wsHelpers.HandlerContext) ([]*protos.UserAddRoleResp, error) {
 	if err := wsHelpers.CheckStringField(&req.UserId, "UserId", 5, wsHelpers.Auth0UserIdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -119,10 +119,13 @@ func HandleUserAddRoleReq(req *protos.UserAddRoleReq, hctx wsHelpers.HandlerCont
 	}
 
 	err = auth0API.User.AssignRoles(userID, &management.Role{ID: &roleID})
-	return nil, err
+	if err != nil {
+		return nil, err
+	}
+	return []*protos.UserAddRoleResp{&protos.UserAddRoleResp{}}, nil
 }
 
-func HandleUserDeleteRoleReq(req *protos.UserDeleteRoleReq, hctx wsHelpers.HandlerContext) (*protos.UserDeleteRoleResp, error) {
+func HandleUserDeleteRoleReq(req *protos.UserDeleteRoleReq, hctx wsHelpers.HandlerContext) ([]*protos.UserDeleteRoleResp, error) {
 	if err := wsHelpers.CheckStringField(&req.UserId, "UserId", 5, wsHelpers.Auth0UserIdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -136,12 +139,15 @@ func HandleUserDeleteRoleReq(req *protos.UserDeleteRoleReq, hctx wsHelpers.Handl
 	}
 
 	err = auth0API.User.RemoveRoles(req.UserId, &management.Role{ID: &req.RoleId})
-	return nil, err
+	if err != nil {
+		return nil, err
+	}
+	return []*protos.UserDeleteRoleResp{&protos.UserDeleteRoleResp{}}, err
 }
 
 // /////////////////////////////////////////////////////////////////////
 // Getting all user roles
-func HandleUserRoleListReq(req *protos.UserRoleListReq, hctx wsHelpers.HandlerContext) (*protos.UserRoleListResp, error) {
+func HandleUserRoleListReq(req *protos.UserRoleListReq, hctx wsHelpers.HandlerContext) ([]*protos.UserRoleListResp, error) {
 	auth0API, err := auth0login.InitAuth0ManagementAPI(hctx.Svcs.Config)
 	if err != nil {
 		return nil, err
@@ -153,9 +159,9 @@ func HandleUserRoleListReq(req *protos.UserRoleListReq, hctx wsHelpers.HandlerCo
 		return nil, err
 	}
 
-	return &protos.UserRoleListResp{
+	return []*protos.UserRoleListResp{&protos.UserRoleListResp{
 		Roles: makeRoleList(gotRoles),
-	}, nil
+	}}, nil
 }
 
 // /////////////////////////////////////////////////////////////////////

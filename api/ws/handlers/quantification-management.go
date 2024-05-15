@@ -12,11 +12,11 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func HandleQuantBlessReq(req *protos.QuantBlessReq, hctx wsHelpers.HandlerContext) (*protos.QuantBlessResp, error) {
+func HandleQuantBlessReq(req *protos.QuantBlessReq, hctx wsHelpers.HandlerContext) ([]*protos.QuantBlessResp, error) {
 	return nil, errors.New("HandleQuantBlessReq not implemented yet")
 }
 
-func HandleQuantDeleteReq(req *protos.QuantDeleteReq, hctx wsHelpers.HandlerContext) (*protos.QuantDeleteResp, error) {
+func HandleQuantDeleteReq(req *protos.QuantDeleteReq, hctx wsHelpers.HandlerContext) ([]*protos.QuantDeleteResp, error) {
 	// Can't use the helper: DeleteUserObject because we also have to delete stuff from S3 and we need the scanId associated to find
 	// the path. So here we do a get first, with edit priviledges required
 	dbItem, _, err := wsHelpers.GetUserObjectById[protos.QuantificationSummary](true, req.QuantId, protos.ObjectType_OT_QUANTIFICATION, dbCollections.QuantificationsName, hctx)
@@ -57,9 +57,9 @@ func HandleQuantDeleteReq(req *protos.QuantDeleteReq, hctx wsHelpers.HandlerCont
 	// Notify of the change
 	hctx.Svcs.Notifier.SysNotifyQuantChanged(req.QuantId)
 
-	return &protos.QuantDeleteResp{}, nil
+	return []*protos.QuantDeleteResp{&protos.QuantDeleteResp{}}, nil
 }
 
-func HandleQuantPublishReq(req *protos.QuantPublishReq, hctx wsHelpers.HandlerContext) (*protos.QuantPublishResp, error) {
+func HandleQuantPublishReq(req *protos.QuantPublishReq, hctx wsHelpers.HandlerContext) ([]*protos.QuantPublishResp, error) {
 	return nil, errors.New("HandleQuantPublishReq not implemented yet")
 }

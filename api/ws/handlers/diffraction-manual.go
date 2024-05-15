@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleDiffractionPeakManualListReq(req *protos.DiffractionPeakManualListReq, hctx wsHelpers.HandlerContext) (*protos.DiffractionPeakManualListResp, error) {
+func HandleDiffractionPeakManualListReq(req *protos.DiffractionPeakManualListReq, hctx wsHelpers.HandlerContext) ([]*protos.DiffractionPeakManualListResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -30,9 +30,9 @@ func HandleDiffractionPeakManualListReq(req *protos.DiffractionPeakManualListReq
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			// Silent error, just return empty
-			return &protos.DiffractionPeakManualListResp{
+			return []*protos.DiffractionPeakManualListResp{&protos.DiffractionPeakManualListResp{
 				Peaks: map[string]*protos.ManualDiffractionPeak{},
-			}, nil
+			}}, nil
 		}
 
 		return nil, err
@@ -51,15 +51,15 @@ func HandleDiffractionPeakManualListReq(req *protos.DiffractionPeakManualListReq
 		item.ScanId = "" // Also no point keeping this around, it was part of the request params
 	}
 
-	return &protos.DiffractionPeakManualListResp{
+	return []*protos.DiffractionPeakManualListResp{&protos.DiffractionPeakManualListResp{
 		Peaks: resultMap,
-	}, nil
+	}}, nil
 }
 
 // NOTE: ScanId isn't checked to see if it's a real scan upon insertion!
 // NOTE2: Insert ONLY! We generate an ID and insert into DB
 
-func HandleDiffractionPeakManualInsertReq(req *protos.DiffractionPeakManualInsertReq, hctx wsHelpers.HandlerContext) (*protos.DiffractionPeakManualInsertResp, error) {
+func HandleDiffractionPeakManualInsertReq(req *protos.DiffractionPeakManualInsertReq, hctx wsHelpers.HandlerContext) ([]*protos.DiffractionPeakManualInsertResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -91,10 +91,10 @@ func HandleDiffractionPeakManualInsertReq(req *protos.DiffractionPeakManualInser
 		hctx.Svcs.Log.Errorf("Manual diffraction insertion expected InsertedID of %v, got %v", id, result.InsertedID)
 	}
 
-	return &protos.DiffractionPeakManualInsertResp{CreatedId: id}, nil
+	return []*protos.DiffractionPeakManualInsertResp{&protos.DiffractionPeakManualInsertResp{CreatedId: id}}, nil
 }
 
-func HandleDiffractionPeakManualDeleteReq(req *protos.DiffractionPeakManualDeleteReq, hctx wsHelpers.HandlerContext) (*protos.DiffractionPeakManualDeleteResp, error) {
+func HandleDiffractionPeakManualDeleteReq(req *protos.DiffractionPeakManualDeleteReq, hctx wsHelpers.HandlerContext) ([]*protos.DiffractionPeakManualDeleteResp, error) {
 	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, wsHelpers.IdFieldMaxLength*2+1); err != nil {
 		return nil, err
 	}
@@ -114,5 +114,5 @@ func HandleDiffractionPeakManualDeleteReq(req *protos.DiffractionPeakManualDelet
 		return nil, errorwithstatus.MakeNotFoundError(req.Id)
 	}
 
-	return &protos.DiffractionPeakManualDeleteResp{}, nil
+	return []*protos.DiffractionPeakManualDeleteResp{&protos.DiffractionPeakManualDeleteResp{}}, nil
 }

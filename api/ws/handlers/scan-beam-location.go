@@ -5,7 +5,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func HandleScanBeamLocationsReq(req *protos.ScanBeamLocationsReq, hctx wsHelpers.HandlerContext) (*protos.ScanBeamLocationsResp, error) {
+func HandleScanBeamLocationsReq(req *protos.ScanBeamLocationsReq, hctx wsHelpers.HandlerContext) ([]*protos.ScanBeamLocationsResp, error) {
 	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func HandleScanBeamLocationsReq(req *protos.ScanBeamLocationsReq, hctx wsHelpers
 		beams = append(beams, beamSave)
 	}
 
-	return &protos.ScanBeamLocationsResp{
+	return []*protos.ScanBeamLocationsResp{&protos.ScanBeamLocationsResp{
 		BeamLocations: beams,
-	}, nil
+	}}, nil
 }

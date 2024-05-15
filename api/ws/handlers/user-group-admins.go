@@ -12,26 +12,26 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func HandleUserGroupAddAdminReq(req *protos.UserGroupAddAdminReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupAddAdminResp, error) {
+func HandleUserGroupAddAdminReq(req *protos.UserGroupAddAdminReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupAddAdminResp, error) {
 	group, err := modifyGroupAdminList(req.GroupId, req.AdminUserId, true, hctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &protos.UserGroupAddAdminResp{
+	return []*protos.UserGroupAddAdminResp{&protos.UserGroupAddAdminResp{
 		Group: group,
-	}, nil
+	}}, nil
 }
 
-func HandleUserGroupDeleteAdminReq(req *protos.UserGroupDeleteAdminReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupDeleteAdminResp, error) {
+func HandleUserGroupDeleteAdminReq(req *protos.UserGroupDeleteAdminReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupDeleteAdminResp, error) {
 	group, err := modifyGroupAdminList(req.GroupId, req.AdminUserId, false, hctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &protos.UserGroupDeleteAdminResp{
+	return []*protos.UserGroupDeleteAdminResp{&protos.UserGroupDeleteAdminResp{
 		Group: group,
-	}, nil
+	}}, nil
 }
 
 func modifyGroupAdminList(groupId string, adminUserId string, add bool, hctx wsHelpers.HandlerContext) (*protos.UserGroup, error) {

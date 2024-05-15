@@ -11,18 +11,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func HandleUserNotificationSettingsReq(req *protos.UserNotificationSettingsReq, hctx wsHelpers.HandlerContext) (*protos.UserNotificationSettingsResp, error) {
+func HandleUserNotificationSettingsReq(req *protos.UserNotificationSettingsReq, hctx wsHelpers.HandlerContext) ([]*protos.UserNotificationSettingsResp, error) {
 	userDBItem, err := wsHelpers.GetDBUser(hctx.SessUser.User.Id, hctx.Svcs.MongoDB)
 	if err != nil {
 		return nil, err
 	}
 
-	return &protos.UserNotificationSettingsResp{
+	return []*protos.UserNotificationSettingsResp{&protos.UserNotificationSettingsResp{
 		Notifications: userDBItem.NotificationSettings,
-	}, nil
+	}}, nil
 }
 
-func HandleUserNotificationSettingsWriteReq(req *protos.UserNotificationSettingsWriteReq, hctx wsHelpers.HandlerContext) (*protos.UserNotificationSettingsWriteResp, error) {
+func HandleUserNotificationSettingsWriteReq(req *protos.UserNotificationSettingsWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.UserNotificationSettingsWriteResp, error) {
 	if req.Notifications == nil || req.Notifications.TopicSettings == nil {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("Notifications must be set"))
 	}
@@ -40,5 +40,5 @@ func HandleUserNotificationSettingsWriteReq(req *protos.UserNotificationSettings
 		return nil, err
 	}
 
-	return &protos.UserNotificationSettingsWriteResp{}, nil
+	return []*protos.UserNotificationSettingsWriteResp{&protos.UserNotificationSettingsWriteResp{}}, nil
 }

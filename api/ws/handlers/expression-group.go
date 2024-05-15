@@ -16,11 +16,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-func HandleExpressionGroupDeleteReq(req *protos.ExpressionGroupDeleteReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionGroupDeleteResp, error) {
+func HandleExpressionGroupDeleteReq(req *protos.ExpressionGroupDeleteReq, hctx wsHelpers.HandlerContext) ([]*protos.ExpressionGroupDeleteResp, error) {
 	return wsHelpers.DeleteUserObject[protos.ExpressionGroupDeleteResp](req.Id, protos.ObjectType_OT_EXPRESSION_GROUP, dbCollections.ExpressionGroupsName, hctx)
 }
 
-func HandleExpressionGroupListReq(req *protos.ExpressionGroupListReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionGroupListResp, error) {
+func HandleExpressionGroupListReq(req *protos.ExpressionGroupListReq, hctx wsHelpers.HandlerContext) ([]*protos.ExpressionGroupListResp, error) {
 	filter, idToOwner, err := wsHelpers.MakeFilter(req.SearchParams, false, protos.ObjectType_OT_EXPRESSION_GROUP, hctx)
 	if err != nil {
 		return nil, err
@@ -47,21 +47,21 @@ func HandleExpressionGroupListReq(req *protos.ExpressionGroupListReq, hctx wsHel
 		itemMap[item.Id] = item
 	}
 
-	return &protos.ExpressionGroupListResp{
+	return []*protos.ExpressionGroupListResp{&protos.ExpressionGroupListResp{
 		Groups: itemMap,
-	}, nil
+	}}, nil
 }
 
-func HandleExpressionGroupGetReq(req *protos.ExpressionGroupGetReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionGroupGetResp, error) {
+func HandleExpressionGroupGetReq(req *protos.ExpressionGroupGetReq, hctx wsHelpers.HandlerContext) ([]*protos.ExpressionGroupGetResp, error) {
 	dbItem, owner, err := wsHelpers.GetUserObjectById[protos.ExpressionGroup](false, req.Id, protos.ObjectType_OT_EXPRESSION_GROUP, dbCollections.ExpressionGroupsName, hctx)
 	if err != nil {
 		return nil, err
 	}
 
 	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
-	return &protos.ExpressionGroupGetResp{
+	return []*protos.ExpressionGroupGetResp{&protos.ExpressionGroupGetResp{
 		Group: dbItem,
-	}, nil
+	}}, nil
 }
 
 func validateExpressionGroup(egroup *protos.ExpressionGroup) error {
@@ -198,7 +198,7 @@ func updateExpressionGroup(egroup *protos.ExpressionGroup, hctx wsHelpers.Handle
 	return dbItem, nil
 }
 
-func HandleExpressionGroupWriteReq(req *protos.ExpressionGroupWriteReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionGroupWriteResp, error) {
+func HandleExpressionGroupWriteReq(req *protos.ExpressionGroupWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.ExpressionGroupWriteResp, error) {
 	// Owner should never be accepted from API
 	if req.Group.Owner != nil {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("Owner must be empty for write messages"))
@@ -216,7 +216,7 @@ func HandleExpressionGroupWriteReq(req *protos.ExpressionGroupWriteReq, hctx wsH
 		return nil, err
 	}
 
-	return &protos.ExpressionGroupWriteResp{
+	return []*protos.ExpressionGroupWriteResp{&protos.ExpressionGroupWriteResp{
 		Group: item,
-	}, nil
+	}}, nil
 }

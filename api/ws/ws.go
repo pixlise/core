@@ -165,24 +165,28 @@ func (ws *WSHandler) HandleMessage(s *melody.Session, msg []byte) {
 		Svcs:     ws.svcs,
 	}
 
-	resp, err := ws.dispatchWSMessage(&wsmsg, ctx)
+	resps, err := ws.dispatchWSMessage(&wsmsg, ctx)
 	if err != nil {
 		fmt.Printf("HandleMessage: %v\n", err)
 	}
 
-	if resp != nil {
-		// Set incoming message ID on the outgoing one
-		resp.MsgId = wsmsg.MsgId
+	if resps != nil && len(resps) > 0 {
+		for _, resp := range resps {
+			if resp != nil {
+				// Set incoming message ID on the outgoing one
+				resp.MsgId = wsmsg.MsgId
 
-		// Print out errors
-		if len(resp.ErrorText) > 0 {
-			fmt.Printf("Sending Response Error for msg id %v:\n  %v\n", resp.MsgId-1, resp.ErrorText)
+				// Print out errors
+				if len(resp.ErrorText) > 0 {
+					fmt.Printf("Sending Response Error for msg id %v:\n  %v\n", resp.MsgId-1, resp.ErrorText)
+				}
+
+				// Send
+				wsHelpers.SendForSession(s, resp)
+			}
 		}
-
-		// Send
-		wsHelpers.SendForSession(s, resp)
 	} else {
-		fmt.Printf("WARNING: No response generated for request: %+v\n", resp)
+		fmt.Printf("WARNING: No response generated for request: %+v\n", wsmsg)
 	}
 }
 
