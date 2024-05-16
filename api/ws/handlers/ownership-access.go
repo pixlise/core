@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func HandleGetOwnershipReq(req *protos.GetOwnershipReq, hctx wsHelpers.HandlerContext) ([]*protos.GetOwnershipResp, error) {
+func HandleGetOwnershipReq(req *protos.GetOwnershipReq, hctx wsHelpers.HandlerContext) (*protos.GetOwnershipResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ObjectId, "ObjectId", 1, wsHelpers.IdFieldMaxLength*2 /* Tests have longer ids anyway... */); err != nil {
 		return nil, err
 	}
@@ -20,9 +20,9 @@ func HandleGetOwnershipReq(req *protos.GetOwnershipReq, hctx wsHelpers.HandlerCo
 		return nil, err
 	}
 
-	return []*protos.GetOwnershipResp{&protos.GetOwnershipResp{
+	return &protos.GetOwnershipResp{
 		Ownership: owner,
-	}}, nil
+	}, nil
 }
 
 func readToMap(ids []string, theMap *map[string]bool) {
@@ -45,7 +45,7 @@ func deleteFromMap(ids []string, theMap *map[string]bool) {
 	}
 }
 
-func HandleObjectEditAccessReq(req *protos.ObjectEditAccessReq, hctx wsHelpers.HandlerContext) ([]*protos.ObjectEditAccessResp, error) {
+func HandleObjectEditAccessReq(req *protos.ObjectEditAccessReq, hctx wsHelpers.HandlerContext) (*protos.ObjectEditAccessResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ObjectId, "ObjectId", 1, wsHelpers.IdFieldMaxLength*2 /* Tests have longer ids anyway... */); err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func HandleObjectEditAccessReq(req *protos.ObjectEditAccessReq, hctx wsHelpers.H
 	owner.Viewers.UserIds = viewerUserIds
 	owner.Viewers.GroupIds = viewerGroupsIds
 
-	return []*protos.ObjectEditAccessResp{&protos.ObjectEditAccessResp{
+	return &protos.ObjectEditAccessResp{
 		Ownership: owner,
-	}}, nil
+	}, nil
 }

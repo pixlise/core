@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpers.HandlerContext) ([]*protos.ImageBeamLocationsResp, error) {
+func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpers.HandlerContext) (*protos.ImageBeamLocationsResp, error) {
 	ctx := context.TODO()
 	var locs *protos.ImageLocations
 
@@ -83,9 +83,9 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 	}
 
 	// Return the coordinates from DB record
-	return []*protos.ImageBeamLocationsResp{&protos.ImageBeamLocationsResp{
+	return &protos.ImageBeamLocationsResp{
 		Locations: locs,
-	}}, nil
+	}, nil
 }
 
 func generateIJs(imageName string, scanId string, instrument protos.ScanInstrument, hctx wsHelpers.HandlerContext) (*protos.ImageLocations, error) {

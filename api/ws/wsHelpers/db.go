@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-func DeleteUserObject[T any](objectId string, objectType protos.ObjectType, collectionName string, hctx HandlerContext) ([]*T, error) {
+func DeleteUserObject[T any](objectId string, objectType protos.ObjectType, collectionName string, hctx HandlerContext) (*T, error) {
 	ctx := context.TODO()
 
 	_, err := CheckObjectAccess(true, objectId, objectType, hctx)
@@ -63,7 +63,7 @@ func DeleteUserObject[T any](objectId string, objectType protos.ObjectType, coll
 
 	// Delete responses are just empty msgs
 	var resp T
-	return []*T{&resp}, nil
+	return &resp, nil
 }
 
 func GetUserObjectById[T any](forEditing bool, objectId string, objectType protos.ObjectType, collectionName string, hctx HandlerContext) (*T, *protos.OwnershipItem, error) {

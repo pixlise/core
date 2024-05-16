@@ -22,7 +22,7 @@ type IdOnly struct {
 	Id string `bson:"_id"`
 }
 
-func HandleRegionOfInterestGetReq(req *protos.RegionOfInterestGetReq, hctx wsHelpers.HandlerContext) ([]*protos.RegionOfInterestGetResp, error) {
+func HandleRegionOfInterestGetReq(req *protos.RegionOfInterestGetReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestGetResp, error) {
 	dbItem, owner, err := wsHelpers.GetUserObjectById[protos.ROIItem](false, req.Id, protos.ObjectType_OT_ROI, dbCollections.RegionsOfInterestName, hctx)
 	if err != nil {
 		return nil, err
@@ -41,12 +41,12 @@ func HandleRegionOfInterestGetReq(req *protos.RegionOfInterestGetReq, hctx wsHel
 		dbItem.MistROIItem = mistItem
 	}
 
-	return []*protos.RegionOfInterestGetResp{&protos.RegionOfInterestGetResp{
+	return &protos.RegionOfInterestGetResp{
 		RegionOfInterest: dbItem,
-	}}, nil
+	}, nil
 }
 
-func HandleRegionOfInterestDeleteReq(req *protos.RegionOfInterestDeleteReq, hctx wsHelpers.HandlerContext) ([]*protos.RegionOfInterestDeleteResp, error) {
+func HandleRegionOfInterestDeleteReq(req *protos.RegionOfInterestDeleteReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestDeleteResp, error) {
 	if req.IsMIST {
 		// Delete from MIST table
 		_, err := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).DeleteOne(context.TODO(), bson.D{{Key: "_id", Value: req.Id}})
@@ -58,7 +58,7 @@ func HandleRegionOfInterestDeleteReq(req *protos.RegionOfInterestDeleteReq, hctx
 	return wsHelpers.DeleteUserObject[protos.RegionOfInterestDeleteResp](req.Id, protos.ObjectType_OT_ROI, dbCollections.RegionsOfInterestName, hctx)
 }
 
-func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsHelpers.HandlerContext) ([]*protos.RegionOfInterestListResp, error) {
+func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestListResp, error) {
 	filter, idToOwner, err := wsHelpers.MakeFilter(req.SearchParams, false, protos.ObjectType_OT_ROI, hctx)
 	if err != nil {
 		return nil, err
@@ -127,9 +127,9 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 		rois[item.Id] = item
 	}
 
-	return []*protos.RegionOfInterestListResp{&protos.RegionOfInterestListResp{
+	return &protos.RegionOfInterestListResp{
 		RegionsOfInterest: rois,
-	}}, nil
+	}, nil
 }
 
 func validateROI(roi *protos.ROIItem) error {
@@ -361,7 +361,7 @@ func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, editors *prot
 	return dbItem, nil
 }
 
-func HandleRegionOfInterestWriteReq(req *protos.RegionOfInterestWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.RegionOfInterestWriteResp, error) {
+func HandleRegionOfInterestWriteReq(req *protos.RegionOfInterestWriteReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestWriteResp, error) {
 	// Owner should never be accepted from API
 	if req.RegionOfInterest.Owner != nil {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("Owner must be empty for write messages"))
@@ -386,12 +386,12 @@ func HandleRegionOfInterestWriteReq(req *protos.RegionOfInterestWriteReq, hctx w
 		return nil, err
 	}
 
-	return []*protos.RegionOfInterestWriteResp{&protos.RegionOfInterestWriteResp{
+	return &protos.RegionOfInterestWriteResp{
 		RegionOfInterest: item,
-	}}, nil
+	}, nil
 }
 
-func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.RegionOfInterestBulkWriteResp, error) {
+func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestBulkWriteResp, error) {
 	if req.IsMIST && req.MistROIScanIdsToDelete != nil && len(req.MistROIScanIdsToDelete) > 0 {
 		ctx := context.TODO()
 		coll := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName)
@@ -541,12 +541,12 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 		writtenROIs = append(writtenROIs, item)
 	}
 
-	return []*protos.RegionOfInterestBulkWriteResp{&protos.RegionOfInterestBulkWriteResp{
+	return &protos.RegionOfInterestBulkWriteResp{
 		RegionsOfInterest: writtenROIs,
-	}}, nil
+	}, nil
 }
 
-func HandleRegionOfInterestBulkDuplicateReq(req *protos.RegionOfInterestBulkDuplicateReq, hctx wsHelpers.HandlerContext) ([]*protos.RegionOfInterestBulkDuplicateResp, error) {
+func HandleRegionOfInterestBulkDuplicateReq(req *protos.RegionOfInterestBulkDuplicateReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestBulkDuplicateResp, error) {
 	// Get the ROIs to duplicate
 	filter := bson.M{"_id": bson.M{"$in": req.Ids}}
 	opts := options.Find()
@@ -587,16 +587,16 @@ func HandleRegionOfInterestBulkDuplicateReq(req *protos.RegionOfInterestBulkDupl
 		}
 	}
 
-	return []*protos.RegionOfInterestBulkDuplicateResp{&protos.RegionOfInterestBulkDuplicateResp{
+	return &protos.RegionOfInterestBulkDuplicateResp{
 		RegionsOfInterest: roiSummaries,
-	}}, nil
+	}, nil
 }
 
 func formROIUserConfigID(user *protos.UserInfo, roiId string) string {
 	return user.Id + "-" + roiId
 }
 
-func HandleRegionOfInterestDisplaySettingsWriteReq(req *protos.RegionOfInterestDisplaySettingsWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.RegionOfInterestDisplaySettingsWriteResp, error) {
+func HandleRegionOfInterestDisplaySettingsWriteReq(req *protos.RegionOfInterestDisplaySettingsWriteReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestDisplaySettingsWriteResp, error) {
 	// Check that we have an id, current user, and display settings
 	if len(req.Id) <= 0 {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("ROI ID must be specified"))
@@ -669,12 +669,12 @@ func HandleRegionOfInterestDisplaySettingsWriteReq(req *protos.RegionOfInterestD
 		return nil, err
 	}
 
-	return []*protos.RegionOfInterestDisplaySettingsWriteResp{&protos.RegionOfInterestDisplaySettingsWriteResp{
+	return &protos.RegionOfInterestDisplaySettingsWriteResp{
 		DisplaySettings: req.DisplaySettings,
-	}}, nil
+	}, nil
 }
 
-func HandleRegionOfInterestDisplaySettingsGetReq(req *protos.RegionOfInterestDisplaySettingsGetReq, hctx wsHelpers.HandlerContext) ([]*protos.RegionOfInterestDisplaySettingsGetResp, error) {
+func HandleRegionOfInterestDisplaySettingsGetReq(req *protos.RegionOfInterestDisplaySettingsGetReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestDisplaySettingsGetResp, error) {
 	// Check that we have an id, current user, and display settings
 	if len(req.Id) <= 0 {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("ROI ID must be specified"))
@@ -692,7 +692,7 @@ func HandleRegionOfInterestDisplaySettingsGetReq(req *protos.RegionOfInterestDis
 		return nil, err
 	}
 
-	return []*protos.RegionOfInterestDisplaySettingsGetResp{&protos.RegionOfInterestDisplaySettingsGetResp{
+	return &protos.RegionOfInterestDisplaySettingsGetResp{
 		DisplaySettings: displaySettings,
-	}}, nil
+	}, nil
 }

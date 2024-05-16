@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleUserGroupJoinReq(req *protos.UserGroupJoinReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupJoinResp, error) {
+func HandleUserGroupJoinReq(req *protos.UserGroupJoinReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupJoinResp, error) {
 	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -67,10 +67,10 @@ A user named %v has just requested to join the group as a %v`, group.Name, hctx.
 		"PIXLISE API",
 	)
 
-	return []*protos.UserGroupJoinResp{&protos.UserGroupJoinResp{}}, nil
+	return &protos.UserGroupJoinResp{}, nil
 }
 
-func HandleUserGroupIgnoreJoinReq(req *protos.UserGroupIgnoreJoinReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupIgnoreJoinResp, error) {
+func HandleUserGroupIgnoreJoinReq(req *protos.UserGroupIgnoreJoinReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupIgnoreJoinResp, error) {
 	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -100,10 +100,10 @@ func HandleUserGroupIgnoreJoinReq(req *protos.UserGroupIgnoreJoinReq, hctx wsHel
 		hctx.Svcs.Log.Errorf("UserGroup Join Request Delete result had unexpected counts %+v id: %v", result, req.RequestId)
 	}
 
-	return []*protos.UserGroupIgnoreJoinResp{&protos.UserGroupIgnoreJoinResp{}}, nil
+	return &protos.UserGroupIgnoreJoinResp{}, nil
 }
 
-func HandleUserGroupJoinListReq(req *protos.UserGroupJoinListReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupJoinListResp, error) {
+func HandleUserGroupJoinListReq(req *protos.UserGroupJoinListReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupJoinListResp, error) {
 	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func HandleUserGroupJoinListReq(req *protos.UserGroupJoinListReq, hctx wsHelpers
 		item.Details = userDBItem.Info
 	}
 
-	return []*protos.UserGroupJoinListResp{&protos.UserGroupJoinListResp{
+	return &protos.UserGroupJoinListResp{
 		Requests: items,
-	}}, nil
+	}, nil
 }

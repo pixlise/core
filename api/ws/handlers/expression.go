@@ -15,23 +15,23 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-func HandleExpressionGetReq(req *protos.ExpressionGetReq, hctx wsHelpers.HandlerContext) ([]*protos.ExpressionGetResp, error) {
+func HandleExpressionGetReq(req *protos.ExpressionGetReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionGetResp, error) {
 	dbItem, owner, err := wsHelpers.GetUserObjectById[protos.DataExpression](false, req.Id, protos.ObjectType_OT_EXPRESSION, dbCollections.ExpressionsName, hctx)
 	if err != nil {
 		return nil, err
 	}
 
 	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
-	return []*protos.ExpressionGetResp{&protos.ExpressionGetResp{
+	return &protos.ExpressionGetResp{
 		Expression: dbItem,
-	}}, nil
+	}, nil
 }
 
-func HandleExpressionDeleteReq(req *protos.ExpressionDeleteReq, hctx wsHelpers.HandlerContext) ([]*protos.ExpressionDeleteResp, error) {
+func HandleExpressionDeleteReq(req *protos.ExpressionDeleteReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionDeleteResp, error) {
 	return wsHelpers.DeleteUserObject[protos.ExpressionDeleteResp](req.Id, protos.ObjectType_OT_EXPRESSION, dbCollections.ExpressionsName, hctx)
 }
 
-func HandleExpressionListReq(req *protos.ExpressionListReq, hctx wsHelpers.HandlerContext) ([]*protos.ExpressionListResp, error) {
+func HandleExpressionListReq(req *protos.ExpressionListReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionListResp, error) {
 	filter, idToOwner, err := wsHelpers.MakeFilter(req.SearchParams, false, protos.ObjectType_OT_EXPRESSION, hctx)
 	if err != nil {
 		return nil, err
@@ -68,9 +68,9 @@ func HandleExpressionListReq(req *protos.ExpressionListReq, hctx wsHelpers.Handl
 		itemMap[item.Id] = item
 	}
 
-	return []*protos.ExpressionListResp{&protos.ExpressionListResp{
+	return &protos.ExpressionListResp{
 		Expressions: itemMap,
-	}}, nil
+	}, nil
 }
 
 func validateExpression(expr *protos.DataExpression) error {
@@ -211,7 +211,7 @@ func updateExpression(expr *protos.DataExpression, hctx wsHelpers.HandlerContext
 	return dbItem, nil
 }
 
-func HandleExpressionWriteReq(req *protos.ExpressionWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.ExpressionWriteResp, error) {
+func HandleExpressionWriteReq(req *protos.ExpressionWriteReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionWriteResp, error) {
 	// Owner should never be accepted from API
 	if req.Expression.Owner != nil {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("Owner must be empty for write messages"))
@@ -229,12 +229,12 @@ func HandleExpressionWriteReq(req *protos.ExpressionWriteReq, hctx wsHelpers.Han
 		return nil, err
 	}
 
-	return []*protos.ExpressionWriteResp{&protos.ExpressionWriteResp{
+	return &protos.ExpressionWriteResp{
 		Expression: item,
-	}}, nil
+	}, nil
 }
 
-func HandleExpressionWriteExecStatReq(req *protos.ExpressionWriteExecStatReq, hctx wsHelpers.HandlerContext) ([]*protos.ExpressionWriteExecStatResp, error) {
+func HandleExpressionWriteExecStatReq(req *protos.ExpressionWriteExecStatReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionWriteExecStatResp, error) {
 	// Validate request
 	if err := wsHelpers.CheckStringField(&req.Id, "Id", 0, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
@@ -270,14 +270,14 @@ func HandleExpressionWriteExecStatReq(req *protos.ExpressionWriteExecStatReq, hc
 		hctx.Svcs.Log.Errorf("DataExpression ExecStatWrite UpdateByID result had unexpected counts %+v id: %v", result, req.Id)
 	}
 
-	return []*protos.ExpressionWriteExecStatResp{&protos.ExpressionWriteExecStatResp{}}, nil
+	return &protos.ExpressionWriteExecStatResp{}, nil
 }
 
 func formExpressionDisplaySettingsID(user *protos.UserInfo, expressionId string) string {
 	return user.Id + "-" + expressionId
 }
 
-func HandleExpressionDisplaySettingsGetReq(req *protos.ExpressionDisplaySettingsGetReq, hctx wsHelpers.HandlerContext) ([]*protos.ExpressionDisplaySettingsGetResp, error) {
+func HandleExpressionDisplaySettingsGetReq(req *protos.ExpressionDisplaySettingsGetReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionDisplaySettingsGetResp, error) {
 	// Validate request
 	if len(req.Id) <= 0 {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("Expression ID must be specified"))
@@ -294,19 +294,19 @@ func HandleExpressionDisplaySettingsGetReq(req *protos.ExpressionDisplaySettings
 	err := hctx.Svcs.MongoDB.Collection(dbCollections.UserExpressionDisplaySettings).FindOne(context.Background(), bson.M{"_id": displaySettingsId}).Decode(&displaySettings)
 	if err != nil {
 		// We don't care about errors. If it doesn't exist, we just return a blank one
-		return []*protos.ExpressionDisplaySettingsGetResp{&protos.ExpressionDisplaySettingsGetResp{
+		return &protos.ExpressionDisplaySettingsGetResp{
 			DisplaySettings: &protos.ExpressionDisplaySettings{Id: req.Id},
-		}}, nil
+		}, nil
 	}
 
 	// Set the ID back before returning it
 	displaySettings.Id = req.Id
-	return []*protos.ExpressionDisplaySettingsGetResp{&protos.ExpressionDisplaySettingsGetResp{
+	return &protos.ExpressionDisplaySettingsGetResp{
 		DisplaySettings: displaySettings,
-	}}, nil
+	}, nil
 }
 
-func HandleExpressionDisplaySettingsWriteReq(req *protos.ExpressionDisplaySettingsWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.ExpressionDisplaySettingsWriteResp, error) {
+func HandleExpressionDisplaySettingsWriteReq(req *protos.ExpressionDisplaySettingsWriteReq, hctx wsHelpers.HandlerContext) (*protos.ExpressionDisplaySettingsWriteResp, error) {
 	if len(req.Id) <= 0 {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("Expression ID must be specified"))
 	}
@@ -376,7 +376,7 @@ func HandleExpressionDisplaySettingsWriteReq(req *protos.ExpressionDisplaySettin
 		return nil, err
 	}
 
-	return []*protos.ExpressionDisplaySettingsWriteResp{&protos.ExpressionDisplaySettingsWriteResp{
+	return &protos.ExpressionDisplaySettingsWriteResp{
 		DisplaySettings: req.DisplaySettings,
-	}}, nil
+	}, nil
 }

@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func HandleUserDetailsReq(req *protos.UserDetailsReq, hctx wsHelpers.HandlerContext) ([]*protos.UserDetailsResp, error) {
+func HandleUserDetailsReq(req *protos.UserDetailsReq, hctx wsHelpers.HandlerContext) (*protos.UserDetailsResp, error) {
 	userDBItem, err := wsHelpers.GetDBUser(hctx.SessUser.User.Id, hctx.Svcs.MongoDB)
 	if err != nil {
 		return nil, err
@@ -26,16 +26,16 @@ func HandleUserDetailsReq(req *protos.UserDetailsReq, hctx wsHelpers.HandlerCont
 	// map doesn't help either!
 	sort.Strings(perms)
 
-	return []*protos.UserDetailsResp{&protos.UserDetailsResp{
+	return &protos.UserDetailsResp{
 		Details: &protos.UserDetails{
 			Info:                  userDBItem.Info,
 			DataCollectionVersion: userDBItem.DataCollectionVersion,
 			Permissions:           perms,
 		},
-	}}, nil
+	}, nil
 }
 
-func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.UserDetailsWriteResp, error) {
+func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, hctx wsHelpers.HandlerContext) (*protos.UserDetailsWriteResp, error) {
 	if &req.Name != nil && req.Name != "" {
 		if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 50); err != nil {
 			return nil, err
@@ -94,10 +94,10 @@ func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, hctx wsHelpers.H
 
 	// TODO: Trigger user details update (?)
 
-	return []*protos.UserDetailsWriteResp{&protos.UserDetailsWriteResp{}}, nil
+	return &protos.UserDetailsWriteResp{}, nil
 }
 
-func HandleUserSearchReq(req *protos.UserSearchReq, hctx wsHelpers.HandlerContext) ([]*protos.UserSearchResp, error) {
+func HandleUserSearchReq(req *protos.UserSearchReq, hctx wsHelpers.HandlerContext) (*protos.UserSearchResp, error) {
 	if err := wsHelpers.CheckStringField(&req.SearchString, "SearchString", 0, 100); err != nil {
 		return nil, err
 	}
@@ -115,9 +115,9 @@ func HandleUserSearchReq(req *protos.UserSearchReq, hctx wsHelpers.HandlerContex
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			// Silent error, just return empty
-			return []*protos.UserSearchResp{&protos.UserSearchResp{
+			return &protos.UserSearchResp{
 				Users: []*protos.UserInfo{},
-			}}, nil
+			}, nil
 		}
 
 		return nil, err
@@ -134,7 +134,7 @@ func HandleUserSearchReq(req *protos.UserSearchReq, hctx wsHelpers.HandlerContex
 		users = append(users, user.Info)
 	}
 
-	return []*protos.UserSearchResp{&protos.UserSearchResp{
+	return &protos.UserSearchResp{
 		Users: users,
-	}}, nil
+	}, nil
 }

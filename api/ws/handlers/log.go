@@ -16,7 +16,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func HandleLogReadReq(req *protos.LogReadReq, hctx wsHelpers.HandlerContext) ([]*protos.LogReadResp, error) {
+func HandleLogReadReq(req *protos.LogReadReq, hctx wsHelpers.HandlerContext) (*protos.LogReadResp, error) {
 	if err := wsHelpers.CheckStringField(&req.LogStreamId, "LogStreamId", 1, 512); err != nil {
 		return nil, err
 	}
@@ -35,23 +35,23 @@ func HandleLogReadReq(req *protos.LogReadReq, hctx wsHelpers.HandlerContext) ([]
 		}
 	}
 
-	return []*protos.LogReadResp{&protos.LogReadResp{
+	return &protos.LogReadResp{
 		Entries: logs,
-	}}, nil
+	}, nil
 }
 
-func HandleLogGetLevelReq(req *protos.LogGetLevelReq, hctx wsHelpers.HandlerContext) ([]*protos.LogGetLevelResp, error) {
+func HandleLogGetLevelReq(req *protos.LogGetLevelReq, hctx wsHelpers.HandlerContext) (*protos.LogGetLevelResp, error) {
 	name, err := logger.GetLogLevelName(hctx.Svcs.Log.GetLogLevel())
 	if err != nil {
 		return nil, err
 	}
 
-	return []*protos.LogGetLevelResp{&protos.LogGetLevelResp{
+	return &protos.LogGetLevelResp{
 		LogLevelId: name,
-	}}, nil
+	}, nil
 }
 
-func HandleLogSetLevelReq(req *protos.LogSetLevelReq, hctx wsHelpers.HandlerContext) ([]*protos.LogSetLevelResp, error) {
+func HandleLogSetLevelReq(req *protos.LogSetLevelReq, hctx wsHelpers.HandlerContext) (*protos.LogSetLevelResp, error) {
 	if err := wsHelpers.CheckStringField(&req.LogLevelId, "LogLevelId", 1, 10); err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func HandleLogSetLevelReq(req *protos.LogSetLevelReq, hctx wsHelpers.HandlerCont
 	// Not really an error, but we log in this level to ensure it always gets printed
 	hctx.Svcs.Log.Errorf("User %v request changed log level to: %v", hctx.SessUser.User.Id, req.LogLevelId)
 
-	return []*protos.LogSetLevelResp{&protos.LogSetLevelResp{LogLevelId: req.LogLevelId}}, nil
+	return &protos.LogSetLevelResp{LogLevelId: req.LogLevelId}, nil
 }
 
 var cloudwatchSvc *cloudwatchlogs.CloudWatchLogs = nil

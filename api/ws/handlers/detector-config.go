@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleDetectorConfigReq(req *protos.DetectorConfigReq, hctx wsHelpers.HandlerContext) ([]*protos.DetectorConfigResp, error) {
+func HandleDetectorConfigReq(req *protos.DetectorConfigReq, hctx wsHelpers.HandlerContext) (*protos.DetectorConfigResp, error) {
 	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, 255); err != nil {
 		return nil, err
 	}
@@ -21,13 +21,13 @@ func HandleDetectorConfigReq(req *protos.DetectorConfigReq, hctx wsHelpers.Handl
 		return nil, err
 	}
 
-	return []*protos.DetectorConfigResp{&protos.DetectorConfigResp{
+	return &protos.DetectorConfigResp{
 		Config:                cfg,
 		PiquantConfigVersions: piquant.GetPiquantConfigVersions(hctx.Svcs, req.Id),
-	}}, nil
+	}, nil
 }
 
-func HandleDetectorConfigListReq(req *protos.DetectorConfigListReq, hctx wsHelpers.HandlerContext) ([]*protos.DetectorConfigListResp, error) {
+func HandleDetectorConfigListReq(req *protos.DetectorConfigListReq, hctx wsHelpers.HandlerContext) (*protos.DetectorConfigListResp, error) {
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.DetectorConfigsName)
 
 	filter := bson.D{}
@@ -51,7 +51,7 @@ func HandleDetectorConfigListReq(req *protos.DetectorConfigListReq, hctx wsHelpe
 		configList = append(configList, cfg.Id)
 	}
 
-	return []*protos.DetectorConfigListResp{&protos.DetectorConfigListResp{
+	return &protos.DetectorConfigListResp{
 		Configs: configList,
-	}}, nil
+	}, nil
 }

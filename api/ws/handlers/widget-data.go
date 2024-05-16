@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func HandleWidgetDataGetReq(req *protos.WidgetDataGetReq, hctx wsHelpers.HandlerContext) ([]*protos.WidgetDataGetResp, error) {
+func HandleWidgetDataGetReq(req *protos.WidgetDataGetReq, hctx wsHelpers.HandlerContext) (*protos.WidgetDataGetResp, error) {
 	result := hctx.Svcs.MongoDB.Collection(dbCollections.WidgetDataName).FindOne(context.TODO(), bson.M{
 		"_id": req.Id,
 	})
@@ -25,12 +25,12 @@ func HandleWidgetDataGetReq(req *protos.WidgetDataGetReq, hctx wsHelpers.Handler
 		return nil, err
 	}
 
-	return []*protos.WidgetDataGetResp{&protos.WidgetDataGetResp{
+	return &protos.WidgetDataGetResp{
 		WidgetData: widgetData,
-	}}, nil
+	}, nil
 }
 
-func HandleWidgetDataWriteReq(req *protos.WidgetDataWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.WidgetDataWriteResp, error) {
+func HandleWidgetDataWriteReq(req *protos.WidgetDataWriteReq, hctx wsHelpers.HandlerContext) (*protos.WidgetDataWriteResp, error) {
 	if req.WidgetData.Id == "" {
 		return nil, errors.New("widget data must have a predefined id to write to")
 	}
@@ -56,7 +56,7 @@ func HandleWidgetDataWriteReq(req *protos.WidgetDataWriteReq, hctx wsHelpers.Han
 		return nil, err
 	}
 
-	return []*protos.WidgetDataWriteResp{&protos.WidgetDataWriteResp{
+	return &protos.WidgetDataWriteResp{
 		WidgetData: req.WidgetData,
-	}}, nil
+	}, nil
 }
