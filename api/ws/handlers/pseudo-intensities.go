@@ -8,7 +8,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func HandlePseudoIntensityReq(req *protos.PseudoIntensityReq, hctx wsHelpers.HandlerContext) ([]*protos.PseudoIntensityResp, error) {
+func HandlePseudoIntensityReq(req *protos.PseudoIntensityReq, hctx wsHelpers.HandlerContext) (*protos.PseudoIntensityResp, error) {
 	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
 	if err != nil {
 		return nil, err
@@ -48,8 +48,8 @@ func HandlePseudoIntensityReq(req *protos.PseudoIntensityReq, hctx wsHelpers.Han
 		hctx.Svcs.Log.Errorf("Reading pseudointensities for scan %v: found more than 1 set of pseudos in %v PMCs", req.ScanId, tooManyPseudosLocations)
 	}
 
-	return []*protos.PseudoIntensityResp{&protos.PseudoIntensityResp{
+	return &protos.PseudoIntensityResp{
 		IntensityLabels: labels,
 		Data:            pseudoIntensities,
-	}}, nil
+	}, nil
 }

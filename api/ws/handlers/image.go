@@ -19,7 +19,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleImageListReq(req *protos.ImageListReq, hctx wsHelpers.HandlerContext) ([]*protos.ImageListResp, error) {
+func HandleImageListReq(req *protos.ImageListReq, hctx wsHelpers.HandlerContext) (*protos.ImageListResp, error) {
 	if err := wsHelpers.CheckFieldLength(req.ScanIds, "ScanIds", 1, 10); err != nil {
 		return nil, err
 	}
@@ -54,12 +54,12 @@ func HandleImageListReq(req *protos.ImageListReq, hctx wsHelpers.HandlerContext)
 		return nil, err
 	}
 
-	return []*protos.ImageListResp{&protos.ImageListResp{
+	return &protos.ImageListResp{
 		Images: items,
-	}}, nil
+	}, nil
 }
 
-func HandleImageGetReq(req *protos.ImageGetReq, hctx wsHelpers.HandlerContext) ([]*protos.ImageGetResp, error) {
+func HandleImageGetReq(req *protos.ImageGetReq, hctx wsHelpers.HandlerContext) (*protos.ImageGetResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ImageName, "ImageName", 1, 255); err != nil {
 		return nil, err
 	}
@@ -107,19 +107,19 @@ func HandleImageGetReq(req *protos.ImageGetReq, hctx wsHelpers.HandlerContext) (
 		}
 	}
 
-	return []*protos.ImageGetResp{&protos.ImageGetResp{
+	return &protos.ImageGetResp{
 		Image: &img,
-	}}, nil
+	}, nil
 }
 
-func HandleImageGetDefaultReq(req *protos.ImageGetDefaultReq, hctx wsHelpers.HandlerContext) ([]*protos.ImageGetDefaultResp, error) {
+func HandleImageGetDefaultReq(req *protos.ImageGetDefaultReq, hctx wsHelpers.HandlerContext) (*protos.ImageGetDefaultResp, error) {
 	/*if err := wsHelpers.CheckFieldLength(req.ScanIds, "ScanIds", 1, 10); err != nil {
 		return nil, err
 	}*/
 	if len(req.ScanIds) <= 0 {
-		return []*protos.ImageGetDefaultResp{&protos.ImageGetDefaultResp{
+		return &protos.ImageGetDefaultResp{
 			DefaultImagesPerScanId: map[string]string{},
-		}}, nil
+		}, nil
 	}
 
 	// Check that the user has access to all the scans in question
@@ -152,12 +152,12 @@ func HandleImageGetDefaultReq(req *protos.ImageGetDefaultReq, hctx wsHelpers.Han
 		result[item.ScanId] = item.DefaultImageFileName
 	}
 
-	return []*protos.ImageGetDefaultResp{&protos.ImageGetDefaultResp{
+	return &protos.ImageGetDefaultResp{
 		DefaultImagesPerScanId: result,
-	}}, nil
+	}, nil
 }
 
-func HandleImageSetDefaultReq(req *protos.ImageSetDefaultReq, hctx wsHelpers.HandlerContext) ([]*protos.ImageSetDefaultResp, error) {
+func HandleImageSetDefaultReq(req *protos.ImageSetDefaultReq, hctx wsHelpers.HandlerContext) (*protos.ImageSetDefaultResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -198,10 +198,10 @@ func HandleImageSetDefaultReq(req *protos.ImageSetDefaultReq, hctx wsHelpers.Han
 	// Send out notifications so caches can be cleared
 	hctx.Svcs.Notifier.SysNotifyScanImagesChanged([]string{req.ScanId})
 
-	return []*protos.ImageSetDefaultResp{&protos.ImageSetDefaultResp{}}, nil
+	return &protos.ImageSetDefaultResp{}, nil
 }
 
-func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerContext) ([]*protos.ImageDeleteResp, error) {
+func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerContext) (*protos.ImageDeleteResp, error) {
 	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 255); err != nil {
 		return nil, err
 	}
@@ -291,10 +291,10 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 
 	hctx.Svcs.Notifier.SysNotifyScanImagesChanged(scanIds)
 
-	return []*protos.ImageDeleteResp{&protos.ImageDeleteResp{}}, nil
+	return &protos.ImageDeleteResp{}, nil
 }
 
-func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerContext) ([]*protos.ImageUploadResp, error) {
+func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerContext) (*protos.ImageUploadResp, error) {
 	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 255); err != nil {
 		return nil, err
 	}
@@ -428,10 +428,10 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 	hctx.Svcs.Notifier.NotifyNewScanImage(req.OriginScanId, req.OriginScanId, scanImage.ImagePath)
 	hctx.Svcs.Notifier.SysNotifyScanImagesChanged([]string{req.OriginScanId})
 
-	return []*protos.ImageUploadResp{&protos.ImageUploadResp{}}, nil
+	return &protos.ImageUploadResp{}, nil
 }
 
-func HandleImageSetMatchTransformReq(req *protos.ImageSetMatchTransformReq, hctx wsHelpers.HandlerContext) ([]*protos.ImageSetMatchTransformResp, error) {
+func HandleImageSetMatchTransformReq(req *protos.ImageSetMatchTransformReq, hctx wsHelpers.HandlerContext) (*protos.ImageSetMatchTransformResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ImageName, "ImageName", 1, 255); err != nil {
 		return nil, err
 	}
@@ -503,5 +503,5 @@ func HandleImageSetMatchTransformReq(req *protos.ImageSetMatchTransformReq, hctx
 		hctx.Svcs.Log.Errorf("ImageSetMatchTransformReq update result had unexpected match count %+v imageName: %v", updResult, req.ImageName)
 	}
 
-	return []*protos.ImageSetMatchTransformResp{&protos.ImageSetMatchTransformResp{}}, nil
+	return &protos.ImageSetMatchTransformResp{}, nil
 }

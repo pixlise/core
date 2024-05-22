@@ -22,7 +22,7 @@ import (
 // ...
 // <csv row n>
 
-func HandleQuantUploadReq(req *protos.QuantUploadReq, hctx wsHelpers.HandlerContext) ([]*protos.QuantUploadResp, error) {
+func HandleQuantUploadReq(req *protos.QuantUploadReq, hctx wsHelpers.HandlerContext) (*protos.QuantUploadResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func HandleQuantUploadReq(req *protos.QuantUploadReq, hctx wsHelpers.HandlerCont
 	if err != nil {
 		return nil, err
 	}
-	return []*protos.QuantUploadResp{&protos.QuantUploadResp{CreatedQuantId: quantId}}, nil
+	return &protos.QuantUploadResp{CreatedQuantId: quantId}, nil
 }
 
 func parseQuantCSVColumns(csvRows []string) (map[string]int, error) {

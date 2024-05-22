@@ -62,7 +62,7 @@ func decorateTag(tag *protos.TagDB, db *mongo.Database, log logger.ILogger) (*pr
 	return decoratedTag, nil
 }
 
-func HandleTagCreateReq(req *protos.TagCreateReq, hctx wsHelpers.HandlerContext) ([]*protos.TagCreateResp, error) {
+func HandleTagCreateReq(req *protos.TagCreateReq, hctx wsHelpers.HandlerContext) (*protos.TagCreateResp, error) {
 	// Limit tags to 50 characters
 	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 50); err != nil {
 		return nil, err
@@ -99,10 +99,10 @@ func HandleTagCreateReq(req *protos.TagCreateReq, hctx wsHelpers.HandlerContext)
 		return nil, err
 	}
 
-	return []*protos.TagCreateResp{&protos.TagCreateResp{Tag: resolvedTag}}, nil
+	return &protos.TagCreateResp{Tag: resolvedTag}, nil
 }
 
-func HandleTagDeleteReq(req *protos.TagDeleteReq, hctx wsHelpers.HandlerContext) ([]*protos.TagDeleteResp, error) {
+func HandleTagDeleteReq(req *protos.TagDeleteReq, hctx wsHelpers.HandlerContext) (*protos.TagDeleteResp, error) {
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.TagsName)
 
@@ -127,10 +127,10 @@ func HandleTagDeleteReq(req *protos.TagDeleteReq, hctx wsHelpers.HandlerContext)
 		return nil, err
 	}
 
-	return []*protos.TagDeleteResp{&protos.TagDeleteResp{}}, nil
+	return &protos.TagDeleteResp{}, nil
 }
 
-func HandleTagListReq(req *protos.TagListReq, hctx wsHelpers.HandlerContext) ([]*protos.TagListResp, error) {
+func HandleTagListReq(req *protos.TagListReq, hctx wsHelpers.HandlerContext) (*protos.TagListResp, error) {
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.TagsName)
 
@@ -153,5 +153,7 @@ func HandleTagListReq(req *protos.TagListReq, hctx wsHelpers.HandlerContext) ([]
 		decoratedTags = append(decoratedTags, decoratedTag)
 	}
 
-	return []*protos.TagListResp{&protos.TagListResp{Tags: decoratedTags}}, nil
+	tagResponse := &protos.TagListResp{Tags: decoratedTags}
+
+	return tagResponse, nil
 }

@@ -16,7 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandlePiquantConfigListReq(req *protos.PiquantConfigListReq, hctx wsHelpers.HandlerContext) ([]*protos.PiquantConfigListResp, error) {
+func HandlePiquantConfigListReq(req *protos.PiquantConfigListReq, hctx wsHelpers.HandlerContext) (*protos.PiquantConfigListResp, error) {
 	// Return a list of all piquant configs we have stored
 	// TODO: Handle paging... this could eventually be > 1000 files, but that's a while away!
 	paths, err := hctx.Svcs.FS.ListObjects(hctx.Svcs.Config.ConfigBucket, filepaths.RootDetectorConfig+"/")
@@ -38,10 +38,10 @@ func HandlePiquantConfigListReq(req *protos.PiquantConfigListReq, hctx wsHelpers
 	names := utils.GetMapKeys(configNamesFiltered)
 	sort.Strings(names)
 
-	return []*protos.PiquantConfigListResp{&protos.PiquantConfigListResp{ConfigNames: names}}, err
+	return &protos.PiquantConfigListResp{ConfigNames: names}, err
 }
 
-func HandlePiquantConfigVersionsListReq(req *protos.PiquantConfigVersionsListReq, hctx wsHelpers.HandlerContext) ([]*protos.PiquantConfigVersionsListResp, error) {
+func HandlePiquantConfigVersionsListReq(req *protos.PiquantConfigVersionsListReq, hctx wsHelpers.HandlerContext) (*protos.PiquantConfigVersionsListResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ConfigId, "ConfigId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -49,12 +49,12 @@ func HandlePiquantConfigVersionsListReq(req *protos.PiquantConfigVersionsListReq
 	// Get a list of PIQUANT config versions too
 	versions := piquant.GetPiquantConfigVersions(hctx.Svcs, req.ConfigId)
 
-	return []*protos.PiquantConfigVersionsListResp{&protos.PiquantConfigVersionsListResp{
+	return &protos.PiquantConfigVersionsListResp{
 		Versions: versions,
-	}}, nil
+	}, nil
 }
 
-func HandlePiquantConfigVersionReq(req *protos.PiquantConfigVersionReq, hctx wsHelpers.HandlerContext) ([]*protos.PiquantConfigVersionResp, error) {
+func HandlePiquantConfigVersionReq(req *protos.PiquantConfigVersionReq, hctx wsHelpers.HandlerContext) (*protos.PiquantConfigVersionResp, error) {
 	if err := wsHelpers.CheckStringField(&req.Version, "Version", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -67,25 +67,25 @@ func HandlePiquantConfigVersionReq(req *protos.PiquantConfigVersionReq, hctx wsH
 		return nil, err
 	}
 
-	return []*protos.PiquantConfigVersionResp{&protos.PiquantConfigVersionResp{
+	return &protos.PiquantConfigVersionResp{
 		PiquantConfig: cfg,
-	}}, nil
+	}, nil
 }
 
 // TODO: need to query versions from github container registry or something similar???
-func HandlePiquantVersionListReq(req *protos.PiquantVersionListReq, hctx wsHelpers.HandlerContext) ([]*protos.PiquantVersionListResp, error) {
+func HandlePiquantVersionListReq(req *protos.PiquantVersionListReq, hctx wsHelpers.HandlerContext) (*protos.PiquantVersionListResp, error) {
 	return nil, errors.New("HandlePiquantVersionListReq not implemented yet")
 }
 
-func HandlePiquantCurrentVersionReq(req *protos.PiquantCurrentVersionReq, hctx wsHelpers.HandlerContext) ([]*protos.PiquantCurrentVersionResp, error) {
+func HandlePiquantCurrentVersionReq(req *protos.PiquantCurrentVersionReq, hctx wsHelpers.HandlerContext) (*protos.PiquantCurrentVersionResp, error) {
 	ver, err := piquant.GetPiquantVersion(hctx.Svcs)
 	if err != nil {
 		return nil, err
 	}
-	return []*protos.PiquantCurrentVersionResp{&protos.PiquantCurrentVersionResp{PiquantVersion: ver}}, nil
+	return &protos.PiquantCurrentVersionResp{PiquantVersion: ver}, nil
 }
 
-func HandlePiquantWriteCurrentVersionReq(req *protos.PiquantWriteCurrentVersionReq, hctx wsHelpers.HandlerContext) ([]*protos.PiquantWriteCurrentVersionResp, error) {
+func HandlePiquantWriteCurrentVersionReq(req *protos.PiquantWriteCurrentVersionReq, hctx wsHelpers.HandlerContext) (*protos.PiquantWriteCurrentVersionResp, error) {
 	if err := wsHelpers.CheckStringField(&req.PiquantVersion, "PiquantVersion", 1, 100); err != nil {
 		return nil, err
 	}
@@ -107,5 +107,5 @@ func HandlePiquantWriteCurrentVersionReq(req *protos.PiquantWriteCurrentVersionR
 		hctx.Svcs.Log.Errorf("PiquantWriteCurrentVersionReq UpdateByID result had unexpected counts %+v", result)
 	}
 
-	return []*protos.PiquantWriteCurrentVersionResp{&protos.PiquantWriteCurrentVersionResp{}}, nil
+	return &protos.PiquantWriteCurrentVersionResp{}, nil
 }

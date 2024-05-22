@@ -16,48 +16,48 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleUserGroupAddViewerReq(req *protos.UserGroupAddViewerReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupAddViewerResp, error) {
+func HandleUserGroupAddViewerReq(req *protos.UserGroupAddViewerReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupAddViewerResp, error) {
 	group, err := modifyGroupMembershipList(req.GroupId, req.GetGroupViewerId(), req.GetUserViewerId(), true, true, hctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*protos.UserGroupAddViewerResp{&protos.UserGroupAddViewerResp{
+	return &protos.UserGroupAddViewerResp{
 		Group: group,
-	}}, nil
+	}, nil
 }
 
-func HandleUserGroupDeleteViewerReq(req *protos.UserGroupDeleteViewerReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupDeleteViewerResp, error) {
+func HandleUserGroupDeleteViewerReq(req *protos.UserGroupDeleteViewerReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupDeleteViewerResp, error) {
 	group, err := modifyGroupMembershipList(req.GroupId, req.GetGroupViewerId(), req.GetUserViewerId(), true, false, hctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*protos.UserGroupDeleteViewerResp{&protos.UserGroupDeleteViewerResp{
+	return &protos.UserGroupDeleteViewerResp{
 		Group: group,
-	}}, nil
+	}, nil
 }
 
-func HandleUserGroupAddMemberReq(req *protos.UserGroupAddMemberReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupAddMemberResp, error) {
+func HandleUserGroupAddMemberReq(req *protos.UserGroupAddMemberReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupAddMemberResp, error) {
 	group, err := modifyGroupMembershipList(req.GroupId, req.GetGroupMemberId(), req.GetUserMemberId(), false, true, hctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*protos.UserGroupAddMemberResp{&protos.UserGroupAddMemberResp{
+	return &protos.UserGroupAddMemberResp{
 		Group: group,
-	}}, nil
+	}, nil
 }
 
-func HandleUserGroupDeleteMemberReq(req *protos.UserGroupDeleteMemberReq, hctx wsHelpers.HandlerContext) ([]*protos.UserGroupDeleteMemberResp, error) {
+func HandleUserGroupDeleteMemberReq(req *protos.UserGroupDeleteMemberReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupDeleteMemberResp, error) {
 	group, err := modifyGroupMembershipList(req.GroupId, req.GetGroupMemberId(), req.GetUserMemberId(), false, false, hctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*protos.UserGroupDeleteMemberResp{&protos.UserGroupDeleteMemberResp{
+	return &protos.UserGroupDeleteMemberResp{
 		Group: group,
-	}}, nil
+	}, nil
 }
 
 // Does the job of the above...

@@ -317,7 +317,7 @@ func PublishExpressionToZenodo(id string, output string, metadata *protos.DOIMet
 	return publishResponse, nil
 }
 
-func HandlePublishExpressionToZenodoReq(req *protos.PublishExpressionToZenodoReq, hctx wsHelpers.HandlerContext) ([]*protos.PublishExpressionToZenodoResp, error) {
+func HandlePublishExpressionToZenodoReq(req *protos.PublishExpressionToZenodoReq, hctx wsHelpers.HandlerContext) (*protos.PublishExpressionToZenodoResp, error) {
 	if hctx.Svcs.Config.EnvironmentName == "unittest" || hctx.Svcs.Config.EnvironmentName == "local" {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
@@ -360,19 +360,19 @@ func HandlePublishExpressionToZenodoReq(req *protos.PublishExpressionToZenodoReq
 		return nil, err
 	}
 
-	return []*protos.PublishExpressionToZenodoResp{&protos.PublishExpressionToZenodoResp{
+	return &protos.PublishExpressionToZenodoResp{
 		Doi: &metadata,
-	}}, nil
+	}, nil
 }
 
-func HandleZenodoDOIGetReq(req *protos.ZenodoDOIGetReq, hctx wsHelpers.HandlerContext) ([]*protos.ZenodoDOIGetResp, error) {
+func HandleZenodoDOIGetReq(req *protos.ZenodoDOIGetReq, hctx wsHelpers.HandlerContext) (*protos.ZenodoDOIGetResp, error) {
 	metadata := &protos.DOIMetadata{}
 	err := hctx.Svcs.MongoDB.Collection(dbCollections.DOIName).FindOne(context.TODO(), bson.D{{Key: "_id", Value: req.Id}}).Decode(&metadata)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*protos.ZenodoDOIGetResp{&protos.ZenodoDOIGetResp{
+	return &protos.ZenodoDOIGetResp{
 		Doi: metadata,
-	}}, nil
+	}, nil
 }

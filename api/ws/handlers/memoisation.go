@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleMemoiseGetReq(req *protos.MemoiseGetReq, hctx wsHelpers.HandlerContext) ([]*protos.MemoiseGetResp, error) {
+func HandleMemoiseGetReq(req *protos.MemoiseGetReq, hctx wsHelpers.HandlerContext) (*protos.MemoiseGetResp, error) {
 	// Read from DB, if not there, fail. We do limit key sizes though
 	if err := wsHelpers.CheckStringField(&req.Key, "Key", 1, 1024); err != nil {
 		return nil, err
@@ -36,12 +36,12 @@ func HandleMemoiseGetReq(req *protos.MemoiseGetReq, hctx wsHelpers.HandlerContex
 		return nil, err
 	}
 
-	return []*protos.MemoiseGetResp{&protos.MemoiseGetResp{
+	return &protos.MemoiseGetResp{
 		Item: item,
-	}}, nil
+	}, nil
 }
 
-func HandleMemoiseWriteReq(req *protos.MemoiseWriteReq, hctx wsHelpers.HandlerContext) ([]*protos.MemoiseWriteResp, error) {
+func HandleMemoiseWriteReq(req *protos.MemoiseWriteReq, hctx wsHelpers.HandlerContext) (*protos.MemoiseWriteResp, error) {
 	// Here we overwrite freely, but we do limit key sizes though
 	if err := wsHelpers.CheckStringField(&req.Key, "Key", 1, 1024); err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func HandleMemoiseWriteReq(req *protos.MemoiseWriteReq, hctx wsHelpers.HandlerCo
 		hctx.Svcs.Log.Errorf("MemoiseWriteReq for: %v got unexpected DB write result: %+v", req.Key, result)
 	}
 
-	return []*protos.MemoiseWriteResp{&protos.MemoiseWriteResp{
+	return &protos.MemoiseWriteResp{
 		MemoTimeUnixSec: timestamp,
-	}}, nil
+	}, nil
 }

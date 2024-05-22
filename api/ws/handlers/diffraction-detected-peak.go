@@ -8,7 +8,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func HandleDetectedDiffractionPeaksReq(req *protos.DetectedDiffractionPeaksReq, hctx wsHelpers.HandlerContext) ([]*protos.DetectedDiffractionPeaksResp, error) {
+func HandleDetectedDiffractionPeaksReq(req *protos.DetectedDiffractionPeaksReq, hctx wsHelpers.HandlerContext) (*protos.DetectedDiffractionPeaksResp, error) {
 	// Because we're dealing in entry indexes (relative to the scan), we download the dataset.bin file here too
 	// to get the totals, and to look up PMCs from diffraction DB
 	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
@@ -64,7 +64,7 @@ func HandleDetectedDiffractionPeaksReq(req *protos.DetectedDiffractionPeaksReq, 
 		}
 	}
 
-	return []*protos.DetectedDiffractionPeaksResp{&protos.DetectedDiffractionPeaksResp{
+	return &protos.DetectedDiffractionPeaksResp{
 		PeaksPerLocation: diffPerLoc,
-	}}, nil
+	}, nil
 }

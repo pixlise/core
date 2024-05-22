@@ -12,7 +12,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func HandleExportFilesReq(req *protos.ExportFilesReq, hctx wsHelpers.HandlerContext) ([]*protos.ExportFilesResp, error) {
+func HandleExportFilesReq(req *protos.ExportFilesReq, hctx wsHelpers.HandlerContext) (*protos.ExportFilesResp, error) {
 	if len(req.ExportTypes) <= 0 {
 		return nil, errors.New("no export types specified")
 	}
@@ -62,5 +62,5 @@ func HandleExportFilesReq(req *protos.ExportFilesReq, hctx wsHelpers.HandlerCont
 		}
 	}
 
-	return []*protos.ExportFilesResp{&protos.ExportFilesResp{Files: files}}, nil
+	return &protos.ExportFilesResp{Files: files}, nil
 }

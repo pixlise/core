@@ -7,6 +7,6 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func HandleRunTestReq(req *protos.RunTestReq, hctx wsHelpers.HandlerContext) ([]*protos.RunTestResp, error) {
+func HandleRunTestReq(req *protos.RunTestReq, hctx wsHelpers.HandlerContext) (*protos.RunTestResp, error) {
 	return nil, errors.New("HandleRunTestReq not implemented yet")
 }

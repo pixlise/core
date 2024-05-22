@@ -9,7 +9,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) ([]*protos.SpectrumResp, error) {
+func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumResp, error) {
 	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (
 	// the channel count based on the detector here...
 	channelCount := uint32(4096)
 
-	firstResponse := &protos.SpectrumResp{
+	result := &protos.SpectrumResp{
 		SpectraPerLocation:   spectra,
 		ChannelCount:         channelCount,
 		NormalSpectraForScan: uint32(exprPB.NormalSpectra),
@@ -57,7 +57,7 @@ func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (
 
 	for c, label := range exprPB.MetaLabels {
 		if label == "LIVETIME" {
-			firstResponse.LiveTimeMetaIndex = uint32(c)
+			result.LiveTimeMetaIndex = uint32(c)
 			break
 		}
 	}
@@ -69,37 +69,11 @@ func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (
 			return nil, err
 		}
 
-		firstResponse.BulkSpectra = bulkSpectra
-		firstResponse.MaxSpectra = maxSpectra
+		result.BulkSpectra = bulkSpectra
+		result.MaxSpectra = maxSpectra
 	}
 
-	resps := []*protos.SpectrumResp{firstResponse}
-
-	// If we have too many spectra in one message, break it up
-	maxSpectraPerMessage := 10
-	if len(spectra) > maxSpectraPerMessage {
-		// Only add the first X to the first message
-		firstResponse.SpectraPerLocation = spectra[0:maxSpectraPerMessage]
-
-		// Make more messages
-		for c := maxSpectraPerMessage; c < len(spectra); c += maxSpectraPerMessage {
-			end := c + maxSpectraPerMessage
-			if end > len(spectra) {
-				end = len(spectra)
-			}
-
-			subsequentResp := &protos.SpectrumResp{
-				SpectraPerLocation:   spectra[c:end],
-				ChannelCount:         firstResponse.ChannelCount,
-				NormalSpectraForScan: firstResponse.NormalSpectraForScan,
-				DwellSpectraForScan:  firstResponse.DwellSpectraForScan,
-				LiveTimeMetaIndex:    firstResponse.LiveTimeMetaIndex,
-			}
-			resps = append(resps, subsequentResp)
-		}
-	}
-
-	return resps, nil
+	return result, nil
 }
 
 // Returns array of bulk, array of max, error
