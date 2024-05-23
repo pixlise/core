@@ -130,5 +130,16 @@ func makeSummaryFileContent(
 		}
 	}
 
+	// Preserve user-editable fields
+	if prevSavedScan != nil {
+		s.Tags = prevSavedScan.Tags
+		s.Description = prevSavedScan.Description
+
+		if len(prevSavedScan.Description) > 0 {
+			// User has entered a description so perserve the title too
+			s.Title = prevSavedScan.Title
+		}
+	}
+
 	return s
 }
