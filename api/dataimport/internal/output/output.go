@@ -38,6 +38,7 @@ import (
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/gdsfilename"
 	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/scan"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
@@ -361,7 +362,13 @@ func (s *PIXLISEDataSaver) Save(
 		return fmt.Errorf("Failed to get dataset file size for: %v", outFilePath)
 	}
 
-	summaryData := makeSummaryFileContent(&exp, data.DatasetID, data.Instrument, data.Meta, int(fi.Size()), creationUnixTimeSec, data.CreatorUserId)
+	var prevSavedScan *protos.ScanItem
+	if prevSavedScan, err = scan.ReadScanItem(data.DatasetID, db); err != nil {
+		// NOTE: this is largely paranoia, in case ReadScanItem changes and returns errors even on read
+		prevSavedScan = nil
+	}
+
+	summaryData := makeSummaryFileContent(&exp, prevSavedScan, data.DatasetID, data.Instrument, data.Meta /*int(fi.Size()),*/, creationUnixTimeSec, data.CreatorUserId)
 
 	jobLog.Infof("Writing summary to DB for %v...", summaryData.Id)
 

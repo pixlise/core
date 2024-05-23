@@ -3,10 +3,12 @@ package quantification
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/specialUserIds"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -52,6 +54,26 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
 		return
 	}
 
+	exprPB, err := wsHelpers.ReadDatasetFile(scanId, svcs)
+	if err != nil {
+		svcs.Log.Errorf("AutoQuant failed to read scan %v to determine PMC list: %v", scanId, err)
+		return
+	}
+
+	pmcs := []int32{}
+	for _, loc := range exprPB.Locations {
+		pmc, err := strconv.Atoi(loc.Id)
+		if err != nil {
+			svcs.Log.Errorf("AutoQuant: Failed to read PMC %v from scan %v. Skipping...", loc.Id, scanId)
+			continue
+		}
+
+		if len(loc.PseudoIntensities) > 0 && len(loc.PseudoIntensities[0].ElementIntensities) > 0 {
+			// We have quantifiable data for this
+			pmcs = append(pmcs, int32(pmc))
+		}
+	}
+
 	// Start all the quants
 	for c, name := range quantNames {
 		for _, m := range quantModes {
@@ -59,7 +81,7 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
 				Command:        "map",
 				Name:           makeAutoQuantName(name, m),
 				ScanId:         scanId,
-				Pmcs:           []int32{},
+				Pmcs:           pmcs,
 				Elements:       quantElements[c],
 				DetectorConfig: detector,
 				Parameters:     "",
