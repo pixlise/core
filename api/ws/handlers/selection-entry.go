@@ -94,7 +94,7 @@ func writeSelection(id string, idxs *protos.ScanEntryRange, db *mongo.Database, 
 	}
 
 	// Modified and Upsert counts will be 0 if the selection hasn't changed, so we just check matched
-	if dbResult.MatchedCount != 1 {
+	if dbResult.MatchedCount != 1 && dbResult.UpsertedCount != 1 {
 		logger.Errorf("writeSelection (%v) UpdateByID result had unexpected counts %+v", id, dbResult)
 	}
 
