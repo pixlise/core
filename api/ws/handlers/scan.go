@@ -15,6 +15,7 @@ import (
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
+	"github.com/pixlise/core/v4/api/quantification"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
@@ -707,4 +708,14 @@ func HandleScanAutoShareWriteReq(req *protos.ScanAutoShareWriteReq, hctx wsHelpe
 	}
 
 	return &protos.ScanAutoShareWriteResp{}, nil
+}
+
+func HandleScanTriggerAutoQuantReq(req *protos.ScanTriggerAutoQuantReq, hctx wsHelpers.HandlerContext) (*protos.ScanTriggerAutoQuantResp, error) {
+	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+
+	quantification.RunAutoQuantifications(req.ScanId, hctx.Svcs)
+
+	return &protos.ScanTriggerAutoQuantResp{}, nil
 }
