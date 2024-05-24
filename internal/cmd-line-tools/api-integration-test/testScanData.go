@@ -1593,7 +1593,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 	// Check that the file was created
 	exists, err := apiStorageFileAccess.ObjectExists(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-width200.png")
 	failIf(err != nil, fmt.Errorf("Failed to check generated GET thumbnail exists: %v", err))
-	failIf(!exists, fmt.Errorf("generated GET thumbnail not found in Image-Cache/"))
+	failIf(!exists, fmt.Errorf("generated GET thumbnail not found in Image-Cache/ width 200"))
 
 	// Now run it again, because this time it should be using the cached copy
 	testImageGetScaled_OK(apiHost, imageGetJWT, 12, 200, 154)
@@ -1607,7 +1607,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 	// Check that the file was created
 	exists, err = apiStorageFileAccess.ObjectExists(apiDatasetBucket, "Image-Cache/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02-width400.png")
 	failIf(err != nil, fmt.Errorf("Failed to check generated GET thumbnail exists: %v", err))
-	failIf(!exists, fmt.Errorf("generated GET thumbnail not found in Image-Cache/"))
+	failIf(!exists, fmt.Errorf("generated GET thumbnail not found in Image-Cache/ width 400"))
 
 	// Now run it again, because this time it should be using the cached copy
 	testImageGetScaled_OK(apiHost, imageGetJWT, 450, 400, 308)
