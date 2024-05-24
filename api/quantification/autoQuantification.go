@@ -25,9 +25,12 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
 	quantNames := []string{"AutoQuant-PDS", "AutoQuant-PIXL"}
 	quantModes := []string{quantModeCombinedAB, quantModeSeparateAB}
 	quantElements := [][]string{
-		// PDS
-		[]string{"Na2O", "MgO", "Al2O3", "SiO2", "P2O5", "SO3", "Cl", "K2O", "CaO", "TiO2", "Cr2O3", "MnO", "FeO-T", "NiO", "ZnO", "Br"},
-		[]string{"Na2O", "MgO", "Al2O3", "SiO2", "P2O5", "SO3", "Cl", "K2O", "CaO", "TiO2", "Cr2O3", "MnO", "FeO-T", "NiO", "ZnO", "GeO", "Br", "Rb2O", "SrO", "Y2O3", "ZrO2"},
+		// PDS: intended "Na2O", "MgO", "Al2O3", "SiO2", "P2O5", "SO3", "Cl", "K2O", "CaO", "TiO2", "Cr2O3", "MnO", "FeO-T", "NiO", "ZnO", "Br"
+		// But we must specify elements only! Expecting PIQUANT to determine the oxide states to write
+		[]string{"Na", "Mg", "Al", "Si", "P", "S", "Cl", "K", "Ca", "Ti", "Cr", "Mn", "Fe", "Ni", "Zn", "Br"},
+		// PIXL: intended "Na2O", "MgO", "Al2O3", "SiO2", "P2O5", "SO3", "Cl", "K2O", "CaO", "TiO2", "Cr2O3", "MnO", "FeO-T", "NiO", "ZnO", "GeO", "Br", "Rb2O", "SrO", "Y2O3", "ZrO2"
+		// But we must specify elements only! Expecting PIQUANT to determine the oxide states to write
+		[]string{"Na", "Mg", "Al", "Si", "P", "S", "Cl", "K", "Ca", "Ti", "Cr", "Mn", "Fe", "Ni", "Zn", "Ge", "Br", "Rb", "Sr", "Y", "Zr"},
 	}
 	detector := "PIXL/PiquantConfigs/v7"
 
