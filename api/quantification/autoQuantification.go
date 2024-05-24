@@ -29,7 +29,7 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
 		[]string{"Na2O", "MgO", "Al2O3", "SiO2", "P2O5", "SO3", "Cl", "K2O", "CaO", "TiO2", "Cr2O3", "MnO", "FeO-T", "NiO", "ZnO", "Br"},
 		[]string{"Na2O", "MgO", "Al2O3", "SiO2", "P2O5", "SO3", "Cl", "K2O", "CaO", "TiO2", "Cr2O3", "MnO", "FeO-T", "NiO", "ZnO", "GeO", "Br", "Rb2O", "SrO", "Y2O3", "ZrO2"},
 	}
-	detector := "PIXL/v7"
+	detector := "PIXL/PiquantConfigs/v7"
 
 	allNames := []string{}
 	for _, name := range quantNames {
