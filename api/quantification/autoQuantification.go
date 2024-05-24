@@ -87,7 +87,7 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
 				Pmcs:           pmcs,
 				Elements:       quantElements[c],
 				DetectorConfig: detector,
-				Parameters:     "",
+				Parameters:     "-Fe,1",
 				RunTimeSec:     300,
 				QuantMode:      m,
 				RoiIDs:         []string{},
