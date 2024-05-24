@@ -234,6 +234,7 @@ func printArchiveOKLogOutput(logger *logger.StdOutLoggerForTest, db *mongo.Datab
 	}
 	// Clear the time stamp so it doesn't change next time we run test
 	summary.TimestampUnixSec = 0
+	summary.CompleteTimeStampUnixSec = 0
 
 	b, err := protojson.Marshal(summary)
 	if err != nil {
@@ -390,6 +391,7 @@ func printManualOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database,
 	} else {
 		// Clear the time stamp so it doesn't change next time we run test
 		summary.TimestampUnixSec = 0
+		summary.CompleteTimeStampUnixSec = 0
 	}
 
 	b, err := protojson.Marshal(summary)

@@ -27,10 +27,11 @@ import (
 
 func makeSummaryFileContent(
 	exp *protos.Experiment,
+	prevSavedScan *protos.ScanItem,
 	datasetID string,
 	sourceInstrument protos.ScanInstrument,
 	meta dataConvertModels.FileMetaData,
-	fileSize int,
+	//fileSize int,
 	creationUnixTimeSec int64,
 	creatorUserId string) *protos.ScanItem {
 	contextImgCount := len(exp.AlignedContextImages) + len(exp.UnalignedContextImages) + len(exp.MatchedAlignedContextImages)
@@ -93,16 +94,52 @@ func makeSummaryFileContent(
 	// what it's displaying
 
 	s := &protos.ScanItem{
-		Id:               datasetID,
-		Title:            meta.Title,
-		Description:      "",
-		DataTypes:        dataTypes,
-		Instrument:       sourceInstrument,
-		InstrumentConfig: exp.DetectorConfig,
-		TimestampUnixSec: uint32(creationUnixTimeSec),
-		Meta:             saveMeta,
-		ContentCounts:    contentCounts,
-		CreatorUserId:    creatorUserId,
+		Id:                         datasetID,
+		Title:                      meta.Title,
+		Description:                "",
+		DataTypes:                  dataTypes,
+		Instrument:                 sourceInstrument,
+		InstrumentConfig:           exp.DetectorConfig,
+		TimestampUnixSec:           uint32(creationUnixTimeSec),
+		Meta:                       saveMeta,
+		ContentCounts:              contentCounts,
+		CreatorUserId:              creatorUserId,
+		PreviousImportTimesUnixSec: []uint32{},
 	}
+
+	// If we've got a previously stored ScanItem, we are updating it, so read its time stamp into the array of previous time stamps
+	isComplete := exp.NormalSpectra == exp.PseudoIntensities*2
+
+	if prevSavedScan != nil {
+		// Build the list of previous import times
+		// Preserve the previous list...
+		s.PreviousImportTimesUnixSec = append(s.PreviousImportTimesUnixSec, prevSavedScan.PreviousImportTimesUnixSec...)
+
+		// Add new time at the end
+		s.PreviousImportTimesUnixSec = append(s.PreviousImportTimesUnixSec, prevSavedScan.TimestampUnixSec)
+	}
+
+	// Save a time stamp for completion
+	if isComplete {
+		// If previous scan was also complete, DON'T update the time stamp, just preserve it
+		if prevSavedScan != nil && prevSavedScan.CompleteTimeStampUnixSec > 0 {
+			s.CompleteTimeStampUnixSec = prevSavedScan.CompleteTimeStampUnixSec
+		} else {
+			// We must've just completed now, so save the time
+			s.CompleteTimeStampUnixSec = uint32(creationUnixTimeSec)
+		}
+	}
+
+	// Preserve user-editable fields
+	if prevSavedScan != nil {
+		s.Tags = prevSavedScan.Tags
+		s.Description = prevSavedScan.Description
+
+		if len(prevSavedScan.Description) > 0 {
+			// User has entered a description so perserve the title too
+			s.Title = prevSavedScan.Title
+		}
+	}
+
 	return s
 }
