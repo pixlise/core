@@ -85,7 +85,7 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
 				Elements:       quantElements[c],
 				DetectorConfig: detector,
 				Parameters:     "",
-				RunTimeSec:     0,
+				RunTimeSec:     300,
 				QuantMode:      m,
 				RoiIDs:         []string{},
 				IncludeDwells:  false,
