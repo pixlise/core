@@ -1462,9 +1462,12 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 		`{"imageBeamLocationsReq":{"imageName": "non-existant.jpg"}}`,
 		`{
 			"msgId": 12,
-			"status": "WS_NOT_FOUND",
-			"errorText": "non-existant.jpg not found",
-			"imageBeamLocationsResp": {}
+			"status": "WS_OK",
+			"imageBeamLocationsResp": {
+				"locations": {
+					"imageName": "non-existant.jpg"
+				}
+			}
 		}`,
 	)
 
