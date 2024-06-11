@@ -388,23 +388,23 @@ func (r *quantNodeRunner) triggerPiquantNodes(wg *sync.WaitGroup) {
 	}
 
 	// If we've got a special import that's done by the internal user, we read the owner entry from DB scan auto share table (ScanAutoShareName)
-	var ownerItem *protos.OwnershipItem
+	ownerItem := wsHelpers.MakeOwnerForWrite(r.jobId, protos.ObjectType_OT_QUANTIFICATION, r.quantStartSettings.RequestorUserId, now)
 	if r.quantStartSettings.RequestorUserId == specialUserIds.PIXLISESystemUserId {
 		coll := svcs.MongoDB.Collection(dbCollections.ScanAutoShareName)
 		autoShareResult := coll.FindOne(context.TODO(), bson.D{{Key: "_id", Value: r.quantStartSettings.RequestorUserId}}, options.FindOne())
 		if autoShareResult.Err() != nil {
 			svcs.Log.Errorf("Failed to read auto-share info for quantification triggered by %v. Quant won't be shared", r.quantStartSettings.RequestorUserId)
 		} else {
-			err := autoShareResult.Decode(ownerItem)
+			autoEntry := &protos.ScanAutoShareEntry{}
+			err := autoShareResult.Decode(autoEntry)
 			if err != nil {
 				svcs.Log.Errorf("Failed to decode auto-share info for quantification triggered by %v: %v", r.quantStartSettings.RequestorUserId, err)
-				ownerItem = nil
+			} else {
+				svcs.Log.Errorf("Found scan auto-share entry for quantification requestor \"%v\". Sharing accordingly.", r.quantStartSettings.RequestorUserId)
+				ownerItem.Viewers = autoEntry.Viewers
+				ownerItem.Editors = autoEntry.Editors
 			}
 		}
-	}
-
-	if ownerItem == nil {
-		ownerItem = wsHelpers.MakeOwnerForWrite(r.jobId, protos.ObjectType_OT_QUANTIFICATION, r.quantStartSettings.RequestorUserId, now)
 	}
 
 	err = writeQuantAndOwnershipToDB(summary, ownerItem, svcs.MongoDB)
