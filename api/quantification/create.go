@@ -18,6 +18,7 @@
 package quantification
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -25,16 +26,20 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/api/piquant"
 	"github.com/pixlise/core/v4/api/quantification/quantRunner"
 	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/api/specialUserIds"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // JobParamsFileName - File name of job params file
@@ -382,7 +387,25 @@ func (r *quantNodeRunner) triggerPiquantNodes(wg *sync.WaitGroup) {
 		},
 	}
 
+	// If we've got a special import that's done by the internal user, we read the owner entry from DB scan auto share table (ScanAutoShareName)
 	ownerItem := wsHelpers.MakeOwnerForWrite(r.jobId, protos.ObjectType_OT_QUANTIFICATION, r.quantStartSettings.RequestorUserId, now)
+	if r.quantStartSettings.RequestorUserId == specialUserIds.PIXLISESystemUserId {
+		coll := svcs.MongoDB.Collection(dbCollections.ScanAutoShareName)
+		autoShareResult := coll.FindOne(context.TODO(), bson.D{{Key: "_id", Value: r.quantStartSettings.RequestorUserId}}, options.FindOne())
+		if autoShareResult.Err() != nil {
+			svcs.Log.Errorf("Failed to read auto-share info for quantification triggered by %v. Quant won't be shared", r.quantStartSettings.RequestorUserId)
+		} else {
+			autoEntry := &protos.ScanAutoShareEntry{}
+			err := autoShareResult.Decode(autoEntry)
+			if err != nil {
+				svcs.Log.Errorf("Failed to decode auto-share info for quantification triggered by %v: %v", r.quantStartSettings.RequestorUserId, err)
+			} else {
+				svcs.Log.Errorf("Found scan auto-share entry for quantification requestor \"%v\". Sharing accordingly.", r.quantStartSettings.RequestorUserId)
+				ownerItem.Viewers = autoEntry.Viewers
+				ownerItem.Editors = autoEntry.Editors
+			}
+		}
+	}
 
 	err = writeQuantAndOwnershipToDB(summary, ownerItem, svcs.MongoDB)
 	if err != nil {

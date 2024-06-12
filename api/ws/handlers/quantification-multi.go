@@ -11,6 +11,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Anyone can retrieve a quant z-stack if they have quant messaging permissions
@@ -65,13 +66,15 @@ func HandleQuantCombineListWriteReq(req *protos.QuantCombineListWriteReq, hctx w
 		List:   req.List,
 	}
 
-	result, err := coll.InsertOne(ctx, doc)
+	opt := options.Update().SetUpsert(true)
+
+	result, err := coll.UpdateByID(ctx, zId, bson.D{{Key: "$set", Value: doc}}, opt)
 	if err != nil {
 		return nil, err
 	}
 
-	if result.InsertedID != zId {
-		hctx.Svcs.Log.Errorf("MultiQuant Z-Stack insert %v inserted different id %v", zId, result.InsertedID)
+	if result.UpsertedCount != 1 {
+		hctx.Svcs.Log.Errorf("MultiQuant Z-Stack write for: %v got unexpected DB write result: %+v", req.ScanId, result)
 	}
 
 	return &protos.QuantCombineListWriteResp{}, nil
