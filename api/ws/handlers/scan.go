@@ -305,7 +305,7 @@ func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHel
 		hctx.Svcs.MongoDB,
 	}
 
-	jobStatus, err := job.AddJob("reimport", protos.JobStatus_JT_REIMPORT_SCAN, req.ScanId, uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendReimportUpdate)
+	jobStatus, err := job.AddJob("reimport", hctx.SessUser.User.Id, protos.JobStatus_JT_REIMPORT_SCAN, req.ScanId, uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendReimportUpdate)
 	jobId := ""
 	if jobStatus != nil {
 		jobId = jobStatus.JobId
@@ -544,7 +544,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	}
 
 	// Add a job watcher for this
-	jobStatus, err := job.AddJob("import", protos.JobStatus_JT_IMPORT_SCAN, datasetID, uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendImportUpdate)
+	jobStatus, err := job.AddJob("import", hctx.SessUser.User.Id, protos.JobStatus_JT_IMPORT_SCAN, datasetID, uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendImportUpdate)
 	jobId := ""
 	if jobStatus != nil {
 		jobId = jobStatus.JobId

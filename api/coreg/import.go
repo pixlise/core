@@ -39,7 +39,7 @@ func StartCoregImport(triggerUrl string, hctx wsHelpers.HandlerContext) (string,
 
 	// Start an image coreg import job (this is a Lambda function)
 	// Once it completes, we have the data we need, so we can treat it as a "normal" image importing task
-	jobStatus, err := job.AddJob("coreg", protos.JobStatus_JT_IMPORT_IMAGE, triggerUrl, uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendUpdate)
+	jobStatus, err := job.AddJob("coreg", hctx.SessUser.User.Id, protos.JobStatus_JT_IMPORT_IMAGE, triggerUrl, uint32(hctx.Svcs.Config.ImportJobMaxTimeSec), hctx.Svcs.MongoDB, hctx.Svcs.IDGen, hctx.Svcs.TimeStamper, hctx.Svcs.Log, i.sendUpdate)
 	jobId := ""
 	if jobStatus != nil {
 		jobId = jobStatus.JobId
