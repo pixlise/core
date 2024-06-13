@@ -106,6 +106,11 @@ func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) (
 		return nil, err
 	}
 
+	for _, scan := range scans {
+		owner := idToOwner[scan.Id]
+		scan.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	}
+
 	return &protos.ScanListResp{
 		Scans: scans,
 	}, nil
