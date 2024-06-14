@@ -22,11 +22,14 @@ var activeJobLock = sync.Mutex{}
 // Expected to be called by API to create the initial record of a job. It can then trigger it however it needs to
 // (eg AWS lambda or running PIQUANT nodes) and this sticks around monitoring the DB entry for changes, calling
 // the sendUpdate callback function on change. Returns the snapshot of the "added" job that was saved
+
 func AddJob(
 	idPrefix string,
 	requestorUserId string,
 	jobType protos.JobStatus_JobType,
 	jobItemId string,
+	jobName string,
+	elementList []string, // optional, only set if it's a quant!
 	jobTimeoutSec uint32,
 	db *mongo.Database,
 	idgen idgen.IDGenerator,
@@ -50,6 +53,8 @@ func AddJob(
 		OtherLogFiles:    []string{},
 		JobType:          jobType,
 		JobItemId:        jobItemId,
+		Name:             jobName,
+		Elements:         elementList,
 	}
 
 	if _, ok := activeJobs[jobId]; ok {
