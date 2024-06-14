@@ -49,6 +49,12 @@ func HandleQuantGetReq(req *protos.QuantGetReq, hctx wsHelpers.HandlerContext) (
 		}
 	}
 
+	// We seem to have some old quants where the status struct says start time was 0, but there is another start time in quant params, so
+	// substitute a non-zero value in this case
+	if dbItem.Status.StartUnixTimeSec == 0 && dbItem.Params.StartUnixTimeSec > 0 {
+		dbItem.Status.StartUnixTimeSec = dbItem.Params.StartUnixTimeSec
+	}
+
 	dbItem.Owner = wsHelpers.MakeOwnerSummary(ownerItem, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 
 	return &protos.QuantGetResp{

@@ -378,12 +378,17 @@ func (r *quantNodeRunner) triggerPiquantNodes(wg *sync.WaitGroup) {
 		Params:   r.quantStartSettings,
 		Elements: elements,
 		Status: &protos.JobStatus{
-			JobId:          r.jobId,
-			Status:         protos.JobStatus_COMPLETE,
-			Message:        completeMsg,
-			EndUnixTimeSec: uint32(now),
-			OutputFilePath: quantOutPath,
-			OtherLogFiles:  piquantLogList,
+			JobId:            r.jobId,
+			JobItemId:        r.jobId,
+			Status:           protos.JobStatus_COMPLETE,
+			Message:          completeMsg,
+			StartUnixTimeSec: r.quantStartSettings.StartUnixTimeSec,
+			EndUnixTimeSec:   uint32(now),
+			OutputFilePath:   quantOutPath,
+			OtherLogFiles:    piquantLogList,
+			Name:             r.quantStartSettings.UserParams.Name,
+			Elements:         r.quantStartSettings.UserParams.Elements,
+			RequestorUserId:  r.quantStartSettings.RequestorUserId,
 		},
 	}
 
