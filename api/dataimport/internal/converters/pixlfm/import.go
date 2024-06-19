@@ -358,7 +358,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		datasetIDExpected,
 		p.overrideInstrument,
 		p.overrideDetector,
-		1, // TODO: Retrieve beam version and set it here!
+		2, // TODO: Retrieve beam version and set it here!
 		log,
 	)
 
