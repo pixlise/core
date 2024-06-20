@@ -41,11 +41,11 @@ func ImportBeamLocationToDB(imgName string, instrument protos.ScanInstrument, fo
 		// We've read what's already there, ensure that the version we're writing doesn't exist!
 		locs := []*protos.ImageLocationsForScan{}
 		for _, beamItem := range beams.LocationPerScan {
-			if beamItem.BeamVersion != beamVersion {
+			if beamItem.ScanId != forScanId || beamItem.BeamVersion != beamVersion {
 				locs = append(locs, beamItem)
-				logger.Infof("Existing beam version %v for image %v will be preserved", beamVersion, imgName)
+				logger.Infof("Existing beam version %v for image %v/scan id %v will be preserved", beamVersion, imgName, beamItem.ScanId)
 			} else {
-				logger.Infof("Detected existing beam version %v for image %v. This will be replaced by the newly imported one", beamVersion, imgName)
+				logger.Infof("Detected existing beam version %v for image %v/scan id %v. This will be replaced by the newly imported one", beamVersion, beamItem.ScanId, imgName)
 			}
 		}
 

@@ -141,3 +141,46 @@ func generateIJs(imageName string, scanId string, instrument protos.ScanInstrume
 
 	return &locs, nil
 }
+
+func HandleImageBeamLocationVersionsReq(req *protos.ImageBeamLocationVersionsReq, hctx wsHelpers.HandlerContext) (*protos.ImageBeamLocationVersionsResp, error) {
+	ctx := context.TODO()
+
+	if err := wsHelpers.CheckStringField(&req.ImageName, "ImageName", 1, 255); err != nil {
+		return nil, err
+	}
+
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
+	vers := map[string]*protos.ImageBeamLocationVersionsResp_AvailableVersions{}
+
+	// Read the image and check that the user has access to all scans associated with it
+	result := coll.FindOne(ctx, bson.M{"_id": req.ImageName})
+	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			// If there are no beam locations, don't return an error, just return a message with no items in it
+			return &protos.ImageBeamLocationVersionsResp{
+				BeamVersionPerScan: vers,
+			}, nil
+		}
+		return nil, result.Err()
+	}
+
+	var locs *protos.ImageLocations
+	err := result.Decode(&locs)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, locPerScan := range locs.LocationPerScan {
+		var availVersions *protos.ImageBeamLocationVersionsResp_AvailableVersions = vers[locPerScan.ScanId]
+		if availVersions == nil {
+			availVersions = &protos.ImageBeamLocationVersionsResp_AvailableVersions{Versions: []uint32{}}
+			vers[locPerScan.ScanId] = availVersions
+		}
+
+		availVersions.Versions = append(availVersions.Versions, locPerScan.BeamVersion)
+	}
+
+	return &protos.ImageBeamLocationVersionsResp{
+		BeamVersionPerScan: vers,
+	}, nil
+}
