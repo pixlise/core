@@ -19,10 +19,12 @@ package pixlfm
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 	"github.com/pixlise/core/v4/api/dataimport/internal/importerutils"
@@ -118,6 +120,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 
 	// Allocate everything needed (empty, if we find & load stuff, great, but we still need the data struct for the last step)
 	beamLookup := dataConvertModels.BeamLocationByPMC{}
+	beamToolVersion := 0
 	hkData := dataConvertModels.HousekeepingData{}
 	locSpectraLookup := dataConvertModels.DetectorSampleByPMC{}
 	bulkMaxSpectraLookup := dataConvertModels.DetectorSampleByPMC{}
@@ -214,10 +217,37 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 			for file, beamCsvMeta := range latestVersionFoundPaths {
 				if beamCsvMeta.ProdType == "RXL" {
 					// If files don't conform, don't read...
-					beamLookup, err = importerutils.ReadBeamLocationsFile(filepath.Join(pathToSubdir, file), true, 1, log)
+					beamFilePath := filepath.Join(pathToSubdir, file)
+					beamLookup, err = importerutils.ReadBeamLocationsFile(beamFilePath, true, 1, log)
 					if err != nil {
 						return nil, "", err
 					} else {
+						// Import worked, find out what version of the beam geometry tool generated this by looking in the LBL file
+						lblPath := beamFilePath[0:len(beamFilePath)-3] + "LBL"
+						lblFileBytes, err := os.ReadFile(lblPath)
+						if err != nil {
+							return nil, "", fmt.Errorf("Failed to read LBL file: %v. Beam geometry version could not be determined.", lblPath)
+							//log.Errorf("Beam location LBL file (%v) could not be read. Beam Version version is assumed to be: %v", lblPath, beamToolVersion)
+						} else {
+							// Read each line and find the beam geometry version
+							lblLines := strings.Split(string(lblFileBytes), "\n")
+							searchStr := "Beam Geometry Tool Version "
+
+							for _, line := range lblLines {
+								if pos := strings.Index(line, searchStr); pos > -1 {
+									verPos := pos + len(searchStr)
+
+									log.Infof("Beam Geometry Tool version text found: %v", line[verPos:])
+
+									verChar := line[verPos : verPos+1]
+									r, _ := utf8.DecodeRuneInString(verChar)
+									beamToolVersion = int(r) - '0'
+									log.Infof("Saving as beam geometry tool version: %v", beamToolVersion)
+									break
+								}
+							}
+						}
+
 						// Found it, why keep looping?
 						break
 					}
@@ -358,7 +388,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		datasetIDExpected,
 		p.overrideInstrument,
 		p.overrideDetector,
-		2, // TODO: Retrieve beam version and set it here!
+		uint32(beamToolVersion),
 		log,
 	)
 
