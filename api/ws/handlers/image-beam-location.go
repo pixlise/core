@@ -87,6 +87,9 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 			dbScanIds[scanLocs.ScanId] = true
 		}
 		scanBeamVersionsToReturn := req.ScanBeamVersions
+		if scanBeamVersionsToReturn == nil {
+			scanBeamVersionsToReturn = map[string]uint32{}
+		}
 
 		// If they didn't specify versions to return, return the latest version for each scan represented
 		if len(scanBeamVersionsToReturn) <= 0 {
