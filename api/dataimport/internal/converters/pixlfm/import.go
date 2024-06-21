@@ -19,7 +19,6 @@ package pixlfm
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -226,8 +225,9 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 						lblPath := beamFilePath[0:len(beamFilePath)-3] + "LBL"
 						lblFileBytes, err := os.ReadFile(lblPath)
 						if err != nil {
-							return nil, "", fmt.Errorf("Failed to read LBL file: %v. Beam geometry version could not be determined.", lblPath)
-							//log.Errorf("Beam location LBL file (%v) could not be read. Beam Version version is assumed to be: %v", lblPath, beamToolVersion)
+							//return nil, "", fmt.Errorf("Failed to read LBL file: %v. Beam geometry version could not be determined.", lblPath)
+							beamToolVersion = 2 // If we don't have an LBL file but it's a "recent" copy of the data, it has to be using beam geometry v2...
+							log.Errorf("WARNING: Beam location LBL file (%v) could not be read. Beam Version version is assumed to be: %v", filepath.Base(lblPath), beamToolVersion)
 						} else {
 							// Read each line and find the beam geometry version
 							lblLines := strings.Split(string(lblFileBytes), "\n")
