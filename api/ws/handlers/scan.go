@@ -106,6 +106,11 @@ func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) (
 		return nil, err
 	}
 
+	for _, scan := range scans {
+		owner := idToOwner[scan.Id]
+		scan.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+	}
+
 	return &protos.ScanListResp{
 		Scans: scans,
 	}, nil
@@ -254,7 +259,7 @@ func HandleScanMetaWriteReq(req *protos.ScanMetaWriteReq, hctx wsHelpers.Handler
 	if err := wsHelpers.CheckStringField(&req.Title, "Title", 1, 100); err != nil {
 		return nil, err
 	}
-	if err := wsHelpers.CheckStringField(&req.Description, "Description", 1, 600); err != nil {
+	if err := wsHelpers.CheckStringField(&req.Description, "Description", 0, 30000); err != nil {
 		return nil, err
 	}
 	if err := wsHelpers.CheckFieldLength(req.Tags, "Tags", 0, 10); err != nil {

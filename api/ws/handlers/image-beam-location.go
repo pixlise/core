@@ -21,7 +21,10 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 	// If we have generateForScanId set, we don't want to have an image name!
 	if len(req.GenerateForScanId) > 0 {
 		if len(req.ImageName) > 0 {
-			return nil, errorwithstatus.MakeBadRequestError(errors.New("Expected empty image name for request with GenerateForScanId set"))
+			return nil, errorwithstatus.MakeBadRequestError(errors.New("Expected empty imageName for request with GenerateForScanId set"))
+		}
+		if len(req.ScanBeamVersions) > 0 {
+			return nil, errorwithstatus.MakeBadRequestError(errors.New("Expected empty scanBeamVersions for request with GenerateForScanId set"))
 		}
 
 		// Check user has access to this scan
@@ -68,17 +71,70 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 			return nil, result.Err()
 		}
 
-		err := result.Decode(&locs)
+		var dbLocs *protos.ImageLocations
+		err := result.Decode(&dbLocs)
 		if err != nil {
 			return nil, err
 		}
 
-		if len(locs.LocationPerScan) <= 0 {
+		if len(dbLocs.LocationPerScan) <= 0 {
 			return nil, fmt.Errorf("No beams defined for image: %v", req.ImageName)
 		}
 
-		for _, scanLocs := range locs.LocationPerScan {
-			_, err := wsHelpers.CheckObjectAccess(false, scanLocs.ScanId, protos.ObjectType_OT_SCAN, hctx)
+		// Build list of unique scans so we don't run the object access check
+		dbScanIds := map[string]bool{}
+		for _, scanLocs := range dbLocs.LocationPerScan {
+			dbScanIds[scanLocs.ScanId] = true
+		}
+		scanBeamVersionsToReturn := req.ScanBeamVersions
+		if scanBeamVersionsToReturn == nil {
+			scanBeamVersionsToReturn = map[string]uint32{}
+		}
+
+		// If they didn't specify versions to return, return the latest version for each scan represented
+		if len(scanBeamVersionsToReturn) <= 0 {
+			for _, scanLocs := range dbLocs.LocationPerScan {
+				// Add to map if it doesn't exist yet
+				if ver, ok := scanBeamVersionsToReturn[scanLocs.ScanId]; !ok {
+					scanBeamVersionsToReturn[scanLocs.ScanId] = scanLocs.BeamVersion
+				} else {
+					// Check if this beam version is larger
+					if scanLocs.BeamVersion > ver {
+						scanBeamVersionsToReturn[scanLocs.ScanId] = scanLocs.BeamVersion
+					}
+				}
+			}
+		}
+
+		// Run through what we're planning to return and make sure user has access while building the result list
+		locs = &protos.ImageLocations{
+			ImageName:       dbLocs.ImageName,
+			LocationPerScan: []*protos.ImageLocationsForScan{},
+		}
+
+		// Return the specified scan/beam versions
+		for scan, ver := range scanBeamVersionsToReturn {
+			if !dbScanIds[scan] {
+				return nil, fmt.Errorf("No beams defined for image: %v and scan: %v", req.ImageName, scan)
+			}
+
+			// This is a valid scan choice, now make sure the version requested exists
+			verFound := false
+			for _, scanLocs := range dbLocs.LocationPerScan {
+				if scanLocs.ScanId == scan && scanLocs.BeamVersion == ver {
+					verFound = true
+					locs.LocationPerScan = append(locs.LocationPerScan, scanLocs)
+					break
+				}
+			}
+
+			if !verFound {
+				return nil, fmt.Errorf("No beams defined for image: %v and scan: %v with version: %v", req.ImageName, scan, ver)
+			}
+		}
+
+		for scanId, _ := range scanBeamVersionsToReturn {
+			_, err := wsHelpers.CheckObjectAccess(false, scanId, protos.ObjectType_OT_SCAN, hctx)
 			if err != nil {
 				return nil, err
 			}
@@ -140,4 +196,47 @@ func generateIJs(imageName string, scanId string, instrument protos.ScanInstrume
 	}
 
 	return &locs, nil
+}
+
+func HandleImageBeamLocationVersionsReq(req *protos.ImageBeamLocationVersionsReq, hctx wsHelpers.HandlerContext) (*protos.ImageBeamLocationVersionsResp, error) {
+	ctx := context.TODO()
+
+	if err := wsHelpers.CheckStringField(&req.ImageName, "ImageName", 1, 255); err != nil {
+		return nil, err
+	}
+
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
+	vers := map[string]*protos.ImageBeamLocationVersionsResp_AvailableVersions{}
+
+	// Read the image and check that the user has access to all scans associated with it
+	result := coll.FindOne(ctx, bson.M{"_id": req.ImageName})
+	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			// If there are no beam locations, don't return an error, just return a message with no items in it
+			return &protos.ImageBeamLocationVersionsResp{
+				BeamVersionPerScan: vers,
+			}, nil
+		}
+		return nil, result.Err()
+	}
+
+	var locs *protos.ImageLocations
+	err := result.Decode(&locs)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, locPerScan := range locs.LocationPerScan {
+		var availVersions *protos.ImageBeamLocationVersionsResp_AvailableVersions = vers[locPerScan.ScanId]
+		if availVersions == nil {
+			availVersions = &protos.ImageBeamLocationVersionsResp_AvailableVersions{Versions: []uint32{}}
+			vers[locPerScan.ScanId] = availVersions
+		}
+
+		availVersions.Versions = append(availVersions.Versions, locPerScan.BeamVersion)
+	}
+
+	return &protos.ImageBeamLocationVersionsResp{
+		BeamVersionPerScan: vers,
+	}, nil
 }
