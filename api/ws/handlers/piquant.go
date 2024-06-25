@@ -103,7 +103,7 @@ func HandlePiquantWriteCurrentVersionReq(req *protos.PiquantWriteCurrentVersionR
 		return nil, err
 	}
 
-	if result.MatchedCount != 1 {
+	if result.MatchedCount != 1 && result.UpsertedCount != 1 {
 		hctx.Svcs.Log.Errorf("PiquantWriteCurrentVersionReq UpdateByID result had unexpected counts %+v", result)
 	}
 
