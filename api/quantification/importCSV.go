@@ -97,12 +97,16 @@ func ImportQuantCSV(
 		},
 		Elements: elements,
 		Status: &protos.JobStatus{
-			JobId:          quantId,
-			Status:         protos.JobStatus_COMPLETE,
-			Message:        csvOrigin + " quantification processed",
-			OtherLogFiles:  []string{},
-			EndUnixTimeSec: uint32(ownerItem.CreatedUnixSec),
-			OutputFilePath: quantOutPath,
+			JobId:            quantId,
+			JobItemId:        quantId,
+			Status:           protos.JobStatus_COMPLETE,
+			Message:          csvOrigin + " quantification processed",
+			OtherLogFiles:    []string{},
+			EndUnixTimeSec:   uint32(ownerItem.CreatedUnixSec),
+			OutputFilePath:   quantOutPath,
+			StartUnixTimeSec: uint32(ownerItem.CreatedUnixSec),
+			Name:             quantName,
+			Elements:         elements,
 		},
 	}
 

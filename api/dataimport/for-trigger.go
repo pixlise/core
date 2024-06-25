@@ -28,6 +28,7 @@ import (
 	"github.com/pixlise/core/v4/api/dataimport/internal/datasetArchive"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/job"
+	"github.com/pixlise/core/v4/api/specialUserIds"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/timestamper"
@@ -183,6 +184,7 @@ func completeJobState(jobId string, success bool, scanId string, message string,
 				EndUnixTimeSec:        now,
 				OutputFilePath:        outputFilePath,
 				OtherLogFiles:         otherLogFiles,
+				RequestorUserId:       specialUserIds.PIXLISESystemUserId, // We don't have a requestor ID to write, we're an auto import
 			}
 
 			insertResult, err := coll.InsertOne(ctx, jobStatus, opt)
