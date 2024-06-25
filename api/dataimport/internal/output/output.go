@@ -364,7 +364,7 @@ func (s *PIXLISEDataSaver) Save(
 		prevSavedScan = nil
 	}
 
-	summaryData := makeSummaryFileContent(&exp, prevSavedScan, data.DatasetID, data.Instrument, data.Meta /*int(fi.Size()),*/, creationUnixTimeSec, data.CreatorUserId)
+	summaryData := makeSummaryFileContent(&exp, prevSavedScan, data.DatasetID, data.Instrument, data.Meta /*int(fi.Size()),*/, creationUnixTimeSec, data.CreatorUserId, jobLog)
 
 	jobLog.Infof("Writing summary to DB for %v...", summaryData.Id)
 
@@ -376,8 +376,8 @@ func (s *PIXLISEDataSaver) Save(
 	if err != nil {
 		jobLog.Errorf("Failed to write summary to DB: %v", err)
 		return err
-	} else if result.UpsertedCount != 1 {
-		jobLog.Errorf("Expected summary write to create 1 upsert, got: %v", result.UpsertedCount)
+	} else if result.UpsertedCount != 1 && result.ModifiedCount != 1 {
+		jobLog.Errorf("Expected summary write to create 1 upsert, got: %v upsert, %v modified", result.UpsertedCount, result.ModifiedCount)
 	}
 
 	// Set ownership
