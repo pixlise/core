@@ -99,5 +99,78 @@ func HandleQuantLastOutputGetReq(req *protos.QuantLastOutputGetReq, hctx wsHelpe
 	}
 
 	return &protos.QuantLastOutputGetResp{Output: string(result)}, nil
+}
 
+func HandleQuantLogListReq(req *protos.QuantLogListReq, hctx wsHelpers.HandlerContext) (*protos.QuantLogListResp, error) {
+	if err := wsHelpers.CheckStringField(&req.QuantId, "QuantId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+
+	// Check that user has access to this quant
+	dbItem, _, err := wsHelpers.GetUserObjectById[protos.QuantificationSummary](false, req.QuantId, protos.ObjectType_OT_QUANTIFICATION, dbCollections.QuantificationsName, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	logFilePaths, err := hctx.Svcs.FS.ListObjects(hctx.Svcs.Config.UsersBucket, path.Join(filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.ScanId, ""), req.QuantId+"-logs")+"/")
+	if err != nil {
+		return nil, err
+	}
+
+	logFileNames := []string{}
+	for _, logpath := range logFilePaths {
+		logFileNames = append(logFileNames, path.Base(logpath))
+	}
+
+	return &protos.QuantLogListResp{
+		FileNames: logFileNames,
+	}, nil
+}
+
+func HandleQuantLogGetReq(req *protos.QuantLogGetReq, hctx wsHelpers.HandlerContext) (*protos.QuantLogGetResp, error) {
+	if err := wsHelpers.CheckStringField(&req.QuantId, "QuantId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&req.LogName, "LogName", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+
+	// Check that user has access to this quant
+	dbItem, _, err := wsHelpers.GetUserObjectById[protos.QuantificationSummary](false, req.QuantId, protos.ObjectType_OT_QUANTIFICATION, dbCollections.QuantificationsName, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	logPath := path.Join(filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.ScanId, ""), req.QuantId+"-logs", req.LogName)
+	logData, err := hctx.Svcs.FS.ReadObject(hctx.Svcs.Config.UsersBucket, logPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.QuantLogGetResp{
+		LogData: string(logData),
+	}, nil
+}
+
+func HandleQuantRawDataGetReq(req *protos.QuantRawDataGetReq, hctx wsHelpers.HandlerContext) (*protos.QuantRawDataGetResp, error) {
+	if err := wsHelpers.CheckStringField(&req.QuantId, "QuantId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+
+	// Check that user has access to this quant
+	dbItem, _, err := wsHelpers.GetUserObjectById[protos.QuantificationSummary](false, req.QuantId, protos.ObjectType_OT_QUANTIFICATION, dbCollections.QuantificationsName, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Read the CSV file from S3
+	csvPath := path.Join(filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.ScanId, ""), req.QuantId+".csv")
+	csvData, err := hctx.Svcs.FS.ReadObject(hctx.Svcs.Config.UsersBucket, csvPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.QuantRawDataGetResp{
+		Data: string(csvData),
+	}, nil
 }
