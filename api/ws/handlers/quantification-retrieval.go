@@ -8,6 +8,7 @@ import (
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/quantification"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
@@ -31,6 +32,10 @@ func HandleQuantListReq(req *protos.QuantListReq, hctx wsHelpers.HandlerContext)
 }
 
 func HandleQuantGetReq(req *protos.QuantGetReq, hctx wsHelpers.HandlerContext) (*protos.QuantGetResp, error) {
+	if err := wsHelpers.CheckStringField(&req.QuantId, "QuantId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+
 	dbItem, ownerItem, err := wsHelpers.GetUserObjectById[protos.QuantificationSummary](false, req.QuantId, protos.ObjectType_OT_QUANTIFICATION, dbCollections.QuantificationsName, hctx)
 	if err != nil {
 		return nil, err
@@ -112,7 +117,7 @@ func HandleQuantLogListReq(req *protos.QuantLogListReq, hctx wsHelpers.HandlerCo
 		return nil, err
 	}
 
-	logFilePaths, err := hctx.Svcs.FS.ListObjects(hctx.Svcs.Config.UsersBucket, path.Join(filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.ScanId, ""), req.QuantId+"-logs")+"/")
+	logFilePaths, err := hctx.Svcs.FS.ListObjects(hctx.Svcs.Config.UsersBucket, path.Join(dbItem.Status.OutputFilePath, req.QuantId+"-logs")+"/")
 	if err != nil {
 		return nil, err
 	}
@@ -141,9 +146,12 @@ func HandleQuantLogGetReq(req *protos.QuantLogGetReq, hctx wsHelpers.HandlerCont
 		return nil, err
 	}
 
-	logPath := path.Join(filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.ScanId, ""), req.QuantId+"-logs", req.LogName)
+	logPath := path.Join(dbItem.Status.OutputFilePath, req.QuantId+"-logs", req.LogName)
 	logData, err := hctx.Svcs.FS.ReadObject(hctx.Svcs.Config.UsersBucket, logPath)
 	if err != nil {
+		if hctx.Svcs.FS.IsNotFoundError(err) {
+			return nil, errorwithstatus.MakeNotFoundError(req.LogName)
+		}
 		return nil, err
 	}
 
@@ -162,11 +170,15 @@ func HandleQuantRawDataGetReq(req *protos.QuantRawDataGetReq, hctx wsHelpers.Han
 	if err != nil {
 		return nil, err
 	}
-
+	//UserContent/5df311ed8a0b5d0ebf5fb476/089063943/Quantifications/
 	// Read the CSV file from S3
-	csvPath := path.Join(filepaths.GetQuantPath(hctx.SessUser.User.Id, dbItem.ScanId, ""), req.QuantId+".csv")
+
+	csvPath := path.Join(dbItem.Status.OutputFilePath, req.QuantId+".csv")
 	csvData, err := hctx.Svcs.FS.ReadObject(hctx.Svcs.Config.UsersBucket, csvPath)
 	if err != nil {
+		if hctx.Svcs.FS.IsNotFoundError(err) {
+			return nil, errorwithstatus.MakeNotFoundError(req.QuantId + ".csv")
+		}
 		return nil, err
 	}
 

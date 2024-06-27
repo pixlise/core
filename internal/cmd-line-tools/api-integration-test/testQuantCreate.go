@@ -179,20 +179,26 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 				"status": "STARTING",
 				"startUnixTimeSec": "${SECAGO=%v}",
 				"jobItemId": "${IGNORE}",
-				"jobType": "JT_RUN_QUANT"
+				"jobType": "JT_RUN_QUANT",
+				"name": "%v",
+				"elements": [%v]
 			}
-		}}`, idx+1, maxAgeSec),
+		}}`, idx+1, maxAgeSec, quantName, elemListStr),
 	)
 
 	finalMsg := fmt.Sprintf(`{"quantCreateUpd":{
 		"status": {
 			"jobId": "${IDCHK=quantCreate%v}",
 			"logId": "${IDCHK=quantCreate%v}",
+			"jobItemId": "${IDCHK=quantCreate%v}",
+			"jobType": "JT_RUN_QUANT",
 			"message": "${IGNORE}",
 			"status": "%v",
 			"startUnixTimeSec": "${SECAGO=%v}",
 			"lastUpdateUnixTimeSec": "${SECAGO=%v}",
-			"endUnixTimeSec": "${SECAGO=%v}"`, idx+1, idx+1, expectedFinalState, maxAgeSec, maxAgeSec, maxAgeSec)
+			"endUnixTimeSec": "${SECAGO=%v}",
+			"name": "%v",
+			"elements": [%v]`, idx+1, idx+1, idx+1, expectedFinalState, maxAgeSec, maxAgeSec, maxAgeSec, quantName, elemListStr)
 	if expectedFinalState != "ERROR" {
 		finalMsg += `,
 			"outputFilePath": "${IGNORE}",
@@ -207,32 +213,44 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 			"status": {
 				"jobId": "${IDCHK=quantCreate%v}",
 				"logId": "${IDCHK=quantCreate%v}",
+				"jobItemId": "${IDCHK=quantCreate%v}",
+				"jobType": "JT_RUN_QUANT",
 				"message": "Cores/Node: 4",
 				"status": "PREPARING_NODES",
 				"startUnixTimeSec": "${SECAGO=%v}",
-				"lastUpdateUnixTimeSec": "${SECAGO=%v}"
+				"lastUpdateUnixTimeSec": "${SECAGO=%v}",
+				"name": "%v",
+				"elements": [%v]
 			}
-		}}`, idx+1, idx+1, maxAgeSec, maxAgeSec),
+		}}`, idx+1, idx+1, idx+1, maxAgeSec, maxAgeSec, quantName, elemListStr),
 		fmt.Sprintf(`{"quantCreateUpd":{
 			"status": {
 				"jobId": "${IDCHK=quantCreate%v}",
 				"logId": "${IDCHK=quantCreate%v}",
+				"jobItemId": "${IDCHK=quantCreate%v}",
+				"jobType": "JT_RUN_QUANT",
 				"message": "${IGNORE}",
 				"status": "RUNNING",
 				"startUnixTimeSec": "${SECAGO=%v}",
-				"lastUpdateUnixTimeSec": "${SECAGO=%v}"
+				"lastUpdateUnixTimeSec": "${SECAGO=%v}",
+				"name": "%v",
+				"elements": [%v]
 			}
-		}}`, idx+1, idx+1, maxAgeSec, maxAgeSec),
+		}}`, idx+1, idx+1, idx+1, maxAgeSec, maxAgeSec, quantName, elemListStr),
 		fmt.Sprintf(`{"quantCreateUpd":{
 			"status": {
 				"jobId": "${IDCHK=quantCreate%v}",
 				"logId": "${IDCHK=quantCreate%v}",
+				"jobItemId": "${IDCHK=quantCreate%v}",
+				"jobType": "JT_RUN_QUANT",
 				"message": "${IGNORE}",
 				"status": "GATHERING_RESULTS",
 				"startUnixTimeSec": "${SECAGO=%v}",
-				"lastUpdateUnixTimeSec": "${SECAGO=%v}"
+				"lastUpdateUnixTimeSec": "${SECAGO=%v}",
+				"name": "%v",
+				"elements": [%v]
 			}
-		}}`, idx+1, idx+1, maxAgeSec, maxAgeSec),
+		}}`, idx+1, idx+1, idx+1, maxAgeSec, maxAgeSec, quantName, elemListStr),
 	}
 
 	/*if expectedFinalState != "ERROR" {

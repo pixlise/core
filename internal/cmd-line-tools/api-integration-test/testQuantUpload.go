@@ -170,10 +170,16 @@ func testQuantUpload(apiHost string) {
 					],
 					"status": {
 						"jobId": "${IDCHK=uploadedQuantId}",
+                		"jobItemId": "${IDCHK=uploadedQuantId}",
 						"status": "COMPLETE",
 						"message": "user-supplied quantification processed",
+						"startUnixTimeSec": "${SECAGO=3}",
 						"endUnixTimeSec": "${SECAGO=3}",
-						"outputFilePath": "Quantifications/the-scan-id/auth0|649e54491154cac52ec21718"
+						"outputFilePath": "Quantifications/the-scan-id/auth0|649e54491154cac52ec21718",
+						"name": "uploaded Quant",
+						"elements": [
+							"Ca"
+						]
 					},
 					"owner": {
 						"creatorUser": {
