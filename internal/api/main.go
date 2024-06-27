@@ -337,7 +337,7 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 					quantification.RunAutoQuantifications(scan.Id, h.svcs)
 				}, h.svcs.MongoDB, h.svcs.TimeStamper, h.svcs.Log)
 			} else {
-				h.svcs.Log.Infof("Scan complete time doesn't match current time, assuming auto-quantification not required.")
+				h.svcs.Log.Infof("Scan complete time %v doesn't match current time %v, assuming auto-quantification not required.", scan.CompleteTimeStampUnixSec, scan.TimestampUnixSec)
 			}
 		} else if status.JobType == protos.JobStatus_JT_REIMPORT_SCAN {
 			h.svcs.Notifier.NotifyUpdatedScan(scan.Title, scan.Id)
