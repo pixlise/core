@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/pixlise/core/v4/core/wstestlib"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -115,19 +116,70 @@ func testQuantGetListDelete(apiHost string) {
 
 	u1.AddSendReqAction("Get with missing ID",
 		`{"quantGetReq":{}}`,
-		`{"msgId":2,"status":"WS_NOT_FOUND","errorText": " not found", "quantGetResp":{}}`,
+		`{"msgId":2,"status":"WS_BAD_REQUEST","errorText": "QuantId is too short", "quantGetResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Get raw with missing ID",
+		`{"quantRawDataGetReq":{}}`,
+		`{"msgId":3,"status":"WS_BAD_REQUEST","errorText": "QuantId is too short", "quantRawDataGetResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Get quant log with missing ID",
+		`{"quantLogGetReq":{}}`,
+		`{"msgId":4,"status":"WS_BAD_REQUEST","errorText": "QuantId is too short", "quantLogGetResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Get quant log with missing log name",
+		`{"quantLogGetReq":{"quantId": "abc123"}}`,
+		`{"msgId":5,"status":"WS_BAD_REQUEST","errorText": "LogName is too short", "quantLogGetResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Get quant log list with missing ID",
+		`{"quantLogListReq":{}}`,
+		`{"msgId":6,"status":"WS_BAD_REQUEST","errorText": "QuantId is too short", "quantLogListResp":{}}`,
 	)
 
 	u1.AddSendReqAction("Get non-existant quant",
 		`{"quantGetReq":{"quantId": "non-existant-id"}}`,
-		`{"msgId":3,"status":"WS_NOT_FOUND","errorText": "non-existant-id not found", "quantGetResp":{}}`,
+		`{"msgId":7,"status":"WS_NOT_FOUND","errorText": "non-existant-id not found", "quantGetResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Get raw non-existant quant",
+		`{"quantRawDataGetReq":{"quantId": "non-existant-id"}}`,
+		`{"msgId":8,"status":"WS_NOT_FOUND","errorText": "non-existant-id not found", "quantRawDataGetResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Get quant log list for non-existant quant",
+		`{"quantLogListReq":{"quantId": "non-existant-id"}}`,
+		`{"msgId":9,"status":"WS_NOT_FOUND","errorText": "non-existant-id not found", "quantLogListResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Get quant log list (should fail, permissions dont allow)",
+		fmt.Sprintf(`{"quantLogListReq":{"quantId": "%v"}}`, quantId),
+		fmt.Sprintf(`{
+			"msgId":10,"status":"WS_NO_PERMISSION",
+			"errorText": "View access denied for: OT_QUANTIFICATION (%v)", "quantLogListResp":{}}`, quantId),
 	)
 
 	u1.AddSendReqAction("Get quant from db (should fail, permissions dont allow)",
 		fmt.Sprintf(`{"quantGetReq":{"quantId": "%v"}}`, quantId),
 		fmt.Sprintf(`{
-			"msgId":4,"status":"WS_NO_PERMISSION",
+			"msgId":11,"status":"WS_NO_PERMISSION",
 			"errorText": "View access denied for: OT_QUANTIFICATION (%v)", "quantGetResp":{}}`, quantId),
+	)
+
+	u1.AddSendReqAction("Get quant CSV from db (should fail, permissions dont allow)",
+		fmt.Sprintf(`{"quantRawDataGetReq":{"quantId": "%v"}}`, quantId),
+		fmt.Sprintf(`{
+			"msgId":12,"status":"WS_NO_PERMISSION",
+			"errorText": "View access denied for: OT_QUANTIFICATION (%v)", "quantRawDataGetResp":{}}`, quantId),
+	)
+
+	u1.AddSendReqAction("Get quant log (should fail, permissions dont allow)",
+		fmt.Sprintf(`{"quantLogGetReq":{"quantId": "%v", "logName": "bad-name.log"}}`, quantId),
+		fmt.Sprintf(`{
+			"msgId":13,"status":"WS_NO_PERMISSION",
+			"errorText": "View access denied for: OT_QUANTIFICATION (%v)", "quantLogGetResp":{}}`, quantId),
 	)
 
 	u1.CloseActionGroup([]string{}, 5000)
@@ -147,13 +199,24 @@ func testQuantGetListDelete(apiHost string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	err = apiStorageFileAccess.DeleteObject(apiUsersBucket, thisQuantRootPath+quantId+".csv")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	for _, logFile := range quantLogs {
+		err = apiStorageFileAccess.DeleteObject(apiUsersBucket, thisQuantRootPath+quantId+"-logs/"+logFile)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
 
 	// Now add u1 as a viewer
 	seedDBOwnership(quantId, protos.ObjectType_OT_QUANTIFICATION, &protos.UserGroupList{UserIds: []string{u1.GetUserId()}}, nil)
 
 	u1.AddSendReqAction("List quants",
 		`{"quantListReq":{}}`,
-		fmt.Sprintf(`{"msgId": 5, "status": "WS_OK", "quantListResp": {
+		fmt.Sprintf(`{"msgId": 14, "status": "WS_OK", "quantListResp": {
 			"quants": [{
 				"id": "%v",
 				"scanId": "the-scan-id",
@@ -196,7 +259,7 @@ func testQuantGetListDelete(apiHost string) {
 
 	u1.AddSendReqAction("Get quant summary only (should work)",
 		fmt.Sprintf(`{"quantGetReq":{"quantId": "%v", "summaryOnly": true }}`, quantId),
-		fmt.Sprintf(`{"msgId":6,"status":"WS_OK", "quantGetResp":{
+		fmt.Sprintf(`{"msgId":15,"status":"WS_OK", "quantGetResp":{
 			"summary": {
 				"id": "%v",
 				"scanId": "the-scan-id",
@@ -223,6 +286,7 @@ func testQuantGetListDelete(apiHost string) {
 					"jobId": "%v",
 					"status": "COMPLETE",
 					"message": "Nodes ran: 7",
+					"startUnixTimeSec": 1652813392,
 					"endUnixTimeSec": 1652813627,
 					"outputFilePath": "UserContent/5df311ed8a0b5d0ebf5fb476/089063943/Quantifications",
 					"otherLogFiles": ["node00001_piquant.log","node00001_stdout.log","node00002_piquant.log","node00002_stdout.log","node00003_piquant.log","node00003_stdout.log","node00004_piquant.log","node00004_stdout.log","node00005_piquant.log","node00005_stdout.log","node00006_piquant.log","node00006_stdout.log","node00007_piquant.log","node00007_stdout.log"]
@@ -239,7 +303,22 @@ func testQuantGetListDelete(apiHost string) {
 
 	u1.AddSendReqAction("Get quant summary+data (should fail, no file in S3)",
 		fmt.Sprintf(`{"quantGetReq":{"quantId": "%v" }}`, quantId),
-		fmt.Sprintf(`{"msgId":7,"status":"WS_NOT_FOUND", "errorText": "%v not found", "quantGetResp":{}}`, quantId),
+		fmt.Sprintf(`{"msgId":16,"status":"WS_NOT_FOUND", "errorText": "%v not found", "quantGetResp":{}}`, quantId),
+	)
+
+	u1.AddSendReqAction("Get quant CSV (should fail, no file in S3)",
+		fmt.Sprintf(`{"quantRawDataGetReq":{"quantId": "%v" }}`, quantId),
+		fmt.Sprintf(`{"msgId":17,"status":"WS_NOT_FOUND", "errorText": "%v.csv not found", "quantRawDataGetResp":{}}`, quantId),
+	)
+
+	u1.AddSendReqAction("Get quant log with non-existant log name",
+		fmt.Sprintf(`{"quantLogGetReq":{"quantId": "%v", "logName": "bad-name.log"}}`, quantId),
+		`{"msgId":18,"status":"WS_NOT_FOUND","errorText": "bad-name.log not found", "quantLogGetResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Get quant log list (success, empty)",
+		fmt.Sprintf(`{"quantLogListReq":{"quantId": "%v"}}`, quantId),
+		`{ "msgId":19, "status": "WS_OK", "quantLogListResp": {}}`,
 	)
 
 	u1.CloseActionGroup([]string{}, 5000)
@@ -254,7 +333,7 @@ func testQuantGetListDelete(apiHost string) {
 
 	u1.AddSendReqAction("Get quant summary+data (should work)",
 		fmt.Sprintf(`{"quantGetReq":{"quantId": "%v" }}`, quantId),
-		fmt.Sprintf(`{"msgId":8,"status":"WS_OK", "quantGetResp":{
+		fmt.Sprintf(`{"msgId":20,"status":"WS_OK", "quantGetResp":{
 			"summary": {
 				"id": "%v",
 				"scanId": "the-scan-id",
@@ -281,6 +360,7 @@ func testQuantGetListDelete(apiHost string) {
 					"jobId": "%v",
 					"status": "COMPLETE",
 					"message": "Nodes ran: 7",
+                	"startUnixTimeSec": 1652813392,
 					"endUnixTimeSec": 1652813627,
 					"outputFilePath": "UserContent/5df311ed8a0b5d0ebf5fb476/089063943/Quantifications",
 					"otherLogFiles": ["node00001_piquant.log","node00001_stdout.log","node00002_piquant.log","node00002_stdout.log","node00003_piquant.log","node00003_stdout.log","node00004_piquant.log","node00004_stdout.log","node00005_piquant.log","node00005_stdout.log","node00006_piquant.log","node00006_stdout.log","node00007_piquant.log","node00007_stdout.log"]
@@ -544,14 +624,36 @@ func testQuantGetListDelete(apiHost string) {
 		}}`, quantId, quantId),
 	)
 
+	u1.CloseActionGroup([]string{}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
+
+	u1.AddSendReqAction("Get quant CSV (success)",
+		fmt.Sprintf(`{"quantRawDataGetReq":{"quantId": "%v" }}`, quantId),
+		`{"msgId":21,"status":"WS_OK", "quantRawDataGetResp":{
+			"data": "${REGEXMATCH=PIQUANT version: registry.gitlab.com/pixlise/piquant/runner:3.2.8 DetectorConfig: PIXL/PiquantConfigs/v7\nPMC.+}"
+		}}`,
+	)
+
+	u1.AddSendReqAction("Get quant log list (success)",
+		fmt.Sprintf(`{"quantLogListReq":{"quantId": "%v"}}`, quantId),
+		fmt.Sprintf(`{ "msgId":22, "status": "WS_OK", "quantLogListResp": {
+				"fileNames": ["%v"]
+			}}`, strings.Join(quantLogs, "\",\"")),
+	)
+
+	u1.AddSendReqAction("Get quant log (success)",
+		fmt.Sprintf(`{"quantLogGetReq":{"quantId": "%v", "logName": "%v"}}`, quantId, quantLogs[0]),
+		`{"msgId":23,"status":"WS_OK", "quantLogGetResp":{"logData": "${REGEXMATCH=.+ /tmp/3vjoovnrhkhv8ecd/dataset.bin.+runtime: 9.52sec\n.+\n.+86|Normal|A\n.+Normal_A\n.*\n.*successfully\n.+1 detector\n.+total counts . 109490}"}}`,
+	)
+
 	u1.AddSendReqAction("Delete non-existant quant (should fail)",
 		`{"quantDeleteReq":{"quantId": "non-existant-quant" }}`,
-		`{"msgId":9,"status":"WS_NOT_FOUND", "errorText": "non-existant-quant not found", "quantDeleteResp":{}}`,
+		`{"msgId":24,"status":"WS_NOT_FOUND", "errorText": "non-existant-quant not found", "quantDeleteResp":{}}`,
 	)
 
 	u1.AddSendReqAction("Delete quant (should fail, we're viewers!)",
 		fmt.Sprintf(`{"quantDeleteReq":{"quantId": "%v" }}`, quantId),
-		fmt.Sprintf(`{"msgId":10,"status":"WS_NO_PERMISSION", "errorText": "Edit access denied for: OT_QUANTIFICATION (%v)", "quantDeleteResp":{}}`, quantId),
+		fmt.Sprintf(`{"msgId":25,"status":"WS_NO_PERMISSION", "errorText": "Edit access denied for: OT_QUANTIFICATION (%v)", "quantDeleteResp":{}}`, quantId),
 	)
 
 	u1.CloseActionGroup([]string{}, 5000)
@@ -585,12 +687,12 @@ func testQuantGetListDelete(apiHost string) {
 
 	u1.AddSendReqAction("Delete quant (should work)",
 		fmt.Sprintf(`{"quantDeleteReq":{"quantId": "%v" }}`, quantId),
-		`{"msgId":11,"status":"WS_OK", "quantDeleteResp":{}}`,
+		`{"msgId":26,"status":"WS_OK", "quantDeleteResp":{}}`,
 	)
 
 	u1.AddSendReqAction("Get quant (should fail, not in db)",
 		fmt.Sprintf(`{"quantGetReq":{"quantId": "%v" }}`, quantId),
-		fmt.Sprintf(`{"msgId":12,"status":"WS_NOT_FOUND", "errorText": "%v not found", "quantGetResp":{}}`, quantId),
+		fmt.Sprintf(`{"msgId":27,"status":"WS_NOT_FOUND", "errorText": "%v not found", "quantGetResp":{}}`, quantId),
 	)
 
 	u1.CloseActionGroup([]string{
