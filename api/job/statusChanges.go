@@ -34,6 +34,11 @@ func UpdateJob(jobId string, status protos.JobStatus_Status, message string, log
 		logger.Errorf("Failed to read existing job status when writing UpdateJob %v: %v", jobId, err)
 	} else {
 		jobStatus.StartUnixTimeSec = existingStatus.StartUnixTimeSec
+		jobStatus.JobType = existingStatus.JobType
+		jobStatus.JobItemId = existingStatus.JobItemId
+		jobStatus.RequestorUserId = existingStatus.RequestorUserId
+		jobStatus.Name = existingStatus.Name
+		jobStatus.Elements = existingStatus.Elements
 	}
 
 	replaceResult, err := coll.ReplaceOne(ctx, filter, jobStatus, opt)
@@ -86,6 +91,11 @@ func CompleteJob(jobId string, success bool, message string, outputFilePath stri
 	} else {
 		jobStatus.LogId = existingStatus.LogId
 		jobStatus.StartUnixTimeSec = existingStatus.StartUnixTimeSec
+		jobStatus.JobType = existingStatus.JobType
+		jobStatus.JobItemId = existingStatus.JobItemId
+		jobStatus.RequestorUserId = existingStatus.RequestorUserId
+		jobStatus.Name = existingStatus.Name
+		jobStatus.Elements = existingStatus.Elements
 	}
 
 	replaceResult, err := coll.ReplaceOne(ctx, filter, jobStatus, opt)

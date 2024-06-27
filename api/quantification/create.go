@@ -64,7 +64,7 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, s
 		// Make the name and ID the same, and start with something that stands out
 		jobId = fmt.Sprintf("cmd-%v-%s", createParams.Command, svcs.IDGen.GenObjectID())
 	} else {
-		jobStatus, err = job.AddJob("quant", protos.JobStatus_JT_RUN_QUANT, "", uint32(svcs.Config.ImportJobMaxTimeSec), svcs.MongoDB, svcs.IDGen, svcs.TimeStamper, svcs.Log, sendUpdate)
+		jobStatus, err = job.AddJob("quant", requestorUserId, protos.JobStatus_JT_RUN_QUANT, "", createParams.Name, createParams.Elements, uint32(svcs.Config.ImportJobMaxTimeSec), svcs.MongoDB, svcs.IDGen, svcs.TimeStamper, svcs.Log, sendUpdate)
 		if jobStatus != nil {
 			jobId = jobStatus.JobId
 		}
@@ -378,12 +378,17 @@ func (r *quantNodeRunner) triggerPiquantNodes(wg *sync.WaitGroup) {
 		Params:   r.quantStartSettings,
 		Elements: elements,
 		Status: &protos.JobStatus{
-			JobId:          r.jobId,
-			Status:         protos.JobStatus_COMPLETE,
-			Message:        completeMsg,
-			EndUnixTimeSec: uint32(now),
-			OutputFilePath: quantOutPath,
-			OtherLogFiles:  piquantLogList,
+			JobId:            r.jobId,
+			JobItemId:        r.jobId,
+			Status:           protos.JobStatus_COMPLETE,
+			Message:          completeMsg,
+			StartUnixTimeSec: r.quantStartSettings.StartUnixTimeSec,
+			EndUnixTimeSec:   uint32(now),
+			OutputFilePath:   quantOutPath,
+			OtherLogFiles:    piquantLogList,
+			Name:             r.quantStartSettings.UserParams.Name,
+			Elements:         r.quantStartSettings.UserParams.Elements,
+			RequestorUserId:  r.quantStartSettings.RequestorUserId,
 		},
 	}
 

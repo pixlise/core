@@ -362,7 +362,7 @@ func Example_importForTrigger_OCS_DatasetEdit() {
 	// <nil>|{"contentCounts": {"BulkSpectra": 2,"DwellSpectra": 0,"MaxSpectra": 2,"NormalSpectra": 242,"PseudoIntensities": 121},"creatorUserId": "PIXLISEImport","dataTypes": [{"count": 5,"dataType": "SD_IMAGE"},{"count": 1,"dataType": "SD_RGBU"},{"count": 242,"dataType": "SD_XRF"}],"id": "048300551","instrument": "PIXL_FM","instrumentConfig": "PIXL","meta": {"DriveId": "1712","RTT": "048300551","SCLK": "678031418","Site": "","SiteId": "4","Sol": "0125","Target": "","TargetId": "?"},"title": "Naltsos"}
 }
 
-func printManualOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database, datasetId string, fileCount uint32) {
+func printManualOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database, datasetId string, fileCount uint32, beamLocLBLFileName string, beamVersion uint32) {
 	// Ensure these log msgs appeared...
 	requiredLogs := []string{
 		"Downloading archived zip files...",
@@ -378,6 +378,12 @@ func printManualOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database,
 		"Diffraction db saved successfully",
 		"Warning: No import.json found, defaults will be used",
 		"No auto-share destination found, so only importing user will be able to access this dataset.",
+	}
+
+	if len(beamLocLBLFileName) > 0 {
+		requiredLogs = append(requiredLogs, fmt.Sprintf("WARNING: Beam location LBL file (%v) could not be read. Beam Version version is assumed to be: %v", beamLocLBLFileName, beamVersion))
+	} else if beamVersion > 0 {
+		requiredLogs = append(requiredLogs, fmt.Sprintf("Saving as beam geometry tool version: %v", beamVersion))
 	}
 
 	for _, msg := range requiredLogs {
@@ -412,7 +418,7 @@ func Example_importForTrigger_Manual_JPL() {
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
-	printManualOKLogOutput(log, db, "test1234", 3)
+	printManualOKLogOutput(log, db, "test1234", 3, "", 0)
 
 	// Output:
 	// Errors: <nil>, changes: unknown, isUpdate: false
@@ -445,7 +451,7 @@ func Example_importForTrigger_Manual_SBU() {
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
-	printManualOKLogOutput(log, db, "test1234sbu", 4)
+	printManualOKLogOutput(log, db, "test1234sbu", 4, "", 0)
 
 	// Output:
 	// Errors: <nil>, changes: unknown, isUpdate: false
@@ -478,7 +484,7 @@ func Example_ImportForTrigger_Manual_SBU_NoAutoShare() {
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
-	printManualOKLogOutput(log, db, "test1234sbu", 4)
+	printManualOKLogOutput(log, db, "test1234sbu", 4, "", 0)
 
 	// Output:
 	// Errors: <nil>, changes: unknown, isUpdate: false
@@ -529,7 +535,7 @@ func Example_importForTrigger_Manual_EM() {
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
-	printManualOKLogOutput(log, db, "048300551", 3)
+	printManualOKLogOutput(log, db, "048300551", 3, "PE__0125_0678031418_000RXL_N004171204830055100910__J01.LBL", 2)
 
 	// Output:
 	// Errors: <nil>, changes: unknown, isUpdate: false
@@ -546,6 +552,41 @@ func Example_importForTrigger_Manual_EM() {
 	// Logged "Diffraction db saved successfully": true
 	// Logged "Warning: No import.json found, defaults will be used": false
 	// Logged "No auto-share destination found, so only importing user will be able to access this dataset.": false
+	// Logged "WARNING: Beam location LBL file (PE__0125_0678031418_000RXL_N004171204830055100910__J01.LBL) could not be read. Beam Version version is assumed to be: 2": true
+	// <nil>|{"id":"048300551","title":"048300551","dataTypes":[{"dataType":"SD_IMAGE","count":4},{"dataType":"SD_XRF","count":242}],"instrument":"PIXL_EM","instrumentConfig":"PIXL-EM-E2E","meta":{"DriveId":"1712","RTT":"048300551","SCLK":"678031418","Site":"","SiteId":"4","Sol":"0125","Target":"","TargetId":"?"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":242,"PseudoIntensities":121},"creatorUserId":"PIXLISEImport"}
+}
+
+// Import a breadboard dataset from manual uploaded zip file
+func Example_importForTrigger_Manual_EM_WithBeamV2() {
+	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("ManualEM_Beamv2_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
+
+	trigger := `{
+	"datasetID": "048300551",
+	"jobID": "dataimport-unittest048300551"
+}`
+
+	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+
+	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
+
+	printManualOKLogOutput(log, db, "048300551", 3, "", 2)
+
+	// Output:
+	// Errors: <nil>, changes: unknown, isUpdate: false
+	// Logged "Downloading archived zip files...": true
+	// Logged "Downloaded 0 zip files, unzipped 0 files": true
+	// Logged "No zip files found in archive, dataset may have been manually uploaded. Trying to download...": true
+	// Logged "Dataset 048300551 downloaded 3 files from manual upload area": true
+	// Logged "Downloading pseudo-intensity ranges...": true
+	// Logged "Downloading user customisation files...": true
+	// Logged "Reading 1261 files from spectrum directory...": false
+	// Logged "Reading spectrum [1135/1260] 90%": false
+	// Logged "PMC 1261 has 4 MSA/spectrum entries": false
+	// Logged "WARNING: No main context image determined": false
+	// Logged "Diffraction db saved successfully": true
+	// Logged "Warning: No import.json found, defaults will be used": false
+	// Logged "No auto-share destination found, so only importing user will be able to access this dataset.": false
+	// Logged "Saving as beam geometry tool version: 2": true
 	// <nil>|{"id":"048300551","title":"048300551","dataTypes":[{"dataType":"SD_IMAGE","count":4},{"dataType":"SD_XRF","count":242}],"instrument":"PIXL_EM","instrumentConfig":"PIXL-EM-E2E","meta":{"DriveId":"1712","RTT":"048300551","SCLK":"678031418","Site":"","SiteId":"4","Sol":"0125","Target":"","TargetId":"?"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":242,"PseudoIntensities":121},"creatorUserId":"PIXLISEImport"}
 }
 

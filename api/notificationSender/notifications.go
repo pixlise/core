@@ -114,9 +114,11 @@ func (n *NotificationSender) sendNotification(sourceId string, topicId string, n
 					uiNotificationUsers = append(uiNotificationUsers, userId)
 				}
 
+				/* Removed because it's really not that helpful but spams logs heaps because lots of users don't have notifications on!
 				if method == protos.NotificationMethod_NOTIF_NONE {
-					n.log.Infof("Skipping notification of topic: %v to user %v because they have this topic turned off", topicId, userId)
+					n.log.Debugf("Skipping notification of topic: %v to user %v because they have this topic turned off", topicId, userId)
 				}
+				*/
 			}
 		}
 	}

@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
+	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
@@ -33,7 +34,8 @@ func makeSummaryFileContent(
 	meta dataConvertModels.FileMetaData,
 	//fileSize int,
 	creationUnixTimeSec int64,
-	creatorUserId string) *protos.ScanItem {
+	creatorUserId string,
+	jobLog logger.ILogger) *protos.ScanItem {
 	contextImgCount := len(exp.AlignedContextImages) + len(exp.UnalignedContextImages) + len(exp.MatchedAlignedContextImages)
 	tiffContextImgCount := 0
 
@@ -117,16 +119,21 @@ func makeSummaryFileContent(
 
 		// Add new time at the end
 		s.PreviousImportTimesUnixSec = append(s.PreviousImportTimesUnixSec, prevSavedScan.TimestampUnixSec)
+		jobLog.Infof(" Added new previous time stamp entry: %v, total previous timestamps: %v", prevSavedScan.TimestampUnixSec, len(s.PreviousImportTimesUnixSec))
 	}
 
 	// Save a time stamp for completion
 	if isComplete {
+		jobLog.Infof(" Detected completed dataset...")
+
 		// If previous scan was also complete, DON'T update the time stamp, just preserve it
 		if prevSavedScan != nil && prevSavedScan.CompleteTimeStampUnixSec > 0 {
 			s.CompleteTimeStampUnixSec = prevSavedScan.CompleteTimeStampUnixSec
+			jobLog.Infof(" Preserved previous CompleteTimeStampUnixSec of %v", s.CompleteTimeStampUnixSec)
 		} else {
 			// We must've just completed now, so save the time
 			s.CompleteTimeStampUnixSec = uint32(creationUnixTimeSec)
+			jobLog.Infof(" Setting CompleteTimeStampUnixSec=%v", creationUnixTimeSec)
 		}
 	}
 
@@ -135,9 +142,16 @@ func makeSummaryFileContent(
 		s.Tags = prevSavedScan.Tags
 		s.Description = prevSavedScan.Description
 
+		descSnippet := s.Description
+		if len(descSnippet) > 30 {
+			descSnippet = descSnippet[0:30] + "..."
+		}
+		jobLog.Infof(" Preserved previous description=\"%v\"...", descSnippet)
+
 		if len(prevSavedScan.Description) > 0 {
 			// User has entered a description so perserve the title too
 			s.Title = prevSavedScan.Title
+			jobLog.Infof(" Preserved previous title=\"%v\"", s.Title)
 		}
 	}
 

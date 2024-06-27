@@ -174,9 +174,9 @@ func (ws *WSHandler) HandleMessage(s *melody.Session, msg []byte) {
 		// Set incoming message ID on the outgoing one
 		resp.MsgId = wsmsg.MsgId
 
-		// Print out errors
-		if len(resp.ErrorText) > 0 {
-			fmt.Printf("Sending Response Error for msg id %v:\n  %v\n", resp.MsgId-1, resp.ErrorText)
+		// Print out errors, except common ones (cache misses)
+		if len(resp.ErrorText) > 0 && resp.GetMemoiseGetResp() == nil {
+			fmt.Printf("Sending Response Error: %v\n", resp.String())
 		}
 
 		// Send

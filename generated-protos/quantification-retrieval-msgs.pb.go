@@ -276,6 +276,299 @@ func (x *QuantGetResp) GetData() *Quantification {
 }
 
 // requires(NONE)
+type QuantLogListReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	QuantId string `protobuf:"bytes,1,opt,name=quantId,proto3" json:"quantId,omitempty"`
+}
+
+func (x *QuantLogListReq) Reset() {
+	*x = QuantLogListReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_quantification_retrieval_msgs_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QuantLogListReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuantLogListReq) ProtoMessage() {}
+
+func (x *QuantLogListReq) ProtoReflect() protoreflect.Message {
+	mi := &file_quantification_retrieval_msgs_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuantLogListReq.ProtoReflect.Descriptor instead.
+func (*QuantLogListReq) Descriptor() ([]byte, []int) {
+	return file_quantification_retrieval_msgs_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *QuantLogListReq) GetQuantId() string {
+	if x != nil {
+		return x.QuantId
+	}
+	return ""
+}
+
+type QuantLogListResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	FileNames []string `protobuf:"bytes,1,rep,name=fileNames,proto3" json:"fileNames,omitempty"`
+}
+
+func (x *QuantLogListResp) Reset() {
+	*x = QuantLogListResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_quantification_retrieval_msgs_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QuantLogListResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuantLogListResp) ProtoMessage() {}
+
+func (x *QuantLogListResp) ProtoReflect() protoreflect.Message {
+	mi := &file_quantification_retrieval_msgs_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuantLogListResp.ProtoReflect.Descriptor instead.
+func (*QuantLogListResp) Descriptor() ([]byte, []int) {
+	return file_quantification_retrieval_msgs_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *QuantLogListResp) GetFileNames() []string {
+	if x != nil {
+		return x.FileNames
+	}
+	return nil
+}
+
+// requires(NONE)
+type QuantLogGetReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	QuantId string `protobuf:"bytes,1,opt,name=quantId,proto3" json:"quantId,omitempty"`
+	LogName string `protobuf:"bytes,2,opt,name=logName,proto3" json:"logName,omitempty"`
+}
+
+func (x *QuantLogGetReq) Reset() {
+	*x = QuantLogGetReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_quantification_retrieval_msgs_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QuantLogGetReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuantLogGetReq) ProtoMessage() {}
+
+func (x *QuantLogGetReq) ProtoReflect() protoreflect.Message {
+	mi := &file_quantification_retrieval_msgs_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuantLogGetReq.ProtoReflect.Descriptor instead.
+func (*QuantLogGetReq) Descriptor() ([]byte, []int) {
+	return file_quantification_retrieval_msgs_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *QuantLogGetReq) GetQuantId() string {
+	if x != nil {
+		return x.QuantId
+	}
+	return ""
+}
+
+func (x *QuantLogGetReq) GetLogName() string {
+	if x != nil {
+		return x.LogName
+	}
+	return ""
+}
+
+type QuantLogGetResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	LogData string `protobuf:"bytes,1,opt,name=logData,proto3" json:"logData,omitempty"`
+}
+
+func (x *QuantLogGetResp) Reset() {
+	*x = QuantLogGetResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_quantification_retrieval_msgs_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QuantLogGetResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuantLogGetResp) ProtoMessage() {}
+
+func (x *QuantLogGetResp) ProtoReflect() protoreflect.Message {
+	mi := &file_quantification_retrieval_msgs_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuantLogGetResp.ProtoReflect.Descriptor instead.
+func (*QuantLogGetResp) Descriptor() ([]byte, []int) {
+	return file_quantification_retrieval_msgs_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *QuantLogGetResp) GetLogData() string {
+	if x != nil {
+		return x.LogData
+	}
+	return ""
+}
+
+// requires(NONE)
+type QuantRawDataGetReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	QuantId string `protobuf:"bytes,1,opt,name=quantId,proto3" json:"quantId,omitempty"`
+}
+
+func (x *QuantRawDataGetReq) Reset() {
+	*x = QuantRawDataGetReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_quantification_retrieval_msgs_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QuantRawDataGetReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuantRawDataGetReq) ProtoMessage() {}
+
+func (x *QuantRawDataGetReq) ProtoReflect() protoreflect.Message {
+	mi := &file_quantification_retrieval_msgs_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuantRawDataGetReq.ProtoReflect.Descriptor instead.
+func (*QuantRawDataGetReq) Descriptor() ([]byte, []int) {
+	return file_quantification_retrieval_msgs_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *QuantRawDataGetReq) GetQuantId() string {
+	if x != nil {
+		return x.QuantId
+	}
+	return ""
+}
+
+type QuantRawDataGetResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Data string `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *QuantRawDataGetResp) Reset() {
+	*x = QuantRawDataGetResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_quantification_retrieval_msgs_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QuantRawDataGetResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuantRawDataGetResp) ProtoMessage() {}
+
+func (x *QuantRawDataGetResp) ProtoReflect() protoreflect.Message {
+	mi := &file_quantification_retrieval_msgs_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuantRawDataGetResp.ProtoReflect.Descriptor instead.
+func (*QuantRawDataGetResp) Descriptor() ([]byte, []int) {
+	return file_quantification_retrieval_msgs_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *QuantRawDataGetResp) GetData() string {
+	if x != nil {
+		return x.Data
+	}
+	return ""
+}
+
+// requires(NONE)
 type QuantLastOutputGetReq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -289,7 +582,7 @@ type QuantLastOutputGetReq struct {
 func (x *QuantLastOutputGetReq) Reset() {
 	*x = QuantLastOutputGetReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_quantification_retrieval_msgs_proto_msgTypes[4]
+		mi := &file_quantification_retrieval_msgs_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -302,7 +595,7 @@ func (x *QuantLastOutputGetReq) String() string {
 func (*QuantLastOutputGetReq) ProtoMessage() {}
 
 func (x *QuantLastOutputGetReq) ProtoReflect() protoreflect.Message {
-	mi := &file_quantification_retrieval_msgs_proto_msgTypes[4]
+	mi := &file_quantification_retrieval_msgs_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -315,7 +608,7 @@ func (x *QuantLastOutputGetReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QuantLastOutputGetReq.ProtoReflect.Descriptor instead.
 func (*QuantLastOutputGetReq) Descriptor() ([]byte, []int) {
-	return file_quantification_retrieval_msgs_proto_rawDescGZIP(), []int{4}
+	return file_quantification_retrieval_msgs_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *QuantLastOutputGetReq) GetOutputType() QuantOutputType {
@@ -350,7 +643,7 @@ type QuantLastOutputGetResp struct {
 func (x *QuantLastOutputGetResp) Reset() {
 	*x = QuantLastOutputGetResp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_quantification_retrieval_msgs_proto_msgTypes[5]
+		mi := &file_quantification_retrieval_msgs_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -363,7 +656,7 @@ func (x *QuantLastOutputGetResp) String() string {
 func (*QuantLastOutputGetResp) ProtoMessage() {}
 
 func (x *QuantLastOutputGetResp) ProtoReflect() protoreflect.Message {
-	mi := &file_quantification_retrieval_msgs_proto_msgTypes[5]
+	mi := &file_quantification_retrieval_msgs_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -376,7 +669,7 @@ func (x *QuantLastOutputGetResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QuantLastOutputGetResp.ProtoReflect.Descriptor instead.
 func (*QuantLastOutputGetResp) Descriptor() ([]byte, []int) {
-	return file_quantification_retrieval_msgs_proto_rawDescGZIP(), []int{5}
+	return file_quantification_retrieval_msgs_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *QuantLastOutputGetResp) GetOutput() string {
@@ -415,23 +708,42 @@ var file_quantification_retrieval_msgs_proto_rawDesc = []byte{
 	0x61, 0x72, 0x79, 0x52, 0x07, 0x73, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x12, 0x23, 0x0a, 0x04,
 	0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x51, 0x75, 0x61,
 	0x6e, 0x74, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x04, 0x64, 0x61, 0x74,
-	0x61, 0x22, 0x89, 0x01, 0x0a, 0x15, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4c, 0x61, 0x73, 0x74, 0x4f,
-	0x75, 0x74, 0x70, 0x75, 0x74, 0x47, 0x65, 0x74, 0x52, 0x65, 0x71, 0x12, 0x30, 0x0a, 0x0a, 0x6f,
-	0x75, 0x74, 0x70, 0x75, 0x74, 0x54, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32,
-	0x10, 0x2e, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x54, 0x79, 0x70,
-	0x65, 0x52, 0x0a, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x54, 0x79, 0x70, 0x65, 0x12, 0x16, 0x0a,
-	0x06, 0x73, 0x63, 0x61, 0x6e, 0x49, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73,
-	0x63, 0x61, 0x6e, 0x49, 0x64, 0x12, 0x26, 0x0a, 0x0e, 0x70, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74,
-	0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x70,
-	0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x22, 0x30, 0x0a,
-	0x16, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4c, 0x61, 0x73, 0x74, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74,
-	0x47, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x12, 0x16, 0x0a, 0x06, 0x6f, 0x75, 0x74, 0x70, 0x75,
-	0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x2a,
-	0x3a, 0x0a, 0x0f, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x54, 0x79,
-	0x70, 0x65, 0x12, 0x0e, 0x0a, 0x0a, 0x51, 0x4f, 0x5f, 0x55, 0x4e, 0x4b, 0x4e, 0x4f, 0x57, 0x4e,
-	0x10, 0x00, 0x12, 0x0b, 0x0a, 0x07, 0x51, 0x4f, 0x5f, 0x44, 0x41, 0x54, 0x41, 0x10, 0x01, 0x12,
-	0x0a, 0x0a, 0x06, 0x51, 0x4f, 0x5f, 0x4c, 0x4f, 0x47, 0x10, 0x02, 0x42, 0x0a, 0x5a, 0x08, 0x2e,
-	0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x22, 0x2b, 0x0a, 0x0f, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4c, 0x6f, 0x67, 0x4c, 0x69, 0x73,
+	0x74, 0x52, 0x65, 0x71, 0x12, 0x18, 0x0a, 0x07, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x49, 0x64, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x49, 0x64, 0x22, 0x30,
+	0x0a, 0x10, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4c, 0x6f, 0x67, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65,
+	0x73, 0x70, 0x12, 0x1c, 0x0a, 0x09, 0x66, 0x69, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x18,
+	0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x09, 0x66, 0x69, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73,
+	0x22, 0x44, 0x0a, 0x0e, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4c, 0x6f, 0x67, 0x47, 0x65, 0x74, 0x52,
+	0x65, 0x71, 0x12, 0x18, 0x0a, 0x07, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x49, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x07, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x49, 0x64, 0x12, 0x18, 0x0a, 0x07,
+	0x6c, 0x6f, 0x67, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6c,
+	0x6f, 0x67, 0x4e, 0x61, 0x6d, 0x65, 0x22, 0x2b, 0x0a, 0x0f, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4c,
+	0x6f, 0x67, 0x47, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x12, 0x18, 0x0a, 0x07, 0x6c, 0x6f, 0x67,
+	0x44, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6c, 0x6f, 0x67, 0x44,
+	0x61, 0x74, 0x61, 0x22, 0x2e, 0x0a, 0x12, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x52, 0x61, 0x77, 0x44,
+	0x61, 0x74, 0x61, 0x47, 0x65, 0x74, 0x52, 0x65, 0x71, 0x12, 0x18, 0x0a, 0x07, 0x71, 0x75, 0x61,
+	0x6e, 0x74, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x71, 0x75, 0x61, 0x6e,
+	0x74, 0x49, 0x64, 0x22, 0x29, 0x0a, 0x13, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x52, 0x61, 0x77, 0x44,
+	0x61, 0x74, 0x61, 0x47, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61,
+	0x74, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x89,
+	0x01, 0x0a, 0x15, 0x51, 0x75, 0x61, 0x6e, 0x74, 0x4c, 0x61, 0x73, 0x74, 0x4f, 0x75, 0x74, 0x70,
+	0x75, 0x74, 0x47, 0x65, 0x74, 0x52, 0x65, 0x71, 0x12, 0x30, 0x0a, 0x0a, 0x6f, 0x75, 0x74, 0x70,
+	0x75, 0x74, 0x54, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x10, 0x2e, 0x51,
+	0x75, 0x61, 0x6e, 0x74, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x54, 0x79, 0x70, 0x65, 0x52, 0x0a,
+	0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x54, 0x79, 0x70, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x63,
+	0x61, 0x6e, 0x49, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x63, 0x61, 0x6e,
+	0x49, 0x64, 0x12, 0x26, 0x0a, 0x0e, 0x70, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x43, 0x6f, 0x6d,
+	0x6d, 0x61, 0x6e, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x70, 0x69, 0x71, 0x75,
+	0x61, 0x6e, 0x74, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x22, 0x30, 0x0a, 0x16, 0x51, 0x75,
+	0x61, 0x6e, 0x74, 0x4c, 0x61, 0x73, 0x74, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x47, 0x65, 0x74,
+	0x52, 0x65, 0x73, 0x70, 0x12, 0x16, 0x0a, 0x06, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x2a, 0x3a, 0x0a, 0x0f,
+	0x51, 0x75, 0x61, 0x6e, 0x74, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x54, 0x79, 0x70, 0x65, 0x12,
+	0x0e, 0x0a, 0x0a, 0x51, 0x4f, 0x5f, 0x55, 0x4e, 0x4b, 0x4e, 0x4f, 0x57, 0x4e, 0x10, 0x00, 0x12,
+	0x0b, 0x0a, 0x07, 0x51, 0x4f, 0x5f, 0x44, 0x41, 0x54, 0x41, 0x10, 0x01, 0x12, 0x0a, 0x0a, 0x06,
+	0x51, 0x4f, 0x5f, 0x4c, 0x4f, 0x47, 0x10, 0x02, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -447,30 +759,36 @@ func file_quantification_retrieval_msgs_proto_rawDescGZIP() []byte {
 }
 
 var file_quantification_retrieval_msgs_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_quantification_retrieval_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_quantification_retrieval_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_quantification_retrieval_msgs_proto_goTypes = []interface{}{
 	(QuantOutputType)(0),           // 0: QuantOutputType
 	(*QuantListReq)(nil),           // 1: QuantListReq
 	(*QuantListResp)(nil),          // 2: QuantListResp
 	(*QuantGetReq)(nil),            // 3: QuantGetReq
 	(*QuantGetResp)(nil),           // 4: QuantGetResp
-	(*QuantLastOutputGetReq)(nil),  // 5: QuantLastOutputGetReq
-	(*QuantLastOutputGetResp)(nil), // 6: QuantLastOutputGetResp
-	(*SearchParams)(nil),           // 7: SearchParams
-	(*QuantificationSummary)(nil),  // 8: QuantificationSummary
-	(*Quantification)(nil),         // 9: Quantification
+	(*QuantLogListReq)(nil),        // 5: QuantLogListReq
+	(*QuantLogListResp)(nil),       // 6: QuantLogListResp
+	(*QuantLogGetReq)(nil),         // 7: QuantLogGetReq
+	(*QuantLogGetResp)(nil),        // 8: QuantLogGetResp
+	(*QuantRawDataGetReq)(nil),     // 9: QuantRawDataGetReq
+	(*QuantRawDataGetResp)(nil),    // 10: QuantRawDataGetResp
+	(*QuantLastOutputGetReq)(nil),  // 11: QuantLastOutputGetReq
+	(*QuantLastOutputGetResp)(nil), // 12: QuantLastOutputGetResp
+	(*SearchParams)(nil),           // 13: SearchParams
+	(*QuantificationSummary)(nil),  // 14: QuantificationSummary
+	(*Quantification)(nil),         // 15: Quantification
 }
 var file_quantification_retrieval_msgs_proto_depIdxs = []int32{
-	7, // 0: QuantListReq.searchParams:type_name -> SearchParams
-	8, // 1: QuantListResp.quants:type_name -> QuantificationSummary
-	8, // 2: QuantGetResp.summary:type_name -> QuantificationSummary
-	9, // 3: QuantGetResp.data:type_name -> Quantification
-	0, // 4: QuantLastOutputGetReq.outputType:type_name -> QuantOutputType
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	13, // 0: QuantListReq.searchParams:type_name -> SearchParams
+	14, // 1: QuantListResp.quants:type_name -> QuantificationSummary
+	14, // 2: QuantGetResp.summary:type_name -> QuantificationSummary
+	15, // 3: QuantGetResp.data:type_name -> Quantification
+	0,  // 4: QuantLastOutputGetReq.outputType:type_name -> QuantOutputType
+	5,  // [5:5] is the sub-list for method output_type
+	5,  // [5:5] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_quantification_retrieval_msgs_proto_init() }
@@ -531,7 +849,7 @@ func file_quantification_retrieval_msgs_proto_init() {
 			}
 		}
 		file_quantification_retrieval_msgs_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QuantLastOutputGetReq); i {
+			switch v := v.(*QuantLogListReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -543,6 +861,78 @@ func file_quantification_retrieval_msgs_proto_init() {
 			}
 		}
 		file_quantification_retrieval_msgs_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QuantLogListResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_quantification_retrieval_msgs_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QuantLogGetReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_quantification_retrieval_msgs_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QuantLogGetResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_quantification_retrieval_msgs_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QuantRawDataGetReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_quantification_retrieval_msgs_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QuantRawDataGetResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_quantification_retrieval_msgs_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QuantLastOutputGetReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_quantification_retrieval_msgs_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*QuantLastOutputGetResp); i {
 			case 0:
 				return &v.state
@@ -561,7 +951,7 @@ func file_quantification_retrieval_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_quantification_retrieval_msgs_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
