@@ -96,7 +96,7 @@ func HandleImageGetReq(req *protos.ImageGetReq, hctx wsHelpers.HandlerContext) (
 			case errorwithstatus.Error:
 				if e.Status() == http.StatusNotFound {
 					// Log the error instead
-					hctx.Svcs.Log.Errorf("ImageGetReq: Scan %v doesn't exist when checking for user access, allowing in case of scan not existing")
+					hctx.Svcs.Log.Errorf("ImageGetReq: Scan %v doesn't exist when checking for user access, allowing in case of scan not existing", scanId)
 					handled = true
 				}
 			}
