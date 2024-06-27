@@ -55,6 +55,7 @@ func AddJob(
 		JobItemId:        jobItemId,
 		Name:             jobName,
 		Elements:         elementList,
+		RequestorUserId:  requestorUserId,
 	}
 
 	if _, ok := activeJobs[jobId]; ok {
