@@ -93,7 +93,7 @@ func main() {
 	fmt.Printf("Web socket config: %+v\n", m.Config)
 	ws := ws.MakeWSHandler(m, svcs)
 
-	svcs.Notifier = notificationSender.MakeNotificationSender(instanceId, svcs.MongoDB, svcs.IDGen, svcs.TimeStamper, svcs.Log, svcs.Config.EnvironmentName, ws, m)
+	svcs.Notifier = notificationSender.MakeNotificationSender(instanceId, svcs.MongoDB, svcs.IDGen, svcs.TimeStamper, svcs.Log, getPIXLISELinkBase(svcs.Config.EnvironmentName), ws, m)
 
 	// Create event handlers for websocket
 	m.HandleConnect(ws.HandleConnect)
@@ -268,6 +268,15 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 	}
 
 	return svcs
+}
+
+func getPIXLISELinkBase(env string) string {
+	prefix := env
+	if strings.Contains(env, "prod") {
+		prefix = "www"
+	}
+
+	return fmt.Sprintf("https://%v.pixlise.org/", prefix)
 }
 
 type autoImportHandler struct {

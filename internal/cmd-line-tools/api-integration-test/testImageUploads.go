@@ -223,7 +223,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
             "contents": "A new image named file_Name.png was added to scan: 048300551 (id: 048300551)",
             "from": "Data Importer",
 			"timeStampUnixSec": "${SECAGO=10}",
-            "actionLink": "?q=048300551&image=048300551/file_Name.png"
+            "actionLink": "analysis?scan_id=048300551&image=048300551/file_Name.png"
         }
     }}`,
 		`{"notificationUpd": {
@@ -234,7 +234,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
             "contents": "A new image named another.png was added to scan: 048300551 (id: 048300551)",
             "from": "Data Importer",
 			"timeStampUnixSec": "${SECAGO=10}",
-            "actionLink": "?q=048300551&image=048300551/another.png"
+            "actionLink": "analysis?scan_id=048300551&image=048300551/another.png"
         }
     }}`,
 		`{"notificationUpd": {
@@ -457,7 +457,7 @@ func testImageMatchTransform(apiHost string) {
 					"contents": "A new image named file_Name.png was added to scan: 048300551 (id: 048300551)",
 					"from": "Data Importer",
 					"timeStampUnixSec": "${SECAGO=10}",
-					"actionLink": "?q=048300551&image=048300551/file_Name.png"
+					"actionLink": "analysis?scan_id=048300551&image=048300551/file_Name.png"
 				}
 			}
 		}`,
@@ -545,7 +545,7 @@ func testImageMatchTransform(apiHost string) {
 					"contents": "A new image named file_Name.png was added to scan: 048300551 (id: 048300551)",
 					"from": "Data Importer",
 					"timeStampUnixSec": "${SECAGO=10}",
-					"actionLink": "?q=048300551&image=048300551/file_Name.png"
+					"actionLink": "analysis?scan_id=048300551&image=048300551/file_Name.png"
 				}
 			}
 		}`,
