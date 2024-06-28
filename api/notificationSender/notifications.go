@@ -3,6 +3,7 @@ package notificationSender
 import (
 	"context"
 	"fmt"
+	"path"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
@@ -178,12 +179,20 @@ func (n *NotificationSender) sendEmail(notif *protos.Notification, userId string
 		return
 	}
 
+	actionLink := ""
+	actionLinkHTML := ""
+	if len(notif.ActionLink) > 0 {
+		link := path.Join(n.envRootURL, notif.ActionLink)
+		actionLink = fmt.Sprintf("\nPIXLISE Link: %v", link)
+		actionLinkHTML = fmt.Sprintf("\n<p>PIXLISE Link: <a href=\"%v\">%v</a></p>", link, link)
+	}
+
 	unsub := "You can change your notification subscriptions if you log into PIXLISE and click on the user icon"
 	text := fmt.Sprintf(`Hi %v,
 
-%v
+%v%v
 
-%v.`, user.Info.Name, notif.Contents, unsub)
+%v.`, user.Info.Name, notif.Contents, actionLink, unsub)
 
 	html := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
@@ -194,10 +203,10 @@ func (n *NotificationSender) sendEmail(notif *protos.Notification, userId string
 <body>
 <h3>Hi %v</h3>
 <p>%v</p>
-<p>%v</p>
+<p>%v</p>%v
 </body>
 </html>
-`, notif.Subject, user.Info.Name, notif.Contents, unsub)
+`, notif.Subject, user.Info.Name, notif.Contents, actionLinkHTML, unsub)
 
 	n.log.Infof("Sending email notification: %v, with id: %v to user: %v, email: %v", notif.Subject, notif.Id, user.Info.Id, user.Info.Email)
 	awsutil.SESSendEmail(user.Info.Email, "UTF-8", text, html, notif.Subject, "info@mail.pixlise.org", []string{}, []string{})

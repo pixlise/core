@@ -34,6 +34,7 @@ func MakeNotificationSender(instanceId string, db *mongo.Database, idgen idgen.I
 		ws:          ws,
 		melody:      melody,
 		idgen:       idgen,
+		envRootURL:  envRootURL,
 	}
 }
 
@@ -42,9 +43,9 @@ func (n *NotificationSender) NotifyNewScan(scanName string, scanId string) {
 		Notification: &protos.Notification{
 			NotificationType: protos.NotificationType_NT_USER_MESSAGE,
 			Subject:          fmt.Sprintf("New scan imported: %v", scanName),
-			Contents:         fmt.Sprintf("A new scan named %v was just imported. Scan ID is: %v", scanName, scanId),
+			Contents:         fmt.Sprintf("A new scan named %v was just imported. Scan ID is: %v.", scanName, scanId),
 			From:             "Data Importer",
-			ActionLink:       path.Join(n.envRootURL, "?q="+scanId),
+			ActionLink:       fmt.Sprintf("analysis?scan_id=%v", scanId),
 		},
 	}
 
@@ -56,9 +57,9 @@ func (n *NotificationSender) NotifyUpdatedScan(scanName string, scanId string) {
 		Notification: &protos.Notification{
 			NotificationType: protos.NotificationType_NT_USER_MESSAGE,
 			Subject:          fmt.Sprintf("Updated scan: %v", scanName),
-			Contents:         fmt.Sprintf("The scan named %v, which you have access to, was just updated. Scan ID is: %v", scanName, scanId),
+			Contents:         fmt.Sprintf("The scan named %v, which you have access to, was just updated. Scan ID is: %v.", scanName, scanId),
 			From:             "Data Importer",
-			ActionLink:       path.Join(n.envRootURL, "?q="+scanId),
+			ActionLink:       fmt.Sprintf("analysis?scan_id=%v", scanId),
 		},
 	}
 
@@ -83,7 +84,7 @@ func (n *NotificationSender) NotifyNewScanImage(scanName string, scanId string, 
 			Subject:          fmt.Sprintf("New image added to scan: %v", scanName),
 			Contents:         fmt.Sprintf("A new image named %v was added to scan: %v (id: %v)", path.Base(imageName), scanName, scanId),
 			From:             "Data Importer",
-			ActionLink:       path.Join(n.envRootURL, "?q="+scanId+"&image="+imageName),
+			ActionLink:       fmt.Sprintf("analysis?scan_id=%v&image=%v", scanId, imageName),
 		},
 	}
 
@@ -108,7 +109,7 @@ func (n *NotificationSender) NotifyNewQuant(uploaded bool, quantId string, quant
 			Subject:          fmt.Sprintf("Quantification %v has completed with status: %v", quantName, status),
 			Contents:         fmt.Sprintf("A quantification named %v (id: %v) has completed with status %v. This quantification is for the scan named: %v", quantName, quantId, status, scanName),
 			From:             "Data Importer",
-			ActionLink:       path.Join(n.envRootURL, "?q="+scanId+"&quant="+quantId),
+			ActionLink:       fmt.Sprintf("analysis?scan_id=%v&quant=%v", scanId, quantId),
 		},
 	}
 
