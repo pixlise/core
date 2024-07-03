@@ -208,7 +208,7 @@ func (n *NotificationSender) sendEmail(notif *protos.Notification, userId string
 </html>
 `, notif.Subject, user.Info.Name, notif.Contents, actionLinkHTML, unsub)
 
-	n.log.Infof("Sending email notification: %v, with id: %v to user: %v, email: %v", notif.Subject, notif.Id, user.Info.Id, user.Info.Email)
+	n.log.Infof("Sending email notification: %v, to user: %v, email: %v", notif.Subject, user.Info.Id, user.Info.Email)
 	awsutil.SESSendEmail(user.Info.Email, "UTF-8", text, html, notif.Subject, "info@mail.pixlise.org", []string{}, []string{})
 }
 
