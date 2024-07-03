@@ -405,7 +405,7 @@ func (r *quantNodeRunner) triggerPiquantNodes(wg *sync.WaitGroup) {
 			if err != nil {
 				svcs.Log.Errorf("Failed to decode auto-share info for quantification triggered by %v: %v", r.quantStartSettings.RequestorUserId, err)
 			} else {
-				svcs.Log.Errorf("Found scan auto-share entry for quantification requestor \"%v\". Sharing accordingly.", r.quantStartSettings.RequestorUserId)
+				svcs.Log.Infof("Found scan auto-share entry for quantification requestor \"%v\". Sharing accordingly.", r.quantStartSettings.RequestorUserId)
 				ownerItem.Viewers = autoEntry.Viewers
 				ownerItem.Editors = autoEntry.Editors
 			}

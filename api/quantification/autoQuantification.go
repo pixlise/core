@@ -18,7 +18,7 @@ import (
 )
 
 func RunAutoQuantifications(scanId string, svcs *services.APIServices, onlyIfNotExists bool) {
-	svcs.Log.Infof("Running auto-quantifications called for scan: %v", scanId)
+	svcs.Log.Infof("Request to run auto-quantifications for scan: %v", scanId)
 
 	// TODO: Make these configuration parameters!
 	quantNames := []string{"AutoQuant-PDS", "AutoQuant-PIXL"}
