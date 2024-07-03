@@ -340,14 +340,11 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 
 			// If this is the first time the scan was found to be complete (we have all spectra), run auto quants
 			// NOTE: We have to ensure this is only done by 1 active API instance, so we don't end up running the quant on each instance!
-			if scan.CompleteTimeStampUnixSec == scan.TimestampUnixSec {
-				h.svcs.Log.Infof("Scan complete detected, running auto-quantifications...")
-				singleinstance.HandleOnce(scan.Id+"-quant", h.instanceId, func(sourceId string) {
-					quantification.RunAutoQuantifications(scan.Id, h.svcs)
-				}, h.svcs.MongoDB, h.svcs.TimeStamper, h.svcs.Log)
-			} else {
-				h.svcs.Log.Infof("Scan complete time %v doesn't match current time %v, assuming auto-quantification not required.", scan.CompleteTimeStampUnixSec, scan.TimestampUnixSec)
-			}
+			h.svcs.Log.Infof("Scan complete detected, checking if auto-quantification needed...")
+			singleinstance.HandleOnce(scan.Id+"-quant", h.instanceId, func(sourceId string) {
+				// We ask it to only run if it hasn't got auto-quants already
+				quantification.RunAutoQuantifications(scan.Id, h.svcs, true)
+			}, h.svcs.MongoDB, h.svcs.TimeStamper, h.svcs.Log)
 		} else if status.JobType == protos.JobStatus_JT_REIMPORT_SCAN {
 			h.svcs.Notifier.NotifyUpdatedScan(scan.Title, scan.Id)
 		}
