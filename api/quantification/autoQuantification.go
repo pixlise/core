@@ -4,22 +4,21 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/specialUserIds"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
-	svcs.Log.Infof("Running auto-quantifications for scan: %v", scanId)
-
-	// Check if we have auto quant already, if not, run one
-	ctx := context.TODO()
-	coll := svcs.MongoDB.Collection(dbCollections.QuantificationsName)
+func RunAutoQuantifications(scanId string, svcs *services.APIServices, onlyIfNotExists bool) {
+	svcs.Log.Infof("Running auto-quantifications called for scan: %v", scanId)
 
 	// TODO: Make these configuration parameters!
 	quantNames := []string{"AutoQuant-PDS", "AutoQuant-PIXL"}
@@ -27,10 +26,10 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
 	quantElements := [][]string{
 		// PDS: intended "Na2O", "MgO", "Al2O3", "SiO2", "P2O5", "SO3", "Cl", "K2O", "CaO", "TiO2", "Cr2O3", "MnO", "FeO-T", "NiO", "ZnO", "Br"
 		// But we must specify elements only! Expecting PIQUANT to determine the oxide states to write
-		[]string{"Na", "Mg", "Al", "Si", "P", "S", "Cl", "K", "Ca", "Ti", "Cr", "Mn", "Fe", "Ni", "Zn", "Br"},
+		{"Na", "Mg", "Al", "Si", "P", "S", "Cl", "K", "Ca", "Ti", "Cr", "Mn", "Fe", "Ni", "Zn", "Br"},
 		// PIXL: intended "Na2O", "MgO", "Al2O3", "SiO2", "P2O5", "SO3", "Cl", "K2O", "CaO", "TiO2", "Cr2O3", "MnO", "FeO-T", "NiO", "ZnO", "GeO", "Br", "Rb2O", "SrO", "Y2O3", "ZrO2"
 		// But we must specify elements only! Expecting PIQUANT to determine the oxide states to write
-		[]string{"Na", "Mg", "Al", "Si", "P", "S", "Cl", "K", "Ca", "Ti", "Cr", "Mn", "Fe", "Ni", "Zn", "Ge", "Br", "Rb", "Sr", "Y", "Zr"},
+		{"Na", "Mg", "Al", "Si", "P", "S", "Cl", "K", "Ca", "Ti", "Cr", "Mn", "Fe", "Ni", "Zn", "Ge", "Br", "Rb", "Sr", "Y", "Zr"},
 	}
 	detector := "PIXL/PiquantConfigs/v7"
 
@@ -41,20 +40,18 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
 		}
 	}
 
-	filter := bson.M{"scanid": scanId, "params.name": bson.M{"$in": allNames}}
-	opt := options.Find()
-	cursor, err := coll.Find(ctx, filter, opt)
-
+	existingAutoQuants, err := getExistingAutoQuants(scanId, allNames, svcs.MongoDB)
 	if err != nil {
-		svcs.Log.Errorf("AutoQuant failed to read existing quantifications: %v", err)
+		svcs.Log.Errorf("%v", err)
 		return
 	}
 
-	result := []*protos.QuantificationSummary{}
-	err = cursor.All(ctx, &result)
-	if err != nil {
-		svcs.Log.Errorf("AutoQuant failed to decode existing quantifications: %v", err)
+	// If we only want to run when there is no existing one yet
+	if onlyIfNotExists {
+		svcs.Log.Errorf("AutoQuant detected existing quantifications: %v. Skipping auto-quantification", strings.Join(existingAutoQuants, ","))
 		return
+	} else {
+		svcs.Log.Infof("AutoQuant detected existing quantifications: %v. Running anyway...", strings.Join(existingAutoQuants, ","))
 	}
 
 	exprPB, err := wsHelpers.ReadDatasetFile(scanId, svcs)
@@ -63,18 +60,10 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
 		return
 	}
 
-	pmcs := []int32{}
-	for _, loc := range exprPB.Locations {
-		pmc, err := strconv.Atoi(loc.Id)
-		if err != nil {
-			svcs.Log.Errorf("AutoQuant: Failed to read PMC %v from scan %v. Skipping...", loc.Id, scanId)
-			continue
-		}
-
-		if len(loc.PseudoIntensities) > 0 && len(loc.PseudoIntensities[0].ElementIntensities) > 0 {
-			// We have quantifiable data for this
-			pmcs = append(pmcs, int32(pmc))
-		}
+	pmcs, err := readQuantifiablePMCs(exprPB, scanId, svcs.Log)
+	if err != nil {
+		svcs.Log.Errorf("%v", scanId, err)
+		return
 	}
 
 	// Start all the quants
@@ -106,4 +95,50 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices) {
 
 func makeAutoQuantName(name string, quantMode string) string {
 	return fmt.Sprintf("%v (%v)", name, quantMode)
+}
+
+func getExistingAutoQuants(scanId string, allNames []string, mongoDB *mongo.Database) ([]string, error) {
+	// Check if we have auto quant already, if not, run one
+	ctx := context.TODO()
+	coll := mongoDB.Collection(dbCollections.QuantificationsName)
+
+	filter := bson.M{"scanid": scanId, "params.userparams.name": bson.M{"$in": allNames}}
+	opt := options.Find()
+	cursor, err := coll.Find(ctx, filter, opt)
+
+	if err != nil {
+		return []string{}, fmt.Errorf("AutoQuant failed to read existing quantifications: %v", err)
+	}
+
+	result := []*protos.QuantificationSummary{}
+	err = cursor.All(ctx, &result)
+	if err != nil {
+		return []string{}, fmt.Errorf("AutoQuant failed to decode existing quantifications: %v", err)
+	}
+
+	existingNames := []string{}
+	for _, item := range result {
+		existingNames = append(existingNames, fmt.Sprintf("%v (id: %v)", item.Params.UserParams.Name, item.Id))
+	}
+
+	return existingNames, nil
+}
+
+func readQuantifiablePMCs(exprPB *protos.Experiment, scanId string, logger logger.ILogger) ([]int32, error) {
+	pmcs := []int32{}
+
+	for _, loc := range exprPB.Locations {
+		pmc, err := strconv.Atoi(loc.Id)
+		if err != nil {
+			logger.Errorf("AutoQuant: Failed to read PMC %v from scan %v. Skipping...", loc.Id, scanId)
+			continue
+		}
+
+		if len(loc.PseudoIntensities) > 0 && len(loc.PseudoIntensities[0].ElementIntensities) > 0 {
+			// We have quantifiable data for this
+			pmcs = append(pmcs, int32(pmc))
+		}
+	}
+
+	return pmcs, nil
 }
