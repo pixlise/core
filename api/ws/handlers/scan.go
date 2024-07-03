@@ -720,7 +720,8 @@ func HandleScanTriggerAutoQuantReq(req *protos.ScanTriggerAutoQuantReq, hctx wsH
 		return nil, err
 	}
 
-	quantification.RunAutoQuantifications(req.ScanId, hctx.Svcs)
+	// Run auto-quants no matter if they have run already
+	quantification.RunAutoQuantifications(req.ScanId, hctx.Svcs, false)
 
 	return &protos.ScanTriggerAutoQuantResp{}, nil
 }
