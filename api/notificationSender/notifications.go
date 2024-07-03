@@ -10,6 +10,8 @@ import (
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/singleinstance"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -213,7 +215,6 @@ func (n *NotificationSender) sendEmail(notif *protos.Notification, userId string
 }
 
 func (n *NotificationSender) saveNotificationToDB(notifId string, destUserId string, notification *protos.Notification) error {
-	// Make a copy which has the user id set
 	toSave := &protos.Notification{
 		DestUserId: destUserId,
 
@@ -230,6 +231,9 @@ func (n *NotificationSender) saveNotificationToDB(notifId string, destUserId str
 		ImageName:        notification.ImageName,
 		QuantId:          notification.QuantId,
 	}
-	_, err := n.db.Collection(dbCollections.NotificationsName).InsertOne(context.TODO(), toSave)
+
+	// Make a copy which has the user id set
+	filter := bson.D{{"id", toSave.Id}}
+	_, err := n.db.Collection(dbCollections.NotificationsName).ReplaceOne(context.TODO(), filter, toSave, options.Replace().SetUpsert(true))
 	return err
 }
