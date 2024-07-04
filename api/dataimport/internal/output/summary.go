@@ -153,6 +153,14 @@ func makeSummaryFileContent(
 			s.Title = prevSavedScan.Title
 			jobLog.Infof(" Preserved previous title=\"%v\"", s.Title)
 		}
+
+		// If we have been marked as having RGBU imagery, preserve this
+		for _, item := range prevSavedScan.DataTypes {
+			if item.DataType == protos.ScanDataType_SD_RGBU {
+				s.DataTypes = append(s.DataTypes, item)
+				break
+			}
+		}
 	}
 
 	return s

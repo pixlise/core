@@ -233,7 +233,9 @@ func (n *NotificationSender) saveNotificationToDB(notifId string, destUserId str
 	}
 
 	// Make a copy which has the user id set
-	filter := bson.D{{"id", toSave.Id}}
-	_, err := n.db.Collection(dbCollections.NotificationsName).ReplaceOne(context.TODO(), filter, toSave, options.Replace().SetUpsert(true))
+	filter := bson.D{{"_id", toSave.Id}}
+	opt := options.Replace().SetUpsert(true)
+
+	_, err := n.db.Collection(dbCollections.NotificationsName).ReplaceOne(context.TODO(), filter, toSave, opt)
 	return err
 }
