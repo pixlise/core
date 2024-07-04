@@ -229,7 +229,7 @@ func printArchiveOKLogOutput(logger *logger.StdOutLoggerForTest, db *mongo.Datab
 	// Dump contents of summary file, this verifies most things imported as expected
 	summary, err := scan.ReadScanItem("048300551", db)
 	if err != nil {
-		fmt.Println("Failed to read dataset summary ScanItem 048300551")
+		fmt.Println("Failed to read dataset summary=048300551")
 		return
 	}
 	// Clear the time stamp so it doesn't change next time we run test
