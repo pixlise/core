@@ -279,6 +279,12 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 
 	//Verify delImgResult.DeletedCount == 1 ???
 
+	// Finally, update the scan if needed
+	err = wsHelpers.UpdateScanImageDataTypes(img.OriginScanId, hctx.Svcs.MongoDB, hctx.Svcs.Log)
+	if err != nil {
+		hctx.Svcs.Log.Errorf("UpdateScanImageDataTypes Failed for scan: %v, when uploading image: %v. DataType counts may not be accurate on Scan Item, RGBU icon may not show correctly.", img.OriginScanId, img.ImagePath)
+	}
+
 	// For any associated scans or origin scans, we send notify out
 	scanIds := []string{}
 	for _, assocScanId := range img.AssociatedScanIds {
@@ -422,6 +428,12 @@ func HandleImageUploadReq(req *protos.ImageUploadReq, hctx wsHelpers.HandlerCont
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// Finally, update the scan if needed
+	err = wsHelpers.UpdateScanImageDataTypes(req.OriginScanId, hctx.Svcs.MongoDB, hctx.Svcs.Log)
+	if err != nil {
+		hctx.Svcs.Log.Errorf("UpdateScanImageDataTypes Failed for scan: %v, when uploading image: %v. DataType counts may not be accurate on Scan Item, RGBU icon may not show correctly.", req.OriginScanId, scanImage.ImagePath)
 	}
 
 	// Notify of our successful image addition
