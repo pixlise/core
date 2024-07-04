@@ -110,7 +110,7 @@ func makeSummaryFileContent(
 	}
 
 	// If we've got a previously stored ScanItem, we are updating it, so read its time stamp into the array of previous time stamps
-	isComplete := exp.NormalSpectra == exp.PseudoIntensities*2
+	isComplete := exp.PseudoIntensities > 0 && exp.NormalSpectra == exp.PseudoIntensities*2
 
 	if prevSavedScan != nil {
 		// Build the list of previous import times
