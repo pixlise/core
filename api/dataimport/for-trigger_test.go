@@ -393,7 +393,7 @@ func printManualOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database,
 	// Dump contents of summary file, this verifies most things imported as expected
 	summary, err := scan.ReadScanItem(datasetId, db)
 	if err != nil {
-		fmt.Println("Failed to read dataset summary ScanItem " + datasetId)
+		fmt.Printf("Failed to read dataset summary ScanItem %v. Error: %v\n", datasetId, err)
 	} else {
 		// Clear the time stamp so it doesn't change next time we run test
 		summary.TimestampUnixSec = 0
