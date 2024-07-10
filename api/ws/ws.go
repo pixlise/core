@@ -8,6 +8,7 @@ import (
 	apiRouter "github.com/pixlise/core/v4/api/router"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/jwtparser"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -64,7 +65,12 @@ func (ws *WSHandler) HandleBeginWSConnection(params apiRouter.ApiHandlerGenericP
 }
 
 func (ws *WSHandler) HandleSocketCreation(params apiRouter.ApiHandlerGenericPublicParams) error {
-	ws.melody.HandleRequest(params.Writer, params.Request)
+	if err := ws.melody.HandleRequest(params.Writer, params.Request); err != nil {
+		// Added to help debug load balancer behaviour
+		fmt.Printf("HandleSocketCreation BadRequest error=\"%v\" from host: %v, method: %v, url: %v, agent: %v\n", err, params.Request.Host, params.Request.Method, params.Request.URL, params.Request.UserAgent())
+		return errorwithstatus.MakeBadRequestError(err)
+	}
+
 	return nil
 }
 

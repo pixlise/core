@@ -348,5 +348,8 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 		} else if status.JobType == protos.JobStatus_JT_REIMPORT_SCAN {
 			h.svcs.Notifier.NotifyUpdatedScan(scan.Title, scan.Id)
 		}
+
+		// Make sure we're not caching up older versions of the bin file locally
+		wsHelpers.ClearCacheForScanId(scan.Id, h.svcs.TimeStamper, h.svcs.Log)
 	}
 }

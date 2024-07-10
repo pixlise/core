@@ -21,6 +21,7 @@ import (
 	"net/http"
 
 	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/jwtparser"
 )
 
@@ -45,6 +46,8 @@ func (h ApiHandlerGeneric) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	userInfo, err := h.APIServices.JWTReader.GetUserInfo(r)
 	if err == nil {
 		err = h.Handler(ApiHandlerGenericParams{h.APIServices, userInfo, pathParams, w, r})
+	} else {
+		err = errorwithstatus.MakeBadRequestError(err)
 	}
 
 	if err != nil {
