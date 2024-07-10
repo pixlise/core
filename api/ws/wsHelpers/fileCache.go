@@ -10,6 +10,8 @@ import (
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/timestamper"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"google.golang.org/protobuf/proto"
 )
@@ -131,6 +133,29 @@ func ReadDiffractionFile(scanId string, svcs *services.APIServices) (*protos.Dif
 	return diffPB, nil
 }
 
+func ClearCacheForScanId(scanId string, ts timestamper.ITimeStamper, l logger.ILogger) {
+	l.Infof("Clearing local file cache for scan %v...", scanId)
+
+	// Check what files we have cached for this scan, and instead of deleting them, we set the time stamp to be
+	// old, so the next time it's accessed from the cache it'll get reloaded. If we directly delete, we may
+	// cause more problems if other threads are reading the file at the moment
+	now := ts.GetTimeNowSec()
+
+	itemsToClear := []string{"scan-" + scanId, "diffraction-" + scanId}
+
+	for _, cacheItem := range itemsToClear {
+		if item, ok := fileCache[cacheItem]; ok {
+			l.Infof("Setting cached file %v time stamp to be too old, subsequent access should re-download it", item.localPath)
+
+			fileCache[cacheItem] = fileCacheItem{
+				localPath:        item.localPath,
+				fileSize:         item.fileSize,
+				timestampUnixSec: now - MaxFileCacheAgeSec - 5,
+			}
+		}
+	}
+}
+
 func checkCache(id string, fileTypeName string, svcs *services.APIServices) []byte {
 	var fileBytes []byte
 	var err error
@@ -174,7 +199,7 @@ func addToCache(id string, fileSuffix string, srcPath string, fileBytes []byte, 
 		}
 
 		// Now we remove files that would make us over-extend our cache space
-		removeOldFileCacheItems(fileCache)
+		removeOldFileCacheItems(fileCache, svcs.Log)
 	}
 }
 
@@ -195,7 +220,7 @@ func orderCacheItems(cache map[string]fileCacheItem) ([]fileCacheItem, uint64) {
 	return itemsByAge, totalSize
 }
 
-func removeOldFileCacheItems(cache map[string]fileCacheItem) {
+func removeOldFileCacheItems(cache map[string]fileCacheItem, l logger.ILogger) {
 	itemsByAge, totalSize := orderCacheItems(cache)
 	if len(itemsByAge) <= 0 {
 		return
@@ -213,12 +238,14 @@ func removeOldFileCacheItems(cache map[string]fileCacheItem) {
 
 		// Delete it
 		err := os.Remove(item.localPath)
-		if err != nil {
+		if err == nil {
 			// If that worked, remember our cache is smaller now
 			totalSize -= item.fileSize
 
 			// And remove it from cache too
 			itemsByAge = append(itemsByAge[0:c], itemsByAge[c+1:]...)
+		} else {
+			l.Errorf("Failed to delete old locally cached file: %v. Error: %v", item.localPath, err)
 		}
 	}
 }

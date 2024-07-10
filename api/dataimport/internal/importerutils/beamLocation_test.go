@@ -19,6 +19,8 @@ package importerutils
 
 import (
 	"fmt"
+
+	"github.com/pixlise/core/v4/core/logger"
 )
 
 func Example_splitColumnHeader() {
@@ -146,4 +148,19 @@ func Example_parseBeamLocations() {
 	// map[33:{1.1 1.2 1.3 0 map[222:{55.1 55.2}]}]|<nil>
 	// map[33:{31.1 31.2 31.3 0 map[22:{355.1 355.2} 62:{3121.4 3121.5}]} 66:{91.1 91.2 91.3 0 map[22:{955.1 955.2} 62:{9121.4 9121.5}]}]|<nil>
 	// map[33:{31.1 31.2 31.3 1.03 map[22:{355.1 355.2} 62:{3121.4 3121.5}]} 66:{91.1 91.2 91.3 0.99 map[22:{955.1 955.2} 62:{9121.4 9121.5}]}]|<nil>
+}
+
+// This is kind of redunant, was already tested elsewhere, but this is an easy point to add a file and run the test to make sure it imports!
+func Example_ReadBeamLocationsFile() {
+	rxl, err := ReadBeamLocationsFile("./test-data/GeomCorrMoved.CSV", true, 4, &logger.StdOutLoggerForTest{})
+	fmt.Printf("%v\nrxl: %v\n", err, len(rxl))
+
+	rxl, err = ReadBeamLocationsFile("./test-data/GeomCorrAtExpected.CSV", true, 4, &logger.StdOutLoggerForTest{})
+	fmt.Printf("%v\nrxl: %v\n", err, len(rxl))
+
+	// Output:
+	// Unexpected count of i/j columns
+	// rxl: 0
+	// <nil>
+	// rxl: 3
 }

@@ -49,7 +49,7 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices, onlyIfNot
 	// If we only want to run when there is no existing one yet
 	if len(existingAutoQuants) > 0 {
 		if onlyIfNotExists {
-			svcs.Log.Errorf("AutoQuant detected existing quantifications: %v. Skipping auto-quantification", strings.Join(existingAutoQuants, ","))
+			svcs.Log.Infof("AutoQuant detected existing quantifications: %v. Skipping auto-quantification", strings.Join(existingAutoQuants, ","))
 			return
 		} else {
 			svcs.Log.Infof("AutoQuant detected existing quantifications: %v. Running anyway...", strings.Join(existingAutoQuants, ","))
