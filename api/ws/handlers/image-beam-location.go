@@ -157,10 +157,10 @@ func generateIJs(imageName string, scanId string, instrument protos.ScanInstrume
 
 	// Generate coordinates
 	scale := float32(1)
-
-	if len(imageName) > 0 {
-		scale = 100 // We scale XY up by this much to make them not be bunched up so much, so the image doesn't have to scale down too much (it's a bit arbitrary)
-	}
+	/*
+		if len(imageName) > 0 {
+			scale = 100 // We scale XY up by this much to make them not be bunched up so much, so the image doesn't have to scale down too much (it's a bit arbitrary)
+		}*/
 
 	coords := []*protos.Coordinate2D{}
 	for _, loc := range exprPB.Locations {
