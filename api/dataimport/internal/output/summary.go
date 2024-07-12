@@ -148,8 +148,8 @@ func makeSummaryFileContent(
 		}
 		jobLog.Infof(" Preserved previous description=\"%v\"...", descSnippet)
 
-		if len(prevSavedScan.Description) > 0 {
-			// User has entered a description so perserve the title too
+		if len(prevSavedScan.Title) > 0 && prevSavedScan.Title != s.Id {
+			// The title wasn't just the dataset ID, so preserve it
 			s.Title = prevSavedScan.Title
 			jobLog.Infof(" Preserved previous title=\"%v\"", s.Title)
 		}
