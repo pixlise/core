@@ -59,7 +59,7 @@ func HandleScreenConfigurationListReq(req *protos.ScreenConfigurationListReq, hc
 
 	opts := options.Find()
 
-	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName).Find(context.TODO(), filter, opts)
+	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.ScreenConfigurationName).Find(context.TODO(), filter, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -131,10 +131,19 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 			updatedConfig = append(updatedConfig, bson.E{Key: "description", Value: screenConfig.Description})
 			updatedConfig = append(updatedConfig, bson.E{Key: "scanconfigurations", Value: screenConfig.ScanConfigurations})
 
+			// Default tab visibilities
+			updatedConfig = append(updatedConfig, bson.E{Key: "browsetabhidden", Value: screenConfig.BrowseTabHidden})
+			updatedConfig = append(updatedConfig, bson.E{Key: "codeeditortabhidden", Value: screenConfig.CodeEditorTabHidden})
+			updatedConfig = append(updatedConfig, bson.E{Key: "elementmapstabhidden", Value: screenConfig.ElementMapsTabHidden})
+
 			configuration.Name = screenConfig.Name
 			configuration.Tags = screenConfig.Tags
 			configuration.Description = screenConfig.Description
 			configuration.ScanConfigurations = screenConfig.ScanConfigurations
+
+			configuration.BrowseTabHidden = screenConfig.BrowseTabHidden
+			configuration.CodeEditorTabHidden = screenConfig.CodeEditorTabHidden
+			configuration.ElementMapsTabHidden = screenConfig.ElementMapsTabHidden
 
 			_, err = hctx.Svcs.MongoDB.Collection(dbCollections.ScreenConfigurationName).UpdateByID(sessCtx, screenConfig.Id, bson.D{{
 				Key:   "$set",
@@ -146,8 +155,12 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 				return nil, errors.New("screen configuration must have at least one layout")
 			}
 
-			// Add an ID to any widgets that don't have one
+			// Add an ID to any layouts and widgets that don't have one
 			for i, layout := range screenConfig.Layouts {
+				if layout.TabId == "" {
+					layout.TabId = hctx.Svcs.IDGen.GenObjectID()
+					layout.TabName = "Tab " + fmt.Sprint(i+1)
+				}
 				for _, widget := range layout.Widgets {
 					if widget.Id == "" {
 						widget.Id = formWidgetId(widget, screenConfig.Id, i)
