@@ -136,6 +136,9 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 			updatedConfig = append(updatedConfig, bson.E{Key: "codeeditortabhidden", Value: screenConfig.CodeEditorTabHidden})
 			updatedConfig = append(updatedConfig, bson.E{Key: "elementmapstabhidden", Value: screenConfig.ElementMapsTabHidden})
 
+			// Update the modified time
+			updatedConfig = append(updatedConfig, bson.E{Key: "modifiedunixsec", Value: hctx.Svcs.TimeStamper.GetTimeNowSec()})
+
 			configuration.Name = screenConfig.Name
 			configuration.Tags = screenConfig.Tags
 			configuration.Description = screenConfig.Description
