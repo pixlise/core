@@ -74,7 +74,7 @@ func validateExpressionGroup(egroup *protos.ExpressionGroup) error {
 	if err := wsHelpers.CheckFieldLength(egroup.Tags, "Tags", 0, wsHelpers.TagListMaxLength); err != nil {
 		return err
 	}
-	if err := wsHelpers.CheckFieldLength(egroup.GroupItems, "GroupItems", 2, 10); err != nil {
+	if err := wsHelpers.CheckFieldLength(egroup.GroupItems, "GroupItems", 2, 20); err != nil {
 		return err
 	}
 
