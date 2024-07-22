@@ -240,10 +240,10 @@ func removeOldFileCacheItems(cache map[string]fileCacheItem, l logger.ILogger) {
 	}
 
 	// Loop through, oldest to newest, delete until we satisfy cache size limit
+	removals := 0
 	for c := len(itemsByAge) - 1; c >= 0; c-- {
 		if totalSize < MaxFileCacheSizeBytes {
 			// Cache is small enough now, stop here
-			l.Infof("Cached files now below %v bytes: %v", MaxFileCacheSizeBytes, totalSize)
 			break
 		}
 
@@ -263,7 +263,9 @@ func removeOldFileCacheItems(cache map[string]fileCacheItem, l logger.ILogger) {
 		} else {
 			l.Errorf("Failed to delete old locally cached file: %v. Error: %v", item.localPath, err)
 		}
+
+		removals++
 	}
 
-	l.Infof("Total locally cached files: %v after removing oldest", len(cache))
+	l.Infof("Total locally cached files: %v, %v bytes, removed %v", len(cache), totalSize, removals)
 }
