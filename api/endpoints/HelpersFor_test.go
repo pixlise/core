@@ -18,8 +18,6 @@
 package endpoints
 
 import (
-	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -150,6 +148,7 @@ func checkResult(t *testing.T, resp *httptest.ResponseRecorder, expectedStatus i
 	}
 }
 
+/*
 func minifyJSON(jsonStr string) string {
 	minifiedStr := &bytes.Buffer{}
 	if err := json.Compact(minifiedStr, []byte(jsonStr)); err != nil {
@@ -166,3 +165,4 @@ func standardizeJSON(jsonStr string) string {
 
 	return standardizedStr.String()
 }
+*/
