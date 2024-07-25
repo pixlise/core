@@ -233,6 +233,8 @@ func testScreenConfiguration(apiHost string) {
 					"name": "Novarupta 2",
 					"layouts": [
 						{
+							"tabId": "${IGNORE}",
+							"tabName": "Tab 1",
 							"rows": [
 								{
 									"height": 3
