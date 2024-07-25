@@ -16,6 +16,7 @@ import (
 	"github.com/pixlise/core/v4/core/auth0login"
 	"github.com/pixlise/core/v4/core/wstestlib"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"google.golang.org/protobuf/proto"
 )
 
 const imagePath = "images/download/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"
@@ -40,7 +41,17 @@ func testImageGet_PreWS(apiHost string) {
 	seedImageLocations()
 	seedImageFile(path.Base(imagePath), scanId, apiDatasetBucket)
 
-	testImageGet_NoMembership(apiHost, imageGetJWT)
+	testImageGet_NoMembership(apiHost, imagePath, "GET", nil, imageGetJWT)
+
+	uploadBody, err := proto.Marshal(&protos.ImageUploadHttpRequest{
+		Name:      "image.jpg",
+		ImageData: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	testImageGet_NoMembership(apiHost, "images", "PUT", bytes.NewBuffer(uploadBody), imageGetJWT)
 }
 
 func seedImageFile(fileName string, scanId string, bucket string) {
@@ -109,15 +120,22 @@ func testImageGet_NoJWT(apiHost string) {
 	failIf(string(body) != "Token not found\n" || resp.StatusCode != 500, fmt.Errorf("Unexpected response! Status %v, body: %v", resp.StatusCode, string(body)))
 }
 
-func doGet(scheme string, apiHost string, path string, query string, jwt string) (int, []byte, error) {
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
+func doHTTPRequest(scheme string, method string, apiHost string, urlPath string, query string, reqBody *bytes.Buffer, jwt string) (int, []byte, error) {
+	if !strings.HasPrefix(urlPath, "/") {
+		urlPath = "/" + urlPath
 	}
 
-	wsConnectUrl := url.URL{Scheme: scheme, Host: apiHost, Path: path, RawQuery: query}
+	wsConnectUrl := url.URL{Scheme: scheme, Host: apiHost, Path: urlPath, RawQuery: query}
+
+	var bodyReader io.Reader
+	if reqBody != nil {
+		bodyReader = io.NopCloser(reqBody)
+	}
+
+	fmt.Printf("Sending HTTP %v request: %v...", method, wsConnectUrl.String())
 
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", wsConnectUrl.String(), nil)
+	req, err := http.NewRequest(method, wsConnectUrl.String(), bodyReader)
 	req.Header.Set("Authorization", "Bearer "+jwt)
 	if err != nil {
 		return 0, []byte{}, err
@@ -138,21 +156,21 @@ func doGet(scheme string, apiHost string, path string, query string, jwt string)
 }
 
 func testImageGet_BadPath(apiHost string, jwt string) {
-	status, body, err := doGet("http", apiHost, "images/download/non-existant", "", jwt)
+	status, body, err := doHTTPRequest("http", "GET", apiHost, "images/download/non-existant", "", nil, jwt)
 
 	failIf(err != nil, err)
 	failIf(string(body) != "404 page not found\n" || status != 404, fmt.Errorf("Unexpected response! Status %v, body: %v", status, string(body)))
 }
 
-func testImageGet_NoMembership(apiHost string, jwt string) {
-	status, body, err := doGet("http", apiHost, imagePath, "", jwt)
+func testImageGet_NoMembership(apiHost string, urlPath string, method string, reqBody *bytes.Buffer, jwt string) {
+	status, body, err := doHTTPRequest("http", method, apiHost, urlPath, "", reqBody, jwt)
 
 	failIf(err != nil, err)
 	failIf(string(body) != "User has no group membership, can't determine permissions\n" || status != 400, fmt.Errorf("Unexpected response! Status %v, body: %v", status, string(body)))
 }
 
 func testImageGet_OK(apiHost string, jwt string) {
-	status, body, err := doGet("http", apiHost, imagePath, "", jwt)
+	status, body, err := doHTTPRequest("http", "GET", apiHost, imagePath, "", nil, jwt)
 	failIf(err != nil, err)
 	img, format, err := image.Decode(bytes.NewReader(body))
 	var imgW, imgH int
@@ -166,7 +184,7 @@ func testImageGet_OK(apiHost string, jwt string) {
 }
 
 func testImageGetScaled_OK(apiHost string, jwt string, minWidthPx int, minWidthPxExpected int, minHeightPxExpected int) {
-	status, body, err := doGet("http", apiHost, imagePath, fmt.Sprintf("minwidth=%v", minWidthPx), jwt)
+	status, body, err := doHTTPRequest("http", "GET", apiHost, imagePath, fmt.Sprintf("minwidth=%v", minWidthPx), nil, jwt)
 	failIf(err != nil, err)
 	failIf(status != 200, fmt.Errorf("Unexpected status: %v. Body: %v", status, string(body)))
 	/*

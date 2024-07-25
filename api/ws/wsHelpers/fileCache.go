@@ -19,6 +19,7 @@ import (
 // This uses a cache as it may be reading the same thing many times in bursts.
 // Cache is updated upon user info change though
 type fileCacheItem struct {
+	id               string
 	localPath        string
 	fileSize         uint64
 	timestampUnixSec int64
@@ -148,12 +149,15 @@ func ClearCacheForScanId(scanId string, ts timestamper.ITimeStamper, l logger.IL
 			l.Infof("Setting cached file %v time stamp to be too old, subsequent access should re-download it", item.localPath)
 
 			fileCache[cacheItem] = fileCacheItem{
+				id:               item.id,
 				localPath:        item.localPath,
 				fileSize:         item.fileSize,
 				timestampUnixSec: now - MaxFileCacheAgeSec - 5,
 			}
 		}
 	}
+
+	l.Infof("Total locally cached files: %v", len(fileCache))
 }
 
 func checkCache(id string, fileTypeName string, svcs *services.APIServices) []byte {
@@ -176,6 +180,14 @@ func checkCache(id string, fileTypeName string, svcs *services.APIServices) []by
 				delete(fileCache, id)
 				fileBytes = nil
 			}
+		} else {
+			// Print that it timed out
+			fmt.Printf("Detected timed-out locally cached file: %v. Deleting...\n", item.localPath)
+			err = os.Remove(item.localPath)
+			if err != nil {
+				svcs.Log.Errorf("Failed to delete timed-out locally cached file: %v. Error: %v", item.localPath, err)
+			}
+			delete(fileCache, id)
 		}
 	}
 
@@ -193,6 +205,7 @@ func addToCache(id string, fileSuffix string, srcPath string, fileBytes []byte, 
 	} else {
 		// Write to cache
 		fileCache[id] = fileCacheItem{
+			id:               id,
 			localPath:        cachePath,
 			fileSize:         uint64(len(fileBytes)),
 			timestampUnixSec: svcs.TimeStamper.GetTimeNowSec(),
@@ -227,6 +240,7 @@ func removeOldFileCacheItems(cache map[string]fileCacheItem, l logger.ILogger) {
 	}
 
 	// Loop through, oldest to newest, delete until we satisfy cache size limit
+	removals := 0
 	for c := len(itemsByAge) - 1; c >= 0; c-- {
 		if totalSize < MaxFileCacheSizeBytes {
 			// Cache is small enough now, stop here
@@ -236,6 +250,8 @@ func removeOldFileCacheItems(cache map[string]fileCacheItem, l logger.ILogger) {
 		// Try delete this file
 		item := itemsByAge[c]
 
+		l.Infof("Deleting locally cached file: %v of size %v bytes to reduce total file cache size", item.localPath, item.fileSize)
+
 		// Delete it
 		err := os.Remove(item.localPath)
 		if err == nil {
@@ -243,9 +259,13 @@ func removeOldFileCacheItems(cache map[string]fileCacheItem, l logger.ILogger) {
 			totalSize -= item.fileSize
 
 			// And remove it from cache too
-			itemsByAge = append(itemsByAge[0:c], itemsByAge[c+1:]...)
+			delete(cache, item.id)
 		} else {
 			l.Errorf("Failed to delete old locally cached file: %v. Error: %v", item.localPath, err)
 		}
+
+		removals++
 	}
+
+	l.Infof("Total locally cached files: %v, %v bytes, removed %v", len(cache), totalSize, removals)
 }

@@ -124,6 +124,8 @@ func main() {
 		endpoints.GetImage,
 	)
 
+	router.AddGenericHandler("/images", apiRouter.MakeMethodPermission("PUT", permission.PermPublic), endpoints.PutImage)
+
 	router.AddGenericHandler("/scan", apiRouter.MakeMethodPermission("PUT", permission.PermPublic), endpoints.PutScanData)
 
 	// WS initiation - token retrieval to be allowed to create socket

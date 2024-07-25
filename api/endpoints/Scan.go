@@ -18,6 +18,7 @@
 package endpoints
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -35,6 +36,10 @@ const FormatIdentifier = "format"
 // actually run the import process! For that, a ScanUploadReq needs to be sent with the same scanID and file name as passed
 // to this call - otherwise it'll fail.
 func PutScanData(params apiRouter.ApiHandlerGenericParams) error {
+	if !params.UserInfo.Permissions["EDIT_SCAN"] {
+		return errorwithstatus.MakeBadRequestError(errors.New("PutScanData not allowed"))
+	}
+
 	destBucket := params.Svcs.Config.ManualUploadBucket
 
 	scanId := fileaccess.MakeValidObjectName(params.PathParams[ScanIdentifier], false)
