@@ -47,7 +47,7 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 		}
 
 		// Generate away! NOTE: empty image name implies this won't write to DB
-		locs, err = generateIJs("", req.GenerateForScanId, scan.Instrument, hctx)
+		locs, err = wsHelpers.GenerateIJs("", req.GenerateForScanId, scan.Instrument, hctx.Svcs)
 		if err != nil {
 			return nil, err
 		}
@@ -145,57 +145,6 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 	return &protos.ImageBeamLocationsResp{
 		Locations: locs,
 	}, nil
-}
-
-func generateIJs(imageName string, scanId string, instrument protos.ScanInstrument, hctx wsHelpers.HandlerContext) (*protos.ImageLocations, error) {
-	hctx.Svcs.Log.Infof("Generating IJ's for image: \"%v\", scan: %v...", imageName, scanId)
-	// Read the dataset file
-	exprPB, err := wsHelpers.ReadDatasetFile(scanId, hctx.Svcs)
-	if err != nil {
-		return nil, err
-	}
-
-	// Generate coordinates
-	scale := float32(1)
-	/*
-		if len(imageName) > 0 {
-			scale = 100 // We scale XY up by this much to make them not be bunched up so much, so the image doesn't have to scale down too much (it's a bit arbitrary)
-		}*/
-
-	coords := []*protos.Coordinate2D{}
-	for _, loc := range exprPB.Locations {
-		if loc.Beam == nil {
-			coords = append(coords, nil)
-		} else {
-			coords = append(coords, &protos.Coordinate2D{I: loc.Beam.X * scale, J: loc.Beam.Y * scale})
-		}
-	}
-
-	locs := protos.ImageLocations{
-		ImageName: imageName,
-		LocationPerScan: []*protos.ImageLocationsForScan{{
-			ScanId: scanId,
-			//BeamVersion: 1,
-			Instrument: instrument,
-			Locations:  coords,
-		}},
-	}
-
-	if len(imageName) > 0 {
-		ctx := context.TODO()
-		coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
-
-		result, err := coll.InsertOne(ctx, &locs, options.InsertOne())
-		if err != nil {
-			return nil, err
-		}
-
-		if result.InsertedID != imageName {
-			return nil, fmt.Errorf("Inserting generated beam IJs, expected id: %v, got: %v", imageName, result.InsertedID)
-		}
-	}
-
-	return &locs, nil
 }
 
 func HandleImageBeamLocationVersionsReq(req *protos.ImageBeamLocationVersionsReq, hctx wsHelpers.HandlerContext) (*protos.ImageBeamLocationVersionsResp, error) {

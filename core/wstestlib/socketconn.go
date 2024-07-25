@@ -162,6 +162,12 @@ func ClearJWTCache() {
 	cachedJWT = map[string]string{}
 }
 
+func GetJWTFromCache(host string, user string, pass string) string {
+	cacheKey := host + "-" + user + "-" + pass
+
+	return cachedJWT[cacheKey]
+}
+
 func (s *socketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Auth0Info) (string, error) {
 	// Try find it
 	cacheKey := connectParams.Host + "-" + connectParams.User + "-" + connectParams.Pass

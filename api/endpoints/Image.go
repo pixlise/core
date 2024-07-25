@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"io"
 	"net/http"
 	"path"
 	"strconv"
@@ -39,9 +40,12 @@ import (
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/imageedit"
+	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"google.golang.org/protobuf/proto"
 )
 
 const ScanIdentifier = "scan"
@@ -291,4 +295,172 @@ func generateImageVersion(s3Path string, minWidthPx int, showLocations bool, fin
 
 	// Write the final image to final cached destination
 	return svcs.FS.WriteObject(svcs.Config.DatasetsBucket, finalFilePath, imgBytesOut)
+}
+
+func PutImage(params apiRouter.ApiHandlerGenericParams) error {
+	if !params.UserInfo.Permissions["EDIT_SCAN"] {
+		return errorwithstatus.MakeBadRequestError(errors.New("PutImage not allowed"))
+	}
+
+	// Check access to each associated scan. The user should already have a web socket open by this point, so we can
+	// look to see if there is a cached copy of their user group membership. If we don't find one, we stop
+	memberOfGroupIds, isMemberOfNoGroups := wsHelpers.GetCachedUserGroupMembership(params.UserInfo.UserID)
+	viewerOfGroupIds, isViewerOfNoGroups := wsHelpers.GetCachedUserGroupViewership(params.UserInfo.UserID)
+	if !isMemberOfNoGroups && !isViewerOfNoGroups {
+		// User is probably not logged in
+		return errorwithstatus.MakeBadRequestError(errors.New("User has no group membership, can't determine permissions"))
+	}
+
+	// Read in body
+	imageReqData, err := io.ReadAll(params.Request.Body)
+	if err != nil {
+		return err
+	}
+
+	req := &protos.ImageUploadHttpRequest{}
+	err = proto.Unmarshal(imageReqData, req)
+	if err != nil {
+		return err
+	}
+
+	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 255); err != nil {
+		return err
+	}
+
+	// We only allow a few formats:
+	nameLowerCase := strings.ToLower(req.Name)
+	if !strings.HasSuffix(nameLowerCase, ".png") && !strings.HasSuffix(nameLowerCase, ".jpg") && !strings.HasSuffix(nameLowerCase, ".tif") {
+		return errorwithstatus.MakeBadRequestError(fmt.Errorf("Unexpected format: %v. Must be either PNG, JPG or 32bit float 4-channel TIF file", req.Name))
+	}
+
+	if err := wsHelpers.CheckStringField(&req.OriginScanId, "OriginScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return err
+	}
+
+	if err := wsHelpers.CheckFieldLength(req.AssociatedScanIds, "AssociatedScanIds", 0, 10); err != nil {
+		return err
+	}
+
+	// Check that user has access to this scan
+	_, err = wsHelpers.CheckObjectAccessForUser(false, req.OriginScanId, protos.ObjectType_OT_SCAN, params.UserInfo.UserID, memberOfGroupIds, viewerOfGroupIds, params.Svcs.MongoDB)
+	if err != nil {
+		return err
+	}
+
+	// Read the scan to confirm it's valid, and also so we have the instrument to save for beams (if needed)
+	ctx := context.TODO()
+	coll := params.Svcs.MongoDB.Collection(dbCollections.ScansName)
+	scanResult := coll.FindOne(ctx, bson.M{"_id": req.OriginScanId}, options.FindOne())
+	if scanResult.Err() != nil {
+		return errorwithstatus.MakeNotFoundError(req.OriginScanId)
+	}
+
+	scan := &protos.ScanItem{}
+	err = scanResult.Decode(scan)
+	if err != nil {
+		return fmt.Errorf("Failed to decode scan: %v. Error: %v", req.OriginScanId, err)
+	}
+
+	db := params.Svcs.MongoDB
+
+	// Save image meta in collection
+	imgWidth, imgHeight, err := utils.ReadImageDimensions(req.Name, req.ImageData)
+	if err != nil {
+		return err
+	}
+
+	purpose := protos.ScanImagePurpose_SIP_VIEWING
+	if strings.HasSuffix(nameLowerCase, ".tif") {
+		purpose = protos.ScanImagePurpose_SIP_MULTICHANNEL
+	}
+
+	associatedScanIds := []string{req.OriginScanId}
+	if len(req.AssociatedScanIds) > 0 {
+		associatedScanIds = req.AssociatedScanIds
+	}
+
+	// We make the names more unique this way...
+	savePath := path.Join(req.OriginScanId, req.Name)
+	scanImage := utils.MakeScanImage(
+		savePath,
+		uint32(len(req.ImageData)),
+		protos.ScanImageSource_SI_UPLOAD,
+		purpose,
+		associatedScanIds,
+		req.OriginScanId,
+		"",
+		req.GetBeamImageRef(),
+		imgWidth,
+		imgHeight,
+	)
+
+	coll = db.Collection(dbCollections.ImagesName)
+
+	// If this is the first image added to a dataset that has no images (and hence no beam location ij's), generate ij's here so the image can be
+	// aligned to them. The image will refer to itself as the owner of the ij's it's matching and will be able to have a transform too
+	foundItems, err := coll.Find(ctx, bson.M{"originscanid": req.OriginScanId}, options.Find())
+	// If there was an error, stop here
+	if err != nil && err != mongo.ErrNoDocuments {
+		return fmt.Errorf("Error while querying for other images for scan %v. Error was: %v", req.OriginScanId, err)
+	}
+
+	generateCoords := err == mongo.ErrNoDocuments // This won't really happen... Find() doesn't return an error for none!
+	if !generateCoords {
+		// Check if the count is 0
+		generateCoords = !foundItems.Next(ctx)
+	}
+
+	if generateCoords && scanImage.MatchInfo == nil {
+		// Set a beam transform
+		scanImage.MatchInfo = &protos.ImageMatchTransform{
+			BeamImageFileName: scanImage.ImagePath,
+			XOffset:           0,
+			YOffset:           0,
+			XScale:            1,
+			YScale:            1,
+		}
+	}
+
+	result, err := coll.InsertOne(ctx, scanImage, options.InsertOne())
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return errorwithstatus.MakeBadRequestError(fmt.Errorf("%v already exists", scanImage.ImagePath))
+		}
+		return err
+	}
+
+	if result.InsertedID != scanImage.ImagePath {
+		return fmt.Errorf("HandleImageUploadReq wrote id %v, got back %v", scanImage.ImagePath, result.InsertedID)
+	}
+
+	// Save the image to S3
+	s3Path := filepaths.GetImageFilePath(savePath)
+	err = params.Svcs.FS.WriteObject(params.Svcs.Config.DatasetsBucket, s3Path, req.ImageData)
+	if err != nil {
+		// Failed to upload image data, so no point in having a DB entry now either...
+		coll = params.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+		filter := bson.D{{Key: "_id", Value: scanImage.ImagePath}}
+		delOpt := options.Delete()
+		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
+		return err
+	}
+
+	if generateCoords {
+		_, err = wsHelpers.GenerateIJs(scanImage.ImagePath, req.OriginScanId, scan.Instrument, params.Svcs)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Finally, update the scan if needed
+	err = wsHelpers.UpdateScanImageDataTypes(req.OriginScanId, params.Svcs.MongoDB, params.Svcs.Log)
+	if err != nil {
+		params.Svcs.Log.Errorf("UpdateScanImageDataTypes Failed for scan: %v, when uploading image: %v. DataType counts may not be accurate on Scan Item, RGBU icon may not show correctly.", req.OriginScanId, scanImage.ImagePath)
+	}
+
+	// Notify of our successful image addition
+	params.Svcs.Notifier.NotifyNewScanImage(req.OriginScanId, req.OriginScanId, scanImage.ImagePath)
+	params.Svcs.Notifier.SysNotifyScanImagesChanged([]string{req.OriginScanId})
+
+	return nil
 }
