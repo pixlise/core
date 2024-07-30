@@ -3,6 +3,7 @@ package wsHandler
 import (
 	"context"
 	"errors"
+	"sort"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
@@ -46,6 +47,7 @@ func HandleExpressionListReq(req *protos.ExpressionListReq, hctx wsHelpers.Handl
 		{Key: "tags", Value: true},
 		{Key: "modulereferences", Value: true},
 		{Key: "modifiedunixsec", Value: true},
+		{Key: "recentexecstats", Value: true},
 	})
 
 	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.ExpressionsName).Find(context.TODO(), filter, opts)
@@ -64,6 +66,11 @@ func HandleExpressionListReq(req *protos.ExpressionListReq, hctx wsHelpers.Handl
 	for _, item := range items {
 		if owner, ok := idToOwner[item.Id]; ok {
 			item.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+		}
+
+		// Order the inputs if any
+		if item.RecentExecStats != nil && len(item.RecentExecStats.DataRequired) > 0 {
+			sort.Strings(item.RecentExecStats.DataRequired)
 		}
 		itemMap[item.Id] = item
 	}
