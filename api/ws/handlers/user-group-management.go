@@ -38,6 +38,7 @@ func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.Han
 		Description:           req.Description,
 		CreatedUnixSec:        uint32(hctx.Svcs.TimeStamper.GetTimeNowSec()),
 		LastUserJoinedUnixSec: uint32(hctx.Svcs.TimeStamper.GetTimeNowSec()),
+		Joinable:              req.Joinable,
 		Members: &protos.UserGroupList{
 			UserIds:  []string{},
 			GroupIds: []string{},

@@ -116,7 +116,7 @@ func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, svcs *ser
 		idLookups = append(idLookups, bson.D{{Key: "viewers.userids", Value: requestorSession.User.Id}})
 	}
 
-	// If we don't require editing, then we just care if the uesr can see the ID
+	// If we don't require editing, then we just care if the user can see the ID
 	if !requireEdit {
 		allGroupsUserIsIn := append(requestorSession.MemberOfGroupIds, requestorSession.ViewerOfGroupIds...)
 
