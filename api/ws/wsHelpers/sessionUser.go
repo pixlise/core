@@ -7,6 +7,7 @@ import (
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/core/jwtparser"
+	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
@@ -60,7 +61,7 @@ func MakeSessionUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.
 // If we have a successful login and the user is not in our DB, we write a default record
 // for them, so if they change their details we have a spot to save it already
 // NOTE: This is (at time of writing) the only way to add a user to the DB
-func CreateDBUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, error) {
+func CreateDBUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.Database, defaultGroupIdToJoin string, log logger.ILogger) (*SessionUser, error) {
 	userId := utils.FixUserId(jwtUser.UserID)
 
 	userDBItem := &protos.UserDBItem{
@@ -75,12 +76,23 @@ func CreateDBUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.Dat
 		//NotificationSettings
 	}
 
-	_, err := db.Collection(dbCollections.UsersName).InsertOne(context.TODO(), userDBItem)
+	ctx := context.TODO()
+	_, err := db.Collection(dbCollections.UsersName).InsertOne(ctx, userDBItem)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: do we insert it in any groups?
+	// Auto-insert into a group if configured
+	if len(defaultGroupIdToJoin) > 0 {
+		result, err := db.Collection(dbCollections.UserGroupsName).UpdateByID(ctx, defaultGroupIdToJoin, bson.D{{Key: "$addToSet", Value: bson.D{{Key: "members.userids", Value: userId}}}})
+		if err != nil {
+			log.Errorf("Failed to add user %v to default group %v. Error: %v", userId, defaultGroupIdToJoin, err)
+		} else if result.MatchedCount != 1 {
+			log.Infof("Unexpected update count when adding user %v to default group %v: %+v", userId, defaultGroupIdToJoin, result)
+		} else {
+			log.Infof("New user %v added to default group: %v", userId, defaultGroupIdToJoin)
+		}
+	}
 
 	return makeSessionUser(userId, sessionId, jwtUser.Permissions, userDBItem, db)
 }

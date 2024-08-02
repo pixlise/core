@@ -101,6 +101,9 @@ type APIConfig struct {
 
 	ImportJobMaxTimeSec  uint32
 	PIQUANTJobMaxTimeSec uint32
+
+	// The GroupId of the group a new user is added to by default as a member
+	DefaultUserGroupId string
 }
 
 func homeDir() string {
