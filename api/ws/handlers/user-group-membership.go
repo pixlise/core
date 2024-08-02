@@ -251,6 +251,7 @@ func decorateUserGroup(dbGroup *protos.UserGroupDB, db *mongo.Database, logger l
 		Info: &protos.UserGroupInfo{
 			Id:             dbGroup.Id,
 			Name:           dbGroup.Name,
+			Description:    dbGroup.Description,
 			CreatedUnixSec: dbGroup.CreatedUnixSec,
 			Joinable:       dbGroup.Joinable,
 		},

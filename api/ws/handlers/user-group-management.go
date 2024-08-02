@@ -18,6 +18,9 @@ func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.Han
 	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 50); err != nil {
 		return nil, err
 	}
+	if err := wsHelpers.CheckStringField(&req.Description, "Description", 0, 200); err != nil {
+		return nil, err
+	}
 
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
@@ -115,12 +118,15 @@ func HandleUserGroupDeleteReq(req *protos.UserGroupDeleteReq, hctx wsHelpers.Han
 	return &protos.UserGroupDeleteResp{}, nil
 }
 
-func HandleUserGroupSetNameReq(req *protos.UserGroupSetNameReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupSetNameResp, error) {
+func HandleUserGroupEditDetailsReq(req *protos.UserGroupEditDetailsReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupEditDetailsResp, error) {
 	// Should only be called if we have admin rights, no other permission issues here
 	if err := wsHelpers.CheckStringField(&req.GroupId, "GroupId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
 	if err := wsHelpers.CheckStringField(&req.Name, "Name", 1, 50); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&req.Description, "Description", 0, 200); err != nil {
 		return nil, err
 	}
 
@@ -143,7 +149,20 @@ func HandleUserGroupSetNameReq(req *protos.UserGroupSetNameReq, hctx wsHelpers.H
 	}
 
 	// Update the name
-	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName).UpdateByID(ctx, req.GroupId, bson.D{{Key: "$set", Value: bson.D{{Key: "name", Value: req.Name}}}})
+	toSet := bson.M{
+		"name":     req.Name,
+		"joinable": req.Joinable,
+	}
+	if len(req.Description) > 0 {
+		toSet["description"] = req.Description
+	}
+	update := bson.D{{Key: "$set", Value: toSet}}
+
+	if len(req.Description) <= 0 {
+		update = append(update, bson.E{Key: "$unset", Value: bson.D{{Key: "description", Value: ""}}})
+	}
+
+	result, err := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName).UpdateByID(ctx, req.GroupId, update)
 	if err != nil {
 		return nil, err
 	}
@@ -153,12 +172,14 @@ func HandleUserGroupSetNameReq(req *protos.UserGroupSetNameReq, hctx wsHelpers.H
 	}
 
 	group.Name = req.Name
+	group.Description = req.Description
+	group.Joinable = req.Joinable
 	groupSend, err := decorateUserGroup(&group, hctx.Svcs.MongoDB, hctx.Svcs.Log)
 	if err != nil {
 		return nil, err
 	}
 
-	return &protos.UserGroupSetNameResp{Group: groupSend}, nil
+	return &protos.UserGroupEditDetailsResp{Group: groupSend}, nil
 }
 
 func checkUserGroupNameExists(name string, ctx context.Context, coll *mongo.Collection) (bool, error, *mongo.SingleResult) {
