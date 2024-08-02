@@ -50,6 +50,7 @@ func HandleUserGroupListReq(req *protos.UserGroupListReq, hctx wsHelpers.Handler
 			CreatedUnixSec:        group.CreatedUnixSec,
 			LastUserJoinedUnixSec: group.LastUserJoinedUnixSec,
 			RelationshipToUser:    userRelationship,
+			Joinable:              group.Joinable,
 		})
 	}
 
@@ -99,7 +100,8 @@ func HandleUserGroupListJoinableReq(req *protos.UserGroupListJoinableReq, hctx w
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
 
-	filter := bson.D{}
+	filter := bson.D{{Key: "joinable", Value: true}}
+
 	// opts := options.Find()
 	// Since we want only summary data, specify less fields to retrieve
 	opts := options.Find().SetProjection(bson.D{

@@ -95,12 +95,13 @@ func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 	)
 
 	u2.AddSendReqAction("Create valid user group",
-		`{"userGroupCreateReq":{"name": "M2020"}}`,
+		`{"userGroupCreateReq":{"name": "M2020", "description": "M2020 Scientists group"}}`,
 		`{"msgId":3,"status":"WS_OK","userGroupCreateResp":{
 			"group": {
 				"info": {
 					"id": "${IDSAVE=createdGroupId}",
 					"name": "M2020",
+					"description": "M2020 Scientists group",
 					"createdUnixSec": "${SECAGO=5}"
 				},
 				"viewers": {},
@@ -119,6 +120,7 @@ func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 				{
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020",
+					"description": "M2020 Scientists group",
 					"createdUnixSec": "${SECAGO=5}",
 					"lastUserJoinedUnixSec": "${SECAGO=5}"
 				}
@@ -126,14 +128,20 @@ func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 		}}`,
 	)
 
-	u2.AddSendReqAction("Rename user group",
-		`{"userGroupSetNameReq":{"name": "M2020 Scientists", "groupId": "${IDLOAD=createdGroupId}"}}`,
-		`{"msgId":5,"status":"WS_OK","userGroupSetNameResp":{
+	u2.AddSendReqAction("Request list of joinable user groups, expecting blank, cos not joinable",
+		`{"userGroupListJoinableReq":{}}`,
+		`{"msgId":5,"status":"WS_OK","userGroupListJoinableResp":{}}`,
+	)
+
+	u2.AddSendReqAction("Rename user group, set description, change joinable flag",
+		`{"userGroupEditDetailsReq":{"name": "M2020 Scientists", "description": "", "joinable": true, "groupId": "${IDLOAD=createdGroupId}"}}`,
+		`{"msgId":6,"status":"WS_OK","userGroupEditDetailsResp":{
 			"group": {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+					"joinable": true
 				},
 				"viewers": {},
 				"members": {}
@@ -143,12 +151,26 @@ func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 
 	u2.AddSendReqAction("List user groups again",
 		`{"userGroupListReq":{}}`,
-		`{"msgId":6,"status":"WS_OK","userGroupListResp":{
+		`{"msgId":7,"status":"WS_OK","userGroupListResp":{
 			"groupInfos": [
 				{
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
 					"createdUnixSec": "${SECAGO=5}",
+					"lastUserJoinedUnixSec": "${SECAGO=5}",
+					"joinable": true
+				}
+			]
+		}}`,
+	)
+
+	u2.AddSendReqAction("Request list of joinable user groups, expecting blank, cos not joinable",
+		`{"userGroupListJoinableReq":{}}`,
+		`{"msgId":8,"status":"WS_OK","userGroupListJoinableResp":{
+			"groups": [
+				{
+					"id": "${IDCHK=createdGroupId}",
+					"name": "M2020 Scientists",
 					"lastUserJoinedUnixSec": "${SECAGO=5}"
 				}
 			]
@@ -160,7 +182,7 @@ func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 
 	u2.AddSendReqAction("Create valid user group",
 		`{"userGroupCreateReq":{"name": "GroupWithSubGroups"}}`,
-		`{"msgId":7,"status":"WS_OK","userGroupCreateResp":{
+		`{"msgId":9,"status":"WS_OK","userGroupCreateResp":{
 			"group": {
 				"info": {
 					"id": "${IDSAVE=createdGroupWithSubGroupsId}",
@@ -178,7 +200,7 @@ func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 
 	u2.AddSendReqAction("Add createdGroupId group as sub-group member of group",
 		`{"userGroupAddMemberReq":{"groupId": "${IDLOAD=createdGroupWithSubGroupsId}", "groupMemberId": "${IDLOAD=createdGroupId}"}}`,
-		`{"msgId":8,
+		`{"msgId":10,
 			"status": "WS_OK",
 				"userGroupAddMemberResp":{
 					"group": {
@@ -193,7 +215,8 @@ func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 								{
 									"id": "${IDCHK=createdGroupId}",
 									"name": "M2020 Scientists",
-									"createdUnixSec": "${SECAGO=5}"
+									"createdUnixSec": "${SECAGO=5}",
+									"joinable": true
 								}
 							]
 						}
@@ -206,7 +229,7 @@ func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 
 	u2.AddSendReqAction("Fetch user group to verify subgroups",
 		`{"userGroupReq":{"groupId": "${IDLOAD=createdGroupWithSubGroupsId}"}}`,
-		`{"msgId":9,"status":"WS_OK","userGroupResp":{
+		`{"msgId":11,"status":"WS_OK","userGroupResp":{
 			"group": {
 				"info": {
 					"id": "${IDCHK=createdGroupWithSubGroupsId}",
@@ -219,7 +242,8 @@ func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 						{
 							"id": "${IDCHK=createdGroupId}",
 							"name": "M2020 Scientists",
-							"createdUnixSec": "${SECAGO=5}"
+							"createdUnixSec": "${SECAGO=5}",
+									"joinable": true
 						}
 					]
 				}
@@ -232,7 +256,7 @@ func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 
 	u2.AddSendReqAction("Delete user group (expect success)",
 		`{"userGroupDeleteReq":{"groupId": "${IDLOAD=createdGroupWithSubGroupsId}"}}`,
-		`{"msgId":10,
+		`{"msgId":12,
 			"status": "WS_OK",
 			"userGroupDeleteResp":{}}`,
 	)
@@ -319,7 +343,7 @@ func testUserGroupJoin(u1NonAdmin wstestlib.ScriptedTestUser) {
 func testAddRemoveUserAsGroupMember(u2 wstestlib.ScriptedTestUser, nonAdminUserId string) {
 	u2.AddSendReqAction("Check for join requests",
 		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		fmt.Sprintf(`{"msgId":11,
+		fmt.Sprintf(`{"msgId":13,
 			"status":"WS_OK",
 			"userGroupJoinListResp":{
 				"requests": [
@@ -340,7 +364,7 @@ func testAddRemoveUserAsGroupMember(u2 wstestlib.ScriptedTestUser, nonAdminUserI
 
 	u2.AddSendReqAction("Add user1 as member of group",
 		fmt.Sprintf(`{"userGroupAddMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "userMemberId": "%v"}}`, nonAdminUserId),
-		fmt.Sprintf(`{"msgId":12,
+		fmt.Sprintf(`{"msgId":14,
 			"status": "WS_OK",
 				"userGroupAddMemberResp":{
 					"group": 
@@ -348,7 +372,8 @@ func testAddRemoveUserAsGroupMember(u2 wstestlib.ScriptedTestUser, nonAdminUserI
 						"info": {
 							"id": "${IDCHK=createdGroupId}",
 							"name": "M2020 Scientists",
-							"createdUnixSec": "${SECAGO=5}"	
+							"createdUnixSec": "${SECAGO=5}",
+                			"joinable": true
 						},
 						"viewers": {},
 						"members": { "users": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}] }
@@ -358,7 +383,7 @@ func testAddRemoveUserAsGroupMember(u2 wstestlib.ScriptedTestUser, nonAdminUserI
 
 	u2.AddSendReqAction("Check for join requests again to see if cleared",
 		`{"userGroupJoinListReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		`{"msgId":13,
+		`{"msgId":15,
 			"status":"WS_OK",
 			"userGroupJoinListResp":{}
 		}`,
@@ -366,14 +391,15 @@ func testAddRemoveUserAsGroupMember(u2 wstestlib.ScriptedTestUser, nonAdminUserI
 
 	u2.AddSendReqAction("Delete user as member",
 		fmt.Sprintf(`{"userGroupDeleteMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "userMemberId": "%v"}}`, nonAdminUserId),
-		`{"msgId":14,
+		`{"msgId":16,
 			"status": "WS_OK",
 			"userGroupDeleteMemberResp":{
 				"group": {
 					"info": {
 						"id": "${IDCHK=createdGroupId}",
 						"name": "M2020 Scientists",
-						"createdUnixSec": "${SECAGO=5}"
+						"createdUnixSec": "${SECAGO=5}",
+						"joinable": true
 					},
 					"viewers": {},
 					"members": {}
@@ -390,34 +416,35 @@ func testUserGroupAdminAdd(u2 wstestlib.ScriptedTestUser, nonAdminUserId string)
 	// Edits by admin of group
 	u2.AddSendReqAction("Add admin user to bad group id",
 		`{"userGroupAddAdminReq":{"groupId": "way-too-long-group-id-way-too-long-group-id-way-too-long-group-id-way-too-long-group-id", "adminUserId": "u123"}}`,
-		`{"msgId":15,"status":"WS_BAD_REQUEST","errorText": "GroupId is too long","userGroupAddAdminResp":{}}`,
+		`{"msgId":17,"status":"WS_BAD_REQUEST","errorText": "GroupId is too long","userGroupAddAdminResp":{}}`,
 	)
 
 	u2.AddSendReqAction("Add bad admin user id to group id",
 		`{"userGroupAddAdminReq":{"groupId": "non-existant", "adminUserId": "admin-user-id-that-is-way-too-long even-for-auth0-admin-user-id-that-is-way-too-long even-for-auth0"}}`,
-		`{"msgId":16,"status":"WS_BAD_REQUEST","errorText": "AdminUserId is too long","userGroupAddAdminResp":{}}`,
+		`{"msgId":18,"status":"WS_BAD_REQUEST","errorText": "AdminUserId is too long","userGroupAddAdminResp":{}}`,
 	)
 
 	u2.AddSendReqAction("Add admin user to non-existant group",
 		`{"userGroupAddAdminReq":{"groupId": "non-existant", "adminUserId": "u123"}}`,
-		`{"msgId":17, "status": "WS_NOT_FOUND",
+		`{"msgId":19, "status": "WS_NOT_FOUND",
 			"errorText": "non-existant not found","userGroupAddAdminResp":{}}`,
 	)
 
 	u2.AddSendReqAction("Add admin user to non-existant group",
 		`{"userGroupAddAdminReq":{"groupId": "non-existant", "adminUserId": "u123"}}`,
-		`{"msgId":18, "status": "WS_NOT_FOUND",
+		`{"msgId":20, "status": "WS_NOT_FOUND",
 			"errorText": "non-existant not found","userGroupAddAdminResp":{}}`,
 	)
 
 	u2.AddSendReqAction("Add admin user to created group",
 		fmt.Sprintf(`{"userGroupAddAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "%v"}}`, nonAdminUserId),
-		fmt.Sprintf(`{"msgId":19, "status": "WS_OK","userGroupAddAdminResp":{
+		fmt.Sprintf(`{"msgId":21, "status": "WS_OK","userGroupAddAdminResp":{
 			"group": {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+                	"joinable": true
 				},
 				"viewers": {},
 				"members": { "users": [{"id": "%v", "name": "${IGNORE}", "email": "${IGNORE}"}] },
@@ -438,6 +465,7 @@ func testUserCanSeeGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 			"groupInfos": [{
 				"id": "${IDCHK=createdGroupId}",
 				"name": "M2020 Scientists",
+                "joinable": true,
 				"createdUnixSec": "${SECAGO=5}",
 				"lastUserJoinedUnixSec": "${SECAGO=5}",
 				"relationshipToUser": "UGR_ADMIN"
@@ -452,7 +480,8 @@ func testUserCanSeeGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+                	"joinable": true
 				},
 				"viewers": {},
 				"members": { "users": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}] },
@@ -468,12 +497,13 @@ func testUserCanSeeGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 func testUserGroupsAddDeleteAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId string) {
 	u2.AddSendReqAction("Add another admin user to created group",
 		`{"userGroupAddAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "123"}}`,
-		fmt.Sprintf(`{"msgId":20, "status": "WS_OK","userGroupAddAdminResp":{
+		fmt.Sprintf(`{"msgId":22, "status": "WS_OK","userGroupAddAdminResp":{
 			"group": {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+                	"joinable": true
 				},
 				"viewers": {},
 				"members": {"users": [
@@ -490,12 +520,13 @@ func testUserGroupsAddDeleteAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId 
 
 	u2.AddSendReqAction("Delete test admin user from created group",
 		`{"userGroupDeleteAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "123"}}`,
-		fmt.Sprintf(`{"msgId":21, "status": "WS_OK","userGroupDeleteAdminResp":{
+		fmt.Sprintf(`{"msgId":23, "status": "WS_OK","userGroupDeleteAdminResp":{
 			"group": {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+                	"joinable": true
 				},
 				"viewers": {},
 				"members": {"users": [
@@ -509,18 +540,19 @@ func testUserGroupsAddDeleteAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId 
 
 	u2.AddSendReqAction("Delete non-existant admin user from created group",
 		`{"userGroupDeleteAdminReq":{"groupId": "${IDLOAD=createdGroupId}", "adminUserId": "non-existant"}}`,
-		`{"msgId":22, "status": "WS_BAD_REQUEST",
+		`{"msgId":24, "status": "WS_BAD_REQUEST",
 			"errorText": "non-existant is not an admin","userGroupDeleteAdminResp":{}}`,
 	)
 
 	u2.AddSendReqAction("List user groups again",
 		`{"userGroupReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		fmt.Sprintf(`{"msgId":23,"status":"WS_OK","userGroupResp":{
+		fmt.Sprintf(`{"msgId":25,"status":"WS_OK","userGroupResp":{
 			"group": {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+					"joinable": true
 				},
 				"viewers": {},
 				"members": {"users": [
@@ -546,7 +578,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+                	"joinable": true
 				},
 				"viewers": {},
 				"members": {"users": [
@@ -569,7 +602,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+					"joinable": true
 				},
 				"viewers": {},
 				"members": {"users": [
@@ -592,7 +626,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+                	"joinable": true
 				},
 				"viewers": {},
 				"members": {"users": [
@@ -612,7 +647,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+                	"joinable": true
 				},
 				"viewers": {},
 				"members": {"users": [
@@ -636,7 +672,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"info": {
 						"id": "${IDCHK=createdGroupId}",
 						"name": "M2020 Scientists",
-						"createdUnixSec": "${SECAGO=5}"	
+						"createdUnixSec": "${SECAGO=5}",
+                		"joinable": true
 					},
 					"viewers": {},
 					"members": {
@@ -672,7 +709,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"info": {
 						"id": "${IDCHK=createdGroupId}",
 						"name": "M2020 Scientists",
-						"createdUnixSec": "${SECAGO=5}"
+						"createdUnixSec": "${SECAGO=5}",
+                		"joinable": true
 					},
 					"viewers": {},
 					"members": {
@@ -709,7 +747,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 						"info": {
 							"id": "${IDCHK=createdGroupId}",
 							"name": "M2020 Scientists",
-							"createdUnixSec": "${SECAGO=5}"
+							"createdUnixSec": "${SECAGO=5}",
+                			"joinable": true
 						},
 						"viewers": { "groups": [{"id": "group-viewabc123"}] },
 						"members": {
@@ -745,7 +784,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"info": {
 						"id": "${IDCHK=createdGroupId}",
 						"name": "M2020 Scientists",
-						"createdUnixSec": "${SECAGO=5}"
+						"createdUnixSec": "${SECAGO=5}",
+                		"joinable": true
 					},
 					"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
 					"members": {
@@ -778,7 +818,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+                	"joinable": true
 				},
 				"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
 				"members": {
@@ -805,7 +846,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"info": {
 						"id": "${IDCHK=createdGroupId}",
 						"name": "M2020 Scientists",
-						"createdUnixSec": "${SECAGO=5}"
+						"createdUnixSec": "${SECAGO=5}",
+                		"joinable": true
 					},
 					"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
 					"members": {
@@ -832,7 +874,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"info": {
 						"id": "${IDCHK=createdGroupId}",
 						"name": "M2020 Scientists",
-						"createdUnixSec": "${SECAGO=5}"
+						"createdUnixSec": "${SECAGO=5}",
+                		"joinable": true
 					},
 					"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
 					"members": {
@@ -858,7 +901,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"info": {
 						"id": "${IDCHK=createdGroupId}",
 						"name": "M2020 Scientists",
-						"createdUnixSec": "${SECAGO=5}"
+						"createdUnixSec": "${SECAGO=5}",
+                		"joinable": true
 					},
 					"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
 					"members": {
@@ -883,7 +927,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"info": {
 						"id": "${IDCHK=createdGroupId}",
 						"name": "M2020 Scientists",
-						"createdUnixSec": "${SECAGO=5}"
+						"createdUnixSec": "${SECAGO=5}",
+                		"joinable": true
 					},
 					"viewers": { "groups": [{"id": "group-viewabc123"}], "users": [{"id": "user-viewerabc123"}] },
 					"members": {
@@ -907,7 +952,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"info": {
 						"id": "${IDCHK=createdGroupId}",
 						"name": "M2020 Scientists",
-						"createdUnixSec": "${SECAGO=5}"
+						"createdUnixSec": "${SECAGO=5}",
+                		"joinable": true
 					},
 					"viewers": { "users": [{"id": "user-viewerabc123"}] },
 					"members": {
@@ -931,7 +977,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 					"info": {
 						"id": "${IDCHK=createdGroupId}",
 						"name": "M2020 Scientists",
-						"createdUnixSec": "${SECAGO=5}"
+						"createdUnixSec": "${SECAGO=5}",
+                		"joinable": true
 					},
 					"viewers": {},
 					"members": {
@@ -997,7 +1044,8 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 				"info": {
 					"id": "${IDCHK=createdGroupId}",
 					"name": "M2020 Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+                	"joinable": true
 				},
 				"viewers": {},
 				"members": {
@@ -1017,7 +1065,7 @@ func testUserCanEditGroup(u1NonAdmin wstestlib.ScriptedTestUser) {
 func testUserGroupAdminAddAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId string) {
 	u2.AddSendReqAction("Add member user to user group",
 		`{"userGroupAddMemberReq":{"groupId": "${IDLOAD=createdGroupId}", "userMemberId": "user-abc999"}}`,
-		fmt.Sprintf(`{"msgId":24,
+		fmt.Sprintf(`{"msgId":26,
 			"status": "WS_OK",
 			"userGroupAddMemberResp":{
 				"group": 
@@ -1025,7 +1073,8 @@ func testUserGroupAdminAddAdmin(u2 wstestlib.ScriptedTestUser, nonAdminUserId st
 					"info": {
 						"id": "${IDCHK=createdGroupId}",
 						"name": "M2020 Scientists",
-						"createdUnixSec": "${SECAGO=5}"
+						"createdUnixSec": "${SECAGO=5}",
+                		"joinable": true
 					},
 					"viewers": {},
 					"members": {
@@ -1057,7 +1106,7 @@ func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
 				]
 			}
 		}}`,
-		`{"msgId":25, "status":"WS_OK", "elementSetWriteResp":{
+		`{"msgId":27, "status":"WS_OK", "elementSetWriteResp":{
 			"elementSet":{
 				"id":"${IDSAVE=u2CreatedElementSetId}",
 				"name":"User2 ElementSet",
@@ -1081,7 +1130,7 @@ func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
 
 	u2.AddSendReqAction("Add created group as viewer of an object",
 		`{"objectEditAccessReq": { "objectId": "${IDLOAD=u2CreatedElementSetId}", "objectType": 2, "addViewers": { "groupIds": [ "${IDLOAD=createdGroupId}" ] }}}`,
-		`{"msgId":26,"status":"WS_OK",
+		`{"msgId":28,"status":"WS_OK",
 			"objectEditAccessResp": {
 				"ownership": {
 					"id": "${IDCHK=u2CreatedElementSetId}",
@@ -1105,7 +1154,7 @@ func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
 
 	u2.AddSendReqAction("Delete user group (should fail due to reference)",
 		`{"userGroupDeleteReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		`{"msgId":27,
+		`{"msgId":29,
 			"status": "WS_SERVER_ERROR",
 			"errorText": "Cannot delete user group because it is a member/viewer of 1 items",
 			"userGroupDeleteResp":{}}`,
@@ -1114,7 +1163,7 @@ func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
 	//
 	u2.AddSendReqAction("Remove the group as a viewer of object",
 		`{"objectEditAccessReq": { "objectId": "${IDLOAD=u2CreatedElementSetId}", "objectType": 2, "deleteViewers": { "groupIds": [ "${IDLOAD=createdGroupId}" ] }}}`,
-		`{"msgId":28,"status":"WS_OK",
+		`{"msgId":30,"status":"WS_OK",
 			"objectEditAccessResp": {
 				"ownership": {
 					"id": "${IDCHK=u2CreatedElementSetId}",
@@ -1134,14 +1183,14 @@ func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
 
 	u2.AddSendReqAction("Delete user group (expect success)",
 		`{"userGroupDeleteReq":{"groupId": "${IDLOAD=createdGroupId}"}}`,
-		`{"msgId":29,
+		`{"msgId":31,
 			"status": "WS_OK",
 			"userGroupDeleteResp":{}}`,
 	)
 
 	u2.AddSendReqAction("List user groups again",
 		`{"userGroupListReq":{}}`,
-		`{"msgId":30,"status":"WS_OK","userGroupListResp":{}}`,
+		`{"msgId":32,"status":"WS_OK","userGroupListResp":{}}`,
 	)
 
 	u2.CloseActionGroup([]string{}, userGroupWaitTime)
@@ -1180,11 +1229,11 @@ func testUserGroupsNoPermission(apiHost string) wstestlib.ScriptedTestUser {
 	)
 
 	u1.AddSendReqAction("Rename user group (no perm)",
-		`{"userGroupSetNameReq":{"groupId": "123", "name": "The new name"}}`,
+		`{"userGroupEditDetailsReq":{"groupId": "123", "name": "The new name"}}`,
 		`{"msgId":4,
 			"status": "WS_NO_PERMISSION",
-			"errorText": "UserGroupSetNameReq not allowed",
-			"userGroupSetNameResp":{}}`,
+			"errorText": "UserGroupEditDetailsReq not allowed",
+			"userGroupEditDetailsResp":{}}`,
 	)
 
 	u1.CloseActionGroup([]string{}, userGroupWaitTime)
@@ -1283,13 +1332,15 @@ func testJoinableUserGroupSummaryList(apiHost string) {
 	})
 
 	u2.AddSendReqAction("Create valid user group 3",
-		`{"userGroupCreateReq":{"name": "M2020", "description": "test"}}`,
+		`{"userGroupCreateReq":{"name": "M2020", "description": "test", "joinable": true}}`,
 		`{"msgId":1,"status":"WS_OK","userGroupCreateResp":{
 			"group": {
 				"info": {
 					"id": "${IDSAVE=joinableGroupId1}",
 					"name": "M2020",
-					"createdUnixSec": "${SECAGO=5}"
+					"description": "test",
+					"createdUnixSec": "${SECAGO=5}",
+					"joinable": true
 				},
 				"viewers": {},
 				"members": {}
@@ -1351,13 +1402,14 @@ func testUserGroupViewerLeavingGroup(apiHost string) {
 	})
 
 	u2.AddSendReqAction("Create valid user group 3",
-		`{"userGroupCreateReq":{"name": "PIXL Scientists"}}`,
+		`{"userGroupCreateReq":{"name": "PIXL Scientists", "joinable": true}}`,
 		`{"msgId":1,"status":"WS_OK","userGroupCreateResp":{
 			"group": {
 				"info": {
 					"id": "${IDSAVE=createdGroupId3}",
 					"name": "PIXL Scientists",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+					"joinable": true
 				},
 				"viewers": {},
 				"members": {}
@@ -1379,7 +1431,8 @@ func testUserGroupViewerLeavingGroup(apiHost string) {
 						"info": {
 							"id": "${IDCHK=createdGroupId3}",
 							"name": "PIXL Scientists",
-							"createdUnixSec": "${SECAGO=5}"
+							"createdUnixSec": "${SECAGO=5}",
+                			"joinable": true
 						},
 						"viewers": { "users": [{"id": "%v", "name":"${REGEXMATCH=Test}","email":"${REGEXMATCH=.+@pixlise\\.org}"}] },
 						"members": {}
@@ -1403,7 +1456,8 @@ func testUserGroupViewerLeavingGroup(apiHost string) {
 						"info": {
 							"id": "${IDCHK=createdGroupId3}",
 							"name": "PIXL Scientists",
-							"createdUnixSec": "${SECAGO=5}"
+							"createdUnixSec": "${SECAGO=5}",
+                			"joinable": true
 						},
 						"viewers": {},
 						"members": {}
@@ -1436,13 +1490,14 @@ func testUserGroupAccessDemotion(apiHost string) {
 	})
 
 	u2.AddSendReqAction("Create valid user group 4",
-		`{"userGroupCreateReq":{"name": "PIXL Sci"}}`,
+		`{"userGroupCreateReq":{"name": "PIXL Sci", "joinable": true}}`,
 		`{"msgId":1,"status":"WS_OK","userGroupCreateResp":{
 			"group": {
 				"info": {
 					"id": "${IDSAVE=createdGroupId4}",
 					"name": "PIXL Sci",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+					"joinable": true
 				},
 				"viewers": {},
 				"members": {}
@@ -1464,7 +1519,8 @@ func testUserGroupAccessDemotion(apiHost string) {
 						"info": {
 							"id": "${IDCHK=createdGroupId4}",
 							"name": "PIXL Sci",
-							"createdUnixSec": "${SECAGO=5}"
+							"createdUnixSec": "${SECAGO=5}",
+                			"joinable": true
 						},
 						"viewers": { "users": [{"id": "%v", "name":"${REGEXMATCH=Test}","email":"${REGEXMATCH=.+@pixlise\\.org}"}] },
 						"members": {}
@@ -1571,13 +1627,14 @@ func testJoinRequestNotificationLive(apiHost string) {
 	})
 
 	u2.AddSendReqAction("Create valid user group 6",
-		`{"userGroupCreateReq":{"name": "M2020 Science"}}`,
+		`{"userGroupCreateReq":{"name": "M2020 Science", "joinable": true}}`,
 		`{"msgId":1,"status":"WS_OK","userGroupCreateResp":{
 			"group": {
 				"info": {
 					"id": "${IDSAVE=createdGroupId6}",
 					"name": "M2020 Science",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+                	"joinable": true
 				},
 				"viewers": {},
 				"members": {}
@@ -1605,7 +1662,8 @@ func testJoinRequestNotificationLive(apiHost string) {
 				"info": {
 					"id": "${IDCHK=createdGroupId6}",
 					"name": "M2020 Science",
-					"createdUnixSec": "${SECAGO=5}"
+					"createdUnixSec": "${SECAGO=5}",
+                	"joinable": true
 				},
 				"viewers": {},
 				"members": { "users": [{"id": "${USERID}", "name": "${IGNORE}", "email": "${IGNORE}"}] },
