@@ -91,10 +91,11 @@ func (n *NotificationSender) NotifyNewScanImage(scanName string, scanId string, 
 	n.sendNotificationToObjectUsers(NOTIF_TOPIC_IMAGE_NEW, notifMsg, scanId)
 }
 
-func (n *NotificationSender) SysNotifyScanImagesChanged(scanIds []string) {
+func (n *NotificationSender) SysNotifyScanImagesChanged(imageName string, scanIds []string) {
 	wsSysNotify := &protos.NotificationUpd{
 		Notification: &protos.Notification{
 			NotificationType: protos.NotificationType_NT_SYS_DATA_CHANGED,
+			ImageName:        imageName,
 			ScanIds:          scanIds,
 		},
 	}

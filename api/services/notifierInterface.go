@@ -18,7 +18,7 @@ type INotifier interface {
 
 	// When an image is deleted, or set as default, or had its metadata changed
 	// NOTE: This does NOT send emails, it's of system-level interest only so UI can update caches as required
-	SysNotifyScanImagesChanged(scanIds []string)
+	SysNotifyScanImagesChanged(imageName string, scanIds []string)
 
 	// When a quant is completed or uploaded
 	NotifyNewQuant(uploaded bool, quantId string, quantName string, status string, scanName string, scanId string)
