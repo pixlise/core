@@ -27,7 +27,7 @@ func testUserManagementFunctionality(apiHost string, userIdToEdit string) {
 		Pass: test2Password,
 	})
 
-	const knownRoleNoPermissions = "No Permissions"
+	const knownRoleNoPermissions = "v3-No Permissions"
 	const knownRoleUnassignedUser = "Unassigned New User"
 
 	u2.AddSendReqAction("List all roles",

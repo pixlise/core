@@ -251,7 +251,9 @@ func decorateUserGroup(dbGroup *protos.UserGroupDB, db *mongo.Database, logger l
 		Info: &protos.UserGroupInfo{
 			Id:             dbGroup.Id,
 			Name:           dbGroup.Name,
+			Description:    dbGroup.Description,
 			CreatedUnixSec: dbGroup.CreatedUnixSec,
+			Joinable:       dbGroup.Joinable,
 		},
 		Viewers:    &protos.UserGroupInfoList{},
 		Members:    &protos.UserGroupInfoList{},
@@ -338,7 +340,7 @@ func getUserGroupInfos(userGroupIds []string, db *mongo.Database) (map[string]*p
 
 	// Read the requested items from DB, but only reading the fields we're interested in!
 	filter := bson.M{"_id": bson.M{"$in": userGroupIds}}
-	opts := options.Find().SetProjection(bson.M{"id": true, "name": true, "createdunixsec": true})
+	opts := options.Find().SetProjection(bson.M{"id": true, "name": true, "createdunixsec": true, "joinable": true})
 
 	cursor, err := coll.Find(ctx, filter, opts)
 	if err != nil {
@@ -358,6 +360,7 @@ func getUserGroupInfos(userGroupIds []string, db *mongo.Database) (map[string]*p
 			Id:             item.Id,
 			Name:           item.Name,
 			CreatedUnixSec: item.CreatedUnixSec,
+			Joinable:       item.Joinable,
 		}
 	}
 

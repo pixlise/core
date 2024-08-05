@@ -122,7 +122,7 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	if err != nil {
 		// If we have no record of this user, add it
 		if err == mongo.ErrNoDocuments {
-			sessionUser, err = wsHelpers.CreateDBUser(sessId, connectingUser, ws.svcs.MongoDB)
+			sessionUser, err = wsHelpers.CreateDBUser(sessId, connectingUser, ws.svcs.MongoDB, ws.svcs.Config.DefaultUserGroupId, ws.svcs.Log)
 			if err != nil {
 				fmt.Printf("WS connect failed for user: %v (%v) - failed to read/create user in DB\n", connectingUser.UserID, connectingUser.Name)
 				s.CloseWithMsg([]byte("Failed to validate session user"))

@@ -196,7 +196,7 @@ func HandleImageSetDefaultReq(req *protos.ImageSetDefaultReq, hctx wsHelpers.Han
 	}
 
 	// Send out notifications so caches can be cleared
-	hctx.Svcs.Notifier.SysNotifyScanImagesChanged([]string{req.ScanId})
+	hctx.Svcs.Notifier.SysNotifyScanChanged(req.ScanId)
 
 	return &protos.ImageSetDefaultResp{}, nil
 }
@@ -295,7 +295,7 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 		scanIds = append(scanIds, img.OriginScanId)
 	}
 
-	hctx.Svcs.Notifier.SysNotifyScanImagesChanged(scanIds)
+	hctx.Svcs.Notifier.SysNotifyScanImagesChanged(img.ImagePath, scanIds)
 
 	return &protos.ImageDeleteResp{}, nil
 }

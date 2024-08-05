@@ -242,6 +242,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		`{"notificationUpd": {
 			"notification": {
 				"notificationType": "NT_SYS_DATA_CHANGED",
+				"imageName": "048300551/another.png",
 				"scanIds": [
 					"048300551"
 				]
@@ -251,6 +252,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		`{"notificationUpd": {
 			"notification": {
 				"notificationType": "NT_SYS_DATA_CHANGED",
+				"imageName": "048300551/file_Name.png",
 				"scanIds": [
 					"048300551"
 				]
@@ -360,6 +362,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		`{"notificationUpd": {
 			"notification": {
 				"notificationType": "NT_SYS_DATA_CHANGED",
+				"imageName": "048300551/file_Name.png",
 				"scanIds": [
 					"048300551"
 				]
@@ -506,7 +509,8 @@ func testImageMatchTransform(apiHost string) {
 				"notificationType": "NT_SYS_DATA_CHANGED",
 				"scanIds": [
 					"048300551"
-				]
+				],
+				"imageName": "048300551/file_Name.png"
 			}
 		}
 	}`}, 10000)
@@ -531,7 +535,7 @@ func testImageMatchTransform(apiHost string) {
 	)
 
 	// Delete image
-	u1.AddSendReqAction("Delete uploaded image",
+	u1.AddSendReqAction("Delete uploaded image 2",
 		`{"imageDeleteReq":{
 			"name": "048300551/file_Name.png"
 		}}`,
@@ -546,6 +550,7 @@ func testImageMatchTransform(apiHost string) {
 		`{"notificationUpd": {
 			"notification": {
 				"notificationType": "NT_SYS_DATA_CHANGED",
+				"imageName": "048300551/file_Name.png",
 				"scanIds": [
 					"048300551"
 				]
@@ -554,7 +559,7 @@ func testImageMatchTransform(apiHost string) {
 	}`}, 10000)
 	wstestlib.ExecQueuedActions(&u1)
 
-	u1.AddSendReqAction("Delete non-existant image (just really here to allow capturing notifications from the above)",
+	u1.AddSendReqAction("Delete non-existant image (just really here to allow capturing notifications from the above) 2",
 		`{"imageDeleteReq":{
 			"name": "doesnt-exist.png"
 		}}`,
@@ -606,6 +611,7 @@ func testImageMatchTransform(apiHost string) {
 		`{"notificationUpd": {
 			"notification": {
 				"notificationType": "NT_SYS_DATA_CHANGED",
+				"imageName": "048300551/file_Name.png",
 				"scanIds": [
 					"048300551"
 				]
@@ -615,7 +621,7 @@ func testImageMatchTransform(apiHost string) {
 	wstestlib.ExecQueuedActions(&u1)
 
 	// Set transform again
-	u1.AddSendReqAction("SetImageMatchTransform - should succeed",
+	u1.AddSendReqAction("SetImageMatchTransform - should succeed 2",
 		`{"imageSetMatchTransformReq":{
 			"imageName": "048300551/file_Name.png",
 			"transform": {

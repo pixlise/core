@@ -460,7 +460,7 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 
 	// Notify of our successful image addition
 	params.Svcs.Notifier.NotifyNewScanImage(req.OriginScanId, req.OriginScanId, scanImage.ImagePath)
-	params.Svcs.Notifier.SysNotifyScanImagesChanged([]string{req.OriginScanId})
+	params.Svcs.Notifier.SysNotifyScanImagesChanged(scanImage.ImagePath, scanImage.AssociatedScanIds)
 
 	return nil
 }
