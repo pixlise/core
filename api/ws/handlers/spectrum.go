@@ -49,6 +49,7 @@ func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (
 	channelCount := uint32(4096)
 
 	result := &protos.SpectrumResp{
+		TimeStampUnixSec:     uint32(exprPB.ImportTimeStampUnixSec),
 		SpectraPerLocation:   spectra,
 		ChannelCount:         channelCount,
 		NormalSpectraForScan: uint32(exprPB.NormalSpectra),

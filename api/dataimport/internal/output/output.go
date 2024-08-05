@@ -84,6 +84,7 @@ func (s *PIXLISEDataSaver) Save(
 	exp.Site = data.Meta.Site
 	exp.Title = data.Meta.Title
 	exp.Sol = data.Meta.SOL
+	exp.ImportTimeStampUnixSec = uint64(creationUnixTimeSec)
 
 	rtt, err := strconv.Atoi(data.Meta.RTT)
 	if err != nil {
