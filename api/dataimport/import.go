@@ -139,7 +139,8 @@ func ImportDataset(
 	// Read the saved summary
 	savedSummary, err = scan.ReadScanItem(datasetID, db)
 	if err != nil {
-		return workingDir, savedSummary, "", false, fmt.Errorf("Failed to verify newly saved summary for import: %v. Error: %v", datasetID, err)
+		// Ensure we don't return a nil ScanItem here...
+		return workingDir, &protos.ScanItem{}, "", false, fmt.Errorf("Failed to verify newly saved summary for import: %v. Error: %v", datasetID, err)
 	}
 
 	// Decide what notifications (if any) to send

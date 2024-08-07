@@ -119,12 +119,13 @@ func ImportForTrigger(
 
 	importedSummary := &protos.ScanItem{}
 	result.WorkingDir, importedSummary, result.WhatChanged, result.IsUpdate, err = ImportDataset(localFS, remoteFS, configBucket, manualBucket, datasetBucket, db, datasetID, log, archived)
-	result.DatasetID = importedSummary.Id
-	result.DatasetTitle = importedSummary.Title
 
 	if err != nil {
-		completeJobState(jobId, false, result.DatasetID, err.Error(), "", []string{}, db, &ts, log)
+		result.DatasetID = datasetID
+		completeJobState(jobId, false, datasetID, err.Error(), "", []string{}, db, &ts, log)
 	} else {
+		result.DatasetID = importedSummary.Id
+		result.DatasetTitle = importedSummary.Title
 		completeJobState(jobId, true, result.DatasetID, "Imported successfully", "", []string{}, db, &ts, log)
 	}
 
