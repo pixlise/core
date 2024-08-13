@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 	"github.com/pixlise/core/v4/api/dataimport/internal/importerutils"
 	dataimportModel "github.com/pixlise/core/v4/api/dataimport/models"
@@ -99,7 +100,7 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 
 	if params.MsaBeamParams == "" && params.BeamFile != "" {
 		jobLog.Infof("  Reading Beam Locations: \"%v\", using minimum context image PMC detected: %v\n", params.BeamFile, minContextPMC)
-		beamLookup, err = importerutils.ReadBeamLocationsFile(filepath.Join(importPath, params.BeamFile), false, minContextPMC, jobLog)
+		beamLookup, err = dataImportHelpers.ReadBeamLocationsFile(filepath.Join(importPath, params.BeamFile), false, minContextPMC, []string{}, jobLog)
 		if err != nil {
 			return nil, "", err
 		}

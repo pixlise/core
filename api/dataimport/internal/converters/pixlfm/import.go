@@ -25,6 +25,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 	"github.com/pixlise/core/v4/api/dataimport/internal/importerutils"
 	"github.com/pixlise/core/v4/core/fileaccess"
@@ -217,7 +218,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 				if beamCsvMeta.ProdType == "RXL" {
 					// If files don't conform, don't read...
 					beamFilePath := filepath.Join(pathToSubdir, file)
-					beamLookup, err = importerutils.ReadBeamLocationsFile(beamFilePath, true, 1, log)
+					beamLookup, err = dataImportHelpers.ReadBeamLocationsFile(beamFilePath, true, 1, []string{}, log)
 					if err != nil {
 						return nil, "", err
 					} else {

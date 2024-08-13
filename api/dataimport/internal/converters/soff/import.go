@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 	"github.com/pixlise/core/v4/api/dataimport/internal/importerutils"
 	"github.com/pixlise/core/v4/core/fileaccess"
@@ -147,7 +148,7 @@ func (s *SOFFImport) Import(importPath string, pseudoIntensityRangesPath string,
 	}
 
 	// Read each one
-	beamLookup, err := importerutils.ReadBeamLocationsFile(filepath.Join(importPath, importPathAndOffsets["Xray_beam_positions"].fileName), true, 1, s.log)
+	beamLookup, err := dataImportHelpers.ReadBeamLocationsFile(filepath.Join(importPath, importPathAndOffsets["Xray_beam_positions"].fileName), true, 1, []string{}, s.log)
 	if err != nil {
 		return nil, "", err
 	}
