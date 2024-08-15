@@ -61,6 +61,12 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 		coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
 		imgFound := coll.FindOne(ctx, bson.M{"_id": req.ImageName}, options.FindOne())
 		if imgFound.Err() != nil {
+			if imgFound.Err() == mongo.ErrNoDocuments {
+				// If there are no beam locations, don't return an error, just return a message with no items in it
+				return &protos.ImageBeamLocationsResp{
+					Locations: &protos.ImageLocations{ImageName: req.ImageName},
+				}, nil
+			}
 			return nil, imgFound.Err()
 		}
 
