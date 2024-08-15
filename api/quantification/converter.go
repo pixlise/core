@@ -416,7 +416,7 @@ type csvData struct {
 	data   [][]string
 }
 
-// TODO: Get rid of this, replace it with importerutils.ReadCSV!
+// TODO: Get rid of this, replace it with dataImportHelpers.ReadCSV!
 func readCSV(data string, headerRowIdx int) (csvData, error) {
 	var result csvData
 
