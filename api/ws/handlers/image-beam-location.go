@@ -57,10 +57,35 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 			return nil, err
 		}
 
-		coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
+		// NOTE: in the case of "matched" images, we look up the image that's marked as the matched image!
+		coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+		imgFound := coll.FindOne(ctx, bson.M{"_id": req.ImageName}, options.FindOne())
+		if imgFound.Err() != nil {
+			if imgFound.Err() == mongo.ErrNoDocuments {
+				// If there are no beam locations, don't return an error, just return a message with no items in it
+				return &protos.ImageBeamLocationsResp{
+					Locations: &protos.ImageLocations{ImageName: req.ImageName},
+				}, nil
+			}
+			return nil, imgFound.Err()
+		}
+
+		img := protos.ScanImage{}
+		err := imgFound.Decode(&img)
+		if err != nil {
+			return nil, err
+		}
+
+		// Read the image, and follow the matched image link if there is one
+		imageForBeamRead := req.ImageName
+		if img.MatchInfo != nil && len(img.MatchInfo.BeamImageFileName) > 0 {
+			imageForBeamRead = img.MatchInfo.BeamImageFileName
+		}
+
+		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 
 		// Read the image and check that the user has access to all scans associated with it
-		result := coll.FindOne(ctx, bson.M{"_id": req.ImageName})
+		result := coll.FindOne(ctx, bson.M{"_id": imageForBeamRead})
 		if result.Err() != nil {
 			if result.Err() == mongo.ErrNoDocuments {
 				// If there are no beam locations, don't return an error, just return a message with no items in it
@@ -72,7 +97,7 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 		}
 
 		var dbLocs *protos.ImageLocations
-		err := result.Decode(&dbLocs)
+		err = result.Decode(&dbLocs)
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +133,7 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 
 		// Run through what we're planning to return and make sure user has access while building the result list
 		locs = &protos.ImageLocations{
-			ImageName:       dbLocs.ImageName,
+			ImageName:       req.ImageName, // We used to return: dbLocs.ImageName but now look up the matched image here!
 			LocationPerScan: []*protos.ImageLocationsForScan{},
 		}
 
@@ -154,11 +179,30 @@ func HandleImageBeamLocationVersionsReq(req *protos.ImageBeamLocationVersionsReq
 		return nil, err
 	}
 
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
+	// NOTE: in the case of "matched" images, we look up the image that's marked as the matched image!
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+	imgFound := coll.FindOne(ctx, bson.M{"_id": req.ImageName}, options.FindOne())
+	if imgFound.Err() != nil {
+		return nil, imgFound.Err()
+	}
+
+	img := protos.ScanImage{}
+	err := imgFound.Decode(&img)
+	if err != nil {
+		return nil, err
+	}
+
+	// Read the image, and follow the matched image link if there is one
+	imageForBeamRead := req.ImageName
+	if img.MatchInfo != nil && len(img.MatchInfo.BeamImageFileName) > 0 {
+		imageForBeamRead = img.MatchInfo.BeamImageFileName
+	}
+
+	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 	vers := map[string]*protos.ImageBeamLocationVersionsResp_AvailableVersions{}
 
 	// Read the image and check that the user has access to all scans associated with it
-	result := coll.FindOne(ctx, bson.M{"_id": req.ImageName})
+	result := coll.FindOne(ctx, bson.M{"_id": imageForBeamRead})
 	if result.Err() != nil {
 		if result.Err() == mongo.ErrNoDocuments {
 			// If there are no beam locations, don't return an error, just return a message with no items in it
@@ -170,7 +214,7 @@ func HandleImageBeamLocationVersionsReq(req *protos.ImageBeamLocationVersionsReq
 	}
 
 	var locs *protos.ImageLocations
-	err := result.Decode(&locs)
+	err = result.Decode(&locs)
 	if err != nil {
 		return nil, err
 	}

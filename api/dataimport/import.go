@@ -136,15 +136,18 @@ func ImportDataset(
 		return workingDir, savedSummary, "", false, err
 	}
 
+	// Read the saved summary
+	savedSummary, err = scan.ReadScanItem(datasetID, db)
+	if err != nil {
+		// Ensure we don't return a nil ScanItem here...
+		return workingDir, &protos.ScanItem{}, "", false, fmt.Errorf("Failed to verify newly saved summary for import: %v. Error: %v", datasetID, err)
+	}
+
 	// Decide what notifications (if any) to send
 	updatenotificationtype := "unknown"
 
-	if errOldSummary == nil { // don't do this if the old summary couldn't be read!
-		savedSummary, err = scan.ReadScanItem(datasetID, db)
-		if err != nil {
-			return workingDir, savedSummary, "", false, err
-		}
-
+	if errOldSummary == nil {
+		// The old summary could be read, so compare
 		updatenotificationtype, err = getUpdateType(savedSummary, oldSummary)
 		if err != nil {
 			return workingDir, savedSummary, "", false, err
