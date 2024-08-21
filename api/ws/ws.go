@@ -2,6 +2,7 @@ package ws
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/olahol/melody"
@@ -22,9 +23,10 @@ type connectToken struct {
 }
 
 type WSHandler struct {
-	connectTokens map[string]connectToken
-	melody        *melody.Melody
-	svcs          *services.APIServices
+	connectTokensMutex sync.Mutex
+	connectTokens      map[string]connectToken
+	melody             *melody.Melody
+	svcs               *services.APIServices
 }
 
 func MakeWSHandler(m *melody.Melody, svcs *services.APIServices) *WSHandler {
@@ -38,6 +40,10 @@ func MakeWSHandler(m *melody.Melody, svcs *services.APIServices) *WSHandler {
 
 func (ws *WSHandler) clearOldTokens() {
 	nowSec := ws.svcs.TimeStamper.GetTimeNowSec()
+
+	ws.connectTokensMutex.Lock()
+	defer ws.connectTokensMutex.Unlock()
+
 	for token, usr := range ws.connectTokens {
 		if usr.expiryUnixSec < nowSec {
 			delete(ws.connectTokens, token)
@@ -53,6 +59,9 @@ func (ws *WSHandler) HandleBeginWSConnection(params apiRouter.ApiHandlerGenericP
 
 	// Clear out old ones, now is a good a time as any!
 	ws.clearOldTokens()
+
+	ws.connectTokensMutex.Lock()
+	defer ws.connectTokensMutex.Unlock()
 
 	ws.connectTokens[token] = connectToken{expirySec, params.UserInfo}
 
@@ -94,6 +103,9 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 			s.CloseWithMsg([]byte("Multiple tokens provided"))
 			return
 		}
+
+		ws.connectTokensMutex.Lock()
+		defer ws.connectTokensMutex.Unlock()
 
 		if conn, ok := ws.connectTokens[token[0]]; !ok {
 			fmt.Printf("WS connect failed for UNKNOWN token: %v\n", token)
