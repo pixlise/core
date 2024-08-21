@@ -15,11 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package importerutils
+package dataImportHelpers
 
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -27,8 +28,8 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 )
 
-// ReadBeamLocationsFile - Reads beam location CSV. Old style (expectMultipleIJ=false) or new multi-image IJ coord CSVs
-func ReadBeamLocationsFile(path string, expectMultipleIJ bool, mainImagePMC int32, jobLog logger.ILogger) (dataConvertModels.BeamLocationByPMC, error) {
+// ReadBeamLocationsFile - Reads beam location CSV. Old style (expectMultipleIJ=false) or new multi-image IJ coord CSVs.
+func ReadBeamLocationsFile(path string, expectMultipleIJ bool, mainImagePMC int32, ignoreColumns []string, jobLog logger.ILogger) (dataConvertModels.BeamLocationByPMC, error) {
 	rowsToSkip := 0
 	if !expectMultipleIJ {
 		// If we're loading the old style test data, that had an extra header that we skip
@@ -40,11 +41,11 @@ func ReadBeamLocationsFile(path string, expectMultipleIJ bool, mainImagePMC int3
 		return nil, err
 	}
 
-	return parseBeamLocations(rows, expectMultipleIJ, mainImagePMC)
+	return parseBeamLocations(rows, expectMultipleIJ, mainImagePMC, ignoreColumns)
 }
 
-func parseBeamLocations(rows [][]string, expectMultipleIJ bool, mainImagePMC int32) (dataConvertModels.BeamLocationByPMC, error) {
-	headerLookup, geom_corrIdx, err := parseBeamLocationHeaders(rows[0], expectMultipleIJ, mainImagePMC)
+func parseBeamLocations(rows [][]string, expectMultipleIJ bool, mainImagePMC int32, ignoreColumns []string) (dataConvertModels.BeamLocationByPMC, error) {
+	headerLookup, geom_corrIdx, err := parseBeamLocationHeaders(rows[0], expectMultipleIJ, mainImagePMC, ignoreColumns)
 	if err != nil {
 		return nil, err
 	}
@@ -75,9 +76,10 @@ type pmcColIdxs struct {
 }
 
 // Gives back the i/j column indexes for each context image image (identified by PMC), geom_corr column index (or -1 if not there), and an error
-func parseBeamLocationHeaders(header []string, expectMultipleIJ bool, mainImagePMC int32) ([]pmcColIdxs, int32, error) {
+func parseBeamLocationHeaders(header []string, expectMultipleIJ bool, mainImagePMC int32, ignoreColumns []string) ([]pmcColIdxs, int32, error) {
 	result := []pmcColIdxs{}
 	geom_corrIdx := int32(-1)
+	ignoredColIdxs := map[string]int32{}
 
 	// Check that these items are first...
 	expHeaders := []string{"PMC", "x", "y", "z"}
@@ -90,14 +92,22 @@ func parseBeamLocationHeaders(header []string, expectMultipleIJ bool, mainImageP
 	} else {
 		// We import also a new geom_corr column, this is optional, but would only appear in newer beam locations where we have multi-ij's
 		// This should be at the end of the expected header values...
-		if len(header) > len(expHeaders) && header[len(expHeaders)] == "geom_corr" {
-			geom_corrIdx = int32(len(expHeaders))
-			expHeaders = append(expHeaders, "geom_corr")
+		remainingColCount := len(header) - len(expHeaders)
+
+		for idx, item := range header {
+			if item == "geom_corr" {
+				geom_corrIdx = int32(idx)
+				ignoredColIdxs[item] = int32(idx)
+				remainingColCount--
+			} else if slices.Contains(ignoreColumns, item) {
+				// we're ignoring this column, all good
+				ignoredColIdxs[item] = int32(idx)
+				remainingColCount--
+			}
 		}
 
-		// we DO expect multiple i/j so check that there is at least 1 set
-		ijColCount := len(header) - len(expHeaders)
-		if ijColCount <= 0 || (ijColCount%2) != 0 {
+		// Assume all remaining columns are ij, so check the remainder could possibly be ijs, and needs to be multiple of 2
+		if remainingColCount <= 0 || (remainingColCount%2) != 0 {
 			return nil, geom_corrIdx, errors.New("Unexpected count of i/j columns")
 		}
 	}
@@ -110,13 +120,13 @@ func parseBeamLocationHeaders(header []string, expectMultipleIJ bool, mainImageP
 	}
 
 	if expectMultipleIJ {
-		// Rest of the columns should be for ij's per PMC, so work out what they are
-		ijColCount := len(header) - len(expHeaders)
-		if ijColCount <= 0 || (ijColCount%2) != 0 {
-			return nil, geom_corrIdx, errors.New("Unexpected count of i/j columns")
-		}
 		// Run through them, expecting them to be in i/j order
-		for idx := len(expHeaders); idx < len(header); idx += 2 {
+		for idx := len(expHeaders); idx < len(header); idx++ {
+			// Check if it's an ignorable one
+			if _, ok := ignoredColIdxs[header[idx]]; ok {
+				continue
+			}
+
 			pmc, datatype, coord, err := splitColumnHeader(header[idx])
 			if err != nil {
 				return nil, geom_corrIdx, err
@@ -135,6 +145,9 @@ func parseBeamLocationHeaders(header []string, expectMultipleIJ bool, mainImageP
 			if datatype == "MCC" {
 				result = append(result, pmcColIdxs{pmc, idx, idx + 1})
 			}
+
+			// Increment again so we skip 2 because we read 2
+			idx++
 		}
 	} else {
 		// We verified it's a single i/j file (like in our older test data files), so we

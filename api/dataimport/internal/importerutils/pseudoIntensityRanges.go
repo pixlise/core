@@ -22,13 +22,14 @@ import (
 	"fmt"
 	"strconv"
 
+	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/utils"
 )
 
 func ReadPseudoIntensityRangesFile(path string, jobLog logger.ILogger) ([]dataConvertModels.PseudoIntensityRange, error) {
-	data, err := ReadCSV(path, 0, ',', jobLog)
+	data, err := dataImportHelpers.ReadCSV(path, 0, ',', jobLog)
 	if err != nil {
 		return nil, err
 	}

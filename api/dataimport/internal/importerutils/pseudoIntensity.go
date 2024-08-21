@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 
+	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 	"github.com/pixlise/core/v4/core/logger"
 )
@@ -31,7 +32,7 @@ func ReadPseudoIntensityFile(path string, expectHeaderRow bool, jobLog logger.IL
 		firstRealRowIdx = 1
 	}
 
-	data, err := ReadCSV(path, firstRealRowIdx, ',', jobLog)
+	data, err := dataImportHelpers.ReadCSV(path, firstRealRowIdx, ',', jobLog)
 	if err != nil {
 		return nil, err
 	}

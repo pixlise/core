@@ -21,13 +21,14 @@ import (
 	"fmt"
 	"strconv"
 
+	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func ReadHousekeepingFile(path string, headerRowCount int, jobLog logger.ILogger) (dataConvertModels.HousekeepingData, error) {
-	rows, err := ReadCSV(path, headerRowCount, ',', jobLog)
+	rows, err := dataImportHelpers.ReadCSV(path, headerRowCount, ',', jobLog)
 	if err != nil {
 		return dataConvertModels.HousekeepingData{}, err
 	}
