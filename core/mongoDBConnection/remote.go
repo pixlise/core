@@ -46,7 +46,7 @@ func connectToRemoteMongoDB(
 
 	iLog.Infof("Connecting to remote mongo db: %v, user: %v", MongoEndpoint, MongoUsername)
 
-	tlsConfig, err := getCustomTLSConfig("./rds-combined-ca-bundle.pem")
+	tlsConfig, err := getCustomTLSConfig("./global-bundle.pem")
 	if err != nil {
 		return nil, fmt.Errorf("Failed getting TLS configuration: %v", err)
 	}

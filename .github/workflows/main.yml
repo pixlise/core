@@ -135,13 +135,14 @@ jobs:
         run: |
           cd _out
           rm pixlise-api-linux
-          wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
+          # WAS USING: wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
+          wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
           mkdir dataimport integrationtest
-          zip -q dataimport/dataimport-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem bootstrap
+          zip -q dataimport/dataimport-linux-${{ needs.version.outputs.version }}.zip global-bundle.pem bootstrap
           rm bootstrap
           # mkdir test-data
           # cp ../internal/cmdline-tools/import-integration-test/test-data/000000001-21-10-2022-15-37-00.zip ./test-data
-          # zip -q integrationtest-linux-${{ needs.version.outputs.version }}.zip rds-combined-ca-bundle.pem integrationtest-linux
+          # zip -q integrationtest-linux-${{ needs.version.outputs.version }}.zip global-bundle.pem integrationtest-linux
           # rm integrationtest-linux
           # zip -q importtest/importtest-linux-${{ needs.version.outputs.version }}.zip importtest-linux test-data/000000001-21-10-2022-15-37-00.zip
           # rm importtest-linux
