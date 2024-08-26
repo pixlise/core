@@ -76,6 +76,10 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 	iLog.SetLogLevel(logger.LogInfo)
 
 	for _, record := range event.Records {
+		// Print this to stdout - not that useful, won't be in the log file, but lambda cloudwatch log should have it
+		// and it'll be useful for initial debugging
+		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
+
 		mongoClient, err := mongoDBConnection.Connect(sess, mongoSecret, iLog)
 		if err != nil {
 			log.Fatal(err)
@@ -84,10 +88,6 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		// Get handle to the DB
 		dbName := mongoDBConnection.GetDatabaseName("pixlise", envName)
 		db := mongoClient.Database(dbName)
-
-		// Print this to stdout - not that useful, won't be in the log file, but lambda cloudwatch log should have it
-		// and it'll be useful for initial debugging
-		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
 
 		result, err := dataimport.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, db, iLog, remoteFS)
 		if err != nil {
