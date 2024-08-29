@@ -198,7 +198,14 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 
 	jobSpec := makeJobObject(params, paramsStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, count, jobTTLSec)
 
-	r.kubeHelper.Log.Infof("runQuantJob creating job for namespace %v, svc account %v: %+v", jobSpec.Namespace, jobSpec.Spec.Template.Spec.ServiceAccountName, jobSpec)
+	jobSpecJSON := ""
+	if jobSpecJSONBytes, err := json.Marshal(jobSpec); err != nil {
+		jobSpecJSON = fmt.Sprintf("%+v (failed to read jobSpec - error: %v)", jobSpec, err)
+	} else {
+		jobSpecJSON = string(jobSpecJSONBytes)
+	}
+
+	r.kubeHelper.Log.Infof("runQuantJob creating job for namespace %v, svc account %v: %v", jobSpec.Namespace, jobSpec.Spec.Template.Spec.ServiceAccountName, jobSpecJSON)
 
 	job, err := r.kubeHelper.Clientset.BatchV1().Jobs(jobSpec.Namespace).Create(context.Background(), jobSpec, metav1.CreateOptions{})
 	if err != nil {
