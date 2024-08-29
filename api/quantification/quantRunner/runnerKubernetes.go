@@ -28,6 +28,7 @@ import (
 	"github.com/pixlise/core/v4/api/config"
 	"github.com/pixlise/core/v4/core/kubernetes"
 	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/utils"
 	batchv1 "k8s.io/api/batch/v1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -199,7 +200,7 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 	jobSpec := makeJobObject(params, paramsStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, count, jobTTLSec)
 
 	jobSpecJSON := ""
-	if jobSpecJSONBytes, err := json.Marshal(jobSpec); err != nil {
+	if jobSpecJSONBytes, err := json.MarshalIndent(jobSpec, "", utils.PrettyPrintIndentForJSON); err != nil {
 		jobSpecJSON = fmt.Sprintf("%+v (failed to read jobSpec - error: %v)", jobSpec, err)
 	} else {
 		jobSpecJSON = string(jobSpecJSONBytes)

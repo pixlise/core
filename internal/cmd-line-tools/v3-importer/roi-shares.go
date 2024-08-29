@@ -125,7 +125,7 @@ func migrateROIShares(
 		}
 	}
 
-	shared, err := json.MarshalIndent(sharedItems, "", "  ")
+	shared, err := json.MarshalIndent(sharedItems, "", utils.PrettyPrintIndentForJSON)
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func migrateROIShares(
 		}
 	}
 
-	user, err := json.MarshalIndent(allItems, "", "  ")
+	user, err := json.MarshalIndent(allItems, "", utils.PrettyPrintIndentForJSON)
 	if err != nil {
 		return err
 	}
