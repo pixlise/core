@@ -18,7 +18,7 @@ func HandleSelectedScanEntriesReq(req *protos.SelectedScanEntriesReq, hctx wsHel
 	// If any have an error, we error the whole thing out
 
 	// Cap it though for performance...
-	if len(req.ScanIds) > 10 {
+	if len(req.ScanIds) > 20 {
 		return nil, errors.New("Too many ScanIds requested")
 	}
 
@@ -45,7 +45,7 @@ func HandleSelectedScanEntriesReq(req *protos.SelectedScanEntriesReq, hctx wsHel
 // Allowing user to save multiple scans worth of entry indexes in one message
 func HandleSelectedScanEntriesWriteReq(req *protos.SelectedScanEntriesWriteReq, hctx wsHelpers.HandlerContext) (*protos.SelectedScanEntriesWriteResp, error) {
 	// Cap it though for performance...
-	if len(req.ScanIdEntryIndexes) > 10 {
+	if len(req.ScanIdEntryIndexes) > 20 {
 		return nil, errors.New("Too many ScanIds written")
 	}
 
