@@ -67,12 +67,12 @@ func testQuantFit(apiHost string) {
 		`{"msgId":3,"status":"WS_OK","quantCreateResp":{
 		"status": {
 				"jobId": "${IDSAVE=quantFitId}",
+				"jobItemId": "${IDSAVE=quantFitId}",
+				"status": "STARTING",
 				"jobType": "JT_RUN_FIT",
 				"requestorUserId": "${USERID}",
-				"message": "${IGNORE}",
-				"status": "STATING",
 				"startUnixTimeSec": "${SECAGO=60}",
-				"lastUpdateUnixTimeSec": "${SECAGO=60}"
+				"elements": ["Ca", "Ti"]
 			}
 				
 		}}`,
