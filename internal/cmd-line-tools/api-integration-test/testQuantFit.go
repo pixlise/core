@@ -64,13 +64,27 @@ func testQuantFit(apiHost string) {
 				"roiIDs": []
 			}
 		}}`,
-		fmt.Sprintf(`{"msgId":3,"status":"WS_OK","quantCreateResp":{
-			"resultData": "${REGEXMATCH=%v.+}"
-		}}`, expData64),
+		`{"msgId":3,"status":"WS_OK","quantCreateResp":{
+		"status": {
+				"jobId": "${IDSAVE=quantFitId}",
+				"jobType": "JT_RUN_FIT",
+				"requestorUserId": "${USERID}",
+				"message": "${IGNORE}",
+				"status": "STATING",
+				"startUnixTimeSec": "${SECAGO=60}",
+				"lastUpdateUnixTimeSec": "${SECAGO=60}"
+			}
+				
+		}}`,
 	)
 
-	// NOTE: we don't expect to get job update messages for these, they're "one-shot", where we get the data back in the response!
-	usr.CloseActionGroup([]string{}, maxRunTimeSec*1000)
+	expectedUpdates := []string{
+		fmt.Sprintf(`{"quantCreateUpd":{
+			"resultData": "${REGEXMATCH=%v.+}"
+		}}`, expData64),
+	}
+
+	usr.CloseActionGroup(expectedUpdates, maxRunTimeSec*1000)
 
 	wstestlib.ExecQueuedActions(&usr)
 
