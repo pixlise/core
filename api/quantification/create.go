@@ -24,7 +24,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
@@ -46,7 +45,7 @@ import (
 const JobParamsFileName = "params.json"
 
 // CreateJob - creates a new quantification job
-func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, svcs *services.APIServices, sessUser *wsHelpers.SessionUser, wg *sync.WaitGroup, sendUpdate func(*protos.JobStatus)) (*protos.JobStatus, error) {
+func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, svcs *services.APIServices, sessUser *wsHelpers.SessionUser, sendUpdate func(*protos.JobStatus)) (*protos.JobStatus, error) {
 	// Get configured PIQUANT docker container
 	piquantVersion, err := piquant.GetPiquantVersion(svcs)
 
@@ -60,20 +59,22 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, s
 	// treated as a long-running job
 	var jobStatus *protos.JobStatus
 	jobId := ""
+	jobType := protos.JobStatus_JT_RUN_QUANT
+	idPrefix := "quant"
 	if createParams.Command != "map" {
-		// Make the name and ID the same, and start with something that stands out
-		jobId = fmt.Sprintf("cmd-%v-%s", createParams.Command, svcs.IDGen.GenObjectID())
-	} else {
-		jobStatus, err = job.AddJob("quant", requestorUserId, protos.JobStatus_JT_RUN_QUANT, "", createParams.Name, createParams.Elements, uint32(svcs.Config.ImportJobMaxTimeSec), svcs.MongoDB, svcs.IDGen, svcs.TimeStamper, svcs.Log, sendUpdate)
-		if jobStatus != nil {
-			jobId = jobStatus.JobId
-		}
+		jobType = protos.JobStatus_JT_RUN_FIT
+		idPrefix = "fit"
+	}
 
-		if err != nil || len(jobId) < 0 {
-			returnErr := fmt.Errorf("Failed to add job watcher for quant Job ID: %v. Error was: %v", jobId, err)
-			svcs.Log.Errorf("%v", returnErr)
-			return nil, returnErr
-		}
+	jobStatus, err = job.AddJob(idPrefix, requestorUserId, jobType, "", createParams.Name, createParams.Elements, uint32(svcs.Config.ImportJobMaxTimeSec), svcs.MongoDB, svcs.IDGen, svcs.TimeStamper, svcs.Log, sendUpdate)
+	if jobStatus != nil {
+		jobId = jobStatus.JobId
+	}
+
+	if err != nil || len(jobId) < 0 {
+		returnErr := fmt.Errorf("Failed to add job watcher for quant Job ID: %v. Error was: %v", jobId, err)
+		svcs.Log.Errorf("%v", returnErr)
+		return nil, returnErr
 	}
 
 	// If not a map command, use the name as the job id just to have a non-empty name and be trackable
@@ -105,10 +106,6 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, s
 		return nil, err
 	}
 
-	if wg != nil {
-		wg.Add(1)
-	}
-
 	// Trigger task to start in a go routine, so we don't block!
 	r := quantNodeRunner{
 		jobId:              jobId,
@@ -117,7 +114,7 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, s
 		sessUser:           sessUser,
 	}
 
-	go r.triggerPiquantNodes(wg)
+	go r.triggerPiquantNodes()
 
 	return jobStatus, nil
 }
@@ -132,12 +129,8 @@ type quantNodeRunner struct {
 }
 
 // This should be triggered as a go routine from quant creation endpoint so we can return a job id there quickly and do the processing offline
-func (r *quantNodeRunner) triggerPiquantNodes(wg *sync.WaitGroup) {
-	if wg != nil {
-		defer wg.Done()
-	}
-
-	r.isJob = r.quantStartSettings.UserParams.Command == "map"
+func (r *quantNodeRunner) triggerPiquantNodes() {
+	r.isJob = true // r.quantStartSettings.UserParams.Command == "map"
 
 	// TODO: figure out log id!
 	r.logId = r.jobId
@@ -244,6 +237,10 @@ func (r *quantNodeRunner) triggerPiquantNodes(wg *sync.WaitGroup) {
 			path.Join(quantOutPath, filepaths.MakeQuantLogDirName(r.jobId)),
 			r.jobId,
 		)
+
+		if err != nil {
+			r.svcs.Log.Errorf("Quant job %v copyAllLogs failed: %v", r.jobId, err)
+		}
 
 		// Now we can combine the outputs from all runners
 		csvTitleRow := fmt.Sprintf("PIQUANT version: %v DetectorConfig: %v", r.quantStartSettings.PIQUANTVersion, userParams.DetectorConfig)

@@ -87,8 +87,8 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices, onlyIfNot
 				IncludeDwells:  false,
 			}
 
-			i := MakeQuantJobUpdater(params, nil, svcs.Notifier, svcs.MongoDB)
-			_, err := CreateJob(params, specialUserIds.PIXLISESystemUserId, svcs, nil, nil, i.SendQuantJobUpdate)
+			i := MakeQuantJobUpdater(params, nil, svcs.Notifier, svcs.MongoDB, svcs.FS, svcs.Config.UsersBucket)
+			_, err := CreateJob(params, specialUserIds.PIXLISESystemUserId, svcs, nil, i.SendQuantJobUpdate)
 			if err != nil {
 				svcs.Log.Errorf("AutoQuant failed to create quant job: %v. Error: %v", params.Name, err)
 				return
