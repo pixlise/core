@@ -84,6 +84,8 @@ func (i *QuantJobUpdater) SendEphemeralQuantJobUpdate(status *protos.JobStatus) 
 		wsUpd := protos.WSMessage{
 			Contents: &protos.WSMessage_QuantCreateUpd{
 				QuantCreateUpd: &protos.QuantCreateUpd{
+					// Need to include status info too otherwise receiver doesn't know what fit this is for
+					Status:     status,
 					ResultData: bytes,
 				},
 			},
