@@ -67,19 +67,27 @@ func testQuantFit(apiHost string) {
 		`{"msgId":3,"status":"WS_OK","quantCreateResp":{
 		"status": {
 				"jobId": "${IDSAVE=quantFitId}",
-				"jobItemId": "${IDSAVE=quantFitId}",
+				"jobItemId": "${IGNORE}",
 				"status": "STARTING",
 				"jobType": "JT_RUN_FIT",
 				"requestorUserId": "${USERID}",
 				"startUnixTimeSec": "${SECAGO=60}",
 				"elements": ["Ca", "Ti"]
 			}
-				
 		}}`,
 	)
 
 	expectedUpdates := []string{
 		fmt.Sprintf(`{"quantCreateUpd":{
+			"status": {
+				"jobId": "${IDCHK=quantFitId}",
+				"jobItemId": "${IDCHK=quantFitId}",
+				"status": "COMPLETE",
+				"jobType": "JT_RUN_FIT",
+				"requestorUserId": "${USERID}",
+				"startUnixTimeSec": "${SECAGO=60}",
+				"elements": ["Ca", "Ti"]
+			},
 			"resultData": "${REGEXMATCH=%v.+}"
 		}}`, expData64),
 	}
