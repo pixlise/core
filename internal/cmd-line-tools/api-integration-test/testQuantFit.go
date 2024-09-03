@@ -64,13 +64,35 @@ func testQuantFit(apiHost string) {
 				"roiIDs": []
 			}
 		}}`,
-		fmt.Sprintf(`{"msgId":3,"status":"WS_OK","quantCreateResp":{
-			"resultData": "${REGEXMATCH=%v.+}"
-		}}`, expData64),
+		`{"msgId":3,"status":"WS_OK","quantCreateResp":{
+		"status": {
+				"jobId": "${IDSAVE=quantFitId}",
+				"jobItemId": "${IGNORE}",
+				"status": "STARTING",
+				"jobType": "JT_RUN_FIT",
+				"requestorUserId": "${USERID}",
+				"startUnixTimeSec": "${SECAGO=60}",
+				"elements": ["Ca", "Ti"]
+			}
+		}}`,
 	)
 
-	// NOTE: we don't expect to get job update messages for these, they're "one-shot", where we get the data back in the response!
-	usr.CloseActionGroup([]string{}, maxRunTimeSec*1000)
+	expectedUpdates := []string{
+		fmt.Sprintf(`{"quantCreateUpd":{
+			"status": {
+				"jobId": "${IDCHK=quantFitId}",
+				"jobItemId": "${IDCHK=quantFitId}",
+				"status": "COMPLETE",
+				"jobType": "JT_RUN_FIT",
+				"requestorUserId": "${USERID}",
+				"startUnixTimeSec": "${SECAGO=60}",
+				"elements": ["Ca", "Ti"]
+			},
+			"resultData": "${REGEXMATCH=%v.+}"
+		}}`, expData64),
+	}
+
+	usr.CloseActionGroup(expectedUpdates, maxRunTimeSec*1000)
 
 	wstestlib.ExecQueuedActions(&usr)
 

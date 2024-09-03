@@ -32,7 +32,7 @@ WORKDIR /root
 COPY --from=0 /build/_out/pixlise-api-linux ./
 #COPY ./_out/pixlise-api-linux ./
 
-RUN chmod +x ./pixlise-api-linux && wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O rds-combined-ca-bundle.pem
+RUN chmod +x ./pixlise-api-linux && wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
 # Expose port 8080 to the outside world
 EXPOSE 8080
 

@@ -18,4 +18,4 @@
 package utils
 
 // PrettyPrintIndentForJSON Pretty-print indenting of JSON
-const PrettyPrintIndentForJSON = "    "
+const PrettyPrintIndentForJSON = "  "

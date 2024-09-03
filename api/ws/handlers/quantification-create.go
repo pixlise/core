@@ -4,7 +4,6 @@ import (
 	"errors"
 	"path"
 	"strings"
-	"sync"
 
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/quantification"
@@ -33,31 +32,19 @@ func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerCont
 	req.Params.DetectorConfig = path.Join(detectorConfigBits[0], filepaths.PiquantConfigSubDir, detectorConfigBits[1])
 
 	// Run the quantification job
-	var wg sync.WaitGroup
+	i := quantification.MakeQuantJobUpdater(req.Params, hctx.Session, hctx.Svcs.Notifier, hctx.Svcs.MongoDB, hctx.Svcs.FS, hctx.Svcs.Config.UsersBucket)
 
-	i := quantification.MakeQuantJobUpdater(req.Params, hctx.Session, hctx.Svcs.Notifier, hctx.Svcs.MongoDB)
+	updater := i.SendQuantJobUpdate
+	if req.Params.Command != "map" {
+		updater = i.SendEphemeralQuantJobUpdate
+	}
 
-	status, err := quantification.CreateJob(req.Params, hctx.SessUser.User.Id, hctx.Svcs, &hctx.SessUser, &wg, i.SendQuantJobUpdate)
+	status, err := quantification.CreateJob(req.Params, hctx.SessUser.User.Id, hctx.Svcs, &hctx.SessUser, updater)
 
 	if err != nil {
 		return nil, err
 	}
 
-	// If it's NOT a map command, we wait around for the result and pass it back in the response
-	// but for map commands, we just pass back the generated job status
-	if req.Params.Command == "map" {
-		return &protos.QuantCreateResp{Status: status}, nil
-	}
-
-	// Wait around for the output file to appear, or for the job to end up in an error state
-	wg.Wait()
-
-	// Return error or the resulting CSV, whichever happened
-	userOutputFilePath := filepaths.GetUserLastPiquantOutputPath(hctx.SessUser.User.Id, req.Params.ScanId, req.Params.Command, filepaths.QuantLastOutputFileName+".csv")
-	bytes, err := hctx.Svcs.FS.ReadObject(hctx.Svcs.Config.UsersBucket, userOutputFilePath)
-	if err != nil {
-		return nil, errors.New("PIQUANT command: " + req.Params.Command + " failed.")
-	}
-
-	return &protos.QuantCreateResp{ResultData: bytes}, nil
+	// Just pass back the generated job status, updates will happen via the update function passed in
+	return &protos.QuantCreateResp{Status: status}, nil
 }

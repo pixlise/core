@@ -20,7 +20,7 @@ import (
 )
 
 func HandleImageListReq(req *protos.ImageListReq, hctx wsHelpers.HandlerContext) (*protos.ImageListResp, error) {
-	if err := wsHelpers.CheckFieldLength(req.ScanIds, "ScanIds", 1, 10); err != nil {
+	if err := wsHelpers.CheckFieldLength(req.ScanIds, "ScanIds", 1, 50); err != nil {
 		return nil, err
 	}
 
@@ -113,7 +113,7 @@ func HandleImageGetReq(req *protos.ImageGetReq, hctx wsHelpers.HandlerContext) (
 }
 
 func HandleImageGetDefaultReq(req *protos.ImageGetDefaultReq, hctx wsHelpers.HandlerContext) (*protos.ImageGetDefaultResp, error) {
-	/*if err := wsHelpers.CheckFieldLength(req.ScanIds, "ScanIds", 1, 10); err != nil {
+	/*if err := wsHelpers.CheckFieldLength(req.ScanIds, "ScanIds", 1, 50); err != nil {
 		return nil, err
 	}*/
 	if len(req.ScanIds) <= 0 {
