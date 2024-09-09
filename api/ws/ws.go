@@ -1,11 +1,13 @@
 package ws
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/olahol/melody"
+	"github.com/pixlise/core/v4/api/dbCollections"
 	apiRouter "github.com/pixlise/core/v4/api/router"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
@@ -13,7 +15,9 @@ import (
 	"github.com/pixlise/core/v4/core/jwtparser"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -130,7 +134,38 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	// Look up user info
 	sessId := utils.RandStringBytesMaskImpr(32)
 
-	sessionUser, err := wsHelpers.MakeSessionUser(sessId, connectingUser, ws.svcs.MongoDB)
+	sessionUserId := connectingUser.UserID
+
+	// Check if we're set to impersonate another user
+	coll := ws.svcs.MongoDB.Collection(dbCollections.UserImpersonatorsName)
+	ctx := context.TODO()
+	impersonateResult := coll.FindOne(ctx, bson.M{"_id": connectingUser.UserID}, options.FindOne())
+	if impersonateResult.Err() != nil {
+		if impersonateResult.Err() != mongo.ErrNoDocuments {
+			msg := fmt.Sprintf("Error checking for user impersonation setting: %v", impersonateResult.Err())
+			fmt.Printf(msg)
+			s.CloseWithMsg([]byte(msg))
+			return
+		}
+	} else {
+		// We got impersonation info, find the user id we want to pretend to be
+		item := wsHelpers.UserImpersonationItem{}
+		err := impersonateResult.Decode(&item)
+
+		if err != nil {
+			msg := fmt.Sprintf("Failed to read user impersonation setting: %v", err)
+			fmt.Printf(msg)
+			s.CloseWithMsg([]byte(msg))
+			return
+		}
+
+		sessionUserId = item.ImpersonatedId
+
+		// Set the "real" user id so we can know who is impersonating what
+		s.Set("realUserId", connectingUser.UserID)
+	}
+
+	sessionUser, err := wsHelpers.MakeSessionUser(sessId, sessionUserId, connectingUser.Permissions, ws.svcs.MongoDB)
 	if err != nil {
 		// If we have no record of this user, add it
 		if err == mongo.ErrNoDocuments {
@@ -146,7 +181,11 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	// Store the connection info!
 	s.Set("user", *sessionUser)
 
-	fmt.Printf("Connect user: %v (%v), session: %v\n", connectingUser.UserID, connectingUser.Name, sessId)
+	if sessionUserId == connectingUser.UserID {
+		fmt.Printf("Connect user: %v (%v), session: %v\n", connectingUser.UserID, connectingUser.Name, sessId)
+	} else {
+		fmt.Printf("Connect user: %v (%v), session: %v, impersonating user: %v (%v)\n", connectingUser.UserID, connectingUser.Name, sessId, sessionUserId, sessionUser.User.Name)
+	}
 
 	// And we're connected, nothing more to do but wait for requests!
 }

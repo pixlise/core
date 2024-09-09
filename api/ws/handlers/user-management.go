@@ -1,13 +1,18 @@
 package wsHandler
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/auth0login"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"gopkg.in/auth0.v4/management"
 )
 
@@ -217,4 +222,118 @@ func makeUser(from *management.User, db *mongo.Database) *protos.Auth0UserDetail
 	}
 
 	return &user
+}
+
+func HandleUserImpersonateReq(req *protos.UserImpersonateReq, hctx wsHelpers.HandlerContext) (*protos.UserImpersonateResp, error) {
+	// NOTE: we set this up in the DB, page refresh will cause it to be applied
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserImpersonatorsName)
+	ctx := context.TODO()
+
+	realUserId, ok := hctx.Session.Get("realUserId")
+
+	// If we're impersonating a user, make sure the one requested isn't ours
+	if ok && realUserId == req.UserId || req.UserId == hctx.SessUser.User.Id {
+		return nil, errors.New("User cannot impersonate themself")
+	}
+
+	if len(req.UserId) <= 0 {
+		// Delete any impersonation entries
+		if !ok {
+			return nil, errors.New("Failed to get real user id so cannot remove impersonation setting")
+		}
+
+		delResult, err := coll.DeleteOne(ctx, bson.M{"_id": realUserId}, options.Delete())
+		if err != nil {
+			return nil, fmt.Errorf("Failed to delete impersonation setting: %v", err)
+		}
+
+		if delResult.DeletedCount <= 0 {
+			return nil, errors.New("No impersonation settings were removed")
+		}
+
+		return &protos.UserImpersonateResp{}, nil
+	}
+	// ELSE...
+
+	// Validate the user id
+	userToImpersonate, err := wsHelpers.GetDBUser(req.UserId, hctx.Svcs.MongoDB)
+
+	if err != nil {
+		return nil, fmt.Errorf("Failed to find user to impersonate by id: %v. Error: %v", req.UserId, err)
+	}
+
+	// Add impersonation entry
+	// NOTE: we ensure we are not currently impersonating...
+	userId := hctx.SessUser.User.Id
+	if ok {
+		// User is currently impersonating already, so make sure we book their real user name in!
+		userId = fmt.Sprintf("%v", realUserId) // or could maybe use realUserId.(string)
+	}
+
+	saveItem := wsHelpers.UserImpersonationItem{
+		Id:               userId,
+		ImpersonatedId:   req.UserId,
+		TimeStampUnixSec: uint32(hctx.Svcs.TimeStamper.GetTimeNowSec()),
+	}
+	filter := bson.M{"_id": userId}
+	updResult, err := coll.UpdateOne(ctx, filter, bson.D{{Key: "$set", Value: &saveItem}}, options.Update().SetUpsert(true))
+	if err != nil {
+		return nil, fmt.Errorf("Failed to save impersonation setting: %v", err)
+	}
+
+	if updResult.UpsertedCount == 0 && updResult.ModifiedCount == 0 {
+		hctx.Svcs.Log.Errorf("Unexpected update result for user impersonation of %v by %v: %+v", req.UserId, userId, updResult)
+	}
+
+	/*
+		// User attached to this session wants to become the user id specified OR stop impersonating if incoming ID is blank
+		if len(req.UserId) <= 0 {
+			// Ensure we have a "original" user stored
+			if orig, ok := hctx.Session.Get("originalUser"); !ok {
+				return nil, fmt.Errorf("Failed to find original user details, existing session may not be impersonating a user")
+			} else {
+				hctx.Session.Set("user", orig)
+				hctx.Session.UnSet("originalUser")
+			}
+		} else {
+			// They're becoming a user - store original if needed
+			if _, ok := hctx.Session.Get("originalUser"); !ok {
+				if u, okReal := hctx.Session.Get("user"); okReal {
+					hctx.Session.Set("originalUser", u)
+				} else {
+					return nil, fmt.Errorf("Failed to backup real user details")
+				}
+			}
+
+			// "Become" the new user
+			newUser, err := wsHelpers.MakeSessionUser(hctx.SessUser.SessionId, req.UserId, hctx.SessUser.Permissions, hctx.Svcs.MongoDB)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to impersonate user: %v. Error was: %v", req.UserId, err)
+			}
+
+			hctx.Session.Set("user", newUser)
+			hctx.SessUser = *newUser
+		}*/
+
+	return &protos.UserImpersonateResp{
+		SessionUser: &protos.UserInfo{
+			Id:    userToImpersonate.Id,
+			Name:  userToImpersonate.Info.Name,
+			Email: userToImpersonate.Info.Email,
+		},
+	}, nil
+}
+
+func HandleUserImpersonateGetReq(req *protos.UserImpersonateGetReq, hctx wsHelpers.HandlerContext) (*protos.UserImpersonateGetResp, error) {
+	// If user is not impersonating someone, just return an empty message
+	_, ok := hctx.Session.Get("realUserId")
+	if !ok {
+		// No impersonation...
+		return &protos.UserImpersonateGetResp{}, nil
+	}
+
+	// We have the real user id, but what's in our session is the impersonated info, return that
+	return &protos.UserImpersonateGetResp{
+		SessionUser: hctx.SessUser.User,
+	}, nil
 }
