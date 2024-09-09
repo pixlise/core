@@ -77,7 +77,7 @@ func startTestWithMockMongo(name string, t *testing.T, testFunc func(mt *mtest.T
 */
 // Import unknown dataset (simulate trigger by OCS pipeline), file goes to archive, then all files downloaded from archive, dataset create fails due to unknown data type
 func Example_importForTrigger_OCS_Archive_BadData() {
-	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("OCS_Archive_BadData", "Archive_BadData", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
+	remoteFS, log, configBucket, datasetBucket, manualBucket, db := initTest("OCS_Archive_BadData", "Archive_BadData", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
 
 	// In case it ran before, delete the file from dataset bucket, otherwise we will end for the wrong reason
 	os.Remove(datasetBucket + "/Archive/70000_069-02-09-2021-06-25-13.zip")
@@ -151,7 +151,7 @@ func Example_importForTrigger_OCS_Archive_BadData() {
 
 // Import FM-style (simulate trigger by OCS pipeline), file already in archive, so should do nothing
 func Example_importForTrigger_OCS_Archive_Exists() {
-	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("OCS_Archive_Exists", "Archive_Exists", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
+	remoteFS, log, configBucket, datasetBucket, manualBucket, db := initTest("OCS_Archive_Exists", "Archive_Exists", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
 	trigger := `{
 	"Records": [
 		{
@@ -244,7 +244,7 @@ func printArchiveOKLogOutput(logger *logger.StdOutLoggerForTest, db *mongo.Datab
 
 // Import FM-style (simulate trigger by OCS pipeline), file goes to archive, then all files downloaded from archive and dataset created
 func Example_importForTrigger_OCS_Archive_OK() {
-	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("OCS_Archive_OK", "Archive_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
+	remoteFS, log, configBucket, datasetBucket, manualBucket, db := initTest("OCS_Archive_OK", "Archive_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
 	// In case it ran before, delete the file from dataset bucket, otherwise we will end for the wrong reason
 	os.Remove(datasetBucket + "/Archive/048300551-27-06-2021-09-52-25.zip")
 
@@ -310,7 +310,7 @@ func Example_importForTrigger_OCS_Archive_OK() {
 
 // Import FM-style (simulate trigger by dataset edit screen), should create dataset with custom name+image
 func Example_importForTrigger_OCS_DatasetEdit() {
-	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("OCS_DatasetEdit", "Archive_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
+	remoteFS, log, configBucket, datasetBucket, manualBucket, db := initTest("OCS_DatasetEdit", "Archive_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
 
 	// To save from checking in 2 sets of the same zip files for this and Example_ImportForTrigger_OCS_Archive_OK, here we copy
 	// the archive files from the Archive_OK test to here.
@@ -406,7 +406,7 @@ func printManualOKLogOutput(log *logger.StdOutLoggerForTest, db *mongo.Database,
 
 // Import a breadboard dataset from manual uploaded zip file
 func Example_importForTrigger_Manual_JPL() {
-	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Manual_JPL", "Manual_OK", specialUserIds.JPLImport, "JPLTestUserGroupId")
+	remoteFS, log, configBucket, datasetBucket, manualBucket, db := initTest("Manual_JPL", "Manual_OK", specialUserIds.JPLImport, "JPLTestUserGroupId")
 
 	trigger := `{
 	"datasetID": "test1234",
@@ -439,7 +439,7 @@ func Example_importForTrigger_Manual_JPL() {
 
 // Import a breadboard dataset from manual uploaded zip file
 func Example_importForTrigger_Manual_SBU() {
-	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Manual_JPL", "Manual_OK2", specialUserIds.SBUImport, "SBUTestUserGroupId")
+	remoteFS, log, configBucket, datasetBucket, manualBucket, db := initTest("Manual_JPL", "Manual_OK2", specialUserIds.SBUImport, "SBUTestUserGroupId")
 
 	trigger := `{
 	"datasetID": "test1234sbu",
@@ -472,7 +472,7 @@ func Example_importForTrigger_Manual_SBU() {
 
 // Import a breadboard dataset from manual uploaded zip file
 func Example_ImportForTrigger_Manual_SBU_NoAutoShare() {
-	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Manual_SBU_NoAutoShare", "Manual_OK2", specialUserIds.JPLImport, "JPLTestUserGroupId")
+	remoteFS, log, configBucket, datasetBucket, manualBucket, db := initTest("Manual_SBU_NoAutoShare", "Manual_OK2", specialUserIds.JPLImport, "JPLTestUserGroupId")
 
 	trigger := `{
 	"datasetID": "test1234sbu",
@@ -506,7 +506,7 @@ func Example_ImportForTrigger_Manual_SBU_NoAutoShare() {
 /* Didnt get this working when the above was changed. Problem is this still generates the user name: SBUImport, so the
    premise of the test fails because it doesn't end up with no user id at that point!
 func Test_ImportForTrigger_Manual_SBU_NoAutoShare_FailForPipeline(t *testing.T) {
-	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Manual_OK2", "", "")
+	remoteFS, log, configBucket, datasetBucket, manualBucket, db := initTest("Manual_OK2", "", "")
 
 	trigger := `{
 	"datasetID": "test1234sbu",
@@ -523,7 +523,7 @@ func Test_ImportForTrigger_Manual_SBU_NoAutoShare_FailForPipeline(t *testing.T) 
 */
 // Import a breadboard dataset from manual uploaded zip file
 func Example_importForTrigger_Manual_EM() {
-	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Manual_EM", "ManualEM_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
+	remoteFS, log, configBucket, datasetBucket, manualBucket, db := initTest("Manual_EM", "ManualEM_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
 
 	trigger := `{
 	"datasetID": "048300551",
@@ -557,7 +557,7 @@ func Example_importForTrigger_Manual_EM() {
 
 // Import a breadboard dataset from manual uploaded zip file
 func Example_importForTrigger_Manual_EM_WithBeamV2() {
-	remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db := initTest("Manual_EM", "ManualEM_Beamv2_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
+	remoteFS, log, configBucket, datasetBucket, manualBucket, db := initTest("Manual_EM", "ManualEM_Beamv2_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
 
 	trigger := `{
 	"datasetID": "048300551",
@@ -593,7 +593,7 @@ func Example_importForTrigger_Manual_EM_WithBeamV2() {
 
 // Import a breadboard dataset from manual uploaded zip file, including custom name+image
 func Example_importForTrigger_Manual_DatasetEdit() {
-	remoteFS, log, envName, configBucket, datasetBucket, manualBucket := initTest("Manual_Edit")
+	remoteFS, log, configBucket, datasetBucket, manualBucket := initTest("Manual_Edit")
 
 	trigger := `{
 	"datasetID": "test1234",
