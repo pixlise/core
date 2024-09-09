@@ -141,7 +141,7 @@ func main() {
 		}
 
 		var result dataimport.ImportResult
-		result, err = dataimport.ImportForTrigger([]byte(*argTrigger), "cmd-line", *argConfigBucket, *argDatasetBucket, *argManualUploadBucket, db, ilog, remoteFS)
+		result, err = dataimport.ImportForTrigger([]byte(*argTrigger), *argConfigBucket, *argDatasetBucket, *argManualUploadBucket, db, ilog, remoteFS)
 		if result.Logger != nil {
 			result.Logger.Close()
 		}

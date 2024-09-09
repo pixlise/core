@@ -36,15 +36,14 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-func initTest(testName string, testDir string, autoShareCreatorId string, autoShareCreatorGroupEditor string) (fileaccess.FileAccess, *logger.StdOutLoggerForTest, string, string, string, string, *mongo.Database) {
+func initTest(testName string, testDir string, autoShareCreatorId string, autoShareCreatorGroupEditor string) (fileaccess.FileAccess, *logger.StdOutLoggerForTest, string, string, string, *mongo.Database) {
 	remoteFS := &fileaccess.FSAccess{}
 	log := &logger.StdOutLoggerForTest{}
-	envName := testName
 	configBucket := "./test-data/" + testDir + "/config-bucket"
 	datasetBucket := "./test-data/" + testDir + "/dataset-bucket"
 	manualBucket := "./test-data/" + testDir + "/manual-bucket"
 
-	db := wstestlib.GetDB()
+	db := wstestlib.GetDBWithSuffix(testName)
 	ctx := context.TODO()
 
 	// Clear relevant collections
@@ -65,7 +64,7 @@ func initTest(testName string, testDir string, autoShareCreatorId string, autoSh
 		db.Collection(dbCollections.ScanAutoShareName).InsertOne(ctx, &item)
 	}
 
-	return remoteFS, log, envName, configBucket, datasetBucket, manualBucket, db
+	return remoteFS, log, configBucket, datasetBucket, manualBucket, db
 }
 
 /*
@@ -122,7 +121,7 @@ func Example_importForTrigger_OCS_Archive_BadData() {
 	]
 }`
 
-	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), configBucket, datasetBucket, manualBucket, db, log, remoteFS)
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
@@ -192,7 +191,7 @@ func Example_importForTrigger_OCS_Archive_Exists() {
 	]
 }`
 
-	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), configBucket, datasetBucket, manualBucket, db, log, remoteFS)
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
@@ -288,7 +287,7 @@ func Example_importForTrigger_OCS_Archive_OK() {
 	]
 }`
 
-	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), configBucket, datasetBucket, manualBucket, db, log, remoteFS)
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
@@ -341,7 +340,7 @@ func Example_importForTrigger_OCS_DatasetEdit() {
 	"jobID": "dataimport-unittest123"
 }`
 
-	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), configBucket, datasetBucket, manualBucket, db, log, remoteFS)
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
@@ -414,7 +413,7 @@ func Example_importForTrigger_Manual_JPL() {
 	"jobID": "dataimport-unittest123"
 }`
 
-	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), configBucket, datasetBucket, manualBucket, db, log, remoteFS)
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
@@ -447,7 +446,7 @@ func Example_importForTrigger_Manual_SBU() {
 	"jobID": "dataimport-unittest123sbu"
 }`
 
-	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), configBucket, datasetBucket, manualBucket, db, log, remoteFS)
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
@@ -480,7 +479,7 @@ func Example_ImportForTrigger_Manual_SBU_NoAutoShare() {
 	"jobID": "dataimport-unittest123sbu"
 }`
 
-	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), configBucket, datasetBucket, manualBucket, db, log, remoteFS)
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
@@ -514,7 +513,7 @@ func Test_ImportForTrigger_Manual_SBU_NoAutoShare_FailForPipeline(t *testing.T) 
 	"jobID": "dataimport-unittest123sbu"
 }`
 
-	_, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+	_, err := ImportForTrigger([]byte(trigger), configBucket, datasetBucket, manualBucket, db, log, remoteFS)
 
 	// Make sure we got the error
 	if !strings.HasSuffix(err.Error(), "Cannot work out groups to auto-share imported dataset with") {
@@ -531,7 +530,7 @@ func Example_importForTrigger_Manual_EM() {
 	"jobID": "dataimport-unittest048300551"
 }`
 
-	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), configBucket, datasetBucket, manualBucket, db, log, remoteFS)
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
@@ -565,7 +564,7 @@ func Example_importForTrigger_Manual_EM_WithBeamV2() {
 	"jobID": "dataimport-unittest048300551"
 }`
 
-	result, err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, db, log, remoteFS)
+	result, err := ImportForTrigger([]byte(trigger), configBucket, datasetBucket, manualBucket, db, log, remoteFS)
 
 	fmt.Printf("Errors: %v, changes: %v, isUpdate: %v\n", err, result.WhatChanged, result.IsUpdate)
 
@@ -601,7 +600,7 @@ func Example_importForTrigger_Manual_DatasetEdit() {
 	"logID": "dataimport-unittest123"
 }`
 
-	err := ImportForTrigger([]byte(trigger), envName, configBucket, datasetBucket, manualBucket, log, remoteFS)
+	err := ImportForTrigger([]byte(trigger), configBucket, datasetBucket, manualBucket, log, remoteFS)
 
 	fmt.Printf("Errors: %v\n", err)
 

@@ -89,7 +89,7 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		dbName := mongoDBConnection.GetDatabaseName("pixlise", envName)
 		db := mongoClient.Database(dbName)
 
-		result, err := dataimport.ImportForTrigger([]byte(record.SNS.Message), envName, configBucket, datasetBucket, manualBucket, db, iLog, remoteFS)
+		result, err := dataimport.ImportForTrigger([]byte(record.SNS.Message), configBucket, datasetBucket, manualBucket, db, iLog, remoteFS)
 		if err != nil {
 			return "", err
 		}

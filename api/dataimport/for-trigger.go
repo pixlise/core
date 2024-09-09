@@ -54,7 +54,6 @@ type ImportResult struct {
 // Error (or nil)
 func ImportForTrigger(
 	triggerMessage []byte,
-	envName string,
 	configBucket string,
 	datasetBucket string,
 	manualBucket string,
