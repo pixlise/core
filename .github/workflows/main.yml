@@ -90,17 +90,20 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Integration Test
+        # NOTE: integration-test-config.json must have EnvironmentName at the end, so we can append a suffix
+        #       to it, to make DB names unique for builds to not clash!
         run: |
           make integrationtest
+          truncate -s-3 ./integration-test-config.json
+          UNIX_MS=$(date +%s%N | cut -b1-13)
+          $UNIX_MS >> ./integration-test-config.json
+          "\"}" >> ./integration-test-config.json
+          cat ./integration-test-config.json
           ./api-service -customConfigPath ./integration-test-config.json &
           sleep 5
-          #pwd
-          #ls
           cd ./internal/cmd-line-tools/api-integration-test
-          #pwd
-          #ls
-          #echo ./tester -apiHost localhost:8080 -datasetBucket "integration-test-data-pixlise" -usersBucket "integration-test-users-pixlise" -auth0Domain ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }} -auth0ClientId ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }} -auth0Secret ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }} -auth0Audience "pixlise-backend" -testType "ci" -test1Username "test1@pixlise.org" -test1Password ${{ secrets.TEST_USER_1_PASSWORD }} -test2Username "test2@pixlise.org" -test2Password ${{ secrets.TEST_USER_2_PASSWORD }}
-          ./tester -apiHost localhost:8080 -datasetBucket "integration-test-data-pixlise" -usersBucket "integration-test-users-pixlise" -auth0Domain ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }} -auth0ClientId ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }} -auth0Secret ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }} -auth0Audience "pixlise-backend" -testType "ci" -test1Username "test1@pixlise.org" -test1Password ${{ secrets.TEST_USER_1_PASSWORD }} -test2Username "test2@pixlise.org" -test2Password ${{ secrets.TEST_USER_2_PASSWORD }}
+          echo "unittest_${UNIX_MS}"
+          ./tester -apiHost localhost:8080 -dbName "unittest_${UNIX_MS}" -datasetBucket "integration-test-data-pixlise" -usersBucket "integration-test-users-pixlise" -auth0Domain ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }} -auth0ClientId ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }} -auth0Secret ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }} -auth0Audience "pixlise-backend" -testType "ci" -test1Username "test1@pixlise.org" -test1Password ${{ secrets.TEST_USER_1_PASSWORD }} -test2Username "test2@pixlise.org" -test2Password ${{ secrets.TEST_USER_2_PASSWORD }}
         env:
           AWS_DEFAULT_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
