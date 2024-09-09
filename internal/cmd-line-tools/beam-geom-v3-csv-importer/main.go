@@ -15,6 +15,7 @@ import (
 	"github.com/pixlise/core/v4/core/gdsfilename"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -141,9 +142,19 @@ func main() {
 
 	for _, beam := range beamLocs {
 		// They should all be the same so only checking first one
+		// NOTE: Also ensure we don't have any images stored for PMCs that we don't have beam data for!
+		validPMCs := []int32{}
 		for imgPMC := range beam.IJ {
 			if _, ok := pmcImageLookup[imgPMC]; !ok {
 				log.Fatalf("Failed to find image for ij PMC: %v", imgPMC)
+			} else {
+				validPMCs = append(validPMCs, imgPMC)
+			}
+		}
+
+		for pmc := range pmcImageLookup {
+			if !utils.ItemInSlice(pmc, validPMCs) {
+				delete(pmcImageLookup, pmc)
 			}
 		}
 		break
@@ -193,7 +204,9 @@ func main() {
 				}
 
 				if beam, ok := beamLocs[int32(pmc)]; !ok {
-					log.Fatalf("Failed to find v3 beam for PMC: %v", pmc)
+					//log.Fatalf("Failed to find v3 beam for PMC: %v\n", pmc)
+					fmt.Printf("WARNING: Failed to find v3 beam for PMC: %v, inserting nil\n", pmc)
+					ijs = append(ijs, nil)
 				} else {
 					ijs = append(ijs, &protos.Coordinate2D{I: beam.IJ[imgPMC].I, J: beam.IJ[imgPMC].J})
 				}
