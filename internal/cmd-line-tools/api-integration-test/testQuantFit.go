@@ -86,7 +86,12 @@ func testQuantFit(apiHost string) {
 				"jobType": "JT_RUN_FIT",
 				"requestorUserId": "${USERID}",
 				"startUnixTimeSec": "${SECAGO=60}",
-				"elements": ["Ca", "Ti"]
+				"lastUpdateUnixTimeSec": "${SECAGO=60}",
+				"endUnixTimeSec": "${SECAGO=60}",
+				"message": "Wrote Fit output CSV",
+				"outputFilePath": "${IGNORE}",
+				"logId": "${IGNORE}",
+				"elements": ["Ca", "Ti"]				
 			},
 			"resultData": "${REGEXMATCH=%v.+}"
 		}}`, expData64),

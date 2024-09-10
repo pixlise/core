@@ -9,6 +9,10 @@ import (
 var db *mongo.Database
 
 func GetDB() *mongo.Database {
+	return GetDBWithEnvironment("unittest")
+}
+
+func GetDBWithEnvironment(envName string) *mongo.Database {
 	if db == nil {
 		// Connect to a local one ONLY
 		logger := logger.StdOutLogger{}
@@ -21,7 +25,7 @@ func GetDB() *mongo.Database {
 			panic(err)
 		}
 
-		dbName := mongoDBConnection.GetDatabaseName("pixlise", "unittest")
+		dbName := mongoDBConnection.GetDatabaseName("pixlise", envName)
 		db = client.Database(dbName)
 	}
 

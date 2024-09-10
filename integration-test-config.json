@@ -2,7 +2,6 @@
     "MaxQuantNodes": 20,
     "AWSBucketRegion": "us-east-1",
     "AWSCloudwatchRegion": "us-east-1",
-    "EnvironmentName": "unittest",
     "LogLevel": 1,
     "CoresPerNode": 4,
     "PiquantDockerImage": "registry.gitlab.com/pixlise/piquant/runner:3.2.17",
@@ -25,5 +24,7 @@
 	"WSMaxMessageSize": 40000,
 	"WSMessageBufferSize": 256,
     
-	"ZenodoURI": "https://sandbox.zenodo.org"
+	"ZenodoURI": "https://sandbox.zenodo.org",
+
+    "EnvironmentName": "unittest"
 }
