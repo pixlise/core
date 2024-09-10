@@ -96,7 +96,7 @@ jobs:
           make integrationtest
           truncate -s-3 ./integration-test-config.json
           UNIX_MS=$(date +%s%N | cut -b1-13)
-          echo "_${UNIX_MS}\"\n}" >> ./integration-test-config.json
+          echo "_${UNIX_MS}\"}" >> ./integration-test-config.json
           cat ./integration-test-config.json
           ./api-service -customConfigPath ./integration-test-config.json &
           sleep 5
