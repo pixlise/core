@@ -43,7 +43,7 @@ func initTest(testName string, testDir string, autoShareCreatorId string, autoSh
 	datasetBucket := "./test-data/" + testDir + "/dataset-bucket"
 	manualBucket := "./test-data/" + testDir + "/manual-bucket"
 
-	db := wstestlib.GetDBWithSuffix(testName)
+	db := wstestlib.GetDBWithEnvironment("unittest_" + testName)
 	ctx := context.TODO()
 
 	// Clear relevant collections
