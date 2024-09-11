@@ -57,6 +57,10 @@ func HandleScreenConfigurationListReq(req *protos.ScreenConfigurationListReq, hc
 		return nil, err
 	}
 
+	if req.SnapshotParentId != "" {
+		filter["snapshotParentId"] = req.SnapshotParentId
+	}
+
 	opts := options.Find()
 
 	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.ScreenConfigurationName).Find(context.TODO(), filter, opts)
