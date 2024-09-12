@@ -225,6 +225,10 @@ func makeUser(from *management.User, db *mongo.Database) *protos.Auth0UserDetail
 }
 
 func HandleUserImpersonateReq(req *protos.UserImpersonateReq, hctx wsHelpers.HandlerContext) (*protos.UserImpersonateResp, error) {
+	if !hctx.Svcs.Config.ImpersonateEnabled {
+		return nil, fmt.Errorf("Impersonate feature is not enabled on this environment")
+	}
+
 	// NOTE: we set this up in the DB, page refresh will cause it to be applied
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserImpersonatorsName)
 	ctx := context.TODO()

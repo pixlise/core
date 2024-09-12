@@ -104,6 +104,13 @@ type APIConfig struct {
 
 	// The GroupId of the group a new user is added to by default as a member
 	DefaultUserGroupId string
+
+	// PIXLISE backup & restore settings
+	DataBackupBucket string
+	BackupEnabled    bool
+	RestoreEnabled   bool
+
+	ImpersonateEnabled bool
 }
 
 func homeDir() string {

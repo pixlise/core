@@ -36,6 +36,7 @@ import (
 	"github.com/pixlise/core/v4/core/idgen"
 	"github.com/pixlise/core/v4/core/jwtparser"
 	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/mongoDBConnection"
 	"github.com/pixlise/core/v4/core/timestamper"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -80,6 +81,9 @@ type APIServices struct {
 
 	// Our mongo db connection
 	MongoDB *mongo.Database
+
+	// And how we connected to it (so we can run mongodump later if needed)
+	MongoDetails mongoDBConnection.MongoConnectionDetails
 
 	Notifier INotifier
 }

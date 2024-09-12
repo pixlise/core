@@ -137,32 +137,34 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	sessionUserId := connectingUser.UserID
 
 	// Check if we're set to impersonate another user
-	coll := ws.svcs.MongoDB.Collection(dbCollections.UserImpersonatorsName)
-	ctx := context.TODO()
-	impersonateResult := coll.FindOne(ctx, bson.M{"_id": connectingUser.UserID}, options.FindOne())
-	if impersonateResult.Err() != nil {
-		if impersonateResult.Err() != mongo.ErrNoDocuments {
-			msg := fmt.Sprintf("Error checking for user impersonation setting: %v", impersonateResult.Err())
-			fmt.Printf(msg)
-			s.CloseWithMsg([]byte(msg))
-			return
+	if ws.svcs.Config.ImpersonateEnabled {
+		coll := ws.svcs.MongoDB.Collection(dbCollections.UserImpersonatorsName)
+		ctx := context.TODO()
+		impersonateResult := coll.FindOne(ctx, bson.M{"_id": connectingUser.UserID}, options.FindOne())
+		if impersonateResult.Err() != nil {
+			if impersonateResult.Err() != mongo.ErrNoDocuments {
+				msg := fmt.Sprintf("Error checking for user impersonation setting: %v", impersonateResult.Err())
+				fmt.Printf(msg)
+				s.CloseWithMsg([]byte(msg))
+				return
+			}
+		} else {
+			// We got impersonation info, find the user id we want to pretend to be
+			item := wsHelpers.UserImpersonationItem{}
+			err := impersonateResult.Decode(&item)
+
+			if err != nil {
+				msg := fmt.Sprintf("Failed to read user impersonation setting: %v", err)
+				fmt.Printf(msg)
+				s.CloseWithMsg([]byte(msg))
+				return
+			}
+
+			sessionUserId = item.ImpersonatedId
+
+			// Set the "real" user id so we can know who is impersonating what
+			s.Set("realUserId", connectingUser.UserID)
 		}
-	} else {
-		// We got impersonation info, find the user id we want to pretend to be
-		item := wsHelpers.UserImpersonationItem{}
-		err := impersonateResult.Decode(&item)
-
-		if err != nil {
-			msg := fmt.Sprintf("Failed to read user impersonation setting: %v", err)
-			fmt.Printf(msg)
-			s.CloseWithMsg([]byte(msg))
-			return
-		}
-
-		sessionUserId = item.ImpersonatedId
-
-		// Set the "real" user id so we can know who is impersonating what
-		s.Set("realUserId", connectingUser.UserID)
 	}
 
 	sessionUser, err := wsHelpers.MakeSessionUser(sessId, sessionUserId, connectingUser.Permissions, ws.svcs.MongoDB)

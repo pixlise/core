@@ -80,7 +80,7 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		// and it'll be useful for initial debugging
 		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
 
-		mongoClient, err := mongoDBConnection.Connect(sess, mongoSecret, iLog)
+		mongoClient, _, err := mongoDBConnection.Connect(sess, mongoSecret, iLog)
 		if err != nil {
 			log.Fatal(err)
 		}

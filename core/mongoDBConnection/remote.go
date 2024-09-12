@@ -39,7 +39,7 @@ func connectToRemoteMongoDB(
 	MongoUsername string,
 	MongoPassword string,
 	iLog logger.ILogger,
-) (*mongo.Client, error) {
+) (*mongo.Client, MongoConnectionDetails, error) {
 	//ctx := context.Background()
 	var err error
 	var client *mongo.Client
@@ -48,7 +48,7 @@ func connectToRemoteMongoDB(
 
 	tlsConfig, err := getCustomTLSConfig("./global-bundle.pem")
 	if err != nil {
-		return nil, fmt.Errorf("Failed getting TLS configuration: %v", err)
+		return nil, MongoConnectionDetails{}, fmt.Errorf("Failed getting TLS configuration: %v", err)
 	}
 
 	if strings.Contains(MongoEndpoint, "localhost") {
@@ -77,20 +77,20 @@ func connectToRemoteMongoDB(
 				}))
 
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create new mongo DB connection: %v", err)
+		return nil, MongoConnectionDetails{}, fmt.Errorf("Failed to create new mongo DB connection: %v", err)
 	}
 
 	// Try to ping the DB to confirm connection
 	var result bson.M
 	err = client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Decode(&result)
 	if err != nil {
-		return nil, err
+		return nil, MongoConnectionDetails{}, err
 	}
 
 	iLog.Infof("Successfully connected to remote mongo db!")
 
 	//defer client.Disconnect(ctx)
-	return client, nil
+	return client, MongoConnectionDetails{Host: connectionURI, User: MongoUsername, Password: MongoPassword}, nil
 }
 
 func getCustomTLSConfig(caFile string) (*tls.Config, error) {
