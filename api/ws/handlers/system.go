@@ -162,58 +162,59 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 	var errImageSync error
 	var errQuantSync error
 
-	// wg.Add(1)
-	// go func() {
-	// 	defer wg.Done()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
-	if downloadRemoteFiles {
-		errDBRestore = wsHelpers.DownloadArchive(svcs)
-	}
-
-	if errDBRestore == nil {
-		restore, errDBRestore := wsHelpers.MakeMongoRestoreInstance(svcs.MongoDetails, mongoDBConnection.GetDatabaseName("pixlise", svcs.Config.EnvironmentName)) // "pixlise-prodv4-15-jul-2024")
+		restoreFromDBName := ""
+		if downloadRemoteFiles {
+			restoreFromDBName, errDBRestore = wsHelpers.DownloadArchive(svcs)
+		}
 
 		if errDBRestore == nil {
-			result := restore.Restore()
-			if result.Err != nil {
-				errDBRestore = result.Err
-			} else {
-				svcs.Log.Infof("Mongo Restore complete: %v successes, %v failures", result.Successes, result.Failures)
+			restore, errDBRestore := wsHelpers.MakeMongoRestoreInstance(svcs.MongoDetails, mongoDBConnection.GetDatabaseName("pixlise", svcs.Config.EnvironmentName), restoreFromDBName)
 
-				if downloadRemoteFiles {
-					// Delete the local db archive
-					//errDBRestore = wsHelpers.ClearLocalMongoArchive()
+			if errDBRestore == nil {
+				result := restore.Restore()
+				if result.Err != nil {
+					errDBRestore = result.Err
+				} else {
+					svcs.Log.Infof("Mongo Restore complete: %v successes, %v failures", result.Successes, result.Failures)
+
+					if downloadRemoteFiles {
+						// Delete the local db archive
+						errDBRestore = wsHelpers.ClearLocalMongoArchive()
+					}
 				}
 			}
 		}
-	}
-	// }()
-	/*
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			svcs.Log.Infof("Restoring scans to bucket")
-			errScanSync = wsHelpers.RestoreScans(svcs)
-			svcs.Log.Infof("Restoring scans to bucket COMPLETE")
-		}()
+	}()
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			svcs.Log.Infof("Restoring quants to bucket")
-			errQuantSync = wsHelpers.RestoreQuants(svcs)
-			svcs.Log.Infof("Restoring quants to bucket COMPLETE")
-		}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		svcs.Log.Infof("Restoring scans to bucket")
+		errScanSync = wsHelpers.RestoreScans(svcs)
+		svcs.Log.Infof("Restoring scans to bucket COMPLETE")
+	}()
 
-		wg.Add(1)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		svcs.Log.Infof("Restoring quants to bucket")
+		errQuantSync = wsHelpers.RestoreQuants(svcs)
+		svcs.Log.Infof("Restoring quants to bucket COMPLETE")
+	}()
 
-		go func() {
-			defer wg.Done()
-			svcs.Log.Infof("Restoring images to bucket")
-			errImageSync = wsHelpers.RestoreImages(svcs)
-			svcs.Log.Infof("Restoring images to bucket COMPLETE")
-		}()
-	*/
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		svcs.Log.Infof("Restoring images to bucket")
+		errImageSync = wsHelpers.RestoreImages(svcs)
+		svcs.Log.Infof("Restoring images to bucket COMPLETE")
+	}()
+
 	// Wait for all sync tasks
 	wg.Wait()
 

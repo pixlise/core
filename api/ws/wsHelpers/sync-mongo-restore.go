@@ -2,6 +2,7 @@ package wsHelpers
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/mongodb/mongo-tools/common/options"
@@ -11,7 +12,7 @@ import (
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
 )
 
-func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, dbName string) (*mongorestore.MongoRestore, error) {
+func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, restoreToDBName string, restoreFromDBName string) (*mongorestore.MongoRestore, error) {
 	var toolOptions *options.ToolOptions
 
 	ssl := options.SSL{}
@@ -37,7 +38,7 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 		URI:        &options.URI{},
 	}
 
-	toolOptions.Namespace = &options.Namespace{DB: dbName}
+	toolOptions.Namespace = &options.Namespace{DB: restoreToDBName}
 
 	outputOptions := &mongorestore.OutputOptions{
 		NumParallelCollections: 1,
@@ -49,7 +50,7 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 	inputOptions := &mongorestore.InputOptions{
 		Gzip: true,
 		//Archive:                path.Join(dataBackupLocalPath, "archive.gzip"),
-		Directory:              "./backup/pixlise-prodv4-15-jul-2024", //"./" + path.Join(dataBackupLocalPath, dbName),
+		Directory:              "./" + path.Join(dataBackupLocalPath, restoreFromDBName),
 		RestoreDBUsersAndRoles: false,
 	}
 
@@ -57,7 +58,7 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 		NSInclude: []string{"*"},
 		//NSInclude: []string{"pixlise-prodv4-15-jul-2024.ownership"},
 		NSFrom: []string{"pixlise-prodv4-15-jul-2024"},
-		NSTo:   []string{"pixlise-localdev"},
+		NSTo:   []string{restoreToDBName},
 	}
 
 	//log.SetVerbosity(toolOptions.Verbosity)
@@ -71,24 +72,25 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 	})
 }
 
-func DownloadArchive(svcs *services.APIServices) error {
+func DownloadArchive(svcs *services.APIServices) (string, error) {
 	svcs.Log.Infof("Downloading PIXLISE DB Dump files...")
 
 	remoteDBFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, dataBackupS3Path)
 	if err != nil {
-		return fmt.Errorf("Failed to list remote DB dump files: %v", err)
+		return "", fmt.Errorf("Failed to list remote DB dump files: %v", err)
 	}
 
 	svcs.Log.Infof("Found %v remote DB Dump files...", len(remoteDBFiles))
 
 	localFS := fileaccess.FSAccess{}
 
+	dbName := ""
 	for _, dbFile := range remoteDBFiles {
 		svcs.Log.Infof(" Downloading: %v...", dbFile)
 
 		dbFileBytes, err := svcs.FS.ReadObject(svcs.Config.DataBackupBucket, dbFile)
 		if err != nil {
-			return fmt.Errorf("Failed to download remote DB dump file: %v. Error: %v", dbFile, err)
+			return "", fmt.Errorf("Failed to download remote DB dump file: %v. Error: %v", dbFile, err)
 		}
 
 		// Save locally
@@ -97,10 +99,18 @@ func DownloadArchive(svcs *services.APIServices) error {
 		err = localFS.WriteObject(dataBackupLocalPath, dbFilePathLocal, dbFileBytes)
 
 		if err != nil {
-			return fmt.Errorf("Failed to write local DB dump file: %v. Error: %v", dbFilePathLocal, err)
+			return "", fmt.Errorf("Failed to write local DB dump file: %v. Error: %v", dbFilePathLocal, err)
+		}
+
+		// Save the first dir as the db name
+		if len(dbName) <= 0 {
+			parts := strings.Split(dbFile, "/")
+			if len(parts) > 1 {
+				dbName = parts[1]
+			}
 		}
 	}
 
 	svcs.Log.Infof("PIXLISE DB Dump files downloaded")
-	return nil
+	return dbName, nil
 }
