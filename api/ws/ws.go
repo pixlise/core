@@ -69,13 +69,13 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	queryParams := s.Request.URL.Query()
 	if token, ok := queryParams["token"]; !ok {
 		fmt.Println("WS connect failed due to missing token")
-		s.CloseWithMsg([]byte("Missing token"))
+		s.CloseWithMsg([]byte("--Missing token"))
 		return
 	} else {
 		// Validate the token
 		if len(token) != 1 {
 			fmt.Printf("WS connect failed for token: %v\n", token)
-			s.CloseWithMsg([]byte("Multiple tokens provided"))
+			s.CloseWithMsg([]byte("--Multiple tokens provided"))
 			return
 		}
 
@@ -83,7 +83,7 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 		connectingUser, err = wsHelpers.CheckConnectToken(token[0], ws.svcs)
 
 		if err != nil {
-			s.CloseWithMsg([]byte(err.Error()))
+			s.CloseWithMsg([]byte("--" + err.Error()))
 			return
 		}
 	}
@@ -102,7 +102,7 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 			if impersonateResult.Err() != mongo.ErrNoDocuments {
 				msg := fmt.Sprintf("Error checking for user impersonation setting: %v", impersonateResult.Err())
 				fmt.Printf(msg)
-				s.CloseWithMsg([]byte(msg))
+				s.CloseWithMsg([]byte("--" + msg))
 				return
 			}
 		} else {
@@ -113,7 +113,7 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 			if err != nil {
 				msg := fmt.Sprintf("Failed to read user impersonation setting: %v", err)
 				fmt.Printf(msg)
-				s.CloseWithMsg([]byte(msg))
+				s.CloseWithMsg([]byte("--" + msg))
 				return
 			}
 
@@ -131,7 +131,7 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 			sessionUser, err = wsHelpers.CreateDBUser(sessId, connectingUser, ws.svcs.MongoDB, ws.svcs.Config.DefaultUserGroupId, ws.svcs.Log)
 			if err != nil {
 				fmt.Printf("WS connect failed for user: %v (%v) - failed to read/create user in DB\n", connectingUser.UserID, connectingUser.Name)
-				s.CloseWithMsg([]byte("Failed to validate session user"))
+				s.CloseWithMsg([]byte("--Failed to validate session user"))
 				return
 			}
 		}
