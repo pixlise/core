@@ -17,14 +17,21 @@ type ConnectToken struct {
 	Id            string `bson:"_id"`
 	ExpiryUnixSec int64
 	User          jwtparser.JWTUserInfo
+	Permissions   []string
 }
 
 func CreateConnectToken(svcs *services.APIServices, user jwtparser.JWTUserInfo) string {
 	// Generate a new token
+	perms := []string{}
+	for k := range user.Permissions {
+		perms = append(perms, k)
+	}
+
 	token := ConnectToken{
 		Id:            utils.RandStringBytesMaskImpr(32), // The actual token
 		ExpiryUnixSec: svcs.TimeStamper.GetTimeNowSec() + 10,
 		User:          user,
+		Permissions:   perms,
 	}
 
 	// Save to DB
@@ -87,6 +94,12 @@ func CheckConnectToken(token string, svcs *services.APIServices) (jwtparser.JWTU
 		if delResult.DeletedCount > 0 {
 			svcs.Log.Infof("Deleted %v expired/used connect tokens", delResult.DeletedCount)
 		}
+	}
+
+	// Set the permissions field!
+	readToken.User.Permissions = map[string]bool{}
+	for _, perm := range readToken.Permissions {
+		readToken.User.Permissions[perm] = true
 	}
 
 	return readToken.User, nil
