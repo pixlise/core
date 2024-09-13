@@ -86,4 +86,7 @@ type APIServices struct {
 	MongoDetails mongoDBConnection.MongoConnectionDetails
 
 	Notifier INotifier
+
+	// The unique identifier of this API instance (so we can log/debug issues that are cross-instance!)
+	InstanceId string
 }

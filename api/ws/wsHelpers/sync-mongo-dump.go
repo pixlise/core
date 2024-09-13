@@ -49,7 +49,7 @@ func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails
 		Gzip: true,
 		//Archive:                path.Join(dataBackupLocalPath, "archive.gzip"),
 		NumParallelCollections: 1,
-		//ExcludeCollections memoization??
+		//ExcludeCollections memoisation?? connecTokens??
 	}
 	inputOptions := &mongodump.InputOptions{}
 

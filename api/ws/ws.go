@@ -3,8 +3,6 @@ package ws
 import (
 	"context"
 	"fmt"
-	"sync"
-	"time"
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -27,47 +25,20 @@ type connectToken struct {
 }
 
 type WSHandler struct {
-	connectTokensMutex sync.Mutex
-	connectTokens      map[string]connectToken
-	melody             *melody.Melody
-	svcs               *services.APIServices
+	melody *melody.Melody
+	svcs   *services.APIServices
 }
 
 func MakeWSHandler(m *melody.Melody, svcs *services.APIServices) *WSHandler {
 	ws := WSHandler{
-		connectTokens: map[string]connectToken{},
-		melody:        m,
-		svcs:          svcs,
+		melody: m,
+		svcs:   svcs,
 	}
 	return &ws
 }
 
-func (ws *WSHandler) clearOldTokens() {
-	nowSec := ws.svcs.TimeStamper.GetTimeNowSec()
-
-	ws.connectTokensMutex.Lock()
-	defer ws.connectTokensMutex.Unlock()
-
-	for token, usr := range ws.connectTokens {
-		if usr.expiryUnixSec < nowSec {
-			delete(ws.connectTokens, token)
-		}
-	}
-}
-
 func (ws *WSHandler) HandleBeginWSConnection(params apiRouter.ApiHandlerGenericParams) error {
-	// Generate a token that is valid for a short time
-	token := utils.RandStringBytesMaskImpr(32)
-
-	expirySec := ws.svcs.TimeStamper.GetTimeNowSec() + 10
-
-	// Clear out old ones, now is a good a time as any!
-	ws.clearOldTokens()
-
-	ws.connectTokensMutex.Lock()
-	defer ws.connectTokensMutex.Unlock()
-
-	ws.connectTokens[token] = connectToken{expirySec, params.UserInfo}
+	token := wsHelpers.CreateConnectToken(params.Svcs, params.UserInfo)
 
 	result := &protos.BeginWSConnectionResponse{}
 	result.ConnToken = token
@@ -108,26 +79,12 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 			return
 		}
 
-		ws.connectTokensMutex.Lock()
-		defer ws.connectTokensMutex.Unlock()
+		var err error
+		connectingUser, err = wsHelpers.CheckConnectToken(token[0], ws.svcs)
 
-		if conn, ok := ws.connectTokens[token[0]]; !ok {
-			fmt.Printf("WS connect failed for UNKNOWN token: %v\n", token)
-			s.CloseWithMsg([]byte("Invalid token"))
+		if err != nil {
+			s.CloseWithMsg([]byte(err.Error()))
 			return
-		} else {
-			// Check that it hasn't expired
-			nowSec := time.Now().Unix() // TODO: use GetTimeNowSec
-			if conn.expiryUnixSec < nowSec {
-				fmt.Printf("WS connect failed for EXPIRED token: %v. User: %v (%v)\n", token, conn.userInfo.UserID, conn.userInfo.Name)
-				s.CloseWithMsg([]byte("Expired token"))
-				return
-			} else {
-				connectingUser = conn.userInfo
-
-				// We no longer need this item in our connection token map
-				delete(ws.connectTokens, token[0])
-			}
 		}
 	}
 

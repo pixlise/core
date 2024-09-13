@@ -60,7 +60,7 @@ func main() {
 	log.SetFlags(0)
 
 	cfg := loadConfig()
-	svcs := initServices(cfg)
+	svcs := initServices(cfg, instanceId)
 
 	////////////////////////////////////////////////////
 	// Set up WebSocket server
@@ -199,7 +199,7 @@ func loadConfig() config.APIConfig {
 	return cfg
 }
 
-func initServices(cfg config.APIConfig) *services.APIServices {
+func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServices {
 	// Get a session for the bucket region
 	sess, err := awsutil.GetSession()
 	if err != nil {
@@ -274,6 +274,7 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 		MongoDB:      db,
 		MongoDetails: mongoDetails,
 		// Notifier is configured after ws is created
+		InstanceId: apiInstanceId,
 	}
 
 	return svcs
