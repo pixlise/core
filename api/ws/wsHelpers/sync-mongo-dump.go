@@ -62,6 +62,8 @@ func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails
 	inputOptions := &mongodump.InputOptions{}
 
 	log.SetVerbosity(nil /*toolOptions.Verbosity*/)
+	lw := LogWriter{logger: logger}
+	log.SetWriter(lw)
 
 	return &mongodump.MongoDump{
 		ToolOptions:   toolOptions,
