@@ -86,7 +86,6 @@ func runBackup(dump *mongodump.MongoDump, startTimestamp int64, svcs *services.A
 	}()
 
 	wg.Add(1)
-
 	go func() {
 		defer wg.Done()
 		svcs.Log.Infof("Syncing images to bucket")
@@ -207,7 +206,6 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 	}()
 
 	wg.Add(1)
-
 	go func() {
 		defer wg.Done()
 		svcs.Log.Infof("Restoring images to bucket")

@@ -2,6 +2,7 @@ package wsHelpers
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"strings"
 
@@ -104,30 +105,46 @@ func SyncQuants(svcs *services.APIServices) error {
 		quantPaths = append(quantPaths, p+".csv")
 	}
 
-	return syncFiles(svcs.Config.UsersBucket, "" /*filepaths.RootQuantificationPath*/, quantPaths, svcs.Config.DataBackupBucket, filepaths.RootQuantificationPath, svcs.FS, svcs.Log)
-}
-
-func RestoreScans(svcs *services.APIServices) error {
-	// List source files
-	scanFiles, err := svcs.FS.ListObjects(svcs.Config.DatasetsBucket, filepaths.DatasetScansRoot)
+	relativeQuantFiles, err := makeRelativePaths(quantPaths, filepaths.RootQuantificationPath)
 	if err != nil {
 		return err
 	}
 
-	return syncFiles(svcs.Config.DataBackupBucket, filepaths.DatasetScansRoot, scanFiles, svcs.Config.DatasetsBucket, filepaths.DatasetScansRoot, svcs.FS, svcs.Log)
+	return syncFiles(svcs.Config.UsersBucket, filepaths.RootQuantificationPath, relativeQuantFiles, svcs.Config.DataBackupBucket, filepaths.RootQuantificationPath, svcs.FS, svcs.Log)
+}
+
+func RestoreScans(svcs *services.APIServices) error {
+	// List source files
+	scanFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, filepaths.DatasetScansRoot)
+	if err != nil {
+		return err
+	}
+
+	// Make scans relative!
+	relativeScanFiles, err := makeRelativePaths(scanFiles, filepaths.DatasetScansRoot)
+	if err != nil {
+		return err
+	}
+
+	return syncFiles(svcs.Config.DataBackupBucket, filepaths.DatasetScansRoot, relativeScanFiles, svcs.Config.DatasetsBucket, filepaths.DatasetScansRoot, svcs.FS, svcs.Log)
 }
 
 func RestoreQuants(svcs *services.APIServices) error {
 	// List source files
-	quantFiles, err := svcs.FS.ListObjects(svcs.Config.UsersBucket, filepaths.RootQuantificationPath)
+	quantFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, filepaths.RootQuantificationPath)
+	if err != nil {
+		return err
+	}
+
+	relativeQuantFiles, err := makeRelativePaths(quantFiles, filepaths.RootQuantificationPath)
 	if err != nil {
 		return err
 	}
 
 	return syncFiles(
 		svcs.Config.DataBackupBucket,
-		path.Join(filepaths.RootQuantificationPath, filepaths.RootQuantificationPath),
-		quantFiles,
+		filepaths.RootQuantificationPath,
+		relativeQuantFiles,
 		svcs.Config.UsersBucket,
 		filepaths.RootQuantificationPath,
 		svcs.FS,
@@ -136,25 +153,46 @@ func RestoreQuants(svcs *services.APIServices) error {
 
 func RestoreImages(svcs *services.APIServices) error {
 	// List source files
-	imageFiles, err := svcs.FS.ListObjects(svcs.Config.DatasetsBucket, filepaths.DatasetImagesRoot)
+	imageFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, filepaths.DatasetImagesRoot)
 	if err != nil {
 		return err
 	}
 
-	return syncFiles(svcs.Config.DataBackupBucket, filepaths.DatasetImagesRoot, imageFiles, svcs.Config.DatasetsBucket, filepaths.DatasetImagesRoot, svcs.FS, svcs.Log)
+	relativeImageFiles, err := makeRelativePaths(imageFiles, filepaths.DatasetImagesRoot)
+	if err != nil {
+		return err
+	}
+
+	return syncFiles(svcs.Config.DataBackupBucket, filepaths.DatasetImagesRoot, relativeImageFiles, svcs.Config.DatasetsBucket, filepaths.DatasetImagesRoot, svcs.FS, svcs.Log)
 }
 
-func syncFiles(srcBucket string, srcRoot string, filePaths []string, destBucket string, destRoot string, fs fileaccess.FileAccess, log logger.ILogger) error {
+func makeRelativePaths(fullPaths []string, root string) ([]string, error) {
+	relativeFiles := []string{}
+	for _, fullPath := range fullPaths {
+		if !strings.HasPrefix(fullPath, root+"/") {
+			return []string{}, fmt.Errorf("Path: %v is not relative to %v", fullPath, root)
+		}
+
+		relativeFiles = append(relativeFiles, fullPath[len(root)+1:])
+	}
+
+	return relativeFiles, nil
+}
+
+// Requires source bucket, source root with srcRelativePaths which are relative to source root. This way the relative paths
+// can be compared to dest paths, and only the ones not already in dest root are copied.
+func syncFiles(srcBucket string, srcRoot string, srcRelativePaths []string, destBucket string, destRoot string, fs fileaccess.FileAccess, log logger.ILogger) error {
 	// Get a listing from the destination
-	destFiles, err := fs.ListObjects(destBucket, destRoot)
+	// NOTE: the returned paths contain destRoot at the start!
+	destFullFiles, err := fs.ListObjects(destBucket, destRoot)
 	if err != nil {
 		return err
 	}
 
 	// Form a map, so we can see what's missing quickly
 	destFileLookup := map[string]bool{}
-	for _, f := range destFiles {
-		// Snip off the root so the comparison is valid
+	for _, f := range destFullFiles {
+		// Store dest file without root, so we can compare
 		if strings.HasPrefix(f, destRoot+"/") {
 			f = f[len(destRoot)+1:]
 		}
@@ -163,26 +201,28 @@ func syncFiles(srcBucket string, srcRoot string, filePaths []string, destBucket 
 	}
 
 	// Find which files haven't yet been copied across
-	toCopy := []string{}
-	for _, f := range filePaths {
-		if !destFileLookup[f] {
-			toCopy = append(toCopy, f)
+	toCopyRelativePaths := []string{}
+	for _, srcRelative := range srcRelativePaths {
+		if !destFileLookup[srcRelative] {
+			toCopyRelativePaths = append(toCopyRelativePaths, srcRelative)
 		}
 	}
 
+	log.Infof(" Sync backup directory to %v: %v skipped (already at destination)...", destRoot, len(srcRelativePaths)-len(toCopyRelativePaths))
+
 	// Copy all the files
-	for c, f := range toCopy {
+	for c, relSrcPath := range toCopyRelativePaths {
 		if c%100 == 0 {
-			log.Infof(" Sync backup directory to %v: %v of %v copied...", destRoot, c, len(toCopy))
+			log.Infof(" Sync backup directory to %v: %v of %v copied...", destRoot, c, len(toCopyRelativePaths))
 		}
 
-		srcPath := path.Join(srcRoot, f)
-		err = fs.CopyObject(srcBucket, srcPath, destBucket, path.Join(destRoot, f))
+		srcFullPath := path.Join(srcRoot, relSrcPath)
+		err = fs.CopyObject(srcBucket, srcFullPath, destBucket, path.Join(destRoot, relSrcPath))
 		if err != nil {
 			if fs.IsNotFoundError(err) {
-				log.Errorf(" Sync backup source file not found: s3://%v/%v", srcBucket, srcPath)
+				log.Errorf(" Sync backup source file not found: s3://%v/%v", srcBucket, srcFullPath)
 			} else {
-				log.Errorf(" Sync error reading read s3://%v/%v: %v", srcBucket, srcPath, err)
+				log.Errorf(" Sync error reading read s3://%v/%v: %v", srcBucket, srcFullPath, err)
 			}
 			//return err
 		}
