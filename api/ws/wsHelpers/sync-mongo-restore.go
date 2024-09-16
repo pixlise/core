@@ -5,17 +5,24 @@ import (
 	"path"
 	"strings"
 
+	"github.com/mongodb/mongo-tools/common/log"
 	"github.com/mongodb/mongo-tools/common/options"
 	"github.com/mongodb/mongo-tools/mongorestore"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
 )
 
-func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, restoreToDBName string, restoreFromDBName string) (*mongorestore.MongoRestore, error) {
+func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, restoreToDBName string, restoreFromDBName string) (*mongorestore.MongoRestore, error) {
 	var toolOptions *options.ToolOptions
 
-	ssl := options.SSL{}
+	ssl := options.SSL{
+		UseSSL:        true,
+		SSLCAFile:     "./global-bundle.pem",
+		SSLPEMKeyFile: "./global-bundle.pem",
+	}
+
 	auth := options.Auth{
 		Username: mongoDetails.User,
 		Password: mongoDetails.Password,
@@ -23,19 +30,23 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 
 	connection := &options.Connection{
 		Host: mongoDetails.Host,
-		//Port: db.DefaultTestPort,
 	}
 
 	// Trim excess
 	protocolPrefix := "mongodb://"
 	connection.Host = strings.TrimPrefix(connection.Host, protocolPrefix)
 
+	logger.Infof("MongoRestore connecting to: %v, user %v...", connection.Host, auth.Username)
+
+	retryWrites := false
+
 	toolOptions = &options.ToolOptions{
-		SSL:        &ssl,
-		Connection: connection,
-		Auth:       &auth,
-		Verbosity:  &options.Verbosity{},
-		URI:        &options.URI{},
+		RetryWrites: &retryWrites,
+		SSL:         &ssl,
+		Connection:  connection,
+		Auth:        &auth,
+		Verbosity:   &options.Verbosity{},
+		URI:         &options.URI{},
 	}
 
 	toolOptions.Namespace = &options.Namespace{DB: restoreToDBName}
@@ -56,12 +67,13 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 
 	nsOptions := &mongorestore.NSOptions{
 		NSInclude: []string{"*"},
-		//NSInclude: []string{"pixlise-prodv4-15-jul-2024.ownership"},
-		NSFrom: []string{"pixlise-prodv4-15-jul-2024"},
-		NSTo:   []string{restoreToDBName},
+		NSFrom:    []string{restoreFromDBName},
+		NSTo:      []string{restoreToDBName},
 	}
 
-	//log.SetVerbosity(toolOptions.Verbosity)
+	log.SetVerbosity(nil /*toolOptions.Verbosity*/)
+	lw := LogWriter{logger: logger}
+	log.SetWriter(lw)
 
 	return mongorestore.New(mongorestore.Options{
 		ToolOptions:     toolOptions,
@@ -70,6 +82,15 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 		NSOptions:       nsOptions,
 		TargetDirectory: inputOptions.Directory,
 	})
+}
+
+type LogWriter struct {
+	logger logger.ILogger
+}
+
+func (w LogWriter) Write(p []byte) (n int, err error) {
+	w.logger.Infof(string(p))
+	return len(p), nil
 }
 
 func DownloadArchive(svcs *services.APIServices) (string, error) {

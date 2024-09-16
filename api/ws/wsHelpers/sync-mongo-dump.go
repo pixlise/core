@@ -6,20 +6,27 @@ import (
 	"path"
 	"strings"
 
+	"github.com/mongodb/mongo-tools/common/log"
 	"github.com/mongodb/mongo-tools/common/options"
 	"github.com/mongodb/mongo-tools/mongodump"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
 )
 
 var dataBackupLocalPath = "./backup"
 var dataBackupS3Path = "DB"
 
-func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, dbName string) *mongodump.MongoDump {
+func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, dbName string) *mongodump.MongoDump {
 	var toolOptions *options.ToolOptions
 
-	ssl := options.SSL{}
+	ssl := options.SSL{
+		UseSSL:        true,
+		SSLCAFile:     "./global-bundle.pem",
+		SSLPEMKeyFile: "./global-bundle.pem",
+	}
+
 	auth := options.Auth{
 		Username: mongoDetails.User,
 		Password: mongoDetails.Password,
@@ -27,19 +34,31 @@ func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails
 
 	connection := &options.Connection{
 		Host: mongoDetails.Host,
-		//Port: db.DefaultTestPort,
 	}
 
 	// Trim excess
 	protocolPrefix := "mongodb://"
 	connection.Host = strings.TrimPrefix(connection.Host, protocolPrefix)
 
+	connectionURI := fmt.Sprintf("mongodb://%s/%s", connection.Host, "")
+
+	logger.Infof("MongoDump connecting to: %v, user %v...", connection.Host, auth.Username)
+
+	uri, err := options.NewURI(connectionURI)
+	if err != nil {
+		logger.Errorf("%v", err)
+		return nil
+	}
+
+	retryWrites := false
+
 	toolOptions = &options.ToolOptions{
-		SSL:        &ssl,
-		Connection: connection,
-		Auth:       &auth,
-		Verbosity:  &options.Verbosity{},
-		URI:        &options.URI{},
+		RetryWrites: &retryWrites,
+		SSL:         &ssl,
+		Connection:  connection,
+		Auth:        &auth,
+		Verbosity:   &options.Verbosity{},
+		URI:         uri,
 	}
 
 	toolOptions.Namespace = &options.Namespace{DB: dbName}
@@ -53,7 +72,9 @@ func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails
 	}
 	inputOptions := &mongodump.InputOptions{}
 
-	//log.SetVerbosity(toolOptions.Verbosity)
+	log.SetVerbosity(nil /*toolOptions.Verbosity*/)
+	lw := LogWriter{logger: logger}
+	log.SetWriter(lw)
 
 	return &mongodump.MongoDump{
 		ToolOptions:   toolOptions,

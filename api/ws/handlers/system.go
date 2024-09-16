@@ -9,19 +9,21 @@ import (
 	"github.com/mongodb/mongo-tools/mongodump"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func HandleBackupDBReq(req *protos.BackupDBReq, hctx wsHelpers.HandlerContext) (*protos.BackupDBResp, error) {
 	if len(hctx.Svcs.Config.DataBackupBucket) <= 0 {
-		err := "PIXLISE Backup bucket not configured!"
+		err := "PIXLISE Backup bucket not configured"
 		hctx.Svcs.Log.Errorf(err)
 		return nil, errors.New(err)
 	}
 
 	if !hctx.Svcs.Config.BackupEnabled {
-		err := "PIXLISE Backup not enabled!"
+		err := "PIXLISE Backup not enabled"
 		hctx.Svcs.Log.Errorf(err)
 		return nil, errors.New(err)
 	}
@@ -37,7 +39,7 @@ func HandleBackupDBReq(req *protos.BackupDBReq, hctx wsHelpers.HandlerContext) (
 	hctx.Svcs.Log.Infof("PIXLISE Backup Requested, will be written to bucket: %v", hctx.Svcs.Config.DataBackupBucket)
 
 	// Run MongoDump, save to a local archive file
-	dump := wsHelpers.MakeMongoDumpInstance(hctx.Svcs.MongoDetails, mongoDBConnection.GetDatabaseName("pixlise", hctx.Svcs.Config.EnvironmentName))
+	dump := wsHelpers.MakeMongoDumpInstance(hctx.Svcs.MongoDetails, hctx.Svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", hctx.Svcs.Config.EnvironmentName))
 
 	err = dump.Init()
 	if err != nil {
@@ -50,12 +52,43 @@ func HandleBackupDBReq(req *protos.BackupDBReq, hctx wsHelpers.HandlerContext) (
 	return &protos.BackupDBResp{}, nil
 }
 
+func clearBucket(bucket string, fs fileaccess.FileAccess, logger logger.ILogger) error {
+	files, err := fs.ListObjects(bucket, "")
+	if err != nil {
+		return err
+	}
+
+	logger.Infof("Clearing %v files from bucket: %v", len(files), bucket)
+
+	for c, file := range files {
+		if c%100 == 0 {
+			logger.Infof("Clearing file %v of %v...", c, len(files))
+		}
+
+		err = fs.DeleteObject(bucket, file)
+		if err != nil {
+			return err
+		}
+	}
+
+	logger.Infof("Bucket cleared: %v", bucket)
+	return nil
+}
+
 func runBackup(dump *mongodump.MongoDump, startTimestamp int64, svcs *services.APIServices) {
 	var wg sync.WaitGroup
 	var errDBDump error
 	var errScanSync error
 	var errImageSync error
 	var errQuantSync error
+
+	svcs.Log.Infof("Clearing PIXLISE backup bucket: %v", svcs.Config.DataBackupBucket)
+
+	err := clearBucket(svcs.Config.DataBackupBucket, svcs.FS, svcs.Log)
+	if err != nil {
+		svcs.Log.Errorf("PIXLISE Backup bucket clear failed: %v", err)
+		return
+	}
 
 	wg.Add(1)
 	go func() {
@@ -96,7 +129,6 @@ func runBackup(dump *mongodump.MongoDump, startTimestamp int64, svcs *services.A
 	// Wait for all sync tasks
 	wg.Wait()
 
-	var err error
 	if errDBDump != nil {
 		err = fmt.Errorf("PIXLISE Backup DB dump failed: %v", errDBDump)
 	}
@@ -114,6 +146,7 @@ func runBackup(dump *mongodump.MongoDump, startTimestamp int64, svcs *services.A
 	}
 
 	if err != nil {
+		svcs.Log.Errorf("%v", err)
 		return
 	}
 
@@ -126,7 +159,7 @@ func runBackup(dump *mongodump.MongoDump, startTimestamp int64, svcs *services.A
 func HandleRestoreDBReq(req *protos.RestoreDBReq, hctx wsHelpers.HandlerContext) (*protos.RestoreDBResp, error) {
 	// Only allow restore if enabled and we're NOT prod
 	if !hctx.Svcs.Config.RestoreEnabled {
-		err := "PIXLISE Restore not enabled!"
+		err := "PIXLISE Restore not enabled"
 		hctx.Svcs.Log.Errorf(err)
 		return nil, errors.New(err)
 	}
@@ -171,7 +204,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 		}
 
 		if errDBRestore == nil {
-			restore, errDBRestore := wsHelpers.MakeMongoRestoreInstance(svcs.MongoDetails, mongoDBConnection.GetDatabaseName("pixlise", svcs.Config.EnvironmentName), restoreFromDBName)
+			restore, errDBRestore := wsHelpers.MakeMongoRestoreInstance(svcs.MongoDetails, svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", svcs.Config.EnvironmentName), restoreFromDBName)
 
 			if errDBRestore == nil {
 				result := restore.Restore()
