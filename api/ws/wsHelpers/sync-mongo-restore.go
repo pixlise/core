@@ -9,10 +9,11 @@ import (
 	"github.com/mongodb/mongo-tools/mongorestore"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
 )
 
-func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, restoreToDBName string, restoreFromDBName string) (*mongorestore.MongoRestore, error) {
+func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, restoreToDBName string, restoreFromDBName string) (*mongorestore.MongoRestore, error) {
 	var toolOptions *options.ToolOptions
 
 	ssl := options.SSL{}
@@ -34,7 +35,7 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 	if len(auth.Password) > 5 {
 		passSeg = auth.Password[0:5]
 	}
-	fmt.Printf("MongoRestore connecting to: %v, user %v, pass %v...", connection.Host, auth.Username, passSeg)
+	logger.Infof("MongoRestore connecting to: %v, user %v, pass %v...", connection.Host, auth.Username, passSeg)
 
 	toolOptions = &options.ToolOptions{
 		SSL:        &ssl,

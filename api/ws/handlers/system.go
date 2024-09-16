@@ -37,7 +37,7 @@ func HandleBackupDBReq(req *protos.BackupDBReq, hctx wsHelpers.HandlerContext) (
 	hctx.Svcs.Log.Infof("PIXLISE Backup Requested, will be written to bucket: %v", hctx.Svcs.Config.DataBackupBucket)
 
 	// Run MongoDump, save to a local archive file
-	dump := wsHelpers.MakeMongoDumpInstance(hctx.Svcs.MongoDetails, mongoDBConnection.GetDatabaseName("pixlise", hctx.Svcs.Config.EnvironmentName))
+	dump := wsHelpers.MakeMongoDumpInstance(hctx.Svcs.MongoDetails, hctx.Svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", hctx.Svcs.Config.EnvironmentName))
 
 	err = dump.Init()
 	if err != nil {
@@ -171,7 +171,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 		}
 
 		if errDBRestore == nil {
-			restore, errDBRestore := wsHelpers.MakeMongoRestoreInstance(svcs.MongoDetails, mongoDBConnection.GetDatabaseName("pixlise", svcs.Config.EnvironmentName), restoreFromDBName)
+			restore, errDBRestore := wsHelpers.MakeMongoRestoreInstance(svcs.MongoDetails, svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", svcs.Config.EnvironmentName), restoreFromDBName)
 
 			if errDBRestore == nil {
 				result := restore.Restore()

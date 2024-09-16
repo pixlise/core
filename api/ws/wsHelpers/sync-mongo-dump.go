@@ -10,13 +10,14 @@ import (
 	"github.com/mongodb/mongo-tools/mongodump"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
 )
 
 var dataBackupLocalPath = "./backup"
 var dataBackupS3Path = "DB"
 
-func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, dbName string) *mongodump.MongoDump {
+func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, dbName string) *mongodump.MongoDump {
 	var toolOptions *options.ToolOptions
 
 	ssl := options.SSL{}
@@ -38,7 +39,7 @@ func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails
 	if len(auth.Password) > 5 {
 		passSeg = auth.Password[0:5]
 	}
-	fmt.Printf("MongoDump connecting to: %v, user %v, pass %v...", connection.Host, auth.Username, passSeg)
+	logger.Infof("MongoDump connecting to: %v, user %v, pass %v...", connection.Host, auth.Username, passSeg)
 
 	toolOptions = &options.ToolOptions{
 		SSL:        &ssl,
