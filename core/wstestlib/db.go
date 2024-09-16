@@ -18,7 +18,7 @@ func GetDBWithEnvironment(envName string) *mongo.Database {
 		logger := logger.StdOutLogger{}
 		logger.SetLogLevel(2)
 
-		client, err := mongoDBConnection.Connect(nil, "", &logger)
+		client, _, err := mongoDBConnection.Connect(nil, "", &logger)
 		if err != nil {
 			// This meant it was hard to catch when it was failing because DB not running locally
 			//log.Fatal(err)

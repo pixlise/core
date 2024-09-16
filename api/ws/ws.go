@@ -3,8 +3,6 @@ package ws
 import (
 	"context"
 	"fmt"
-	"sync"
-	"time"
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -27,47 +25,20 @@ type connectToken struct {
 }
 
 type WSHandler struct {
-	connectTokensMutex sync.Mutex
-	connectTokens      map[string]connectToken
-	melody             *melody.Melody
-	svcs               *services.APIServices
+	melody *melody.Melody
+	svcs   *services.APIServices
 }
 
 func MakeWSHandler(m *melody.Melody, svcs *services.APIServices) *WSHandler {
 	ws := WSHandler{
-		connectTokens: map[string]connectToken{},
-		melody:        m,
-		svcs:          svcs,
+		melody: m,
+		svcs:   svcs,
 	}
 	return &ws
 }
 
-func (ws *WSHandler) clearOldTokens() {
-	nowSec := ws.svcs.TimeStamper.GetTimeNowSec()
-
-	ws.connectTokensMutex.Lock()
-	defer ws.connectTokensMutex.Unlock()
-
-	for token, usr := range ws.connectTokens {
-		if usr.expiryUnixSec < nowSec {
-			delete(ws.connectTokens, token)
-		}
-	}
-}
-
 func (ws *WSHandler) HandleBeginWSConnection(params apiRouter.ApiHandlerGenericParams) error {
-	// Generate a token that is valid for a short time
-	token := utils.RandStringBytesMaskImpr(32)
-
-	expirySec := ws.svcs.TimeStamper.GetTimeNowSec() + 10
-
-	// Clear out old ones, now is a good a time as any!
-	ws.clearOldTokens()
-
-	ws.connectTokensMutex.Lock()
-	defer ws.connectTokensMutex.Unlock()
-
-	ws.connectTokens[token] = connectToken{expirySec, params.UserInfo}
+	token := wsHelpers.CreateConnectToken(params.Svcs, params.UserInfo)
 
 	result := &protos.BeginWSConnectionResponse{}
 	result.ConnToken = token
@@ -98,36 +69,22 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	queryParams := s.Request.URL.Query()
 	if token, ok := queryParams["token"]; !ok {
 		fmt.Println("WS connect failed due to missing token")
-		s.CloseWithMsg([]byte("Missing token"))
+		s.CloseWithMsg([]byte("--Missing token"))
 		return
 	} else {
 		// Validate the token
 		if len(token) != 1 {
 			fmt.Printf("WS connect failed for token: %v\n", token)
-			s.CloseWithMsg([]byte("Multiple tokens provided"))
+			s.CloseWithMsg([]byte("--Multiple tokens provided"))
 			return
 		}
 
-		ws.connectTokensMutex.Lock()
-		defer ws.connectTokensMutex.Unlock()
+		var err error
+		connectingUser, err = wsHelpers.CheckConnectToken(token[0], ws.svcs)
 
-		if conn, ok := ws.connectTokens[token[0]]; !ok {
-			fmt.Printf("WS connect failed for UNKNOWN token: %v\n", token)
-			s.CloseWithMsg([]byte("Invalid token"))
+		if err != nil {
+			s.CloseWithMsg([]byte("--" + err.Error()))
 			return
-		} else {
-			// Check that it hasn't expired
-			nowSec := time.Now().Unix() // TODO: use GetTimeNowSec
-			if conn.expiryUnixSec < nowSec {
-				fmt.Printf("WS connect failed for EXPIRED token: %v. User: %v (%v)\n", token, conn.userInfo.UserID, conn.userInfo.Name)
-				s.CloseWithMsg([]byte("Expired token"))
-				return
-			} else {
-				connectingUser = conn.userInfo
-
-				// We no longer need this item in our connection token map
-				delete(ws.connectTokens, token[0])
-			}
 		}
 	}
 
@@ -137,32 +94,34 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	sessionUserId := connectingUser.UserID
 
 	// Check if we're set to impersonate another user
-	coll := ws.svcs.MongoDB.Collection(dbCollections.UserImpersonatorsName)
-	ctx := context.TODO()
-	impersonateResult := coll.FindOne(ctx, bson.M{"_id": connectingUser.UserID}, options.FindOne())
-	if impersonateResult.Err() != nil {
-		if impersonateResult.Err() != mongo.ErrNoDocuments {
-			msg := fmt.Sprintf("Error checking for user impersonation setting: %v", impersonateResult.Err())
-			fmt.Printf(msg)
-			s.CloseWithMsg([]byte(msg))
-			return
+	if ws.svcs.Config.ImpersonateEnabled {
+		coll := ws.svcs.MongoDB.Collection(dbCollections.UserImpersonatorsName)
+		ctx := context.TODO()
+		impersonateResult := coll.FindOne(ctx, bson.M{"_id": connectingUser.UserID}, options.FindOne())
+		if impersonateResult.Err() != nil {
+			if impersonateResult.Err() != mongo.ErrNoDocuments {
+				msg := fmt.Sprintf("Error checking for user impersonation setting: %v", impersonateResult.Err())
+				fmt.Printf(msg)
+				s.CloseWithMsg([]byte("--" + msg))
+				return
+			}
+		} else {
+			// We got impersonation info, find the user id we want to pretend to be
+			item := wsHelpers.UserImpersonationItem{}
+			err := impersonateResult.Decode(&item)
+
+			if err != nil {
+				msg := fmt.Sprintf("Failed to read user impersonation setting: %v", err)
+				fmt.Printf(msg)
+				s.CloseWithMsg([]byte("--" + msg))
+				return
+			}
+
+			sessionUserId = item.ImpersonatedId
+
+			// Set the "real" user id so we can know who is impersonating what
+			s.Set("realUserId", connectingUser.UserID)
 		}
-	} else {
-		// We got impersonation info, find the user id we want to pretend to be
-		item := wsHelpers.UserImpersonationItem{}
-		err := impersonateResult.Decode(&item)
-
-		if err != nil {
-			msg := fmt.Sprintf("Failed to read user impersonation setting: %v", err)
-			fmt.Printf(msg)
-			s.CloseWithMsg([]byte(msg))
-			return
-		}
-
-		sessionUserId = item.ImpersonatedId
-
-		// Set the "real" user id so we can know who is impersonating what
-		s.Set("realUserId", connectingUser.UserID)
 	}
 
 	sessionUser, err := wsHelpers.MakeSessionUser(sessId, sessionUserId, connectingUser.Permissions, ws.svcs.MongoDB)
@@ -172,7 +131,7 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 			sessionUser, err = wsHelpers.CreateDBUser(sessId, connectingUser, ws.svcs.MongoDB, ws.svcs.Config.DefaultUserGroupId, ws.svcs.Log)
 			if err != nil {
 				fmt.Printf("WS connect failed for user: %v (%v) - failed to read/create user in DB\n", connectingUser.UserID, connectingUser.Name)
-				s.CloseWithMsg([]byte("Failed to validate session user"))
+				s.CloseWithMsg([]byte("--Failed to validate session user"))
 				return
 			}
 		}

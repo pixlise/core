@@ -75,7 +75,7 @@ func main() {
 	remoteFS := fileaccess.MakeS3Access(svc)
 
 	// Connect to mongo
-	mongoClient, err := mongoDBConnection.Connect(sess, *argMongoSecret, ilog)
+	mongoClient, _, err := mongoDBConnection.Connect(sess, *argMongoSecret, ilog)
 	if err != nil {
 		log.Fatalf("Failed to connect to mongo DB: %v", err)
 	}

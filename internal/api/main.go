@@ -60,7 +60,7 @@ func main() {
 	log.SetFlags(0)
 
 	cfg := loadConfig()
-	svcs := initServices(cfg)
+	svcs := initServices(cfg, instanceId)
 
 	////////////////////////////////////////////////////
 	// Set up WebSocket server
@@ -199,7 +199,7 @@ func loadConfig() config.APIConfig {
 	return cfg
 }
 
-func initServices(cfg config.APIConfig) *services.APIServices {
+func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServices {
 	// Get a session for the bucket region
 	sess, err := awsutil.GetSession()
 	if err != nil {
@@ -218,7 +218,7 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 	iLog.SetLogLevel(cfg.LogLevel)
 
 	// Connect to mongo
-	mongoClient, err := mongoDBConnection.Connect(sess, cfg.MongoSecret, iLog)
+	mongoClient, mongoDetails, err := mongoDBConnection.Connect(sess, cfg.MongoSecret, iLog)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -234,6 +234,12 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 			db.Drop(context.TODO())
 		}
 	*/
+
+	// Ensure prod doesn't have restore and impersonate enabled, so we don't overwrite it via the UI
+	if strings.Contains(strings.ToLower(cfg.EnvironmentName), "prod") {
+		cfg.RestoreEnabled = false
+		cfg.ImpersonateEnabled = false
+	}
 
 	dbCollections.InitCollections(db, iLog, cfg.EnvironmentName)
 
@@ -256,17 +262,19 @@ func initServices(cfg config.APIConfig) *services.APIServices {
 
 	// Set up services
 	svcs := &services.APIServices{
-		Config:      cfg,
-		Log:         iLog,
-		S3:          s3svc,
-		SNS:         awsutil.RealSNS{SNS: snsSvc},
-		SQS:         awsutil.RealSQS{SQS: sqsSvc},
-		FS:          fs,
-		JWTReader:   jwt,
-		IDGen:       &idgen.IDGen{},
-		TimeStamper: &timestamper.UnixTimeNowStamper{},
-		MongoDB:     db,
+		Config:       cfg,
+		Log:          iLog,
+		S3:           s3svc,
+		SNS:          awsutil.RealSNS{SNS: snsSvc},
+		SQS:          awsutil.RealSQS{SQS: sqsSvc},
+		FS:           fs,
+		JWTReader:    jwt,
+		IDGen:        &idgen.IDGen{},
+		TimeStamper:  &timestamper.UnixTimeNowStamper{},
+		MongoDB:      db,
+		MongoDetails: mongoDetails,
 		// Notifier is configured after ws is created
+		InstanceId: apiInstanceId,
 	}
 
 	return svcs

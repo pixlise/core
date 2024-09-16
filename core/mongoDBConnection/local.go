@@ -31,7 +31,7 @@ import (
 
 // Assumes local mongo running in docker as per this command:
 // docker run -d  --name mongo-on-docker  -p 27888:27017 -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=secret mongo
-func connectToLocalMongoDB(log logger.ILogger) (*mongo.Client, error) {
+func connectToLocalMongoDB(log logger.ILogger) (*mongo.Client, MongoConnectionDetails, error) {
 	cmdMonitor := makeMongoCommandMonitor(log)
 
 	log.Infof("Connecting to local mongo db...")
@@ -42,18 +42,18 @@ func connectToLocalMongoDB(log logger.ILogger) (*mongo.Client, error) {
 	//ctx := context.Background()
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoUri).SetMonitor(cmdMonitor).SetDirect(true))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create new local mongo DB connection: %v", err)
+		return nil, MongoConnectionDetails{}, fmt.Errorf("Failed to create new local mongo DB connection: %v", err)
 	}
 
 	// Try to ping the DB to confirm connection
 	var result bson.M
 	err = client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Decode(&result)
 	if err != nil {
-		return nil, err
+		return nil, MongoConnectionDetails{}, err
 	}
 
 	log.Infof("Successfully connected to local mongo db!")
 
 	//defer client.Disconnect(ctx)
-	return client, nil
+	return client, MongoConnectionDetails{Host: mongoUri}, nil
 }
