@@ -207,6 +207,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 			restore, errDBRestore := wsHelpers.MakeMongoRestoreInstance(svcs.MongoDetails, svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", svcs.Config.EnvironmentName), restoreFromDBName)
 
 			if errDBRestore == nil {
+				svcs.Log.Infof("Mongo Restore starting...")
 				result := restore.Restore()
 				if result.Err != nil {
 					errDBRestore = result.Err
@@ -267,6 +268,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 	}
 
 	if err != nil {
+		svcs.Log.Errorf("%v", err)
 		return
 	}
 
