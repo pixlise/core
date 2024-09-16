@@ -36,7 +36,15 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 	protocolPrefix := "mongodb://"
 	connection.Host = strings.TrimPrefix(connection.Host, protocolPrefix)
 
-	logger.Infof("MongoRestore connecting to: %v, user %v, restore-to-db: %v, restore-from-db: %v...", connection.Host, auth.Username, restoreToDBName, restoreFromDBName)
+	connectionURI := fmt.Sprintf("mongodb://%s/%s", connection.Host, "")
+
+	logger.Infof("MongoRestore connecting to: %v, user %v, restore-to-db: %v, restore-from-db: %v...", connectionURI, auth.Username, restoreToDBName, restoreFromDBName)
+
+	uri, err := options.NewURI(connectionURI)
+	if err != nil {
+		logger.Errorf("%v", err)
+		return nil, err
+	}
 
 	retryWrites := false
 
@@ -46,7 +54,7 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 		Connection:  connection,
 		Auth:        &auth,
 		Verbosity:   &options.Verbosity{},
-		URI:         &options.URI{},
+		URI:         uri,
 	}
 
 	toolOptions.Namespace = &options.Namespace{DB: restoreToDBName}
