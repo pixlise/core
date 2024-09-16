@@ -30,6 +30,12 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 	protocolPrefix := "mongodb://"
 	connection.Host = strings.TrimPrefix(connection.Host, protocolPrefix)
 
+	passSeg := ""
+	if len(auth.Password) > 5 {
+		passSeg = auth.Password[0:5]
+	}
+	fmt.Printf("MongoRestore connecting to: %v, user %v, pass %v...", connection.Host, auth.Username, passSeg)
+
 	toolOptions = &options.ToolOptions{
 		SSL:        &ssl,
 		Connection: connection,
@@ -56,9 +62,8 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 
 	nsOptions := &mongorestore.NSOptions{
 		NSInclude: []string{"*"},
-		//NSInclude: []string{"pixlise-prodv4-15-jul-2024.ownership"},
-		NSFrom: []string{"pixlise-prodv4-15-jul-2024"},
-		NSTo:   []string{restoreToDBName},
+		NSFrom:    []string{restoreFromDBName},
+		NSTo:      []string{restoreToDBName},
 	}
 
 	//log.SetVerbosity(toolOptions.Verbosity)
