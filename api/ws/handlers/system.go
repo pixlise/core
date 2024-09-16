@@ -61,7 +61,9 @@ func clearBucket(bucket string, fs fileaccess.FileAccess, logger logger.ILogger)
 	logger.Infof("Clearing %v files from bucket: %v", len(files), bucket)
 
 	for c, file := range files {
-		logger.Infof("Clearing file %v of %v...", c, len(files))
+		if c%100 == 0 {
+			logger.Infof("Clearing file %v of %v...", c, len(files))
+		}
 
 		err = fs.DeleteObject(bucket, file)
 		if err != nil {
