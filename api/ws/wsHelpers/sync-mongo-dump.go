@@ -36,18 +36,28 @@ func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails
 	protocolPrefix := "mongodb://"
 	connection.Host = strings.TrimPrefix(connection.Host, protocolPrefix)
 
+	connectionURI := fmt.Sprintf("mongodb://%s/%s", connection.Host, "")
+
 	passSeg := ""
 	if len(auth.Password) > 5 {
 		passSeg = auth.Password[0:5]
 	}
 	logger.Infof("MongoDump connecting to: %v, user %v, pass %v...", connection.Host, auth.Username, passSeg)
 
+	uri, err := options.NewURI(connectionURI)
+	if err != nil {
+		logger.Errorf("%v", err)
+		return nil
+	}
+
 	toolOptions = &options.ToolOptions{
 		SSL:        &ssl,
 		Connection: connection,
 		Auth:       &auth,
 		Verbosity:  &options.Verbosity{},
-		URI:        &options.URI{},
+		URI:        uri, /*&options.URI{
+			ConnectionString: connectionURI,
+		},*/
 	}
 
 	toolOptions.Namespace = &options.Namespace{DB: dbName}
