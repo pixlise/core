@@ -17,7 +17,12 @@ import (
 func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, restoreToDBName string, restoreFromDBName string) (*mongorestore.MongoRestore, error) {
 	var toolOptions *options.ToolOptions
 
-	ssl := options.SSL{}
+	ssl := options.SSL{
+		UseSSL:        true,
+		SSLCAFile:     "./global-bundle.pem",
+		SSLPEMKeyFile: "./global-bundle.pem",
+	}
+
 	auth := options.Auth{
 		Username: mongoDetails.User,
 		Password: mongoDetails.Password,
@@ -25,25 +30,23 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 
 	connection := &options.Connection{
 		Host: mongoDetails.Host,
-		//Port: db.DefaultTestPort,
 	}
 
 	// Trim excess
 	protocolPrefix := "mongodb://"
 	connection.Host = strings.TrimPrefix(connection.Host, protocolPrefix)
 
-	passSeg := ""
-	if len(auth.Password) > 5 {
-		passSeg = auth.Password[0:5]
-	}
-	logger.Infof("MongoRestore connecting to: %v, user %v, pass %v...", connection.Host, auth.Username, passSeg)
+	logger.Infof("MongoRestore connecting to: %v, user %v...", connection.Host, auth.Username)
+
+	retryWrites := false
 
 	toolOptions = &options.ToolOptions{
-		SSL:        &ssl,
-		Connection: connection,
-		Auth:       &auth,
-		Verbosity:  &options.Verbosity{},
-		URI:        &options.URI{},
+		RetryWrites: &retryWrites,
+		SSL:         &ssl,
+		Connection:  connection,
+		Auth:        &auth,
+		Verbosity:   &options.Verbosity{},
+		URI:         &options.URI{},
 	}
 
 	toolOptions.Namespace = &options.Namespace{DB: restoreToDBName}

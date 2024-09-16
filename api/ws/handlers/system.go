@@ -9,6 +9,8 @@ import (
 	"github.com/mongodb/mongo-tools/mongodump"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
@@ -50,12 +52,41 @@ func HandleBackupDBReq(req *protos.BackupDBReq, hctx wsHelpers.HandlerContext) (
 	return &protos.BackupDBResp{}, nil
 }
 
+func clearBucket(bucket string, fs fileaccess.FileAccess, logger logger.ILogger) error {
+	files, err := fs.ListObjects(bucket, "")
+	if err != nil {
+		return err
+	}
+
+	logger.Infof("Clearing %v files from bucket: %v", len(files), bucket)
+
+	for c, file := range files {
+		logger.Infof("Clearing file %v of %v...", c, len(files))
+
+		err = fs.DeleteObject(bucket, file)
+		if err != nil {
+			return err
+		}
+	}
+
+	logger.Infof("Bucket cleared: %v", bucket)
+	return nil
+}
+
 func runBackup(dump *mongodump.MongoDump, startTimestamp int64, svcs *services.APIServices) {
 	var wg sync.WaitGroup
 	var errDBDump error
 	var errScanSync error
 	var errImageSync error
 	var errQuantSync error
+
+	svcs.Log.Infof("Clearing PIXLISE backup bucket: %v", svcs.Config.DataBackupBucket)
+
+	err := clearBucket(svcs.Config.DataBackupBucket, svcs.FS, svcs.Log)
+	if err != nil {
+		svcs.Log.Errorf("PIXLISE Backup bucket clear failed: %v", err)
+		return
+	}
 
 	wg.Add(1)
 	go func() {
@@ -96,7 +127,6 @@ func runBackup(dump *mongodump.MongoDump, startTimestamp int64, svcs *services.A
 	// Wait for all sync tasks
 	wg.Wait()
 
-	var err error
 	if errDBDump != nil {
 		err = fmt.Errorf("PIXLISE Backup DB dump failed: %v", errDBDump)
 	}
@@ -114,6 +144,7 @@ func runBackup(dump *mongodump.MongoDump, startTimestamp int64, svcs *services.A
 	}
 
 	if err != nil {
+		svcs.Log.Errorf("%v", err)
 		return
 	}
 

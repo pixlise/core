@@ -25,21 +25,15 @@ func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails
 		UseSSL:        true,
 		SSLCAFile:     "./global-bundle.pem",
 		SSLPEMKeyFile: "./global-bundle.pem",
-		//SSLAllowInvalidCert: true,
-		//SSLAllowInvalidHost: true,
-		// SSLFipsMode         bool   `long:"sslFIPSMode" description:"use FIPS mode of the installed openssl library"`
-		//TLSInsecure: true,
 	}
 
 	auth := options.Auth{
 		Username: mongoDetails.User,
 		Password: mongoDetails.Password,
-		//Mechanism: "DEFAULT",
 	}
 
 	connection := &options.Connection{
 		Host: mongoDetails.Host,
-		//Port: db.DefaultTestPort,
 	}
 
 	// Trim excess
@@ -48,11 +42,7 @@ func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails
 
 	connectionURI := fmt.Sprintf("mongodb://%s/%s", connection.Host, "")
 
-	passSeg := ""
-	if len(auth.Password) > 5 {
-		passSeg = auth.Password[0:5]
-	}
-	logger.Infof("MongoDump connecting to: %v, user %v, pass %v...", connection.Host, auth.Username, passSeg)
+	logger.Infof("MongoDump connecting to: %v, user %v...", connection.Host, auth.Username)
 
 	uri, err := options.NewURI(connectionURI)
 	if err != nil {
