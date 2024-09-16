@@ -36,7 +36,7 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 	protocolPrefix := "mongodb://"
 	connection.Host = strings.TrimPrefix(connection.Host, protocolPrefix)
 
-	logger.Infof("MongoRestore connecting to: %v, user %v...", connection.Host, auth.Username)
+	logger.Infof("MongoRestore connecting to: %v, user %v, restore-to-db: %v, restore-from-db: %v...", connection.Host, auth.Username, restoreToDBName, restoreFromDBName)
 
 	retryWrites := false
 
