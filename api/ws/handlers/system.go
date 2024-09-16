@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/mongodb/mongo-tools/mongodump"
+	"github.com/mongodb/mongo-tools/mongorestore"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/fileaccess"
@@ -204,7 +205,8 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 		}
 
 		if errDBRestore == nil {
-			restore, errDBRestore := wsHelpers.MakeMongoRestoreInstance(svcs.MongoDetails, svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", svcs.Config.EnvironmentName), restoreFromDBName)
+			var restore *mongorestore.MongoRestore
+			restore, errDBRestore = wsHelpers.MakeMongoRestoreInstance(svcs.MongoDetails, svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", svcs.Config.EnvironmentName), restoreFromDBName)
 
 			if errDBRestore == nil {
 				svcs.Log.Infof("Mongo Restore starting...")

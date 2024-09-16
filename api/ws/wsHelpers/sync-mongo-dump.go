@@ -42,7 +42,7 @@ func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails
 
 	connectionURI := fmt.Sprintf("mongodb://%s/%s", connection.Host, "")
 
-	logger.Infof("MongoDump connecting to: %v, user %v...", connection.Host, auth.Username)
+	logger.Infof("MongoDump connecting to: %v, user %v, db-to-dump: %v...", connection.Host, auth.Username, dbName)
 
 	uri, err := options.NewURI(connectionURI)
 	if err != nil {
