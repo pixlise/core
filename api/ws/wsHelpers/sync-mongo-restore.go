@@ -69,6 +69,8 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 	}
 
 	log.SetVerbosity(nil /*toolOptions.Verbosity*/)
+	lw := LogWriter{logger: logger}
+	log.SetWriter(lw)
 
 	return mongorestore.New(mongorestore.Options{
 		ToolOptions:     toolOptions,
@@ -77,6 +79,15 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 		NSOptions:       nsOptions,
 		TargetDirectory: inputOptions.Directory,
 	})
+}
+
+type LogWriter struct {
+	logger logger.ILogger
+}
+
+func (w LogWriter) Write(p []byte) (n int, err error) {
+	w.logger.Infof(string(p))
+	return len(p), nil
 }
 
 func DownloadArchive(svcs *services.APIServices) (string, error) {
