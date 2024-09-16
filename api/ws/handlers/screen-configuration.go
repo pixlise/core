@@ -57,6 +57,10 @@ func HandleScreenConfigurationListReq(req *protos.ScreenConfigurationListReq, hc
 		return nil, err
 	}
 
+	if req.SnapshotParentId != "" {
+		filter["snapshotParentId"] = req.SnapshotParentId
+	}
+
 	opts := options.Find()
 
 	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.ScreenConfigurationName).Find(context.TODO(), filter, opts)
@@ -162,11 +166,54 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 			for i, layout := range screenConfig.Layouts {
 				if layout.TabId == "" {
 					layout.TabId = hctx.Svcs.IDGen.GenObjectID()
-					layout.TabName = "Tab " + fmt.Sprint(i+1)
+					if layout.TabName == "" {
+						layout.TabName = "Tab " + fmt.Sprint(i+1)
+					}
 				}
 				for _, widget := range layout.Widgets {
 					if widget.Id == "" {
 						widget.Id = formWidgetId(widget, screenConfig.Id, i)
+						if widget.Data != nil {
+							// We have widget data, but no ID, so write it to the database with a new ID
+							_, err := hctx.Svcs.MongoDB.Collection(dbCollections.WidgetDataName).UpdateOne(sessCtx, bson.M{
+								"_id": widget.Id,
+							}, bson.M{
+								"$set": widget.Data,
+							}, options.Update().SetUpsert(true))
+							if err != nil {
+								return nil, err
+							}
+						}
+					} else if widget.Id != "" {
+						// We have a widget ID, but no data, so we'll just copy the respective widget record to a new one
+						var oldWidgetId = widget.Id
+						widget.Id = formWidgetId(widget, screenConfig.Id, i)
+						// Fetch old widget data
+						result := hctx.Svcs.MongoDB.Collection(dbCollections.WidgetDataName).FindOne(sessCtx, bson.M{
+							"_id": oldWidgetId,
+						})
+						if result.Err() != nil {
+							// We can't get the data, so we'll just continue
+							continue
+						}
+
+						widgetData := &protos.WidgetData{}
+						err = result.Decode(&widgetData)
+						if err != nil {
+							continue
+						}
+
+						widgetData.Id = widget.Id
+
+						// Write the data to the new widget ID
+						_, err := hctx.Svcs.MongoDB.Collection(dbCollections.WidgetDataName).UpdateOne(sessCtx, bson.M{
+							"_id": widget.Id,
+						}, bson.M{
+							"$set": widgetData,
+						}, options.Update().SetUpsert(true))
+						if err != nil {
+							return nil, err
+						}
 					}
 				}
 			}
