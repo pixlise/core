@@ -542,6 +542,191 @@ func (*UserDeleteRoleResp) Descriptor() ([]byte, []int) {
 	return file_user_management_msgs_proto_rawDescGZIP(), []int{9}
 }
 
+// requires(PIXLISE_ADMIN)
+type UserImpersonateReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// "Become" the user with specified id. If this is blank, this session stops impersonating
+	UserId string `protobuf:"bytes,1,opt,name=userId,proto3" json:"userId,omitempty"`
+}
+
+func (x *UserImpersonateReq) Reset() {
+	*x = UserImpersonateReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_user_management_msgs_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UserImpersonateReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserImpersonateReq) ProtoMessage() {}
+
+func (x *UserImpersonateReq) ProtoReflect() protoreflect.Message {
+	mi := &file_user_management_msgs_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserImpersonateReq.ProtoReflect.Descriptor instead.
+func (*UserImpersonateReq) Descriptor() ([]byte, []int) {
+	return file_user_management_msgs_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *UserImpersonateReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type UserImpersonateResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Returns the currently set user in this user session
+	SessionUser *UserInfo `protobuf:"bytes,1,opt,name=sessionUser,proto3" json:"sessionUser,omitempty"`
+}
+
+func (x *UserImpersonateResp) Reset() {
+	*x = UserImpersonateResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_user_management_msgs_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UserImpersonateResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserImpersonateResp) ProtoMessage() {}
+
+func (x *UserImpersonateResp) ProtoReflect() protoreflect.Message {
+	mi := &file_user_management_msgs_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserImpersonateResp.ProtoReflect.Descriptor instead.
+func (*UserImpersonateResp) Descriptor() ([]byte, []int) {
+	return file_user_management_msgs_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *UserImpersonateResp) GetSessionUser() *UserInfo {
+	if x != nil {
+		return x.SessionUser
+	}
+	return nil
+}
+
+// Allows querying if we're impersonating anyone
+// requires(NONE)
+type UserImpersonateGetReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *UserImpersonateGetReq) Reset() {
+	*x = UserImpersonateGetReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_user_management_msgs_proto_msgTypes[12]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UserImpersonateGetReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserImpersonateGetReq) ProtoMessage() {}
+
+func (x *UserImpersonateGetReq) ProtoReflect() protoreflect.Message {
+	mi := &file_user_management_msgs_proto_msgTypes[12]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserImpersonateGetReq.ProtoReflect.Descriptor instead.
+func (*UserImpersonateGetReq) Descriptor() ([]byte, []int) {
+	return file_user_management_msgs_proto_rawDescGZIP(), []int{12}
+}
+
+type UserImpersonateGetResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Returns the currently set user in this user session
+	SessionUser *UserInfo `protobuf:"bytes,1,opt,name=sessionUser,proto3" json:"sessionUser,omitempty"`
+}
+
+func (x *UserImpersonateGetResp) Reset() {
+	*x = UserImpersonateGetResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_user_management_msgs_proto_msgTypes[13]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UserImpersonateGetResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserImpersonateGetResp) ProtoMessage() {}
+
+func (x *UserImpersonateGetResp) ProtoReflect() protoreflect.Message {
+	mi := &file_user_management_msgs_proto_msgTypes[13]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserImpersonateGetResp.ProtoReflect.Descriptor instead.
+func (*UserImpersonateGetResp) Descriptor() ([]byte, []int) {
+	return file_user_management_msgs_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *UserImpersonateGetResp) GetSessionUser() *UserInfo {
+	if x != nil {
+		return x.SessionUser
+	}
+	return nil
+}
+
 var File_user_management_msgs_proto protoreflect.FileDescriptor
 
 var file_user_management_msgs_proto_rawDesc = []byte{
@@ -580,8 +765,22 @@ var file_user_management_msgs_proto_rawDesc = []byte{
 	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49, 0x64, 0x12, 0x16, 0x0a,
 	0x06, 0x72, 0x6f, 0x6c, 0x65, 0x49, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x72,
 	0x6f, 0x6c, 0x65, 0x49, 0x64, 0x22, 0x14, 0x0a, 0x12, 0x55, 0x73, 0x65, 0x72, 0x44, 0x65, 0x6c,
-	0x65, 0x74, 0x65, 0x52, 0x6f, 0x6c, 0x65, 0x52, 0x65, 0x73, 0x70, 0x42, 0x0a, 0x5a, 0x08, 0x2e,
-	0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x65, 0x74, 0x65, 0x52, 0x6f, 0x6c, 0x65, 0x52, 0x65, 0x73, 0x70, 0x22, 0x2c, 0x0a, 0x12, 0x55,
+	0x73, 0x65, 0x72, 0x49, 0x6d, 0x70, 0x65, 0x72, 0x73, 0x6f, 0x6e, 0x61, 0x74, 0x65, 0x52, 0x65,
+	0x71, 0x12, 0x16, 0x0a, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49, 0x64, 0x22, 0x42, 0x0a, 0x13, 0x55, 0x73, 0x65,
+	0x72, 0x49, 0x6d, 0x70, 0x65, 0x72, 0x73, 0x6f, 0x6e, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70,
+	0x12, 0x2b, 0x0a, 0x0b, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x55, 0x73, 0x65, 0x72, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x09, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f,
+	0x52, 0x0b, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x55, 0x73, 0x65, 0x72, 0x22, 0x17, 0x0a,
+	0x15, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6d, 0x70, 0x65, 0x72, 0x73, 0x6f, 0x6e, 0x61, 0x74, 0x65,
+	0x47, 0x65, 0x74, 0x52, 0x65, 0x71, 0x22, 0x45, 0x0a, 0x16, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6d,
+	0x70, 0x65, 0x72, 0x73, 0x6f, 0x6e, 0x61, 0x74, 0x65, 0x47, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70,
+	0x12, 0x2b, 0x0a, 0x0b, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x55, 0x73, 0x65, 0x72, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x09, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f,
+	0x52, 0x0b, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x55, 0x73, 0x65, 0x72, 0x42, 0x0a, 0x5a,
+	0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -596,30 +795,37 @@ func file_user_management_msgs_proto_rawDescGZIP() []byte {
 	return file_user_management_msgs_proto_rawDescData
 }
 
-var file_user_management_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_user_management_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_user_management_msgs_proto_goTypes = []interface{}{
-	(*UserListReq)(nil),        // 0: UserListReq
-	(*UserListResp)(nil),       // 1: UserListResp
-	(*UserRoleListReq)(nil),    // 2: UserRoleListReq
-	(*UserRoleListResp)(nil),   // 3: UserRoleListResp
-	(*UserRolesListReq)(nil),   // 4: UserRolesListReq
-	(*UserRolesListResp)(nil),  // 5: UserRolesListResp
-	(*UserAddRoleReq)(nil),     // 6: UserAddRoleReq
-	(*UserAddRoleResp)(nil),    // 7: UserAddRoleResp
-	(*UserDeleteRoleReq)(nil),  // 8: UserDeleteRoleReq
-	(*UserDeleteRoleResp)(nil), // 9: UserDeleteRoleResp
-	(*Auth0UserDetails)(nil),   // 10: Auth0UserDetails
-	(*Auth0UserRole)(nil),      // 11: Auth0UserRole
+	(*UserListReq)(nil),            // 0: UserListReq
+	(*UserListResp)(nil),           // 1: UserListResp
+	(*UserRoleListReq)(nil),        // 2: UserRoleListReq
+	(*UserRoleListResp)(nil),       // 3: UserRoleListResp
+	(*UserRolesListReq)(nil),       // 4: UserRolesListReq
+	(*UserRolesListResp)(nil),      // 5: UserRolesListResp
+	(*UserAddRoleReq)(nil),         // 6: UserAddRoleReq
+	(*UserAddRoleResp)(nil),        // 7: UserAddRoleResp
+	(*UserDeleteRoleReq)(nil),      // 8: UserDeleteRoleReq
+	(*UserDeleteRoleResp)(nil),     // 9: UserDeleteRoleResp
+	(*UserImpersonateReq)(nil),     // 10: UserImpersonateReq
+	(*UserImpersonateResp)(nil),    // 11: UserImpersonateResp
+	(*UserImpersonateGetReq)(nil),  // 12: UserImpersonateGetReq
+	(*UserImpersonateGetResp)(nil), // 13: UserImpersonateGetResp
+	(*Auth0UserDetails)(nil),       // 14: Auth0UserDetails
+	(*Auth0UserRole)(nil),          // 15: Auth0UserRole
+	(*UserInfo)(nil),               // 16: UserInfo
 }
 var file_user_management_msgs_proto_depIdxs = []int32{
-	10, // 0: UserListResp.details:type_name -> Auth0UserDetails
-	11, // 1: UserRoleListResp.roles:type_name -> Auth0UserRole
-	11, // 2: UserRolesListResp.roles:type_name -> Auth0UserRole
-	3,  // [3:3] is the sub-list for method output_type
-	3,  // [3:3] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	14, // 0: UserListResp.details:type_name -> Auth0UserDetails
+	15, // 1: UserRoleListResp.roles:type_name -> Auth0UserRole
+	15, // 2: UserRolesListResp.roles:type_name -> Auth0UserRole
+	16, // 3: UserImpersonateResp.sessionUser:type_name -> UserInfo
+	16, // 4: UserImpersonateGetResp.sessionUser:type_name -> UserInfo
+	5,  // [5:5] is the sub-list for method output_type
+	5,  // [5:5] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_user_management_msgs_proto_init() }
@@ -749,6 +955,54 @@ func file_user_management_msgs_proto_init() {
 				return nil
 			}
 		}
+		file_user_management_msgs_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UserImpersonateReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_user_management_msgs_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UserImpersonateResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_user_management_msgs_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UserImpersonateGetReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_user_management_msgs_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UserImpersonateGetResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	file_user_management_msgs_proto_msgTypes[0].OneofWrappers = []interface{}{
 		(*UserListReq_RoleId)(nil),
@@ -761,7 +1015,7 @@ func file_user_management_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_user_management_msgs_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

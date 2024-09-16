@@ -37,8 +37,10 @@ const UserGroupsName = "userGroups"
 const UserROIDisplaySettings = "userROIDisplaySettings"
 const UserExpressionDisplaySettings = "userExpressionDisplaySettings"
 const UsersName = "users"
+const UserImpersonatorsName = "userImpersonators"
 const ViewStatesName = "viewStates"
 const WidgetDataName = "widgetData"
+const ConnectTempTokensName = "connectTempTokens"
 
 func GetAllCollections() []string {
 	return []string{

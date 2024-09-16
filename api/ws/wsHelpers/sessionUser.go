@@ -45,17 +45,17 @@ var cachedUserGroupViewership = map[string][]string{}
 // JWT user has the user ID and permissions that we get from Auth0. The rest is handled
 // within PIXLISE, so lets read our DB to see if this user exists and get their
 // user name, email, icon, etc
-func MakeSessionUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.Database) (*SessionUser, error) {
+func MakeSessionUser(sessionId string, userId string, permissions map[string]bool, db *mongo.Database) (*SessionUser, error) {
 	// Ensure we have the full user ID, as our system was previously cutting the prefix
 	// off of Auth0 user ids
-	userId := utils.FixUserId(jwtUser.UserID)
+	fixedUserId := utils.FixUserId(userId)
 
-	userDBItem, err := GetDBUser(userId, db)
+	userDBItem, err := GetDBUser(fixedUserId, db)
 	if err != nil {
 		return nil, err
 	}
 
-	return makeSessionUser(userId, sessionId, jwtUser.Permissions, userDBItem, db)
+	return makeSessionUser(fixedUserId, sessionId, permissions, userDBItem, db)
 }
 
 // If we have a successful login and the user is not in our DB, we write a default record
@@ -192,4 +192,15 @@ func GetCachedUserGroupMembership(userId string) ([]string, bool) {
 func GetCachedUserGroupViewership(userId string) ([]string, bool) {
 	membership, ok := cachedUserGroupViewership[userId]
 	return membership, ok
+}
+
+type UserImpersonationItem struct {
+	// The user id who is doing the impersonating
+	Id string `bson:"_id"`
+
+	// The id of the user we're pretending to be
+	ImpersonatedId string
+
+	// For ease of debugging, we don't "time it out" right now or anything...
+	TimeStampUnixSec uint32
 }

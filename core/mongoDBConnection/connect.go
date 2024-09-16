@@ -29,11 +29,17 @@ import (
 // Helpers for connecting to Mongo DB
 // NOTE: we support remote, local and "test" connections as per https://medium.com/@victor.neuret/mocking-the-official-mongo-golang-driver-5aad5b226a78
 
+type MongoConnectionDetails struct {
+	Host     string
+	User     string
+	Password string
+}
+
 func Connect(
 	sess *session.Session, // Can be nil for local connection
 	mongoSecret string, // empty for local connection
 	iLog logger.ILogger,
-) (*mongo.Client, error) {
+) (*mongo.Client, MongoConnectionDetails, error) {
 	// If the secret is blank, assume we're connecting to a local DB with no auth
 	if len(mongoSecret) <= 0 {
 		// Connect to local mongo
@@ -44,7 +50,7 @@ func Connect(
 	// Get a session for the bucket region
 	mongoConnectionInfo, err := getMongoConnectionInfoFromSecretCache(sess, mongoSecret)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read mongo secret \"%v\" info from secrets cache: %v", mongoSecret, err)
+		return nil, MongoConnectionDetails{}, fmt.Errorf("Failed to read mongo secret \"%v\" info from secrets cache: %v", mongoSecret, err)
 	}
 
 	return connectToRemoteMongoDB(

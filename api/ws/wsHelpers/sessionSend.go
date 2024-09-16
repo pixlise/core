@@ -9,7 +9,7 @@ import (
 func SendForSession(s *melody.Session, wsmsg *protos.WSMessage) {
 	bytes, err := proto.Marshal(wsmsg)
 	if err != nil {
-		s.CloseWithMsg([]byte(err.Error()))
+		s.CloseWithMsg([]byte("--" + err.Error()))
 		return
 	}
 

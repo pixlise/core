@@ -46,6 +46,7 @@ func (j RealJWTReader) GetValidator() JWTInterface {
 }
 
 // GetSimpleUserInfo - Get Simple User Info
+// TODO: See note for GetUserInfo about user impersonation
 func (j RealJWTReader) GetSimpleUserInfo(r *http.Request) (JWTUserInfo, error) {
 	result := JWTUserInfo{}
 
@@ -83,6 +84,13 @@ func (j RealJWTReader) GetSimpleUserInfo(r *http.Request) (JWTUserInfo, error) {
 }
 
 // GetUserInfo - Get User Info
+// TODO: When a user is impersonating another, this still returns the real users details
+//
+//	from the JWT. This is unfortunate but seemed more effort than it's worth to fix
+//	because we'll mainly test with science team members who have similar auth0
+//	permissions, similar groups, similar access to datasets. If we do encounter
+//	issues we can look at adding a map of userid->UserInfo structs containing the
+//	impersonated users details, and return that from here
 func (j RealJWTReader) GetUserInfo(r *http.Request) (JWTUserInfo, error) {
 	result := JWTUserInfo{}
 

@@ -21,7 +21,7 @@ import "math/rand"
 
 // Random string generation
 // https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
-const letterBytes = "abcdefghijklmnopqrstuvwxyz1234567890"
+const RandomStringChars = "abcdefghijklmnopqrstuvwxyz1234567890"
 const (
 	letterIdxBits = 6                    // 6 bits to represent a letter index
 	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
@@ -35,8 +35,8 @@ func RandStringBytesMaskImpr(n int) string {
 		if remain == 0 {
 			cache, remain = rand.Int63(), letterIdxMax
 		}
-		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-			b[i] = letterBytes[idx]
+		if idx := int(cache & letterIdxMask); idx < len(RandomStringChars) {
+			b[i] = RandomStringChars[idx]
 			i--
 		}
 		cache >>= letterIdxBits
