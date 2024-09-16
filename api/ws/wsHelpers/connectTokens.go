@@ -3,6 +3,7 @@ package wsHelpers
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/services"
@@ -45,6 +46,21 @@ func CreateConnectToken(svcs *services.APIServices, user jwtparser.JWTUserInfo) 
 	}
 
 	return token.Id
+}
+
+func IsValidConnectToken(token string) bool {
+	if len(token) != 32 {
+		return false
+	}
+
+	possibleChars := utils.RandomStringChars
+	for i := range token {
+		if strings.Index(possibleChars, token[i:i+1]) < 0 {
+			return false
+		}
+	}
+
+	return true
 }
 
 func CheckConnectToken(token string, svcs *services.APIServices) (jwtparser.JWTUserInfo, error) {

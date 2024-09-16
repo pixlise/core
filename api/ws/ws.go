@@ -74,8 +74,14 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 	} else {
 		// Validate the token
 		if len(token) != 1 {
-			fmt.Printf("WS connect failed for token: %v\n", token)
+			fmt.Printf("WS connect failed due to unexpected token count %v\n", len(token))
 			s.CloseWithMsg([]byte("--Multiple tokens provided"))
+			return
+		}
+
+		if !wsHelpers.IsValidConnectToken(token[0]) {
+			fmt.Printf("WS connect received invalid token: %v\n", token[0])
+			s.CloseWithMsg([]byte("--Invalid token provided"))
 			return
 		}
 
