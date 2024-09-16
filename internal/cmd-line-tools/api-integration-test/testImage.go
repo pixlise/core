@@ -132,7 +132,7 @@ func doHTTPRequest(scheme string, method string, apiHost string, urlPath string,
 		bodyReader = io.NopCloser(reqBody)
 	}
 
-	fmt.Printf("Sending HTTP %v request: %v...", method, wsConnectUrl.String())
+	fmt.Printf("Sending HTTP %v request: %v...\n", method, wsConnectUrl.String())
 
 	client := &http.Client{}
 	req, err := http.NewRequest(method, wsConnectUrl.String(), bodyReader)
