@@ -33,6 +33,11 @@ func Example_ConnectTokens() {
 	_, err := coll.InsertOne(ctx, token1, options.InsertOne())
 	fmt.Printf("insert1: %v\n", err)
 
+	// Insert again
+	token1.Id = "abc999"
+	_, err = coll.InsertOne(ctx, token1, options.InsertOne())
+	fmt.Printf("insert2: %v\n", err)
+
 	_, err = CheckConnectToken("abcd", &services.APIServices{
 		Log:     &logger.StdOutLoggerForTest{},
 		MongoDB: db,
@@ -53,7 +58,7 @@ func Example_ConnectTokens() {
 
 	fmt.Printf("token ok %v, user: %v\n", err, usr.Name)
 
-	_, err = CheckConnectToken("abc123", &services.APIServices{
+	_, err = CheckConnectToken("abc999", &services.APIServices{
 		Log:     &logger.StdOutLoggerForTest{},
 		MongoDB: db,
 		TimeStamper: &timestamper.MockTimeNowStamper{
@@ -66,6 +71,7 @@ func Example_ConnectTokens() {
 	// Output:
 	// drop: <nil>
 	// insert1: <nil>
+	// insert2: <nil>
 	// notfound: Provided token is unknown
 	// token ok <nil>, user: TheUser's Name
 	// token expired, err: Expired token
