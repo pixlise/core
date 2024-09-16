@@ -5,6 +5,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/mongodb/mongo-tools/common/log"
 	"github.com/mongodb/mongo-tools/common/options"
 	"github.com/mongodb/mongo-tools/mongorestore"
 	"github.com/pixlise/core/v4/api/services"
@@ -67,7 +68,7 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 		NSTo:      []string{restoreToDBName},
 	}
 
-	//log.SetVerbosity(toolOptions.Verbosity)
+	log.SetVerbosity(nil /*toolOptions.Verbosity*/)
 
 	return mongorestore.New(mongorestore.Options{
 		ToolOptions:     toolOptions,
