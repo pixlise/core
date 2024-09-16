@@ -32,9 +32,9 @@ func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails
 	}
 
 	auth := options.Auth{
-		Username:  mongoDetails.User,
-		Password:  mongoDetails.Password,
-		Mechanism: "DEFAULT",
+		Username: mongoDetails.User,
+		Password: mongoDetails.Password,
+		//Mechanism: "DEFAULT",
 	}
 
 	connection := &options.Connection{
