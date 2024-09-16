@@ -17,10 +17,16 @@ import (
 func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, restoreToDBName string, restoreFromDBName string) (*mongorestore.MongoRestore, error) {
 	var toolOptions *options.ToolOptions
 
-	ssl := options.SSL{
-		UseSSL:        true,
-		SSLCAFile:     "./global-bundle.pem",
-		SSLPEMKeyFile: "./global-bundle.pem",
+	ssl := options.SSL{}
+
+	isLocal := strings.Contains(mongoDetails.Host, "localhost") && len(mongoDetails.User) <= 0 && len(mongoDetails.Password) <= 0
+
+	if !isLocal {
+		ssl = options.SSL{
+			UseSSL:        true,
+			SSLCAFile:     "./global-bundle.pem",
+			SSLPEMKeyFile: "./global-bundle.pem",
+		}
 	}
 
 	auth := options.Auth{

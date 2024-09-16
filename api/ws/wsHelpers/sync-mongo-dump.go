@@ -21,10 +21,16 @@ var dataBackupS3Path = "DB"
 func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, dbName string) *mongodump.MongoDump {
 	var toolOptions *options.ToolOptions
 
-	ssl := options.SSL{
-		UseSSL:        true,
-		SSLCAFile:     "./global-bundle.pem",
-		SSLPEMKeyFile: "./global-bundle.pem",
+	ssl := options.SSL{}
+
+	isLocal := strings.Contains(mongoDetails.Host, "localhost") && len(mongoDetails.User) <= 0 && len(mongoDetails.Password) <= 0
+
+	if !isLocal {
+		ssl = options.SSL{
+			UseSSL:        true,
+			SSLCAFile:     "./global-bundle.pem",
+			SSLPEMKeyFile: "./global-bundle.pem",
+		}
 	}
 
 	auth := options.Auth{
