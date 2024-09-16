@@ -6,6 +6,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/mongodb/mongo-tools/common/log"
 	"github.com/mongodb/mongo-tools/common/options"
 	"github.com/mongodb/mongo-tools/mongodump"
 	"github.com/pixlise/core/v4/api/services"
@@ -60,7 +61,7 @@ func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails
 	}
 	inputOptions := &mongodump.InputOptions{}
 
-	//log.SetVerbosity(toolOptions.Verbosity)
+	log.SetVerbosity(nil /*toolOptions.Verbosity*/)
 
 	return &mongodump.MongoDump{
 		ToolOptions:   toolOptions,
