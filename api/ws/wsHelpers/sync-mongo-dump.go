@@ -21,10 +21,20 @@ var dataBackupS3Path = "DB"
 func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, dbName string) *mongodump.MongoDump {
 	var toolOptions *options.ToolOptions
 
-	ssl := options.SSL{}
+	ssl := options.SSL{
+		UseSSL:        true,
+		SSLCAFile:     "./global-bundle.pem",
+		SSLPEMKeyFile: "./global-bundle.pem",
+		//SSLAllowInvalidCert: true,
+		//SSLAllowInvalidHost: true,
+		// SSLFipsMode         bool   `long:"sslFIPSMode" description:"use FIPS mode of the installed openssl library"`
+		//TLSInsecure: true,
+	}
+
 	auth := options.Auth{
-		Username: mongoDetails.User,
-		Password: mongoDetails.Password,
+		Username:  mongoDetails.User,
+		Password:  mongoDetails.Password,
+		Mechanism: "DEFAULT",
 	}
 
 	connection := &options.Connection{
@@ -50,14 +60,15 @@ func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails
 		return nil
 	}
 
+	retryWrites := false
+
 	toolOptions = &options.ToolOptions{
-		SSL:        &ssl,
-		Connection: connection,
-		Auth:       &auth,
-		Verbosity:  &options.Verbosity{},
-		URI:        uri, /*&options.URI{
-			ConnectionString: connectionURI,
-		},*/
+		RetryWrites: &retryWrites,
+		SSL:         &ssl,
+		Connection:  connection,
+		Auth:        &auth,
+		Verbosity:   &options.Verbosity{},
+		URI:         uri,
 	}
 
 	toolOptions.Namespace = &options.Namespace{DB: dbName}
