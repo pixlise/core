@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"strings"
 
-	"github.com/mongodb/mongo-tools/common/log"
-	"github.com/mongodb/mongo-tools/common/options"
 	"github.com/mongodb/mongo-tools/mongodump"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/fileaccess"
@@ -18,50 +15,13 @@ import (
 var dataBackupLocalPath = "./backup"
 var dataBackupS3Path = "DB"
 
-func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, dbName string) *mongodump.MongoDump {
-	var toolOptions *options.ToolOptions
-
-	ssl := options.SSL{
-		UseSSL:        true,
-		SSLCAFile:     "./global-bundle.pem",
-		SSLPEMKeyFile: "./global-bundle.pem",
-	}
-
-	auth := options.Auth{
-		Username: mongoDetails.User,
-		Password: mongoDetails.Password,
-	}
-
-	connection := &options.Connection{
-		Host: mongoDetails.Host,
-	}
-
-	// Trim excess
-	protocolPrefix := "mongodb://"
-	connection.Host = strings.TrimPrefix(connection.Host, protocolPrefix)
-
-	connectionURI := fmt.Sprintf("mongodb://%s/%s", connection.Host, "")
-
-	logger.Infof("MongoDump connecting to: %v, user %v, db-to-dump: %v...", connectionURI, auth.Username, dbName)
-
-	uri, err := options.NewURI(connectionURI)
+func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, dbName string) (*mongodump.MongoDump, error) {
+	toolOptions, err := makeMongoToolOptions(mongoDetails, logger, dbName)
 	if err != nil {
-		logger.Errorf("%v", err)
-		return nil
+		return nil, err
 	}
 
-	retryWrites := false
-
-	toolOptions = &options.ToolOptions{
-		RetryWrites: &retryWrites,
-		SSL:         &ssl,
-		Connection:  connection,
-		Auth:        &auth,
-		Verbosity:   &options.Verbosity{},
-		URI:         uri,
-	}
-
-	toolOptions.Namespace = &options.Namespace{DB: dbName}
+	logger.Infof("MongoDump connecting to: %v, user %v, db-to-dump: %v...", toolOptions.URI.ConnectionString, toolOptions.Auth.Username, dbName)
 
 	outputOptions := &mongodump.OutputOptions{
 		Out:  dataBackupLocalPath,
@@ -72,15 +32,11 @@ func MakeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails
 	}
 	inputOptions := &mongodump.InputOptions{}
 
-	log.SetVerbosity(nil /*toolOptions.Verbosity*/)
-	lw := LogWriter{logger: logger}
-	log.SetWriter(lw)
-
 	return &mongodump.MongoDump{
 		ToolOptions:   toolOptions,
 		InputOptions:  inputOptions,
 		OutputOptions: outputOptions,
-	}
+	}, nil
 }
 
 func UploadArchive(svcs *services.APIServices) error {
