@@ -40,7 +40,12 @@ func HandleBackupDBReq(req *protos.BackupDBReq, hctx wsHelpers.HandlerContext) (
 	hctx.Svcs.Log.Infof("PIXLISE Backup Requested, will be written to bucket: %v", hctx.Svcs.Config.DataBackupBucket)
 
 	// Run MongoDump, save to a local archive file
-	dump := wsHelpers.MakeMongoDumpInstance(hctx.Svcs.MongoDetails, hctx.Svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", hctx.Svcs.Config.EnvironmentName))
+	dump, err := wsHelpers.MakeMongoDumpInstance(hctx.Svcs.MongoDetails, hctx.Svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", hctx.Svcs.Config.EnvironmentName))
+
+	if err != nil {
+		hctx.Svcs.Log.Errorf("Failed to create dump instance: %v", err)
+		return nil, err
+	}
 
 	err = dump.Init()
 	if err != nil {
