@@ -5,8 +5,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/mongodb/mongo-tools/common/log"
-	"github.com/mongodb/mongo-tools/common/options"
 	"github.com/mongodb/mongo-tools/mongorestore"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/fileaccess"
@@ -15,41 +13,12 @@ import (
 )
 
 func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, restoreToDBName string, restoreFromDBName string) (*mongorestore.MongoRestore, error) {
-	var toolOptions *options.ToolOptions
-
-	ssl := options.SSL{
-		UseSSL:        true,
-		SSLCAFile:     "./global-bundle.pem",
-		SSLPEMKeyFile: "./global-bundle.pem",
+	toolOptions, err := makeMongoToolOptions(mongoDetails, logger, restoreToDBName)
+	if err != nil {
+		return nil, err
 	}
 
-	auth := options.Auth{
-		Username: mongoDetails.User,
-		Password: mongoDetails.Password,
-	}
-
-	connection := &options.Connection{
-		Host: mongoDetails.Host,
-	}
-
-	// Trim excess
-	protocolPrefix := "mongodb://"
-	connection.Host = strings.TrimPrefix(connection.Host, protocolPrefix)
-
-	logger.Infof("MongoRestore connecting to: %v, user %v...", connection.Host, auth.Username)
-
-	retryWrites := false
-
-	toolOptions = &options.ToolOptions{
-		RetryWrites: &retryWrites,
-		SSL:         &ssl,
-		Connection:  connection,
-		Auth:        &auth,
-		Verbosity:   &options.Verbosity{},
-		URI:         &options.URI{},
-	}
-
-	toolOptions.Namespace = &options.Namespace{DB: restoreToDBName}
+	logger.Infof("MongoRestore connecting to: %v, user %v, restore-to-db: %v, restore-from-db: %v...", toolOptions.URI.ConnectionString, toolOptions.Auth.Username, restoreToDBName, restoreFromDBName)
 
 	outputOptions := &mongorestore.OutputOptions{
 		NumParallelCollections: 1,
@@ -70,10 +39,6 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 		NSFrom:    []string{restoreFromDBName},
 		NSTo:      []string{restoreToDBName},
 	}
-
-	log.SetVerbosity(nil /*toolOptions.Verbosity*/)
-	lw := LogWriter{logger: logger}
-	log.SetWriter(lw)
 
 	return mongorestore.New(mongorestore.Options{
 		ToolOptions:     toolOptions,

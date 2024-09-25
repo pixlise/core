@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/mongodb/mongo-tools/mongodump"
+	"github.com/mongodb/mongo-tools/mongorestore"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/fileaccess"
@@ -39,7 +40,12 @@ func HandleBackupDBReq(req *protos.BackupDBReq, hctx wsHelpers.HandlerContext) (
 	hctx.Svcs.Log.Infof("PIXLISE Backup Requested, will be written to bucket: %v", hctx.Svcs.Config.DataBackupBucket)
 
 	// Run MongoDump, save to a local archive file
-	dump := wsHelpers.MakeMongoDumpInstance(hctx.Svcs.MongoDetails, hctx.Svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", hctx.Svcs.Config.EnvironmentName))
+	dump, err := wsHelpers.MakeMongoDumpInstance(hctx.Svcs.MongoDetails, hctx.Svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", hctx.Svcs.Config.EnvironmentName))
+
+	if err != nil {
+		hctx.Svcs.Log.Errorf("Failed to create dump instance: %v", err)
+		return nil, err
+	}
 
 	err = dump.Init()
 	if err != nil {
@@ -204,9 +210,11 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 		}
 
 		if errDBRestore == nil {
-			restore, errDBRestore := wsHelpers.MakeMongoRestoreInstance(svcs.MongoDetails, svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", svcs.Config.EnvironmentName), restoreFromDBName)
+			var restore *mongorestore.MongoRestore
+			restore, errDBRestore = wsHelpers.MakeMongoRestoreInstance(svcs.MongoDetails, svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", svcs.Config.EnvironmentName), restoreFromDBName)
 
 			if errDBRestore == nil {
+				svcs.Log.Infof("Mongo Restore starting...")
 				result := restore.Restore()
 				if result.Err != nil {
 					errDBRestore = result.Err
@@ -267,6 +275,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 	}
 
 	if err != nil {
+		svcs.Log.Errorf("%v", err)
 		return
 	}
 
