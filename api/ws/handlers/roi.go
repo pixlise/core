@@ -30,7 +30,7 @@ func HandleRegionOfInterestGetReq(req *protos.RegionOfInterestGetReq, hctx wsHel
 
 	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
 
-	if req.IsMIST {
+	if req.IsMIST && dbItem.IsMIST {
 		// Fetch from MIST table and add to dbItem
 		mistItem := &protos.MistROIItem{}
 		err = hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).FindOne(context.TODO(), bson.D{{Key: "_id", Value: req.Id}}).Decode(&mistItem)
@@ -238,6 +238,7 @@ func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, needMistEntry
 				IdDepth:             mistROIItem.IdDepth,
 				ClassificationTrail: mistROIItem.ClassificationTrail,
 				Formula:             mistROIItem.Formula,
+				PmcConfidenceMap:    mistROIItem.PmcConfidenceMap,
 			}
 			// Add an entry into the MIST ROI table
 			_, err := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName).InsertOne(context.TODO(), mistROIItem)
