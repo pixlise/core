@@ -65,7 +65,9 @@ func HandleExpressionGroupGetReq(req *protos.ExpressionGroupGetReq, hctx wsHelpe
 }
 
 func validateExpressionGroup(egroup *protos.ExpressionGroup) error {
-	if err := wsHelpers.CheckStringField(&egroup.Name, "Name", 1, 100); err != nil {
+	// NOTE: name allows for 200 chars. Original was 100. Raised due to temporary RGB mixes generating names that are too long. We intend
+	// to fix RGB mixes in a different way in future and should lower this back at that point
+	if err := wsHelpers.CheckStringField(&egroup.Name, "Name", 1, 200); err != nil {
 		return err
 	}
 	if err := wsHelpers.CheckStringField(&egroup.Description, "Description", 0, wsHelpers.DescriptionFieldMaxLength); err != nil {
