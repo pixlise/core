@@ -20,6 +20,9 @@ package piquant
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
@@ -78,4 +81,30 @@ func GetDetectorConfig(name string, db *mongo.Database) (*protos.DetectorConfig,
 	}
 
 	return &cfg, nil
+}
+
+func ReadFieldFromPIQUANTConfigMSA(msaContents string, fieldName string) (float32, error) {
+	piquantCfgLines := strings.Split(msaContents, "\n")
+	for _, line := range piquantCfgLines {
+		idx := strings.Index(line, fieldName)
+		if idx >= 0 {
+			line := line[idx+len(fieldName):]
+			idx = strings.Index(line, ":")
+
+			if idx >= 0 {
+				line = line[idx+1:]
+				line = strings.TrimLeft(line, " ")
+
+				// Now snip off anything after it
+				idx = strings.Index(line, " ")
+				if idx >= 0 {
+					line = line[0:idx]
+					val, err := strconv.ParseFloat(line, 32)
+					return float32(val), err
+				}
+			}
+		}
+	}
+
+	return 0, fmt.Errorf("Failed to find field %v", fieldName)
 }
