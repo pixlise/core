@@ -2,8 +2,10 @@ package wsHandler
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/piquant"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -21,9 +23,39 @@ func HandleDetectorConfigReq(req *protos.DetectorConfigReq, hctx wsHelpers.Handl
 		return nil, err
 	}
 
+	// Read versions
+	versions := piquant.GetPiquantConfigVersions(hctx.Svcs, req.Id)
+	if len(versions) <= 0 {
+		return nil, fmt.Errorf("DetectorConfig %v has no versions defined", req.Id)
+	}
+
+	latestVersion := versions[len(versions)-1]
+
+	// Read PIQUANT config file
+	piquantCfg, err := piquant.GetPIQUANTConfig(hctx.Svcs, req.Id, latestVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	// Retrieve elevAngle
+	cfgPath := filepaths.GetDetectorConfigPath(req.Id, latestVersion, piquantCfg.ConfigFile)
+	piquantCfgFile, err := hctx.Svcs.FS.ReadObject(hctx.Svcs.Config.ConfigBucket, cfgPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Find the value
+	piquantCfgFileStr := string(piquantCfgFile)
+	angle, err := piquant.ReadFieldFromPIQUANTConfigMSA(piquantCfgFileStr, "#ELEVANGLE")
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read ELEVANGLE from Piquant config file: %v", cfgPath)
+	}
+
+	cfg.ElevAngle = angle
+
 	return &protos.DetectorConfigResp{
 		Config:                cfg,
-		PiquantConfigVersions: piquant.GetPiquantConfigVersions(hctx.Svcs, req.Id),
+		PiquantConfigVersions: versions,
 	}, nil
 }
 

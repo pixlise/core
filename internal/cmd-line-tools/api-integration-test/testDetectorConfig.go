@@ -67,7 +67,8 @@ func testDetectorConfig(apiHost string) {
 					"xrfeVResolution": 230,
 					"windowElement": 14,
 					"tubeElement": 45,
-					"mmBeamRadius": 0.06
+					"mmBeamRadius": 0.06,
+					"elevAngle": 70
 				},
 				"piquantConfigVersions": [
 					"v5",
