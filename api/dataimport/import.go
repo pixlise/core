@@ -28,8 +28,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pixlise/core/v4/api/dataimport/datasetArchive"
 	"github.com/pixlise/core/v4/api/dataimport/internal/converterSelector"
-	"github.com/pixlise/core/v4/api/dataimport/internal/datasetArchive"
 	"github.com/pixlise/core/v4/api/dataimport/internal/output"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/core/fileaccess"
