@@ -175,11 +175,9 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 						widget.Id = formWidgetId(widget, screenConfig.Id, i)
 						if widget.Data != nil {
 							// We have widget data, but no ID, so write it to the database with a new ID
-							_, err := hctx.Svcs.MongoDB.Collection(dbCollections.WidgetDataName).UpdateOne(sessCtx, bson.M{
-								"_id": widget.Id,
-							}, bson.M{
-								"$set": widget.Data,
-							}, options.Update().SetUpsert(true))
+							widget.Data.Id = widget.Id
+							_, err := hctx.Svcs.MongoDB.Collection(dbCollections.WidgetDataName).InsertOne(sessCtx, widget.Data)
+
 							if err != nil {
 								return nil, err
 							}
