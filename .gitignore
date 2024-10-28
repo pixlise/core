@@ -17,6 +17,8 @@ auth0dummy-LOCAL-ONLY.go-
 /local-mongo/dbseed/json/
 /local-mongo/3repl/
 
+db-restore/
+
 local-api-config.json
 local-api-config-unittest.json
 
