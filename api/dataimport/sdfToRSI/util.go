@@ -81,6 +81,7 @@ func findToken(line string, prefix string, endDelim string) (string, bool) {
 
 // Split off the first token (space separated), returns token, rest-of-line, error if any
 func takeToken(line string, sep string) (string, string, bool) {
+	line = strings.TrimLeft(line, sep)
 	pos := strings.Index(line, sep)
 	if pos > 0 {
 		return line[0:pos], strings.TrimLeft(line[pos+len(sep):], " "), true
@@ -102,7 +103,8 @@ func readFloat(line string) (float32, string, error) {
 
 	f, err := strconv.ParseFloat(fStr, 32)
 	if err != nil {
-		return 0, remainder, fmt.Errorf("Failed to parse float: %v. Error: %v", fStr, err)
+		// Prints: Error: strconv.ParseFloat: parsing "2.L3": invalid syntax
+		return 0, remainder, fmt.Errorf("Error: %v", err)
 	}
 
 	return float32(f), remainder, nil

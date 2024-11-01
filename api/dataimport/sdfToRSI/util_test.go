@@ -103,29 +103,41 @@ func Example_readFloat() {
 	f, r, e := readFloat("-0.12470774    0.15369324    0.24655464        ")
 	fmt.Printf("%v|%v|%v\n", f, e, strings.TrimRight(r, " "))
 
-	f, r, e = readFloat(" -0.12470774    0.15369324    0.24655464        ")
+	f, r, e = readFloat("2.L3    0.15369324    0.24655464        ")
 	fmt.Printf("%v|%v|%v\n", f, e, r)
 
 	// Output:
 	// -0.12470774|<nil>|0.15369324    0.24655464
-	// 0|Failed to read token| -0.12470774    0.15369324    0.24655464
+	// 0|Error: strconv.ParseFloat: parsing "2.L3": invalid syntax|0.15369324    0.24655464
 }
 
 func Example_takeToken() {
-	tok, l, err := takeToken("gv - 0x00dd40 : 00000000 00000000 00000000 00000000 ::             0             0             0             0 ", " -")
-	fmt.Printf("%v|%v|%v\n", tok, l, err)
-	tok, l, err = takeToken("gv - 0x00dd40 : 00000000 00000000 00000000 00000000 ::             0             0             0             0 ", " ")
-	fmt.Printf("%v|%v|%v\n", tok, l, err)
+	tok, l, ok := takeToken("gv - 0x00dd40 : 00000000 00000000 00000000 00000000 ::             0             0             0             0 ", " -")
+	fmt.Printf("%v|%v|%v\n", tok, l, ok)
+	tok, l, ok = takeToken("gv - 0x00dd40 : 00000000 00000000 00000000 00000000 ::             0             0             0             0 ", " ")
+	fmt.Printf("%v|%v|%v\n", tok, l, ok)
 
-	tok, l, err = takeToken(" 0x00dd40 : 00000000 00000000 00000000 00000000", " ")
-	fmt.Printf("%v|%v|%v\n", tok, l, err)
+	tok, l, ok = takeToken(" 0x00dd40 : 00000000 00000000 00000000 00000000", " ")
+	fmt.Printf("%v|%v|%v\n", tok, l, ok)
 
-	tok, l, err = takeToken(strings.TrimLeft(" 0x00dd40 : 00000000 00000000 00000000 00000000", " "), " ")
-	fmt.Printf("%v|%v|%v\n", tok, l, err)
+	tok, l, ok = takeToken(strings.TrimLeft(" 0x00dd40 : 00000000 00000000 00000000 00000000", " "), " ")
+	fmt.Printf("%v|%v|%v\n", tok, l, ok)
+
+	tok, l, ok = takeToken("abc", "b")
+	fmt.Printf("%v|%v|%v\n", tok, l, ok)
+
+	tok, l, ok = takeToken("abc", "a")
+	fmt.Printf("%v|%v|%v\n", tok, l, ok)
+
+	tok, l, ok = takeToken("a", "a")
+	fmt.Printf("%v|%v|%v\n", tok, l, ok)
 
 	// Output:
 	// gv|0x00dd40 : 00000000 00000000 00000000 00000000 ::             0             0             0             0 |true
 	// gv|- 0x00dd40 : 00000000 00000000 00000000 00000000 ::             0             0             0             0 |true
-	// | 0x00dd40 : 00000000 00000000 00000000 00000000|false
 	// 0x00dd40|: 00000000 00000000 00000000 00000000|true
+	// 0x00dd40|: 00000000 00000000 00000000 00000000|true
+	// a|c|true
+	// bc||true
+	// ||false
 }
