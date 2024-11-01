@@ -6,12 +6,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dataimport"
 	dataimportModel "github.com/pixlise/core/v4/api/dataimport/models"
+	"github.com/pixlise/core/v4/api/dataimport/sdfToRSI"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
@@ -21,6 +26,7 @@ import (
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/indexcompression"
+	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/scan"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -396,130 +402,13 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 
 	// Validate contents - detector dependent
 	if req.Format == "pixl-em" {
-		// Expecting certain product dirs, but don't be too prescriptive
-		foundHousekeeping := false
-		foundBeamLocation := false
-		foundSpectra := false
-		for _, f := range zipReader.File {
-			if f.FileInfo().IsDir() {
-				if f.Name == "RFS" {
-					foundSpectra = true
-				} else if f.Name == "RXL" {
-					foundBeamLocation = true
-				} else if f.Name == "RSI" {
-					foundHousekeeping = true
-				}
-			} else {
-				if strings.HasPrefix(f.Name, "RFS") {
-					foundSpectra = true
-				} else if strings.HasPrefix(f.Name, "RXL") {
-					foundBeamLocation = true
-				} else if strings.HasPrefix(f.Name, "RSI") {
-					foundHousekeeping = true
-				}
-			}
-		}
-
-		if !foundHousekeeping {
-			return nil, fmt.Errorf("Zip file missing RSI sub-directory")
-		}
-		if !foundBeamLocation {
-			return nil, fmt.Errorf("Zip file missing RXL sub-directory")
-		}
-		if !foundSpectra {
-			return nil, fmt.Errorf("Zip file missing RFS sub-directory")
-		}
-
-		// NOTE: we just downloaded the zip from here, no point uploading it again!
-		/*
-			// Save the contents as a zip file in the uploads area
-			savePath := path.Join(s3PathStart, "data.zip")
-			err = fs.WriteObject(destBucket, savePath, zippedData)
-			if err != nil {
-				return nil, err
-			}
-			logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
-		*/
+		err = processEM(datasetID, zipReader, zippedData, destBucket, s3PathStart, fs, logger)
 	} else {
-		// Expecting flat zip of MSA files
-		count := 0
-		for _, f := range zipReader.File {
-			// If the zip path starts with __MACOSX, ignore it, it's garbage that a mac laptop has included...
-			//if strings.HasPrefix(f.Name, "__MACOSX") {
-			//	continue
-			//}
+		err = processBeadboard(req.Format, hctx.SessUser.User.Id, datasetID, zipReader, zippedData, destBucket, s3PathStart, fs, logger)
+	}
 
-			if f.FileInfo().IsDir() {
-				return nil, fmt.Errorf("Zip file must not contain sub-directories. Found: %v", f.Name)
-			}
-
-			if !strings.HasSuffix(f.Name, ".msa") {
-				return nil, fmt.Errorf("Zip file must only contain MSA files. Found: %v", f.Name)
-			}
-			count++
-		}
-
-		// Make sure it has at least one msa!
-		if count <= 0 {
-			return nil, errors.New("Zip file did not contain any MSA files")
-		}
-
-		// Save the contents as a zip file in the uploads area
-		savePath := path.Join(s3PathStart, "spectra.zip")
-		err = fs.WriteObject(destBucket, savePath, zippedData)
-		if err != nil {
-			return nil, err
-		}
-		logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
-
-		// Now save detector info
-		savePath = path.Join(s3PathStart, "import.json")
-		importerFile := dataimportModel.BreadboardImportParams{
-			MsaDir:           "spectra", // We now assume we will have a spectra.zip extracted into a spectra dir!
-			MsaBeamParams:    "10,0,10,0",
-			GenBulkMax:       true,
-			GenPMCs:          true,
-			ReadTypeOverride: "Normal",
-			DetectorConfig:   "Breadboard",
-			Group:            "JPL Breadboard",
-			TargetID:         "0",
-			SiteID:           0,
-
-			CreatorUserId: hctx.SessUser.User.Id,
-
-			// The rest we set to the dataset ID
-			DatasetID: datasetID,
-			//Site: datasetID,
-			//Target: datasetID,
-			Title: datasetID,
-			/*
-				BeamFile // Beam location CSV path
-				HousekeepingFile // Housekeeping CSV path
-				ContextImgDir // Dir to find context images in
-				PseudoIntensityCSVPath // Pseudointensity CSV path
-				IgnoreMSAFiles // MSA files to ignore
-				SingleDetectorMSAs // Expecting single detector (1 column) MSA files
-				DetectorADuplicate // Duplication of detector A to B, because test MSA only had 1 set of spectra
-				BulkQuantFile // Bulk quantification file (for tactical datasets)
-				XPerChanA // eV calibration eV/channel (detector A)
-				OffsetA // eV calibration eV start offset (detector A)
-				XPerChanB // eV calibration eV/channel (detector B)
-				OffsetB // eV calibration eV start offset (detector B)
-				ExcludeNormalDwellSpectra // Hack for tactical datasets - load all MSAs to gen bulk sum, but dont save them in output
-				SOL // Might as well be able to specify SOL. Needed for first spectrum dataset on SOL13
-			*/
-		}
-
-		if req.Format == "sbu-breadboard" {
-			importerFile.Group = "Stony Brook Breadboard"
-			importerFile.DetectorConfig = "StonyBrookBreadboard"
-		}
-
-		err = fs.WriteJSON(destBucket, savePath, importerFile)
-		if err != nil {
-			return nil, err
-		}
-		logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
+	if err != nil {
+		return nil, err
 	}
 
 	// Save detector info
@@ -538,7 +427,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	if err != nil {
 		return nil, err
 	}
-	logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
+	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
 
 	i := importUpdater{
 		hctx.Session,
@@ -570,6 +459,309 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	logger.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Job ID: %v", result, jobId)
 
 	return &protos.ScanUploadResp{JobId: jobId}, nil
+}
+
+func readFromZip(fileInZip *zip.File, outPath string) (string, error) {
+	outFullPath := filepath.Join(outPath, path.Base(fileInZip.Name))
+	outFile, err := os.OpenFile(outFullPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, fileInZip.Mode())
+	if err != nil {
+		return "", fmt.Errorf("Failed to create output file: %v. Error: %v", outFullPath, err)
+	}
+
+	rc, err := fileInZip.Open()
+	if err != nil {
+		return "", fmt.Errorf("Failed to read %v from zip. Error: %v", fileInZip.Name, err)
+	}
+
+	_, err = io.Copy(outFile, rc)
+	if err != nil {
+		return "", fmt.Errorf("Failed to write zip %v. Error: %v", outFullPath, err)
+	}
+
+	// Close the file without defer to close before next iteration of loop
+	outFile.Close()
+	rc.Close()
+	return outFullPath, nil
+}
+
+func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
+	// EM data comes not via the FM pipeline, but more direct from the instrument via SDF peeks output format.
+	// We search the zip dir tree for:
+	// - sdf_raw.txt
+	// - All *.msa fils
+	// - All *.jpg files (and based on file name decide if they're needed)
+	// SDF raw file may contain data from multiple scans, so we have to generate one scan per RTT found in sdf_raw.
+
+	// We also have to run the beam location tool ourselves - there isn't one coming from sdf_raw.txt
+	localTemp := filepath.Join(os.TempDir(), importId)
+	localMSAPath := filepath.Join(localTemp, "msa")
+	if err := os.MkdirAll(localMSAPath, 0644); err != nil {
+		return fmt.Errorf("Failed to create output MSA path: %v. Error: %v", localMSAPath, err)
+	}
+	localImagesPath := filepath.Join(localTemp, "images")
+	if err := os.MkdirAll(localImagesPath, 0644); err != nil {
+		return fmt.Errorf("Failed to create output images path: %v. Error: %v", localImagesPath, err)
+	}
+
+	msas := []string{}
+	images := []string{}
+	sdfLocalPath := ""
+	sdf_raw_zipPath := ""
+
+	for _, f := range zipReader.File {
+		if !f.FileInfo().IsDir() {
+			// Add to list of files we're interested in
+			if strings.HasSuffix(f.Name, "sdf_raw.txt") {
+				sdf_raw_zipPath = path.Base(f.Name)
+				if p, err := readFromZip(f, localTemp); err != nil {
+					return err
+				} else {
+					sdfLocalPath = p
+				}
+			} else if strings.HasSuffix(f.Name, ".msa") {
+				if p, err := readFromZip(f, localMSAPath); err != nil {
+					return err
+				} else {
+					msas = append(msas, p)
+				}
+			} else if strings.HasSuffix(f.Name, ".jpg") {
+				if p, err := readFromZip(f, localImagesPath); err != nil {
+					return err
+				} else {
+					images = append(images, p)
+				}
+			}
+		}
+	}
+
+	logger.Infof("Found sdf_raw: %v", sdf_raw_zipPath)
+	logger.Infof("Found %v images", len(images))
+	logger.Infof("Found %v histograms (MSA files)", len(msas))
+
+	// Reject any scans that don't have histograms from the EM
+	if len(msas) <= 0 {
+		return fmt.Errorf("No histograms found")
+	}
+	if len(sdf_raw_zipPath) <= 0 {
+		return fmt.Errorf("No sdf_raw.txt found")
+	}
+
+	// Create an RSI file from the sdf_raw file
+	rsis, err := sdfToRSI.ConvertSDFtoRSIs(sdfLocalPath, localTemp)
+
+	if err != nil {
+		return fmt.Errorf("Failed to scan %v for RSI creation: %v", sdfLocalPath, err)
+	}
+
+	logger.Infof("Generated RSI files:")
+	for _, rsi := range rsis {
+		logger.Infof("  %v", rsi)
+	}
+
+	for _, rsi := range rsis {
+		beamName := importId + "-beamloc.csv"
+		beamLocalPath := filepath.Join(localTemp, beamName)
+		rxlPath, logPath, err := createBeamLocation(rsi, beamLocalPath, logger)
+		if err != nil {
+			return fmt.Errorf("Beam location generation failed for RSI: %v. Error: %v", rsi, err)
+		}
+
+		// Read in the beam location file
+		rxl, err := os.ReadFile(rxlPath)
+		if err != nil {
+			return fmt.Errorf("Failed to read generated beam location file: %v. Error: %v", rxlPath, err)
+		}
+
+		// Upload
+		savePath := path.Join(s3PathStart, beamName)
+		err = fs.WriteObject(destBucket, savePath, rxl)
+		if err != nil {
+			return err
+		}
+
+		logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
+
+		// Also upload the log in case it's needed
+		logdata, err := os.ReadFile(logPath)
+		if err != nil {
+			return fmt.Errorf("Failed to read beam geometry tool log: %v. Error: %v", logPath, err)
+		}
+
+		// Upload
+		savePath = path.Join(s3PathStart, "beam-geom-log.txt")
+		err = fs.WriteObject(destBucket, savePath, logdata)
+		if err != nil {
+			return err
+		}
+
+		logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
+	}
+
+	// Upload the images
+	for _, image := range images {
+		p := filepath.Join(localImagesPath, image)
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return fmt.Errorf("Failed to read image: %v. Error: %v", p, err)
+		}
+
+		savePath := path.Join(s3PathStart, image)
+		err = fs.WriteObject(destBucket, savePath, b)
+		if err != nil {
+			return err
+		}
+		logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
+	}
+
+	// Zip up the MSA's
+	msaData, err := utils.ZipDirectory(localMSAPath)
+	if err != nil {
+		return fmt.Errorf("Failed to zip MSA files from: %v. Error: %v", localMSAPath, err)
+	}
+
+	// Upload the MSA zip
+	savePath := path.Join(s3PathStart, "spectra.zip")
+	err = fs.WriteObject(destBucket, savePath, msaData)
+	if err != nil {
+		return err
+	}
+	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
+
+	// Process each RSI file generated
+	return nil
+}
+
+func createBeamLocation(rsiPath string, outputBeamLocationPath string, logger logger.ILogger) (string, string, error) {
+	outSurfaceTop := filepath.Join(outputBeamLocationPath, "surface_top.txt")
+	outRXL := filepath.Join(outputBeamLocationPath, "beam_location_RXL.csv")
+	outLog := filepath.Join(outputBeamLocationPath, "log.txt")
+
+	logger.Infof("Generating beam location CSV from: %v", rsiPath)
+
+	bgtPath := "." + string(os.PathSeparator)
+
+	if _, err := os.Stat(bgtPath + "BGT"); err != nil {
+		// Try the path used in local testing
+		bgtPath = ".." + string(os.PathSeparator) + ".." + string(os.PathSeparator) + "beam-tool" + string(os.PathSeparator)
+
+		if _, err := os.Stat(bgtPath + "BGT"); err != nil {
+			// Try the path used in local testing
+			fmt.Println("PATH WONT BE FOUND")
+
+			d, _ := os.Getwd()
+			fmt.Println(d)
+
+			// Try get it backwards
+			bgtPath = filepath.Dir(filepath.Dir(d)) + string(os.PathSeparator)
+		}
+	}
+
+	cmd := exec.Command(bgtPath+"BGTa", bgtPath+"Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL, outLog)
+	if err := cmd.Run(); err != nil {
+		return "", "", fmt.Errorf("BGT tool error: %v", err)
+	}
+
+	/*
+		procAttr := new(os.ProcAttr)
+		procAttr.Files = []*os.File{nil, nil, nil}
+		if _, err := os.StartProcess(bgtPath+"BGT", []string{bgtPath + "Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL, outLog}, procAttr); err != nil {
+			return fmt.Errorf("BGT tool error: %v", err)
+		}
+	*/
+	// Make sure we have all output files
+	outputs := []string{outSurfaceTop, outRXL, outLog}
+	for _, out := range outputs {
+		if _, err := os.Stat(out); err != nil {
+			return "", "", fmt.Errorf("%v not found after BGT tool ran: %v", out, err)
+		}
+	}
+
+	return outRXL, outLog, nil
+}
+
+func processBeadboard(format string, creatorUserId string, datasetID string, zipReader *zip.Reader, zippedData []byte, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
+	var err error
+
+	// Expecting flat zip of MSA files
+	count := 0
+	for _, f := range zipReader.File {
+		// If the zip path starts with __MACOSX, ignore it, it's garbage that a mac laptop has included...
+		//if strings.HasPrefix(f.Name, "__MACOSX") {
+		//	continue
+		//}
+
+		if f.FileInfo().IsDir() {
+			return fmt.Errorf("Zip file must not contain sub-directories. Found: %v", f.Name)
+		}
+
+		if !strings.HasSuffix(f.Name, ".msa") {
+			return fmt.Errorf("Zip file must only contain MSA files. Found: %v", f.Name)
+		}
+		count++
+	}
+
+	// Make sure it has at least one msa!
+	if count <= 0 {
+		return errors.New("Zip file did not contain any MSA files")
+	}
+
+	// Save the contents as a zip file in the uploads area
+	savePath := path.Join(s3PathStart, "spectra.zip")
+	err = fs.WriteObject(destBucket, savePath, zippedData)
+	if err != nil {
+		return err
+	}
+	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
+
+	// Now save detector info
+	savePath = path.Join(s3PathStart, "import.json")
+	importerFile := dataimportModel.BreadboardImportParams{
+		MsaDir:           "spectra", // We now assume we will have a spectra.zip extracted into a spectra dir!
+		MsaBeamParams:    "10,0,10,0",
+		GenBulkMax:       true,
+		GenPMCs:          true,
+		ReadTypeOverride: "Normal",
+		DetectorConfig:   "Breadboard",
+		Group:            "JPL Breadboard",
+		TargetID:         "0",
+		SiteID:           0,
+
+		CreatorUserId: creatorUserId,
+
+		// The rest we set to the dataset ID
+		DatasetID: datasetID,
+		//Site: datasetID,
+		//Target: datasetID,
+		Title: datasetID,
+		/*
+			BeamFile // Beam location CSV path
+			HousekeepingFile // Housekeeping CSV path
+			ContextImgDir // Dir to find context images in
+			PseudoIntensityCSVPath // Pseudointensity CSV path
+			IgnoreMSAFiles // MSA files to ignore
+			SingleDetectorMSAs // Expecting single detector (1 column) MSA files
+			DetectorADuplicate // Duplication of detector A to B, because test MSA only had 1 set of spectra
+			BulkQuantFile // Bulk quantification file (for tactical datasets)
+			XPerChanA // eV calibration eV/channel (detector A)
+			OffsetA // eV calibration eV start offset (detector A)
+			XPerChanB // eV calibration eV/channel (detector B)
+			OffsetB // eV calibration eV start offset (detector B)
+			ExcludeNormalDwellSpectra // Hack for tactical datasets - load all MSAs to gen bulk sum, but dont save them in output
+			SOL // Might as well be able to specify SOL. Needed for first spectrum dataset on SOL13
+		*/
+	}
+
+	if format == "sbu-breadboard" {
+		importerFile.Group = "Stony Brook Breadboard"
+		importerFile.DetectorConfig = "StonyBrookBreadboard"
+	}
+
+	err = fs.WriteJSON(destBucket, savePath, importerFile)
+	if err != nil {
+		return err
+	}
+	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
+	return nil
 }
 
 type importUpdater struct {
