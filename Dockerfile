@@ -37,6 +37,7 @@ COPY beam-tool/Geometry_PIXL_EM_Landing_25Jan2021.csv ./
 #RUN ls -al
 
 RUN chmod +x ./pixlise-api-linux && wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
+RUN chmod +x ./BGT
 # Expose port 8080 to the outside world
 EXPOSE 8080
 
