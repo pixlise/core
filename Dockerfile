@@ -31,10 +31,10 @@ WORKDIR /root
 
 COPY --from=builder /build/_out/pixlise-api-linux ./
 #COPY ./_out/pixlise-api-linux ./
-RUN ls -al
+#RUN ls -al
 COPY beam-tool/BGT ./
 COPY beam-tool/Geometry_PIXL_EM_Landing_25Jan2021.csv ./
-RUN ls -al
+#RUN ls -al
 
 RUN chmod +x ./pixlise-api-linux && wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
 # Expose port 8080 to the outside world
