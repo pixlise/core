@@ -644,7 +644,7 @@ func createBeamLocation(rsiPath string, outputBeamLocationPath string, logger lo
 		// Try the path used in local testing
 		bgtPath = ".." + string(os.PathSeparator) + ".." + string(os.PathSeparator) + "beam-tool" + string(os.PathSeparator)
 
-		if _, err := os.Stat(bgtPath + "BGT"); err != nil {
+		/*if _, err := os.Stat(bgtPath + "BGT"); err != nil {
 			// Try the path used in local testing
 			fmt.Println("PATH WONT BE FOUND")
 
@@ -653,7 +653,7 @@ func createBeamLocation(rsiPath string, outputBeamLocationPath string, logger lo
 
 			// Try get it backwards
 			bgtPath = filepath.Dir(filepath.Dir(d)) + string(os.PathSeparator)
-		}
+		}*/
 	}
 
 	cmd := exec.Command(bgtPath+"BGT", bgtPath+"Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL, outLog)
