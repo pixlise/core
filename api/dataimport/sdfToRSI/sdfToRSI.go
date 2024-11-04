@@ -12,12 +12,13 @@ import (
 
 // Given an SDF path and an output path, this generates RSI files for each scan mentioned in the SDF.
 // Returns the file names generated and an error if any
-func ConvertSDFtoRSIs(sdfPath string, outPath string) ([]string, error) {
+func ConvertSDFtoRSIs(sdfPath string, outPath string) ([]string, []int64, error) {
 	files := []string{}
+	rtts := []int64{}
 
 	refs, err := scanSDF(sdfPath)
 	if err != nil {
-		return files, err
+		return files, rtts, err
 	}
 
 	// Loop through RTTs, output one RSI file per RTT
@@ -31,19 +32,20 @@ func ConvertSDFtoRSIs(sdfPath string, outPath string) ([]string, error) {
 			if ref.Value == "begin" {
 				startLine = ref.Line
 			} else if ref.Value != "end" {
-				return files, fmt.Errorf("End not found for science RTT: %v", rtt)
+				return files, rtts, fmt.Errorf("End not found for science RTT: %v", rtt)
 			} else {
 				name := fmt.Sprintf("RSI-%v.csv", rtt)
 				err = sdfToRSI(sdfPath, rtt, startLine, ref.Line, path.Join(outPath, name))
 				if err != nil {
-					return files, fmt.Errorf("Failed to generate %v: %v", name, err)
+					return files, rtts, fmt.Errorf("Failed to generate %v: %v", name, err)
 				}
 				files = append(files, name)
+				rtts = append(rtts, rtt)
 			}
 		}
 	}
 
-	return files, nil
+	return files, rtts, nil
 }
 
 func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath string) error {

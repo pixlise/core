@@ -550,7 +550,7 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 	}
 
 	// Create an RSI file from the sdf_raw file
-	rsis, err := sdfToRSI.ConvertSDFtoRSIs(sdfLocalPath, localTemp)
+	rsis, rtts, err := sdfToRSI.ConvertSDFtoRSIs(sdfLocalPath, localTemp)
 
 	if err != nil {
 		return fmt.Errorf("Failed to scan %v for RSI creation: %v", sdfLocalPath, err)
@@ -562,8 +562,8 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 	}
 
 	rsiUploaded := 0
-	for _, rsi := range rsis {
-		rxlPath, logPath, err := createBeamLocation(filepath.Join(localTemp, rsi), localTemp, logger)
+	for c, rsi := range rsis {
+		rxlPath, logPath, err := createBeamLocation(filepath.Join(localTemp, rsi), rtts[c], localTemp, logger)
 		if err != nil {
 			// Don't fail on errors for these - we may have run beam location tool on some incomplete scan, so failure isn't terrible!
 			logger.Errorf("Beam location generation failed for RSI: %v. Error: %v", rsi, err)
@@ -658,10 +658,10 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 	return nil
 }
 
-func createBeamLocation(rsiPath string, outputBeamLocationPath string, logger logger.ILogger) (string, string, error) {
-	outSurfaceTop := filepath.Join(outputBeamLocationPath, "surface_top.txt")
-	outRXL := filepath.Join(outputBeamLocationPath, "beam_location_RXL.csv")
-	outLog := filepath.Join(outputBeamLocationPath, "log.txt")
+func createBeamLocation(rsiPath string, rtt int64, outputBeamLocationPath string, logger logger.ILogger) (string, string, error) {
+	outSurfaceTop := filepath.Join(outputBeamLocationPath, fmt.Sprintf("surface_top-%v.txt", rtt))
+	outRXL := filepath.Join(outputBeamLocationPath, fmt.Sprintf("beam_location_RXL-%v.txt", rtt))
+	outLog := filepath.Join(outputBeamLocationPath, fmt.Sprintf("log-%v.txt", rtt))
 
 	logger.Infof("Generating beam location CSV from: %v", rsiPath)
 
@@ -710,6 +710,8 @@ func createBeamLocation(rsiPath string, outputBeamLocationPath string, logger lo
 		// logger.Infof("BGT stdout:\n" + out.String())
 		// logger.Errorf("BGT stderr:\n" + stderr.String())
 		return "", "", fmt.Errorf("BGT tool error: %v", err)
+	} else {
+		logger.Infof("CombinedOutput:\n%s", out)
 	}
 
 	/*
