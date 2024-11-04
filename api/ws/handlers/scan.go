@@ -563,46 +563,35 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 
 	rsiUploaded := 0
 	for c, rsi := range rsis {
-		rxlPath, logPath, err := createBeamLocation(filepath.Join(localTemp, rsi), rtts[c], localTemp, logger)
+		rxlPath, logPath, surfPath, err := createBeamLocation(filepath.Join(localTemp, rsi), rtts[c], localTemp, logger)
 		if err != nil {
 			// Don't fail on errors for these - we may have run beam location tool on some incomplete scan, so failure isn't terrible!
 			logger.Errorf("Beam location generation failed for RSI: %v. Error: %v", rsi, err)
 			continue
 		}
 
-		// Read in the beam location file
-		rxl, err := os.ReadFile(rxlPath)
-		if err != nil {
-			// Don't fail on errors for these - we may have run beam location tool on some incomplete scan, so failure isn't terrible!
-			logger.Errorf("Failed to read generated beam location file: %v. Error: %v", rxlPath, err)
-			continue
+		// Upoad the output files (beam locations, log and surface)
+		files := []string{rxlPath, logPath, surfPath}
+		name := []string{"beam location", "log", "surface"}
+		for _, file := range files {
+			data, err := os.ReadFile(file)
+			if err != nil {
+				// Don't fail on errors for these - we may have run beam location tool on some incomplete scan, so failure isn't terrible!
+				logger.Errorf("Failed to read generated %v file: %v. Error: %v", name, file, err)
+				continue
+			}
+
+			// Upload
+			savePath := path.Join(s3PathStart, path.Base(file))
+			err = fs.WriteObject(destBucket, savePath, data)
+			if err != nil {
+				// We do want to fail here, this isn't an error related to input data - if we have the file, we should be able to upload it
+				return err
+			}
+
+			logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
 		}
 
-		// Upload
-		savePath := path.Join(s3PathStart, "beam-locations.csv")
-		err = fs.WriteObject(destBucket, savePath, rxl)
-		if err != nil {
-			// We do want to fail here, this isn't an error related to input data - if we have the file, we should be able to upload it
-			return err
-		}
-
-		logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
-
-		// Also upload the log in case it's needed
-		logdata, err := os.ReadFile(logPath)
-		if err != nil {
-			logger.Errorf("Failed to read beam geometry tool log: %v. Error: %v", logPath, err)
-			continue
-		}
-
-		// Upload
-		savePath = path.Join(s3PathStart, "beam-geom-log.txt")
-		err = fs.WriteObject(destBucket, savePath, logdata)
-		if err != nil {
-			return err
-		}
-
-		logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
 		rsiUploaded++
 	}
 
@@ -658,7 +647,7 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 	return nil
 }
 
-func createBeamLocation(rsiPath string, rtt int64, outputBeamLocationPath string, logger logger.ILogger) (string, string, error) {
+func createBeamLocation(rsiPath string, rtt int64, outputBeamLocationPath string, logger logger.ILogger) (string, string, string, error) {
 	outSurfaceTop := filepath.Join(outputBeamLocationPath, fmt.Sprintf("surface_top-%v.txt", rtt))
 	outRXL := filepath.Join(outputBeamLocationPath, fmt.Sprintf("beam_location_RXL-%v.txt", rtt))
 	outLog := filepath.Join(outputBeamLocationPath, fmt.Sprintf("log-%v.txt", rtt))
@@ -684,10 +673,10 @@ func createBeamLocation(rsiPath string, rtt int64, outputBeamLocationPath string
 	}
 
 	if _, err := os.Stat(bgtPath + "Geometry_PIXL_EM_Landing_25Jan2021.csv"); err != nil {
-		return "", "", errors.New("Calibration file not found")
+		return "", "", "", errors.New("Calibration file not found")
 	}
 	if _, err := os.Stat(rsiPath); err != nil {
-		return "", "", errors.New("RSI not found")
+		return "", "", "", errors.New("RSI not found")
 	}
 
 	fmt.Printf("Executing: %v %v %v %v %v %v", bgtPath+"BGT", bgtPath+"Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL, outLog)
@@ -709,7 +698,7 @@ func createBeamLocation(rsiPath string, rtt int64, outputBeamLocationPath string
 		// Dump std out
 		// logger.Infof("BGT stdout:\n" + out.String())
 		// logger.Errorf("BGT stderr:\n" + stderr.String())
-		return "", "", fmt.Errorf("BGT tool error: %v", err)
+		return "", "", "", fmt.Errorf("BGT tool error: %v", err)
 	} else {
 		logger.Infof("CombinedOutput:\n%s", out)
 	}
@@ -725,11 +714,11 @@ func createBeamLocation(rsiPath string, rtt int64, outputBeamLocationPath string
 	outputs := []string{outSurfaceTop, outRXL, outLog}
 	for _, out := range outputs {
 		if _, err := os.Stat(out); err != nil {
-			return "", "", fmt.Errorf("%v not found after BGT tool ran: %v", out, err)
+			return "", "", "", fmt.Errorf("%v not found after BGT tool ran: %v", out, err)
 		}
 	}
 
-	return outRXL, outLog, nil
+	return outRXL, outLog, outSurfaceTop, nil
 }
 
 func processBeadboard(format string, creatorUserId string, datasetID string, zipReader *zip.Reader, zippedData []byte, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
