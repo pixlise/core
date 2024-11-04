@@ -420,6 +420,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	if err != nil {
 		return nil, err
 	}
+	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
 
 	// Now save creator info
 	savePath = path.Join(s3PathStart, "creator.json")
@@ -559,23 +560,26 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 	}
 
 	for _, rsi := range rsis {
-		beamName := importId + "-beamloc.csv"
-		beamLocalPath := filepath.Join(localTemp, beamName)
-		rxlPath, logPath, err := createBeamLocation(rsi, beamLocalPath, logger)
+		rxlPath, logPath, err := createBeamLocation(rsi, localTemp, logger)
 		if err != nil {
-			return fmt.Errorf("Beam location generation failed for RSI: %v. Error: %v", rsi, err)
+			// Don't fail on errors for these - we may have run beam location tool on some incomplete scan, so failure isn't terrible!
+			logger.Errorf("Beam location generation failed for RSI: %v. Error: %v", rsi, err)
+			continue
 		}
 
 		// Read in the beam location file
 		rxl, err := os.ReadFile(rxlPath)
 		if err != nil {
-			return fmt.Errorf("Failed to read generated beam location file: %v. Error: %v", rxlPath, err)
+			// Don't fail on errors for these - we may have run beam location tool on some incomplete scan, so failure isn't terrible!
+			logger.Errorf("Failed to read generated beam location file: %v. Error: %v", rxlPath, err)
+			continue
 		}
 
 		// Upload
-		savePath := path.Join(s3PathStart, beamName)
+		savePath := path.Join(s3PathStart, "beam-locations.csv")
 		err = fs.WriteObject(destBucket, savePath, rxl)
 		if err != nil {
+			// We do want to fail here, this isn't an error related to input data - if we have the file, we should be able to upload it
 			return err
 		}
 
@@ -584,7 +588,8 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 		// Also upload the log in case it's needed
 		logdata, err := os.ReadFile(logPath)
 		if err != nil {
-			return fmt.Errorf("Failed to read beam geometry tool log: %v. Error: %v", logPath, err)
+			logger.Errorf("Failed to read beam geometry tool log: %v. Error: %v", logPath, err)
+			continue
 		}
 
 		// Upload
