@@ -520,17 +520,19 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 					sdfLocalPath = p
 				}
 			} else if strings.HasSuffix(f.Name, ".msa") {
-				if p, err := readFromZip(f, localMSAPath); err != nil {
+				/*if p, err := readFromZip(f, localMSAPath); err != nil {
 					return err
 				} else {
 					msas = append(msas, path.Base(p))
-				}
+				}*/
+				msas = append(msas, f.Name)
 			} else if strings.HasSuffix(f.Name, ".jpg") {
-				if p, err := readFromZip(f, localImagesPath); err != nil {
+				/*if p, err := readFromZip(f, localImagesPath); err != nil {
 					return err
 				} else {
 					images = append(images, path.Base(p))
-				}
+				}*/
+				images = append(images, f.Name)
 			}
 		}
 	}
@@ -559,6 +561,7 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 		logger.Infof("  %v", rsi)
 	}
 
+	rsiUploaded := 0
 	for _, rsi := range rsis {
 		rxlPath, logPath, err := createBeamLocation(rsi, localTemp, logger)
 		if err != nil {
@@ -600,38 +603,57 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 		}
 
 		logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
+		rsiUploaded++
 	}
 
-	// Upload the images
-	for _, image := range images {
-		p := filepath.Join(localImagesPath, image)
-		b, err := os.ReadFile(p)
-		if err != nil {
-			return fmt.Errorf("Failed to read image: %v. Error: %v", p, err)
+	if rsiUploaded <= 0 {
+		return fmt.Errorf("Failed to generate beam locations from uploaded data")
+	}
+
+	// Write the list of images and MSAs we found
+	savePath := path.Join(s3PathStart, "images.txt")
+	err = fs.WriteObject(destBucket, savePath, []byte(strings.Join(images, "\n")))
+	if err != nil {
+		return fmt.Errorf("Failed to write image list: %v", err)
+	}
+
+	savePath = path.Join(s3PathStart, "msas.txt")
+	err = fs.WriteObject(destBucket, savePath, []byte(strings.Join(msas, "\n")))
+	if err != nil {
+		return fmt.Errorf("Failed to write MSA list: %v", err)
+	}
+
+	/*
+		// Upload the images
+		for _, image := range images {
+			p := filepath.Join(localImagesPath, image)
+			b, err := os.ReadFile(p)
+			if err != nil {
+				return fmt.Errorf("Failed to read image: %v. Error: %v", p, err)
+			}
+
+			savePath := path.Join(s3PathStart, image)
+			err = fs.WriteObject(destBucket, savePath, b)
+			if err != nil {
+				return err
+			}
+			logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
 		}
 
-		savePath := path.Join(s3PathStart, image)
-		err = fs.WriteObject(destBucket, savePath, b)
+		// Zip up the MSA's
+		msaData, err := utils.ZipDirectory(localMSAPath)
+		if err != nil {
+			return fmt.Errorf("Failed to zip MSA files from: %v. Error: %v", localMSAPath, err)
+		}
+
+		// Upload the MSA zip
+		savePath := path.Join(s3PathStart, "spectra.zip")
+		err = fs.WriteObject(destBucket, savePath, msaData)
 		if err != nil {
 			return err
 		}
 		logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
-	}
-
-	// Zip up the MSA's
-	msaData, err := utils.ZipDirectory(localMSAPath)
-	if err != nil {
-		return fmt.Errorf("Failed to zip MSA files from: %v. Error: %v", localMSAPath, err)
-	}
-
-	// Upload the MSA zip
-	savePath := path.Join(s3PathStart, "spectra.zip")
-	err = fs.WriteObject(destBucket, savePath, msaData)
-	if err != nil {
-		return err
-	}
-	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
-
+	*/
 	// Process each RSI file generated
 	return nil
 }
@@ -663,11 +685,19 @@ func createBeamLocation(rsiPath string, outputBeamLocationPath string, logger lo
 
 	cmd := exec.Command(bgtPath+"BGT", bgtPath+"Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL, outLog)
 
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+
+	// cmd.Stdout = os.Stdout
+	// cmd.Stderr = os.Stderr
 	cmd.Dir = bgtPath
 
 	if err := cmd.Run(); err != nil {
+		// Dump std out
+		logger.Infof("BGT stdout:\n" + out.String())
+		logger.Errorf("BGT stderr:\n" + stderr.String())
 		return "", "", fmt.Errorf("BGT tool error: %v", err)
 	}
 
