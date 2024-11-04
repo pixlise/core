@@ -523,13 +523,13 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 				if p, err := readFromZip(f, localMSAPath); err != nil {
 					return err
 				} else {
-					msas = append(msas, p)
+					msas = append(msas, path.Base(p))
 				}
 			} else if strings.HasSuffix(f.Name, ".jpg") {
 				if p, err := readFromZip(f, localImagesPath); err != nil {
 					return err
 				} else {
-					images = append(images, p)
+					images = append(images, path.Base(p))
 				}
 			}
 		}
