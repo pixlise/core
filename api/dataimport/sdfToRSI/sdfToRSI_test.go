@@ -40,9 +40,9 @@ func Example_ConvertSDFtoRSI() {
 		}
 	}
 
-	files, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", "./output/")
-	fmt.Printf("%v: %v\n", files, err)
+	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", "./output/")
+	fmt.Printf("%v, %v: %v\n", files, rtts, err)
 
 	// Output:
-	// [RSI-208536069.csv RSI-208601602.csv]: <nil>
+	// [RSI-208536069.csv RSI-208601602.csv], [208536069 208601602]: <nil>
 }
