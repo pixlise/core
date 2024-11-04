@@ -563,7 +563,7 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 
 	rsiUploaded := 0
 	for _, rsi := range rsis {
-		rxlPath, logPath, err := createBeamLocation(rsi, localTemp, logger)
+		rxlPath, logPath, err := createBeamLocation(filepath.Join(localTemp, rsi), localTemp, logger)
 		if err != nil {
 			// Don't fail on errors for these - we may have run beam location tool on some incomplete scan, so failure isn't terrible!
 			logger.Errorf("Beam location generation failed for RSI: %v. Error: %v", rsi, err)
@@ -682,6 +682,15 @@ func createBeamLocation(rsiPath string, outputBeamLocationPath string, logger lo
 			bgtPath = filepath.Dir(filepath.Dir(d)) + string(os.PathSeparator)
 		}*/
 	}
+
+	if _, err := os.Stat(bgtPath + "Geometry_PIXL_EM_Landing_25Jan2021.csv"); err != nil {
+		return "", "", errors.New("Calibration file not found")
+	}
+	if _, err := os.Stat(rsiPath); err != nil {
+		return "", "", errors.New("RSI not found")
+	}
+
+	fmt.Printf("Executing: %v %v %v %v %v %v", bgtPath+"BGT", bgtPath+"Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL, outLog)
 
 	cmd := exec.Command(bgtPath+"BGT", bgtPath+"Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL, outLog)
 
