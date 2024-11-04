@@ -685,19 +685,21 @@ func createBeamLocation(rsiPath string, outputBeamLocationPath string, logger lo
 
 	cmd := exec.Command(bgtPath+"BGT", bgtPath+"Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL, outLog)
 
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &stderr
+	// var out bytes.Buffer
+	// var stderr bytes.Buffer
+	// cmd.Stdout = &out
+	// cmd.Stderr = &stderr
 
 	// cmd.Stdout = os.Stdout
 	// cmd.Stderr = os.Stderr
 	cmd.Dir = bgtPath
 
-	if err := cmd.Run(); err != nil {
+	if out, err := cmd.CombinedOutput(); err != nil {
+		logger.Infof("CombinedOutput:\n%s", out)
+		//if err := cmd.Run(); err != nil {
 		// Dump std out
-		logger.Infof("BGT stdout:\n" + out.String())
-		logger.Errorf("BGT stderr:\n" + stderr.String())
+		// logger.Infof("BGT stdout:\n" + out.String())
+		// logger.Errorf("BGT stderr:\n" + stderr.String())
 		return "", "", fmt.Errorf("BGT tool error: %v", err)
 	}
 
