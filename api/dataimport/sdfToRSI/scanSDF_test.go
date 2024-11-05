@@ -3,6 +3,8 @@ package sdfToRSI
 import "fmt"
 
 func Example_scanSDF() {
+	ensureSDFRawExists()
+
 	refs, err := scanSDF("./test-data/BadPath.txt")
 	fmt.Printf("%v|%v\n", len(refs), err)
 
