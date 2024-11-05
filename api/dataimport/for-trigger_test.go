@@ -521,7 +521,9 @@ func Test_ImportForTrigger_Manual_SBU_NoAutoShare_FailForPipeline(t *testing.T) 
 	}
 }
 */
-// Import a breadboard dataset from manual uploaded zip file
+
+// DISABLED 5/Nov/2024, rewrite importer for EM to work differently so these tests are no longer relevant. Will have to write new tests for new functionality
+/*
 func Example_importForTrigger_Manual_EM() {
 	remoteFS, log, configBucket, datasetBucket, manualBucket, db := initTest("Manual_EM", "ManualEM_OK", specialUserIds.PIXLISESystemUserId, "PIXLFMGroupId")
 
@@ -587,7 +589,7 @@ func Example_importForTrigger_Manual_EM_WithBeamV2() {
 	// Logged "No auto-share destination found, so only importing user will be able to access this dataset.": false
 	// Logged "Saving as beam geometry tool version: 2": true
 	// <nil>|{"id":"048300551","title":"048300551","dataTypes":[{"dataType":"SD_IMAGE","count":4},{"dataType":"SD_XRF","count":242}],"instrument":"PIXL_EM","instrumentConfig":"PIXL-EM-E2E","meta":{"DriveId":"1712","RTT":"048300551","SCLK":"678031418","Site":"","SiteId":"4","Sol":"0125","Target":"","TargetId":"?"},"contentCounts":{"BulkSpectra":2,"DwellSpectra":0,"MaxSpectra":2,"NormalSpectra":242,"PseudoIntensities":121},"creatorUserId":"PIXLISEImport"}
-}
+}*/
 
 /* NOT TESTED YET, because it's not done yet!
 
