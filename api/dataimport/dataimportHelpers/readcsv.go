@@ -16,6 +16,7 @@ func ReadCSV(filePath string, headerIdx int, sep rune, jobLog logger.ILogger) ([
 		return nil, err
 	}
 
+	seekPos := int64(0)
 	if headerIdx > 0 {
 		n := 0
 		for n < headerIdx {
@@ -24,7 +25,8 @@ func ReadCSV(filePath string, headerIdx int, sep rune, jobLog logger.ILogger) ([
 			if err != nil {
 				return nil, err
 			}
-			_, err = csvFile.Seek(int64(len(row1)), io.SeekStart)
+			seekPos += int64(len(row1))
+			_, err = csvFile.Seek(seekPos, io.SeekStart)
 			if err != nil {
 				return nil, err
 			}

@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package jplbreadboard
+package importerutils
 
 import (
 	"fmt"
@@ -24,9 +24,9 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 )
 
-func Example_getContextImagesPerPMCFromListing() {
+func Example_GetContextImagesPerPMCFromListing() {
 	listing := []string{"../datasets/FM_5x5/P13177_5x5_190602/hk.txt", "../datasets/FM_5x5/P13177_5x5_190602/0612747347_000001C5_005048.jpg", "../datasets/FM_5x5/P13177_5x5_190602/0612756313_000001C5_005651.jpg", "../datasets/FM_5x5/P13177_5x5_190602/.DS_Store", "../datasets/FM_5x5/P13177_5x5_190602/0612744373_000001C5_004847.jpg", "../datasets/FM_5x5/P13177_5x5_190602/0612735422_000001C5_004244.jpg", "../datasets/FM_5x5/P13177_5x5_190602/0612758681_000001C5_005807.jpg", "../datasets/FM_5x5/P13177_5x5_190602/0612741400_000001C5_004646.jpg", "../datasets/FM_5x5/P13177_5x5_190602/hk_data.csv", "../datasets/FM_5x5/P13177_5x5_190602/0612732390_000001C5_004042.jpg", "../datasets/FM_5x5/P13177_5x5_190602/0612750353_000001C5_005249.jpg", "../datasets/FM_5x5/P13177_5x5_190602/0612738397_000001C5_004445.jpg", "../datasets/FM_5x5/P13177_5x5_190602/0612753334_000001C5_005450.jpg"}
-	results := getContextImagesPerPMCFromListing(listing, &logger.StdOutLogger{})
+	results := GetContextImagesPerPMCFromListing(listing, &logger.StdOutLogger{})
 
 	fmt.Printf("length: %d\n", len(results))
 
