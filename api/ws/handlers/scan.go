@@ -648,8 +648,8 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 }
 
 func createBeamLocation(rsiPath string, rtt int64, outputBeamLocationPath string, logger logger.ILogger) (string, string, string, error) {
-	outSurfaceTop := filepath.Join(outputBeamLocationPath, fmt.Sprintf("surface_top-%v.txt", rtt))
-	outRXL := filepath.Join(outputBeamLocationPath, fmt.Sprintf("beam_location_RXL-%v.txt", rtt))
+	outSurfaceTop := filepath.Join(outputBeamLocationPath, fmt.Sprintf("surfaceTop-%v.txt", rtt))
+	outRXL := filepath.Join(outputBeamLocationPath, fmt.Sprintf("beamLocation-%v.csv", rtt))
 	outLog := filepath.Join(outputBeamLocationPath, fmt.Sprintf("log-%v.txt", rtt))
 
 	logger.Infof("Generating beam location CSV from: %v", rsiPath)

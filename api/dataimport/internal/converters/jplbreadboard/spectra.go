@@ -122,7 +122,7 @@ func getMSASeqNo(path string) (int64, error) {
 	return int64(seqNo), nil
 }
 
-func makeSpectraLookup(inputpath string, spectraFiles []string, singleDetectorMSAs bool, genPMCs bool, readTypeOverride string, detectorADuplicate bool, jobLog logger.ILogger) (dataConvertModels.DetectorSampleByPMC, error) {
+func MakeSpectraLookup(inputpath string, spectraFiles []string, singleDetectorMSAs bool, genPMCs bool, readTypeOverride string, detectorADuplicate bool, jobLog logger.ILogger) (dataConvertModels.DetectorSampleByPMC, error) {
 	spectraLookup := make(dataConvertModels.DetectorSampleByPMC)
 
 	reportInterval := len(spectraFiles) / 10
@@ -168,7 +168,7 @@ func makeSpectraLookup(inputpath string, spectraFiles []string, singleDetectorMS
 				return spectraLookup, fmt.Errorf("Unexpected SOURCEFILE metadata already defined in %v", path)
 			}
 
-			s.Meta["SOURCEFILE"] = dataConvertModels.StringMetaValue(f)
+			s.Meta["SOURCEFILE"] = dataConvertModels.StringMetaValue(filepath.Base(f))
 
 			// Use the override if it's provided
 			rt := readTypeOverride

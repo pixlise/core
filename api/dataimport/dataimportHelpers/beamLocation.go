@@ -18,8 +18,10 @@
 package dataImportHelpers
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -29,14 +31,35 @@ import (
 )
 
 // ReadBeamLocationsFile - Reads beam location CSV. Old style (expectMultipleIJ=false) or new multi-image IJ coord CSVs.
-func ReadBeamLocationsFile(path string, expectMultipleIJ bool, mainImagePMC int32, ignoreColumns []string, jobLog logger.ILogger) (dataConvertModels.BeamLocationByPMC, error) {
-	rowsToSkip := 0
-	if !expectMultipleIJ {
-		// If we're loading the old style test data, that had an extra header that we skip
-		rowsToSkip = 1
+func ReadBeamLocationsFile(beamPath string, expectMultipleIJ bool, mainImagePMC int32, ignoreColumns []string, jobLog logger.ILogger) (dataConvertModels.BeamLocationByPMC, error) {
+	// Find the first row that has the start of data we're interested in!
+	file, err := os.Open(beamPath)
+	if err != nil {
+		return nil, err
 	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	lineNo := 0
+	for scanner.Scan() {
+		line := scanner.Text()
+		lineNo++
+
+		if strings.HasPrefix(line, "PMC,") {
+			break
+		}
+
+		if lineNo > 4 {
+			return nil, fmt.Errorf("Failed to find header row of beam location data")
+		}
+	}
+
 	// read CSV
-	rows, err := ReadCSV(path, rowsToSkip, ',', jobLog)
+	if lineNo > 0 {
+		lineNo--
+	}
+	rows, err := ReadCSV(beamPath, lineNo, ',', jobLog)
 	if err != nil {
 		return nil, err
 	}
