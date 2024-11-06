@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-FROM golang:1.21-alpine
+FROM golang:1.21-alpine AS builder
 ARG VERSION
 ARG GITHUB_SHA
 
@@ -29,10 +29,15 @@ RUN apk --no-cache add ca-certificates libc6-compat wget
 WORKDIR /root
 # Copy the Pre-built binary file from the previous stage
 
-COPY --from=0 /build/_out/pixlise-api-linux ./
+COPY --from=builder /build/_out/pixlise-api-linux ./
 #COPY ./_out/pixlise-api-linux ./
+#RUN ls -al
+COPY beam-tool/BGT ./
+COPY beam-tool/Geometry_PIXL_EM_Landing_25Jan2021.csv ./
+#RUN ls -al
 
 RUN chmod +x ./pixlise-api-linux && wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
+RUN chmod +x ./BGT
 # Expose port 8080 to the outside world
 EXPOSE 8080
 

@@ -76,7 +76,7 @@ func PutScanData(params apiRouter.ApiHandlerGenericParams) error {
 		return err
 	}
 
-	params.Svcs.Log.Infof("PutScan: Read zip %v for scan %v uploaded: %v bytes", fileName, scanId, len(zippedData))
+	params.Svcs.Log.Infof("PutScanData: Read zip %v for scan %v uploaded: %v bytes", fileName, scanId, len(zippedData))
 	savePath := path.Join(s3PathStart, fileName)
 
 	err = params.Svcs.FS.WriteObject(destBucket, savePath, zippedData)
@@ -84,6 +84,6 @@ func PutScanData(params apiRouter.ApiHandlerGenericParams) error {
 		return err
 	}
 
-	params.Svcs.Log.Infof("PutScan: Wrote: s3://%v/%v", destBucket, savePath)
+	params.Svcs.Log.Infof("PutScanData: Wrote: s3://%v/%v", destBucket, savePath)
 	return nil
 }
