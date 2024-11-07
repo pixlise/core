@@ -22,7 +22,10 @@
 // available from
 package fileaccess
 
-import "strings"
+import (
+	"io"
+	"strings"
+)
 
 // Generic interface for reading/writing files asynchronously
 // We could have used OS level things but we want to be able to
@@ -44,6 +47,11 @@ type FileAccess interface {
 	ReadObject(bucket string, path string) ([]byte, error)
 	// Writes a file as bytes
 	WriteObject(bucket string, path string, data []byte) error
+
+	// Reads a file as bytes (returning a stream)
+	ReadObjectStream(bucket string, path string) (io.ReadCloser, error)
+	// Writes a file from stream
+	WriteObjectStream(bucket string, path string, stream io.Reader) error
 
 	// Reads a file as JSON and decodes it into itemsPtr
 	ReadJSON(bucket string, s3Path string, itemsPtr interface{}, emptyIfNotFound bool) error
