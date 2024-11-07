@@ -104,14 +104,20 @@ func main() {
 
 	l := &logger.StdOutLogger{}
 
+	skip := []string{}
 	for _, scan := range scans {
+		if utils.ItemInSlice(scan.Id, skip) {
+			l.Infof("Skipping scan id: %v", scan.Id)
+			continue
+		}
+
 		if scan.Instrument == protos.ScanInstrument_PIXL_FM {
 			l.Infof("")
 			l.Infof("============================================================")
 			l.Infof(">>> Downloading archives for scan: %v (%v)", scan.Title, scan.Id)
 
 			archive := datasetArchive.NewDatasetArchiveDownloader(remoteFS, &localFS, l, sourceDataBucket, "" /* not needed */)
-			_ /*localDownloadPath*/, localUnzippedPath, zipCount, err := archive.DownloadFromDatasetArchive(scan.Id, workingDir)
+			_ /*localDownloadPath*/, localUnzippedPath, zipCount, lastZipName, err := archive.DownloadFromDatasetArchive(scan.Id, workingDir)
 			if err != nil {
 				log.Fatalf("Failed to download archive for scan %v: %v", scan.Id, err)
 			}
@@ -121,11 +127,14 @@ func main() {
 				continue
 			}
 
-			l.Infof("Zipping optimised archive...")
+			l.Infof("Zipping optimised archive %v...", lastZipName)
 
 			// Now we zip up everything that's there
-			tm := time.Now()
-			zipName := fmt.Sprintf("%v-%02d-%02d-%v-%02d-%02d-%02d.zip", scan.Id, tm.Day(), int(tm.Month()), tm.Year(), tm.Hour(), tm.Minute(), tm.Second())
+			//tm := time.Now()
+			//zipName := fmt.Sprintf("%v-%02d-%02d-%v-%02d-%02d-%02d.zip", scan.Id, tm.Day(), int(tm.Month()), tm.Year(), tm.Hour(), tm.Minute(), tm.Second())
+			// Zip with the latest zip name so if newer downlinks happened since we dont invent a time newer than them. This is to run on prod v3 but v4 has
+			// been collecting its own archives for months. This also makes sense if we run against prodv4 in future.
+			zipName := lastZipName
 			zipPath := filepath.Join(workingDir, zipName)
 			zipFile, err := os.Create(zipPath)
 			if err != nil {

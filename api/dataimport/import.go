@@ -81,7 +81,7 @@ func ImportDataset(
 
 	// Firstly, we download from the archive
 	archive := datasetArchive.NewDatasetArchiveDownloader(remoteFS, localFS, log, datasetBucket, manualUploadBucket)
-	localDownloadPath, localUnzippedPath, zipCount, err := archive.DownloadFromDatasetArchive(datasetID, workingDir)
+	localDownloadPath, localUnzippedPath, zipCount, lastZipName, err := archive.DownloadFromDatasetArchive(datasetID, workingDir)
 	if err != nil {
 		return workingDir, savedSummary, "", false, err
 	}
