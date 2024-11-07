@@ -9,6 +9,18 @@ import (
 )
 
 func Example_ConvertSDFtoRSI() {
+	ensureSDFRawExists()
+
+	fmt.Printf("Mkdir output: %v\n", os.MkdirAll("./output", 0644))
+	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", "./output/")
+	fmt.Printf("%v, %v: %v\n", files, rtts, err)
+
+	// Output:
+	// Mkdir output: <nil>
+	// [RSI-208536069.csv RSI-208601602.csv], [208536069 208601602]: <nil>
+}
+
+func ensureSDFRawExists() {
 	// If it's not here, unzip it
 	_, err := os.Stat("./test-data/sdf_raw.txt")
 	if err != nil {
@@ -39,10 +51,4 @@ func Example_ConvertSDFtoRSI() {
 			}
 		}
 	}
-
-	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", "./output/")
-	fmt.Printf("%v, %v: %v\n", files, rtts, err)
-
-	// Output:
-	// [RSI-208536069.csv RSI-208601602.csv], [208536069 208601602]: <nil>
 }
