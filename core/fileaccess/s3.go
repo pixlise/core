@@ -121,6 +121,32 @@ func (s3Access S3Access) WriteObject(bucket string, path string, data []byte) er
 	return err
 }
 
+func (s3Access S3Access) ReadObjectStream(bucket string, path string) (io.ReadCloser, error) {
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(path),
+	}
+
+	result, err := s3Access.s3Api.GetObject(input)
+	if err != nil {
+		return nil, err
+	}
+
+	return result.Body, nil
+}
+
+func (s3Access S3Access) WriteObjectStream(bucket string, path string, stream io.Reader) error {
+	/*input := &s3.PutObjectInput{
+		Body:   stream,
+		Bucket: aws.String(bucket),
+		Key:    aws.String(path),
+	}
+
+	_, err := s3Access.s3Api.PutObject(input)
+	return err*/
+	return fmt.Errorf("Not implemented")
+}
+
 func (s3Access S3Access) ReadJSON(bucket string, s3Path string, itemsPtr interface{}, emptyIfNotFound bool) error {
 	fileData, err := s3Access.ReadObject(bucket, s3Path)
 

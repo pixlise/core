@@ -133,6 +133,36 @@ func (fs *FSAccess) WriteObject(rootPath string, path string, data []byte) error
 	return os.WriteFile(fullPath, data, 0777)
 }
 
+func (fs *FSAccess) ReadObjectStream(rootPath string, path string) (io.ReadCloser, error) {
+	fullPath := fs.filePath(rootPath, path)
+	f, err := os.Open(fullPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return f, nil
+}
+
+func (fs *FSAccess) WriteObjectStream(rootPath string, path string, stream io.Reader) error {
+	fullPath := fs.filePath(rootPath, path)
+
+	// Ensure any subdirs in between are created
+	createPath := filepath.Dir(fullPath)
+	err := os.MkdirAll(createPath, 0777)
+	if err != nil {
+		return err
+	}
+
+	outFile, err := os.Create(fullPath)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+
+	_, err = io.Copy(outFile, stream)
+	return err
+}
+
 func (fs *FSAccess) ReadJSON(rootPath string, s3Path string, itemsPtr interface{}, emptyIfNotFound bool) error {
 	fileData, err := fs.ReadObject(rootPath, s3Path)
 

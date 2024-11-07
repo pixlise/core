@@ -79,9 +79,9 @@ func DownloadArchive(svcs *services.APIServices) (string, error) {
 			svcs.Log.Errorf(" Failed to get free disk bytes: %v", err)
 		}
 
-		svcs.Log.Infof(" Downloading: %v... free space: %v bytes", dbFile, freeBytes)
+		svcs.Log.Infof(" Downloading: %v... (%v bytes free)", dbFile, freeBytes)
 
-		dbFileBytes, err := svcs.FS.ReadObject(svcs.Config.DataBackupBucket, dbFile)
+		dbStream, err := svcs.FS.ReadObjectStream(svcs.Config.DataBackupBucket, dbFile)
 		if err != nil {
 			return "", fmt.Errorf("Failed to download remote DB dump file: %v. Error: %v", dbFile, err)
 		}
@@ -89,7 +89,7 @@ func DownloadArchive(svcs *services.APIServices) (string, error) {
 		// Save locally
 		// Remove remote root dir
 		dbFilePathLocal := strings.TrimPrefix(dbFile, dataBackupS3Path+"/")
-		err = localFS.WriteObject(dataBackupLocalPath, dbFilePathLocal, dbFileBytes)
+		err = localFS.WriteObjectStream(dataBackupLocalPath, dbFilePathLocal, dbStream)
 
 		if err != nil {
 			return "", fmt.Errorf("Failed to write local DB dump file: %v. Error: %v", dbFilePathLocal, err)
