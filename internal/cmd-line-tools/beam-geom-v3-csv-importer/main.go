@@ -172,6 +172,11 @@ func main() {
 		log.Fatalf("Failed to decode experiment: %v", err)
 	}
 
+	fmt.Println("Images found:")
+	for imgPMC, imgName := range pmcImageLookup {
+		fmt.Printf(" %v -> %v\n", imgPMC, imgName)
+	}
+
 	// Now construct and save beam location entry. NOTE: it should already exist!
 	coll = destDB.Collection(dbCollections.ImageBeamLocationsName)
 	for imgPMC, imgName := range pmcImageLookup {
@@ -187,9 +192,28 @@ func main() {
 			log.Fatalf("Failed to read beam locations for image: %v, scan: %v. Error: %v", imgName, scanItem.Id, err)
 		}
 
-		if len(imageBeamLocations.LocationPerScan) != 1 || imageBeamLocations.LocationPerScan[0].ScanId != scanId || imageBeamLocations.LocationPerScan[0].BeamVersion != 2 {
-			log.Fatalf("Read beams for image: %v, got unexpected entries, expected one entry for scan %v, v2", imgName, scanId)
+		if imageBeamLocations.LocationPerScan[0].ScanId != scanId {
+			log.Fatalf("Read beams for image: %v, got unexpected scan %v", imgName, imageBeamLocations.LocationPerScan[0].ScanId)
 		}
+
+		if len(imageBeamLocations.LocationPerScan) < 1 || len(imageBeamLocations.LocationPerScan) > 2 {
+			log.Fatalf("Read beams for image: %v, got unexpected entries, expected 1-2 entries for scan %v, got %v", imgName, scanId, len(imageBeamLocations.LocationPerScan))
+		}
+		if len(imageBeamLocations.LocationPerScan) == 1 {
+			if imageBeamLocations.LocationPerScan[0].BeamVersion != 2 {
+				log.Fatalf("Read beams for image: %v, got unexpected entries, expected one entry for scan %v, v2, got v%v", imgName, scanId, imageBeamLocations.LocationPerScan[0].BeamVersion)
+			}
+		} else {
+			// 2 entries, make sure 1 is v1 and 1 is v2
+			if imageBeamLocations.LocationPerScan[0].BeamVersion == imageBeamLocations.LocationPerScan[1].BeamVersion ||
+				imageBeamLocations.LocationPerScan[0].BeamVersion != 1 && imageBeamLocations.LocationPerScan[0].BeamVersion != 2 ||
+				imageBeamLocations.LocationPerScan[1].BeamVersion != 1 && imageBeamLocations.LocationPerScan[1].BeamVersion != 2 {
+				log.Fatalf("Read beams for image: %v, got unexpected entries, expected 2 entries, v1/2 each for scan %v, got versions: %v,%v", imgName, scanId, imageBeamLocations.LocationPerScan[0].BeamVersion, imageBeamLocations.LocationPerScan[1].BeamVersion)
+
+			}
+		}
+
+		preStoreLocations := len(imageBeamLocations.LocationPerScan)
 
 		// Now insert this new location set
 		ijs := []*protos.Coordinate2D{}
@@ -243,8 +267,8 @@ func main() {
 			log.Fatalf("Failed to read beam locations to confirm writing beams for image: %v, scan: %v. Error: %v", imgName, scanId, err)
 		}
 
-		if len(imageBeamLocations.LocationPerScan) != 2 {
-			log.Fatalf("Expected 2 stored beam locations for image: %v, scan: %v", imgName, scanId)
+		if len(imageBeamLocations.LocationPerScan) != preStoreLocations+1 {
+			log.Fatalf("Expected %v stored beam locations for image: %v, scan: %v. Got %v", preStoreLocations, imgName, scanId, len(imageBeamLocations.LocationPerScan))
 		}
 
 		found3 := false

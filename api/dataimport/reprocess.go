@@ -27,7 +27,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sns"
-	"github.com/pixlise/core/v4/api/dataimport/internal/datasetArchive"
+	"github.com/pixlise/core/v4/api/dataimport/datasetArchive"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/utils"

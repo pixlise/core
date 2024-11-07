@@ -28,8 +28,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pixlise/core/v4/api/dataimport/datasetArchive"
 	"github.com/pixlise/core/v4/api/dataimport/internal/converterSelector"
-	"github.com/pixlise/core/v4/api/dataimport/internal/datasetArchive"
 	"github.com/pixlise/core/v4/api/dataimport/internal/output"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/core/fileaccess"
@@ -81,7 +81,7 @@ func ImportDataset(
 
 	// Firstly, we download from the archive
 	archive := datasetArchive.NewDatasetArchiveDownloader(remoteFS, localFS, log, datasetBucket, manualUploadBucket)
-	localDownloadPath, localUnzippedPath, zipCount, err := archive.DownloadFromDatasetArchive(datasetID, workingDir)
+	localDownloadPath, localUnzippedPath, zipCount, lastZipName, err := archive.DownloadFromDatasetArchive(datasetID, workingDir)
 	if err != nil {
 		return workingDir, savedSummary, "", false, err
 	}

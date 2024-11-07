@@ -25,7 +25,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pixlise/core/v4/api/dataimport/internal/datasetArchive"
+	"github.com/pixlise/core/v4/api/dataimport/datasetArchive"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/api/specialUserIds"
