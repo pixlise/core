@@ -122,7 +122,10 @@ func main() {
 				log.Fatalf("Failed to download archive for scan %v: %v", scan.Id, err)
 			}
 
-			if zipCount == 0 {
+			if zipCount == 1 {
+				l.Infof("Only one zip was loaded, nothing to optimise...")
+			}
+			if zipCount <= 1 {
 				// Stuff already logged... l.Infof("No archive zip files found for scan %v\n", scan.Id)
 				continue
 			}
