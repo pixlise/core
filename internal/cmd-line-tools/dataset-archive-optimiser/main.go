@@ -159,27 +159,33 @@ func optimise(rtts map[string]string, remoteFS fileaccess.FileAccess, iLog logge
 		fatalError(err)
 	}
 
+	iLog.Infof("Found %v scans to optimise archive for:", len(rttToArchiveFiles))
+	for rtt, files := range rttToArchiveFiles {
+		iLog.Infof(" %v: %v zip files", rtt, len(files))
+	}
+
 	// Handle each file
 	for rtt, _ := range rttToArchiveFiles {
 		localArchivePath, zipFilesOptimised, err := makeOptimisedArchive(rtt, rtts[rtt], remoteFS, workingDir, iLog)
 		if err != nil {
-			fmt.Printf("Error creating optimised archive for %v: %v\n", rtt, err)
+			iLog.Errorf("Error creating optimised archive for %v: %v\n", rtt, err)
 		} else {
 			// Upload the optimised file (should be overwriting the latest one)
 			err = upload(localArchivePath, "Archive", remoteFS, iLog)
 			if err != nil {
-				fmt.Printf("FAILED TO UPLOAD archive file %v: %v\n", localArchivePath, err)
+				iLog.Errorf("FAILED TO UPLOAD archive file %v: %v\n", localArchivePath, err)
 			}
 
 			// Delete the zips that we are replacing
 			for _, zipFile := range zipFilesOptimised {
-
 				// Don't delete what we just uploaded!
 				if !strings.HasSuffix(localArchivePath, zipFile) {
 					zipPath := path.Join("Archive", zipFile)
+
+					iLog.Infof("Deleting from S3: %v", zip.ErrInsecurePath)
 					err = remoteFS.DeleteObject(dataBucket, zipPath)
 					if err != nil {
-						fmt.Printf("Error deleting archive file %v: %v\n", zipPath, err)
+						iLog.Errorf("Error deleting archive file %v: %v\n", zipPath, err)
 					}
 				}
 			}

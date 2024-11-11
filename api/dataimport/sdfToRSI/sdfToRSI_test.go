@@ -31,7 +31,7 @@ func ensureSDFRawExists() {
 
 		for _, f := range archive.File {
 			if len(archive.File) != 1 || f.Name != "sdf_raw.txt" {
-				log.Fatalln("Expected zdf_raw.zip to only contain one file: sdf_raw.txt")
+				log.Fatalln("Expected sdf_raw.zip to only contain one file: sdf_raw.txt")
 			}
 
 			dstFile, err := os.OpenFile("./test-data/sdf_raw.txt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
@@ -51,4 +51,13 @@ func ensureSDFRawExists() {
 			}
 		}
 	}
+
+	err = os.MkdirAll("./output", 0644)
+	fmt.Printf("mkdir worked: %v\n", err == nil)
+	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", "./output/")
+	fmt.Printf("%v, %v: %v\n", files, rtts, err)
+
+	// Output:
+	// mkdir worked: true
+	// [RSI-208536069.csv RSI-208601602.csv], [208536069 208601602]: <nil>
 }

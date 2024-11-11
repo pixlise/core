@@ -6,7 +6,7 @@ func Example_scanSDF() {
 	ensureSDFRawExists()
 
 	refs, err := scanSDF("./test-data/BadPath.txt")
-	fmt.Printf("%v|%v\n", len(refs), err)
+	fmt.Printf("%v|%v\n", len(refs), err != nil)
 
 	refs, err = scanSDF("./test-data/sdf_raw.txt")
 	fmt.Printf("err: %v\n", err)
@@ -15,7 +15,7 @@ func Example_scanSDF() {
 	}
 
 	// Output:
-	// 0|open ./test-data/BadPath.txt: The system cannot find the file specified.
+	// 0|true
 	// err: <nil>
 	// 439: start: ''
 	// 464: first-time: '2022-301T13:50:28'

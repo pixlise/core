@@ -38,7 +38,6 @@ func AddFilesToZip(w *zip.Writer, basePath, baseInZip string) error {
 
 	for _, file := range files {
 		readPath := filepath.Join(basePath, file.Name())
-		fmt.Println(readPath)
 		if !file.IsDir() {
 			dat, err := os.ReadFile(readPath)
 			if err != nil {
