@@ -137,7 +137,7 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 
 		beamPath := filepath.Join(importPath, beamName)
 		// HK file should be here too...
-		hkPath := filepath.Join(importPath, "housekeeping-"+rttStr+".csv")
+		hkPath := filepath.Join(importPath, "HK-"+rttStr+".csv")
 		data, err := importEMData(rttStr, beamPath, hkPath, imageList, bulkMaxList, msaList, &fs, log)
 		if err != nil {
 			log.Errorf("Import failed for %v: %v", beamName, err)
