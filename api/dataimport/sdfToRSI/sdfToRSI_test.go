@@ -40,9 +40,12 @@ func Example_ConvertSDFtoRSI() {
 		}
 	}
 
+	err = os.MkdirAll("./output", 0644)
+	fmt.Printf("mkdir worked: %v\n", err == nil)
 	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", "./output/")
 	fmt.Printf("%v, %v: %v\n", files, rtts, err)
 
 	// Output:
+	// mkdir worked: true
 	// [RSI-208536069.csv RSI-208601602.csv], [208536069 208601602]: <nil>
 }
