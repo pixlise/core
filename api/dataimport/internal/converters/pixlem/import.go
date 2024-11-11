@@ -201,7 +201,7 @@ func importEMData(rtt string, beamLocPath string, hkPath string, imagePathList [
 		return nil, err
 	}
 
-	hkData, err := importerutils.ReadHousekeepingFile(hkPath, 1, logger)
+	hkData, err := importerutils.ReadHousekeepingFile(hkPath, 0, logger)
 	if err != nil {
 		return nil, err
 	}
