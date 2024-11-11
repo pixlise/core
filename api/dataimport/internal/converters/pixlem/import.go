@@ -143,6 +143,7 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 		}
 
 		log.Infof("Imported scan with RTT: %v", rtt)
+		data.DatasetID += "_em" // To ensure we don't overwrite real datasets
 		return data, filepath.Join(importPath, zipName, zipName), nil
 	}
 
