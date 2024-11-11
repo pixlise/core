@@ -6,13 +6,17 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 func Example_ConvertSDFtoRSI() {
 	ensureSDFRawExists()
 
-	fmt.Printf("mkdir worked: %v\n", os.MkdirAll("./output", 0644) == nil)
-	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", "./output/")
+	fmt.Printf("mkdir worked: %v\n", os.MkdirAll("./output", 0777) == nil)
+	wd, err := os.Getwd()
+	fmt.Printf("wd: %v|%v\n", wd, err)
+	p := filepath.Join(wd, "output")
+	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", p)
 	fmt.Printf("%v, %v: %v\n", files, rtts, err)
 
 	// Output:
