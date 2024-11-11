@@ -19,7 +19,7 @@ func Example_ConvertSDFtoRSI() {
 
 		for _, f := range archive.File {
 			if len(archive.File) != 1 || f.Name != "sdf_raw.txt" {
-				log.Fatalln("Expected zdf_raw.zip to only contain one file: sdf_raw.txt")
+				log.Fatalln("Expected sdf_raw.zip to only contain one file: sdf_raw.txt")
 			}
 
 			dstFile, err := os.OpenFile("./test-data/sdf_raw.txt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
