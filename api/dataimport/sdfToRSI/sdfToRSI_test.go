@@ -6,17 +6,22 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 func Example_ConvertSDFtoRSI() {
 	ensureSDFRawExists()
 
-	fmt.Printf("Mkdir output: %v\n", os.MkdirAll("./output", 0644))
-	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", "./output/")
+	fmt.Printf("mkdir worked: %v\n", os.MkdirAll("./output", 0777) == nil)
+	wd, err := os.Getwd()
+	fmt.Printf("Getwd: %v\n", err == nil)
+	p := filepath.Join(wd, "output")
+	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", p)
 	fmt.Printf("%v, %v: %v\n", files, rtts, err)
 
 	// Output:
-	// Mkdir output: <nil>
+	// mkdir worked: true
+	// Getwd: true
 	// [RSI-208536069.csv RSI-208601602.csv], [208536069 208601602]: <nil>
 }
 
@@ -51,13 +56,4 @@ func ensureSDFRawExists() {
 			}
 		}
 	}
-
-	err = os.MkdirAll("./output", 0644)
-	fmt.Printf("mkdir worked: %v\n", err == nil)
-	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", "./output/")
-	fmt.Printf("%v, %v: %v\n", files, rtts, err)
-
-	// Output:
-	// mkdir worked: true
-	// [RSI-208536069.csv RSI-208601602.csv], [208536069 208601602]: <nil>
 }
