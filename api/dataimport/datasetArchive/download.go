@@ -59,7 +59,7 @@ func NewDatasetArchiveDownloader(
 // Unzipped files path (archive zips unzipped here),
 // How many zips loaded from archive
 // Error (if any)
-func (dl *DatasetArchiveDownloader) DownloadFromDatasetArchive(datasetID string, workingDir string) (string, string, int, string, error) {
+func (dl *DatasetArchiveDownloader) DownloadFromDatasetArchive(datasetID string, workingDir string) (string, string, []string, error) {
 	// Create a directories to process data in
 	dl.log.Debugf("Preparing to download archived dataset %v...", datasetID)
 
@@ -67,27 +67,27 @@ func (dl *DatasetArchiveDownloader) DownloadFromDatasetArchive(datasetID string,
 	if err != nil {
 		err = fmt.Errorf("Failed to generate directory for importer downloads: %v", err)
 		//dl.log.Errorf("%v", err)
-		return "", "", 0, "", err
+		return "", "", []string{}, err
 	}
 	unzippedPath, err := fileaccess.MakeEmptyLocalDirectory(workingDir, "unzipped")
 	if err != nil {
 		err = fmt.Errorf("Failed to generate directory for importer unzips: %v", err)
 		//dl.log.Errorf("%v", err)
-		return "", "", 0, "", err
+		return "", "", []string{}, err
 	}
 
 	// Download all zip files from archive for this dataset ID, and extract them as required
 	dl.log.Debugf("Downloading archived zip files...")
 
-	zipCount, lastZipName, err := dl.downloadArchivedZipsForDataset(datasetID, downloadPath, unzippedPath)
+	zipFilesOrdered, err := dl.downloadArchivedZipsForDataset(datasetID, downloadPath, unzippedPath)
 	if err != nil {
 		err = fmt.Errorf("Failed to download archived zip files for dataset ID: %v. Error: %v", datasetID, err)
 		//dl.log.Errorf("%v", err)
-		return downloadPath, unzippedPath, zipCount, lastZipName, err
+		return downloadPath, unzippedPath, zipFilesOrdered, err
 	}
 
-	dl.log.Debugf("Dataset %v downloaded %v zip files from archive", datasetID, zipCount)
-	return downloadPath, unzippedPath, zipCount, lastZipName, nil
+	dl.log.Debugf("Dataset %v downloaded %v zip files from archive", datasetID, len(zipFilesOrdered))
+	return downloadPath, unzippedPath, zipFilesOrdered, nil
 }
 
 func (dl *DatasetArchiveDownloader) DownloadPseudoIntensityRangesFile(configBucket string, downloadPath string, version string) (string, error) {
@@ -121,7 +121,7 @@ func (dl *DatasetArchiveDownloader) fetchFile(bucketFrom string, pathFrom string
 // Returns 2 things:
 // Number of zips loaded
 // Error if there was one
-func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID string, downloadPath string, unzippedPath string) (int, string, error) {
+func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID string, downloadPath string, unzippedPath string) ([]string, error) {
 	// Download all zip files that have the dataset ID prefixed in their file name
 	// Unzip them in timestamp order into downloadPath
 	archiveSearchPath := path.Join(filepaths.RootArchive, datasetID)
@@ -129,14 +129,14 @@ func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID str
 
 	archivedFiles, err := dl.remoteFS.ListObjects(dl.datasetBucket, archiveSearchPath)
 	if err != nil {
-		return 0, "", err
+		return []string{}, err
 	}
 
 	orderedArchivedFiles, err := getOrderedArchiveFiles(archivedFiles)
 
 	if err != nil {
 		// Stop here if we find a bad file
-		return 0, "", err
+		return []string{}, err
 	}
 
 	fileCount := 0
@@ -144,14 +144,14 @@ func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID str
 	for _, filePath := range orderedArchivedFiles {
 		fileName := path.Base(filePath)
 		if !strings.HasSuffix(fileName, ".zip") {
-			return 0, "", errors.New("Expected zip file, got: " + fileName)
+			return []string{}, errors.New("Expected zip file, got: " + fileName)
 		}
 
 		savePath := filepath.Join(downloadPath, fileName)
 		err = dl.fetchFile(dl.datasetBucket, filePath, savePath)
 
 		if err != nil {
-			return 0, "", err
+			return []string{}, err
 		}
 
 		dl.log.Debugf("Unzipping: \"%v\"", savePath)
@@ -159,7 +159,7 @@ func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID str
 		// Unzip the file
 		unzippedFileNames, err := utils.UnzipDirectory(savePath, unzippedPath, false)
 		if err != nil {
-			return 0, "", err
+			return []string{}, err
 		}
 
 		fileCount += len(unzippedFileNames)
@@ -181,7 +181,7 @@ func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID str
 	}
 
 	dl.log.Infof("Downloaded %v zip files, unzipped %v files. Last file name: %v", len(orderedArchivedFiles), fileCount, lastFileName)
-	return len(orderedArchivedFiles), filepath.Base(lastFileName), nil
+	return orderedArchivedFiles, nil
 }
 
 func (dl *DatasetArchiveDownloader) DownloadUserCustomisationsForDataset(datasetID string, downloadPath string) error {
