@@ -556,7 +556,11 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 		return fmt.Errorf("Failed to scan %v for RSI creation: %v", sdfLocalPath, err)
 	}
 
-	logger.Infof("Generated RSI files:")
+	if len(rtts) > 0 && len(genFiles) != len(rtts)*2 {
+		return fmt.Errorf("Unexpected file generation count for RSI creation from: %v", sdfLocalPath)
+	}
+
+	logger.Infof("Generated RSI & HK files:")
 	for _, f := range genFiles {
 		logger.Infof("  %v", f)
 	}
@@ -572,7 +576,7 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 			continue
 		}
 
-		rxlPath, logPath, surfPath, err := createBeamLocation(filepath.Join(localTemp, f), rtts[c], localTemp, logger)
+		rxlPath, logPath, surfPath, err := createBeamLocation(filepath.Join(localTemp, f), rtts[c/2], localTemp, logger)
 		if err != nil {
 			// Don't fail on errors for these - we may have run beam location tool on some incomplete scan, so failure isn't terrible!
 			logger.Errorf("Beam location generation failed for RSI: %v. Error: %v", f, err)

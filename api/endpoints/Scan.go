@@ -59,9 +59,9 @@ func PutScanData(params apiRouter.ApiHandlerGenericParams) error {
 	existing, err := params.Svcs.FS.ListObjects(destBucket, s3PathStart+"/")
 	if err == nil && len(existing) > 0 {
 		// Delete all that exists
-		msg := fmt.Sprintf("PutScan for \"%v\": Deleting existing file...\n", scanId)
+		msg := fmt.Sprintf("PutScan for \"%v\": Deleting existing file...", scanId)
 		for _, existingItem := range existing {
-			msg += existingItem + "\n"
+			msg += "\n " + existingItem
 			if err := params.Svcs.FS.DeleteObject(destBucket, existingItem); err != nil {
 				return fmt.Errorf("Failed to delete: \"%v\", error: %v", existing, err)
 			}
