@@ -174,13 +174,19 @@ func readNumBetween(line string, prefix string, suffix string, readType int) (in
 	return val, 0, lastPos, nil
 }
 
-func makeWriteSCLK(readSCLK string) string {
+func makeWriteSCLInt(readSCLK string) int64 {
 	unixSec := readTimestamp(readSCLK)
 
 	// Work out where we are relative to the epoch above, and add to it to work out SCLK to use
 	secSinceEpoch := unixSec - 1666967479
 
 	sclk := 720239544 + secSinceEpoch
+
+	return sclk
+}
+
+func makeWriteSCLK(readSCLK string) string {
+	sclk := makeWriteSCLInt(readSCLK)
 
 	// Return as hex
 	return fmt.Sprintf("%X", sclk)
