@@ -586,11 +586,11 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 		// Upoad the output files (beam locations, log and surface)
 		files := []string{filepath.Join(localTemp, hkFile), rxlPath, logPath, surfPath}
 		name := []string{"housekeeping", "beam location", "log", "surface"}
-		for _, file := range files {
+		for i, file := range files {
 			data, err := os.ReadFile(file)
 			if err != nil {
 				// Don't fail on errors for these - we may have run beam location tool on some incomplete scan, so failure isn't terrible!
-				logger.Errorf("Failed to read generated %v file: %v. Error: %v", name, file, err)
+				logger.Errorf("Failed to read generated %v file: %v. Error: %v", name[i], file, err)
 				continue
 			}
 

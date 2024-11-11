@@ -63,15 +63,20 @@ func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath str
 		return fmt.Errorf("Failed to create output RSI CSV %v: %v", outPath, err)
 	}
 
+	_, err = fout.WriteString(fmt.Sprintf("Spatial information from PIXL SDF or dat files %v for RTT: %v\n", sdfPath, rtt) +
+		"SCLK, RTT, PMC, PDP category, PDP name, PDP information (content varies)\n" +
+		"comment,,,, Housekeeping columns, Mtr1, Mtr2, Mtr3, Mtr4, Mtr5, Mtr6, SDD1_V, SDD2_V, Arm_R, SDD1_T, SDD2_T, SDD1_TEC_T, SDD2_TEC_T, Yellow_T, AFE_T, LVCM_T, HVMM_T, Fil_V, Fil_I, HV, Em_I\n")
+
+	if err != nil {
+		return fmt.Errorf("Failed to write output CSV headers for %v: %v", outPath, err)
+	}
+
 	fout_hk, err := os.Create(outPath_Housekeeping)
 	if err != nil {
 		return fmt.Errorf("Failed to create output housekeeping CSV %v: %v", outPath, err)
 	}
 
-	_, err = fout.WriteString(fmt.Sprintf("Spatial information from PIXL SDF or dat files %v for RTT: %v\n", sdfPath, rtt) +
-		"SCLK, RTT, PMC, PDP category, PDP name, PDP information (content varies)\n" +
-		"comment,,,, Housekeeping columns, Mtr1, Mtr2, Mtr3, Mtr4, Mtr5, Mtr6, SDD1_V, SDD2_V, Arm_R, SDD1_T, SDD2_T, SDD1_TEC_T, SDD2_TEC_T, Yellow_T, AFE_T, LVCM_T, HVMM_T, Fil_V, Fil_I, HV, Em_I\n")
-
+	_, err = fout_hk.WriteString("SCLK,PMC,hk_fcnt,f_pixl_sdd_1_conv,f_pixl_sdd_2_conv,f_pixl_arm_resist_conv,f_head_sdd_1_conv,f_head_sdd_2_conv,f_hvps_fvmon_conv,f_hvps_fimon_conv,f_hvps_hvmon_conv,f_hvps_himon_conv,i_motor_1_conv,i_motor_2_conv,i_motor_3_conv,i_motor_4_conv,i_motor_5_conv,i_motor_6_conv\n")
 	if err != nil {
 		return fmt.Errorf("Failed to write output CSV headers for %v: %v", outPath, err)
 	}
