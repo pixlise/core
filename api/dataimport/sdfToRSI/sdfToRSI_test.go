@@ -14,13 +14,14 @@ func Example_ConvertSDFtoRSI() {
 
 	fmt.Printf("mkdir worked: %v\n", os.MkdirAll("./output", 0777) == nil)
 	wd, err := os.Getwd()
-	fmt.Printf("wd: %v|%v\n", wd, err)
+	fmt.Printf("Getwd: %v\n", err == nil)
 	p := filepath.Join(wd, "output")
 	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", p)
 	fmt.Printf("%v, %v: %v\n", files, rtts, err)
 
 	// Output:
 	// mkdir worked: true
+	// Getwd: true
 	// [RSI-208536069.csv RSI-208601602.csv], [208536069 208601602]: <nil>
 }
 
