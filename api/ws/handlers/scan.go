@@ -550,29 +550,38 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 	}
 
 	// Create an RSI file from the sdf_raw file
-	rsis, rtts, err := sdfToRSI.ConvertSDFtoRSIs(sdfLocalPath, localTemp)
+	genFiles, rtts, err := sdfToRSI.ConvertSDFtoRSIs(sdfLocalPath, localTemp)
 
 	if err != nil {
 		return fmt.Errorf("Failed to scan %v for RSI creation: %v", sdfLocalPath, err)
 	}
 
 	logger.Infof("Generated RSI files:")
-	for _, rsi := range rsis {
-		logger.Infof("  %v", rsi)
+	for _, f := range genFiles {
+		logger.Infof("  %v", f)
 	}
 
 	rsiUploaded := 0
-	for c, rsi := range rsis {
-		rxlPath, logPath, surfPath, err := createBeamLocation(filepath.Join(localTemp, rsi), rtts[c], localTemp, logger)
+	for c := 0; c < len(genFiles); c += 2 {
+		f := genFiles[c]
+		hkFile := genFiles[c+1]
+
+		// Every second file is a HK file not an actual RSI file... make sure we have the right prefix here
+		if !strings.HasPrefix(f, "RSI-") || !strings.HasPrefix(hkFile, "HK-") {
+			logger.Errorf("ConvertSDFtoRSIs generated : %v. Error: %v", f, err)
+			continue
+		}
+
+		rxlPath, logPath, surfPath, err := createBeamLocation(filepath.Join(localTemp, f), rtts[c], localTemp, logger)
 		if err != nil {
 			// Don't fail on errors for these - we may have run beam location tool on some incomplete scan, so failure isn't terrible!
-			logger.Errorf("Beam location generation failed for RSI: %v. Error: %v", rsi, err)
+			logger.Errorf("Beam location generation failed for RSI: %v. Error: %v", f, err)
 			continue
 		}
 
 		// Upoad the output files (beam locations, log and surface)
-		files := []string{rxlPath, logPath, surfPath}
-		name := []string{"beam location", "log", "surface"}
+		files := []string{filepath.Join(localTemp, hkFile), rxlPath, logPath, surfPath}
+		name := []string{"housekeeping", "beam location", "log", "surface"}
 		for _, file := range files {
 			data, err := os.ReadFile(file)
 			if err != nil {
@@ -612,38 +621,6 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 		return fmt.Errorf("Failed to write MSA list: %v", err)
 	}
 
-	/*
-		// Upload the images
-		for _, image := range images {
-			p := filepath.Join(localImagesPath, image)
-			b, err := os.ReadFile(p)
-			if err != nil {
-				return fmt.Errorf("Failed to read image: %v. Error: %v", p, err)
-			}
-
-			savePath := path.Join(s3PathStart, image)
-			err = fs.WriteObject(destBucket, savePath, b)
-			if err != nil {
-				return err
-			}
-			logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
-		}
-
-		// Zip up the MSA's
-		msaData, err := utils.ZipDirectory(localMSAPath)
-		if err != nil {
-			return fmt.Errorf("Failed to zip MSA files from: %v. Error: %v", localMSAPath, err)
-		}
-
-		// Upload the MSA zip
-		savePath := path.Join(s3PathStart, "spectra.zip")
-		err = fs.WriteObject(destBucket, savePath, msaData)
-		if err != nil {
-			return err
-		}
-		logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
-	*/
-	// Process each RSI file generated
 	return nil
 }
 
@@ -659,17 +636,6 @@ func createBeamLocation(rsiPath string, rtt int64, outputBeamLocationPath string
 	if _, err := os.Stat(bgtPath + "BGT"); err != nil {
 		// Try the path used in local testing
 		bgtPath = ".." + string(os.PathSeparator) + ".." + string(os.PathSeparator) + "beam-tool" + string(os.PathSeparator)
-
-		/*if _, err := os.Stat(bgtPath + "BGT"); err != nil {
-			// Try the path used in local testing
-			fmt.Println("PATH WONT BE FOUND")
-
-			d, _ := os.Getwd()
-			fmt.Println(d)
-
-			// Try get it backwards
-			bgtPath = filepath.Dir(filepath.Dir(d)) + string(os.PathSeparator)
-		}*/
 	}
 
 	if _, err := os.Stat(bgtPath + "Geometry_PIXL_EM_Landing_25Jan2021.csv"); err != nil {

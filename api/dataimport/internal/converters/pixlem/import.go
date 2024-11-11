@@ -136,13 +136,16 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 		}
 
 		beamPath := filepath.Join(importPath, beamName)
-		data, err := importEMData(rttStr, beamPath, imageList, bulkMaxList, msaList, &fs, log)
+		// HK file should be here too...
+		hkPath := filepath.Join(importPath, "housekeeping-"+rttStr+".csv")
+		data, err := importEMData(rttStr, beamPath, hkPath, imageList, bulkMaxList, msaList, &fs, log)
 		if err != nil {
 			log.Errorf("Import failed for %v: %v", beamName, err)
 			continue
 		}
 
 		log.Infof("Imported scan with RTT: %v", rtt)
+		data.DatasetID += "_em" // To ensure we don't overwrite real datasets
 		return data, filepath.Join(importPath, zipName, zipName), nil
 	}
 
@@ -176,7 +179,7 @@ func extractZipName(files []string) (string, error) {
 
 	return zipName, nil
 }
-func importEMData(rtt string, beamLocPath string, imagePathList []string, bulkMaxList []string, msaList []string, fs fileaccess.FileAccess, logger logger.ILogger) (*dataConvertModels.OutputData, error) {
+func importEMData(rtt string, beamLocPath string, hkPath string, imagePathList []string, bulkMaxList []string, msaList []string, fs fileaccess.FileAccess, logger logger.ILogger) (*dataConvertModels.OutputData, error) {
 	// Read MSAs
 	locSpectraLookup, err := jplbreadboard.MakeSpectraLookup("", msaList, true, false, "", false, logger)
 	if err != nil {
@@ -198,8 +201,12 @@ func importEMData(rtt string, beamLocPath string, imagePathList []string, bulkMa
 		return nil, err
 	}
 
+	hkData, err := importerutils.ReadHousekeepingFile(hkPath, 1, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	// We don't have everything a full FM dataset would have...
-	var hkData dataConvertModels.HousekeepingData
 	var pseudoIntensityData dataConvertModels.PseudoIntensities
 	var pseudoIntensityRanges []dataConvertModels.PseudoIntensityRange
 	var matchedAlignedImages []dataConvertModels.MatchedAlignedImageMeta

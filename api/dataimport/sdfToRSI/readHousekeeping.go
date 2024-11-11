@@ -129,14 +129,19 @@ SDF-Raw:
 // 2022-302T00:22:08 : 1604 hk raw -------->> 0673085B 074006BF 08470890 00000000 04640000 DEADDEAD DEADDEAD 190425F4
 // 2022-302T00:22:08 : 1604 hk raw -------->> 2AEE8631 99800668 F80039F1 00238D00 0CD4000D 25000036 000D816F 4AE4F2CA
 // ]
-func processHousekeeping(lineNo int, lineData string, lines []string, sclk string, rtt int64, pmc int) (int64, string, error) {
+func processHousekeeping(lineNo int, lineData string, lines []string, sclk string, rtt int64, pmc int) (int64, string, string, error) {
 	if len(lines) != 23 {
-		return 0, "", fmt.Errorf("hk line count invalid on line %v", lineNo)
+		return 0, "", "", fmt.Errorf("hk line count invalid on line %v", lineNo)
 	}
 
 	hktime, _, _, err := readNumBetween(lineData, "HK Time: 0x", " ", read_int_hex)
 	if err != nil || hktime <= 0 {
-		return 0, "", fmt.Errorf("hk start didn't contain hk time on line %v", lineNo)
+		return 0, "", "", fmt.Errorf("hk start didn't contain hk time on line %v", lineNo)
+	}
+
+	fcnt, _, _, err := readNumBetween(lineData, "fcnt:", " ", read_int)
+	if err != nil || hktime <= 0 {
+		return 0, "", "", fmt.Errorf("hk start didn't contain fcnt on line %v", lineNo)
 	}
 
 	// Snip all lines so they start after mcc_trn
@@ -144,7 +149,7 @@ func processHousekeeping(lineNo int, lineData string, lines []string, sclk strin
 	for c := 0; c < 23; c++ {
 		pos := strings.Index(lines[c], tok)
 		if pos < 0 {
-			return 0, "", fmt.Errorf("%v not found on line %v", tok, lineNo)
+			return 0, "", "", fmt.Errorf("%v not found on line %v", tok, lineNo)
 		}
 
 		lines[c] = strings.Trim(lines[c][pos+len(tok):], " ")
@@ -156,14 +161,14 @@ func processHousekeeping(lineNo int, lineData string, lines []string, sclk strin
 
 	tok, lines[15], ok = takeToken(lines[15], ":")
 	if !ok || tok != "Motor Pos" {
-		return 0, "", fmt.Errorf("Expected Motor Pos, got %v on line %v", tok, lineNo)
+		return 0, "", "", fmt.Errorf("Expected Motor Pos, got %v on line %v", tok, lineNo)
 	}
 
 	for c := 0; c < 6; c++ {
 		var p int64
 		p, lines[15], err = readInt(lines[15])
 		if err != nil {
-			return 0, "", fmt.Errorf("Failed to read Motor Pos %v on line %v", c, lineNo)
+			return 0, "", "", fmt.Errorf("Failed to read Motor Pos %v on line %v", c, lineNo)
 		}
 		motorPos = append(motorPos, int(p))
 	}
@@ -178,10 +183,10 @@ func processHousekeeping(lineNo int, lineData string, lines []string, sclk strin
 	for c := 0; c < len(names); c++ {
 		_, f, pos, err = readNumBetween(lines[c+lineOffset], names[c], " ", read_float)
 		if err != nil {
-			return 0, "", err
+			return 0, "", "", err
 		}
 		if pos < 0 {
-			return 0, "", fmt.Errorf("Missing value: %v", names[c])
+			return 0, "", "", fmt.Errorf("Missing value: %v", names[c])
 		}
 		fVal = append(fVal, f)
 
@@ -190,10 +195,6 @@ func processHousekeeping(lineNo int, lineData string, lines []string, sclk strin
 		}
 	}
 
-	// DataDrive RSI format has table headers:
-	// HK Frame
-	// SCLK,PMC,hk_fcnt,f_pixl_analog_fpga,f_pixl_chassis_top,f_pixl_chassis_bottom,f_pixl_aft_low_cal,f_pixl_aft_high_cal,f_pixl_motor_v_plus,f_pixl_motor_v_minus,f_pixl_sdd_1,f_pixl_sdd_2,f_pixl_3_3_volt,f_pixl_1_8_volt,f_pixl_dspc_v_plus,f_pixl_dspc_v_minus,f_pixl_prt_curr,f_pixl_arm_resist,f_head_sdd_1,f_head_sdd_2,f_head_afe,f_head_lvcm,f_head_hvmm,f_head_bipod1,f_head_bipod2,f_head_bipod3,f_head_cover,f_head_hop,f_head_flie,f_head_tec1,f_head_tec2,f_head_xray,f_head_yellow_piece,f_head_mcc,f_hvps_fvmon,f_hvps_fimon,f_hvps_hvmon,f_hvps_himon,f_hvps_13v_plus,f_hvps_13v_minus,f_hvps_5v_plus,f_hvps_lvcm,i_valid_cmds,i_crf_retry,i_sdf_retry,i_rejected_cmds,i_hk_side,i_motor_1,i_motor_2,i_motor_3,i_motor_4,i_motor_5,i_motor_6,i_motor_cover,i_hes_sense,i_flash_status,u_hk_version,u_hk_time,u_hk_power,u_fsw_0,u_fsw_1,u_fsw_2,u_fsw_3,u_fsw_4,u_fsw_5,f_pixl_analog_fpga_conv,f_pixl_chassis_top_conv,f_pixl_chassis_bottom_conv,f_pixl_aft_low_cal_conv,f_pixl_aft_high_cal_conv,f_pixl_motor_v_plus_conv,f_pixl_motor_v_minus_conv,f_pixl_sdd_1_conv,f_pixl_sdd_2_conv,f_pixl_3_3_volt_conv,f_pixl_1_8_volt_conv,f_pixl_dspc_v_plus_conv,f_pixl_dspc_v_minus_conv,f_pixl_prt_curr_conv,f_pixl_arm_resist_conv,f_head_sdd_1_conv,f_head_sdd_2_conv,f_head_afe_conv,f_head_lvcm_conv,f_head_hvmm_conv,f_head_bipod1_conv,f_head_bipod2_conv,f_head_bipod3_conv,f_head_cover_conv,f_head_hop_conv,f_head_flie_conv,f_head_tec1_conv,f_head_tec2_conv,f_head_xray_conv,f_head_yellow_piece_conv,f_head_mcc_conv,f_hvps_fvmon_conv,f_hvps_fimon_conv,f_hvps_hvmon_conv,f_hvps_himon_conv,f_hvps_13v_plus_conv,f_hvps_13v_minus_conv,f_hvps_5v_plus_conv,f_hvps_lvcm_conv,i_valid_cmds_conv,i_crf_retry_conv,i_sdf_retry_conv,i_rejected_cmds_conv,i_hk_side_conv,i_motor_1_conv,i_motor_2_conv,i_motor_3_conv,i_motor_4_conv,i_motor_5_conv,i_motor_6_conv,i_motor_cover_conv,i_hes_sense_conv,i_flash_status_conv,RTT
-
 	// Outputs:
 	// 2AEE898E, C6F0202, 1658, 8, HK Frame, 1957, 1967, 2040, 1958, 1966, 2098, -146.50, -146.47, 7.64, -30.04, -30.02, -10.47, -11.04, 2.17, 8.87, -8.83, -0.04, 3.92, 0.70, 27.79, 20.05
 	hk := fmt.Sprintf("%v, %X, %v, 8, HK Frame, %d, %d, %d, %d, %d, %d, %v, %v, %v, %v, %v, -1, -1, -1, -1, -1, -1, %v, %v, %v, %v\n",
@@ -201,5 +202,21 @@ func processHousekeeping(lineNo int, lineData string, lines []string, sclk strin
 		motorPos[0], motorPos[1], motorPos[2], motorPos[3], motorPos[4], motorPos[5],
 		fVal[0], fVal[1], fVal[2], fVal[3], fVal[4], fVal[5], fVal[6], fVal[7], fVal[8])
 
-	return hktime, hk, nil
+	// We also output housekeeping data in a different "RSI" format thats compatible with the ones output by the pipeline for PIXLISE to read actual housekeeping
+	// values from. This differs from the above, and doesn't have all the columns in the "real" files but PIXLISE gets a lot of what it needs this way already. If
+	// specific data is required, we'll have to add it here
+
+	// DataDrive RSI format has table headers:
+	// HK Frame
+	// SCLK,PMC,hk_fcnt,f_pixl_analog_fpga,f_pixl_chassis_top,f_pixl_chassis_bottom,f_pixl_aft_low_cal,f_pixl_aft_high_cal,f_pixl_motor_v_plus,f_pixl_motor_v_minus,f_pixl_sdd_1,f_pixl_sdd_2,f_pixl_3_3_volt,f_pixl_1_8_volt,f_pixl_dspc_v_plus,f_pixl_dspc_v_minus,f_pixl_prt_curr,f_pixl_arm_resist,f_head_sdd_1,f_head_sdd_2,f_head_afe,f_head_lvcm,f_head_hvmm,f_head_bipod1,f_head_bipod2,f_head_bipod3,f_head_cover,f_head_hop,f_head_flie,f_head_tec1,f_head_tec2,f_head_xray,f_head_yellow_piece,f_head_mcc,f_hvps_fvmon,f_hvps_fimon,f_hvps_hvmon,f_hvps_himon,f_hvps_13v_plus,f_hvps_13v_minus,f_hvps_5v_plus,f_hvps_lvcm,i_valid_cmds,i_crf_retry,i_sdf_retry,i_rejected_cmds,i_hk_side,i_motor_1,i_motor_2,i_motor_3,i_motor_4,i_motor_5,i_motor_6,i_motor_cover,i_hes_sense,i_flash_status,u_hk_version,u_hk_time,u_hk_power,u_fsw_0,u_fsw_1,u_fsw_2,u_fsw_3,u_fsw_4,u_fsw_5,f_pixl_analog_fpga_conv,f_pixl_chassis_top_conv,f_pixl_chassis_bottom_conv,f_pixl_aft_low_cal_conv,f_pixl_aft_high_cal_conv,f_pixl_motor_v_plus_conv,f_pixl_motor_v_minus_conv,f_pixl_sdd_1_conv,f_pixl_sdd_2_conv,f_pixl_3_3_volt_conv,f_pixl_1_8_volt_conv,f_pixl_dspc_v_plus_conv,f_pixl_dspc_v_minus_conv,f_pixl_prt_curr_conv,f_pixl_arm_resist_conv,f_head_sdd_1_conv,f_head_sdd_2_conv,f_head_afe_conv,f_head_lvcm_conv,f_head_hvmm_conv,f_head_bipod1_conv,f_head_bipod2_conv,f_head_bipod3_conv,f_head_cover_conv,f_head_hop_conv,f_head_flie_conv,f_head_tec1_conv,f_head_tec2_conv,f_head_xray_conv,f_head_yellow_piece_conv,f_head_mcc_conv,f_hvps_fvmon_conv,f_hvps_fimon_conv,f_hvps_hvmon_conv,f_hvps_himon_conv,f_hvps_13v_plus_conv,f_hvps_13v_minus_conv,f_hvps_5v_plus_conv,f_hvps_lvcm_conv,i_valid_cmds_conv,i_crf_retry_conv,i_sdf_retry_conv,i_rejected_cmds_conv,i_hk_side_conv,i_motor_1_conv,i_motor_2_conv,i_motor_3_conv,i_motor_4_conv,i_motor_5_conv,i_motor_6_conv,i_motor_cover_conv,i_hes_sense_conv,i_flash_status_conv,RTT
+	// 720274993,1604,10329,8840,8625,8624,6823,9492,4925,60015,58755,58754,3172,1777,8940,56119,3112,10763,2398,2400,8439,7902,8181,6313,6317,6323,6946,6867,6871,7864,7839,7810,8241,7856,3201,542,3455,3266,3590,61946,1364,2210,42,0,0,0,0,1651,2139,1856,1727,2119,2192,0,1124,0,0x190425F4,720274993,0x99800668,0xF80039F1,0x00238D00,0x0CD4000D,0x25000036,0x000D816F,0x4AE4F2CA,21.06158,14.166139999999999,14.13406,-43.62744,41.97247,4.925,-4.9094,-146.53015,-146.51488999999998,3.172,1.777,8.94,-8.83681,3.112,7.63,-29.934690000000003,-29.948140000000002,8.20074,-9.02187,-0.07379,-59.9841,-59.855819999999994,-59.66339,-39.6826,-42.21628,-42.08798,-10.24059,-11.04239,-11.97247,1.8505200000000002,-10.497160000000001,3.90843,0.66178,27.84249,19.93895,13.150179999999999,-13.150179999999999,4.99634,-3.31345,42,0,0,0,0,1651,2139,1856,1727,2119,2192,0,1124,0,208601602
+
+	// We output:
+	// SCLK,PMC,hk_fcnt,f_pixl_sdd_1_conv,f_pixl_sdd_2_conv,f_pixl_arm_resist_conv,f_head_sdd_1_conv,f_head_sdd_2_conv,f_hvps_fvmon_conv,f_hvps_fimon_conv,f_hvps_hvmon_conv,f_hvps_himon_conv,i_motor_1_conv,i_motor_2_conv,i_motor_3_conv,i_motor_4_conv,i_motor_5_conv,i_motor_6_conv
+
+	hk2 := fmt.Sprintf("%v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v\n",
+		makeWriteSCLK(sclk), pmc, fcnt, fVal[1], fVal[0], fVal[2], fVal[3], fVal[4], fVal[5], fVal[6], fVal[7], fVal[8],
+		motorPos[0], motorPos[1], motorPos[2], motorPos[3], motorPos[4], motorPos[5])
+
+	return hktime, hk, hk2, nil
 }
