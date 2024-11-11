@@ -182,7 +182,7 @@ func optimise(rtts map[string]string, remoteFS fileaccess.FileAccess, iLog logge
 				if !strings.HasSuffix(localArchivePath, zipFile) {
 					zipPath := path.Join("Archive", zipFile)
 
-					iLog.Infof("Deleting from S3: %v", zip.ErrInsecurePath)
+					iLog.Infof("Deleting from S3: %v", zipPath)
 					err = remoteFS.DeleteObject(dataBucket, zipPath)
 					if err != nil {
 						iLog.Errorf("Error deleting archive file %v: %v\n", zipPath, err)

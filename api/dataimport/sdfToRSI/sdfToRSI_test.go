@@ -22,7 +22,7 @@ func Example_ConvertSDFtoRSI() {
 	// Output:
 	// mkdir worked: true
 	// Getwd: true
-	// [RSI-208536069.csv RSI-208601602.csv], [208536069 208601602]: <nil>
+	// [RSI-208536069.csv HK-208536069.csv RSI-208601602.csv HK-208601602.csv], [208536069 208601602]: <nil>
 }
 
 func ensureSDFRawExists() {

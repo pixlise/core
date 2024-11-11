@@ -34,12 +34,13 @@ func ConvertSDFtoRSIs(sdfPath string, outPath string) ([]string, []int64, error)
 			} else if ref.Value != "end" {
 				return files, rtts, fmt.Errorf("End not found for science RTT: %v", rtt)
 			} else {
-				name := fmt.Sprintf("RSI-%v.csv", rtt)
-				err = sdfToRSI(sdfPath, rtt, startLine, ref.Line, path.Join(outPath, name))
+				nameRSI := fmt.Sprintf("RSI-%v.csv", rtt)
+				nameHK := fmt.Sprintf("HK-%v.csv", rtt)
+				err = sdfToRSI(sdfPath, rtt, startLine, ref.Line, path.Join(outPath, nameRSI), path.Join(outPath, nameHK))
 				if err != nil {
-					return files, rtts, fmt.Errorf("Failed to generate %v: %v", name, err)
+					return files, rtts, fmt.Errorf("Failed to generate files %v, %v: %v", nameRSI, nameHK, err)
 				}
-				files = append(files, name)
+				files = append(files, nameRSI, nameHK)
 				rtts = append(rtts, rtt)
 			}
 		}
@@ -48,7 +49,7 @@ func ConvertSDFtoRSIs(sdfPath string, outPath string) ([]string, []int64, error)
 	return files, rtts, nil
 }
 
-func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath string) error {
+func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath string, outPath_Housekeeping string) error {
 	file, err := os.Open(sdfPath)
 	if err != nil {
 		return fmt.Errorf("Failed to open SDF %v: %v", sdfPath, err)
@@ -59,7 +60,12 @@ func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath str
 
 	fout, err := os.Create(outPath)
 	if err != nil {
-		return fmt.Errorf("Failed to create output CSV %v: %v", outPath, err)
+		return fmt.Errorf("Failed to create output RSI CSV %v: %v", outPath, err)
+	}
+
+	fout_hk, err := os.Create(outPath_Housekeeping)
+	if err != nil {
+		return fmt.Errorf("Failed to create output housekeeping CSV %v: %v", outPath, err)
 	}
 
 	_, err = fout.WriteString(fmt.Sprintf("Spatial information from PIXL SDF or dat files %v for RTT: %v\n", sdfPath, rtt) +
@@ -163,7 +169,7 @@ func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath str
 				return fmt.Errorf("hk: %v", err)
 			}
 
-			hktime, hkline, err := processHousekeeping(lineNo, lineData, hkLines, sclk, rtt, pmc)
+			hktime, hkline, hkline_RSI, err := processHousekeeping(lineNo, lineData, hkLines, sclk, rtt, pmc)
 			if hktime == lastHKTime {
 				// We overwrite in this case!
 				hklinesSaved := len(outLinesByType[tok])
@@ -172,6 +178,9 @@ func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath str
 
 			// just let it get written like anything else
 			out.WriteString(hkline)
+
+			// Also write to the HK file
+			fout_hk.WriteString(hkline_RSI)
 
 			lastHKTime = hktime
 			lineNo += 23
@@ -247,7 +256,11 @@ func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath str
 
 	writeOutput(outLinesByType, fout)
 
-	return fout.Close()
+	err = fout.Close()
+	if err != nil {
+		return err
+	}
+	return fout_hk.Close()
 }
 
 func writeOutput(outLinesByType map[string][]string, fout *os.File) {
