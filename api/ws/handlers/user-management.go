@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -13,7 +14,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"gopkg.in/auth0.v4"
 	"gopkg.in/auth0.v4/management"
+	"github.com/pixlise/core/v4/core/utils"
 )
 
 // /////////////////////////////////////////////////////////////////////
@@ -340,4 +343,76 @@ func HandleUserImpersonateGetReq(req *protos.UserImpersonateGetReq, hctx wsHelpe
 	return &protos.UserImpersonateGetResp{
 		SessionUser: hctx.SessUser.User,
 	}, nil
+}
+
+func HandleReviewerMagicLinkCreateReq(req *protos.ReviewerMagicLinkCreateReq, hctx wsHelpers.HandlerContext) (*protos.ReviewerMagicLinkCreateResp, error) {
+	auth0API, err := auth0login.InitAuth0ManagementAPI(hctx.Svcs.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	email := fmt.Sprintf("reviewer-%s@pixlise.org", req.WorkspaceId)
+	// Search for existing user
+	// management.New(cfg.Auth0Domain, cfg.Auth0ManagementClientID, cfg.Auth0ManagementSecret)
+	// userList, err := auth0API.User.List(
+	// 		management.Query(""), //`logins_count:{100 TO *]`),
+	// 		management.Page(page),
+	// 	)
+	users, err := auth0API.User.List(management.Query(fmt.Sprintf("email:\"%s\"", email)))
+	if err != nil {
+		log.Fatalf("failed to list users: %+v", err)
+	}
+
+	if len(users.Users) > 0 {
+		user := users.Users[0]
+		if user.AppMetadata != nil && user.AppMetadata["workspaceId"] == req.WorkspaceId {
+			return &protos.ReviewerMagicLinkCreateResp{
+				MagicLink: *users.Users[0].ID,
+			}, nil
+		} else {
+			fmt.Print(users.Users[0], "|", req.WorkspaceId)
+			log.Fatalf("user with email %s already exists, but not for this workspace", email)
+		}
+	}
+
+	password := RandPassword(24)
+	fmt.Println("password: ", password)
+
+	user := management.User{
+		Connection: auth0.String("Username-Password-Authentication"),
+		Email:      auth0.String(email),
+		Password:   auth0.String(password),
+		AppMetadata: map[string]interface{}{
+			"workspaceId": req.WorkspaceId,
+		},
+	}
+
+	err = auth0API.User.Create(&user)
+	if err != nil {
+		log.Fatalf("failed to create user: %+v", err)
+	}
+
+	// Retrieve the role ID for the "Reviewer" role
+	roles, err := auth0API.Role.List(management.Parameter("name_filter", "Reviewer"))
+	if err != nil {
+		log.Fatalf("failed to list roles: %+v", err)
+	}
+	if len(roles.Roles) == 0 {
+		log.Fatalf("role 'Reviewer' not found")
+	}
+	reviewerRole := roles.Roles[0]
+
+	// Assign the "Reviewer" role to the user
+	err = auth0API.User.AssignRoles(*user.ID, reviewerRole)
+	if err != nil {
+		log.Fatalf("failed to assign role to user: %+v", err)
+	}
+
+	return &protos.ReviewerMagicLinkCreateResp{
+		MagicLink: *user.ID,
+	}, nil
+}
+
+func HandleReviewerMagicLinkLoginReq(req *protos.ReviewerMagicLinkLoginReq, hctx wsHelpers.HandlerContext) (*protos.ReviewerMagicLinkLoginResp, error) {
+	return nil, nil
 }
