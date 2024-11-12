@@ -60,7 +60,7 @@ func MakeSessionUser(sessionId string, userId string, permissions map[string]boo
 
 // If we have a successful login and the user is not in our DB, we write a default record
 // for them, so if they change their details we have a spot to save it already
-// NOTE: This is (at time of writing) the only way to add a user to the DB
+// NOTE: Non-session users can also be created via CreateNonSessionDBUser in userDBCache.go
 func CreateDBUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.Database, defaultGroupIdToJoin string, log logger.ILogger) (*SessionUser, error) {
 	userId := utils.FixUserId(jwtUser.UserID)
 

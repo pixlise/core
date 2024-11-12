@@ -103,3 +103,38 @@ func NotifyUserInfoChange(userId string) {
 	// This will ensure it is read fresh the next time this user is accessed
 	delete(userInfoCache, userId)
 }
+
+func CreateNonSessionDBUser(userId string, db *mongo.Database, name string, email string, workspaceId *string, expirationDate *int64) (*protos.UserDBItem, error) {
+	userDBItem := &protos.UserDBItem{
+		Id: userId,
+		Info: &protos.UserInfo{
+			Id:    userId,
+			Name:  name,
+			Email: email,
+		},
+		DataCollectionVersion: "",
+	}
+
+	if workspaceId != nil {
+		userDBItem.Info.ReviewerWorkspaceId = *workspaceId
+	}
+
+	if expirationDate != nil {
+		userDBItem.Info.ExpirationDateUnixSec = *expirationDate
+	}
+
+	ctx := context.TODO()
+	_, err := db.Collection(dbCollections.UsersName).InsertOne(ctx, userDBItem)
+	if err != nil {
+		return nil, err
+	}
+
+	// We need to return the full item, so we read it back from the DB
+	userDBItem, err = GetDBUser(userId, db)
+	if err != nil {
+		return nil, err
+	}
+
+	return userDBItem, nil
+
+}

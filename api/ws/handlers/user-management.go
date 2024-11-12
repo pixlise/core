@@ -10,13 +10,13 @@ import (
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/auth0login"
+	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"gopkg.in/auth0.v4"
 	"gopkg.in/auth0.v4/management"
-	"github.com/pixlise/core/v4/core/utils"
 )
 
 // /////////////////////////////////////////////////////////////////////
@@ -351,13 +351,18 @@ func HandleReviewerMagicLinkCreateReq(req *protos.ReviewerMagicLinkCreateReq, hc
 		return nil, err
 	}
 
+	// Fetch workspace to verify it exists
+	workspace, workspaceOwner, err := wsHelpers.GetUserObjectById[protos.ScreenConfiguration](false, req.WorkspaceId, protos.ObjectType_OT_SCREEN_CONFIG, dbCollections.ScreenConfigurationName, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the user is the owner of the workspace
+	if workspaceOwner.CreatorUserId != hctx.SessUser.User.Id {
+		return nil, errors.New("user is not the owner of the workspace")
+	}
+
 	email := fmt.Sprintf("reviewer-%s@pixlise.org", req.WorkspaceId)
-	// Search for existing user
-	// management.New(cfg.Auth0Domain, cfg.Auth0ManagementClientID, cfg.Auth0ManagementSecret)
-	// userList, err := auth0API.User.List(
-	// 		management.Query(""), //`logins_count:{100 TO *]`),
-	// 		management.Page(page),
-	// 	)
 	users, err := auth0API.User.List(management.Query(fmt.Sprintf("email:\"%s\"", email)))
 	if err != nil {
 		log.Fatalf("failed to list users: %+v", err)
@@ -371,13 +376,16 @@ func HandleReviewerMagicLinkCreateReq(req *protos.ReviewerMagicLinkCreateReq, hc
 			}, nil
 		} else {
 			fmt.Print(users.Users[0], "|", req.WorkspaceId)
-			log.Fatalf("user with email %s already exists, but not for this workspace", email)
+			return nil, errors.New("user with email (" + email + ") already exists, but not for this workspace")
 		}
 	}
 
-	password := RandPassword(24)
-	fmt.Println("password: ", password)
+	password, err := utils.RandPassword(24)
+	if err != nil {
+		log.Fatalf("failed to generate password: %+v", err)
+	}
 
+	userName := fmt.Sprintf("Reviewer (%s)", workspace.Name)
 	user := management.User{
 		Connection: auth0.String("Username-Password-Authentication"),
 		Email:      auth0.String(email),
@@ -385,6 +393,7 @@ func HandleReviewerMagicLinkCreateReq(req *protos.ReviewerMagicLinkCreateReq, hc
 		AppMetadata: map[string]interface{}{
 			"workspaceId": req.WorkspaceId,
 		},
+		Name: auth0.String(userName),
 	}
 
 	err = auth0API.User.Create(&user)
@@ -395,21 +404,35 @@ func HandleReviewerMagicLinkCreateReq(req *protos.ReviewerMagicLinkCreateReq, hc
 	// Retrieve the role ID for the "Reviewer" role
 	roles, err := auth0API.Role.List(management.Parameter("name_filter", "Reviewer"))
 	if err != nil {
-		log.Fatalf("failed to list roles: %+v", err)
+		return nil, errors.New("failed to list roles:" + err.Error())
 	}
 	if len(roles.Roles) == 0 {
-		log.Fatalf("role 'Reviewer' not found")
+		return nil, errors.New("role 'Reviewer' not found")
 	}
 	reviewerRole := roles.Roles[0]
 
+	userID := *user.ID
+
 	// Assign the "Reviewer" role to the user
-	err = auth0API.User.AssignRoles(*user.ID, reviewerRole)
+	err = auth0API.User.AssignRoles(userID, reviewerRole)
 	if err != nil {
-		log.Fatalf("failed to assign role to user: %+v", err)
+		return nil, errors.New("failed to assign role to user:" + err.Error())
+	}
+
+	// Set the expiration date for the user
+	var expirationDate int64 = 0
+	if req.AccessLength > 0 {
+		expirationDate = time.Now().Add(time.Duration(req.AccessLength) * time.Second).Unix()
+	}
+
+	// Create a user in our database
+	_, err = wsHelpers.CreateNonSessionDBUser(userID, hctx.Svcs.MongoDB, userName, email, &req.WorkspaceId, &expirationDate)
+	if err != nil {
+		return nil, errors.New("failed to create user in database:" + err.Error())
 	}
 
 	return &protos.ReviewerMagicLinkCreateResp{
-		MagicLink: *user.ID,
+		MagicLink: userID,
 	}, nil
 }
 
