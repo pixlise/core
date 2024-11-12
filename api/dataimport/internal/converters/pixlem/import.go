@@ -76,6 +76,11 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 		return nil, "", err
 	}
 
+	creatorId, err := readCreator(filepath.Join(importPath, "creator.json"), &fs)
+	if err != nil {
+		return nil, "", err
+	}
+
 	// Extract RTTs from each beam location file name and import a dataset for each RTT
 	zipName, err := extractZipName(append(msaFiles, imageFiles...))
 	if err != nil {
@@ -138,7 +143,7 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 		beamPath := filepath.Join(importPath, beamName)
 		// HK file should be here too...
 		hkPath := filepath.Join(importPath, "HK-"+rttStr+".csv")
-		data, err := importEMData(rttStr, beamPath, hkPath, imageList, bulkMaxList, msaList, &fs, log)
+		data, err := importEMData(creatorId, rttStr, beamPath, hkPath, imageList, bulkMaxList, msaList, &fs, log)
 		if err != nil {
 			log.Errorf("Import failed for %v: %v", beamName, err)
 			continue
@@ -151,6 +156,19 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 
 	// If we got here, nothing was imported
 	return nil, "", fmt.Errorf("Expected RTT %v was not found in uploaded data", datasetIDExpected)
+}
+
+func readCreator(creatorPath string, fs fileaccess.FileAccess) (string, error) {
+	var creator = protos.UserInfo{}
+	err := fs.ReadJSON(creatorPath, "", &creator, false)
+	if err != nil {
+		return "", nil
+	}
+
+	if len(creator.Id) <= 0 {
+		return "", fmt.Errorf("Failed to read creator id from %v", creatorPath)
+	}
+	return creator.Id, nil
 }
 
 func extractZipName(files []string) (string, error) {
@@ -179,7 +197,7 @@ func extractZipName(files []string) (string, error) {
 
 	return zipName, nil
 }
-func importEMData(rtt string, beamLocPath string, hkPath string, imagePathList []string, bulkMaxList []string, msaList []string, fs fileaccess.FileAccess, logger logger.ILogger) (*dataConvertModels.OutputData, error) {
+func importEMData(creatorId string, rtt string, beamLocPath string, hkPath string, imagePathList []string, bulkMaxList []string, msaList []string, fs fileaccess.FileAccess, logger logger.ILogger) (*dataConvertModels.OutputData, error) {
 	// Read MSAs
 	locSpectraLookup, err := jplbreadboard.MakeSpectraLookup("", msaList, true, false, "", false, logger)
 	if err != nil {
@@ -246,7 +264,7 @@ func importEMData(rtt string, beamLocPath string, hkPath string, imagePathList [
 		return nil, err
 	}
 
-	return importerutils.MakeFMDatasetOutput(
+	outData, err := importerutils.MakeFMDatasetOutput(
 		beamLookup,
 		hkData,
 		locSpectraLookup,
@@ -265,4 +283,7 @@ func importEMData(rtt string, beamLocPath string, hkPath string, imagePathList [
 		uint32(3),
 		logger,
 	)
+
+	outData.CreatorUserId = creatorId
+	return outData, err
 }
