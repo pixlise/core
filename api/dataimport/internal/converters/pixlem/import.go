@@ -219,6 +219,14 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 		return nil, err
 	}
 
+	// Remove any images which don't have beam locations
+	for pmc, img := range contextImgsPerPMC {
+		if _, ok := beamLookup[pmc]; !ok {
+			logger.Infof("Excluding image due to not having beam locations: %v", img)
+			delete(contextImgsPerPMC, pmc)
+		}
+	}
+
 	hkData, err := importerutils.ReadHousekeepingFile(hkPath, 0, logger)
 	if err != nil {
 		return nil, err
