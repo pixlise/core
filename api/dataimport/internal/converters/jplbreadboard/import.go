@@ -100,7 +100,7 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 
 	if params.MsaBeamParams == "" && params.BeamFile != "" {
 		jobLog.Infof("  Reading Beam Locations: \"%v\", using minimum context image PMC detected: %v\n", params.BeamFile, minContextPMC)
-		beamLookup, err = dataImportHelpers.ReadBeamLocationsFile(filepath.Join(importPath, params.BeamFile), false, minContextPMC, []string{}, jobLog)
+		beamLookup, _, err = dataImportHelpers.ReadBeamLocationsFile(filepath.Join(importPath, params.BeamFile), false, minContextPMC, []string{}, jobLog)
 		if err != nil {
 			return nil, "", err
 		}

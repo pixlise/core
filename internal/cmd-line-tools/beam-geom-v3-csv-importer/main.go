@@ -134,30 +134,16 @@ func main() {
 
 	// Find out what PMCs we have ij's for, and find the corresponding image file name to import for
 	// this way we can import into ImageBeamLocations using the file name, and insert an entry for v3
-	beamLocs, err := dataImportHelpers.ReadBeamLocationsFile(fileName, true, 0, []string{"drift_x", "drift_y", "drift_z"}, &logger.StdOutLogger{})
+	beamLocs, ijPMCs, err := dataImportHelpers.ReadBeamLocationsFile(fileName, true, 0, []string{"drift_x", "drift_y", "drift_z"}, &logger.StdOutLogger{})
 
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	for _, beam := range beamLocs {
-		// They should all be the same so only checking first one
-		// NOTE: Also ensure we don't have any images stored for PMCs that we don't have beam data for!
-		validPMCs := []int32{}
-		for imgPMC := range beam.IJ {
-			if _, ok := pmcImageLookup[imgPMC]; !ok {
-				log.Fatalf("Failed to find image for ij PMC: %v", imgPMC)
-			} else {
-				validPMCs = append(validPMCs, imgPMC)
-			}
+	for pmc := range pmcImageLookup {
+		if !utils.ItemInSlice(pmc, ijPMCs) {
+			delete(pmcImageLookup, pmc)
 		}
-
-		for pmc := range pmcImageLookup {
-			if !utils.ItemInSlice(pmc, validPMCs) {
-				delete(pmcImageLookup, pmc)
-			}
-		}
-		break
 	}
 
 	s3Path := fmt.Sprintf("Scans/%v/dataset.bin", scanId)

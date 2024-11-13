@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dataimport/internal/converters/jplbreadboard"
@@ -214,14 +215,14 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 	minContextPMC := importerutils.GetMinimumContextPMC(contextImgsPerPMC)
 
 	// Read Beams
-	beamLookup, err := dataImportHelpers.ReadBeamLocationsFile(beamLocPath, true, minContextPMC, []string{"drift_x", "drift_y", "drift_z"}, logger)
+	beamLookup, ijPMCs, err := dataImportHelpers.ReadBeamLocationsFile(beamLocPath, true, minContextPMC, []string{"drift_x", "drift_y", "drift_z"}, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	// Remove any images which don't have beam locations
 	for pmc, img := range contextImgsPerPMC {
-		if _, ok := beamLookup[pmc]; !ok {
+		if !utils.ItemInSlice(pmc, ijPMCs) {
 			logger.Infof("Excluding image due to not having beam locations: %v", img)
 			delete(contextImgsPerPMC, pmc)
 		}
@@ -240,7 +241,11 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 	site := "000"
 	drive := "0000"
 	product := "???"
-	sol := "D000"
+
+	// Use current date encoded as a test sol
+	// A=2017, 'A' is 65 ascii
+	sol := fmt.Sprintf("%v%v", string(65+time.Now().Year()-2017), time.Now().YearDay())
+
 	ftype := "??" // PE
 	producer := "J"
 	version := "01"

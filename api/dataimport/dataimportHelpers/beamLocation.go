@@ -31,11 +31,11 @@ import (
 )
 
 // ReadBeamLocationsFile - Reads beam location CSV. Old style (expectMultipleIJ=false) or new multi-image IJ coord CSVs.
-func ReadBeamLocationsFile(beamPath string, expectMultipleIJ bool, mainImagePMC int32, ignoreColumns []string, jobLog logger.ILogger) (dataConvertModels.BeamLocationByPMC, error) {
+func ReadBeamLocationsFile(beamPath string, expectMultipleIJ bool, mainImagePMC int32, ignoreColumns []string, jobLog logger.ILogger) (dataConvertModels.BeamLocationByPMC, []int32, error) {
 	// Find the first row that has the start of data we're interested in!
 	file, err := os.Open(beamPath)
 	if err != nil {
-		return nil, err
+		return nil, []int32{}, err
 	}
 	defer file.Close()
 
@@ -51,7 +51,7 @@ func ReadBeamLocationsFile(beamPath string, expectMultipleIJ bool, mainImagePMC 
 		}
 
 		if lineNo > 4 {
-			return nil, fmt.Errorf("Failed to find header row of beam location data")
+			return nil, []int32{}, fmt.Errorf("Failed to find header row of beam location data")
 		}
 	}
 
@@ -61,16 +61,17 @@ func ReadBeamLocationsFile(beamPath string, expectMultipleIJ bool, mainImagePMC 
 	}
 	rows, err := ReadCSV(beamPath, lineNo, ',', jobLog)
 	if err != nil {
-		return nil, err
+		return nil, []int32{}, err
 	}
 
 	return parseBeamLocations(rows, expectMultipleIJ, mainImagePMC, ignoreColumns)
 }
 
-func parseBeamLocations(rows [][]string, expectMultipleIJ bool, mainImagePMC int32, ignoreColumns []string) (dataConvertModels.BeamLocationByPMC, error) {
+func parseBeamLocations(rows [][]string, expectMultipleIJ bool, mainImagePMC int32, ignoreColumns []string) (dataConvertModels.BeamLocationByPMC, []int32, error) {
+	pmcs := []int32{}
 	headerLookup, geom_corrIdx, err := parseBeamLocationHeaders(rows[0], expectMultipleIJ, mainImagePMC, ignoreColumns)
 	if err != nil {
-		return nil, err
+		return nil, pmcs, err
 	}
 
 	// Read in each row and store based on the header lookup we made
@@ -79,16 +80,21 @@ func parseBeamLocations(rows [][]string, expectMultipleIJ bool, mainImagePMC int
 	for line, row := range rows[1:] {
 		pmc, locData, err := parseBeamLocationRow(row, headerLookup, geom_corrIdx)
 		if err != nil {
-			return nil, fmt.Errorf("line [%v] - ERROR: %v", line, err)
+			return nil, pmcs, fmt.Errorf("line [%v] - ERROR: %v", line, err)
 		}
 		if _, ok := result[pmc]; ok {
-			return nil, fmt.Errorf("line [%v] - ERROR: duplicate PMC %v", line, pmc)
+			return nil, pmcs, fmt.Errorf("line [%v] - ERROR: duplicate PMC %v", line, pmc)
 		}
 
 		result[pmc] = locData
 	}
 
-	return result, nil
+	// Also save a list of PMCs who had ijs
+	for _, item := range headerLookup {
+		pmcs = append(pmcs, item.pmc)
+	}
+
+	return result, pmcs, nil
 }
 
 type pmcColIdxs struct {
