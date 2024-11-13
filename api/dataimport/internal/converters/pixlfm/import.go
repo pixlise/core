@@ -393,6 +393,9 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		log,
 	)
 
+	// Explicitly set to NOT clear before import - this way we should keep images around...
+	data.ClearBeforeSave = false
+
 	if err != nil {
 		return nil, "", err
 	}
