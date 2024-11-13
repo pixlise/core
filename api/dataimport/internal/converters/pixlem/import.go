@@ -152,6 +152,9 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 
 		log.Infof("Imported scan with RTT: %v", rtt)
 		data.DatasetID += "_em" // To ensure we don't overwrite real datasets
+
+		// NOTE: PIXL EM import - we clear everything before importing so we don't end up with eg images from a bad previous import
+		data.ClearBeforeSave = true
 		return data, filepath.Join(importPath, zipName, zipName), nil
 	}
 
@@ -243,8 +246,8 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 	product := "???"
 
 	// Use current date encoded as a test sol
-	// A=2017, 'A' is 65 ascii
-	sol := fmt.Sprintf("%v%v", string(65+time.Now().Year()-2017), time.Now().YearDay())
+	// A=2016, 'A' is 65 ascii
+	sol := fmt.Sprintf("%v%v", string(65+time.Now().Year()-2016), time.Now().YearDay())
 
 	ftype := "??" // PE
 	producer := "J"
