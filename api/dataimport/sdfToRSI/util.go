@@ -174,6 +174,7 @@ func readNumBetween(line string, prefix string, suffix string, readType int) (in
 	return val, 0, lastPos, nil
 }
 
+// Expected SCLK format: 2006-002T15:04:05
 func makeWriteSCLInt(readSCLK string) int64 {
 	unixSec := readTimestamp(readSCLK)
 

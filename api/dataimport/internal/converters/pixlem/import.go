@@ -246,8 +246,7 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 	product := "???"
 
 	// Use current date encoded as a test sol
-	// A=2016, 'A' is 65 ascii
-	sol := fmt.Sprintf("%v%v", string(65+time.Now().Year()-2016), time.Now().YearDay())
+	sol := timeToTestSol(time.Now())
 
 	ftype := "??" // PE
 	producer := "J"
@@ -302,4 +301,14 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 
 	outData.CreatorUserId = creatorId
 	return outData, err
+}
+
+func timeToTestSol(t time.Time) string {
+	// A=2016, 'A' is 65 ascii
+	var result string
+
+	var asciiDate = rune('A' + t.Year() - 2016)
+	result += string(asciiDate)
+	result += strconv.Itoa(t.YearDay())
+	return result
 }
