@@ -127,53 +127,56 @@ func Example_parseBeamLocationRow() {
 }
 
 func Example_parseBeamLocations() {
-	data, err := parseBeamLocations([][]string{[]string{"PMC", "x", "y", "z", "image_i", "image_j"}, []string{"33", "1.1", "1.2", "1.3", "55.1", "55.2"}}, false, 222, []string{})
-	fmt.Printf("%v|%v\n", data, err)
+	data, pmcs, err := parseBeamLocations([][]string{{"PMC", "x", "y", "z", "image_i", "image_j"}, {"33", "1.1", "1.2", "1.3", "55.1", "55.2"}}, false, 222, []string{})
+	fmt.Printf("%v|%v|%v\n", data, pmcs, err)
 
-	data, err = parseBeamLocations([][]string{
-		[]string{"PMC", "x", "y", "z", "PMC_22_MCC_i", "PMC_22_MCC_j", "PMC_62_MCC_i", "PMC_62_MCC_j"},
-		[]string{"33", "31.1", "31.2", "31.3", "355.1", "355.2", "3121.4", "3121.5"},
-		[]string{"66", "91.1", "91.2", "91.3", "955.1", "955.2", "9121.4", "9121.5"},
+	data, pmcs, err = parseBeamLocations([][]string{
+		{"PMC", "x", "y", "z", "PMC_22_MCC_i", "PMC_22_MCC_j", "PMC_62_MCC_i", "PMC_62_MCC_j"},
+		{"33", "31.1", "31.2", "31.3", "355.1", "355.2", "3121.4", "3121.5"},
+		{"66", "91.1", "91.2", "91.3", "955.1", "955.2", "9121.4", "9121.5"},
 	}, true, 333, []string{})
-	fmt.Printf("%v|%v\n", data, err)
+	fmt.Printf("%v|%v|%v\n", data, pmcs, err)
 
-	data, err = parseBeamLocations([][]string{
-		[]string{"PMC", "x", "y", "z", "geom_corr", "PMC_22_MCC_i", "PMC_22_MCC_j", "PMC_62_MCC_i", "PMC_62_MCC_j"},
-		[]string{"33", "31.1", "31.2", "31.3", "1.03", "355.1", "355.2", "3121.4", "3121.5"},
-		[]string{"66", "91.1", "91.2", "91.3", "0.99", "955.1", "955.2", "9121.4", "9121.5"},
+	data, pmcs, err = parseBeamLocations([][]string{
+		{"PMC", "x", "y", "z", "geom_corr", "PMC_22_MCC_i", "PMC_22_MCC_j", "PMC_62_MCC_i", "PMC_62_MCC_j"},
+		{"33", "31.1", "31.2", "31.3", "1.03", "355.1", "355.2", "3121.4", "3121.5"},
+		{"66", "91.1", "91.2", "91.3", "0.99", "955.1", "955.2", "9121.4", "9121.5"},
 	}, true, 333, []string{})
-	fmt.Printf("%v|%v\n", data, err)
+	fmt.Printf("%v|%v|%v\n", data, pmcs, err)
 
-	data, err = parseBeamLocations([][]string{
-		[]string{"PMC", "x", "y", "z", "PMC_22_MCC_i", "PMC_22_MCC_j", "geom_corr", "PMC_62_MCC_i", "PMC_62_MCC_j"},
-		[]string{"33", "31.1", "31.2", "31.3", "355.1", "355.2", "1.03", "3121.4", "3121.5"},
-		[]string{"66", "91.1", "91.2", "91.3", "955.1", "955.2", "0.99", "9121.4", "9121.5"},
+	data, pmcs, err = parseBeamLocations([][]string{
+		{"PMC", "x", "y", "z", "PMC_22_MCC_i", "PMC_22_MCC_j", "geom_corr", "PMC_62_MCC_i", "PMC_62_MCC_j"},
+		{"33", "31.1", "31.2", "31.3", "355.1", "355.2", "1.03", "3121.4", "3121.5"},
+		{"66", "91.1", "91.2", "91.3", "955.1", "955.2", "0.99", "9121.4", "9121.5"},
 	}, true, 333, []string{})
-	fmt.Printf("%v|%v\n", data, err)
+	fmt.Printf("%v|%v|%v\n", data, pmcs, err)
 
 	// Output:
-	// map[33:{1.1 1.2 1.3 0 map[222:{55.1 55.2}]}]|<nil>
-	// map[33:{31.1 31.2 31.3 0 map[22:{355.1 355.2} 62:{3121.4 3121.5}]} 66:{91.1 91.2 91.3 0 map[22:{955.1 955.2} 62:{9121.4 9121.5}]}]|<nil>
-	// map[33:{31.1 31.2 31.3 1.03 map[22:{355.1 355.2} 62:{3121.4 3121.5}]} 66:{91.1 91.2 91.3 0.99 map[22:{955.1 955.2} 62:{9121.4 9121.5}]}]|<nil>
-	// map[33:{31.1 31.2 31.3 1.03 map[22:{355.1 355.2} 62:{3121.4 3121.5}]} 66:{91.1 91.2 91.3 0.99 map[22:{955.1 955.2} 62:{9121.4 9121.5}]}]|<nil>
+	// map[33:{1.1 1.2 1.3 0 map[222:{55.1 55.2}]}]|[222]|<nil>
+	// map[33:{31.1 31.2 31.3 0 map[22:{355.1 355.2} 62:{3121.4 3121.5}]} 66:{91.1 91.2 91.3 0 map[22:{955.1 955.2} 62:{9121.4 9121.5}]}]|[22 62]|<nil>
+	// map[33:{31.1 31.2 31.3 1.03 map[22:{355.1 355.2} 62:{3121.4 3121.5}]} 66:{91.1 91.2 91.3 0.99 map[22:{955.1 955.2} 62:{9121.4 9121.5}]}]|[22 62]|<nil>
+	// map[33:{31.1 31.2 31.3 1.03 map[22:{355.1 355.2} 62:{3121.4 3121.5}]} 66:{91.1 91.2 91.3 0.99 map[22:{955.1 955.2} 62:{9121.4 9121.5}]}]|[22 62]|<nil>
 }
 
 // This is kind of redunant, was already tested elsewhere, but this is an easy point to add a file and run the test to make sure it imports!
 func Example_ReadBeamLocationsFile() {
-	rxl, err := ReadBeamLocationsFile("./test-data/GeomCorrMoved.CSV", true, 4, []string{}, &logger.StdOutLoggerForTest{})
-	fmt.Printf("%v\nrxl: %v\n", err, len(rxl))
+	rxl, pmcs, err := ReadBeamLocationsFile("./test-data/GeomCorrMoved.CSV", true, 4, []string{}, &logger.StdOutLoggerForTest{})
+	fmt.Printf("%v\npmcs: %v\nrxl: %v\n", err, pmcs, len(rxl))
 
-	rxl, err = ReadBeamLocationsFile("./test-data/GeomCorrAtExpected.CSV", true, 4, []string{}, &logger.StdOutLoggerForTest{})
-	fmt.Printf("%v\nrxl: %v\n", err, len(rxl))
+	rxl, pmcs, err = ReadBeamLocationsFile("./test-data/GeomCorrAtExpected.CSV", true, 4, []string{}, &logger.StdOutLoggerForTest{})
+	fmt.Printf("%v\npmcs: %v\nrxl: %v\n", err, pmcs, len(rxl))
 
-	rxl, err = ReadBeamLocationsFile("./test-data/MissingJ.CSV", true, 4, []string{}, &logger.StdOutLoggerForTest{})
-	fmt.Printf("%v\nrxl: %v\n", err, len(rxl))
+	rxl, pmcs, err = ReadBeamLocationsFile("./test-data/MissingJ.CSV", true, 4, []string{}, &logger.StdOutLoggerForTest{})
+	fmt.Printf("%v\npmcs: %v\nrxl: %v\n", err, pmcs, len(rxl))
 
 	// Output:
 	// <nil>
+	// pmcs: [4 457 5 458]
 	// rxl: 3
 	// <nil>
+	// pmcs: [4 457 5 458]
 	// rxl: 3
 	// Unexpected count of i/j columns
+	// pmcs: []
 	// rxl: 0
 }

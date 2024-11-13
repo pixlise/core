@@ -148,7 +148,7 @@ func (s *SOFFImport) Import(importPath string, pseudoIntensityRangesPath string,
 	}
 
 	// Read each one
-	beamLookup, err := dataImportHelpers.ReadBeamLocationsFile(filepath.Join(importPath, importPathAndOffsets["Xray_beam_positions"].fileName), true, 1, []string{}, s.log)
+	beamLookup, _, err := dataImportHelpers.ReadBeamLocationsFile(filepath.Join(importPath, importPathAndOffsets["Xray_beam_positions"].fileName), true, 1, []string{}, s.log)
 	if err != nil {
 		return nil, "", err
 	}
