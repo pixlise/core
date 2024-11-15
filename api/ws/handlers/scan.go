@@ -510,6 +510,10 @@ func processEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 	sdf_raw_zipPath := ""
 
 	for _, f := range zipReader.File {
+		if strings.Contains(f.Name, "..") {
+			return fmt.Errorf("Found invalid path in zip that references ..: %v", f.Name)
+		}
+
 		if !f.FileInfo().IsDir() {
 			// Add to list of files we're interested in
 			if strings.HasSuffix(f.Name, "sdf_raw.txt") {
