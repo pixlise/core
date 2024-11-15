@@ -245,6 +245,10 @@ type OutputData struct {
 
 	// Beam generator version number
 	BeamVersion uint32
+
+	// ClearBeforeSave - As the name says, this flag can indicate from the importer that when saving this data
+	// we have to clear existing data for it. Mainly for images, do we want old ones to stick around incorrectly?
+	ClearBeforeSave bool
 }
 
 // EnsurePMC - allocates an item to store data for the given PMC if doesn't already exist

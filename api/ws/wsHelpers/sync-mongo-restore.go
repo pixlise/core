@@ -10,6 +10,7 @@ import (
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/core/utils"
 )
 
 func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, restoreToDBName string, restoreFromDBName string) (*mongorestore.MongoRestore, error) {
@@ -69,12 +70,18 @@ func DownloadArchive(svcs *services.APIServices) (string, error) {
 	svcs.Log.Infof("Found %v remote DB Dump files...", len(remoteDBFiles))
 
 	localFS := fileaccess.FSAccess{}
-
 	dbName := ""
-	for _, dbFile := range remoteDBFiles {
-		svcs.Log.Infof(" Downloading: %v...", dbFile)
 
-		dbFileBytes, err := svcs.FS.ReadObject(svcs.Config.DataBackupBucket, dbFile)
+	for _, dbFile := range remoteDBFiles {
+		// Report free space remaining
+		freeBytes, err := utils.GetDiskAvailableBytes()
+		if err != nil {
+			svcs.Log.Errorf(" Failed to get free disk bytes: %v", err)
+		}
+
+		svcs.Log.Infof(" Downloading: %v... (%v bytes free)", dbFile, freeBytes)
+
+		dbStream, err := svcs.FS.ReadObjectStream(svcs.Config.DataBackupBucket, dbFile)
 		if err != nil {
 			return "", fmt.Errorf("Failed to download remote DB dump file: %v. Error: %v", dbFile, err)
 		}
@@ -82,7 +89,7 @@ func DownloadArchive(svcs *services.APIServices) (string, error) {
 		// Save locally
 		// Remove remote root dir
 		dbFilePathLocal := strings.TrimPrefix(dbFile, dataBackupS3Path+"/")
-		err = localFS.WriteObject(dataBackupLocalPath, dbFilePathLocal, dbFileBytes)
+		err = localFS.WriteObjectStream(dataBackupLocalPath, dbFilePathLocal, dbStream)
 
 		if err != nil {
 			return "", fmt.Errorf("Failed to write local DB dump file: %v. Error: %v", dbFilePathLocal, err)

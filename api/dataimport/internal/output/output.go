@@ -318,6 +318,67 @@ func (s *PIXLISEDataSaver) Save(
 		}
 	}
 
+	// Delete images and other DB entries if need be
+	if data.ClearBeforeSave {
+		coll := db.Collection(dbCollections.ImagesName)
+
+		opts := options.Find().SetProjection(bson.D{
+			{Key: "id", Value: true},
+		})
+
+		cursor, err := coll.Find(context.TODO(), bson.D{{Key: "originscanid", Value: data.DatasetID}}, opts)
+		if err != nil {
+			return fmt.Errorf("Failed to delete images pre scan import for: %v. Error: %v", data.DatasetID, err)
+		}
+
+		images := []*protos.ScanImage{}
+		err = cursor.All(context.TODO(), &images)
+		if err != nil {
+			return err
+		}
+
+		// Gather all image names
+		imageIds := []string{}
+		for _, img := range images {
+			imageIds = append(imageIds, img.ImagePath)
+		}
+
+		// Delete the images themselves
+		res, err := coll.DeleteMany(context.TODO(), bson.D{{Key: "originscanid", Value: data.DatasetID}})
+		if err != nil {
+			return fmt.Errorf("Failed to delete images pre scan import for: %v. Error: %v", data.DatasetID, err)
+		}
+
+		coll = db.Collection(dbCollections.ImageBeamLocationsName)
+		resBeam, err := coll.DeleteMany(context.TODO(), bson.M{"_id": bson.M{"$in": imageIds}})
+		if err != nil {
+			return fmt.Errorf("Failed to delete images pre scan import for: %v. Error: %v", data.DatasetID, err)
+		}
+
+		jobLog.Infof("Deleted %d images, %d image beam locations pre importing scan: %v...", res.DeletedCount, resBeam.DeletedCount, data.DatasetID)
+
+		// Delete from ownership, scan default images and scan itself
+		coll = db.Collection(dbCollections.ScanDefaultImagesName)
+		resDefImg, err := coll.DeleteOne(context.TODO(), bson.M{"_id": data.DatasetID})
+		if err != nil {
+			return fmt.Errorf("Failed to delete scan default image for: %v. Error: %v", data.DatasetID, err)
+		}
+
+		coll = db.Collection(dbCollections.ScansName)
+		resScan, err := coll.DeleteOne(context.TODO(), bson.M{"_id": data.DatasetID})
+		if err != nil {
+			return fmt.Errorf("Failed to delete scan default image for: %v. Error: %v", data.DatasetID, err)
+		}
+
+		coll = db.Collection(dbCollections.OwnershipName)
+		resOwnership, err := coll.DeleteOne(context.TODO(), bson.M{"_id": data.DatasetID})
+		if err != nil {
+			return fmt.Errorf("Failed to delete scan default image for: %v. Error: %v", data.DatasetID, err)
+		}
+
+		jobLog.Infof("Deleted %d scan default images, %d scans and %v ownership entries for scan: %v...", resDefImg.DeletedCount, resScan.DeletedCount, resOwnership.DeletedCount, data.DatasetID)
+	}
+
 	// We work out the default file name when copying output images now... because if there isn't one, we may pick one during that process.
 	defaultContextImage, err := copyImagesToOutput(contextImageSrcPath, []string{data.DatasetID}, data.DatasetID, outputImagesPath, data, db, jobLog)
 	if err != nil {

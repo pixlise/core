@@ -18,10 +18,7 @@
 package jplbreadboard
 
 import (
-	"path/filepath"
-	"strconv"
-	"strings"
-
+	"github.com/pixlise/core/v4/api/dataimport/internal/importerutils"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 )
@@ -35,30 +32,5 @@ func processContextImages(path string, jobLog logger.ILogger, fs fileaccess.File
 		return nil, err
 	}
 
-	return getContextImagesPerPMCFromListing(contextImgDirFiles, jobLog), nil
-}
-
-func getContextImagesPerPMCFromListing(paths []string, jobLog logger.ILogger) map[int32]string {
-	result := make(map[int32]string)
-
-	for _, pathitem := range paths {
-		_, file := filepath.Split(pathitem)
-		extension := filepath.Ext(file)
-		if extension == ".jpg" {
-			fileNameBits := strings.Split(file, "_")
-			if len(fileNameBits) != 3 {
-				jobLog.Infof("Ignored unexpected image file name \"%v\" when searching for context images.", pathitem)
-			} else {
-				pmcStr := fileNameBits[len(fileNameBits)-1]
-				pmcStr = pmcStr[0 : len(pmcStr)-len(extension)]
-				pmcI, err := strconv.Atoi(pmcStr)
-				if err != nil {
-					jobLog.Infof("Ignored unexpected image file name \"%v\", couldn't parse PMC.", pathitem)
-				} else {
-					result[int32(pmcI)] = file
-				}
-			}
-		}
-	}
-	return result
+	return importerutils.GetContextImagesPerPMCFromListing(contextImgDirFiles, jobLog), nil
 }

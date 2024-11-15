@@ -93,14 +93,14 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 		}
 	}
 
-	minContextPMC := getMinimumContextPMC(contextImgsPerPMC)
+	minContextPMC := importerutils.GetMinimumContextPMC(contextImgsPerPMC)
 
 	var hkData dataConvertModels.HousekeepingData
 	var beamLookup = make(dataConvertModels.BeamLocationByPMC)
 
 	if params.MsaBeamParams == "" && params.BeamFile != "" {
 		jobLog.Infof("  Reading Beam Locations: \"%v\", using minimum context image PMC detected: %v\n", params.BeamFile, minContextPMC)
-		beamLookup, err = dataImportHelpers.ReadBeamLocationsFile(filepath.Join(importPath, params.BeamFile), false, minContextPMC, []string{}, jobLog)
+		beamLookup, _, err = dataImportHelpers.ReadBeamLocationsFile(filepath.Join(importPath, params.BeamFile), false, minContextPMC, []string{}, jobLog)
 		if err != nil {
 			return nil, "", err
 		}
@@ -153,7 +153,7 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 	spectrafiles, _ := getSpectraFiles(allMSAFiles, verifyreadtype, jobLog)
 
 	jobLog.Infof("  Found %v usable spectrum files...", len(allMSAFiles))
-	spectraLookup, err := makeSpectraLookup(spectraPath, spectrafiles, params.SingleDetectorMSAs, params.GenPMCs, params.ReadTypeOverride, params.DetectorADuplicate, jobLog)
+	spectraLookup, err := MakeSpectraLookup(spectraPath, spectrafiles, params.SingleDetectorMSAs, params.GenPMCs, params.ReadTypeOverride, params.DetectorADuplicate, jobLog)
 	if err != nil {
 		return nil, "", err
 	}
@@ -235,20 +235,4 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 
 	data.SetPMCData(beamLookup, hkData, spectraLookup, contextImgsPerPMC, pseudoIntensityData, map[int32]string{})
 	return data, contextImageSrcDir, nil
-}
-
-// Check what the minimum PMC is we have a context image for
-func getMinimumContextPMC(contextImgsPerPMC map[int32]string) int32 {
-	minContextPMC := int32(0)
-
-	for contextPMC := range contextImgsPerPMC {
-		if minContextPMC == 0 || contextPMC < minContextPMC {
-			minContextPMC = contextPMC
-		}
-	}
-	if minContextPMC == 0 {
-		minContextPMC = 1
-	}
-
-	return minContextPMC
 }

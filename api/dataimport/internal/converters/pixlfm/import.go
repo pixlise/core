@@ -218,7 +218,7 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 				if beamCsvMeta.ProdType == "RXL" {
 					// If files don't conform, don't read...
 					beamFilePath := filepath.Join(pathToSubdir, file)
-					beamLookup, err = dataImportHelpers.ReadBeamLocationsFile(beamFilePath, true, 1, []string{}, log)
+					beamLookup, _, err = dataImportHelpers.ReadBeamLocationsFile(beamFilePath, true, 1, []string{}, log)
 					if err != nil {
 						return nil, "", err
 					} else {
@@ -392,6 +392,9 @@ func (p PIXLFM) Import(importPath string, pseudoIntensityRangesPath string, data
 		uint32(beamToolVersion),
 		log,
 	)
+
+	// Explicitly set to NOT clear before import - this way we should keep images around...
+	data.ClearBeforeSave = false
 
 	if err != nil {
 		return nil, "", err

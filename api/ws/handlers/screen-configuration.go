@@ -399,14 +399,16 @@ func HandleScreenConfigurationDeleteReq(req *protos.ScreenConfigurationDeleteReq
 	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
 		var err error
 
-		for _, layout := range screenConfig.Layouts {
-			for _, widget := range layout.Widgets {
-				if widget.Id != "" {
-					_, err = hctx.Svcs.MongoDB.Collection(dbCollections.WidgetDataName).DeleteOne(sessCtx, bson.M{
-						"_id": widget.Id,
-					})
-					if err != nil {
-						return nil, err
+		if !req.PreserveDanglingWidgetReferences {
+			for _, layout := range screenConfig.Layouts {
+				for _, widget := range layout.Widgets {
+					if widget.Id != "" {
+						_, err = hctx.Svcs.MongoDB.Collection(dbCollections.WidgetDataName).DeleteOne(sessCtx, bson.M{
+							"_id": widget.Id,
+						})
+						if err != nil {
+							return nil, err
+						}
 					}
 				}
 			}

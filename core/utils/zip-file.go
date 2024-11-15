@@ -29,40 +29,43 @@ import (
 	"time"
 )
 
-func AddFilesToZip(w *zip.Writer, basePath, baseInZip string) {
+func AddFilesToZip(w *zip.Writer, basePath, baseInZip string) error {
 	// Open the Directory
 	files, err := os.ReadDir(basePath)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	for _, file := range files {
-		fmt.Println(basePath + file.Name())
+		readPath := filepath.Join(basePath, file.Name())
 		if !file.IsDir() {
-			dat, err := os.ReadFile(basePath + file.Name())
+			dat, err := os.ReadFile(readPath)
 			if err != nil {
-				fmt.Println(err)
+				return fmt.Errorf("Failed to read file %v: %v", readPath, err)
 			}
 
-			// Add some files to the archive.
-			f, err := w.Create(baseInZip + file.Name())
+			writePath := path.Join(baseInZip, file.Name())
+			f, err := w.Create(writePath)
 			if err != nil {
-				fmt.Println(err)
+				return fmt.Errorf("Failed to create file %v in zip: %v", writePath, err)
 			}
 			_, err = f.Write(dat)
 			if err != nil {
-				fmt.Println(err)
+				return fmt.Errorf("Failed to write file %v to zip: %v", writePath, err)
 			}
 		} else if file.IsDir() {
-
 			// Recurse
-			newBase := basePath + file.Name() + "/"
-			fmt.Println("Recursing and Adding SubDir: " + file.Name())
-			fmt.Println("Recursing and Adding SubDir: " + newBase)
+			//fmt.Println("Recursing and Adding SubDir: " + file.Name())
+			fmt.Println("Recursing and Adding SubDir: " + readPath)
 
-			AddFilesToZip(w, newBase, baseInZip+file.Name()+"/")
+			err := AddFilesToZip(w, readPath, path.Join(baseInZip, file.Name()))
+			if err != nil {
+				return err
+			}
 		}
 	}
+
+	return nil
 }
 
 func UnzipDirectory(src string, dest string, flattenPaths bool) ([]string, error) {
