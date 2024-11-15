@@ -303,12 +303,24 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 	return outData, err
 }
 
+/*
+The Primary timestamp of coarser granularity than the Secondary timestamp (documented later).  Value type is based on either of four scenarios:
+Flight Cruise
+Year-DOY (4 alphanumeric) - This field stores two metadata items in the order:
+a)    One alpha character in range “A-Z” to designate Earth Year portion of the UTC-like time value, representing Years 2017 to 2042
+b)    Three integers in range “001-365” representing Day-of-Year (DOY)
+*/
 func timeToTestSol(t time.Time) string {
-	// A=2016, 'A' is 65 ascii
+	// A=2017, 'A' is 65 ascii
 	var result string
 
-	var asciiDate = rune('A' + t.Year() - 2016)
+	yearSinceEpoch := t.Year() - 2017
+	if yearSinceEpoch < 0 || yearSinceEpoch > 25 {
+		return "????"
+	}
+
+	var asciiDate = rune('A' + yearSinceEpoch)
 	result += string(asciiDate)
-	result += strconv.Itoa(t.YearDay())
+	result += fmt.Sprintf("%03d", t.YearDay())
 	return result
 }
