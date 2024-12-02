@@ -3,7 +3,6 @@ package sdfToRSI
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"strconv"
@@ -62,6 +61,7 @@ func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath str
 	if err != nil {
 		return fmt.Errorf("Failed to create output RSI CSV %v: %v", outPath, err)
 	}
+	defer fout.Close()
 
 	_, err = fout.WriteString(fmt.Sprintf("Spatial information from PIXL SDF or dat files %v for RTT: %v\n", sdfPath, rtt) +
 		"SCLK, RTT, PMC, PDP category, PDP name, PDP information (content varies)\n" +
@@ -75,6 +75,7 @@ func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath str
 	if err != nil {
 		return fmt.Errorf("Failed to create output housekeeping CSV %v: %v", outPath, err)
 	}
+	defer fout_hk.Close()
 
 	_, err = fout_hk.WriteString("SCLK,PMC,hk_fcnt,f_pixl_sdd_1_conv,f_pixl_sdd_2_conv,f_pixl_arm_resist_conv,f_head_sdd_1_conv,f_head_sdd_2_conv,f_hvps_fvmon_conv,f_hvps_fimon_conv,f_hvps_hvmon_conv,f_hvps_himon_conv,i_motor_1_conv,i_motor_2_conv,i_motor_3_conv,i_motor_4_conv,i_motor_5_conv,i_motor_6_conv\n")
 	if err != nil {
@@ -259,16 +260,10 @@ func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath str
 		return err
 	}
 
-	writeOutput(outLinesByType, fout)
-
-	err = fout.Close()
-	if err != nil {
-		return err
-	}
-	return fout_hk.Close()
+	return writeOutput(outLinesByType, fout)
 }
 
-func writeOutput(outLinesByType map[string][]string, fout *os.File) {
+func writeOutput(outLinesByType map[string][]string, fout *os.File) error {
 	// We save in this order:
 	// gv aka _MCC_SLI_SpotList_BF
 	// scanlog aka _Grand_Scan_Log
@@ -282,7 +277,7 @@ func writeOutput(outLinesByType map[string][]string, fout *os.File) {
 			for _, line := range lines {
 				_, err := fout.WriteString(line)
 				if err != nil {
-					log.Fatalf("Failed to write to output file: %v", err)
+					return fmt.Errorf("Failed to write to output file: %v", err)
 				}
 			}
 
@@ -293,7 +288,9 @@ func writeOutput(outLinesByType map[string][]string, fout *os.File) {
 	// If any left at the end, we've got a bug
 	if len(outLinesByType) > 0 {
 		for k := range outLinesByType {
-			log.Fatalf("Failed to write '%v' output file!", k)
+			return fmt.Errorf("Failed to write '%v' output file!", k)
 		}
 	}
+
+	return nil
 }
