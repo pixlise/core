@@ -119,6 +119,6 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 }
 
 func main() {
-	os.Mkdir("/tmp/profile", 0750)
+	os.Mkdir("/tmp/profile", 0750) // Not sure what this is for, permissions are read/executable for owner/group. Perhaps some profiling tool Tom used a while back
 	lambda.Start(HandleRequest)
 }

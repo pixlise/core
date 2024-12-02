@@ -2,6 +2,7 @@ package sdfToRSI
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -61,6 +62,11 @@ func scanSDF(sdfPath string) ([]EventEntry, error) {
 			continue
 		}
 
+		// Ignore startup messages (these sometimes come after the :: SDF_Peek complete line)
+		if strings.HasPrefix(tok, "*** ") {
+			continue
+		}
+
 		// Valid time stamp, see if it's the first we're reading...
 		ts, err := readTimestamp(tok)
 
@@ -86,17 +92,16 @@ func scanSDF(sdfPath string) ([]EventEntry, error) {
 
 		// See if there's an RTT on this line, if so, note what line it starts on
 		tok, ok = findToken(lineData, " RTT: ", " ")
-		if ok && len(tok) > 0 && !strings.HasPrefix(tok, "0x") {
-			// Read the RTT as hex number
-			thisRTT, err := strconv.ParseInt(tok, 16, 32)
+		if ok {
+			thisRTT, err := readRTT(tok)
 			if err != nil {
 				return refs, fmt.Errorf("Failed to read RTT from line %v: \"%v\". Error: %v", lineNo, line, err)
 			}
 
 			if thisRTT > 0 {
-				if !rttMap[thisRTT] {
+				if !rttMap[int64(thisRTT)] {
 					// First mention of this RTT
-					rttMap[thisRTT] = true
+					rttMap[int64(thisRTT)] = true
 					refs = append(refs, EventEntry{Line: lineNo, What: "new-rtt", Value: tok})
 				}
 			}
@@ -135,4 +140,65 @@ func scanSDF(sdfPath string) ([]EventEntry, error) {
 	}
 
 	return refs, nil
+}
+
+func readRTT(tok string) (int64, error) {
+	tok = strings.Trim(tok, "\t ")
+	if len(tok) <= 0 {
+		return 0, errors.New("Failed to read RTT from empty string")
+	}
+
+	// Some have a / in the middle separating int vs hex... if so, check both sides
+	parts := strings.Split(tok, "/")
+	if len(parts) < 1 || len(parts) > 2 {
+		return 0, fmt.Errorf("Invalid RTT read: \"%v\"", tok)
+	}
+
+	if len(parts) == 1 {
+		// It's either hex or int
+		if !strings.HasPrefix(tok, "0x") {
+			// Read the RTT as int
+			r, err := strconv.ParseInt(tok, 10, 32)
+			if err != nil {
+				// Try as hex just in case...
+				h, err2 := strconv.ParseInt(tok, 16, 32)
+				if err2 == nil {
+					return h, nil
+				}
+				return 0, fmt.Errorf("Failed to read integer RTT: \"%v\". Error: %v", tok, err)
+			}
+
+			return r, nil
+		}
+
+		// Read the RTT as hex number
+		h, err := strconv.ParseInt(tok[2:], 16, 32)
+		if err != nil {
+			return 0, fmt.Errorf("Failed to read hex RTT: \"%v\". Error: %v", tok, err)
+		}
+
+		return h, nil
+	}
+
+	// It must be of format: int/0xhex, verify the 2 halves
+	i, err := strconv.ParseInt(parts[0], 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("Failed to read integer part of RTT: \"%v\". Error: %v", tok, err)
+	}
+
+	if !strings.HasPrefix(parts[1], "0x") {
+		return 0, fmt.Errorf("Expected hex rtt after / for RTT: \"%v\"", tok)
+	}
+
+	h, err := strconv.ParseInt(parts[1][2:], 16, 32)
+	if err != nil {
+		return 0, fmt.Errorf("Failed to read hex part of RTT: \"%v\". Error: %v", tok, err)
+	}
+
+	// Verify they match
+	if i != h {
+		return 0, fmt.Errorf("Read RTT where int didn't match hex value: \"%v\".", tok)
+	}
+
+	return i, nil
 }

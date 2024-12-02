@@ -22,6 +22,10 @@ func Example_processCentroidLine3() {
 	id, res, err := processCentroidLine3(7, "2022-301T17:28:38 :    2 CenSLI_struct  0 -- ID: 0x4a, Residual: 0x03", 0)
 	fmt.Printf("%v,%v,%v\n", id, res, err)
 
+	id, res, err = processCentroidLine3(7, "2024-218T18:51:22 :    1 CenSLI_struct  0 -- ID: 0x4c, Residual: 0x05                                |           76            5", 0)
+	fmt.Printf("%v,%v,%v\n", id, res, err)
+
 	// Output:
 	// 74,3,<nil>
+	// 76,5,<nil>
 }

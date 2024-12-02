@@ -141,3 +141,19 @@ func Example_takeToken() {
 	// bc||true
 	// ||false
 }
+
+func Example_readNumBetween() {
+	fval, ival, lastpos, err := readNumBetween("SenHd -       SDD 1 Tmp: 19.83 C   |  Bipod 1 Tmp:  20.71 C |         FLIE Tmp:  21.74 C", "SDD 1 Tmp:", "", read_float)
+	fmt.Printf("%v|%v|%v|%v\n", fval, ival, lastpos, err)
+	fval, ival, lastpos, err = readNumBetween("SenHd -       SDD 1 Tmp: 19.83 C   |  Bipod 1 Tmp:  20.71 C |         FLIE Tmp:  21.74 C", "SDD 1 Tmp:", "", read_int)
+	fmt.Printf("%v|%v|%v|%v\n", fval, ival, lastpos, err)
+
+	// NOTE: No Data is special... we pretend we read a 0 for now (maybe put in a sentinel later? Or other error returns??)
+	fval, ival, lastpos, err = readNumBetween("SenHd -       SDD 1 Tmp: No Data   |  Bipod 1 Tmp:  20.71 C |         FLIE Tmp:  21.74 C", "SDD 1 Tmp:", "", read_float)
+	fmt.Printf("%v|%v|%v|%v\n", fval, ival, lastpos, err)
+
+	// Output:
+	// 0|19.83|29|<nil>
+	// 0|0|0|failed to read int value after 'SDD 1 Tmp:'
+	// 0|0|26|<nil>
+}
