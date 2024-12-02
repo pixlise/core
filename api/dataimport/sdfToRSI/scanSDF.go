@@ -62,7 +62,11 @@ func scanSDF(sdfPath string) ([]EventEntry, error) {
 		}
 
 		// Valid time stamp, see if it's the first we're reading...
-		ts := readTimestamp(tok)
+		ts, err := readTimestamp(tok)
+
+		if err != nil {
+			return refs, fmt.Errorf("Failed to read timestamp on line %v: %v", lineNo, err)
+		}
 
 		if firstTimeStamp == 0 {
 			// Must be the first time stamp

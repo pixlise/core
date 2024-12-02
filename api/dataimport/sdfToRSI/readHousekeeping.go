@@ -214,8 +214,13 @@ func processHousekeeping(lineNo int, lineData string, lines []string, sclk strin
 	// We output:
 	// SCLK,PMC,hk_fcnt,f_pixl_sdd_1_conv,f_pixl_sdd_2_conv,f_pixl_arm_resist_conv,f_head_sdd_1_conv,f_head_sdd_2_conv,f_hvps_fvmon_conv,f_hvps_fimon_conv,f_hvps_hvmon_conv,f_hvps_himon_conv,i_motor_1_conv,i_motor_2_conv,i_motor_3_conv,i_motor_4_conv,i_motor_5_conv,i_motor_6_conv
 
+	iSCLK, err := makeWriteSCLInt(sclk)
+	if err != nil {
+		return 0, "", "", fmt.Errorf("hk failed to parse SCLK on line %v: %v", lineNo, err)
+	}
+
 	hk2 := fmt.Sprintf("%v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v\n",
-		makeWriteSCLInt(sclk), pmc, fcnt, fVal[1], fVal[0], fVal[2], fVal[3], fVal[4], fVal[5], fVal[6], fVal[7], fVal[8],
+		iSCLK, pmc, fcnt, fVal[1], fVal[0], fVal[2], fVal[3], fVal[4], fVal[5], fVal[6], fVal[7], fVal[8],
 		motorPos[0], motorPos[1], motorPos[2], motorPos[3], motorPos[4], motorPos[5])
 
 	return hktime, hk, hk2, nil
