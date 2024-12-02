@@ -48,7 +48,7 @@ func Example_ProcessEM() {
 
 	// Output:
 	// startEMProcess err=<nil>
-	// genFiles: [RSI-0.csv HK-0.csv]
-	// rtts: [0]
+	// genFiles: [RSI-453.csv HK-453.csv]
+	// rtts: [453]
 	// err: <nil>
 }

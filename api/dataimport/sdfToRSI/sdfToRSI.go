@@ -25,8 +25,11 @@ func ConvertSDFtoRSIs(sdfPath string, outPath string) ([]string, []int64, error)
 	startLine := 0
 	for _, ref := range refs {
 		if ref.What == "new-rtt" {
-			// Parse the RTT as hex
-			rtt, err = strconv.ParseInt(ref.Value, 16, 32)
+			// Parse the RTT (in whatever form it may be in)
+			rtt, err = readRTT(ref.Value)
+			if err != nil {
+				return files, rtts, err
+			}
 		} else if ref.What == "science" {
 			if ref.Value == "begin" {
 				startLine = ref.Line

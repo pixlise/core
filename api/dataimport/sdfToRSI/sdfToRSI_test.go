@@ -12,7 +12,7 @@ import (
 func Example_ConvertSDFtoRSI() {
 	ensureSDFRawExists()
 
-	fmt.Printf("mkdir worked: %v\n", os.MkdirAll("./output", 0777) == nil)
+	fmt.Printf("mkdir worked: %v\n", os.MkdirAll("./output", 0777) == nil) // other than 0777 fails in unit tests :(
 	wd, err := os.Getwd()
 	fmt.Printf("Getwd: %v\n", err == nil)
 	p := filepath.Join(wd, "output")
