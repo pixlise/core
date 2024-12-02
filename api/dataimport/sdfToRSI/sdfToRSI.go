@@ -176,7 +176,11 @@ func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath str
 			}
 
 			hktime, hkline, hkline_RSI, err := processHousekeeping(lineNo, lineData, hkLines, sclk, rtt, pmc)
-			if hktime == lastHKTime {
+			if err != nil {
+				return fmt.Errorf("hk: %v", err)
+			}
+
+			if hktime > 0 && hktime == lastHKTime {
 				// We overwrite in this case!
 				hklinesSaved := len(outLinesByType[tok])
 				outLinesByType[tok] = outLinesByType[tok][0 : hklinesSaved-1]

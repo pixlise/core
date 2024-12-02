@@ -57,3 +57,59 @@ func ensureSDFRawExists() {
 		}
 	}
 }
+
+func Example_readRTT() {
+	r, e := readRTT("")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("123")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("948427324")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("0x1C38D33E")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("1C38D33E") // If lacking the 0x, we should be trying it as hex just in case, some files come with 000001C5 for RTT=453
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("1234/0x333")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("1234/0x4D2")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("0x7F9G03")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("Aword")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("123/456")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("22/0xHello")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("/")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("1/2/3")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("345/245H")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("345/")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("/45")
+	fmt.Printf("%v|%v\n", r, e)
+	r, e = readRTT("/0x7E")
+	fmt.Printf("%v|%v\n", r, e)
+
+	// Output:
+	// 0|Failed to read RTT from empty string
+	// 123|<nil>
+	// 948427324|<nil>
+	// 473486142|<nil>
+	// 473486142|<nil>
+	// 0|Read RTT where int didn't match hex value: "1234/0x333".
+	// 1234|<nil>
+	// 0|Failed to read hex RTT: "0x7F9G03". Error: strconv.ParseInt: parsing "7F9G03": invalid syntax
+	// 0|Failed to read integer RTT: "Aword". Error: strconv.ParseInt: parsing "Aword": invalid syntax
+	// 0|Expected hex rtt after / for RTT: "123/456"
+	// 0|Failed to read hex part of RTT: "22/0xHello". Error: strconv.ParseInt: parsing "Hello": invalid syntax
+	// 0|Failed to read integer part of RTT: "/". Error: strconv.ParseInt: parsing "": invalid syntax
+	// 0|Invalid RTT read: "1/2/3"
+	// 0|Expected hex rtt after / for RTT: "345/245H"
+	// 0|Expected hex rtt after / for RTT: "345/"
+	// 0|Failed to read integer part of RTT: "/45". Error: strconv.ParseInt: parsing "": invalid syntax
+	// 0|Failed to read integer part of RTT: "/0x7E". Error: strconv.ParseInt: parsing "": invalid syntax
+}

@@ -145,11 +145,17 @@ func readNumBetween(line string, prefix string, suffix string, readType int) (in
 
 	var ok bool
 	var tok string
-	tok, _, ok = takeToken(line, suffix)
+	var remLine string
+	tok, remLine, ok = takeToken(line, suffix)
 	if !ok {
 		return 0, 0, 0, fmt.Errorf("failed to read suffix '%v' after '%v'", suffix, prefix)
 	}
 	lastPos += len(tok)
+
+	if tok == "No" && strings.HasPrefix(remLine, "Data") {
+		// This isn't an error... what do we do? Use a sentinal? Use 0 for now
+		return 0, 0, lastPos, nil
+	}
 
 	if readType == read_float {
 		val, err := strconv.ParseFloat(tok, 32)
