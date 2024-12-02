@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pixlise/core/v4/core/fileaccess"
+	"github.com/pixlise/core/v4/api/dataimport/sdfToRSI"
 	"github.com/pixlise/core/v4/core/logger"
 )
 
@@ -37,15 +37,18 @@ func Example_ProcessEM() {
 		z, err = zip.NewReader(bytes.NewReader(zFile), int64(len(zFile)))
 
 		if err == nil {
-			fs := fileaccess.FSAccess{}
 			l := logger.StdOutLoggerForTest{}
 
-			err = ProcessEM("123", z, zFile, "pixlise-local-data-peter", "ProcessEMTest", &fs, &l)
+			localTemp, sdfLocalPath, _, _, err := startEMProcess("123", z, zFile, &l)
+			fmt.Printf("startEMProcess err=%v\n", err)
+			genFiles, rtts, err := sdfToRSI.ConvertSDFtoRSIs(sdfLocalPath, localTemp)
+			fmt.Printf("genFiles: %v\nrtts: %v\nerr: %v\n", genFiles, rtts, err)
 		}
 	}
 
-	fmt.Printf("%v\n", err)
-
 	// Output:
-	// <nil>
+	// startEMProcess err=<nil>
+	// genFiles: [RSI-0.csv HK-0.csv]
+	// rtts: [0]
+	// err: <nil>
 }

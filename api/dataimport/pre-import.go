@@ -68,64 +68,9 @@ func ProcessEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 	// - All *.jpg files (and based on file name decide if they're needed)
 	// SDF raw file may contain data from multiple scans, so we have to generate one scan per RTT found in sdf_raw.
 
-	// We also have to run the beam location tool ourselves - there isn't one coming from sdf_raw.txt
-	localTemp := filepath.Join(os.TempDir(), importId)
-	localMSAPath := filepath.Join(localTemp, "msa")
-	if err := os.MkdirAll(localMSAPath, 0644); err != nil {
-		return fmt.Errorf("Failed to create output MSA path: %v. Error: %v", localMSAPath, err)
-	}
-	localImagesPath := filepath.Join(localTemp, "images")
-	if err := os.MkdirAll(localImagesPath, 0644); err != nil {
-		return fmt.Errorf("Failed to create output images path: %v. Error: %v", localImagesPath, err)
-	}
-
-	msas := []string{}
-	images := []string{}
-	sdfLocalPath := ""
-	sdf_raw_zipPath := ""
-
-	for _, f := range zipReader.File {
-		if strings.Contains(f.Name, "..") {
-			return fmt.Errorf("Found invalid path in zip that references ..: %v", f.Name)
-		}
-
-		if !f.FileInfo().IsDir() {
-			// Add to list of files we're interested in
-			if strings.HasSuffix(f.Name, "sdf_raw.txt") {
-				sdf_raw_zipPath = path.Base(f.Name)
-				if p, err := readFromZip(f, localTemp); err != nil {
-					return err
-				} else {
-					sdfLocalPath = p
-				}
-			} else if strings.HasSuffix(f.Name, ".msa") {
-				/*if p, err := readFromZip(f, localMSAPath); err != nil {
-					return err
-				} else {
-					msas = append(msas, path.Base(p))
-				}*/
-				msas = append(msas, f.Name)
-			} else if strings.HasSuffix(f.Name, ".jpg") {
-				/*if p, err := readFromZip(f, localImagesPath); err != nil {
-					return err
-				} else {
-					images = append(images, path.Base(p))
-				}*/
-				images = append(images, f.Name)
-			}
-		}
-	}
-
-	logger.Infof("Found sdf_raw: %v", sdf_raw_zipPath)
-	logger.Infof("Found %v images", len(images))
-	logger.Infof("Found %v histograms (MSA files)", len(msas))
-
-	// Reject any scans that don't have histograms from the EM
-	if len(msas) <= 0 {
-		return fmt.Errorf("No histograms found")
-	}
-	if len(sdf_raw_zipPath) <= 0 {
-		return fmt.Errorf("No sdf_raw.txt found")
+	localTemp, sdfLocalPath, msas, images, err := startEMProcess(importId, zipReader, zippedData, logger)
+	if err != nil {
+		return err
 	}
 
 	// Create an RSI file from the sdf_raw file
@@ -205,6 +150,71 @@ func ProcessEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 	}
 
 	return nil
+}
+
+// Just broken out to make it testable
+func startEMProcess(importId string, zipReader *zip.Reader, zippedData []byte, logger logger.ILogger) (string, string, []string, []string, error) {
+	// We also have to run the beam location tool ourselves - there isn't one coming from sdf_raw.txt
+	localTemp := filepath.Join(os.TempDir(), importId)
+	localMSAPath := filepath.Join(localTemp, "msa")
+	if err := os.MkdirAll(localMSAPath, 0644); err != nil {
+		return localTemp, "", []string{}, []string{}, fmt.Errorf("Failed to create output MSA path: %v. Error: %v", localMSAPath, err)
+	}
+	localImagesPath := filepath.Join(localTemp, "images")
+	if err := os.MkdirAll(localImagesPath, 0644); err != nil {
+		return localTemp, "", []string{}, []string{}, fmt.Errorf("Failed to create output images path: %v. Error: %v", localImagesPath, err)
+	}
+
+	msas := []string{}
+	images := []string{}
+	sdf_raw_zipPath := ""
+	sdfLocalPath := ""
+
+	for _, f := range zipReader.File {
+		if strings.Contains(f.Name, "..") {
+			return localTemp, sdfLocalPath, msas, images, fmt.Errorf("Found invalid path in zip that references ..: %v", f.Name)
+		}
+
+		if !f.FileInfo().IsDir() {
+			// Add to list of files we're interested in
+			if strings.HasSuffix(f.Name, "sdf_raw.txt") {
+				sdf_raw_zipPath = path.Base(f.Name)
+				if p, err := readFromZip(f, localTemp); err != nil {
+					return localTemp, sdfLocalPath, msas, images, err
+				} else {
+					sdfLocalPath = p
+				}
+			} else if strings.HasSuffix(f.Name, ".msa") {
+				/*if p, err := readFromZip(f, localMSAPath); err != nil {
+					return err
+				} else {
+					msas = append(msas, path.Base(p))
+				}*/
+				msas = append(msas, f.Name)
+			} else if strings.HasSuffix(f.Name, ".jpg") {
+				/*if p, err := readFromZip(f, localImagesPath); err != nil {
+					return err
+				} else {
+					images = append(images, path.Base(p))
+				}*/
+				images = append(images, f.Name)
+			}
+		}
+	}
+
+	logger.Infof("Found sdf_raw: %v", sdf_raw_zipPath)
+	logger.Infof("Found %v images", len(images))
+	logger.Infof("Found %v histograms (MSA files)", len(msas))
+
+	// Reject any scans that don't have histograms from the EM
+	if len(msas) <= 0 {
+		return localTemp, sdfLocalPath, msas, images, fmt.Errorf("No histograms found")
+	}
+	if len(sdf_raw_zipPath) <= 0 {
+		return localTemp, sdfLocalPath, msas, images, fmt.Errorf("No sdf_raw.txt found")
+	}
+
+	return localTemp, sdfLocalPath, msas, images, nil
 }
 
 func createBeamLocation(rsiPath string, rtt int64, outputBeamLocationPath string, logger logger.ILogger) (string, string, string, error) {
