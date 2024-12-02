@@ -157,11 +157,11 @@ func startEMProcess(importId string, zipReader *zip.Reader, zippedData []byte, l
 	// We also have to run the beam location tool ourselves - there isn't one coming from sdf_raw.txt
 	localTemp := filepath.Join(os.TempDir(), importId)
 	localMSAPath := filepath.Join(localTemp, "msa")
-	if err := os.MkdirAll(localMSAPath, 0666); err != nil {
+	if err := os.MkdirAll(localMSAPath, 0777); err != nil {
 		return localTemp, "", []string{}, []string{}, fmt.Errorf("Failed to create output MSA path: %v. Error: %v", localMSAPath, err)
 	}
 	localImagesPath := filepath.Join(localTemp, "images")
-	if err := os.MkdirAll(localImagesPath, 0666); err != nil {
+	if err := os.MkdirAll(localImagesPath, 0777); err != nil {
 		return localTemp, "", []string{}, []string{}, fmt.Errorf("Failed to create output images path: %v. Error: %v", localImagesPath, err)
 	}
 
