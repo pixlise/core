@@ -30,6 +30,7 @@ import (
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/core/utils"
 )
 
 func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
@@ -79,6 +80,13 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		// Print this to stdout - not that useful, won't be in the log file, but lambda cloudwatch log should have it
 		// and it'll be useful for initial debugging
 		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
+
+		freeBytes, err := utils.GetDiskAvailableBytes()
+		if err != nil {
+			fmt.Printf("Failed to read disk free space: %v\n", err)
+		} else {
+			fmt.Printf("Disk free space: %v\n", freeBytes)
+		}
 
 		mongoClient, _, err := mongoDBConnection.Connect(sess, mongoSecret, iLog)
 		if err != nil {
