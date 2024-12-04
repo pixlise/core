@@ -157,7 +157,6 @@ func processHousekeeping(lineNo int, lineData string, lines []string, sclk strin
 
 	var ok bool
 	motorPos := []int{}
-	fVal := []float32{}
 
 	tok, lines[15], ok = takeToken(lines[15], ":")
 	if !ok || tok != "Motor Pos" {
@@ -178,20 +177,31 @@ func processHousekeeping(lineNo int, lineData string, lines []string, sclk strin
 	var f float32
 
 	names := []string{"SDD2 Bias:", "SDD1 Bias:", "Arm Resistance:", "SDD 1 Tmp:", "SDD 2 Tmp:", "FVMON:", "FIMON:", "HVMON:", "HIMON:"}
+	fValMap := map[string]float32{}
 
-	lineOffset := 2
-	for c := 0; c < len(names); c++ {
-		_, f, pos, err = readNumBetween(lines[c+lineOffset], names[c], " ", read_float)
-		if err != nil {
-			return 0, "", "", err
-		}
-		if pos < 0 {
-			return 0, "", "", fmt.Errorf("Missing value: %v", names[c])
-		}
-		fVal = append(fVal, f)
+	for _, name := range names {
+		// Search each line it could be on
+		for c := 0; c < len(lines); c++ {
+			_, f, pos, err = readNumBetween(lines[c], name, " ", read_float)
+			if err != nil {
+				// If it's a not found error, that's valid, we're looking for it on multiple lines...
+				if strings.HasPrefix(err.Error(), "failed to find value after ") {
+					continue
+				}
+				return 0, "", "", err
+			}
+			if pos < 0 {
+				return 0, "", "", fmt.Errorf("Missing value: %v", name)
+			}
 
-		if c == 4 {
-			lineOffset = 6
+			fValMap[name] = f
+		}
+	}
+
+	// We should now have all values!
+	for _, name := range names {
+		if _, ok := fValMap[name]; !ok {
+			return 0, "", "", fmt.Errorf("No value found for: %v", name)
 		}
 	}
 
@@ -200,7 +210,7 @@ func processHousekeeping(lineNo int, lineData string, lines []string, sclk strin
 	hk := fmt.Sprintf("%v, %X, %v, 8, HK Frame, %d, %d, %d, %d, %d, %d, %v, %v, %v, %v, %v, -1, -1, -1, -1, -1, -1, %v, %v, %v, %v\n",
 		makeWriteSCLK(sclk), rtt, pmc,
 		motorPos[0], motorPos[1], motorPos[2], motorPos[3], motorPos[4], motorPos[5],
-		fVal[0], fVal[1], fVal[2], fVal[3], fVal[4], fVal[5], fVal[6], fVal[7], fVal[8])
+		fValMap[names[0]], fValMap[names[1]], fValMap[names[2]], fValMap[names[3]], fValMap[names[4]], fValMap[names[5]], fValMap[names[6]], fValMap[names[7]], fValMap[names[8]])
 
 	// We also output housekeeping data in a different "RSI" format thats compatible with the ones output by the pipeline for PIXLISE to read actual housekeeping
 	// values from. This differs from the above, and doesn't have all the columns in the "real" files but PIXLISE gets a lot of what it needs this way already. If
@@ -214,8 +224,13 @@ func processHousekeeping(lineNo int, lineData string, lines []string, sclk strin
 	// We output:
 	// SCLK,PMC,hk_fcnt,f_pixl_sdd_1_conv,f_pixl_sdd_2_conv,f_pixl_arm_resist_conv,f_head_sdd_1_conv,f_head_sdd_2_conv,f_hvps_fvmon_conv,f_hvps_fimon_conv,f_hvps_hvmon_conv,f_hvps_himon_conv,i_motor_1_conv,i_motor_2_conv,i_motor_3_conv,i_motor_4_conv,i_motor_5_conv,i_motor_6_conv
 
+	iSCLK, err := makeWriteSCLInt(sclk)
+	if err != nil {
+		return 0, "", "", fmt.Errorf("hk failed to parse SCLK on line %v: %v", lineNo, err)
+	}
+
 	hk2 := fmt.Sprintf("%v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v, %v\n",
-		makeWriteSCLInt(sclk), pmc, fcnt, fVal[1], fVal[0], fVal[2], fVal[3], fVal[4], fVal[5], fVal[6], fVal[7], fVal[8],
+		iSCLK, pmc, fcnt, fValMap[names[1]], fValMap[names[0]], fValMap[names[2]], fValMap[names[3]], fValMap[names[4]], fValMap[names[5]], fValMap[names[6]], fValMap[names[7]], fValMap[names[8]],
 		motorPos[0], motorPos[1], motorPos[2], motorPos[3], motorPos[4], motorPos[5])
 
 	return hktime, hk, hk2, nil

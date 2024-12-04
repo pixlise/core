@@ -109,7 +109,7 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 		if len(rttHex) < 8 {
 			rttHex = "0" + rttHex
 		}
-		rttHex = "_" + rttHex + "_"
+		rttHex = rttHex + "_"
 
 		imageList := []string{}
 		for _, img := range imageFiles {
@@ -273,6 +273,10 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 
 	sclk := parts[0]
 
+	for len(rtt) <= 8 {
+		rtt = "0" + rtt
+	}
+
 	fakeFileName := fmt.Sprintf("%v__%v_%v_000%v_N%v%v%v_______%v%v.CSV", ftype, sol, sclk, product, site, drive, rtt, producer, version)
 	housekeepingFileNameMeta, err := gdsfilename.ParseFileName(fakeFileName)
 	if err != nil {
@@ -294,12 +298,15 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 		housekeepingFileNameMeta,
 		rtt,
 		protos.ScanInstrument_PIXL_EM,
-		"",
+		"PIXL-EM-E2E", // Specifying this and the above will allow importer to work, we want to block out weird EM data from FM pipeline normally
 		uint32(3),
 		logger,
 	)
 
-	outData.CreatorUserId = creatorId
+	if outData != nil {
+		outData.CreatorUserId = creatorId
+	}
+
 	return outData, err
 }
 

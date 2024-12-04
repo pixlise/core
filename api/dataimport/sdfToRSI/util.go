@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -146,11 +145,17 @@ func readNumBetween(line string, prefix string, suffix string, readType int) (in
 
 	var ok bool
 	var tok string
-	tok, _, ok = takeToken(line, suffix)
+	var remLine string
+	tok, remLine, ok = takeToken(line, suffix)
 	if !ok {
 		return 0, 0, 0, fmt.Errorf("failed to read suffix '%v' after '%v'", suffix, prefix)
 	}
 	lastPos += len(tok)
+
+	if tok == "No" && strings.HasPrefix(remLine, "Data") {
+		// This isn't an error... what do we do? Use a sentinal? Use 0 for now
+		return 0, 0, lastPos, nil
+	}
 
 	if readType == read_float {
 		val, err := strconv.ParseFloat(tok, 32)
@@ -175,32 +180,40 @@ func readNumBetween(line string, prefix string, suffix string, readType int) (in
 }
 
 // Expected SCLK format: 2006-002T15:04:05
-func makeWriteSCLInt(readSCLK string) int64 {
-	unixSec := readTimestamp(readSCLK)
+func makeWriteSCLInt(readSCLK string) (int64, error) {
+	unixSec, err := readTimestamp(readSCLK)
+
+	if err != nil {
+		return 0, err
+	}
 
 	// Work out where we are relative to the epoch above, and add to it to work out SCLK to use
 	secSinceEpoch := unixSec - 1666967479
 
 	sclk := 720239544 + secSinceEpoch
 
-	return sclk
+	return sclk, nil
 }
 
 func makeWriteSCLK(readSCLK string) string {
-	sclk := makeWriteSCLInt(readSCLK)
+	sclk, err := makeWriteSCLInt(readSCLK)
+
+	if err != nil {
+		return "0"
+	}
 
 	// Return as hex
 	return fmt.Sprintf("%X", sclk)
 }
 
-func readTimestamp(ts string) int64 {
+func readTimestamp(ts string) (int64, error) {
 	// Read the SCLK value as a string time, expecting eg 2022-301T14:31:18
 	t, err := time.Parse("2006-002T15:04:05", ts)
 	if err != nil {
-		log.Fatalf("Failed to parse read SCLK: %v. Error: %v", ts, err)
+		return 0, fmt.Errorf("Failed to parse read SCLK: %v. Error: %v", ts, err)
 	}
 
 	// Bit of a hack/approximation. We assume that SCLK is in seconds, and our reference is:
 	// 2022-301T14:31:19 ==  Friday, October 28, 2022 14:31:19 == 1666967479 == 0x2AEDFBB8 == 720239544
-	return t.Unix()
+	return t.Unix(), nil
 }

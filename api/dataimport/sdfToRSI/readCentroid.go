@@ -201,6 +201,7 @@ func processCentroidLine3(lineNo int, line string, sliNum int64) (int64, int64, 
 
 	// Read after ID:, then after Residual:
 	tokens := []string{"ID: 0x", "Residual: 0x"}
+	tokSep := []string{",", " "}
 	vals := []int64{}
 
 	for c := 0; c < 2; c++ {
@@ -214,7 +215,7 @@ func processCentroidLine3(lineNo int, line string, sliNum int64) (int64, int64, 
 
 		var ok bool
 		var tok string
-		tok, lineData, ok = takeToken(lineData, ",")
+		tok, lineData, ok = takeToken(lineData, tokSep[c])
 
 		if !ok {
 			return 0, 0, fmt.Errorf("Failed to read %v on line: %v, \"%v\"", idToken, lineNo, line)
@@ -222,7 +223,7 @@ func processCentroidLine3(lineNo int, line string, sliNum int64) (int64, int64, 
 
 		val, err := strconv.ParseInt(tok, 16, 32)
 		if err != nil {
-			return 0, 0, fmt.Errorf("Failed to read id on line: %v, \"%v\"", lineNo, line)
+			return 0, 0, fmt.Errorf("Failed to read hex %v on line: %v, \"%v\"", idToken, lineNo, line)
 		}
 
 		vals = append(vals, val)
