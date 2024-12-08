@@ -21,22 +21,22 @@ func GetDiskAvailableBytes() (uint64, error) {
 		return 0, err
 	}
 
-	fmt.Sprintf("Bavail: %v", stat.Bavail)
-	fmt.Sprintf("Bfree: %v", stat.Bfree)
-	fmt.Sprintf("Blocks: %v", stat.Blocks)
-	fmt.Sprintf("Bsize: %v", stat.Bsize)
-	fmt.Sprintf("Ffree: %v", stat.Ffree)
-	fmt.Sprintf("Files: %v", stat.Files)
-	fmt.Sprintf("Flags: %v", stat.Flags)
-	fmt.Sprintf("Flags_ext: %v", stat.Flags_ext)
-	fmt.Sprintf("Fsid: %v", stat.Fsid.Val)
-	fmt.Sprintf("Fssubtype: %v", stat.Fssubtype)
-	fmt.Sprintf("Fstypename: %v", stat.Fstypename)
-	fmt.Sprintf("Iosize: %v", stat.Iosize)
-	fmt.Sprintf("Mntfromname: %v", stat.Mntfromname)
-	fmt.Sprintf("Mntonname: %v", stat.Mntonname)
-	fmt.Sprintf("Owner: %v", stat.Owner)
-	fmt.Sprintf("Type: %v", stat.Type)
+	fmt.Printf("Bavail: %v\n", stat.Bavail)
+	fmt.Printf("Bfree: %v\n", stat.Bfree)
+	fmt.Printf("Blocks: %v\n", stat.Blocks)
+	fmt.Printf("Bsize: %v\n", stat.Bsize)
+	fmt.Printf("Ffree: %v\n", stat.Ffree)
+	fmt.Printf("Files: %v\n", stat.Files)
+	fmt.Printf("Flags: %v\n", stat.Flags)
+	fmt.Printf("Flags_ext: %v\n", stat.Flags_ext)
+	fmt.Printf("Fsid: %v\n", stat.Fsid.Val)
+	fmt.Printf("Fssubtype: %v\n", stat.Fssubtype)
+	fmt.Printf("Fstypename: %v\n", stat.Fstypename)
+	fmt.Printf("Iosize: %v\n", stat.Iosize)
+	fmt.Printf("Mntfromname: %v\n", stat.Mntfromname)
+	fmt.Printf("Mntonname: %v\n", stat.Mntonname)
+	fmt.Printf("Owner: %v\n", stat.Owner)
+	fmt.Printf("Type: %v\n", stat.Type)
 
 	// Available blocks * size per block = available space in bytes
 	return stat.Bavail * uint64(stat.Bsize), nil
