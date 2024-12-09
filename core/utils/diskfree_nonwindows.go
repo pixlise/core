@@ -3,7 +3,6 @@
 package utils
 
 import (
-	"fmt"
 	"os"
 
 	"golang.org/x/sys/unix"
@@ -21,6 +20,18 @@ func GetDiskAvailableBytes() (uint64, error) {
 		return 0, err
 	}
 
+	/* An example of output on Lambda:
+	Bavail: 393433
+	Bfree: 397529
+	Blocks: 397532
+	Bsize: 4096
+	Ffree: 434325
+	Files: 434336
+	Flags: 4128
+	Fsid: [-1480289054 1771191333]
+	Type: 61267
+	Disk free space: 1611501568
+
 	fmt.Printf("Bavail: %v\n", stat.Bavail)
 	fmt.Printf("Bfree: %v\n", stat.Bfree)
 	fmt.Printf("Blocks: %v\n", stat.Blocks)
@@ -37,7 +48,7 @@ func GetDiskAvailableBytes() (uint64, error) {
 	//fmt.Printf("Mntonname: %v\n", stat.Mntonname)
 	//fmt.Printf("Owner: %v\n", stat.Owner)
 	fmt.Printf("Type: %v\n", stat.Type)
-
+	*/
 	// Available blocks * size per block = available space in bytes
 	return stat.Bavail * uint64(stat.Bsize), nil
 }
