@@ -81,6 +81,11 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		// and it'll be useful for initial debugging
 		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
 
+		err = os.Chdir(os.TempDir())
+		if err != nil {
+			fmt.Printf("Failed to change to temp dir: %v\n", err)
+		}
+
 		freeBytes, err := utils.GetDiskAvailableBytes()
 		if err != nil {
 			fmt.Printf("Failed to read disk free space: %v\n", err)
