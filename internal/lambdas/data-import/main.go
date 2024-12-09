@@ -81,16 +81,28 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 		// and it'll be useful for initial debugging
 		fmt.Printf("ImportForTrigger: \"%v\"\n", record.SNS.Message)
 
-		err = os.Chdir(os.TempDir())
+		wd, err := os.Getwd()
 		if err != nil {
-			fmt.Printf("Failed to change to temp dir: %v\n", err)
-		}
-
-		freeBytes, err := utils.GetDiskAvailableBytes()
-		if err != nil {
-			fmt.Printf("Failed to read disk free space: %v\n", err)
+			fmt.Printf("Failed to get working dir: %v\n", err)
 		} else {
-			fmt.Printf("Disk free space: %v\n", freeBytes)
+			fmt.Printf("Working dir: %v\n", wd)
+
+			err = os.Chdir(os.TempDir())
+			if err != nil {
+				fmt.Printf("Failed to change to temp dir: %v\n", err)
+			}
+
+			freeBytes, err := utils.GetDiskAvailableBytes()
+			if err != nil {
+				fmt.Printf("Failed to read disk free space: %v\n", err)
+			} else {
+				fmt.Printf("Disk free space: %v\n", freeBytes)
+			}
+
+			err = os.Chdir(wd)
+			if err != nil {
+				fmt.Printf("Failed to change to working dir: %v\n", err)
+			}
 		}
 
 		mongoClient, _, err := mongoDBConnection.Connect(sess, mongoSecret, iLog)
