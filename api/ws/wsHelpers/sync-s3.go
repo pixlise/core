@@ -181,7 +181,7 @@ func makeRelativePaths(fullPaths []string, root string) ([]string, error) {
 
 // Requires source bucket, source root with srcRelativePaths which are relative to source root. This way the relative paths
 // can be compared to dest paths, and only the ones not already in dest root are copied.
-func syncFiles(srcBucket string, srcRoot string, srcRelativePaths []string, destBucket string, destRoot string, fs fileaccess.FileAccess, log logger.ILogger) error {
+func syncFiles(srcBucket string, srcRoot string, srcRelativePaths []string, destBucket string, destRoot string, fs fileaccess.FileAccess, jobLog logger.ILogger) error {
 	// Get a listing from the destination
 	// NOTE: the returned paths contain destRoot at the start!
 	destFullFiles, err := fs.ListObjects(destBucket, destRoot)
@@ -208,21 +208,21 @@ func syncFiles(srcBucket string, srcRoot string, srcRelativePaths []string, dest
 		}
 	}
 
-	log.Infof(" Sync backup directory to %v: %v skipped (already at destination)...", destRoot, len(srcRelativePaths)-len(toCopyRelativePaths))
+	jobLog.Infof(" Sync backup directory to %v: %v skipped (already at destination)...", destRoot, len(srcRelativePaths)-len(toCopyRelativePaths))
 
 	// Copy all the files
 	for c, relSrcPath := range toCopyRelativePaths {
 		if c%100 == 0 {
-			log.Infof(" Sync backup directory to %v: %v of %v copied...", destRoot, c, len(toCopyRelativePaths))
+			jobLog.Infof(" Sync backup directory to %v: %v of %v copied...", destRoot, c, len(toCopyRelativePaths))
 		}
 
 		srcFullPath := path.Join(srcRoot, relSrcPath)
 		err = fs.CopyObject(srcBucket, srcFullPath, destBucket, path.Join(destRoot, relSrcPath))
 		if err != nil {
 			if fs.IsNotFoundError(err) {
-				log.Errorf(" Sync backup source file not found: s3://%v/%v", srcBucket, srcFullPath)
+				jobLog.Errorf(" Sync backup source file not found: s3://%v/%v", srcBucket, srcFullPath)
 			} else {
-				log.Errorf(" Sync error reading read s3://%v/%v: %v", srcBucket, srcFullPath, err)
+				jobLog.Errorf(" Sync error reading read s3://%v/%v: %v", srcBucket, srcFullPath, err)
 			}
 			//return err
 		}

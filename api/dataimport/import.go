@@ -121,7 +121,7 @@ func ImportDataset(
 	}
 
 	// Now that we have data down, we can run the importer from local file system
-	_, err = ImportFromLocalFileSystem(
+	savedScanId, err := ImportFromLocalFileSystem(
 		localFS,
 		remoteFS,
 		db,
@@ -137,10 +137,10 @@ func ImportDataset(
 	}
 
 	// Read the saved summary
-	savedSummary, err = scan.ReadScanItem(datasetID, db)
+	savedSummary, err = scan.ReadScanItem(savedScanId, db)
 	if err != nil {
 		// Ensure we don't return a nil ScanItem here...
-		return workingDir, &protos.ScanItem{}, "", false, fmt.Errorf("Failed to verify newly saved summary for import: %v. Error: %v", datasetID, err)
+		return workingDir, &protos.ScanItem{}, "", false, fmt.Errorf("Failed to verify newly saved summary for import: %v. Error: %v", savedScanId, err)
 	}
 
 	// Decide what notifications (if any) to send

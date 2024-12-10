@@ -125,6 +125,10 @@ func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID str
 	// Download all zip files that have the dataset ID prefixed in their file name
 	// Unzip them in timestamp order into downloadPath
 	archiveSearchPath := path.Join(filepaths.RootArchive, datasetID)
+	if !strings.HasSuffix(archiveSearchPath, "/") {
+		archiveSearchPath = archiveSearchPath + "/"
+	}
+
 	dl.log.Infof("Searching for archived files in: s3://%v/%v", dl.datasetBucket, archiveSearchPath)
 
 	archivedFiles, err := dl.remoteFS.ListObjects(dl.datasetBucket, archiveSearchPath)
