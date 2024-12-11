@@ -528,7 +528,6 @@ func HandleReviewerMagicLinkLoginReq(req *protos.ReviewerMagicLinkLoginReq, hctx
 		return nil, err
 	}
 
-	// user.Info.ExpirationDateUnixSec
 	currentTime := time.Now().Unix()
 	if user.Info.ExpirationDateUnixSec > 0 && user.Info.ExpirationDateUnixSec < currentTime {
 		return nil, errors.New("user access has expired")
