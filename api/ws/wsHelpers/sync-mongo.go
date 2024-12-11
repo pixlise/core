@@ -12,8 +12,12 @@ import (
 )
 
 func ResetLocalMongoBackupDir() error {
-	os.RemoveAll("./backup")
-	err := os.Mkdir("./backup", 0750)
+	err := os.RemoveAll("./backup")
+	if err != nil {
+		return fmt.Errorf("PIXLISE Backup failed to RemoveAll backup directory: %v", err)
+	}
+
+	err = os.Mkdir("./backup", 0750)
 	if err != nil {
 		return fmt.Errorf("PIXLISE Backup failed to create backup directory: %v", err)
 	}

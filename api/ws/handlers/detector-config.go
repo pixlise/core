@@ -48,7 +48,13 @@ func HandleDetectorConfigReq(req *protos.DetectorConfigReq, hctx wsHelpers.Handl
 	piquantCfgFileStr := string(piquantCfgFile)
 	angle, err := piquant.ReadFieldFromPIQUANTConfigMSA(piquantCfgFileStr, "#ELEVANGLE")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read ELEVANGLE from Piquant config file: %v", cfgPath)
+		hctx.Svcs.Log.Errorf("Failed to read ELEVANGLE from Piquant config file: %v, trying emerg_angle", cfgPath)
+
+		// EM config has a value "emerg_angle" which is also set to 70, maybe it's an interchangeable name?
+		angle, err = piquant.ReadFieldFromPIQUANTConfigMSA(piquantCfgFileStr, "emerg_angle")
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read ELEVANGLE and emerg_angle from Piquant config file: %v", cfgPath)
+		}
 	}
 
 	cfg.ElevAngle = angle

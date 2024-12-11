@@ -28,8 +28,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pixlise/core/v4/api/dataimport/datasetArchive"
 	"github.com/pixlise/core/v4/api/dataimport/internal/converterSelector"
-	"github.com/pixlise/core/v4/api/dataimport/internal/datasetArchive"
 	"github.com/pixlise/core/v4/api/dataimport/internal/output"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/core/fileaccess"
@@ -81,13 +81,13 @@ func ImportDataset(
 
 	// Firstly, we download from the archive
 	archive := datasetArchive.NewDatasetArchiveDownloader(remoteFS, localFS, log, datasetBucket, manualUploadBucket)
-	localDownloadPath, localUnzippedPath, zipCount, err := archive.DownloadFromDatasetArchive(datasetID, workingDir)
+	localDownloadPath, localUnzippedPath, zipFiles, err := archive.DownloadFromDatasetArchive(datasetID, workingDir)
 	if err != nil {
 		return workingDir, savedSummary, "", false, err
 	}
 
 	// If no zip files were loaded, maybe this dataset is a manually uploaded one, try to import from there instead
-	if zipCount == 0 {
+	if len(zipFiles) == 0 {
 		log.Infof("No zip files found in archive, dataset may have been manually uploaded. Trying to download...")
 		localDownloadPath, localUnzippedPath, err = archive.DownloadFromDatasetUploads(datasetID, workingDir)
 		if err != nil {
@@ -121,7 +121,7 @@ func ImportDataset(
 	}
 
 	// Now that we have data down, we can run the importer from local file system
-	_, err = ImportFromLocalFileSystem(
+	savedScanId, err := ImportFromLocalFileSystem(
 		localFS,
 		remoteFS,
 		db,
@@ -137,10 +137,10 @@ func ImportDataset(
 	}
 
 	// Read the saved summary
-	savedSummary, err = scan.ReadScanItem(datasetID, db)
+	savedSummary, err = scan.ReadScanItem(savedScanId, db)
 	if err != nil {
 		// Ensure we don't return a nil ScanItem here...
-		return workingDir, &protos.ScanItem{}, "", false, fmt.Errorf("Failed to verify newly saved summary for import: %v. Error: %v", datasetID, err)
+		return workingDir, &protos.ScanItem{}, "", false, fmt.Errorf("Failed to verify newly saved summary for import: %v. Error: %v", savedScanId, err)
 	}
 
 	// Decide what notifications (if any) to send
@@ -154,7 +154,7 @@ func ImportDataset(
 		}
 	}
 
-	return workingDir, savedSummary, updatenotificationtype, !justArchived && zipCount > 1, err
+	return workingDir, savedSummary, updatenotificationtype, !justArchived && len(zipFiles) > 1, err
 }
 
 // ImportFromLocalFileSystem - As the name says, imports from directory on local file system

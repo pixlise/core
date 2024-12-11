@@ -228,6 +228,7 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 
 	// Get handle to the DB
 	dbName := mongoDBConnection.GetDatabaseName("pixlise", cfg.EnvironmentName)
+	iLog.Infof("DB name: %v", dbName)
 
 	db := mongoClient.Database(dbName)
 	/*

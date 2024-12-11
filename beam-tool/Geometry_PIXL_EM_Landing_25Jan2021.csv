@@ -1,0 +1,75 @@
+comment, PIXL EM Geometry information final version (so far)  Sept. 11, 2020
+comment, Ref. 20181002 Coord Frames 10464005_A1_PIXL_LYT_20181002_851.pdf
+comment, Strut locations from PIXL flight software of 2019-01-11  Mot Library is ID=7  Mov Library Version is 05.03
+comment,     from file Mot_Library.scpt received from Sondheim, Michael E (382A) <michael.e.sondheim@jpl.nasa.gov> on 3/25/2019, 3:44 PM
+comment, X-ray beam line location, MCC camera model, and SLI beam positions all from PIXL EM Geometric Calibration   June 2020
+comment,     using X-ray beam location target features coordinates from new CMM, 10/24/2019, 6:19 PM
+comment,     Metrology data adjusted to new post-LVCM-rework coordinate system (Larry Wade, Jan. 2020) PIXL Coordinates-Synthesisrev5b.xlsx
+comment, Drift model selection added Jan. 20, 2021     Use TIME for EM for test data (try using Arm Resistance for FM to start)
+comment, SDD positions added Jan. 20, 2021     to use in calculation standoff corrections (positions are from the CAD dawing above)
+
+comment,  *** Everything converted to meters and using CAHVOR model refined by Todd Litwin (Gennery) code (works near perfect!) ***
+
+sensor_home, -0.0418, 0.0390, 0.1637, 0, 0, 0, 1
+number_struts, 6
+strut, 0.016239065, 0.093000000, -0.008503727, -0.017040373, 0.185576008, 0.015886326, 0.1495, 2100, 0.000008333333333, 0, 4200
+strut, -0.204639065, 0.093000000, -0.008503727, -0.254959626, 0.185576008, 0.015886326, 0.1495, 2100, 0.000008333333333, 0, 4200
+strut, -0.083500000, -0.016000000, -0.009000000, -0.041700661, 0.023000000, 0.030758883, 0.1495, 2100, 0.000008333333333, 0, 4200
+strut, 0.016300000, 0.072000000, -0.009500000, -0.018611949, 0.012919175, 0.041581366, 0.1495, 2100, 0.000008333333333, 0, 4200
+strut, -0.2047000000, 0.0720000000, -0.0095000000, -0.253388050, 0.012919751, 0.041581366, 0.1495, 2100, 0.000008333333333, 0, 4200
+strut, -0.1049000000, -0.0160000000, -0.0090000000, -0.230299339, 0.023000000, 0.030758883, 0.1495, 2100, 0.000008333333333, 0, 4200
+
+comment, These X-ray beam location parameters must match what is in the flight software
+comment, They were calculated from the Tim Setterfield beam location below and passed to Robert Denise for inclusion in the iFSW libraries
+comment, See e-mail to Robert 9/8/2020, 12:19 PM
+comment, X-ray beam source position    X-ray beam direction            Rfocus    Pivot
+beam,  -0.093993, 0.092310, -0.018499, -0.001314, -0.003335, 0.999994, 0.103000, 0.190
+
+Detectors, -0.08285861, 0.09200000, 0.05333979, -0.10554139, 0.09200000, 0.05333979
+
+comment, X-ray beam location line from geo cal, met spreadsheet X RAY INTERCEPTION 5-2-19 CORRECTED (JANUARY 2020 OFFSET).xlsx
+comment,    from Tim Setterfield 6/17/2020, 8:34 AM
+beamline, -0.094132, 0.091957, 0.087251, -0.001314, -0.003335, 0.999994
+
+comment,  Extrinsic camera calibration from David Pedersen, 
+comment, See e-mail to Robert Denise  9/8/2020, 12:19 PM for conversion from Euler angles to quaternion
+camera_frame, -0.094272, 0.073354, 0.033857, 0.0056599614337413, 0.1543036891187540, 0.9879898441345568, 0.0058655134375243
+
+comment, Camera model from file: Camera_model_EM_Rev3_Sep2020.csv
+MCC_C, -0.094255554,      0.073275622,      0.033763947   
+MCC_A, -0.001882883,      0.369733062,      0.929136114   
+MCC_H, -1082.858716118,    149.631064820,    346.879667319
+MCC_V, -10.965197109,   -952.941974954,    643.187656594  
+MCC_O,   0.008725607,      0.311363516,      0.950250822  
+MCC_Rho, 0.003887759,      0.141324801,      0.694530993  
+
+comment, Idealized camera model with no distortions
+comment, Camera center will be placed at scan start
+
+       **** Need to get the correction model from Bob Deen, to match his trapezoid corrected images ****
+			E-mail asking about this sent Sept. 11, 2020 4:36 pm
+	   
+View_C, -0.0942, 0.092, 0.030
+View_A, 0, 0, -1
+View_H, -800, 0, -540
+View_V, 0, 800, -380
+View_O, 0, 0, -1
+View_Rho, 0, 0, 0
+
+comment, SLI coordinates will be reprocessed by DTU to new coordinate system and with new calibration for SLI spots
+comment, SLI calibration is not needed in this file, remove old calibration from Oct. 2019
+comment, Smoothing for SLIs now entered here in meters, defaults is zero, after change from millimeters to meters
+smoothing_beam_sli_A, 0.001
+
+comment, Hexapod corrections from Hexapod_Characteriation_Data_Review_20200604.pptx of 6/11/2020 by Nick Tallarida and James Lambert
+comment,    volume polynomial fits for each axis to 3rd order in x, y, and z          Table 3
+comment, Order of terms in fit is checked by geometry read routine, corrections rejected if they don't match
+hexapod_corr_terms,1,x,y,z,xy,xz,yz,x^2,y^2,z^2,xy^2,xz^2,yx^2,yz^2,zx^2,zy^2,x^3,y^3,z^3,xyz
+comment,    target frame origin is in base frame, to convert from base frame to target frame and back for fits
+target_frame_origin, -0.136,0.131,0.2482
+hexapod_corr_x,-6.843381378488961e-06,0.003063234976266444,0.002031583835127812,0.0030687165891379246,0.009607006678673402,-0.008355715571784016,0.0017949660489837366,-0.00018344950522266218,-0.003957246198607971,0.017207941344457477,-0.22749521376089976,4.073220090765612,0.5294277494965556,-0.039381734276235175,-0.2039809226970925,-0.08860881302087265,0.13886588885561482,0.2350750088533219,-7.700480705248596,0.6146544054293401
+hexapod_corr_y,3.202460987455477e-05,-0.00028834008772906695,0.0011484691834014228,0.0009789947223317892,0.00930941074002364,-0.008034967840121058,-0.0024620489536262783,-0.016024781301783003,0.02641059042783,0.012590682092577759,0.10605614934869374,-3.8657353619778467,-0.6735058331599552,-3.1026616864056753,0.09322909931438116,-1.7319123043492102,-0.17487959152034788,-0.7451551318296833,14.937808096526588,0.5125610727087515
+hexapod_corr_z,-1.9945350414717335e-06,-0.0001716104912997756,-0.0004630270927651315,0.002164833582852397,-0.004202526242360446,0.0035160067998301564,-0.019185888977750802,-0.010308363690551969,-0.00026051954963481245,-0.006323195422831653,0.08992561033005927,3.653444082108219,0.38604146848151716,0.9279061787650796,-0.640463307426821,-0.20937894733151774,0.15697611793774682,-0.039662008219847555,-9.329212423397793,0.21911287688641104
+
+comment, Choice of models for unexpected motion of target, current choices are: NONE, ARM_RES, and TIME (dual-slope time model will be automatically selected)
+Drift_model, TIME

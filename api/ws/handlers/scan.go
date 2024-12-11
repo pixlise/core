@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"strings"
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dataimport"
@@ -396,130 +395,13 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 
 	// Validate contents - detector dependent
 	if req.Format == "pixl-em" {
-		// Expecting certain product dirs, but don't be too prescriptive
-		foundHousekeeping := false
-		foundBeamLocation := false
-		foundSpectra := false
-		for _, f := range zipReader.File {
-			if f.FileInfo().IsDir() {
-				if f.Name == "RFS" {
-					foundSpectra = true
-				} else if f.Name == "RXL" {
-					foundBeamLocation = true
-				} else if f.Name == "RSI" {
-					foundHousekeeping = true
-				}
-			} else {
-				if strings.HasPrefix(f.Name, "RFS") {
-					foundSpectra = true
-				} else if strings.HasPrefix(f.Name, "RXL") {
-					foundBeamLocation = true
-				} else if strings.HasPrefix(f.Name, "RSI") {
-					foundHousekeeping = true
-				}
-			}
-		}
-
-		if !foundHousekeeping {
-			return nil, fmt.Errorf("Zip file missing RSI sub-directory")
-		}
-		if !foundBeamLocation {
-			return nil, fmt.Errorf("Zip file missing RXL sub-directory")
-		}
-		if !foundSpectra {
-			return nil, fmt.Errorf("Zip file missing RFS sub-directory")
-		}
-
-		// NOTE: we just downloaded the zip from here, no point uploading it again!
-		/*
-			// Save the contents as a zip file in the uploads area
-			savePath := path.Join(s3PathStart, "data.zip")
-			err = fs.WriteObject(destBucket, savePath, zippedData)
-			if err != nil {
-				return nil, err
-			}
-			logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
-		*/
+		err = dataimport.ProcessEM(datasetID, zipReader, zippedData, destBucket, s3PathStart, fs, logger)
 	} else {
-		// Expecting flat zip of MSA files
-		count := 0
-		for _, f := range zipReader.File {
-			// If the zip path starts with __MACOSX, ignore it, it's garbage that a mac laptop has included...
-			//if strings.HasPrefix(f.Name, "__MACOSX") {
-			//	continue
-			//}
+		err = dataimport.ProcessBreadboard(req.Format, hctx.SessUser.User.Id, datasetID, zipReader, zippedData, destBucket, s3PathStart, fs, logger)
+	}
 
-			if f.FileInfo().IsDir() {
-				return nil, fmt.Errorf("Zip file must not contain sub-directories. Found: %v", f.Name)
-			}
-
-			if !strings.HasSuffix(f.Name, ".msa") {
-				return nil, fmt.Errorf("Zip file must only contain MSA files. Found: %v", f.Name)
-			}
-			count++
-		}
-
-		// Make sure it has at least one msa!
-		if count <= 0 {
-			return nil, errors.New("Zip file did not contain any MSA files")
-		}
-
-		// Save the contents as a zip file in the uploads area
-		savePath := path.Join(s3PathStart, "spectra.zip")
-		err = fs.WriteObject(destBucket, savePath, zippedData)
-		if err != nil {
-			return nil, err
-		}
-		logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
-
-		// Now save detector info
-		savePath = path.Join(s3PathStart, "import.json")
-		importerFile := dataimportModel.BreadboardImportParams{
-			MsaDir:           "spectra", // We now assume we will have a spectra.zip extracted into a spectra dir!
-			MsaBeamParams:    "10,0,10,0",
-			GenBulkMax:       true,
-			GenPMCs:          true,
-			ReadTypeOverride: "Normal",
-			DetectorConfig:   "Breadboard",
-			Group:            "JPL Breadboard",
-			TargetID:         "0",
-			SiteID:           0,
-
-			CreatorUserId: hctx.SessUser.User.Id,
-
-			// The rest we set to the dataset ID
-			DatasetID: datasetID,
-			//Site: datasetID,
-			//Target: datasetID,
-			Title: datasetID,
-			/*
-				BeamFile // Beam location CSV path
-				HousekeepingFile // Housekeeping CSV path
-				ContextImgDir // Dir to find context images in
-				PseudoIntensityCSVPath // Pseudointensity CSV path
-				IgnoreMSAFiles // MSA files to ignore
-				SingleDetectorMSAs // Expecting single detector (1 column) MSA files
-				DetectorADuplicate // Duplication of detector A to B, because test MSA only had 1 set of spectra
-				BulkQuantFile // Bulk quantification file (for tactical datasets)
-				XPerChanA // eV calibration eV/channel (detector A)
-				OffsetA // eV calibration eV start offset (detector A)
-				XPerChanB // eV calibration eV/channel (detector B)
-				OffsetB // eV calibration eV start offset (detector B)
-				ExcludeNormalDwellSpectra // Hack for tactical datasets - load all MSAs to gen bulk sum, but dont save them in output
-				SOL // Might as well be able to specify SOL. Needed for first spectrum dataset on SOL13
-			*/
-		}
-
-		if req.Format == "sbu-breadboard" {
-			importerFile.Group = "Stony Brook Breadboard"
-			importerFile.DetectorConfig = "StonyBrookBreadboard"
-		}
-
-		err = fs.WriteJSON(destBucket, savePath, importerFile)
-		if err != nil {
-			return nil, err
-		}
-		logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
+	if err != nil {
+		return nil, err
 	}
 
 	// Save detector info
@@ -531,6 +413,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	if err != nil {
 		return nil, err
 	}
+	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
 
 	// Now save creator info
 	savePath = path.Join(s3PathStart, "creator.json")
@@ -538,7 +421,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	if err != nil {
 		return nil, err
 	}
-	logger.Infof("  Wrote: s3://%v/%v", destBucket, savePath)
+	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
 
 	i := importUpdater{
 		hctx.Session,

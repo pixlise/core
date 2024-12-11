@@ -120,7 +120,7 @@ func makeMongoCommandMonitor(log logger.ILogger) *event.CommandMonitor {
 			log.Debugf("Mongo success:\n%v", evt.CommandFinishedEvent)
 		},
 		Failed: func(_ context.Context, evt *event.CommandFailedEvent) {
-			log.Errorf("Mongo FAIL:\n%v", evt.Failure)
+			log.Errorf("Mongo err:\n%v", evt.Failure)
 		},
 	}
 }

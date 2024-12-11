@@ -54,14 +54,14 @@ func UploadArchive(svcs *services.APIServices) error {
 		svcs.Log.Infof(" Uploading: %v...", dbFile)
 
 		dbFilePath := path.Join(dataBackupLocalPath, dbFile)
-		dbFileBytes, err := os.ReadFile(dbFilePath)
+		dbFileObj, err := os.Open(dbFilePath)
 		if err != nil {
 			return fmt.Errorf("Failed to read local DB dump file: %v. Error: %v", dbFilePath, err)
 		}
 
 		// Upload to bucket
 		dbFilePathRemote := path.Join(dataBackupS3Path, dbFile)
-		err = svcs.FS.WriteObject(svcs.Config.DataBackupBucket, dbFilePathRemote, dbFileBytes)
+		err = svcs.FS.WriteObjectStream(svcs.Config.DataBackupBucket, dbFilePathRemote, dbFileObj)
 
 		if err != nil {
 			return fmt.Errorf("Failed to upload DB dump file: %v. Error: %v", dbFilePathRemote, err)

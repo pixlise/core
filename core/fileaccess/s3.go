@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"path"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -121,6 +122,34 @@ func (s3Access S3Access) WriteObject(bucket string, path string, data []byte) er
 	return err
 }
 
+func (s3Access S3Access) ReadObjectStream(bucket string, path string) (io.ReadCloser, error) {
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(path),
+	}
+
+	result, err := s3Access.s3Api.GetObject(input)
+	if err != nil {
+		return nil, err
+	}
+
+	return result.Body, nil
+}
+
+func (s3Access S3Access) WriteObjectStream(bucket string, path string, stream io.Reader) error {
+	uploader := s3manager.NewUploaderWithClient(s3Access.s3Api)
+
+	upParams := &s3manager.UploadInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(path),
+		Body:   stream,
+	}
+
+	// Perform an upload
+	_, err := uploader.Upload(upParams)
+	return err
+}
+
 func (s3Access S3Access) ReadJSON(bucket string, s3Path string, itemsPtr interface{}, emptyIfNotFound bool) error {
 	fileData, err := s3Access.ReadObject(bucket, s3Path)
 
@@ -167,7 +196,7 @@ func (s3Access S3Access) CopyObject(srcBucket string, srcPath string, dstBucket 
 	input := &s3.CopyObjectInput{
 		Bucket:     aws.String(dstBucket),
 		Key:        aws.String(dstPath),
-		CopySource: aws.String(srcBucket + "/" + srcPath),
+		CopySource: aws.String(path.Join(srcBucket, srcPath)),
 	}
 	_, err := s3Access.s3Api.CopyObject(input)
 	return err

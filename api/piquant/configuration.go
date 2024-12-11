@@ -99,9 +99,11 @@ func ReadFieldFromPIQUANTConfigMSA(msaContents string, fieldName string) (float3
 				idx = strings.Index(line, " ")
 				if idx >= 0 {
 					line = line[0:idx]
-					val, err := strconv.ParseFloat(line, 32)
-					return float32(val), err
 				}
+
+				// Read it as a float
+				val, err := strconv.ParseFloat(line, 32)
+				return float32(val), err
 			}
 		}
 	}
