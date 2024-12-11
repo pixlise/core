@@ -104,13 +104,14 @@ func NotifyUserInfoChange(userId string) {
 	delete(userInfoCache, userId)
 }
 
-func CreateNonSessionDBUser(userId string, db *mongo.Database, name string, email string, workspaceId *string, expirationDate *int64) (*protos.UserDBItem, error) {
+func CreateNonSessionDBUser(userId string, db *mongo.Database, name string, email string, workspaceId *string, expirationDate *int64, publicUserPassword string) (*protos.UserDBItem, error) {
 	userDBItem := &protos.UserDBItem{
 		Id: userId,
 		Info: &protos.UserInfo{
-			Id:    userId,
-			Name:  name,
-			Email: email,
+			Id:                userId,
+			Name:              name,
+			Email:             email,
+			NonSecretPassword: publicUserPassword,
 		},
 		DataCollectionVersion: "",
 	}

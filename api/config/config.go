@@ -42,6 +42,7 @@ type APIConfig struct {
 	Auth0Domain             string
 	Auth0ManagementClientID string
 	Auth0ManagementSecret   string
+	Auth0ClientSecret       string
 	Auth0NewUserRoleID      string
 
 	ConfigBucket string

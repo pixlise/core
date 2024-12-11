@@ -375,7 +375,6 @@ func HandleReviewerMagicLinkCreateReq(req *protos.ReviewerMagicLinkCreateReq, hc
 				MagicLink: *users.Users[0].ID,
 			}, nil
 		} else {
-			fmt.Print(users.Users[0], "|", req.WorkspaceId)
 			return nil, errors.New("user with email (" + email + ") already exists, but not for this workspace")
 		}
 	}
@@ -393,7 +392,9 @@ func HandleReviewerMagicLinkCreateReq(req *protos.ReviewerMagicLinkCreateReq, hc
 		AppMetadata: map[string]interface{}{
 			"workspaceId": req.WorkspaceId,
 		},
-		Name: auth0.String(userName),
+		Name:          auth0.String(userName),
+		VerifyEmail:   auth0.Bool(false),
+		EmailVerified: auth0.Bool(true),
 	}
 
 	err = auth0API.User.Create(&user)
@@ -419,6 +420,59 @@ func HandleReviewerMagicLinkCreateReq(req *protos.ReviewerMagicLinkCreateReq, hc
 		return nil, errors.New("failed to assign role to user:" + err.Error())
 	}
 
+	// Retrieve permissions associated with the Reviewer role
+	permissions, err := auth0API.Role.Permissions(reviewerRole.GetID())
+	if err != nil {
+		return nil, errors.New("failed to retrieve role permissions: " + err.Error())
+	}
+
+	// Assign permissions directly to the user
+	var userPermissions []*management.Permission
+	for _, perm := range permissions.Permissions {
+		userPermissions = append(userPermissions, &management.Permission{
+			ResourceServerIdentifier: perm.ResourceServerIdentifier,
+			Name:                     perm.Name,
+		})
+	}
+
+	err = auth0API.User.AssignPermissions(userID, userPermissions...)
+	if err != nil {
+		return nil, errors.New("failed to assign permissions to user: " + err.Error())
+	}
+	// Associate the permissions with the client application (to avoid the consent prompt)
+	scopes := []string{"openid", "profile", "email"}
+	var scopeInterfaces []interface{}
+	for _, scope := range scopes {
+		scopeInterfaces = append(scopeInterfaces, scope)
+	}
+	clientGrant := &management.ClientGrant{
+		ClientID: auth0.String(req.ClientId),
+		Audience: auth0.String(req.Audience),
+		Scope:    scopeInterfaces,
+	}
+
+	existingGrants, err := auth0API.ClientGrant.List()
+	if err != nil {
+		return nil, errors.New("failed to list client grants: " + err.Error())
+	}
+
+	grantExists := false
+	for _, grant := range existingGrants.ClientGrants {
+		if grant.GetClientID() == req.ClientId && grant.GetAudience() == req.Audience {
+			// Client grant already exists; no need to create it
+			grantExists = true
+			break
+		}
+	}
+
+	if !grantExists {
+		// Create the client grant
+		err = auth0API.ClientGrant.Create(clientGrant)
+		if err != nil {
+			return nil, errors.New("failed to create client grant: " + err.Error())
+		}
+	}
+
 	// Set the expiration date for the user
 	var expirationDate int64 = 0
 	if req.AccessLength > 0 {
@@ -426,9 +480,28 @@ func HandleReviewerMagicLinkCreateReq(req *protos.ReviewerMagicLinkCreateReq, hc
 	}
 
 	// Create a user in our database
-	_, err = wsHelpers.CreateNonSessionDBUser(userID, hctx.Svcs.MongoDB, userName, email, &req.WorkspaceId, &expirationDate)
+	_, err = wsHelpers.CreateNonSessionDBUser(userID, hctx.Svcs.MongoDB, userName, email, &req.WorkspaceId, &expirationDate, password)
 	if err != nil {
 		return nil, errors.New("failed to create user in database:" + err.Error())
+	}
+
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
+	dbResult := coll.FindOne(ctx, bson.M{"name": "Public"}, options.FindOne())
+	if dbResult.Err() != nil {
+		return nil, errors.New("failed to find public group: " + dbResult.Err().Error())
+	}
+
+	publicGroup := &protos.UserGroupDB{}
+	err = dbResult.Decode(publicGroup)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add user to public group
+	_, err = modifyGroupMembershipList(publicGroup.Id, "", userID, true, true, hctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return &protos.ReviewerMagicLinkCreateResp{
@@ -437,5 +510,72 @@ func HandleReviewerMagicLinkCreateReq(req *protos.ReviewerMagicLinkCreateReq, hc
 }
 
 func HandleReviewerMagicLinkLoginReq(req *protos.ReviewerMagicLinkLoginReq, hctx wsHelpers.HandlerContext) (*protos.ReviewerMagicLinkLoginResp, error) {
-	return nil, nil
+	workspaceId := string(req.MagicLink)
+	// Fetch workspace to verify it exists
+	workspace, _, err := wsHelpers.GetUserObjectById[protos.ScreenConfiguration](false, workspaceId, protos.ObjectType_OT_SCREEN_CONFIG, dbCollections.ScreenConfigurationName, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	reviewerId := workspace.ReviewerId
+	if reviewerId == "" {
+		return nil, errors.New("no reviewer found for workspace")
+	}
+
+	// Fetch user
+	user, err := wsHelpers.GetDBUser(reviewerId, hctx.Svcs.MongoDB)
+	if err != nil {
+		return nil, err
+	}
+
+	// user.Info.ExpirationDateUnixSec
+	currentTime := time.Now().Unix()
+	if user.Info.ExpirationDateUnixSec > 0 && user.Info.ExpirationDateUnixSec < currentTime {
+		return nil, errors.New("user access has expired")
+	}
+
+	auth0API, err := auth0login.InitAuth0ManagementAPI(hctx.Svcs.Config)
+	if err != nil {
+		return nil, errors.New("failed to initialize Auth0 API: " + err.Error())
+	}
+
+	auth0User, err := auth0API.User.Read(reviewerId)
+	if err != nil {
+		return nil, errors.New("failed to fetch Auth0 user: " + err.Error())
+	}
+
+	hasReviewerRole := false
+	roles, err := auth0API.User.Roles(reviewerId)
+	if err != nil {
+		return nil, errors.New("failed to fetch roles for user: " + err.Error())
+	}
+
+	for _, role := range roles.Roles {
+		if *role.Name == "Reviewer" {
+			hasReviewerRole = true
+			break
+		}
+	}
+	if !hasReviewerRole {
+		return nil, errors.New("user does not have the 'Reviewer' role")
+	}
+
+	clientSecret := hctx.Svcs.Config.Auth0ClientSecret
+	clientID := req.ClientId
+	redirectUri := req.RedirectURI
+	audience := req.Audience
+	domain := req.Domain
+	scope := "openid profile email"
+
+	jwt, err := auth0login.GetJWT(*auth0User.Email, user.Info.NonSecretPassword, clientID, clientSecret, domain, redirectUri, audience, scope)
+	if err != nil {
+		return nil, errors.New("failed to get JWT: " + err.Error())
+	}
+
+	return &protos.ReviewerMagicLinkLoginResp{
+		UserId:            reviewerId,
+		Email:             *auth0User.Email,
+		NonSecretPassword: user.Info.NonSecretPassword,
+		Token:             jwt,
+	}, nil
 }

@@ -117,6 +117,9 @@ func main() {
 	// User requesting version as JSON
 	router.AddPublicHandler("/version-json", "GET", endpoints.GetVersionJSON)
 
+	// User requesting public reviewer login credentials to bypass auth
+	router.AddPublicHandler("/magiclink", "POST", endpoints.PostMagicLinkLoginInfo)
+
 	// Requesting images
 	router.AddCacheControlledStreamHandler(
 		apiRouter.MakeEndpointPath("/images/"+apiRouter.UrlStreamDownloadIndicator, endpoints.ScanIdentifier, endpoints.FileNameIdentifier),

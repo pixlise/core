@@ -55,7 +55,7 @@ func RandPassword(length int) (string, error) {
 		lowerChars   = "abcdefghijklmnopqrstuvwxyz"
 		upperChars   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		numberChars  = "0123456789"
-		specialChars = "!@#$%^&*()-_=+[]{}<>?"
+		specialChars = "!-"
 		allChars     = lowerChars + upperChars + numberChars + specialChars
 	)
 
