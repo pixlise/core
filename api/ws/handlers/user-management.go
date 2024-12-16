@@ -370,10 +370,67 @@ func HandleReviewerMagicLinkCreateReq(req *protos.ReviewerMagicLinkCreateReq, hc
 
 	if len(users.Users) > 0 {
 		user := users.Users[0]
-		if user.AppMetadata != nil && user.AppMetadata["workspaceId"] == req.WorkspaceId {
+		isExpired := false
+		noMongoUser := false
+
+		userDB, err := wsHelpers.GetDBUserByEmail(user.GetEmail(), hctx.Svcs.MongoDB)
+		if err != nil {
+			if err != mongo.ErrNoDocuments {
+				log.Fatalf("failed to get existing reviewer user (%+v) from mongoDB: %+v", *user.ID, err)
+			} else {
+				noMongoUser = true
+			}
+		}
+
+		isExpired = noMongoUser || (userDB.Info.ExpirationDateUnixSec > 0 && userDB.Info.ExpirationDateUnixSec < time.Now().Unix())
+		if user.AppMetadata != nil && user.AppMetadata["workspaceId"] == req.WorkspaceId && !isExpired {
+			// If it's not expired, but the new expiration date differs, update it
+			if req.AccessLength == 0 && userDB.Info.ExpirationDateUnixSec != 0 {
+				userDB.Info.ExpirationDateUnixSec = 0
+				ctx := context.TODO()
+				coll := hctx.Svcs.MongoDB.Collection(dbCollections.UsersName)
+				_, err := coll.UpdateOne(ctx, bson.M{"_id": userDB.Id}, bson.D{{Key: "$set", Value: &userDB}}, options.Update())
+				if err != nil {
+					log.Fatalf("failed to update user in mongoDB: %+v", err)
+				}
+
+				return &protos.ReviewerMagicLinkCreateResp{
+					MagicLink: userDB.Id,
+				}, nil
+
+			} else if req.AccessLength > 0 && userDB.Info.ExpirationDateUnixSec != time.Now().Add(time.Duration(req.AccessLength)*time.Second).Unix() {
+				userDB.Info.ExpirationDateUnixSec = time.Now().Add(time.Duration(req.AccessLength) * time.Second).Unix()
+				ctx := context.TODO()
+				coll := hctx.Svcs.MongoDB.Collection(dbCollections.UsersName)
+				_, err := coll.UpdateOne(ctx, bson.M{"_id": userDB.Id}, bson.D{{Key: "$set", Value: &userDB}}, options.Update())
+				if err != nil {
+					log.Fatalf("failed to update user in mongoDB: %+v", err)
+				}
+
+				return &protos.ReviewerMagicLinkCreateResp{
+					MagicLink: userDB.Id,
+				}, nil
+			}
+
 			return &protos.ReviewerMagicLinkCreateResp{
 				MagicLink: *users.Users[0].ID,
 			}, nil
+		} else if isExpired {
+
+			if !noMongoUser {
+				ctx := context.TODO()
+				coll := hctx.Svcs.MongoDB.Collection(dbCollections.UsersName)
+				_, err := coll.DeleteOne(ctx, bson.M{"_id": userDB.Id})
+				if err != nil {
+					log.Fatalf("failed to delete expired reviewer user from mongo DB: %+v", err)
+				}
+			}
+
+			// Delete the user from Auth0, as the user has expired
+			err = auth0API.User.Delete(*user.ID)
+			if err != nil {
+				log.Fatalf("failed to delete expired reviewer user: %+v", err)
+			}
 		} else {
 			return nil, errors.New("user with email (" + email + ") already exists, but not for this workspace")
 		}

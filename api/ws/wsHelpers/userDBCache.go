@@ -40,6 +40,27 @@ func GetDBUser(userId string, db *mongo.Database) (*protos.UserDBItem, error) {
 	return &userDBItem, nil
 }
 
+func GetDBUserByEmail(email string, db *mongo.Database) (*protos.UserDBItem, error) {
+	userResult := db.Collection(dbCollections.UsersName).FindOne(context.TODO(), bson.M{"info.email": email})
+	if userResult.Err() != nil {
+		return nil, userResult.Err()
+	}
+
+	userDBItem := protos.UserDBItem{}
+	err := userResult.Decode(&userDBItem)
+	if err != nil {
+		return nil, err
+	}
+
+	if userDBItem.NotificationSettings == nil {
+		userDBItem.NotificationSettings = &protos.UserNotificationSettings{
+			TopicSettings: map[string]protos.NotificationMethod{},
+		}
+	}
+
+	return &userDBItem, nil
+}
+
 // This uses a cache as it may be reading the same thing many times in bursts.
 // Cache is told when user info changes, and also has a time stamp so we don't
 // keep reading from cache forever
