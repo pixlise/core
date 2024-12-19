@@ -125,6 +125,11 @@ func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID str
 	// Download all zip files that have the dataset ID prefixed in their file name
 	// Unzip them in timestamp order into downloadPath
 	archiveSearchPath := path.Join(filepaths.RootArchive, datasetID)
+
+	// NOTE: For importing datasets from FM, we don't want a / at the end, but for importing from uploaded data, we do!
+	// Uploaded datasets may have the same prefix at the start (eg user uploads dataset AA then later uploads A) so if
+	// we don't have a trailing / when reading dataset A, we'd get the files from AA and it'll fail. For this reason
+	// we have a second attempt after this with no / if no files were found
 	if !strings.HasSuffix(archiveSearchPath, "/") {
 		archiveSearchPath = archiveSearchPath + "/"
 	}
@@ -134,6 +139,18 @@ func (dl *DatasetArchiveDownloader) downloadArchivedZipsForDataset(datasetID str
 	archivedFiles, err := dl.remoteFS.ListObjects(dl.datasetBucket, archiveSearchPath)
 	if err != nil {
 		return []string{}, err
+	}
+
+	// If nothing has been found try search again without a trailing /
+	if len(archivedFiles) <= 0 {
+		archiveSearchPath = path.Join(filepaths.RootArchive, datasetID)
+
+		dl.log.Infof("Searching again for archived files in: s3://%v/%v", dl.datasetBucket, archiveSearchPath)
+
+		archivedFiles, err = dl.remoteFS.ListObjects(dl.datasetBucket, archiveSearchPath)
+		if err != nil {
+			return []string{}, err
+		}
 	}
 
 	orderedArchivedFiles, err := getOrderedArchiveFiles(archivedFiles)
