@@ -90,22 +90,33 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 	ctx := context.TODO()
 	coll := params.Svcs.MongoDB.Collection(dbCollections.ImagesName)
 
-	filter := bson.M{"_id": requestedFileName}
-	imageDBResult := coll.FindOne(ctx, filter)
+	filter := wsHelpers.GetDBImageFilter(requestedFileName)
+	cursor, err := coll.Find(ctx, filter)
 
-	if imageDBResult.Err() != nil {
+	if err != nil {
 		// This doesn't look good...
-		if imageDBResult.Err() == mongo.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments {
 			return nil, "", "", "", 0, errorwithstatus.MakeNotFoundError(requestedFileName)
 		}
-		return nil, "", "", "", 0, imageDBResult.Err()
+		return nil, "", "", "", 0, err
 	}
 
-	dbImage := protos.ScanImage{}
-	err := imageDBResult.Decode(&dbImage)
+	scanImages := []*protos.ScanImage{}
+	err = cursor.All(context.TODO(), &scanImages)
 	if err != nil {
 		return nil, "", "", "", 0, err
 	}
+
+	dbImages, err := wsHelpers.GetLatestImagesOnly(scanImages)
+	if err != nil {
+		return nil, "", "", "", 0, err
+	}
+
+	if len(dbImages) != 1 {
+		return nil, "", "", "", 0, fmt.Errorf("Failed to find image %v, version count was %v", requestedFileName, len(dbImages))
+	}
+
+	dbImage := dbImages[0]
 
 	for _, scanId := range dbImage.AssociatedScanIds {
 		_, err := wsHelpers.CheckObjectAccessForUser(false, scanId, protos.ObjectType_OT_SCAN, params.UserInfo.UserID, memberOfGroupIds, viewerOfGroupIds, params.Svcs.MongoDB)
@@ -115,7 +126,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 	}
 
 	// We're still here, so we have access! Check query params for any modifiers
-	finalFileName := requestedFileName
+	finalFileName := dbImage.ImagePath
 	showLocations, err := getBoolValue(params.PathParams["with-locations"])
 	if err != nil {
 		return nil, "", "", "", 0, err
