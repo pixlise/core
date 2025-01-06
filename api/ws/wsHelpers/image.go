@@ -93,9 +93,8 @@ func GetLatestImagesOnly(images []*protos.ScanImage) ([]*protos.ScanImage, error
 			meta.SetVersionStr("__")
 
 			// Preserve the path
-			l := path.Dir(img.ImagePath)
-			if len(l) > 0 {
-				imagePath := path.Join(img.ImagePath[0:len(l)], meta.ToString())
+			if len(meta.FilePath) > 0 {
+				imagePath := meta.ToString(true, false)
 
 				// If it doesn't exist, just add it
 				if existingImg, ok := latestImage[imagePath]; ok {
@@ -146,7 +145,7 @@ func GetDBImageFilter(imageName string) bson.D {
 		imagePath := imageName
 		if len(root) > 0 {
 			meta.SetVersionStr("..")
-			imagePath = path.Join(root, meta.ToString())
+			imagePath = meta.ToString(true, false)
 		}
 
 		filter = bson.D{{"_id", primitive.Regex{Pattern: imagePath, Options: ""}}}
