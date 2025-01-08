@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
+	"github.com/pixlise/core/v4/core/gdsfilename"
 	"github.com/pixlise/core/v4/core/logger"
 )
 
@@ -257,4 +258,16 @@ func parseBeamLocationRow(row []string, headerLookup []pmcColIdxs, geom_corrIdx 
 	}
 
 	return int32(pmcI), locData, nil
+}
+
+func GetImageNameSansVersion(imageName string) string {
+	meta, err := gdsfilename.ParseFileName(imageName)
+	if err != nil {
+		// It's likely not a PDS style file name
+		return imageName
+	}
+
+	// Clear the image version
+	meta.SetVersionStr("__")
+	return meta.ToString(true, true)
 }

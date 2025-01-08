@@ -14,6 +14,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
@@ -332,7 +333,7 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, marsViewerExp
 
 	// Also insert a blank entry for beam locations for this image, as we're expecting to import scans for it
 	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
-	beamImageName := wsHelpers.GetImageNameSansVersion(scanImage.ImagePath)
+	beamImageName := dataImportHelpers.GetImageNameSansVersion(scanImage.ImagePath)
 	beamLocs := &protos.ImageLocations{
 		ImageName:       beamImageName,
 		LocationPerScan: []*protos.ImageLocationsForScan{},
@@ -356,7 +357,7 @@ func readExistingLocationsForImage(jobId string, image string, hctx wsHelpers.Ha
 
 	// We're adding to the beam locations for the base image! First, read the base image beam locations structure as there should
 	// already be one!
-	filter := bson.M{"_id": wsHelpers.GetImageNameSansVersion(image)}
+	filter := bson.M{"_id": dataImportHelpers.GetImageNameSansVersion(image)}
 	baseImageBeamsResult := coll.FindOne(ctx, filter)
 
 	if baseImageBeamsResult.Err() != nil {
@@ -469,7 +470,7 @@ func importWarpedToBase(jobId string, baseImage string, ourBaseImageItem *protos
 		}
 
 		// TODO: Transaction for these 2?
-		filter := bson.M{"_id": wsHelpers.GetImageNameSansVersion(baseImage)} // See WARNING at top of function
+		filter := bson.M{"_id": dataImportHelpers.GetImageNameSansVersion(baseImage)} // See WARNING at top of function
 		result, err := coll.ReplaceOne(ctx, filter, &baseImageBeams, options.Replace())
 		if err != nil {
 			return fmt.Errorf("Coreg import job %v failed to save new beam locations: %v", jobId, err)

@@ -33,6 +33,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	apiRouter "github.com/pixlise/core/v4/api/router"
@@ -271,7 +272,7 @@ func generateImageVersion(imageName string, s3Path string, minWidthPx int, showL
 		ctx := context.TODO()
 		coll := svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 
-		filter := bson.M{"_id": wsHelpers.GetImageNameSansVersion(imageName)}
+		filter := bson.M{"_id": dataImportHelpers.GetImageNameSansVersion(imageName)}
 		result := coll.FindOne(ctx, filter)
 
 		if result.Err() != nil {
