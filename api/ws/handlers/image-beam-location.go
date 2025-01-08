@@ -81,6 +81,7 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 		if img.MatchInfo != nil && len(img.MatchInfo.BeamImageFileName) > 0 {
 			imageForBeamRead = img.MatchInfo.BeamImageFileName
 		}
+		imageForBeamRead = wsHelpers.GetImageNameSansVersion(imageForBeamRead)
 
 		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 
@@ -197,6 +198,7 @@ func HandleImageBeamLocationVersionsReq(req *protos.ImageBeamLocationVersionsReq
 	if img.MatchInfo != nil && len(img.MatchInfo.BeamImageFileName) > 0 {
 		imageForBeamRead = img.MatchInfo.BeamImageFileName
 	}
+	imageForBeamRead = wsHelpers.GetImageNameSansVersion(imageForBeamRead)
 
 	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 	vers := map[string]*protos.ImageBeamLocationVersionsResp_AvailableVersions{}

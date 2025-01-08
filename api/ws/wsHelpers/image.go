@@ -8,6 +8,7 @@ import (
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/gdsfilename"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
@@ -40,7 +41,7 @@ func GenerateIJs(imageName string, scanId string, instrument protos.ScanInstrume
 	}
 
 	locs := protos.ImageLocations{
-		ImageName: imageName,
+		ImageName: wsHelpers.GetImageNameSansVersion(imageName),
 		LocationPerScan: []*protos.ImageLocationsForScan{{
 			ScanId: scanId,
 			//BeamVersion: 1,
@@ -152,4 +153,16 @@ func GetDBImageFilter(imageName string) bson.D {
 	}
 
 	return filter
+}
+
+func GetImageNameSansVersion(imageName string) string {
+	meta, err := gdsfilename.ParseFileName(imageName)
+	if err != nil {
+		// It's likely not a PDS style file name
+		return imageName
+	}
+
+	// Clear the image version
+	meta.SetVersionStr("__")
+	return meta.ToString(true, true)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,6 +14,10 @@ import (
 )
 
 func ImportBeamLocationToDB(imgName string, instrument protos.ScanInstrument, forScanId string, beamVersion uint32, ijIndex int, fromExprPB *protos.Experiment, db *mongo.Database, logger logger.ILogger) error {
+	// Make sure anything calling us using a PDS style name has the version removed, because beam locations aren't stored with
+	// the version name
+	imgName = wsHelpers.GetImageNameSansVersion(imgName)
+
 	imagesColl := db.Collection(dbCollections.ImageBeamLocationsName)
 	ctx := context.TODO()
 	filter := bson.M{"_id": imgName}

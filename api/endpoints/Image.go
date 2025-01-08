@@ -187,7 +187,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 
 			// Original file exists, generate this modified copy and cache it back in S3 for the rest of this
 			// function to find!
-			err = generateImageVersion(genS3Path, minWidthPx, showLocations, s3Path, params.Svcs)
+			err = generateImageVersion(requestedFileName, genS3Path, minWidthPx, showLocations, s3Path, params.Svcs)
 		}
 
 		if err != nil {
@@ -251,7 +251,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 
 const imageSizeStepPx = 200
 
-func generateImageVersion(s3Path string, minWidthPx int, showLocations bool, finalFilePath string, svcs *services.APIServices) error {
+func generateImageVersion(imageName string, s3Path string, minWidthPx int, showLocations bool, finalFilePath string, svcs *services.APIServices) error {
 	if minWidthPx <= 0 {
 		return fmt.Errorf("generateImageVersion minWidthPx too small: %v", minWidthPx)
 	}
@@ -271,7 +271,7 @@ func generateImageVersion(s3Path string, minWidthPx int, showLocations bool, fin
 		ctx := context.TODO()
 		coll := svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 
-		filter := bson.M{"_id": path.Base(s3Path)}
+		filter := bson.M{"_id": wsHelpers.GetImageNameSansVersion(imageName)}
 		result := coll.FindOne(ctx, filter)
 
 		if result.Err() != nil {

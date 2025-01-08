@@ -332,12 +332,13 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, marsViewerExp
 
 	// Also insert a blank entry for beam locations for this image, as we're expecting to import scans for it
 	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
+	beamImageName := wsHelpers.GetImageNameSansVersion(scanImage.ImagePath)
 	beamLocs := &protos.ImageLocations{
-		ImageName:       scanImage.ImagePath,
+		ImageName:       beamImageName,
 		LocationPerScan: []*protos.ImageLocationsForScan{},
 	}
 
-	beamResult, err := coll.UpdateByID(ctx, scanImage.ImagePath, bson.D{{Key: "$set", Value: beamLocs}}, opt)
+	beamResult, err := coll.UpdateByID(ctx, beamImageName, bson.D{{Key: "$set", Value: beamLocs}}, opt)
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -355,7 +356,7 @@ func readExistingLocationsForImage(jobId string, image string, hctx wsHelpers.Ha
 
 	// We're adding to the beam locations for the base image! First, read the base image beam locations structure as there should
 	// already be one!
-	filter := bson.M{"_id": image}
+	filter := bson.M{"_id": wsHelpers.GetImageNameSansVersion(image)}
 	baseImageBeamsResult := coll.FindOne(ctx, filter)
 
 	if baseImageBeamsResult.Err() != nil {
@@ -372,6 +373,9 @@ func readExistingLocationsForImage(jobId string, image string, hctx wsHelpers.Ha
 	return baseImageBeams, nil
 }
 
+// WARNING: This may have broken since image beam locations are now stored without version info. Because JPL has put the brakes on their side of
+//
+//	the coreg feature, there's no real way to test this out now
 func importWarpedToBase(jobId string, baseImage string, ourBaseImageItem *protos.ScanImage, baseImageBeams *protos.ImageLocations, baseRtt string, coregResult *CoregJobResult, marsViewerExport *protos.MarsViewerExport, hctx wsHelpers.HandlerContext) error {
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
@@ -465,7 +469,7 @@ func importWarpedToBase(jobId string, baseImage string, ourBaseImageItem *protos
 		}
 
 		// TODO: Transaction for these 2?
-		filter := bson.M{"_id": baseImage}
+		filter := bson.M{"_id": wsHelpers.GetImageNameSansVersion(baseImage)} // See WARNING at top of function
 		result, err := coll.ReplaceOne(ctx, filter, &baseImageBeams, options.Replace())
 		if err != nil {
 			return fmt.Errorf("Coreg import job %v failed to save new beam locations: %v", jobId, err)
