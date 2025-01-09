@@ -229,7 +229,7 @@ func seedImages() {
 func seedImageLocations() {
 	locs := []interface{}{
 		&protos.ImageLocations{
-			ImageName: "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+			ImageName: "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J__.png",
 			LocationPerScan: []*protos.ImageLocationsForScan{
 				{
 					ScanId: "048300551",
@@ -1476,7 +1476,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 		`{"msgId":13, "status": "WS_OK",
 			"imageBeamLocationsResp":{
 				"locations": {
-					"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+					"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J__.png",
 					"locationPerScan": [
 						{
 							"scanId": "048300551",
