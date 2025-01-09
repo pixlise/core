@@ -349,13 +349,16 @@ func (s *PIXLISEDataSaver) Save(
 			return fmt.Errorf("Failed to delete images pre scan import for: %v. Error: %v", data.DatasetID, err)
 		}
 
-		coll = db.Collection(dbCollections.ImageBeamLocationsName)
-		resBeam, err := coll.DeleteMany(context.TODO(), bson.M{"_id": bson.M{"$in": imageIds}})
-		if err != nil {
-			return fmt.Errorf("Failed to delete images pre scan import for: %v. Error: %v", data.DatasetID, err)
-		}
-
-		jobLog.Infof("Deleted %d images, %d image beam locations pre importing scan: %v...", res.DeletedCount, resBeam.DeletedCount, data.DatasetID)
+		// NOTE: We used to delete beam locations but this no longer makes sense because they're not stored by straight image names, but image names stripped
+		//       of version information. A given entry may hold beams for multiple images, so we just leave it until this causes headaches one day?
+		/*
+			coll = db.Collection(dbCollections.ImageBeamLocationsName)
+			resBeam, err := coll.DeleteMany(context.TODO(), bson.M{"_id": bson.M{"$in": imageIds}})
+			if err != nil {
+				return fmt.Errorf("Failed to delete image beam locations pre scan import for: %v. Error: %v", data.DatasetID, err)
+			}
+		*/
+		jobLog.Infof("Deleted %d images pre importing scan: %v...", res.DeletedCount, data.DatasetID)
 
 		// Delete from ownership, scan default images and scan itself
 		coll = db.Collection(dbCollections.ScanDefaultImagesName)
