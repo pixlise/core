@@ -1472,11 +1472,11 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 	)
 
 	u1.AddSendReqAction("imageBeamLocationsReq (should work)",
-		`{"imageBeamLocationsReq":{"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J__.png"}}`,
+		`{"imageBeamLocationsReq":{"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
 		`{"msgId":13, "status": "WS_OK",
 			"imageBeamLocationsResp":{
 				"locations": {
-					"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J__.png",
+					"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 					"locationPerScan": [
 						{
 							"scanId": "048300551",
