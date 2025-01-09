@@ -727,6 +727,276 @@ func (x *UserImpersonateGetResp) GetSessionUser() *UserInfo {
 	return nil
 }
 
+// requires(NONE)
+type ReviewerMagicLinkCreateReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	AccessLength int64  `protobuf:"varint,1,opt,name=accessLength,proto3" json:"accessLength,omitempty"`
+	WorkspaceId  string `protobuf:"bytes,2,opt,name=workspaceId,proto3" json:"workspaceId,omitempty"`
+	ClientId     string `protobuf:"bytes,3,opt,name=clientId,proto3" json:"clientId,omitempty"`
+	Audience     string `protobuf:"bytes,4,opt,name=audience,proto3" json:"audience,omitempty"`
+}
+
+func (x *ReviewerMagicLinkCreateReq) Reset() {
+	*x = ReviewerMagicLinkCreateReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_user_management_msgs_proto_msgTypes[14]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ReviewerMagicLinkCreateReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReviewerMagicLinkCreateReq) ProtoMessage() {}
+
+func (x *ReviewerMagicLinkCreateReq) ProtoReflect() protoreflect.Message {
+	mi := &file_user_management_msgs_proto_msgTypes[14]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReviewerMagicLinkCreateReq.ProtoReflect.Descriptor instead.
+func (*ReviewerMagicLinkCreateReq) Descriptor() ([]byte, []int) {
+	return file_user_management_msgs_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *ReviewerMagicLinkCreateReq) GetAccessLength() int64 {
+	if x != nil {
+		return x.AccessLength
+	}
+	return 0
+}
+
+func (x *ReviewerMagicLinkCreateReq) GetWorkspaceId() string {
+	if x != nil {
+		return x.WorkspaceId
+	}
+	return ""
+}
+
+func (x *ReviewerMagicLinkCreateReq) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *ReviewerMagicLinkCreateReq) GetAudience() string {
+	if x != nil {
+		return x.Audience
+	}
+	return ""
+}
+
+type ReviewerMagicLinkCreateResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	MagicLink string `protobuf:"bytes,1,opt,name=magicLink,proto3" json:"magicLink,omitempty"`
+}
+
+func (x *ReviewerMagicLinkCreateResp) Reset() {
+	*x = ReviewerMagicLinkCreateResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_user_management_msgs_proto_msgTypes[15]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ReviewerMagicLinkCreateResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReviewerMagicLinkCreateResp) ProtoMessage() {}
+
+func (x *ReviewerMagicLinkCreateResp) ProtoReflect() protoreflect.Message {
+	mi := &file_user_management_msgs_proto_msgTypes[15]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReviewerMagicLinkCreateResp.ProtoReflect.Descriptor instead.
+func (*ReviewerMagicLinkCreateResp) Descriptor() ([]byte, []int) {
+	return file_user_management_msgs_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ReviewerMagicLinkCreateResp) GetMagicLink() string {
+	if x != nil {
+		return x.MagicLink
+	}
+	return ""
+}
+
+// requires(NONE)
+type ReviewerMagicLinkLoginReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	MagicLink   string `protobuf:"bytes,1,opt,name=magicLink,proto3" json:"magicLink,omitempty"`
+	ClientId    string `protobuf:"bytes,2,opt,name=clientId,proto3" json:"clientId,omitempty"`
+	Domain      string `protobuf:"bytes,3,opt,name=domain,proto3" json:"domain,omitempty"`
+	Audience    string `protobuf:"bytes,4,opt,name=audience,proto3" json:"audience,omitempty"`
+	RedirectURI string `protobuf:"bytes,5,opt,name=redirectURI,proto3" json:"redirectURI,omitempty"`
+}
+
+func (x *ReviewerMagicLinkLoginReq) Reset() {
+	*x = ReviewerMagicLinkLoginReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_user_management_msgs_proto_msgTypes[16]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ReviewerMagicLinkLoginReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReviewerMagicLinkLoginReq) ProtoMessage() {}
+
+func (x *ReviewerMagicLinkLoginReq) ProtoReflect() protoreflect.Message {
+	mi := &file_user_management_msgs_proto_msgTypes[16]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReviewerMagicLinkLoginReq.ProtoReflect.Descriptor instead.
+func (*ReviewerMagicLinkLoginReq) Descriptor() ([]byte, []int) {
+	return file_user_management_msgs_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ReviewerMagicLinkLoginReq) GetMagicLink() string {
+	if x != nil {
+		return x.MagicLink
+	}
+	return ""
+}
+
+func (x *ReviewerMagicLinkLoginReq) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *ReviewerMagicLinkLoginReq) GetDomain() string {
+	if x != nil {
+		return x.Domain
+	}
+	return ""
+}
+
+func (x *ReviewerMagicLinkLoginReq) GetAudience() string {
+	if x != nil {
+		return x.Audience
+	}
+	return ""
+}
+
+func (x *ReviewerMagicLinkLoginReq) GetRedirectURI() string {
+	if x != nil {
+		return x.RedirectURI
+	}
+	return ""
+}
+
+type ReviewerMagicLinkLoginResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserId            string `protobuf:"bytes,1,opt,name=userId,proto3" json:"userId,omitempty"`
+	Token             string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	Email             string `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	NonSecretPassword string `protobuf:"bytes,4,opt,name=nonSecretPassword,proto3" json:"nonSecretPassword,omitempty"`
+}
+
+func (x *ReviewerMagicLinkLoginResp) Reset() {
+	*x = ReviewerMagicLinkLoginResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_user_management_msgs_proto_msgTypes[17]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ReviewerMagicLinkLoginResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReviewerMagicLinkLoginResp) ProtoMessage() {}
+
+func (x *ReviewerMagicLinkLoginResp) ProtoReflect() protoreflect.Message {
+	mi := &file_user_management_msgs_proto_msgTypes[17]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReviewerMagicLinkLoginResp.ProtoReflect.Descriptor instead.
+func (*ReviewerMagicLinkLoginResp) Descriptor() ([]byte, []int) {
+	return file_user_management_msgs_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ReviewerMagicLinkLoginResp) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *ReviewerMagicLinkLoginResp) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *ReviewerMagicLinkLoginResp) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *ReviewerMagicLinkLoginResp) GetNonSecretPassword() string {
+	if x != nil {
+		return x.NonSecretPassword
+	}
+	return ""
+}
+
 var File_user_management_msgs_proto protoreflect.FileDescriptor
 
 var file_user_management_msgs_proto_rawDesc = []byte{
@@ -778,9 +1048,42 @@ var file_user_management_msgs_proto_rawDesc = []byte{
 	0x70, 0x65, 0x72, 0x73, 0x6f, 0x6e, 0x61, 0x74, 0x65, 0x47, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70,
 	0x12, 0x2b, 0x0a, 0x0b, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x55, 0x73, 0x65, 0x72, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x09, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f,
-	0x52, 0x0b, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x55, 0x73, 0x65, 0x72, 0x42, 0x0a, 0x5a,
-	0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x52, 0x0b, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x55, 0x73, 0x65, 0x72, 0x22, 0x9a, 0x01,
+	0x0a, 0x1a, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77, 0x65, 0x72, 0x4d, 0x61, 0x67, 0x69, 0x63, 0x4c,
+	0x69, 0x6e, 0x6b, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x12, 0x22, 0x0a, 0x0c,
+	0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x03, 0x52, 0x0c, 0x61, 0x63, 0x63, 0x65, 0x73, 0x73, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68,
+	0x12, 0x20, 0x0a, 0x0b, 0x77, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x49, 0x64, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x77, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65,
+	0x49, 0x64, 0x12, 0x1a, 0x0a, 0x08, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x49, 0x64, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x49, 0x64, 0x12, 0x1a,
+	0x0a, 0x08, 0x61, 0x75, 0x64, 0x69, 0x65, 0x6e, 0x63, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x08, 0x61, 0x75, 0x64, 0x69, 0x65, 0x6e, 0x63, 0x65, 0x22, 0x3b, 0x0a, 0x1b, 0x52, 0x65,
+	0x76, 0x69, 0x65, 0x77, 0x65, 0x72, 0x4d, 0x61, 0x67, 0x69, 0x63, 0x4c, 0x69, 0x6e, 0x6b, 0x43,
+	0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x12, 0x1c, 0x0a, 0x09, 0x6d, 0x61, 0x67,
+	0x69, 0x63, 0x4c, 0x69, 0x6e, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x6d, 0x61,
+	0x67, 0x69, 0x63, 0x4c, 0x69, 0x6e, 0x6b, 0x22, 0xab, 0x01, 0x0a, 0x19, 0x52, 0x65, 0x76, 0x69,
+	0x65, 0x77, 0x65, 0x72, 0x4d, 0x61, 0x67, 0x69, 0x63, 0x4c, 0x69, 0x6e, 0x6b, 0x4c, 0x6f, 0x67,
+	0x69, 0x6e, 0x52, 0x65, 0x71, 0x12, 0x1c, 0x0a, 0x09, 0x6d, 0x61, 0x67, 0x69, 0x63, 0x4c, 0x69,
+	0x6e, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x6d, 0x61, 0x67, 0x69, 0x63, 0x4c,
+	0x69, 0x6e, 0x6b, 0x12, 0x1a, 0x0a, 0x08, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x49, 0x64, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x49, 0x64, 0x12,
+	0x16, 0x0a, 0x06, 0x64, 0x6f, 0x6d, 0x61, 0x69, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x06, 0x64, 0x6f, 0x6d, 0x61, 0x69, 0x6e, 0x12, 0x1a, 0x0a, 0x08, 0x61, 0x75, 0x64, 0x69, 0x65,
+	0x6e, 0x63, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x61, 0x75, 0x64, 0x69, 0x65,
+	0x6e, 0x63, 0x65, 0x12, 0x20, 0x0a, 0x0b, 0x72, 0x65, 0x64, 0x69, 0x72, 0x65, 0x63, 0x74, 0x55,
+	0x52, 0x49, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x72, 0x65, 0x64, 0x69, 0x72, 0x65,
+	0x63, 0x74, 0x55, 0x52, 0x49, 0x22, 0x8e, 0x01, 0x0a, 0x1a, 0x52, 0x65, 0x76, 0x69, 0x65, 0x77,
+	0x65, 0x72, 0x4d, 0x61, 0x67, 0x69, 0x63, 0x4c, 0x69, 0x6e, 0x6b, 0x4c, 0x6f, 0x67, 0x69, 0x6e,
+	0x52, 0x65, 0x73, 0x70, 0x12, 0x16, 0x0a, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49, 0x64, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x75, 0x73, 0x65, 0x72, 0x49, 0x64, 0x12, 0x14, 0x0a, 0x05,
+	0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x6f, 0x6b,
+	0x65, 0x6e, 0x12, 0x14, 0x0a, 0x05, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x05, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x12, 0x2c, 0x0a, 0x11, 0x6e, 0x6f, 0x6e, 0x53,
+	0x65, 0x63, 0x72, 0x65, 0x74, 0x50, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x11, 0x6e, 0x6f, 0x6e, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x50, 0x61,
+	0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -795,32 +1098,36 @@ func file_user_management_msgs_proto_rawDescGZIP() []byte {
 	return file_user_management_msgs_proto_rawDescData
 }
 
-var file_user_management_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_user_management_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_user_management_msgs_proto_goTypes = []interface{}{
-	(*UserListReq)(nil),            // 0: UserListReq
-	(*UserListResp)(nil),           // 1: UserListResp
-	(*UserRoleListReq)(nil),        // 2: UserRoleListReq
-	(*UserRoleListResp)(nil),       // 3: UserRoleListResp
-	(*UserRolesListReq)(nil),       // 4: UserRolesListReq
-	(*UserRolesListResp)(nil),      // 5: UserRolesListResp
-	(*UserAddRoleReq)(nil),         // 6: UserAddRoleReq
-	(*UserAddRoleResp)(nil),        // 7: UserAddRoleResp
-	(*UserDeleteRoleReq)(nil),      // 8: UserDeleteRoleReq
-	(*UserDeleteRoleResp)(nil),     // 9: UserDeleteRoleResp
-	(*UserImpersonateReq)(nil),     // 10: UserImpersonateReq
-	(*UserImpersonateResp)(nil),    // 11: UserImpersonateResp
-	(*UserImpersonateGetReq)(nil),  // 12: UserImpersonateGetReq
-	(*UserImpersonateGetResp)(nil), // 13: UserImpersonateGetResp
-	(*Auth0UserDetails)(nil),       // 14: Auth0UserDetails
-	(*Auth0UserRole)(nil),          // 15: Auth0UserRole
-	(*UserInfo)(nil),               // 16: UserInfo
+	(*UserListReq)(nil),                 // 0: UserListReq
+	(*UserListResp)(nil),                // 1: UserListResp
+	(*UserRoleListReq)(nil),             // 2: UserRoleListReq
+	(*UserRoleListResp)(nil),            // 3: UserRoleListResp
+	(*UserRolesListReq)(nil),            // 4: UserRolesListReq
+	(*UserRolesListResp)(nil),           // 5: UserRolesListResp
+	(*UserAddRoleReq)(nil),              // 6: UserAddRoleReq
+	(*UserAddRoleResp)(nil),             // 7: UserAddRoleResp
+	(*UserDeleteRoleReq)(nil),           // 8: UserDeleteRoleReq
+	(*UserDeleteRoleResp)(nil),          // 9: UserDeleteRoleResp
+	(*UserImpersonateReq)(nil),          // 10: UserImpersonateReq
+	(*UserImpersonateResp)(nil),         // 11: UserImpersonateResp
+	(*UserImpersonateGetReq)(nil),       // 12: UserImpersonateGetReq
+	(*UserImpersonateGetResp)(nil),      // 13: UserImpersonateGetResp
+	(*ReviewerMagicLinkCreateReq)(nil),  // 14: ReviewerMagicLinkCreateReq
+	(*ReviewerMagicLinkCreateResp)(nil), // 15: ReviewerMagicLinkCreateResp
+	(*ReviewerMagicLinkLoginReq)(nil),   // 16: ReviewerMagicLinkLoginReq
+	(*ReviewerMagicLinkLoginResp)(nil),  // 17: ReviewerMagicLinkLoginResp
+	(*Auth0UserDetails)(nil),            // 18: Auth0UserDetails
+	(*Auth0UserRole)(nil),               // 19: Auth0UserRole
+	(*UserInfo)(nil),                    // 20: UserInfo
 }
 var file_user_management_msgs_proto_depIdxs = []int32{
-	14, // 0: UserListResp.details:type_name -> Auth0UserDetails
-	15, // 1: UserRoleListResp.roles:type_name -> Auth0UserRole
-	15, // 2: UserRolesListResp.roles:type_name -> Auth0UserRole
-	16, // 3: UserImpersonateResp.sessionUser:type_name -> UserInfo
-	16, // 4: UserImpersonateGetResp.sessionUser:type_name -> UserInfo
+	18, // 0: UserListResp.details:type_name -> Auth0UserDetails
+	19, // 1: UserRoleListResp.roles:type_name -> Auth0UserRole
+	19, // 2: UserRolesListResp.roles:type_name -> Auth0UserRole
+	20, // 3: UserImpersonateResp.sessionUser:type_name -> UserInfo
+	20, // 4: UserImpersonateGetResp.sessionUser:type_name -> UserInfo
 	5,  // [5:5] is the sub-list for method output_type
 	5,  // [5:5] is the sub-list for method input_type
 	5,  // [5:5] is the sub-list for extension type_name
@@ -1003,6 +1310,54 @@ func file_user_management_msgs_proto_init() {
 				return nil
 			}
 		}
+		file_user_management_msgs_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ReviewerMagicLinkCreateReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_user_management_msgs_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ReviewerMagicLinkCreateResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_user_management_msgs_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ReviewerMagicLinkLoginReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_user_management_msgs_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ReviewerMagicLinkLoginResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	file_user_management_msgs_proto_msgTypes[0].OneofWrappers = []interface{}{
 		(*UserListReq_RoleId)(nil),
@@ -1015,7 +1370,7 @@ func file_user_management_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_user_management_msgs_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

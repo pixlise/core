@@ -4,15 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/auth0login"
+	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"gopkg.in/auth0.v4"
 	"gopkg.in/auth0.v4/management"
 )
 
@@ -339,5 +342,296 @@ func HandleUserImpersonateGetReq(req *protos.UserImpersonateGetReq, hctx wsHelpe
 	// We have the real user id, but what's in our session is the impersonated info, return that
 	return &protos.UserImpersonateGetResp{
 		SessionUser: hctx.SessUser.User,
+	}, nil
+}
+
+func HandleReviewerMagicLinkCreateReq(req *protos.ReviewerMagicLinkCreateReq, hctx wsHelpers.HandlerContext) (*protos.ReviewerMagicLinkCreateResp, error) {
+	auth0API, err := auth0login.InitAuth0ManagementAPI(hctx.Svcs.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch workspace to verify it exists
+	workspace, workspaceOwner, err := wsHelpers.GetUserObjectById[protos.ScreenConfiguration](false, req.WorkspaceId, protos.ObjectType_OT_SCREEN_CONFIG, dbCollections.ScreenConfigurationName, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the user is the owner of the workspace
+	if workspaceOwner.CreatorUserId != hctx.SessUser.User.Id {
+		return nil, errors.New("user is not the owner of the workspace")
+	}
+
+	email := fmt.Sprintf("reviewer-%s@pixlise.org", req.WorkspaceId)
+	users, err := auth0API.User.List(management.Query(fmt.Sprintf("email:\"%s\"", email)))
+	if err != nil {
+		log.Fatalf("failed to list users: %+v", err)
+	}
+
+	if len(users.Users) > 0 {
+		user := users.Users[0]
+		isExpired := false
+		noMongoUser := false
+
+		userDB, err := wsHelpers.GetDBUserByEmail(user.GetEmail(), hctx.Svcs.MongoDB)
+		if err != nil {
+			if err != mongo.ErrNoDocuments {
+				log.Fatalf("failed to get existing reviewer user (%+v) from mongoDB: %+v", *user.ID, err)
+			} else {
+				noMongoUser = true
+			}
+		}
+
+		isExpired = noMongoUser || (userDB.Info.ExpirationDateUnixSec > 0 && userDB.Info.ExpirationDateUnixSec < time.Now().Unix())
+		if user.AppMetadata != nil && user.AppMetadata["workspaceId"] == req.WorkspaceId && !isExpired {
+			// If it's not expired, but the new expiration date differs, update it
+			if req.AccessLength == 0 && userDB.Info.ExpirationDateUnixSec != 0 {
+				userDB.Info.ExpirationDateUnixSec = 0
+				ctx := context.TODO()
+				coll := hctx.Svcs.MongoDB.Collection(dbCollections.UsersName)
+				_, err := coll.UpdateOne(ctx, bson.M{"_id": userDB.Id}, bson.D{{Key: "$set", Value: &userDB}}, options.Update())
+				if err != nil {
+					log.Fatalf("failed to update user in mongoDB: %+v", err)
+				}
+
+				return &protos.ReviewerMagicLinkCreateResp{
+					MagicLink: userDB.Id,
+				}, nil
+
+			} else if req.AccessLength > 0 && userDB.Info.ExpirationDateUnixSec != time.Now().Add(time.Duration(req.AccessLength)*time.Second).Unix() {
+				userDB.Info.ExpirationDateUnixSec = time.Now().Add(time.Duration(req.AccessLength) * time.Second).Unix()
+				ctx := context.TODO()
+				coll := hctx.Svcs.MongoDB.Collection(dbCollections.UsersName)
+				_, err := coll.UpdateOne(ctx, bson.M{"_id": userDB.Id}, bson.D{{Key: "$set", Value: &userDB}}, options.Update())
+				if err != nil {
+					log.Fatalf("failed to update user in mongoDB: %+v", err)
+				}
+
+				return &protos.ReviewerMagicLinkCreateResp{
+					MagicLink: userDB.Id,
+				}, nil
+			}
+
+			return &protos.ReviewerMagicLinkCreateResp{
+				MagicLink: *users.Users[0].ID,
+			}, nil
+		} else if isExpired {
+
+			if !noMongoUser {
+				ctx := context.TODO()
+				coll := hctx.Svcs.MongoDB.Collection(dbCollections.UsersName)
+				_, err := coll.DeleteOne(ctx, bson.M{"_id": userDB.Id})
+				if err != nil {
+					log.Fatalf("failed to delete expired reviewer user from mongo DB: %+v", err)
+				}
+			}
+
+			// Delete the user from Auth0, as the user has expired
+			err = auth0API.User.Delete(*user.ID)
+			if err != nil {
+				log.Fatalf("failed to delete expired reviewer user: %+v", err)
+			}
+		} else {
+			return nil, errors.New("user with email (" + email + ") already exists, but not for this workspace")
+		}
+	}
+
+	password, err := utils.RandPassword(24)
+	if err != nil {
+		log.Fatalf("failed to generate password: %+v", err)
+	}
+
+	userName := fmt.Sprintf("Reviewer (%s)", workspace.Name)
+	user := management.User{
+		Connection: auth0.String("Username-Password-Authentication"),
+		Email:      auth0.String(email),
+		Password:   auth0.String(password),
+		AppMetadata: map[string]interface{}{
+			"workspaceId": req.WorkspaceId,
+		},
+		Name:          auth0.String(userName),
+		VerifyEmail:   auth0.Bool(false),
+		EmailVerified: auth0.Bool(true),
+	}
+
+	err = auth0API.User.Create(&user)
+	if err != nil {
+		log.Fatalf("failed to create user: %+v", err)
+	}
+
+	// Retrieve the role ID for the "Reviewer" role
+	roles, err := auth0API.Role.List(management.Parameter("name_filter", "Reviewer"))
+	if err != nil {
+		return nil, errors.New("failed to list roles:" + err.Error())
+	}
+	if len(roles.Roles) == 0 {
+		return nil, errors.New("role 'Reviewer' not found")
+	}
+	reviewerRole := roles.Roles[0]
+
+	userID := *user.ID
+
+	// Assign the "Reviewer" role to the user
+	err = auth0API.User.AssignRoles(userID, reviewerRole)
+	if err != nil {
+		return nil, errors.New("failed to assign role to user:" + err.Error())
+	}
+
+	// Retrieve permissions associated with the Reviewer role
+	permissions, err := auth0API.Role.Permissions(reviewerRole.GetID())
+	if err != nil {
+		return nil, errors.New("failed to retrieve role permissions: " + err.Error())
+	}
+
+	// Assign permissions directly to the user
+	var userPermissions []*management.Permission
+	for _, perm := range permissions.Permissions {
+		userPermissions = append(userPermissions, &management.Permission{
+			ResourceServerIdentifier: perm.ResourceServerIdentifier,
+			Name:                     perm.Name,
+		})
+	}
+
+	err = auth0API.User.AssignPermissions(userID, userPermissions...)
+	if err != nil {
+		return nil, errors.New("failed to assign permissions to user: " + err.Error())
+	}
+	// Associate the permissions with the client application (to avoid the consent prompt)
+	scopes := []string{"openid", "profile", "email"}
+	var scopeInterfaces []interface{}
+	for _, scope := range scopes {
+		scopeInterfaces = append(scopeInterfaces, scope)
+	}
+	clientGrant := &management.ClientGrant{
+		ClientID: auth0.String(req.ClientId),
+		Audience: auth0.String(req.Audience),
+		Scope:    scopeInterfaces,
+	}
+
+	existingGrants, err := auth0API.ClientGrant.List()
+	if err != nil {
+		return nil, errors.New("failed to list client grants: " + err.Error())
+	}
+
+	grantExists := false
+	for _, grant := range existingGrants.ClientGrants {
+		if grant.GetClientID() == req.ClientId && grant.GetAudience() == req.Audience {
+			// Client grant already exists; no need to create it
+			grantExists = true
+			break
+		}
+	}
+
+	if !grantExists {
+		// Create the client grant
+		err = auth0API.ClientGrant.Create(clientGrant)
+		if err != nil {
+			return nil, errors.New("failed to create client grant: " + err.Error())
+		}
+	}
+
+	// Set the expiration date for the user
+	var expirationDate int64 = 0
+	if req.AccessLength > 0 {
+		expirationDate = time.Now().Add(time.Duration(req.AccessLength) * time.Second).Unix()
+	}
+
+	// Create a user in our database
+	_, err = wsHelpers.CreateNonSessionDBUser(userID, hctx.Svcs.MongoDB, userName, email, &req.WorkspaceId, &expirationDate, password)
+	if err != nil {
+		return nil, errors.New("failed to create user in database:" + err.Error())
+	}
+
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.UserGroupsName)
+	dbResult := coll.FindOne(ctx, bson.M{"name": "Public"}, options.FindOne())
+	if dbResult.Err() != nil {
+		return nil, errors.New("failed to find public group: " + dbResult.Err().Error())
+	}
+
+	publicGroup := &protos.UserGroupDB{}
+	err = dbResult.Decode(publicGroup)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add user to public group
+	_, err = modifyGroupMembershipList(publicGroup.Id, "", userID, true, true, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.ReviewerMagicLinkCreateResp{
+		MagicLink: userID,
+	}, nil
+}
+
+func HandleReviewerMagicLinkLoginReq(req *protos.ReviewerMagicLinkLoginReq, hctx wsHelpers.HandlerContext) (*protos.ReviewerMagicLinkLoginResp, error) {
+	workspaceId := string(req.MagicLink)
+	// Fetch workspace to verify it exists
+	workspace, _, err := wsHelpers.GetUserObjectById[protos.ScreenConfiguration](false, workspaceId, protos.ObjectType_OT_SCREEN_CONFIG, dbCollections.ScreenConfigurationName, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	reviewerId := workspace.ReviewerId
+	if reviewerId == "" {
+		return nil, errors.New("no reviewer found for workspace")
+	}
+
+	// Fetch user
+	user, err := wsHelpers.GetDBUser(reviewerId, hctx.Svcs.MongoDB)
+	if err != nil {
+		return nil, err
+	}
+
+	currentTime := time.Now().Unix()
+	if user.Info.ExpirationDateUnixSec > 0 && user.Info.ExpirationDateUnixSec < currentTime {
+		return nil, errors.New("user access has expired")
+	}
+
+	auth0API, err := auth0login.InitAuth0ManagementAPI(hctx.Svcs.Config)
+	if err != nil {
+		return nil, errors.New("failed to initialize Auth0 API: " + err.Error())
+	}
+
+	auth0User, err := auth0API.User.Read(reviewerId)
+	if err != nil {
+		return nil, errors.New("failed to fetch Auth0 user: " + err.Error())
+	}
+
+	hasReviewerRole := false
+	roles, err := auth0API.User.Roles(reviewerId)
+	if err != nil {
+		return nil, errors.New("failed to fetch roles for user: " + err.Error())
+	}
+
+	for _, role := range roles.Roles {
+		if *role.Name == "Reviewer" {
+			hasReviewerRole = true
+			break
+		}
+	}
+	if !hasReviewerRole {
+		return nil, errors.New("user does not have the 'Reviewer' role")
+	}
+
+	clientSecret := hctx.Svcs.Config.Auth0ClientSecret
+	clientID := req.ClientId
+	redirectUri := req.RedirectURI
+	audience := req.Audience
+	domain := req.Domain
+	scope := "openid profile email"
+
+	jwt, err := auth0login.GetJWT(*auth0User.Email, user.Info.NonSecretPassword, clientID, clientSecret, domain, redirectUri, audience, scope)
+	if err != nil {
+		return nil, errors.New("failed to get JWT: " + err.Error())
+	}
+
+	return &protos.ReviewerMagicLinkLoginResp{
+		UserId:            reviewerId,
+		Email:             *auth0User.Email,
+		NonSecretPassword: user.Info.NonSecretPassword,
+		Token:             jwt,
 	}, nil
 }
