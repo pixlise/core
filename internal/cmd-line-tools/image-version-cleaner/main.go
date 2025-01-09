@@ -8,7 +8,6 @@ import (
 	"log"
 	"path"
 	"path/filepath"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -36,6 +35,8 @@ func main() {
 
 	flag.StringVar(&destMongoSecret, "destMongoSecret", "", "Destination mongo DB secret")
 	flag.StringVar(&dbName, "dbName", "", "DB name we're doing the cleanup in")
+	var mustShowBeamVersion int
+	flag.IntVar(&mustShowBeamVersion, "mustShowBeamVersion", -1, "-1 or set a version that must exist for the image to be displayed")
 
 	flag.Parse()
 
@@ -72,7 +73,7 @@ func main() {
 	// Destination DB is the new pixlise one
 	db := destMongoClient.Database(dbName) //mongoDBConnection.GetDatabaseName("pixlise", destEnvName))
 
-	listMultiVersionImages(db, iLog)
+	listMultiVersionImages(mustShowBeamVersion, db, iLog)
 
 	printFinishStats()
 }
@@ -254,7 +255,7 @@ func collapseImageVersions(imageLookup map[string]*protos.ScanImage, scanMap map
 				}
 
 				// Add this image if we dont have it
-				sansVer := filepath.Join(img.OriginScanId, meta.ToString(false, false))
+				sansVer := meta.ToString(true, true)
 
 				if _, ok := imageSansVersion[img.OriginScanId][sansVer]; !ok {
 					imageSansVersion[img.OriginScanId][sansVer] = []*protos.ScanImage{img}
@@ -290,62 +291,48 @@ func deleteImagesWithSingleVersions(imageSansVersion map[string]map[string][]*pr
 	}
 }
 
-func printImageVersionBeamVersionList(scanIds []string, imageSansVersion map[string]map[string][]*protos.ScanImage, beamLocLookup map[string]*protos.ImageLocations) {
+func printImageVersionBeamVersionList(mustShowBeamVersion int, scanIds []string, scanMap map[string]*protos.ScanItem, imageSansVersion map[string]map[string][]*protos.ScanImage, beamLocLookup map[string]*protos.ImageLocations) {
 	for _, scanId := range scanIds {
 		imgs := imageSansVersion[scanId]
-		fmt.Printf("Scan: %v\n", scanId)
+		scan := scanMap[scanId]
+		scanTitle := "UNKONWN TITLE"
+		if scan != nil {
+			scanTitle = scan.Title
+		}
+		fmt.Printf("-------------------------------------\nScan: %v [%v]\n", scanId, scanTitle)
 
 		for k, imgVers := range imgs {
-			versions := []int{}
-			versionedNames := map[int]string{}
-			beamsVersionsForImageVersions := map[int][]uint32{}
-			for _, v := range imgVers {
-				meta, err := gdsfilename.ParseFileName(v.ImagePath)
-				if err != nil {
-					fatalError(fmt.Errorf("%v: %v", v.ImagePath, err))
-				}
-
-				vNum, err := meta.Version()
-				if err != nil {
-					fatalError(fmt.Errorf("%v: %v", v.ImagePath, err))
-				}
-
-				versions = append(versions, int(vNum))
-				versionedNames[int(vNum)] = v.ImagePath
-
-				// Look up what beam location versions are available
-				beamLocs := beamLocLookup[v.ImagePath]
-				if beamLocs != nil {
-					if _, ok := beamsVersionsForImageVersions[int(vNum)]; !ok {
-						beamsVersionsForImageVersions[int(vNum)] = []uint32{}
-					}
-
-					for _, beamLoc := range beamLocs.LocationPerScan {
-						beamsVersionsForImageVersions[int(vNum)] = append(beamsVersionsForImageVersions[int(vNum)], beamLoc.BeamVersion)
+			beamLocs := beamLocLookup[k]
+			beamLocVersions := []int{}
+			if beamLocs != nil {
+				for _, loc := range beamLocs.LocationPerScan {
+					if loc.ScanId == scanId {
+						beamLocVersions = append(beamLocVersions, int(loc.BeamVersion))
 					}
 				}
 			}
 
-			fmt.Printf("  Image %v:\n", k)
+			if mustShowBeamVersion < 0 || utils.ItemInSlice(mustShowBeamVersion, beamLocVersions) {
+				fmt.Printf("  Image %v:\n   Image Versions:\n", k)
 
-			slices.Sort(versions)
-			for _, v := range versions {
-				fmt.Printf("   %v: %v\n", v, versionedNames[v])
-				if beamsVersionsForImageVersions[v] == nil {
-					fmt.Printf("   NO BEAM VERSIONS!\n")
-				} else {
-					vers := []string{}
-					for _, bVer := range beamsVersionsForImageVersions[v] {
-						vers = append(vers, fmt.Sprintf("%v", bVer))
-					}
-					fmt.Printf("      Beam versions: [%v]\n", strings.Join(vers, ", "))
+				for c, v := range imgVers {
+					fmt.Printf("    %v: %v\n", c+1, v.ImagePath)
 				}
+
+				fmt.Printf("   Beam Versions:\n")
+
+				sort.Ints(beamLocVersions)
+				beamLocVersionsStrs := []string{}
+				for _, v := range beamLocVersions {
+					beamLocVersionsStrs = append(beamLocVersionsStrs, fmt.Sprintf("%v", v))
+				}
+				fmt.Printf("      [%v]\n", strings.Join(beamLocVersionsStrs, ", "))
 			}
 		}
 	}
 }
 
-func listMultiVersionImages(db *mongo.Database, iLog logger.ILogger) {
+func listMultiVersionImages(mustShowBeamVersion int, db *mongo.Database, iLog logger.ILogger) {
 	scanMap := readScans(db)
 	//scanIds := makeSortedScanIds(scanMap)
 
@@ -359,7 +346,7 @@ func listMultiVersionImages(db *mongo.Database, iLog logger.ILogger) {
 
 	fmt.Printf("Listing %v scans containing images with multiple versions present\n", len(imageSansVersion))
 
-	printImageVersionBeamVersionList(scanIds, imageSansVersion, beamLocLookup)
+	printImageVersionBeamVersionList(mustShowBeamVersion, scanIds, scanMap, imageSansVersion, beamLocLookup)
 
 	// Pull together all images
 	scanImgs := []*protos.ScanImage{}
