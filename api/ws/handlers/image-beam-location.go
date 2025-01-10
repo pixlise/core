@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
@@ -81,6 +82,7 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 		if img.MatchInfo != nil && len(img.MatchInfo.BeamImageFileName) > 0 {
 			imageForBeamRead = img.MatchInfo.BeamImageFileName
 		}
+		imageForBeamRead = dataImportHelpers.GetImageNameSansVersion(imageForBeamRead)
 
 		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 
@@ -197,6 +199,7 @@ func HandleImageBeamLocationVersionsReq(req *protos.ImageBeamLocationVersionsReq
 	if img.MatchInfo != nil && len(img.MatchInfo.BeamImageFileName) > 0 {
 		imageForBeamRead = img.MatchInfo.BeamImageFileName
 	}
+	imageForBeamRead = dataImportHelpers.GetImageNameSansVersion(imageForBeamRead)
 
 	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 	vers := map[string]*protos.ImageBeamLocationVersionsResp_AvailableVersions{}

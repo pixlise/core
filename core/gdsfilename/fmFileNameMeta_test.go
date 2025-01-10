@@ -60,6 +60,12 @@ func Example_parseFileName() {
 	fmt.Printf("%v|%v\n", e, m)
 	printFNValues(m)
 
+	// context image with path
+	fmt.Println("Context image with path:")
+	m, e = ParseFileName("01234/PCR_D078T0637741562_000FDR_N00100360009835610066000J01.PNG")
+	fmt.Printf("%v|%v\n", e, m)
+	printFNValues(m)
+
 	// bulk MSA
 	fmt.Println("MSA (bulk) file:")
 	m, e = ParseFileName("PS__D077T0637746318_000RBS_N001003600098356103760__J01.MSA")
@@ -100,7 +106,7 @@ func Example_parseFileName() {
 
 	// Output:
 	// Field test:
-	// <nil>|{IN C S PRIM V SECONDARYT TER PRO G T SIT DRIV SEQNUMRTT CAMS D CO P VE}
+	// <nil>|{IN C S PRIM V SECONDARYT TER PRO G T SIT DRIV SEQNUMRTT CAMS D CO P VE  EXT}
 	// PMC=0|PMC only stored for PIXL files
 	// RTT=SEQNUMRTT|<nil>
 	// SCLK=0|Failed to get SCLK from: SECONDARYT
@@ -110,56 +116,63 @@ func Example_parseFileName() {
 	// Failed to parse meta from file name
 	//
 	// Pseudo-intensity file:
-	// <nil>|{PS _ _ D077 T 0637741109 000 RPM _ N 001 0036 000983561 0064 0 __ J 01}
+	// <nil>|{PS _ _ D077 T 0637741109 000 RPM _ N 001 0036 000983561 0064 0 __ J 01  CSV}
 	// PMC=64|<nil>
 	// RTT=000983561|<nil>
 	// SCLK=637741109|<nil>
 	// SOL=D077|<nil>
 	//
 	// Context image file:
-	// <nil>|{PC R _ D077 T 0637741562 000 EDR _ N 001 0036 000983561 0066 0 00 J 01}
+	// <nil>|{PC R _ D077 T 0637741562 000 EDR _ N 001 0036 000983561 0066 0 00 J 01  PNG}
 	// PMC=66|<nil>
 	// RTT=000983561|<nil>
 	// SCLK=637741562|<nil>
 	// SOL=D077|<nil>
 	//
+	// Context image with path:
+	// <nil>|{PC R _ D078 T 0637741562 000 FDR _ N 001 0036 000983561 0066 0 00 J 01 01234 PNG}
+	// PMC=66|<nil>
+	// RTT=000983561|<nil>
+	// SCLK=637741562|<nil>
+	// SOL=D078|<nil>
+	//
 	// MSA (bulk) file:
-	// <nil>|{PS _ _ D077 T 0637746318 000 RBS _ N 001 0036 000983561 0376 0 __ J 01}
+	// <nil>|{PS _ _ D077 T 0637746318 000 RBS _ N 001 0036 000983561 0376 0 __ J 01  MSA}
 	// PMC=376|<nil>
 	// RTT=000983561|<nil>
 	// SCLK=637746318|<nil>
 	// SOL=D077|<nil>
 	//
 	// Housekeeping (RSI) file:
-	// <nil>|{PE _ _ D077 T 0637741109 000 RSI _ N 001 0036 000983561 0066 0 __ J 01}
+	// <nil>|{PE _ _ D077 T 0637741109 000 RSI _ N 001 0036 000983561 0066 0 __ J 01  CSV}
 	// PMC=66|<nil>
 	// RTT=000983561|<nil>
 	// SCLK=637741109|<nil>
 	// SOL=D077|<nil>
 	//
 	// All spectra CSV file:
-	// <nil>|{PS _ _ D077 T 0637741109 000 RFS _ N 001 0036 000983561 0064 0 __ J 01}
+	// <nil>|{PS _ _ D077 T 0637741109 000 RFS _ N 001 0036 000983561 0064 0 __ J 01  CSV}
 	// PMC=64|<nil>
 	// RTT=000983561|<nil>
 	// SCLK=637741109|<nil>
 	// SOL=D077|<nil>
 	//
 	// Testing SCLK and SOL fields:
-	// <nil>|{PS _ _ 1033 _ 0012345678 000 RFS _ N 001 0036 000983561 0064 0 __ J 01}
+	// <nil>|{PS _ _ 1033 _ 0012345678 000 RFS _ N 001 0036 000983561 0064 0 __ J 01  CSV}
 	// PMC=64|<nil>
 	// RTT=000983561|<nil>
 	// SCLK=12345678|<nil>
 	// SOL=1033|<nil>
 	//
 	// Watson file:
-	// <nil>|{SI F _ 0614 _ 0721455441 734 RAS _ N 030 1172 SRLC00643 _000 0 LM J 01}
+	// <nil>|{SI F _ 0614 _ 0721455441 734 RAS _ N 030 1172 SRLC00643 _000 0 LM J 01  PNG}
 	// PMC=0|PMC only stored for PIXL files
 	// RTT=SRLC00643|<nil>
 	// SCLK=721455441|<nil>
 	// SOL=0614|<nil>
 	//
 	// Sherloc file:
-	// <nil>|{SS _ _ 0614 _ 0721475157 600 RRS _ _ 030 1172 SRLC11360 W208 C GN J 01}
+	// <nil>|{SS _ _ 0614 _ 0721475157 600 RRS _ _ 030 1172 SRLC11360 W208 C GN J 01  CSV}
 	// PMC=0|PMC only stored for PIXL files
 	// RTT=SRLC11360|<nil>
 	// SCLK=721475157|<nil>
@@ -189,9 +202,27 @@ func Example_makeComparableName() {
 func Example_stringFileName() {
 	name := "PS__D077T0637741109_000RPM_N001003600098356100640__J01.CSV"
 	m, e := ParseFileName(name)
-	fmt.Printf("%v|%v\n", e, m.ToString())
+	fmt.Printf("%v|%v\n", e, m.ToString(false, false))
+	fmt.Printf("%v|%v\n", e, m.ToString(true, false))
+	fmt.Printf("%v|%v\n", e, m.ToString(false, true))
+	fmt.Printf("%v|%v\n", e, m.ToString(true, true))
+
+	name = "0987654321/PS__D077T0637741109_000RPM_N001003600098356100640__J01.CSV"
+	m, e = ParseFileName(name)
+	fmt.Printf("%v|%v\n", e, m.ToString(false, false))
+	fmt.Printf("%v|%v\n", e, m.ToString(true, false))
+	fmt.Printf("%v|%v\n", e, m.ToString(false, true))
+	fmt.Printf("%v|%v\n", e, m.ToString(true, true))
+
 	// Output:
 	// <nil>|PS__D077T0637741109_000RPM_N001003600098356100640__J01
+	// <nil>|PS__D077T0637741109_000RPM_N001003600098356100640__J01
+	// <nil>|PS__D077T0637741109_000RPM_N001003600098356100640__J01.CSV
+	// <nil>|PS__D077T0637741109_000RPM_N001003600098356100640__J01.CSV
+	// <nil>|PS__D077T0637741109_000RPM_N001003600098356100640__J01
+	// <nil>|0987654321/PS__D077T0637741109_000RPM_N001003600098356100640__J01
+	// <nil>|PS__D077T0637741109_000RPM_N001003600098356100640__J01.CSV
+	// <nil>|0987654321/PS__D077T0637741109_000RPM_N001003600098356100640__J01.CSV
 }
 
 func Example_stringToIDSimpleCase() {

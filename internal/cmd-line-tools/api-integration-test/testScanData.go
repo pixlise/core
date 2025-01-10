@@ -229,7 +229,7 @@ func seedImages() {
 func seedImageLocations() {
 	locs := []interface{}{
 		&protos.ImageLocations{
-			ImageName: "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+			ImageName: "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J__.png",
 			LocationPerScan: []*protos.ImageLocationsForScan{
 				{
 					ScanId: "048300551",
@@ -1409,11 +1409,11 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 			"imageListResp":{
 				"images": [
 					{
-						"imagePath": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+						"imagePath": "048300551/PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
 						"source": "SI_INSTRUMENT",
 						"width": 752,
 						"height": 580,
-						"fileSize": 240084,
+						"fileSize": 256736,
 						"purpose": "SIP_VIEWING",
 						"associatedScanIds": [
 							"048300551"
@@ -1421,11 +1421,11 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 						"originScanId": "048300551"
 					},
 					{
-						"imagePath": "048300551/PCW_0125_0678032223_000RCM_N00417120483005510093075J02.png",
+						"imagePath": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
 						"source": "SI_INSTRUMENT",
 						"width": 752,
 						"height": 580,
-						"fileSize": 256736,
+						"fileSize": 240084,
 						"purpose": "SIP_VIEWING",
 						"associatedScanIds": [
 							"048300551"

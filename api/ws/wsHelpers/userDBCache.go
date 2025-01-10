@@ -40,6 +40,27 @@ func GetDBUser(userId string, db *mongo.Database) (*protos.UserDBItem, error) {
 	return &userDBItem, nil
 }
 
+func GetDBUserByEmail(email string, db *mongo.Database) (*protos.UserDBItem, error) {
+	userResult := db.Collection(dbCollections.UsersName).FindOne(context.TODO(), bson.M{"info.email": email})
+	if userResult.Err() != nil {
+		return nil, userResult.Err()
+	}
+
+	userDBItem := protos.UserDBItem{}
+	err := userResult.Decode(&userDBItem)
+	if err != nil {
+		return nil, err
+	}
+
+	if userDBItem.NotificationSettings == nil {
+		userDBItem.NotificationSettings = &protos.UserNotificationSettings{
+			TopicSettings: map[string]protos.NotificationMethod{},
+		}
+	}
+
+	return &userDBItem, nil
+}
+
 // This uses a cache as it may be reading the same thing many times in bursts.
 // Cache is told when user info changes, and also has a time stamp so we don't
 // keep reading from cache forever
@@ -102,4 +123,40 @@ func NotifyUserInfoChange(userId string) {
 	// Delete this item from our cache
 	// This will ensure it is read fresh the next time this user is accessed
 	delete(userInfoCache, userId)
+}
+
+func CreateNonSessionDBUser(userId string, db *mongo.Database, name string, email string, workspaceId *string, expirationDate *int64, publicUserPassword string) (*protos.UserDBItem, error) {
+	userDBItem := &protos.UserDBItem{
+		Id: userId,
+		Info: &protos.UserInfo{
+			Id:                userId,
+			Name:              name,
+			Email:             email,
+			NonSecretPassword: publicUserPassword,
+		},
+		DataCollectionVersion: "",
+	}
+
+	if workspaceId != nil {
+		userDBItem.Info.ReviewerWorkspaceId = *workspaceId
+	}
+
+	if expirationDate != nil {
+		userDBItem.Info.ExpirationDateUnixSec = *expirationDate
+	}
+
+	ctx := context.TODO()
+	_, err := db.Collection(dbCollections.UsersName).InsertOne(ctx, userDBItem)
+	if err != nil {
+		return nil, err
+	}
+
+	// We need to return the full item, so we read it back from the DB
+	userDBItem, err = GetDBUser(userId, db)
+	if err != nil {
+		return nil, err
+	}
+
+	return userDBItem, nil
+
 }

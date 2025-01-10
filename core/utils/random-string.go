@@ -17,7 +17,11 @@
 
 package utils
 
-import "math/rand"
+import (
+	crand "crypto/rand"
+	"math/big"
+	"math/rand"
+)
 
 // Random string generation
 // https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
@@ -44,4 +48,45 @@ func RandStringBytesMaskImpr(n int) string {
 	}
 
 	return string(b)
+}
+
+func RandPassword(length int) (string, error) {
+	const (
+		lowerChars   = "abcdefghijklmnopqrstuvwxyz"
+		upperChars   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		numberChars  = "0123456789"
+		specialChars = "!-"
+		allChars     = lowerChars + upperChars + numberChars + specialChars
+	)
+
+	password := make([]byte, length)
+
+	requiredChars := []byte{
+		upperChars[randInt(len(upperChars))],
+		numberChars[randInt(len(numberChars))],
+		specialChars[randInt(len(specialChars))],
+	}
+
+	copy(password, requiredChars)
+	for i := len(requiredChars); i < length; i++ {
+		password[i] = allChars[randInt(len(allChars))]
+	}
+
+	shuffle(password)
+	return string(password), nil
+}
+
+func randInt(max int) int {
+	n, err := crand.Int(crand.Reader, big.NewInt(int64(max)))
+	if err != nil {
+		panic(err)
+	}
+	return int(n.Int64())
+}
+
+func shuffle(password []byte) {
+	for i := range password {
+		j := randInt(len(password))
+		password[i], password[j] = password[j], password[i]
+	}
 }

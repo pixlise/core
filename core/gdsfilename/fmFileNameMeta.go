@@ -21,6 +21,7 @@ package gdsfilename
 import (
 	"errors"
 	"fmt"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -52,6 +53,10 @@ type FileNameMeta struct {
 	versionStr       string // 01-99=1-9, A0-A9=100-109, AA-AZ=110-135, B0-B9=136-145, __=out of range
 	// . always before...
 	// EXT - file extension, which we get through conventional Go filepath.Ext()
+
+	// Non-PDS fields that exist in our own file name conventions
+	FilePath  string // We store images with the RTT as a folder
+	Extension string // see EXT above
 }
 
 func (m *FileNameMeta) SetColourFilter(colourFilter string) {
@@ -118,7 +123,7 @@ func (m FileNameMeta) Version() (int32, error) {
 	return stringToVersion(m.versionStr)
 }
 
-func (m FileNameMeta) ToString() string {
+func (m FileNameMeta) ToString(includePath bool, includeExt bool) string {
 	var s strings.Builder
 
 	s.WriteString(m.Instrument)
@@ -141,7 +146,23 @@ func (m FileNameMeta) ToString() string {
 	s.WriteString(m.Producer)
 	s.WriteString(m.versionStr)
 
-	return s.String()
+	fileName := s.String()
+
+	if includePath {
+		// We may have a path too
+		if len(m.FilePath) > 0 {
+			fileName = path.Join(m.FilePath, fileName)
+		}
+	}
+
+	if includeExt {
+		// Add the extension
+		if len(m.Extension) > 0 {
+			fileName = fileName + "." + m.Extension
+		}
+	}
+
+	return fileName
 }
 
 func (m *FileNameMeta) SetInstrumentType(instrumentType string) {
@@ -158,11 +179,16 @@ func (m FileNameMeta) Timestamp() (int32, error) {
 }
 */
 
-func ParseFileName(fileName string) (FileNameMeta, error) {
-	// We often get passed paths so here we ensure we're just dealing with the file name at the end
-	fileName = filepath.Base(fileName)
-
+func ParseFileName(fileNameOptPathPrefix string) (FileNameMeta, error) {
 	result := FileNameMeta{}
+
+	// We often get passed paths so here we ensure we're just dealing with the file name at the end
+	fileName := filepath.Base(fileNameOptPathPrefix)
+
+	if len(fileNameOptPathPrefix) > len(fileName) {
+		// Something got snipped... that's our path
+		result.FilePath = fileNameOptPathPrefix[0 : len(fileNameOptPathPrefix)-len(fileName)-1]
+	}
 
 	if len(fileName) != 58 {
 		return result, errors.New("Failed to parse meta from file name")
@@ -189,8 +215,8 @@ func ParseFileName(fileName string) (FileNameMeta, error) {
 	result.compression = fileName[49:51]
 	result.Producer = fileName[51:52]
 	result.versionStr = fileName[52:54]
-	//         "." = fileName[53:54]
-	//         EXT = fileName[54:57]
+	//         "." = fileName[54:55]
+	result.Extension = fileName[55:58]
 	// Length 58 chars
 
 	return result, nil

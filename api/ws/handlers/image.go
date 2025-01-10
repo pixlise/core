@@ -54,8 +54,15 @@ func HandleImageListReq(req *protos.ImageListReq, hctx wsHelpers.HandlerContext)
 		return nil, err
 	}
 
+	// We only return the "latest" version of images. This is only for ones named with the GDS naming convention, other images
+	// are returned as per listing
+	latestItems, err := wsHelpers.GetLatestImagesOnly(items)
+	if err != nil {
+		return nil, err
+	}
+
 	return &protos.ImageListResp{
-		Images: items,
+		Images: latestItems,
 	}, nil
 }
 
@@ -68,27 +75,38 @@ func HandleImageGetReq(req *protos.ImageGetReq, hctx wsHelpers.HandlerContext) (
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
 
-	filter := bson.M{"_id": req.ImageName}
-	result := coll.FindOne(ctx, filter)
-	if result.Err() != nil {
-		if result.Err() == mongo.ErrNoDocuments {
-			return nil, errorwithstatus.MakeNotFoundError(req.ImageName)
-		}
-		return nil, result.Err()
-	}
-	img := protos.ScanImage{}
-	err := result.Decode(&img)
+	filter := wsHelpers.GetDBImageFilter(req.ImageName)
+	cursor, err := coll.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
 
+	items := []*protos.ScanImage{}
+	err = cursor.All(context.TODO(), &items)
+	if err != nil {
+		return nil, err
+	}
+
+	// We only return the "latest" version of images. This is only for ones named with the GDS naming convention, other images
+	// are returned as per listing
+	latestItems, err := wsHelpers.GetLatestImagesOnly(items)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(latestItems) != 1 {
+		return nil, fmt.Errorf("Failed to find image %v, version count was %v", req.ImageName, len(latestItems))
+	}
+
+	latestItem := latestItems[0]
+
 	// Now look up any associated ids
-	if len(img.AssociatedScanIds) <= 0 {
+	if len(latestItem.AssociatedScanIds) <= 0 {
 		return nil, fmt.Errorf("Failed to find scan associated with image: %v", req.ImageName)
 	}
 
 	// Check that the user has access to all the scans in question
-	for _, scanId := range img.AssociatedScanIds {
+	for _, scanId := range latestItem.AssociatedScanIds {
 		_, err := wsHelpers.CheckObjectAccess(false, scanId, protos.ObjectType_OT_SCAN, hctx)
 		if err != nil {
 			handled := false
@@ -108,7 +126,7 @@ func HandleImageGetReq(req *protos.ImageGetReq, hctx wsHelpers.HandlerContext) (
 	}
 
 	return &protos.ImageGetResp{
-		Image: &img,
+		Image: latestItem,
 	}, nil
 }
 
@@ -260,11 +278,15 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 
 	// And the cached files
 	files, err := hctx.Svcs.FS.ListObjects(hctx.Svcs.Config.DatasetsBucket, path.Join(filepaths.DatasetImageCacheRoot, img.ImagePath))
-	for _, fileName := range files {
-		err = hctx.Svcs.FS.DeleteObject(hctx.Svcs.Config.DatasetsBucket, fileName)
-		if err != nil {
-			// Just log, but continue
-			hctx.Svcs.Log.Errorf("Delete cached image %v - failed to delete s3://%v/%v: %v", req.Name, hctx.Svcs.Config.DatasetsBucket, fileName, err)
+	if err != nil {
+		hctx.Svcs.Log.Errorf("Delete image %v - failed to list cached files: %v", req.Name, err)
+	} else {
+		for _, fileName := range files {
+			err = hctx.Svcs.FS.DeleteObject(hctx.Svcs.Config.DatasetsBucket, fileName)
+			if err != nil {
+				// Just log, but continue
+				hctx.Svcs.Log.Errorf("Delete cached image %v - failed to delete s3://%v/%v: %v", req.Name, hctx.Svcs.Config.DatasetsBucket, fileName, err)
+			}
 		}
 	}
 
@@ -287,9 +309,7 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 
 	// For any associated scans or origin scans, we send notify out
 	scanIds := []string{}
-	for _, assocScanId := range img.AssociatedScanIds {
-		scanIds = append(scanIds, assocScanId)
-	}
+	scanIds = append(scanIds, img.AssociatedScanIds...)
 
 	if !utils.ItemInSlice(img.OriginScanId, img.AssociatedScanIds) {
 		scanIds = append(scanIds, img.OriginScanId)
