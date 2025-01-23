@@ -116,19 +116,15 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 
 		result, err := dataimport.ImportForTrigger([]byte(record.SNS.Message), configBucket, datasetBucket, manualBucket, db, iLog, remoteFS)
 		if err != nil {
+
+			if len(result.WorkingDir) > 0 {
+				clearWorkingDir(result.WorkingDir)
+			}
+
 			return "", err
 		}
 
-		// Delete the working directory here, there's no point leaving it on a lambda machine, we can't debug it
-		// but if this code ran elsewhere we wouldn't delete it, to have something to look at
-		if len(result.WorkingDir) > 0 {
-			removeErr := os.RemoveAll(result.WorkingDir)
-			if removeErr != nil {
-				fmt.Printf("Failed to remove working dir: \"%v\". Error: %v\n", result.WorkingDir, removeErr)
-			} else {
-				fmt.Printf("Removed working dir: \"%v\"\n", result.WorkingDir)
-			}
-		}
+		clearWorkingDir(result.WorkingDir)
 
 		// TODO: Send some kind of SNS notification to the API so it can directly show notifications to connected user sessions
 		// What do we do about multiple API instances though? Should all APIs receive it?
@@ -141,6 +137,19 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 	}
 
 	return fmt.Sprintf("Imported %v records", worked), nil
+}
+
+func clearWorkingDir(workingDir string) {
+	// Delete the working directory here, there's no point leaving it on a lambda machine, we can't debug it
+	// but if this code ran elsewhere we wouldn't delete it, to have something to look at
+	if len(workingDir) > 0 {
+		removeErr := os.RemoveAll(workingDir)
+		if removeErr != nil {
+			fmt.Printf("Failed to remove working dir: \"%v\". Error: %v\n", workingDir, removeErr)
+		} else {
+			fmt.Printf("Removed working dir: \"%v\"\n", workingDir)
+		}
+	}
 }
 
 func main() {

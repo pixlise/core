@@ -73,7 +73,7 @@ func (r *kubernetesRunner) RunPiquant(piquantDockerImage string, params PiquantP
 	status := make(chan string)
 
 	// Dispatch the piquant run as a Kubernetes Job
-	go r.runQuantJob(params, jobId, kubeNamespace, svcAcctName, piquantDockerImage, requestorUserId, cpu, len(pmcListNames), status)
+	go r.runQuantJob(params, jobId, kubeNamespace, svcAcctName, piquantDockerImage, requestorUserId, cpu, len(pmcListNames), status, cfg.QuantNodeMaxRuntimeSec)
 
 	// Wait for all piquant instances to finish
 	log.Infof("Waiting for %v pods...", len(pmcListNames))
@@ -89,7 +89,11 @@ func (r *kubernetesRunner) RunPiquant(piquantDockerImage string, params PiquantP
 			}
 		// Receive fatal errors from the running Job; exiting if any are received
 		case kerr := <-r.fatalErrors:
-			log.Errorf("Kubernetes Error: %v", kerr.Error())
+			if kerr != nil {
+				log.Errorf("Quant Error: %v", kerr.Error())
+			} else {
+				log.Errorf("Unknown Quant Error")
+			}
 			return kerr
 		}
 	}
@@ -185,7 +189,7 @@ func (r *kubernetesRunner) getJobStatus(namespace, jobId string) (jobStatus batc
 	return job.Status, err
 }
 
-func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, svcAcctName, dockerImage, requestorUserId, cpuResource string, count int, status chan string) {
+func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, svcAcctName, dockerImage, requestorUserId, cpuResource string, count int, status chan string, quantNodeMaxRuntimeSec int32) {
 	defer close(status)
 	paramsJSON, err := json.Marshal(params)
 	if err != nil {
@@ -195,7 +199,7 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 	paramsStr := string(paramsJSON)
 
 	// Max time job can run for
-	jobTTLSec := int64(25 * 60)
+	jobTTLSec := int64(quantNodeMaxRuntimeSec)
 
 	jobSpec := makeJobObject(params, paramsStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, count, jobTTLSec)
 
@@ -210,8 +214,9 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 
 	job, err := r.kubeHelper.Clientset.BatchV1().Jobs(jobSpec.Namespace).Create(context.Background(), jobSpec, metav1.CreateOptions{})
 	if err != nil {
-		r.kubeHelper.Log.Errorf("Job create failed for: %v. namespace: %v, count: %v", jobId, namespace, count)
-		r.fatalErrors <- err
+		err2 := fmt.Errorf("Job create failed for: %v. namespace: %v, count: %v. Error: %v", jobId, namespace, count, err)
+		r.kubeHelper.Log.Errorf("%v", err2)
+		r.fatalErrors <- err2
 		return
 	}
 
@@ -225,8 +230,9 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 
 		jobStatus, err := r.getJobStatus(job.Namespace, job.Name)
 		if err != nil {
-			r.kubeHelper.Log.Errorf("Failed to get job status for: %v. namespace: %v, count: %v", jobId, namespace, count)
-			r.fatalErrors <- err
+			err2 := fmt.Errorf("Failed to get job status for: %v. namespace: %v, count: %v. Error: %v", jobId, namespace, count, err)
+			r.kubeHelper.Log.Errorf("%v", err2)
+			r.fatalErrors <- err2
 			return
 		}
 
@@ -247,9 +253,11 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 		}
 
 		// If we've been whining for too long, stop logging
-		if time.Now().Unix()-startTS > (jobTTLSec + 5*60) {
-			statusMsg := fmt.Sprintf("Timed out monitoring job %v/%v, considering it failed.", namespace, jobId)
-			status <- statusMsg
+		if time.Now().Unix()-startTS > (jobTTLSec + 60) {
+			err2 := fmt.Errorf("Timed out monitoring job %v/%v, %v failed nodes, %v succeeded nodes, %v active nodes. Marking job as failed.", namespace, jobId, jobStatus.Failed, jobStatus.Succeeded, jobStatus.Active)
+			//			status <- statusMsg
+			r.kubeHelper.Log.Errorf("%v", err2)
+			r.fatalErrors <- err2
 			break
 		}
 	}

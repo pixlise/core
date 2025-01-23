@@ -213,7 +213,14 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 	r.updateJobState(protos.JobStatus_RUNNING, fmt.Sprintf("Node count: %v, Spectra/Node: %v", len(pmcFiles), spectraPerNode))
 
 	// Run piquant job(s)
-	runner.RunPiquant(r.quantStartSettings.PIQUANTVersion, piquantParams, pmcFiles, svcs.Config, r.quantStartSettings.RequestorUserId, svcs.Log)
+	err = runner.RunPiquant(r.quantStartSettings.PIQUANTVersion, piquantParams, pmcFiles, svcs.Config, r.quantStartSettings.RequestorUserId, svcs.Log)
+
+	piquantLogList := []string{}
+
+	if err != nil {
+		r.completeJobState(false, fmt.Sprintf("%v", err.Error()), "", piquantLogList)
+		return
+	}
 
 	// Generate the output path for all generated data files & logs
 	quantOutPath := filepaths.GetQuantPath(r.quantStartSettings.RequestorUserId, userParams.ScanId, "")
@@ -221,8 +228,6 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 	outputCSVName := ""
 	outputCSVBytes := []byte{}
 	outputCSV := ""
-
-	piquantLogList := []string{}
 
 	r.updateJobState(protos.JobStatus_GATHERING_RESULTS, fmt.Sprintf("Combining CSVs from %v nodes...", len(pmcFiles)))
 

@@ -85,9 +85,10 @@ type APIConfig struct {
 	ZenodoAccessToken string
 
 	// Vars not set by environment
-	NodeCountOverride int32
-	MaxQuantNodes     int32
-	KubeConfig        string // Env sets this via command line parameter
+	NodeCountOverride      int32
+	QuantNodeMaxRuntimeSec int32
+	MaxQuantNodes          int32
+	KubeConfig             string // Env sets this via command line parameter
 
 	// Web Socket config
 	WSWriteWaitMs       uint
