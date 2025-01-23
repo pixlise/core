@@ -195,7 +195,7 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 	paramsStr := string(paramsJSON)
 
 	// Max time job can run for
-	jobTTLSec := int64(25 * 60)
+	jobTTLSec := int64(1 * 60)
 
 	jobSpec := makeJobObject(params, paramsStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, count, jobTTLSec)
 
