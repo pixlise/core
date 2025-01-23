@@ -193,7 +193,7 @@ func loadConfig() config.APIConfig {
 	}
 
 	if cfg.MaxQuantNodes <= 0 {
-		cfg.MaxQuantNodes = 40
+		cfg.MaxQuantNodes = 120
 	}
 
 	cfgStr := string(cfgJSON)
