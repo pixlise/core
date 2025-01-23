@@ -89,7 +89,11 @@ func (r *kubernetesRunner) RunPiquant(piquantDockerImage string, params PiquantP
 			}
 		// Receive fatal errors from the running Job; exiting if any are received
 		case kerr := <-r.fatalErrors:
-			log.Errorf("Kubernetes Error: %v", kerr.Error())
+			if kerr != nil {
+				log.Errorf("Kubernetes Error: %v", kerr.Error())
+			} else {
+				log.Errorf("Unknown Kubernetes Error: %v", kerr)
+			}
 			return kerr
 		}
 	}
