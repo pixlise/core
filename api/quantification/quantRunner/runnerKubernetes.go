@@ -73,7 +73,7 @@ func (r *kubernetesRunner) RunPiquant(piquantDockerImage string, params PiquantP
 	status := make(chan string)
 
 	// Dispatch the piquant run as a Kubernetes Job
-	go r.runQuantJob(params, jobId, kubeNamespace, svcAcctName, piquantDockerImage, requestorUserId, cpu, len(pmcListNames), status)
+	go r.runQuantJob(params, jobId, kubeNamespace, svcAcctName, piquantDockerImage, requestorUserId, cpu, len(pmcListNames), status, cfg.QuantNodeMaxRuntimeSec)
 
 	// Wait for all piquant instances to finish
 	log.Infof("Waiting for %v pods...", len(pmcListNames))
@@ -189,7 +189,7 @@ func (r *kubernetesRunner) getJobStatus(namespace, jobId string) (jobStatus batc
 	return job.Status, err
 }
 
-func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, svcAcctName, dockerImage, requestorUserId, cpuResource string, count int, status chan string) {
+func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, svcAcctName, dockerImage, requestorUserId, cpuResource string, count int, status chan string, quantNodeMaxRuntimeSec int32) {
 	defer close(status)
 	paramsJSON, err := json.Marshal(params)
 	if err != nil {
@@ -199,7 +199,7 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 	paramsStr := string(paramsJSON)
 
 	// Max time job can run for
-	jobTTLSec := int64(1 * 60)
+	jobTTLSec := int64(quantNodeMaxRuntimeSec)
 
 	jobSpec := makeJobObject(params, paramsStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, count, jobTTLSec)
 
