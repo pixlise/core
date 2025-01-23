@@ -214,8 +214,9 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 
 	job, err := r.kubeHelper.Clientset.BatchV1().Jobs(jobSpec.Namespace).Create(context.Background(), jobSpec, metav1.CreateOptions{})
 	if err != nil {
-		r.kubeHelper.Log.Errorf("Job create failed for: %v. namespace: %v, count: %v", jobId, namespace, count)
-		r.fatalErrors <- err
+		err2 := fmt.Errorf("Job create failed for: %v. namespace: %v, count: %v. Error: %v", jobId, namespace, count, err)
+		r.kubeHelper.Log.Errorf("%v", err2)
+		r.fatalErrors <- err2
 		return
 	}
 
@@ -229,8 +230,9 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 
 		jobStatus, err := r.getJobStatus(job.Namespace, job.Name)
 		if err != nil {
-			r.kubeHelper.Log.Errorf("Failed to get job status for: %v. namespace: %v, count: %v", jobId, namespace, count)
-			r.fatalErrors <- err
+			err2 := fmt.Errorf("Failed to get job status for: %v. namespace: %v, count: %v. Error: %v", jobId, namespace, count, err)
+			r.kubeHelper.Log.Errorf("%v", err2)
+			r.fatalErrors <- err2
 			return
 		}
 
@@ -252,10 +254,10 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 
 		// If we've been whining for too long, stop logging
 		if time.Now().Unix()-startTS > (jobTTLSec + 60) {
-			statusMsg := fmt.Sprintf("Timed out monitoring job %v/%v, %v failed nodes, %v succeeded nodes, %v active nodes. Marking job as failed.", namespace, jobId, jobStatus.Failed, jobStatus.Succeeded, jobStatus.Active)
+			err2 := fmt.Errorf("Timed out monitoring job %v/%v, %v failed nodes, %v succeeded nodes, %v active nodes. Marking job as failed.", namespace, jobId, jobStatus.Failed, jobStatus.Succeeded, jobStatus.Active)
 			//			status <- statusMsg
-			r.kubeHelper.Log.Errorf(statusMsg)
-			r.fatalErrors <- err
+			r.kubeHelper.Log.Errorf("$v", err2)
+			r.fatalErrors <- err2
 			break
 		}
 	}
