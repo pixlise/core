@@ -25,7 +25,7 @@ func GenerateIJs(imageName string, scanId string, instrument protos.ScanInstrume
 	}
 
 	// Generate coordinates
-	scale := float32(1)
+	scale := float32(100)
 	/*
 		if len(imageName) > 0 {
 			scale = 100 // We scale XY up by this much to make them not be bunched up so much, so the image doesn't have to scale down too much (it's a bit arbitrary)
