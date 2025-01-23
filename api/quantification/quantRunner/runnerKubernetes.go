@@ -247,9 +247,11 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 		}
 
 		// If we've been whining for too long, stop logging
-		if time.Now().Unix()-startTS > (jobTTLSec + 5*60) {
-			statusMsg := fmt.Sprintf("Timed out monitoring job %v/%v, considering it failed.", namespace, jobId)
-			status <- statusMsg
+		if time.Now().Unix()-startTS > (jobTTLSec + 60) {
+			statusMsg := fmt.Sprintf("Timed out monitoring job %v/%v, %v failed nodes, %v succeeded nodes, %v active nodes. Marking job as failed.", namespace, jobId, jobStatus.Failed, jobStatus.Succeeded, jobStatus.Active)
+			//			status <- statusMsg
+			r.kubeHelper.Log.Errorf(statusMsg)
+			r.fatalErrors <- err
 			break
 		}
 	}
