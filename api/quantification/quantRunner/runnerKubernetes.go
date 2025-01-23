@@ -90,9 +90,9 @@ func (r *kubernetesRunner) RunPiquant(piquantDockerImage string, params PiquantP
 		// Receive fatal errors from the running Job; exiting if any are received
 		case kerr := <-r.fatalErrors:
 			if kerr != nil {
-				log.Errorf("Kubernetes Error: %v", kerr.Error())
+				log.Errorf("Quant Error: %v", kerr.Error())
 			} else {
-				log.Errorf("Unknown Kubernetes Error: %v", kerr)
+				log.Errorf("Unknown Quant Error")
 			}
 			return kerr
 		}
@@ -256,7 +256,7 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 		if time.Now().Unix()-startTS > (jobTTLSec + 60) {
 			err2 := fmt.Errorf("Timed out monitoring job %v/%v, %v failed nodes, %v succeeded nodes, %v active nodes. Marking job as failed.", namespace, jobId, jobStatus.Failed, jobStatus.Succeeded, jobStatus.Active)
 			//			status <- statusMsg
-			r.kubeHelper.Log.Errorf("$v", err2)
+			r.kubeHelper.Log.Errorf("%v", err2)
 			r.fatalErrors <- err2
 			break
 		}
