@@ -78,10 +78,16 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 	scanID := params.PathParams[ScanIdentifier]
 	requestedFileName := path.Join(scanID, params.PathParams[FileNameIdentifier])
 
+	// User might be impersonating someone, check this
+	userId, err := checkImpersonation(params.Svcs, params.UserInfo.UserID)
+	if err != nil {
+		return nil, "", "", "", 0, fmt.Errorf("Failed to determine user id impersonation status: %v", err)
+	}
+
 	// Check access to each associated scan. The user should already have a web socket open by this point, so we can
 	// look to see if there is a cached copy of their user group membership. If we don't find one, we stop
-	memberOfGroupIds, isMemberOfNoGroups := wsHelpers.GetCachedUserGroupMembership(params.UserInfo.UserID)
-	viewerOfGroupIds, isViewerOfNoGroups := wsHelpers.GetCachedUserGroupViewership(params.UserInfo.UserID)
+	memberOfGroupIds, isMemberOfNoGroups := wsHelpers.GetCachedUserGroupMembership(userId)
+	viewerOfGroupIds, isViewerOfNoGroups := wsHelpers.GetCachedUserGroupViewership(userId)
 	if !isMemberOfNoGroups && !isViewerOfNoGroups {
 		// User is probably not logged in
 		return nil, "", "", "", 0, errorwithstatus.MakeBadRequestError(errors.New("User has no group membership, can't determine permissions"))
@@ -120,7 +126,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 	dbImage := dbImages[0]
 
 	for _, scanId := range dbImage.AssociatedScanIds {
-		_, err := wsHelpers.CheckObjectAccessForUser(false, scanId, protos.ObjectType_OT_SCAN, params.UserInfo.UserID, memberOfGroupIds, viewerOfGroupIds, params.Svcs.MongoDB)
+		_, err := wsHelpers.CheckObjectAccessForUser(false, scanId, protos.ObjectType_OT_SCAN, userId, memberOfGroupIds, viewerOfGroupIds, params.Svcs.MongoDB)
 		if err != nil {
 			return nil, "", "", "", 0, err
 		}
@@ -314,10 +320,16 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 		return errorwithstatus.MakeBadRequestError(errors.New("PutImage not allowed"))
 	}
 
+	// User might be impersonating someone, check this
+	userId, err := checkImpersonation(params.Svcs, params.UserInfo.UserID)
+	if err != nil {
+		return fmt.Errorf("Failed to determine user id impersonation status: %v", err)
+	}
+
 	// Check access to each associated scan. The user should already have a web socket open by this point, so we can
 	// look to see if there is a cached copy of their user group membership. If we don't find one, we stop
-	memberOfGroupIds, isMemberOfNoGroups := wsHelpers.GetCachedUserGroupMembership(params.UserInfo.UserID)
-	viewerOfGroupIds, isViewerOfNoGroups := wsHelpers.GetCachedUserGroupViewership(params.UserInfo.UserID)
+	memberOfGroupIds, isMemberOfNoGroups := wsHelpers.GetCachedUserGroupMembership(userId)
+	viewerOfGroupIds, isViewerOfNoGroups := wsHelpers.GetCachedUserGroupViewership(userId)
 	if !isMemberOfNoGroups && !isViewerOfNoGroups {
 		// User is probably not logged in
 		return errorwithstatus.MakeBadRequestError(errors.New("User has no group membership, can't determine permissions"))
@@ -354,7 +366,7 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 	}
 
 	// Check that user has access to this scan
-	_, err = wsHelpers.CheckObjectAccessForUser(false, req.OriginScanId, protos.ObjectType_OT_SCAN, params.UserInfo.UserID, memberOfGroupIds, viewerOfGroupIds, params.Svcs.MongoDB)
+	_, err = wsHelpers.CheckObjectAccessForUser(false, req.OriginScanId, protos.ObjectType_OT_SCAN, userId, memberOfGroupIds, viewerOfGroupIds, params.Svcs.MongoDB)
 	if err != nil {
 		return err
 	}
@@ -475,4 +487,30 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 	params.Svcs.Notifier.SysNotifyScanImagesChanged(scanImage.ImagePath, scanImage.AssociatedScanIds)
 
 	return nil
+}
+
+func checkImpersonation(svcs *services.APIServices, userId string) (string, error) {
+	if !svcs.Config.ImpersonateEnabled {
+		return userId, nil
+	}
+
+	coll := svcs.MongoDB.Collection(dbCollections.UserImpersonatorsName)
+	ctx := context.TODO()
+	impersonateResult := coll.FindOne(ctx, bson.M{"_id": userId}, options.FindOne())
+	if impersonateResult.Err() != nil {
+		if impersonateResult.Err() != mongo.ErrNoDocuments {
+			return userId, impersonateResult.Err()
+		}
+		return userId, nil
+	}
+
+	// We got impersonation info, find the user id we want to pretend to be
+	item := wsHelpers.UserImpersonationItem{}
+	err := impersonateResult.Decode(&item)
+
+	if err != nil {
+		return userId, err
+	}
+
+	return item.ImpersonatedId, nil
 }
