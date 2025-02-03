@@ -204,10 +204,10 @@ func importMatchedImage(
 
 	imgSave.MatchInfo = &protos.ImageMatchTransform{
 		BeamImageFileName: alignedImageName,
-		XOffset:           img.XOffset,
-		YOffset:           img.YOffset,
-		XScale:            img.XScale,
-		YScale:            img.YScale,
+		XOffset:           float64(img.XOffset),
+		YOffset:           float64(img.YOffset),
+		XScale:            float64(img.XScale),
+		YScale:            float64(img.YScale),
 	}
 
 	imgSave.AssociatedScanIds = []string{datasetID}
