@@ -702,10 +702,10 @@ func copyImagesToOutput(
 
 		matchInfo := &protos.ImageMatchTransform{
 			BeamImageFileName: beamImgName,
-			XOffset:           matchedMeta.XOffset,
-			YOffset:           matchedMeta.YOffset,
-			XScale:            matchedMeta.XScale,
-			YScale:            matchedMeta.YScale,
+			XOffset:           float64(matchedMeta.XOffset),
+			YOffset:           float64(matchedMeta.YOffset),
+			XScale:            float64(matchedMeta.XScale),
+			YScale:            float64(matchedMeta.YScale),
 		}
 
 		err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_UPLOAD, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, "", matchInfo, jobLog)
