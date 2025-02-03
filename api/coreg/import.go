@@ -713,10 +713,10 @@ func readWarpedImageTransform(fileName string) (*protos.ImageMatchTransform, str
 
 	// At this point we should have enough to reconstruct the transform as we interpret it
 	return &protos.ImageMatchTransform{
-			XOffset: float32(winParts[1]),
-			YOffset: float32(winParts[0]),
-			XScale:  float32(zoom),
-			YScale:  float32(zoom),
+			XOffset: float64(winParts[1]),
+			YOffset: float64(winParts[0]),
+			XScale:  float64(zoom),
+			YScale:  float64(zoom),
 		},
 		// Provide a nicer file name to save as
 		// If this image is coregistered in other ways we don't want it to clash, but we also don't want to generate random chars

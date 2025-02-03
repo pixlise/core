@@ -22,8 +22,8 @@ func MarkLocations(img image.Image, locations []*protos.Coordinate2D, markColour
 	// Run through all locations & set a white pixel where they are in the context image
 	for _, loc := range locations {
 		if loc != nil && loc.I > 0 && loc.J > 0 {
-			i := loc.I
-			j := loc.J
+			i := float64(loc.I)
+			j := float64(loc.J)
 
 			if imgMatchTransform != nil {
 				i *= imgMatchTransform.XScale
