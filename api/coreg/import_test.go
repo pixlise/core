@@ -37,30 +37,30 @@ func Example_readWarpedImageTransform() {
 	// coreg-40_519-SC3_0921_0748732957_027RAS_N0450000SRLC11373_0000LMJ01-A.png|<nil>
 	// {
 	//  "xOffset": 40,
-	//  "xScale": 4.478153,
+	//  "xScale": 4.478153138946561,
 	//  "yOffset": 519,
-	//  "yScale": 4.478153
+	//  "yScale": 4.478153138946561
 	// }
 	// coreg-186_216-PCB_0921_0748739251_000RAS_N045000032302746300020LUJ01-A.png|<nil>
 	// {
 	//  "xOffset": 186,
-	//  "xScale": 1.1359178,
+	//  "xScale": 1.1359177671479777,
 	//  "yOffset": 216,
-	//  "yScale": 1.1359178
+	//  "yScale": 1.1359177671479777
 	// }
 	// coreg-40_519-SC3_0921_0748732957_027RAS_N0450000SRLC11373_0000LMJ01.png|<nil>
 	// {
 	//  "xOffset": 40,
-	//  "xScale": 4.478153,
+	//  "xScale": 4.478153138946561,
 	//  "yOffset": 519,
-	//  "yScale": 4.478153
+	//  "yScale": 4.478153138946561
 	// }
 	// coreg-186_216-PCB_0921_0748739251_000RAS_N045000032302746300020LUJ01.png|<nil>
 	// {
 	//  "xOffset": 186,
-	//  "xScale": 1.1359178,
+	//  "xScale": 1.1359177671479777,
 	//  "yOffset": 216,
-	//  "yScale": 1.1359178
+	//  "yScale": 1.1359177671479777
 	// }
 	// |Warped image name does not have expected components
 	// {}

@@ -352,7 +352,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	// quant summary file was written with a + instead of a space?!
 	datasetID := fileaccess.MakeValidObjectName(req.Id, false)
 
-	formats := []string{"jpl-breadboard", "sbu-breadboard", "pixl-em"}
+	formats := []string{"jpl-breadboard", "sbu-breadboard", "pixl-em", "bruker"}
 	if !utils.ItemInSlice(req.Format, formats) {
 		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Unexpected format: \"%v\"", req.Format))
 	}
