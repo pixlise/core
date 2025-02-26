@@ -74,3 +74,47 @@ func HandleMemoiseWriteReq(req *protos.MemoiseWriteReq, hctx wsHelpers.HandlerCo
 		MemoTimeUnixSec: timestamp,
 	}, nil
 }
+
+func HandleMemoiseDeleteReq(req *protos.MemoiseDeleteReq, hctx wsHelpers.HandlerContext) (*protos.MemoiseDeleteResp, error) {
+	if err := wsHelpers.CheckStringField(&req.Key, "Key", 1, 1024); err != nil {
+		return nil, err
+	}
+
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.MemoisedItemsName)
+
+	result, err := coll.DeleteOne(ctx, bson.D{{Key: "_id", Value: req.Key}})
+	if err != nil {
+		return nil, err
+	}
+
+	if result.DeletedCount != 1 {
+		hctx.Svcs.Log.Errorf("MemoiseDeleteReq for: %v got unexpected DB write result: %+v", req.Key, result)
+	}
+
+	return &protos.MemoiseDeleteResp{
+		Success: result.DeletedCount == 1,
+	}, nil
+}
+
+func HandleMemoiseDeleteByRegexReq(req *protos.MemoiseDeleteByRegexReq, hctx wsHelpers.HandlerContext) (*protos.MemoiseDeleteByRegexResp, error) {
+	if err := wsHelpers.CheckStringField(&req.Pattern, "Pattern", 1, 1024); err != nil {
+		return nil, err
+	}
+
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.MemoisedItemsName)
+
+	result, err := coll.DeleteMany(ctx, bson.D{{Key: "_id", Value: bson.D{{Key: "$regex", Value: req.Pattern}}}})
+	if err != nil {
+		return nil, err
+	}
+
+	if result.DeletedCount < 1 {
+		hctx.Svcs.Log.Errorf("MemoiseDeleteByRegexReq for: %v got unexpected DB write result: %+v", req.Pattern, result)
+	}
+
+	return &protos.MemoiseDeleteByRegexResp{
+		NumDeleted: uint32(result.DeletedCount),
+	}, nil
+}
