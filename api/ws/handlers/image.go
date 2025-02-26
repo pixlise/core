@@ -180,7 +180,7 @@ func HandleImageSetDefaultReq(req *protos.ImageSetDefaultReq, hctx wsHelpers.Han
 		return nil, err
 	}
 
-	if err := wsHelpers.CheckStringField(&req.DefaultImageFileName, "DefaultImageFileName", 1, 255); err != nil {
+	if err := wsHelpers.CheckStringField(&req.DefaultImageFileName, "DefaultImageFileName", 0, 255); err != nil {
 		return nil, err
 	}
 
@@ -188,12 +188,15 @@ func HandleImageSetDefaultReq(req *protos.ImageSetDefaultReq, hctx wsHelpers.Han
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
 
-	imgResult := coll.FindOne(ctx, bson.M{"_id": req.DefaultImageFileName})
-	if imgResult.Err() != nil {
-		if imgResult.Err() == mongo.ErrNoDocuments {
-			return nil, errorwithstatus.MakeNotFoundError(req.DefaultImageFileName)
+	// IF they're setting it to something non-empty...
+	if len(req.DefaultImageFileName) > 0 {
+		imgResult := coll.FindOne(ctx, bson.M{"_id": req.DefaultImageFileName})
+		if imgResult.Err() != nil {
+			if imgResult.Err() == mongo.ErrNoDocuments {
+				return nil, errorwithstatus.MakeNotFoundError(req.DefaultImageFileName)
+			}
+			return nil, imgResult.Err()
 		}
-		return nil, imgResult.Err()
 	}
 
 	// Write to DB
