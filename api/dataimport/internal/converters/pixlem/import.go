@@ -168,6 +168,9 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 		log.Infof("Imported scan with RTT: %v", rtt)
 		data.DatasetID += "_em" // To ensure we don't overwrite real datasets
 
+		// Set the title if we need one
+		data.Meta.Title = datasetIDExpected
+
 		// NOTE: PIXL EM import - we clear everything before importing so we don't end up with eg images from a bad previous import
 		data.ClearBeforeSave = true
 		return data, filepath.Join(importPath, zipName /*, zipName*/), nil
