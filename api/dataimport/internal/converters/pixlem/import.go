@@ -81,10 +81,27 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 	if err != nil {
 		return nil, "", err
 	}
+	/*
+		// Extract RTTs from each beam location file name and import a dataset for each RTT
+		zipName, err := extractZipName(append(msaFiles, imageFiles...))
+		if err != nil {
+			return nil, "", err
+		}
+	*/
 
-	// Extract RTTs from each beam location file name and import a dataset for each RTT
-	zipName, err := extractZipName(append(msaFiles, imageFiles...))
-	if err != nil {
+	// Assume zip name is the same as dataset id, ie the directory where the files referenced in the above text files exist
+	zipName := datasetIDExpected
+
+	// Reject silly imports - if the scan has multiple sets of beams for different RTTs, we stop here
+	if len(beams) > 1 {
+		rtts := []string{}
+		for _, beamName := range beams {
+			rttStr := beamName[len(beamLocPrefix) : len(beamName)-4]
+			rtts = append(rtts, rttStr)
+		}
+
+		err = fmt.Errorf("Multiple RTTs found in SDF data. Stopping because we don't know which to import: %v", strings.Join(rtts, ","))
+		log.Infof("%v", err)
 		return nil, "", err
 	}
 
@@ -101,10 +118,10 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 
 		// User may have specified RTT as hex or int, when we're checking which to import, check both ways
 		rttHex := fmt.Sprintf("%X", rtt)
-		if datasetIDExpected != rttStr && !strings.HasSuffix(datasetIDExpected, rttHex) {
+		/*if datasetIDExpected != rttStr && !strings.HasSuffix(datasetIDExpected, rttHex) {
 			log.Infof("Skipping beam location file: %v, RTT doesn't match expected: %v", beamName, datasetIDExpected)
 			continue
-		}
+		}*/
 
 		if len(rttHex) < 8 {
 			rttHex = "0" + rttHex
@@ -127,9 +144,7 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 		for _, msa := range msaFiles {
 			// Expecting image file names of the form: 0720239657_0C6E0205_000002.jpg
 			// The second part is the RTT, so we convert our RTT to hex to compare
-
 			if strings.Contains(msa, rttHex) {
-
 				fullPath := filepath.Join(importPath, zipName, msa)
 				fileName := filepath.Base(msa)
 
@@ -155,7 +170,7 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 
 		// NOTE: PIXL EM import - we clear everything before importing so we don't end up with eg images from a bad previous import
 		data.ClearBeforeSave = true
-		return data, filepath.Join(importPath, zipName, zipName), nil
+		return data, filepath.Join(importPath, zipName /*, zipName*/), nil
 	}
 
 	// If we got here, nothing was imported
