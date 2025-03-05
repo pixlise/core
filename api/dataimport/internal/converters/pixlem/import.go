@@ -32,6 +32,7 @@ import (
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/gdsfilename"
 	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/timestamper"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
@@ -166,7 +167,11 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 		}
 
 		log.Infof("Imported scan with RTT: %v", rtt)
-		data.DatasetID += "_em" // To ensure we don't overwrite real datasets
+		ts := timestamper.UnixTimeNowStamper{}
+
+		// To ensure we don't overwrite real datasets by RTT, along with ensure we always create a new dataset when importing
+		// because the PIXL testing process means people won't always generate a new RTT for their scan!
+		data.DatasetID = fmt.Sprintf("em_%v_%v", ts.GetTimeNowSec(), data.DatasetID)
 
 		// Set the title if we need one
 		data.Meta.Title = datasetIDExpected
