@@ -171,7 +171,7 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 
 		// To ensure we don't overwrite real datasets by RTT, along with ensure we always create a new dataset when importing
 		// because the PIXL testing process means people won't always generate a new RTT for their scan!
-		data.DatasetID = fmt.Sprintf("em_%v_%v", ts.GetTimeNowSec(), data.DatasetID)
+		data.DatasetID = fmt.Sprintf("em_%v_%v", data.DatasetID, ts.GetTimeNowSec())
 
 		// Set the title if we need one
 		data.Meta.Title = datasetIDExpected
