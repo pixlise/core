@@ -176,8 +176,14 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 		// Set the title if we need one
 		data.Meta.Title = datasetIDExpected
 
+		// Default image selection, just the first one in the list
+		if len(imageList) > 0 {
+			data.DefaultContextImage = imageList[0]
+		}
+
 		// NOTE: PIXL EM import - we clear everything before importing so we don't end up with eg images from a bad previous import
 		data.ClearBeforeSave = true
+
 		return data, filepath.Join(importPath, zipName /*, zipName*/), nil
 	}
 
