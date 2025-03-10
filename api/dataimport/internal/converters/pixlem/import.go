@@ -173,12 +173,14 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 		// because the PIXL testing process means people won't always generate a new RTT for their scan!
 		data.DatasetID = fmt.Sprintf("em_%v_%v", data.DatasetID, ts.GetTimeNowSec())
 
+		log.Infof("Generated Scan ID: %v", data.DatasetID)
+
 		// Set the title if we need one
 		data.Meta.Title = datasetIDExpected
 
 		// Default image selection, just the first one in the list
 		if len(imageList) > 0 {
-			data.DefaultContextImage = imageList[0]
+			data.DefaultContextImage = filepath.Base(imageList[0]) //path.Join(data.DatasetID, filepath.Base(imageList[0]))
 		}
 
 		// NOTE: PIXL EM import - we clear everything before importing so we don't end up with eg images from a bad previous import
