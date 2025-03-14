@@ -73,6 +73,9 @@ func ProcessEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 		return err
 	}
 
+	lowerId := strings.ToLower(importId)
+	isCalTarget := strings.Contains(lowerId, "cal-target") || strings.Contains(lowerId, "cal_target") || strings.Contains(lowerId, "caltarget")
+
 	// Create an RSI file from the sdf_raw file
 	genFiles, rtts, err := sdfToRSI.ConvertSDFtoRSIs(sdfLocalPath, localTemp)
 
@@ -100,7 +103,7 @@ func ProcessEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 			continue
 		}
 
-		rxlPath, logPath, surfPath, err := createBeamLocation(filepath.Join(localTemp, f), rtts[c/2], localTemp, logger)
+		rxlPath, logPath, surfPath, err := createBeamLocation(isCalTarget, filepath.Join(localTemp, f), rtts[c/2], localTemp, logger)
 		if err != nil {
 			// Don't fail on errors for these - we may have run beam location tool on some incomplete scan, so failure isn't terrible!
 			logger.Errorf("Beam location generation failed for RSI: %v. Error: %v", f, err)
@@ -217,12 +220,12 @@ func startEMProcess(importId string, zipReader *zip.Reader, zippedData []byte, l
 	return localTemp, sdfLocalPath, msas, images, nil
 }
 
-func createBeamLocation(rsiPath string, rtt int64, outputBeamLocationPath string, logger logger.ILogger) (string, string, string, error) {
+func createBeamLocation(isCalTarget bool, rsiPath string, rtt int64, outputBeamLocationPath string, logger logger.ILogger) (string, string, string, error) {
 	outSurfaceTop := filepath.Join(outputBeamLocationPath, fmt.Sprintf("surfaceTop-%v.txt", rtt))
 	outRXL := filepath.Join(outputBeamLocationPath, fmt.Sprintf("beamLocation-%v.csv", rtt))
 	outLog := filepath.Join(outputBeamLocationPath, fmt.Sprintf("log-%v.txt", rtt))
 
-	logger.Infof("Generating beam location CSV from: %v", rsiPath)
+	logger.Infof("Generating beam location CSV from: %v. Is Cal target: %v", rsiPath, isCalTarget)
 
 	bgtPath := "." + string(os.PathSeparator)
 
@@ -240,7 +243,12 @@ func createBeamLocation(rsiPath string, rtt int64, outputBeamLocationPath string
 
 	fmt.Printf("Executing: %v %v %v %v %v %v", bgtPath+"BGT", bgtPath+"Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL, outLog)
 
-	cmd := exec.Command(bgtPath+"BGT", bgtPath+"Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL, outLog)
+	args := []string{bgtPath + "Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL, outLog}
+	if isCalTarget {
+		args = append([]string{"-t"}, args...)
+	}
+
+	cmd := exec.Command(bgtPath+"BGT", args...)
 
 	// var out bytes.Buffer
 	// var stderr bytes.Buffer
