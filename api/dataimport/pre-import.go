@@ -103,7 +103,8 @@ func ProcessEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 			continue
 		}
 
-		rxlPath, logPath, surfPath, err := createBeamLocation(isCalTarget, filepath.Join(localTemp, f), rtts[c/2], localTemp, logger)
+		rsiLocalPath := filepath.Join(localTemp, f)
+		rxlPath, logPath, surfPath, err := createBeamLocation(isCalTarget, rsiLocalPath, rtts[c/2], localTemp, logger)
 		if err != nil {
 			// Don't fail on errors for these - we may have run beam location tool on some incomplete scan, so failure isn't terrible!
 			logger.Errorf("Beam location generation failed for RSI: %v. Error: %v", f, err)
@@ -111,8 +112,8 @@ func ProcessEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 		}
 
 		// Upoad the output files (beam locations, log and surface)
-		files := []string{filepath.Join(localTemp, hkFile), rxlPath, logPath, surfPath}
-		name := []string{"housekeeping", "beam location", "log", "surface"}
+		files := []string{filepath.Join(localTemp, hkFile), rxlPath, logPath, surfPath, rsiLocalPath}
+		name := []string{"housekeeping", "beam location", "log", "surface", "rsi"}
 		for i, file := range files {
 			data, err := os.ReadFile(file)
 			if err != nil {
@@ -241,13 +242,13 @@ func createBeamLocation(isCalTarget bool, rsiPath string, rtt int64, outputBeamL
 		return "", "", "", errors.New("RSI not found")
 	}
 
-	args := []string{bgtPath + "Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL}
+	args := []string{bgtPath + "Geometry_PIXL_EM_Landing_25Jan2021.csv", fmt.Sprintf("\"%v\"", rsiPath), fmt.Sprintf("\"%v\"", outSurfaceTop), fmt.Sprintf("\"%v\"", outRXL)}
 	if isCalTarget {
 		args = append(args, "-t")
 	}
-	args = append(args, outLog)
+	args = append(args, fmt.Sprintf("\"%v\"", outLog))
 
-	fmt.Printf("Executing: %v %v", bgtPath+"BGT", strings.Join(args, " "))
+	fmt.Printf("Executing: %v %v\n", bgtPath+"BGT", strings.Join(args, " "))
 
 	cmd := exec.Command(bgtPath+"BGT", args...)
 
