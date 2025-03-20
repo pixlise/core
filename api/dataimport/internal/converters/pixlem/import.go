@@ -256,6 +256,8 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 		return nil, err
 	}
 
+	logger.Infof("Energy calibration for spectra set to xperchan=8, offset=0")
+
 	// Read Images
 	contextImgsPerPMC := importerutils.GetContextImagesPerPMCFromListing(imagePathList, logger)
 	minContextPMC := importerutils.GetMinimumContextPMC(contextImgsPerPMC)
