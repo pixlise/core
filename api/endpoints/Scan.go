@@ -45,7 +45,7 @@ func PutScanData(params apiRouter.ApiHandlerGenericParams) error {
 	scanId := fileaccess.MakeValidObjectName(params.PathParams[ScanIdentifier], false)
 
 	if l := len(scanId); l <= 0 || l >= wsHelpers.IdFieldMaxLength {
-		return errorwithstatus.MakeBadRequestError(fmt.Errorf("Invalid scanID: %v", scanId))
+		return errorwithstatus.MakeBadRequestError(fmt.Errorf("Invalid ScanID: %v, must be between 1 and 32 characters long", scanId))
 	}
 
 	fileName := params.PathParams[FileNameIdentifier]

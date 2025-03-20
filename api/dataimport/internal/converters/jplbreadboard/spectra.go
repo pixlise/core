@@ -189,7 +189,7 @@ func MakeSpectraLookup(inputpath string, spectraFiles []string, singleDetectorMS
 	return spectraLookup, nil
 }
 
-func eVCalibrationOverride(spectraLookup *dataConvertModels.DetectorSampleByPMC, xperchanA float32, offsetA float32, xperchanB float32, offsetB float32) error {
+func EVCalibrationOverride(spectraLookup *dataConvertModels.DetectorSampleByPMC, xperchanA float32, offsetA float32, xperchanB float32, offsetB float32) error {
 	// Overrides eV calibration metadata in each spectrum (XPERCHAN, OFFSET)
 	for pmc, detSamples := range *spectraLookup {
 		for detIdx := range detSamples {

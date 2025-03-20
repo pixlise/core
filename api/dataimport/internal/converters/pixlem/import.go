@@ -19,7 +19,6 @@ package pixlem
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -206,7 +205,7 @@ func readCreator(creatorPath string, fs fileaccess.FileAccess) (string, error) {
 	return creator.Id, nil
 }
 
-func extractZipName(files []string) (string, error) {
+/*func extractZipName(files []string) (string, error) {
 	zipName := ""
 	pathSep := string(os.PathSeparator)
 
@@ -231,7 +230,8 @@ func extractZipName(files []string) (string, error) {
 	}
 
 	return zipName, nil
-}
+}*/
+
 func importEMData(creatorId string, rtt string, beamLocPath string, hkPath string, imagePathList []string, bulkMaxList []string, msaList []string, fs fileaccess.FileAccess, logger logger.ILogger) (*dataConvertModels.OutputData, error) {
 	// Read MSAs
 	locSpectraLookup, err := jplbreadboard.MakeSpectraLookup("", msaList, true, false, "", false, logger)
@@ -243,6 +243,20 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 	if err != nil {
 		return nil, err
 	}
+
+	// We override the calibration values (well, they're actually absent at time of writing!) with hard-coded values
+	// that come from PIXL_EM_GEB_20kVair_SolidAngleAdj_Sep2020.xsp - the config file for PIXL-EM-E2E PIQUANT config
+	err = jplbreadboard.EVCalibrationOverride(&locSpectraLookup, 8, 0, 8, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	err = jplbreadboard.EVCalibrationOverride(&bulkMaxSpectraLookup, 8, 0, 8, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Infof("Energy calibration for spectra set to xperchan=8, offset=0")
 
 	// Read Images
 	contextImgsPerPMC := importerutils.GetContextImagesPerPMCFromListing(imagePathList, logger)
