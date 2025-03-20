@@ -252,9 +252,9 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	jobLog.Infof("Saving %v field names...", len(s.metaLookup))
-	for k, info := range s.metaLookup {
+	/*for k, info := range s.metaLookup {
 		jobLog.Infof("%v -> %v\n", k, info.label)
-	}
+	}*/
 
 	err = s.saveMetaData(&exp)
 	if err != nil {
