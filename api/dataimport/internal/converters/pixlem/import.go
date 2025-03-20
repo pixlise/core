@@ -19,7 +19,6 @@ package pixlem
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -206,7 +205,7 @@ func readCreator(creatorPath string, fs fileaccess.FileAccess) (string, error) {
 	return creator.Id, nil
 }
 
-func extractZipName(files []string) (string, error) {
+/*func extractZipName(files []string) (string, error) {
 	zipName := ""
 	pathSep := string(os.PathSeparator)
 
@@ -231,7 +230,8 @@ func extractZipName(files []string) (string, error) {
 	}
 
 	return zipName, nil
-}
+}*/
+
 func importEMData(creatorId string, rtt string, beamLocPath string, hkPath string, imagePathList []string, bulkMaxList []string, msaList []string, fs fileaccess.FileAccess, logger logger.ILogger) (*dataConvertModels.OutputData, error) {
 	// Read MSAs
 	locSpectraLookup, err := jplbreadboard.MakeSpectraLookup("", msaList, true, false, "", false, logger)
