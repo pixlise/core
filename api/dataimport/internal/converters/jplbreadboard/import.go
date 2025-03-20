@@ -158,7 +158,7 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 		return nil, "", err
 	}
 
-	err = eVCalibrationOverride(&spectraLookup, params.XPerChanA, params.OffsetA, params.XPerChanB, params.OffsetB)
+	err = EVCalibrationOverride(&spectraLookup, params.XPerChanA, params.OffsetA, params.XPerChanB, params.OffsetB)
 	if err != nil {
 		return nil, "", err
 	}
