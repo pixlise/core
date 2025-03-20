@@ -241,13 +241,13 @@ func createBeamLocation(isCalTarget bool, rsiPath string, rtt int64, outputBeamL
 		return "", "", "", errors.New("RSI not found")
 	}
 
-	args := []string{bgtPath + "Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL}
+	args := []string{bgtPath + "Geometry_PIXL_EM_Landing_25Jan2021.csv", fmt.Sprintf("\"%v\"", rsiPath), fmt.Sprintf("\"%v\"", outSurfaceTop), fmt.Sprintf("\"%v\"", outRXL)}
 	if isCalTarget {
 		args = append(args, "-t")
 	}
-	args = append(args, outLog)
+	args = append(args, fmt.Sprintf("\"%v\"", outLog))
 
-	fmt.Printf("Executing: %v %v", bgtPath+"BGT", strings.Join(args, " "))
+	fmt.Printf("Executing: %v %v\n", bgtPath+"BGT", strings.Join(args, " "))
 
 	cmd := exec.Command(bgtPath+"BGT", args...)
 
