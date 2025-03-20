@@ -168,7 +168,7 @@ func Example_makeBulkMaxSpectra() {
 	// [3]=meta [DETECTOR_ID:B/s LIVETIME:9.75/f OFFSET:50/f PMC:3/i READTYPE:MaxValue/s SOURCEFILE:GeneratedByPIXLISEConverter/s XPERCHAN:40/f] spectrum [21 22 23]
 }
 
-func Example_eVCalibrationOverride() {
+func Example_EVCalibrationOverride() {
 	spectrumLookup := dataConvertModels.DetectorSampleByPMC{
 		1: []dataConvertModels.DetectorSample{
 			dataConvertModels.DetectorSample{
@@ -192,7 +192,7 @@ func Example_eVCalibrationOverride() {
 		},
 	}
 
-	err := eVCalibrationOverride(&spectrumLookup, 0, 0, 40, 50)
+	err := EVCalibrationOverride(&spectrumLookup, 0, 0, 40, 50)
 
 	fmt.Printf("err=%v, pmcs=%v, detector counts=%v,%v\n", err, len(spectrumLookup), len(spectrumLookup[1]), len(spectrumLookup[2]))
 

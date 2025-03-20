@@ -244,6 +244,18 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 		return nil, err
 	}
 
+	// We override the calibration values (well, they're actually absent at time of writing!) with hard-coded values
+	// that come from PIXL_EM_GEB_20kVair_SolidAngleAdj_Sep2020.xsp - the config file for PIXL-EM-E2E PIQUANT config
+	err = jplbreadboard.EVCalibrationOverride(&locSpectraLookup, 8, 0, 8, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	err = jplbreadboard.EVCalibrationOverride(&bulkMaxSpectraLookup, 8, 0, 8, 0)
+	if err != nil {
+		return nil, err
+	}
+
 	// Read Images
 	contextImgsPerPMC := importerutils.GetContextImagesPerPMCFromListing(imagePathList, logger)
 	minContextPMC := importerutils.GetMinimumContextPMC(contextImgsPerPMC)
