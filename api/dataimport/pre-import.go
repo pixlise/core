@@ -103,7 +103,8 @@ func ProcessEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 			continue
 		}
 
-		rxlPath, logPath, surfPath, err := createBeamLocation(isCalTarget, filepath.Join(localTemp, f), rtts[c/2], localTemp, logger)
+		rsiLocalPath := filepath.Join(localTemp, f)
+		rxlPath, logPath, surfPath, err := createBeamLocation(isCalTarget, rsiLocalPath, rtts[c/2], localTemp, logger)
 		if err != nil {
 			// Don't fail on errors for these - we may have run beam location tool on some incomplete scan, so failure isn't terrible!
 			logger.Errorf("Beam location generation failed for RSI: %v. Error: %v", f, err)
@@ -111,8 +112,8 @@ func ProcessEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 		}
 
 		// Upoad the output files (beam locations, log and surface)
-		files := []string{filepath.Join(localTemp, hkFile), rxlPath, logPath, surfPath}
-		name := []string{"housekeeping", "beam location", "log", "surface"}
+		files := []string{filepath.Join(localTemp, hkFile), rxlPath, logPath, surfPath, rsiLocalPath}
+		name := []string{"housekeeping", "beam location", "log", "surface", "rsi"}
 		for i, file := range files {
 			data, err := os.ReadFile(file)
 			if err != nil {
