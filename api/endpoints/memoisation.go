@@ -71,7 +71,7 @@ func PutMemoise(params apiRouter.ApiHandlerGenericParams) error {
 	}
 
 	reqItem := &protos.MemoisedItem{}
-	err = proto.Unmarshal(reqData, req)
+	err = proto.Unmarshal(reqData, reqItem)
 	if err != nil {
 		return err
 	}
