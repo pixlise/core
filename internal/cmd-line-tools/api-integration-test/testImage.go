@@ -24,7 +24,7 @@ const imagePath = "images/download/048300551/PCW_0125_0678031992_000RCM_N0041712
 var imageGetJWT string
 
 // Must be called before connecting to web socket
-func testImageGet_PreWS(apiHost string) {
+func testImageGet_PreWS(apiHost string) string {
 	var err error
 	imageGetJWT, err = auth0login.GetJWT(test1Username, test1Password,
 		auth0Params.ClientId, auth0Params.Secret, auth0Params.Domain, "http://localhost:4200/authenticate", auth0Params.Audience, "openid profile email")
@@ -52,6 +52,7 @@ func testImageGet_PreWS(apiHost string) {
 	}
 
 	testImageGet_NoMembership(apiHost, "images", "PUT", bytes.NewBuffer(uploadBody), imageGetJWT)
+	return imageGetJWT
 }
 
 func seedImageFile(fileName string, scanId string, bucket string) {

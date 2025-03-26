@@ -44,9 +44,11 @@ func GetMemoise(params apiRouter.ApiHandlerGenericParams) error {
 		return err
 	}
 
+	ctx := context.TODO()
 	filter := bson.M{"_id": key}
 	opts := options.FindOne()
-	result := params.Svcs.MongoDB.Collection(dbCollections.MemoisedItemsName).FindOne(context.TODO(), filter, opts)
+	coll := params.Svcs.MongoDB.Collection(dbCollections.MemoisedItemsName)
+	result := coll.FindOne(ctx, filter, opts)
 	if result.Err() != nil {
 		if result.Err() == mongo.ErrNoDocuments {
 			return errorwithstatus.MakeNotFoundError(key)
@@ -60,11 +62,36 @@ func GetMemoise(params apiRouter.ApiHandlerGenericParams) error {
 		return err
 	}
 
+	// Update last accessed time here
+	timestamp := uint32(params.Svcs.TimeStamper.GetTimeNowSec())
+	if timestamp != item.LastReadTimeUnixSec {
+		update := bson.D{{Key: "$set", Value: bson.D{{Key: "lastreadtimeunixsec", Value: timestamp}}}}
+		updResult, err := coll.UpdateOne(ctx, filter, update, options.Update())
+		if err != nil {
+			// Don't error out on this, but do notify
+			params.Svcs.Log.Errorf("Failed to update last read time stamp for memoised item: %v. Error: %v", key, err)
+		}
+
+		if updResult.ModifiedCount != 1 {
+			params.Svcs.Log.Errorf("Memoised item timestamp update had unexpected counts %+v key: %v", updResult, key)
+		}
+
+		// Also set it in the item we're replying with
+		item.LastReadTimeUnixSec = timestamp
+	}
+
 	utils.SendProtoBinary(params.Writer, item)
 	return nil
 }
 
 func PutMemoise(params apiRouter.ApiHandlerGenericParams) error {
+	// Get key from query params
+	key := params.PathParams["key"]
+
+	if err := wsHelpers.CheckStringField(&key, "Key", 1, 1024); err != nil {
+		return err
+	}
+
 	reqData, err := io.ReadAll(params.Request.Body)
 	if err != nil {
 		return err
@@ -76,10 +103,12 @@ func PutMemoise(params apiRouter.ApiHandlerGenericParams) error {
 		return err
 	}
 
-	// Here we overwrite freely, but we do limit key sizes though
-	if err := wsHelpers.CheckStringField(&reqItem.Key, "Key", 1, 1024); err != nil {
-		return err
+	// Ensure key is either empty or the same as the key in the query param
+	if len(reqItem.Key) > 0 && key != reqItem.Key {
+		return errorwithstatus.MakeBadRequestError(errors.New("Memoisation item key doesn't match query parameter"))
 	}
+
+	// Here we overwrite freely, but we do limit key sizes though
 	if len(reqItem.Data) <= 0 {
 		return errorwithstatus.MakeBadRequestError(errors.New("Missing data field"))
 	}
@@ -90,12 +119,14 @@ func PutMemoise(params apiRouter.ApiHandlerGenericParams) error {
 
 	timestamp := uint32(params.Svcs.TimeStamper.GetTimeNowSec())
 	item := &protos.MemoisedItem{
-		Key:             reqItem.Key,
-		MemoTimeUnixSec: timestamp,
-		Data:            reqItem.Data,
-		ScanId:          reqItem.ScanId,
-		QuantId:         reqItem.QuantId,
-		ExprId:          reqItem.ExprId,
+		Key:                 reqItem.Key,
+		MemoTimeUnixSec:     timestamp,
+		Data:                reqItem.Data,
+		ScanId:              reqItem.ScanId,
+		QuantId:             reqItem.QuantId,
+		ExprId:              reqItem.ExprId,
+		DataSize:            uint32(len(reqItem.Data)),
+		LastReadTimeUnixSec: timestamp, // Right now this is the last time it was accessed. To be updated in future get calls
 	}
 
 	result, err := coll.UpdateByID(ctx, reqItem.Key, bson.D{{Key: "$set", Value: item}}, opt)
