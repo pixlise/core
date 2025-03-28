@@ -140,7 +140,7 @@ func PutMemoise(params apiRouter.ApiHandlerGenericParams) error {
 
 	params.Writer.Header().Add("Content-Type", "application/json")
 
-	ts := fmt.Sprintf("%v", timestamp)
+	ts := fmt.Sprintf(`{"timestamp": %v}`, timestamp)
 	params.Writer.Write([]byte(ts))
 
 	return nil
