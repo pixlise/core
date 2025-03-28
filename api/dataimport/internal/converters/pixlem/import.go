@@ -177,9 +177,25 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 		// Set the title if we need one
 		data.Meta.Title = datasetIDExpected
 
-		// Default image selection, just the first one in the list
-		if len(imageList) > 0 {
-			data.DefaultContextImage = filepath.Base(imageList[0]) //path.Join(data.DatasetID, filepath.Base(imageList[0]))
+		// Default image selection, ensure we're using one that has beam locations defined
+		if len(data.DefaultContextImage) <= 0 && len(imageList) > 0 {
+			for _, item := range data.PerPMCData {
+				if item.Beam != nil {
+					keys := utils.GetMapKeys(item.Beam.IJ)
+					if len(keys) > 0 {
+						for _, key := range keys {
+							// We have a list of PMCs we have beams for, pick an image that has this in it
+							for _, img := range imageList {
+								if strings.Contains(img, fmt.Sprintf("%v.", key)) {
+									data.DefaultContextImage = filepath.Base(img)
+									break
+								}
+							}
+						}
+						break
+					}
+				}
+			}
 		}
 
 		// NOTE: PIXL EM import - we clear everything before importing so we don't end up with eg images from a bad previous import
