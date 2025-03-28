@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pixlise/core/v4/core/utils"
@@ -96,7 +97,11 @@ func testMemoisationWrite_WriteReadRead(apiHost string, jwt string) {
 	failIf(status != 200, fmt.Errorf("Unexpected memoisation response! Status %v, body: %v", status, string(body)))
 
 	// We should have a time stamp
-	ts, err := strconv.ParseInt(string(body), 10, 32)
+	bodyStr := string(body)
+	start := "{\"timestamp\": "
+	failIf(!strings.HasPrefix(bodyStr, start), errors.New("Bad memoise PUT body format: "+bodyStr))
+
+	ts, err := strconv.ParseInt(bodyStr[len(start):len(bodyStr)-1], 10, 32)
 	failIf(err != nil, err)
 
 	failIf(ts < 1742956321, fmt.Errorf("Invalid timestamp: %v", ts))
