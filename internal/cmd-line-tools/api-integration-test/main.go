@@ -160,7 +160,10 @@ func runEnvTests(apiHost string) {
 }
 
 func runLocalTests(apiHost string, isCI bool) {
-	testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
+	jwt := testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
+
+	// Should run anywhere, but easy to do here
+	testMemoisation(apiHost, jwt)
 
 	// Test log query (for data import)
 	// Run integration test against review env?
@@ -169,7 +172,6 @@ func runLocalTests(apiHost string, isCI bool) {
 	// *** NOT RUNNING THIS LOCALLY, NO LAMBDA IS STARTED *** testScanImport(apiHost)
 	u1Id, u2Id := testNotification(apiHost)
 	testImageUpload(apiHost, u1Id, u2Id)
-	testMemoisation(apiHost)
 	testImageMatchTransform(apiHost)
 	testSelectionMsgs(apiHost)
 	testQuants(apiHost, !isCI) // We only run the tests that need to start PIQUANT outside of CI for now

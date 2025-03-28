@@ -21,204 +21,6 @@ const (
 )
 
 // requires(NONE)
-type MemoiseWriteReq struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Key  string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Data []byte `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
-}
-
-func (x *MemoiseWriteReq) Reset() {
-	*x = MemoiseWriteReq{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_memoisation_msgs_proto_msgTypes[0]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *MemoiseWriteReq) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MemoiseWriteReq) ProtoMessage() {}
-
-func (x *MemoiseWriteReq) ProtoReflect() protoreflect.Message {
-	mi := &file_memoisation_msgs_proto_msgTypes[0]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MemoiseWriteReq.ProtoReflect.Descriptor instead.
-func (*MemoiseWriteReq) Descriptor() ([]byte, []int) {
-	return file_memoisation_msgs_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *MemoiseWriteReq) GetKey() string {
-	if x != nil {
-		return x.Key
-	}
-	return ""
-}
-
-func (x *MemoiseWriteReq) GetData() []byte {
-	if x != nil {
-		return x.Data
-	}
-	return nil
-}
-
-type MemoiseWriteResp struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	MemoTimeUnixSec uint32 `protobuf:"varint,1,opt,name=memoTimeUnixSec,proto3" json:"memoTimeUnixSec,omitempty"`
-}
-
-func (x *MemoiseWriteResp) Reset() {
-	*x = MemoiseWriteResp{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_memoisation_msgs_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *MemoiseWriteResp) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MemoiseWriteResp) ProtoMessage() {}
-
-func (x *MemoiseWriteResp) ProtoReflect() protoreflect.Message {
-	mi := &file_memoisation_msgs_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MemoiseWriteResp.ProtoReflect.Descriptor instead.
-func (*MemoiseWriteResp) Descriptor() ([]byte, []int) {
-	return file_memoisation_msgs_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *MemoiseWriteResp) GetMemoTimeUnixSec() uint32 {
-	if x != nil {
-		return x.MemoTimeUnixSec
-	}
-	return 0
-}
-
-// requires(NONE)
-type MemoiseGetReq struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-}
-
-func (x *MemoiseGetReq) Reset() {
-	*x = MemoiseGetReq{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_memoisation_msgs_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *MemoiseGetReq) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MemoiseGetReq) ProtoMessage() {}
-
-func (x *MemoiseGetReq) ProtoReflect() protoreflect.Message {
-	mi := &file_memoisation_msgs_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MemoiseGetReq.ProtoReflect.Descriptor instead.
-func (*MemoiseGetReq) Descriptor() ([]byte, []int) {
-	return file_memoisation_msgs_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *MemoiseGetReq) GetKey() string {
-	if x != nil {
-		return x.Key
-	}
-	return ""
-}
-
-type MemoiseGetResp struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Item *MemoisedItem `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
-}
-
-func (x *MemoiseGetResp) Reset() {
-	*x = MemoiseGetResp{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_memoisation_msgs_proto_msgTypes[3]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *MemoiseGetResp) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MemoiseGetResp) ProtoMessage() {}
-
-func (x *MemoiseGetResp) ProtoReflect() protoreflect.Message {
-	mi := &file_memoisation_msgs_proto_msgTypes[3]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MemoiseGetResp.ProtoReflect.Descriptor instead.
-func (*MemoiseGetResp) Descriptor() ([]byte, []int) {
-	return file_memoisation_msgs_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *MemoiseGetResp) GetItem() *MemoisedItem {
-	if x != nil {
-		return x.Item
-	}
-	return nil
-}
-
-// requires(NONE)
 type MemoiseDeleteReq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -230,7 +32,7 @@ type MemoiseDeleteReq struct {
 func (x *MemoiseDeleteReq) Reset() {
 	*x = MemoiseDeleteReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_memoisation_msgs_proto_msgTypes[4]
+		mi := &file_memoisation_msgs_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -243,7 +45,7 @@ func (x *MemoiseDeleteReq) String() string {
 func (*MemoiseDeleteReq) ProtoMessage() {}
 
 func (x *MemoiseDeleteReq) ProtoReflect() protoreflect.Message {
-	mi := &file_memoisation_msgs_proto_msgTypes[4]
+	mi := &file_memoisation_msgs_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -256,7 +58,7 @@ func (x *MemoiseDeleteReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoiseDeleteReq.ProtoReflect.Descriptor instead.
 func (*MemoiseDeleteReq) Descriptor() ([]byte, []int) {
-	return file_memoisation_msgs_proto_rawDescGZIP(), []int{4}
+	return file_memoisation_msgs_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *MemoiseDeleteReq) GetKey() string {
@@ -277,7 +79,7 @@ type MemoiseDeleteResp struct {
 func (x *MemoiseDeleteResp) Reset() {
 	*x = MemoiseDeleteResp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_memoisation_msgs_proto_msgTypes[5]
+		mi := &file_memoisation_msgs_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -290,7 +92,7 @@ func (x *MemoiseDeleteResp) String() string {
 func (*MemoiseDeleteResp) ProtoMessage() {}
 
 func (x *MemoiseDeleteResp) ProtoReflect() protoreflect.Message {
-	mi := &file_memoisation_msgs_proto_msgTypes[5]
+	mi := &file_memoisation_msgs_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -303,7 +105,7 @@ func (x *MemoiseDeleteResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoiseDeleteResp.ProtoReflect.Descriptor instead.
 func (*MemoiseDeleteResp) Descriptor() ([]byte, []int) {
-	return file_memoisation_msgs_proto_rawDescGZIP(), []int{5}
+	return file_memoisation_msgs_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *MemoiseDeleteResp) GetSuccess() bool {
@@ -325,7 +127,7 @@ type MemoiseDeleteByRegexReq struct {
 func (x *MemoiseDeleteByRegexReq) Reset() {
 	*x = MemoiseDeleteByRegexReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_memoisation_msgs_proto_msgTypes[6]
+		mi := &file_memoisation_msgs_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -338,7 +140,7 @@ func (x *MemoiseDeleteByRegexReq) String() string {
 func (*MemoiseDeleteByRegexReq) ProtoMessage() {}
 
 func (x *MemoiseDeleteByRegexReq) ProtoReflect() protoreflect.Message {
-	mi := &file_memoisation_msgs_proto_msgTypes[6]
+	mi := &file_memoisation_msgs_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -351,7 +153,7 @@ func (x *MemoiseDeleteByRegexReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoiseDeleteByRegexReq.ProtoReflect.Descriptor instead.
 func (*MemoiseDeleteByRegexReq) Descriptor() ([]byte, []int) {
-	return file_memoisation_msgs_proto_rawDescGZIP(), []int{6}
+	return file_memoisation_msgs_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *MemoiseDeleteByRegexReq) GetPattern() string {
@@ -372,7 +174,7 @@ type MemoiseDeleteByRegexResp struct {
 func (x *MemoiseDeleteByRegexResp) Reset() {
 	*x = MemoiseDeleteByRegexResp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_memoisation_msgs_proto_msgTypes[7]
+		mi := &file_memoisation_msgs_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -385,7 +187,7 @@ func (x *MemoiseDeleteByRegexResp) String() string {
 func (*MemoiseDeleteByRegexResp) ProtoMessage() {}
 
 func (x *MemoiseDeleteByRegexResp) ProtoReflect() protoreflect.Message {
-	mi := &file_memoisation_msgs_proto_msgTypes[7]
+	mi := &file_memoisation_msgs_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -398,7 +200,7 @@ func (x *MemoiseDeleteByRegexResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoiseDeleteByRegexResp.ProtoReflect.Descriptor instead.
 func (*MemoiseDeleteByRegexResp) Descriptor() ([]byte, []int) {
-	return file_memoisation_msgs_proto_rawDescGZIP(), []int{7}
+	return file_memoisation_msgs_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *MemoiseDeleteByRegexResp) GetNumDeleted() uint32 {
@@ -412,35 +214,21 @@ var File_memoisation_msgs_proto protoreflect.FileDescriptor
 
 var file_memoisation_msgs_proto_rawDesc = []byte{
 	0x0a, 0x16, 0x6d, 0x65, 0x6d, 0x6f, 0x69, 0x73, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2d, 0x6d, 0x73,
-	0x67, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x11, 0x6d, 0x65, 0x6d, 0x6f, 0x69, 0x73,
-	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x37, 0x0a, 0x0f, 0x4d,
-	0x65, 0x6d, 0x6f, 0x69, 0x73, 0x65, 0x57, 0x72, 0x69, 0x74, 0x65, 0x52, 0x65, 0x71, 0x12, 0x10,
-	0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79,
-	0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04,
-	0x64, 0x61, 0x74, 0x61, 0x22, 0x3c, 0x0a, 0x10, 0x4d, 0x65, 0x6d, 0x6f, 0x69, 0x73, 0x65, 0x57,
-	0x72, 0x69, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x12, 0x28, 0x0a, 0x0f, 0x6d, 0x65, 0x6d, 0x6f,
-	0x54, 0x69, 0x6d, 0x65, 0x55, 0x6e, 0x69, 0x78, 0x53, 0x65, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x0d, 0x52, 0x0f, 0x6d, 0x65, 0x6d, 0x6f, 0x54, 0x69, 0x6d, 0x65, 0x55, 0x6e, 0x69, 0x78, 0x53,
-	0x65, 0x63, 0x22, 0x21, 0x0a, 0x0d, 0x4d, 0x65, 0x6d, 0x6f, 0x69, 0x73, 0x65, 0x47, 0x65, 0x74,
-	0x52, 0x65, 0x71, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x03, 0x6b, 0x65, 0x79, 0x22, 0x33, 0x0a, 0x0e, 0x4d, 0x65, 0x6d, 0x6f, 0x69, 0x73, 0x65,
-	0x47, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x12, 0x21, 0x0a, 0x04, 0x69, 0x74, 0x65, 0x6d, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0d, 0x2e, 0x4d, 0x65, 0x6d, 0x6f, 0x69, 0x73, 0x65, 0x64,
-	0x49, 0x74, 0x65, 0x6d, 0x52, 0x04, 0x69, 0x74, 0x65, 0x6d, 0x22, 0x24, 0x0a, 0x10, 0x4d, 0x65,
-	0x6d, 0x6f, 0x69, 0x73, 0x65, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x12, 0x10,
-	0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79,
-	0x22, 0x2d, 0x0a, 0x11, 0x4d, 0x65, 0x6d, 0x6f, 0x69, 0x73, 0x65, 0x44, 0x65, 0x6c, 0x65, 0x74,
-	0x65, 0x52, 0x65, 0x73, 0x70, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x22,
-	0x33, 0x0a, 0x17, 0x4d, 0x65, 0x6d, 0x6f, 0x69, 0x73, 0x65, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65,
-	0x42, 0x79, 0x52, 0x65, 0x67, 0x65, 0x78, 0x52, 0x65, 0x71, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x61,
-	0x74, 0x74, 0x65, 0x72, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x70, 0x61, 0x74,
-	0x74, 0x65, 0x72, 0x6e, 0x22, 0x3a, 0x0a, 0x18, 0x4d, 0x65, 0x6d, 0x6f, 0x69, 0x73, 0x65, 0x44,
-	0x65, 0x6c, 0x65, 0x74, 0x65, 0x42, 0x79, 0x52, 0x65, 0x67, 0x65, 0x78, 0x52, 0x65, 0x73, 0x70,
-	0x12, 0x1e, 0x0a, 0x0a, 0x6e, 0x75, 0x6d, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x64, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x0d, 0x52, 0x0a, 0x6e, 0x75, 0x6d, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x64,
-	0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x33,
+	0x67, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x24, 0x0a, 0x10, 0x4d, 0x65, 0x6d, 0x6f,
+	0x69, 0x73, 0x65, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x12, 0x10, 0x0a, 0x03,
+	0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x22, 0x2d,
+	0x0a, 0x11, 0x4d, 0x65, 0x6d, 0x6f, 0x69, 0x73, 0x65, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52,
+	0x65, 0x73, 0x70, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x22, 0x33, 0x0a,
+	0x17, 0x4d, 0x65, 0x6d, 0x6f, 0x69, 0x73, 0x65, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x42, 0x79,
+	0x52, 0x65, 0x67, 0x65, 0x78, 0x52, 0x65, 0x71, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x61, 0x74, 0x74,
+	0x65, 0x72, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x70, 0x61, 0x74, 0x74, 0x65,
+	0x72, 0x6e, 0x22, 0x3a, 0x0a, 0x18, 0x4d, 0x65, 0x6d, 0x6f, 0x69, 0x73, 0x65, 0x44, 0x65, 0x6c,
+	0x65, 0x74, 0x65, 0x42, 0x79, 0x52, 0x65, 0x67, 0x65, 0x78, 0x52, 0x65, 0x73, 0x70, 0x12, 0x1e,
+	0x0a, 0x0a, 0x6e, 0x75, 0x6d, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x64, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0d, 0x52, 0x0a, 0x6e, 0x75, 0x6d, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x64, 0x42, 0x0a,
+	0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 }
 
 var (
@@ -455,25 +243,19 @@ func file_memoisation_msgs_proto_rawDescGZIP() []byte {
 	return file_memoisation_msgs_proto_rawDescData
 }
 
-var file_memoisation_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_memoisation_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_memoisation_msgs_proto_goTypes = []interface{}{
-	(*MemoiseWriteReq)(nil),          // 0: MemoiseWriteReq
-	(*MemoiseWriteResp)(nil),         // 1: MemoiseWriteResp
-	(*MemoiseGetReq)(nil),            // 2: MemoiseGetReq
-	(*MemoiseGetResp)(nil),           // 3: MemoiseGetResp
-	(*MemoiseDeleteReq)(nil),         // 4: MemoiseDeleteReq
-	(*MemoiseDeleteResp)(nil),        // 5: MemoiseDeleteResp
-	(*MemoiseDeleteByRegexReq)(nil),  // 6: MemoiseDeleteByRegexReq
-	(*MemoiseDeleteByRegexResp)(nil), // 7: MemoiseDeleteByRegexResp
-	(*MemoisedItem)(nil),             // 8: MemoisedItem
+	(*MemoiseDeleteReq)(nil),         // 0: MemoiseDeleteReq
+	(*MemoiseDeleteResp)(nil),        // 1: MemoiseDeleteResp
+	(*MemoiseDeleteByRegexReq)(nil),  // 2: MemoiseDeleteByRegexReq
+	(*MemoiseDeleteByRegexResp)(nil), // 3: MemoiseDeleteByRegexResp
 }
 var file_memoisation_msgs_proto_depIdxs = []int32{
-	8, // 0: MemoiseGetResp.item:type_name -> MemoisedItem
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // [0:0] is the sub-list for method output_type
+	0, // [0:0] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_memoisation_msgs_proto_init() }
@@ -481,57 +263,8 @@ func file_memoisation_msgs_proto_init() {
 	if File_memoisation_msgs_proto != nil {
 		return
 	}
-	file_memoisation_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_memoisation_msgs_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MemoiseWriteReq); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_memoisation_msgs_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MemoiseWriteResp); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_memoisation_msgs_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MemoiseGetReq); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_memoisation_msgs_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MemoiseGetResp); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_memoisation_msgs_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MemoiseDeleteReq); i {
 			case 0:
 				return &v.state
@@ -543,7 +276,7 @@ func file_memoisation_msgs_proto_init() {
 				return nil
 			}
 		}
-		file_memoisation_msgs_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_memoisation_msgs_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MemoiseDeleteResp); i {
 			case 0:
 				return &v.state
@@ -555,7 +288,7 @@ func file_memoisation_msgs_proto_init() {
 				return nil
 			}
 		}
-		file_memoisation_msgs_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_memoisation_msgs_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MemoiseDeleteByRegexReq); i {
 			case 0:
 				return &v.state
@@ -567,7 +300,7 @@ func file_memoisation_msgs_proto_init() {
 				return nil
 			}
 		}
-		file_memoisation_msgs_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_memoisation_msgs_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MemoiseDeleteByRegexResp); i {
 			case 0:
 				return &v.state
@@ -586,7 +319,7 @@ func file_memoisation_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_memoisation_msgs_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
