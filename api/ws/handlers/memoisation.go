@@ -2,16 +2,14 @@ package wsHandler
 
 import (
 	"context"
-	"errors"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
-	"github.com/pixlise/core/v4/core/errorwithstatus"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+/* Went unused - became HTTP msgs, leaving this temporarily
 
 func HandleMemoiseGetReq(req *protos.MemoiseGetReq, hctx wsHelpers.HandlerContext) (*protos.MemoiseGetResp, error) {
 	// Read from DB, if not there, fail. We do limit key sizes though
@@ -59,6 +57,10 @@ func HandleMemoiseWriteReq(req *protos.MemoiseWriteReq, hctx wsHelpers.HandlerCo
 		Key:             req.Key,
 		MemoTimeUnixSec: timestamp,
 		Data:            req.Data,
+
+		ScanId:  req.ScanId,
+		QuantId: req.QuantId,
+		ExprId:  req.ExprId,
 	}
 
 	result, err := coll.UpdateByID(ctx, req.Key, bson.D{{Key: "$set", Value: item}}, opt)
@@ -73,7 +75,7 @@ func HandleMemoiseWriteReq(req *protos.MemoiseWriteReq, hctx wsHelpers.HandlerCo
 	return &protos.MemoiseWriteResp{
 		MemoTimeUnixSec: timestamp,
 	}, nil
-}
+}*/
 
 func HandleMemoiseDeleteReq(req *protos.MemoiseDeleteReq, hctx wsHelpers.HandlerContext) (*protos.MemoiseDeleteResp, error) {
 	if err := wsHelpers.CheckStringField(&req.Key, "Key", 1, 1024); err != nil {
