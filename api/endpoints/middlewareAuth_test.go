@@ -99,7 +99,7 @@ func Example_isMatch() {
 
 func Example_getPermissionsForURI() {
 	var a AuthMiddleWareData
-	a.Logger = &logger.StdOutLogger{}
+	a.Logger = &logger.StdErrLogger{}
 	a.RoutePermissionsRequired = map[string]string{
 		"GET/the/{id}/something": "root3",
 		"GET/the/path":           "root1",

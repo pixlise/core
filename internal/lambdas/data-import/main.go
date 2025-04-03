@@ -73,7 +73,7 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 
 	// Normally we'd only expect event.Records to be of length 1...
 	worked := 0
-	iLog := &logger.StdOutLogger{}
+	iLog := &logger.StdErrLogger{}
 	iLog.SetLogLevel(logger.LogInfo)
 
 	for _, record := range event.Records {

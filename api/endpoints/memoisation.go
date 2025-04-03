@@ -62,25 +62,45 @@ func GetMemoise(params apiRouter.ApiHandlerGenericParams) error {
 		return err
 	}
 
-	// Update last accessed time here
-	timestamp := uint32(params.Svcs.TimeStamper.GetTimeNowSec())
-	if timestamp != item.LastReadTimeUnixSec {
-		update := bson.D{{Key: "$set", Value: bson.D{{Key: "lastreadtimeunixsec", Value: timestamp}}}}
-		updResult, err := coll.UpdateOne(ctx, filter, update, options.Update())
+	now := uint32(params.Svcs.TimeStamper.GetTimeNowSec())
+
+	// Check if this is passed the max age we allow for an item to live in our cache
+	if item.LastReadTimeUnixSec < now-uint32(params.Svcs.Config.MaxUnretrievedMemoisationAgeSec) {
+		// It's too old, delete & don't return
+		params.Svcs.Log.Infof("Retrieved memoised item: %v that hasn't been accessed in %v sec. Deleting.", key, now-item.LastReadTimeUnixSec)
+
+		delResult, err := coll.DeleteOne(ctx, filter, options.Delete())
 		if err != nil {
 			// Don't error out on this, but do notify
-			params.Svcs.Log.Errorf("Failed to update last read time stamp for memoised item: %v. Error: %v", key, err)
-		}
+			params.Svcs.Log.Errorf("Failed to delete outdated memoised item: %v. Error: %v", key, err)
+		} else {
+			if delResult.DeletedCount != 1 {
+				params.Svcs.Log.Errorf("Memoised item delete had unexpected counts %+v key: %v", delResult, key)
+			}
 
-		if updResult.ModifiedCount != 1 {
-			params.Svcs.Log.Errorf("Memoised item timestamp update had unexpected counts %+v key: %v", updResult, key)
+			return errorwithstatus.MakeNotFoundError(key)
 		}
+	} else {
+		// Update last accessed time here
+		if now != item.LastReadTimeUnixSec {
+			update := bson.D{{Key: "$set", Value: bson.D{{Key: "lastreadtimeunixsec", Value: now}}}}
+			updResult, err := coll.UpdateOne(ctx, filter, update, options.Update())
+			if err != nil {
+				// Don't error out on this, but do notify
+				params.Svcs.Log.Errorf("Failed to update last read time stamp for memoised item: %v. Error: %v", key, err)
+			}
 
-		// Also set it in the item we're replying with
-		item.LastReadTimeUnixSec = timestamp
+			if updResult.ModifiedCount != 1 {
+				params.Svcs.Log.Errorf("Memoised item timestamp update had unexpected counts %+v key: %v", updResult, key)
+			}
+
+			// Also set it in the item we're replying with
+			item.LastReadTimeUnixSec = now
+		}
 	}
 
 	utils.SendProtoBinary(params.Writer, item)
+
 	return nil
 }
 

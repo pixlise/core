@@ -19,6 +19,7 @@ import (
 	"github.com/pixlise/core/v4/api/endpoints"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
+	"github.com/pixlise/core/v4/api/memoisation"
 	"github.com/pixlise/core/v4/api/notificationSender"
 	"github.com/pixlise/core/v4/api/permission"
 	"github.com/pixlise/core/v4/api/quantification"
@@ -169,6 +170,7 @@ func main() {
 	}
 
 	go job.ListenForExternalTriggeredJobs(dataimport.JobIDAutoImportPrefix, handler.handleAutoImportJobStatus, svcs.MongoDB, svcs.Log)
+	go memoisation.RunMemoisationGarbageCollector(uint32(cfg.MemoisationGCIntervalSec), uint32(cfg.MaxUnretrievedMemoisationAgeSec), svcs.MongoDB, svcs.TimeStamper, svcs.Log)
 
 	log.Fatal(
 		http.ListenAndServe(":8080",
@@ -224,7 +226,7 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 	fs := fileaccess.MakeS3Access(s3svc)
 
 	// Init logger - this used to be local=stdout, cloud env=cloudwatch, but we now write all logs to stdout
-	iLog := &logger.StdOutLogger{}
+	iLog := &logger.StdErrLogger{}
 	iLog.SetLogLevel(cfg.LogLevel)
 
 	// Connect to mongo

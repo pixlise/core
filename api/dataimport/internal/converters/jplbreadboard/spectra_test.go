@@ -44,7 +44,7 @@ func Example_getMSASeqNo() {
 
 func Example_getSpectraFiles() {
 	files := []string{"../something/file.txt", "../something/Normal_B_1_2_3.msa", "../something/BulkSum_B_1_2_3.msa", "../something/Another_B_1_2_3.msa", "../something/Normal_B_1_2.jpg", "Normal_P_1_2_3.msa"}
-	f, l := getSpectraFiles(files, true, &logger.StdOutLogger{})
+	f, l := getSpectraFiles(files, true, &logger.StdErrLogger{})
 
 	for _, v := range f {
 		fmt.Printf(v + "\n")

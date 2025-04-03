@@ -68,7 +68,7 @@ func importImagesForDataset(datasetID string, instrument protos.ScanInstrument, 
 
 				taskId = addImportTask(fmt.Sprintf("ImportBeamLocationToDB datasetID: %v, image: %v, beamVersion: %v, alignedIdx: %v", datasetID, savedName, beamVersion, alignedIdx))
 				// Import coordinates
-				err = beamLocation.ImportBeamLocationToDB(savedName, instrument, datasetID, beamVersion, alignedIdx, exprPB, dest, &logger.StdOutLogger{})
+				err = beamLocation.ImportBeamLocationToDB(savedName, instrument, datasetID, beamVersion, alignedIdx, exprPB, dest, &logger.StdErrLogger{})
 				/*if err != nil {
 					fatalError(err)
 				}*/
