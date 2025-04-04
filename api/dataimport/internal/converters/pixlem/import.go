@@ -292,6 +292,18 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 		}
 	}
 
+	// Check if there are beam locations for images that we don't have
+	for _, pmc := range ijPMCs {
+		if _, ok := contextImgsPerPMC[pmc]; !ok {
+			logger.Infof("WARNING: Missing image for beam location PMC: %v. Beam ij's for this won't be stored.", pmc)
+
+			// Delete all stored PMCs for this
+			for _, beamInfo := range beamLookup {
+				delete(beamInfo.IJ, pmc)
+			}
+		}
+	}
+
 	hkData, err := importerutils.ReadHousekeepingFile(hkPath, 0, logger)
 	if err != nil {
 		return nil, err
