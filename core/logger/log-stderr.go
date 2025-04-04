@@ -19,36 +19,37 @@ package logger
 
 import (
 	"fmt"
+	"log"
 )
 
-// StdOutLogger - For mocking out in tests
-type StdOutLogger struct {
+// StdErrLogger - For mocking out in tests
+type StdErrLogger struct {
 	logLevel LogLevel
 }
 
-func (l *StdOutLogger) Printf(level LogLevel, format string, a ...interface{}) {
+func (l *StdErrLogger) Printf(level LogLevel, format string, a ...interface{}) {
 	txt := logLevelPrefix[level] + ": " + fmt.Sprintf(format, a...)
-	fmt.Println(txt)
+	log.Println(txt)
 }
-func (l *StdOutLogger) Debugf(format string, a ...interface{}) {
+func (l *StdErrLogger) Debugf(format string, a ...interface{}) {
 	if l.logLevel <= LogDebug {
 		l.Printf(LogDebug, format, a...)
 	}
 }
-func (l *StdOutLogger) Infof(format string, a ...interface{}) {
+func (l *StdErrLogger) Infof(format string, a ...interface{}) {
 	if l.logLevel <= LogInfo {
 		l.Printf(LogInfo, format, a...)
 	}
 }
-func (l *StdOutLogger) Errorf(format string, a ...interface{}) {
+func (l *StdErrLogger) Errorf(format string, a ...interface{}) {
 	l.Printf(LogError, format, a...)
 }
 
-func (l *StdOutLogger) SetLogLevel(level LogLevel) {
+func (l *StdErrLogger) SetLogLevel(level LogLevel) {
 	l.logLevel = level
 }
-func (l *StdOutLogger) GetLogLevel() LogLevel {
+func (l *StdErrLogger) GetLogLevel() LogLevel {
 	return l.logLevel
 }
-func (l *StdOutLogger) Close() {
+func (l *StdErrLogger) Close() {
 }

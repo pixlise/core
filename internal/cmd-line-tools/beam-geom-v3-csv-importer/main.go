@@ -72,7 +72,7 @@ func main() {
 	fs := fileaccess.MakeS3Access(s3svc)
 
 	// Init logger - this used to be local=stdout, cloud env=cloudwatch, but we now write all logs to stdout
-	iLog := &logger.StdOutLogger{}
+	iLog := &logger.StdErrLogger{}
 	iLog.SetLogLevel(logger.LogInfo)
 
 	// Connect to mongo
@@ -134,7 +134,7 @@ func main() {
 
 	// Find out what PMCs we have ij's for, and find the corresponding image file name to import for
 	// this way we can import into ImageBeamLocations using the file name, and insert an entry for v3
-	beamLocs, ijPMCs, err := dataImportHelpers.ReadBeamLocationsFile(fileName, true, 0, []string{"drift_x", "drift_y", "drift_z"}, &logger.StdOutLogger{})
+	beamLocs, ijPMCs, err := dataImportHelpers.ReadBeamLocationsFile(fileName, true, 0, []string{"drift_x", "drift_y", "drift_z"}, &logger.StdErrLogger{})
 
 	if err != nil {
 		log.Fatalln(err)

@@ -15,7 +15,7 @@ func GetDB() *mongo.Database {
 func GetDBWithEnvironment(envName string) *mongo.Database {
 	if db == nil {
 		// Connect to a local one ONLY
-		logger := logger.StdOutLogger{}
+		logger := logger.StdErrLogger{}
 		logger.SetLogLevel(2)
 
 		client, _, err := mongoDBConnection.Connect(nil, "", &logger)

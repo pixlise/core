@@ -37,7 +37,7 @@ func main() {
 	fmt.Println("=  PIXLISE dataset importer  =")
 	fmt.Println("==============================")
 
-	ilog := &logger.StdOutLogger{}
+	ilog := &logger.StdErrLogger{}
 
 	// This can be run in various modes...
 

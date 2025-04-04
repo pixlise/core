@@ -101,6 +101,13 @@ type APIConfig struct {
 	MaxFileCacheAgeSec    uint
 	MaxFileCacheSizeBytes uint
 
+	// Max time we allow memoised item to exist in DB and not be retrieved.
+	// If it hasn't been accessed in this many seconds, consider it stale & delete it!
+	MaxUnretrievedMemoisationAgeSec uint
+
+	// How often we run memoisation GC
+	MemoisationGCIntervalSec uint
+
 	ImportJobMaxTimeSec  uint32
 	PIQUANTJobMaxTimeSec uint32
 
@@ -211,6 +218,14 @@ func Init() (APIConfig, error) {
 
 	if cfg.PIQUANTJobMaxTimeSec <= 0 {
 		cfg.PIQUANTJobMaxTimeSec = uint32(15 * 60)
+	}
+
+	if cfg.MaxUnretrievedMemoisationAgeSec <= 0 {
+		cfg.MaxUnretrievedMemoisationAgeSec = 86400 * 30
+	}
+
+	if cfg.MemoisationGCIntervalSec <= 0 {
+		cfg.MemoisationGCIntervalSec = 3600
 	}
 
 	cfg.KubeConfig = *kubeconfig

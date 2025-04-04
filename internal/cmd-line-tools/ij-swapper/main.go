@@ -49,7 +49,7 @@ func main() {
 	}
 
 	// Init logger - this used to be local=stdout, cloud env=cloudwatch, but we now write all logs to stdout
-	iLog := &logger.StdOutLogger{}
+	iLog := &logger.StdErrLogger{}
 	iLog.SetLogLevel(logger.LogInfo)
 
 	// Connect to mongo
