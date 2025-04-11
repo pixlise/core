@@ -140,7 +140,7 @@ func readDatasetFile(path string) (*protos.Experiment, error) {
 }
 
 func Example_matchPMCsWithDataset() {
-	l := &logger.StdOutLogger{}
+	l := &logger.StdErrLogger{}
 	data := csvData{[]string{"X", "Y", "Z", "filename", "Ca_%"}, [][]string{[]string{"1", "0.40", "0", "Roastt_Laguna_Salinas_28kV_230uA_03_03_2020_111.msa", "4.5"}}}
 
 	exp, err := readDatasetFile("./testdata/LagunaSalinasdataset.bin")

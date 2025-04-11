@@ -70,7 +70,7 @@ func main() {
 	remoteFS := fileaccess.MakeS3Access(s3svc)
 
 	// Init logger - this used to be local=stdout, cloud env=cloudwatch, but we now write all logs to stdout
-	iLog := &logger.StdOutLogger{}
+	iLog := &logger.StdErrLogger{}
 	iLog.SetLogLevel(logger.LogInfo)
 
 	rtts := readRTTs(sess, iLog)
@@ -194,7 +194,7 @@ func optimise(rtts map[string]string, remoteFS fileaccess.FileAccess, iLog logge
 }
 
 func makeOptimisedArchive(rtt string, scanTitle string, remoteFS fileaccess.FileAccess, workingDir string, iLog logger.ILogger) (string, []string, error) {
-	l := &logger.StdOutLogger{}
+	l := &logger.StdErrLogger{}
 	localFS := fileaccess.FSAccess{}
 
 	l.Infof("")
