@@ -25,7 +25,10 @@ local-api-config-unittest.json
 # temp files that get generated for tests
 diffraction-detector/test-files/dataset-diffraction.bin
 core/fileaccess/test-output/
-
+api/job/data
+api/job/data.txt
+api/job/inputfile.csv
+api/job/second.csv
 
 # macOS #
 .DS_Store
