@@ -202,6 +202,7 @@ func downloadFile(jobLog logger.ILogger, remoteFS fileaccess.FileAccess, bucket 
 
 	// Ensure local path exists
 	localPathOnly := filepath.Dir(localPath)
+	localPathForLog := ""
 	if len(localPathOnly) > 0 && localPathOnly != "." {
 		err := os.MkdirAll(localPathOnly, dirperm)
 		if err != nil {
@@ -216,9 +217,11 @@ func downloadFile(jobLog logger.ILogger, remoteFS fileaccess.FileAccess, bucket 
 			return fmt.Errorf("Failed to get working directory: %v", err)
 		}
 
+		localPathForLog = localPath
 		localPath = filepath.Join(wd, localPath)
 		if logWD {
 			jobLog.Infof(" Local path is working dir: %v", localPath)
+			localPathForLog = localPath // Use the new one
 		} else {
 			jobLog.Infof(" Local file will be written to working dir")
 		}
@@ -238,7 +241,7 @@ func downloadFile(jobLog logger.ILogger, remoteFS fileaccess.FileAccess, bucket 
 	if err != nil {
 		return fmt.Errorf("Failed to write %v byte local file: %v. Error: %v", len(data), localPath, err)
 	} else {
-		jobLog.Infof(" Wrote file: %v", localPath)
+		jobLog.Infof(" Wrote file: %v", localPathForLog)
 	}
 	return nil
 }

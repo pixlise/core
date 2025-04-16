@@ -167,11 +167,11 @@ func Example_RunJob_DownloadUploadOK() {
 	// INFO: Download "s3://test-piquant/RunnerTest/input.csv" -> "inputfile.csv":
 	// INFO:  Local file will be written to working dir
 	// INFO:  Downloaded 5 bytes
-	// INFO:  Wrote file: c:\Users\peter\Documents\code\PIXLISE\core\api\job\inputfile.csv
+	// INFO:  Wrote file: inputfile.csv
 	// INFO: Download "s3://test-piquant/RunnerTest/input2.csv" -> "second.csv":
 	// INFO:  Local file will be written to working dir
 	// INFO:  Downloaded 6 bytes
-	// INFO:  Wrote file: c:\Users\peter\Documents\code\PIXLISE\core\api\job\second.csv
+	// INFO:  Wrote file: second.csv
 	// DEBUG: exec.Command starting "noop", args: []
 	// INFO: Job Job001 runtime was 0 sec
 	// INFO: Uploaded stdout log to: s3://test-piquant/RunnerTest/Output/stdout
