@@ -610,9 +610,35 @@ func HandleScanTriggerJobReq(req *protos.ScanTriggerJobReq, hctx wsHelpers.Handl
 }
 
 func HandleScanListJobsReq(req *protos.ScanListJobsReq, hctx wsHelpers.HandlerContext) (*protos.ScanListJobsResp, error) {
-	return nil, errors.New("Not implemented yet")
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.JobsName)
+	cursor, err := coll.Find(ctx, nil, options.Find())
+	if err != nil {
+		return nil, err
+	}
+
+	jobs := []*protos.JobGroupConfig{}
+	err = cursor.All(context.TODO(), &jobs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.ScanListJobsResp{
+		Jobs: jobs,
+	}, nil
 }
 
 func HandleScanWriteJobReq(req *protos.ScanWriteJobReq, hctx wsHelpers.HandlerContext) (*protos.ScanWriteJobResp, error) {
-	return nil, errors.New("Not implemented yet")
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.JobsName)
+	result, err := coll.UpdateByID(ctx, req.Job.JobGroupId, bson.D{{Key: "$set", Value: req.Job}}, options.Update().SetUpsert(true))
+	if err != nil {
+		return nil, err
+	}
+
+	if result.UpsertedCount == 0 && result.ModifiedCount == 0 {
+		hctx.Svcs.Log.Errorf("Unexpected update result for job: %+v", result)
+	}
+
+	return &protos.ScanWriteJobResp{}, nil
 }

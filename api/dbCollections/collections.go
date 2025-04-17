@@ -41,6 +41,7 @@ const UserImpersonatorsName = "userImpersonators"
 const ViewStatesName = "viewStates"
 const WidgetDataName = "widgetData"
 const ConnectTempTokensName = "connectTempTokens"
+const JobsName = "jobs"
 
 func GetAllCollections() []string {
 	return []string{
@@ -77,5 +78,7 @@ func GetAllCollections() []string {
 		UsersName,
 		ViewStatesName,
 		WidgetDataName,
+		ConnectTempTokensName,
+		JobsName,
 	}
 }
