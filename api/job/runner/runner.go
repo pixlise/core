@@ -1,4 +1,4 @@
-package job
+package jobrunner
 
 import (
 	"encoding/json"
@@ -47,12 +47,27 @@ type JobConfig struct {
 	OutputFiles []JobFilePath
 }
 
+func (c JobConfig) Copy() JobConfig {
+	newCfg := JobConfig{
+		JobId:         c.JobId,
+		RequiredFiles: []JobFilePath{},
+		Command:       c.Command,
+		Args:          c.Args,
+		OutputFiles:   c.OutputFiles,
+	}
+
+	copy(newCfg.RequiredFiles, c.RequiredFiles)
+	copy(newCfg.OutputFiles, c.OutputFiles)
+	return newCfg
+}
+
 func logJobPrep(cfgStr string, cfg JobConfig, jobLog logger.ILogger) {
 	jobLog.Infof("Preparing job: %v\nConfig: %+v", cfg.JobId, cfgStr)
 	jobLog.Infof("Job config struct: %#v", cfg)
 }
 
 var NoOpCommand = "noop"
+var JobConfigEnvVar = "JOB_CONFIG"
 
 // Downloads files required for job to run. These are read from an env var
 // Parameters:
@@ -60,16 +75,16 @@ var NoOpCommand = "noop"
 //     as a test because it may differ on different machines and fail the test...
 func RunJob(logWD bool) error {
 	// Get the config from env var
-	cfgStr := os.Getenv("JOB_CONFIG")
+	cfgStr := os.Getenv(JobConfigEnvVar)
 
 	if len(cfgStr) <= 0 {
-		return fmt.Errorf("JOB_CONFIG env var not set")
+		return fmt.Errorf(JobConfigEnvVar + " env var not set")
 	}
 
 	var cfg JobConfig
 	err := json.Unmarshal([]byte(cfgStr), &cfg)
 	if err != nil {
-		return fmt.Errorf("Failed to parse env var JOB_CONFIG: %v", err)
+		return fmt.Errorf("Failed to parse env var %v: %v", JobConfigEnvVar, err)
 	}
 
 	sess, err := awsutil.GetSession()

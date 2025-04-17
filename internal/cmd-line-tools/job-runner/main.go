@@ -1,7 +1,7 @@
 package main
 
-import "github.com/pixlise/core/v4/api/job"
+import jobrunner "github.com/pixlise/core/v4/api/job/runner"
 
 func main() {
-	job.RunJob(true)
+	jobrunner.RunJob(true)
 }

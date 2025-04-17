@@ -19,6 +19,7 @@ import (
 	"github.com/pixlise/core/v4/api/endpoints"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
+	"github.com/pixlise/core/v4/api/job/jobstarter"
 	"github.com/pixlise/core/v4/api/memoisation"
 	"github.com/pixlise/core/v4/api/notificationSender"
 	"github.com/pixlise/core/v4/api/permission"
@@ -367,6 +368,11 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 			singleinstance.HandleOnce(scan.Id+"-quant", h.instanceId, func(sourceId string) {
 				// We ask it to only run if it hasn't got auto-quants already
 				quantification.RunAutoQuantifications(scan.Id, h.svcs, true)
+
+				// Run post-import jobs - these are run in docker containers to process the imported data however we need. They read the files
+				// we wrote to S3 and output their own files back to S3
+				runPostImportJobs(scan.Id, h.svcs)
+
 			}, h.svcs.MongoDB, h.svcs.TimeStamper, h.svcs.Log)
 		} else if status.JobType == protos.JobStatus_JT_REIMPORT_SCAN {
 			h.svcs.Notifier.NotifyUpdatedScan(scan.Title, scan.Id)
@@ -375,4 +381,14 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 		// Make sure we're not caching up older versions of the bin file locally
 		wsHelpers.ClearCacheForScanId(scan.Id, h.svcs.TimeStamper, h.svcs.Log)
 	}
+}
+
+func runPostImportJobs(scanId string, svcs *services.APIServices) {
+	_, err := jobstarter.GetJobStarter(svcs.Config.QuantExecutor)
+	if err != nil {
+		svcs.Log.Errorf("Failed to create job starter for running post-import jobs: %v", err)
+		return
+	}
+
+	//jobStarter.StartJob(dockerImage, jobConfig, svcs.Config, specialUserIds.PIXLISESystemUserId, svcs.Log)
 }
