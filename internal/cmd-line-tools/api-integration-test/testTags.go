@@ -1,12 +1,13 @@
 package main
 
 import (
+	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/wstestlib"
 )
 
 func testTags(apiHost string) {
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,
@@ -26,7 +27,7 @@ func testTags(apiHost string) {
 	wstestlib.ExecQueuedActions(&u1)
 
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u2.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test2Username,
 		Pass: test2Password,

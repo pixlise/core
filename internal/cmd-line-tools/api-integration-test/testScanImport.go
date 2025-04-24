@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/wstestlib"
 )
 
@@ -16,7 +17,7 @@ var uploadedBreadboardScanId = "TEST_breadboard_upload"
 
 func testImports(apiHost string) {
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,

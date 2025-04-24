@@ -29,12 +29,13 @@ import (
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/core/awsutil"
+	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/wstestlib"
 )
 
-var auth0Params wstestlib.Auth0Info
+var auth0Params client.Auth0Info
 
 var test1Username, test1Password, test2Username, test2Password string
 
@@ -451,7 +452,7 @@ func runLocalTests(apiHost string, isCI bool) {
 	testUserSearch(apiHost)
 	testUserDetails(apiHost, u1Id, u2Id)
 	if !isCI {
-		wstestlib.ClearJWTCache()
+		client.ClearJWTCache()
 		testUserManagement(apiHost)
 	}
 	testUserGroups(apiHost)

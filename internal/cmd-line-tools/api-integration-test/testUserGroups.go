@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/wstestlib"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
@@ -78,7 +79,7 @@ func testUserGroups(apiHost string) {
 
 func testUserGroupCreation(apiHost string) wstestlib.ScriptedTestUser {
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u2.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test2Username,
 		Pass: test2Password,
@@ -1199,7 +1200,7 @@ func testUserGroupAdminDeleteGroup(u2 wstestlib.ScriptedTestUser) {
 
 func testUserGroupsNoPermission(apiHost string) wstestlib.ScriptedTestUser {
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,
@@ -1244,7 +1245,7 @@ func testUserGroupsNoPermission(apiHost string) wstestlib.ScriptedTestUser {
 
 func testAdminUserIgnoreGroupJoin(apiHost string) {
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u2.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test2Username,
 		Pass: test2Password,
@@ -1269,7 +1270,7 @@ func testAdminUserIgnoreGroupJoin(apiHost string) {
 	wstestlib.ExecQueuedActions(&u2)
 
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,
@@ -1325,7 +1326,7 @@ func testAdminUserIgnoreGroupJoin(apiHost string) {
 
 func testJoinableUserGroupSummaryList(apiHost string) {
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u2.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test2Username,
 		Pass: test2Password,
@@ -1383,7 +1384,7 @@ func testJoinableUserGroupSummaryList(apiHost string) {
 
 func testUserGroupViewerLeavingGroup(apiHost string) {
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,
@@ -1395,7 +1396,7 @@ func testUserGroupViewerLeavingGroup(apiHost string) {
 	nonAdminUserId := u1.GetUserId()
 
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u2.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test2Username,
 		Pass: test2Password,
@@ -1471,7 +1472,7 @@ func testUserGroupViewerLeavingGroup(apiHost string) {
 
 func testUserGroupAccessDemotion(apiHost string) {
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,
@@ -1483,7 +1484,7 @@ func testUserGroupAccessDemotion(apiHost string) {
 	nonAdminUserId := u1.GetUserId()
 
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u2.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test2Username,
 		Pass: test2Password,
@@ -1542,7 +1543,7 @@ func testUserGroupAccessDemotion(apiHost string) {
 
 func testUserGroupAccessPromotionAndDuplicateGroupName(apiHost string) {
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,
@@ -1554,7 +1555,7 @@ func testUserGroupAccessPromotionAndDuplicateGroupName(apiHost string) {
 	nonAdminUserId := u1.GetUserId()
 
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u2.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test2Username,
 		Pass: test2Password,
@@ -1620,7 +1621,7 @@ func testUserGroupAccessPromotionAndDuplicateGroupName(apiHost string) {
 
 func testJoinRequestNotificationLive(apiHost string) {
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u2.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test2Username,
 		Pass: test2Password,
@@ -1678,7 +1679,7 @@ func testJoinRequestNotificationLive(apiHost string) {
 	wstestlib.ExecQueuedActions(&u2)
 
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,
@@ -1757,7 +1758,7 @@ func testJoinRequestNotificationAfterConnect(apiHost string) {
 	setupGroup5(apiHost)
 
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,
@@ -1773,7 +1774,7 @@ func testJoinRequestNotificationAfterConnect(apiHost string) {
 
 	// Connect user 2 again
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u2.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test2Username,
 		Pass: test2Password,
@@ -1841,7 +1842,7 @@ func testJoinRequestNotificationAfterConnect(apiHost string) {
 
 func setupGroup5(apiHost string) {
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u2.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test2Username,
 		Pass: test2Password,

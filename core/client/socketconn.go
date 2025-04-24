@@ -1,4 +1,4 @@
-package wstestlib
+package client
 
 import (
 	"fmt"
@@ -26,14 +26,13 @@ type ConnectInfo struct {
 
 type Auth0Info struct {
 	ClientId string
-	Secret   string
 	Domain   string
 	Audience string
 }
 
-type socketConn struct {
+type SocketConn struct {
 	JWT       string
-	userId    string
+	UserId    string
 	send      chan []byte
 	recv      chan []byte
 	recvList  [][]byte // msgs received in past
@@ -45,7 +44,7 @@ type socketConn struct {
 const maxResponsesBuffered = 100
 
 // Inspired by: https://tradermade.com/tutorials/golang-websocket-client
-func (s *socketConn) connect(connectParams ConnectInfo, auth0Params Auth0Info) error {
+func (s *SocketConn) Connect(connectParams ConnectInfo, auth0Params Auth0Info) error {
 	token, err := s.getWSConnectToken(connectParams, auth0Params)
 	if err != nil {
 		return err
@@ -150,7 +149,7 @@ func (s *socketConn) connect(connectParams ConnectInfo, auth0Params Auth0Info) e
 	return nil
 }
 
-func (s *socketConn) disconnect() error {
+func (s *SocketConn) Disconnect() error {
 	s.done <- struct{}{}
 	return nil
 }
@@ -168,12 +167,12 @@ func GetJWTFromCache(host string, user string, pass string) string {
 	return cachedJWT[cacheKey]
 }
 
-func (s *socketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Auth0Info) (string, error) {
+func (s *SocketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Auth0Info) (string, error) {
 	// Try find it
 	cacheKey := connectParams.Host + "-" + connectParams.User + "-" + connectParams.Pass
 	if jwt, ok := cachedJWT[cacheKey]; !ok {
 		jwt, err := auth0login.GetJWT(connectParams.User, connectParams.Pass,
-			auth0Params.ClientId, auth0Params.Secret, auth0Params.Domain, "http://localhost:4200/authenticate", auth0Params.Audience, "openid profile email")
+			auth0Params.ClientId, auth0Params.Domain, "http://localhost:4200/authenticate", auth0Params.Audience, "openid profile email")
 		if err != nil {
 			return "", err
 		}
@@ -196,7 +195,7 @@ func (s *socketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Au
 		return "", err
 	}
 
-	s.userId = fmt.Sprintf("%v", claims["sub"])
+	s.UserId = fmt.Sprintf("%v", claims["sub"])
 
 	// Get WS connection token
 	// NOTE: not using https for local...
@@ -240,7 +239,7 @@ func (s *socketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Au
 	return respBody.ConnToken, nil
 }
 
-func (s *socketConn) sendMessage(msg *protos.WSMessage) error {
+func (s *SocketConn) SendMessage(msg *protos.WSMessage) error {
 	s.reqCount++
 
 	msg.MsgId = s.reqCount
@@ -255,7 +254,7 @@ func (s *socketConn) sendMessage(msg *protos.WSMessage) error {
 }
 
 /*
-func (s *socketConn) waitReceive(expectStatus protos.ResponseStatus, timeoutMs time.Duration) *protos.WSMessage {
+func (s *SocketConn) waitReceive(expectStatus protos.ResponseStatus, timeoutMs time.Duration) *protos.WSMessage {
 	select {
 	case r := <-s.recv:
 		wsResp := &protos.WSMessage{}
@@ -275,7 +274,7 @@ func (s *socketConn) waitReceive(expectStatus protos.ResponseStatus, timeoutMs t
 */
 
 // Parameters define stop conditions, either how many messages or how much time to wait
-func (s *socketConn) waitForMessages(msgCount int, timeout time.Duration) []*protos.WSMessage {
+func (s *SocketConn) WaitForMessages(msgCount int, timeout time.Duration) []*protos.WSMessage {
 	msgs := []*protos.WSMessage{}
 
 	running := true

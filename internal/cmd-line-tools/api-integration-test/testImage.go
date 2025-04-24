@@ -27,7 +27,7 @@ var imageGetJWT string
 func testImageGet_PreWS(apiHost string) string {
 	var err error
 	imageGetJWT, err = auth0login.GetJWT(test1Username, test1Password,
-		auth0Params.ClientId, auth0Params.Secret, auth0Params.Domain, "http://localhost:4200/authenticate", auth0Params.Audience, "openid profile email")
+		auth0Params.ClientId, auth0Params.Domain, "http://localhost:4200/authenticate", auth0Params.Audience, "openid profile email")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -78,7 +78,7 @@ func testImageGet_PostWS(apiHost string) {
 
 	// Ensure a web socket connection has been established
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,
