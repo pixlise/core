@@ -43,10 +43,10 @@ type Auth0TokenResponse struct {
 }
 
 // GetJWT performs an Auth0 login using the parameters and returns the JWT if successful
-func GetJWT(username string, password string, clientID string, clientSecret string, auth0domain string, redirectURI string, audience string, scope string) (string, error) {
+func GetJWT(username string, password string, clientID string /*clientSecret string,*/, auth0domain string, redirectURI string, audience string, scope string) (string, error) {
 	// Form the request
 	reqURL := fmt.Sprintf("https://%v/oauth/token", auth0domain)
-	payload := strings.NewReader(fmt.Sprintf("grant_type=password&username=%v&password=%v&audience=%v&scope=%v&client_id=%v&client_secret=%v", username, password, audience, scope, clientID, clientSecret))
+	payload := strings.NewReader(fmt.Sprintf("grant_type=password&username=%v&password=%v&audience=%v&scope=%v&client_id=%v" /*&client_secret=%v"*/, username, password, audience, scope, clientID /*, clientSecret*/))
 	resp, err := http.Post(reqURL, "application/x-www-form-urlencoded", payload)
 	if err != nil {
 		return "", fmt.Errorf("Auth0 login failed: %v", err)

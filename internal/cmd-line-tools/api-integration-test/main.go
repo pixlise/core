@@ -68,7 +68,7 @@ func main() {
 	flag.StringVar(&apiUsersBucket, "usersBucket", "", "User Data bucket the API is using")
 	flag.StringVar(&auth0Params.Domain, "auth0Domain", "", "Auth0 domain for management API")
 	flag.StringVar(&auth0Params.ClientId, "auth0ClientId", "", "Auth0 client id for management API")
-	flag.StringVar(&auth0Params.Secret, "auth0Secret", "", "Auth0 secret for management API")
+	//flag.StringVar(&auth0Params.Secret, "auth0Secret", "", "Auth0 secret for management API")
 	flag.StringVar(&auth0Params.Audience, "auth0Audience", "", "Auth0 audience")
 	flag.StringVar(&expectedAPIVersion, "expectedAPIVersion", "", "Expected API version (version not checked if blank)")
 	flag.StringVar(&testType, "testType", "local", "Test type to run: local, env")
