@@ -254,6 +254,7 @@ func decorateUserGroup(dbGroup *protos.UserGroupDB, db *mongo.Database, logger l
 			Description:    dbGroup.Description,
 			CreatedUnixSec: dbGroup.CreatedUnixSec,
 			Joinable:       dbGroup.Joinable,
+			DefaultRoles:   dbGroup.DefaultRoles,
 		},
 		Viewers:    &protos.UserGroupInfoList{},
 		Members:    &protos.UserGroupInfoList{},
@@ -361,6 +362,7 @@ func getUserGroupInfos(userGroupIds []string, db *mongo.Database) (map[string]*p
 			Name:           item.Name,
 			CreatedUnixSec: item.CreatedUnixSec,
 			Joinable:       item.Joinable,
+			DefaultRoles:   item.DefaultRoles,
 		}
 	}
 
