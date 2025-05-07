@@ -1,13 +1,13 @@
 package client
 
-func zeroRunDecode(data []uint32) []int32 {
-	result := []int32{}
+func zeroRunDecode(data []uint32) []uint32 {
+	result := []uint32{}
 
 	for c := 0; c < len(data); c++ {
 		v := data[c]
 		if v != 0 {
 			// Just copy it across
-			result = append(result, int32(v))
+			result = append(result, v)
 		} else {
 			// We found a 0, this is going to be followed by the number of 0's. Read ahead and fill that many
 			// 0's in our result

@@ -1,2 +1,2 @@
-pixlise-linux.h
-pixlise-linux.so
+pixlise-linux.*
+pixlise-win32.*

@@ -22,6 +22,9 @@ db-restore/
 local-api-config.json
 local-api-config-unittest.json
 
+__pycache__
+python/pixlisemsgs/
+
 # temp files that get generated for tests
 diffraction-detector/test-files/dataset-diffraction.bin
 core/fileaccess/test-output/

@@ -25,9 +25,9 @@ type ConnectInfo struct {
 }
 
 type Auth0Info struct {
-	ClientId string
-	Domain   string
-	Audience string
+	ClientId string `json:"auth0_client"`
+	Domain   string `json:"auth0_domain"`
+	Audience string `json:"auth0_audience"`
 }
 
 type SocketConn struct {
@@ -65,6 +65,8 @@ func (s *SocketConn) Connect(connectParams ConnectInfo, auth0Params Auth0Info) e
 	} else {
 		hostUrl = strings.TrimPrefix(hostUrl, "http://")
 	}
+
+	hostUrl = strings.TrimSuffix(hostUrl, "/")
 
 	wsUrl := url.URL{Scheme: protocol, Host: hostUrl, Path: "/ws", RawQuery: "token=" + token}
 	ws, resp, err := websocket.DefaultDialer.Dial(wsUrl.String(), nil)
@@ -208,6 +210,7 @@ func (s *SocketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Au
 	} else {
 		hostUrl = strings.TrimPrefix(hostUrl, "http://")
 	}
+	hostUrl = strings.TrimSuffix(hostUrl, "/")
 
 	wsConnectUrl := url.URL{Scheme: protocol, Host: hostUrl, Path: "/ws-connect"}
 
