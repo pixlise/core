@@ -244,9 +244,23 @@ func getScanImageBeamLocations(imageName string, scanId string, version int32) *
 	return processRequest("getScanImageBeamLocations", func() (proto.Message, error) { return apiClient.GetScanImageBeamLocations(imageName, scanId, version) })
 }
 
+//export setUserScanCalibration
+func setUserScanCalibration(scanId string, detector string, starteV float32, perChanneleV float32) *C.char {
+	return processRequest("setUserScanCalibration", func() (proto.Message, error) {
+		return apiClient.SetUserScanCalibration(scanId, detector, starteV, perChanneleV)
+	})
+}
+
+//export getScanBulkSumCalibration
+func getScanBulkSumCalibration(scanId string) *C.char {
+	return processRequest("getScanBulkSumCalibration", func() (proto.Message, error) { return apiClient.GetScanBulkSumCalibration(scanId) })
+}
+
 //export getDiffractionPeaks
-func getDiffractionPeaks(scanId string) *C.char {
-	return processRequest("getDiffractionPeaks", func() (proto.Message, error) { return apiClient.GetDiffractionPeaks(scanId) })
+func getDiffractionPeaks(scanId string, calibrationSource int) *C.char {
+	return processRequest("getDiffractionPeaks", func() (proto.Message, error) {
+		return apiClient.GetDiffractionPeaks(scanId, protos.EnergyCalibrationSource(calibrationSource))
+	})
 }
 
 //export getQuantColumns

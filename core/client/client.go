@@ -33,11 +33,6 @@ var configEnvVar = "PIXLISE_CLIENT_CONFIG"
 var configFileName = ".pixlise-config.json" // We look for this file in home dir
 var responseTimeoutSec = 10
 
-type EnergyCalibration struct {
-	StarteV      float64
-	PerChanneleV float64
-}
-
 type APIClient struct {
 	socket *SocketConn
 
@@ -53,7 +48,8 @@ type APIClient struct {
 	quants                       map[string]*protos.QuantGetResp
 	scanDiffractionStatuses      map[string]*protos.DiffractionPeakStatusListResp
 	scanDiffractionDetected      map[string]*protos.DetectedDiffractionPeaksResp
-	scanDefaultEnergyCalibration map[string]map[string]EnergyCalibration
+	scanBulkSumEnergyCalibration map[string]*protos.ClientEnergyCalibration
+	scanUserEnergyCalibration    map[string]*protos.ClientEnergyCalibration
 }
 
 // Authenticates using one of several methods:
@@ -154,7 +150,8 @@ func AuthenticateWithAuth0Info(connectParams ConnectInfo, auth0Params Auth0Info)
 		quants:                       map[string]*protos.QuantGetResp{},
 		scanDiffractionStatuses:      map[string]*protos.DiffractionPeakStatusListResp{},
 		scanDiffractionDetected:      map[string]*protos.DetectedDiffractionPeaksResp{},
-		scanDefaultEnergyCalibration: map[string]map[string]EnergyCalibration{},
+		scanBulkSumEnergyCalibration: map[string]*protos.ClientEnergyCalibration{},
+		scanUserEnergyCalibration:    map[string]*protos.ClientEnergyCalibration{},
 	}, err
 }
 
@@ -201,7 +198,7 @@ func (c *APIClient) sendMessageWaitResponse(msg *protos.WSMessage) ([]*protos.WS
 	}
 */
 func (c *APIClient) ensureScanSpectra(scanId string) error {
-	req := &protos.SpectrumReq{ScanId: scanId, BulkSum: true, MaxValue: true}
+	req := &protos.SpectrumReq{ScanId: scanId, BulkSum: true, MaxValue: true /*, Entries: &protos.ScanEntryRange{}*/}
 	msg := &protos.WSMessage{Contents: &protos.WSMessage_SpectrumReq{
 		SpectrumReq: req,
 	}}
@@ -804,7 +801,7 @@ func (c *APIClient) ensureDiffractionDetected(scanId string) error {
 	return nil
 }
 
-func (c *APIClient) ensureScanCalibration(scanId string) error {
+func (c *APIClient) ensureBulkSumScanCalibration(scanId string) error {
 	if err := c.ensureScanSpectra(scanId); err != nil {
 		return err
 	}
@@ -842,35 +839,68 @@ func (c *APIClient) ensureScanCalibration(scanId string) error {
 		return fmt.Errorf("Failed to find XPERCHAN label index for scan %v when determining calibration", scanId)
 	}
 
-	calibrations := map[string]EnergyCalibration{}
-	for _, spectrum := range spectra.BulkSpectra {
-		evStart := spectrum.Meta[int32(evStartIdx)].GetFvalue()
-		evPerChan := spectrum.Meta[int32(evPerChanIdx)].GetFvalue()
-
-		calibrations[spectrum.Detector] = EnergyCalibration{StarteV: float64(evStart), PerChanneleV: float64(evPerChan)}
+	calibrations := &protos.ClientEnergyCalibration{
+		DetectorCalibrations: map[string]*protos.ClientSpectrumEnergyCalibration{},
 	}
 
-	c.scanDefaultEnergyCalibration[scanId] = calibrations
+	for _, spectrum := range spectra.BulkSpectra {
+		evStart := spectrum.Meta[int32(evStartIdx)].GetFvalue()
+		evPerChannel := spectrum.Meta[int32(evPerChanIdx)].GetFvalue()
+
+		calibrations.DetectorCalibrations[spectrum.Detector] = &protos.ClientSpectrumEnergyCalibration{StarteV: evStart, PerChanneleV: evPerChannel}
+	}
+
+	c.scanBulkSumEnergyCalibration[scanId] = calibrations
 	return nil
 }
 
-func channelTokeV(channels []int32, cal EnergyCalibration) []float64 {
+func channelTokeV(channels []float32, cal *protos.ClientSpectrumEnergyCalibration) []float64 {
 	result := []float64{}
 	for _, ch := range channels {
-		result = append(result, (cal.StarteV+float64(ch)*cal.PerChanneleV)*0.001) // eV->keV conversion
+		result = append(result, (float64(cal.StarteV)+float64(ch)*float64(cal.PerChanneleV))*0.001) // eV->keV conversion
 	}
 	return result
 }
 
-func (c *APIClient) GetDiffractionPeaks(scanId string) (*protos.ClientDiffractionData, error) {
+func (c *APIClient) GetScanBulkSumCalibration(scanId string) (*protos.ClientEnergyCalibration, error) {
+	if err := c.ensureBulkSumScanCalibration(scanId); err != nil {
+		return nil, err
+	}
+
+	return c.scanBulkSumEnergyCalibration[scanId], nil
+}
+
+func (c *APIClient) SetUserScanCalibration(scanId string, detector string, starteV float32, perChanneleV float32) (*protos.ClientEnergyCalibration, error) {
+	// Ensure we have one stored for this scan:
+	if _, ok := c.scanUserEnergyCalibration[scanId]; !ok {
+		c.scanUserEnergyCalibration[scanId] = &protos.ClientEnergyCalibration{
+			DetectorCalibrations: map[string]*protos.ClientSpectrumEnergyCalibration{},
+		}
+	}
+
+	cal := c.scanUserEnergyCalibration[scanId]
+	if _, ok := cal.DetectorCalibrations[detector]; !ok {
+		cal.DetectorCalibrations[detector] = &protos.ClientSpectrumEnergyCalibration{}
+	}
+
+	// Write this calibration in
+	cal.DetectorCalibrations[detector].StarteV = starteV
+	cal.DetectorCalibrations[detector].PerChanneleV = perChanneleV
+	return c.scanUserEnergyCalibration[scanId], nil
+}
+
+func (c *APIClient) GetDiffractionPeaks(scanId string, energyCalibrationSource protos.EnergyCalibrationSource) (*protos.ClientDiffractionData, error) {
 	if err := c.ensureDiffractionDetected(scanId); err != nil {
 		return nil, err
 	}
 	if err := c.ensureDiffractionPeakStatuses(scanId); err != nil {
 		return nil, err
 	}
-	if err := c.ensureScanCalibration(scanId); err != nil {
-		return nil, err
+
+	if energyCalibrationSource == protos.EnergyCalibrationSource_CAL_BULK_SUM {
+		if err := c.ensureBulkSumScanCalibration(scanId); err != nil {
+			return nil, err
+		}
 	}
 
 	// Now that we have all data, form one view of it and return to client. This is intended to match the
@@ -879,11 +909,25 @@ func (c *APIClient) GetDiffractionPeaks(scanId string) (*protos.ClientDiffractio
 
 	detectedPeaks := c.scanDiffractionDetected[scanId]
 	peakStatuses := c.scanDiffractionStatuses[scanId]
-	spectrumEnergyCalibration := c.scanDefaultEnergyCalibration[scanId]
+	var spectrumEnergyCalibration *protos.ClientEnergyCalibration
+
+	if energyCalibrationSource == protos.EnergyCalibrationSource_CAL_BULK_SUM {
+		spectrumEnergyCalibration = c.scanBulkSumEnergyCalibration[scanId]
+	} else if energyCalibrationSource == protos.EnergyCalibrationSource_CAL_USER {
+		// Check user has one set
+		if cal, ok := c.scanUserEnergyCalibration[scanId]; !ok {
+			return nil, fmt.Errorf("Failed to get user energy calibration for scan: %v", scanId)
+		} else {
+			// Use it!
+			spectrumEnergyCalibration = cal
+		}
+	} else {
+		return nil, fmt.Errorf("Failed to get energy calibration for scan: %v, source: %v", scanId, energyCalibrationSource)
+	}
 
 	// Some constants, along with others in this code!
 	roughnessItemThreshold := float32(0.16)
-	diffractionPeakHalfWidth := int32(15 / 2)
+	diffractionPeakHalfWidth := float32(15) * 0.5
 	eVCalibrationDetector := "A"
 
 	allPeaks := []*protos.ClientDiffractionPeak{}
@@ -920,12 +964,12 @@ func (c *APIClient) GetDiffractionPeaks(scanId string) (*protos.ClientDiffractio
 					roughnessPMCs[pmc] = true
 				}
 			} else if peak.PeakHeight > 0.64 {
-				startChannel := peak.PeakChannel - diffractionPeakHalfWidth
-				endChannel := peak.PeakChannel - diffractionPeakHalfWidth
+				startChannel := float32(peak.PeakChannel) - diffractionPeakHalfWidth
+				endChannel := float32(peak.PeakChannel) + diffractionPeakHalfWidth
 
-				channels := []int32{peak.PeakChannel, startChannel, endChannel}
+				channels := []float32{float32(peak.PeakChannel), startChannel, endChannel}
 				keVs := []float64{}
-				for det, cal := range spectrumEnergyCalibration {
+				for det, cal := range spectrumEnergyCalibration.DetectorCalibrations {
 					if det == eVCalibrationDetector {
 						keVs = channelTokeV(channels, cal)
 					}

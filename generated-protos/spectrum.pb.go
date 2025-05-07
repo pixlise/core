@@ -75,6 +75,55 @@ func (SpectrumType) EnumDescriptor() ([]byte, []int) {
 	return file_spectrum_proto_rawDescGZIP(), []int{0}
 }
 
+type EnergyCalibrationSource int32
+
+const (
+	EnergyCalibrationSource_CAL_UNKNOWN  EnergyCalibrationSource = 0
+	EnergyCalibrationSource_CAL_BULK_SUM EnergyCalibrationSource = 1
+	EnergyCalibrationSource_CAL_USER     EnergyCalibrationSource = 2 //CAL_QUANTIFICATION = 3;
+)
+
+// Enum value maps for EnergyCalibrationSource.
+var (
+	EnergyCalibrationSource_name = map[int32]string{
+		0: "CAL_UNKNOWN",
+		1: "CAL_BULK_SUM",
+		2: "CAL_USER",
+	}
+	EnergyCalibrationSource_value = map[string]int32{
+		"CAL_UNKNOWN":  0,
+		"CAL_BULK_SUM": 1,
+		"CAL_USER":     2,
+	}
+)
+
+func (x EnergyCalibrationSource) Enum() *EnergyCalibrationSource {
+	p := new(EnergyCalibrationSource)
+	*p = x
+	return p
+}
+
+func (x EnergyCalibrationSource) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (EnergyCalibrationSource) Descriptor() protoreflect.EnumDescriptor {
+	return file_spectrum_proto_enumTypes[1].Descriptor()
+}
+
+func (EnergyCalibrationSource) Type() protoreflect.EnumType {
+	return &file_spectrum_proto_enumTypes[1]
+}
+
+func (x EnergyCalibrationSource) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use EnergyCalibrationSource.Descriptor instead.
+func (EnergyCalibrationSource) EnumDescriptor() ([]byte, []int) {
+	return file_spectrum_proto_rawDescGZIP(), []int{1}
+}
+
 type Spectrum struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -283,6 +332,108 @@ func (x *ClientSpectrum) GetMeta() map[string]*ScanMetaDataItem {
 	return nil
 }
 
+type ClientSpectrumEnergyCalibration struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	StarteV      float32 `protobuf:"fixed32,1,opt,name=StarteV,proto3" json:"StarteV,omitempty"`
+	PerChanneleV float32 `protobuf:"fixed32,2,opt,name=PerChanneleV,proto3" json:"PerChanneleV,omitempty"`
+}
+
+func (x *ClientSpectrumEnergyCalibration) Reset() {
+	*x = ClientSpectrumEnergyCalibration{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_spectrum_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ClientSpectrumEnergyCalibration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClientSpectrumEnergyCalibration) ProtoMessage() {}
+
+func (x *ClientSpectrumEnergyCalibration) ProtoReflect() protoreflect.Message {
+	mi := &file_spectrum_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClientSpectrumEnergyCalibration.ProtoReflect.Descriptor instead.
+func (*ClientSpectrumEnergyCalibration) Descriptor() ([]byte, []int) {
+	return file_spectrum_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ClientSpectrumEnergyCalibration) GetStarteV() float32 {
+	if x != nil {
+		return x.StarteV
+	}
+	return 0
+}
+
+func (x *ClientSpectrumEnergyCalibration) GetPerChanneleV() float32 {
+	if x != nil {
+		return x.PerChanneleV
+	}
+	return 0
+}
+
+type ClientEnergyCalibration struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	DetectorCalibrations map[string]*ClientSpectrumEnergyCalibration `protobuf:"bytes,1,rep,name=DetectorCalibrations,proto3" json:"DetectorCalibrations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (x *ClientEnergyCalibration) Reset() {
+	*x = ClientEnergyCalibration{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_spectrum_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ClientEnergyCalibration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClientEnergyCalibration) ProtoMessage() {}
+
+func (x *ClientEnergyCalibration) ProtoReflect() protoreflect.Message {
+	mi := &file_spectrum_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClientEnergyCalibration.ProtoReflect.Descriptor instead.
+func (*ClientEnergyCalibration) Descriptor() ([]byte, []int) {
+	return file_spectrum_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ClientEnergyCalibration) GetDetectorCalibrations() map[string]*ClientSpectrumEnergyCalibration {
+	if x != nil {
+		return x.DetectorCalibrations
+	}
+	return nil
+}
+
 var File_spectrum_proto protoreflect.FileDescriptor
 
 var file_spectrum_proto_rawDesc = []byte{
@@ -322,6 +473,27 @@ var file_spectrum_proto_rawDesc = []byte{
 	0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x27, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x53, 0x63, 0x61, 0x6e, 0x4d, 0x65, 0x74, 0x61, 0x44,
 	0x61, 0x74, 0x61, 0x49, 0x74, 0x65, 0x6d, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02,
+	0x38, 0x01, 0x22, 0x5f, 0x0a, 0x1f, 0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x53, 0x70, 0x65, 0x63,
+	0x74, 0x72, 0x75, 0x6d, 0x45, 0x6e, 0x65, 0x72, 0x67, 0x79, 0x43, 0x61, 0x6c, 0x69, 0x62, 0x72,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x18, 0x0a, 0x07, 0x53, 0x74, 0x61, 0x72, 0x74, 0x65, 0x56,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x02, 0x52, 0x07, 0x53, 0x74, 0x61, 0x72, 0x74, 0x65, 0x56, 0x12,
+	0x22, 0x0a, 0x0c, 0x50, 0x65, 0x72, 0x43, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x65, 0x56, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x02, 0x52, 0x0c, 0x50, 0x65, 0x72, 0x43, 0x68, 0x61, 0x6e, 0x6e, 0x65,
+	0x6c, 0x65, 0x56, 0x22, 0xec, 0x01, 0x0a, 0x17, 0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x45, 0x6e,
+	0x65, 0x72, 0x67, 0x79, 0x43, 0x61, 0x6c, 0x69, 0x62, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12,
+	0x66, 0x0a, 0x14, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x43, 0x61, 0x6c, 0x69, 0x62,
+	0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x32, 0x2e,
+	0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x45, 0x6e, 0x65, 0x72, 0x67, 0x79, 0x43, 0x61, 0x6c, 0x69,
+	0x62, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x6f, 0x72,
+	0x43, 0x61, 0x6c, 0x69, 0x62, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x45, 0x6e, 0x74, 0x72,
+	0x79, 0x52, 0x14, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x43, 0x61, 0x6c, 0x69, 0x62,
+	0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x1a, 0x69, 0x0a, 0x19, 0x44, 0x65, 0x74, 0x65, 0x63,
+	0x74, 0x6f, 0x72, 0x43, 0x61, 0x6c, 0x69, 0x62, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x45,
+	0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x36, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x53, 0x70,
+	0x65, 0x63, 0x74, 0x72, 0x75, 0x6d, 0x45, 0x6e, 0x65, 0x72, 0x67, 0x79, 0x43, 0x61, 0x6c, 0x69,
+	0x62, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02,
 	0x38, 0x01, 0x2a, 0x72, 0x0a, 0x0c, 0x53, 0x70, 0x65, 0x63, 0x74, 0x72, 0x75, 0x6d, 0x54, 0x79,
 	0x70, 0x65, 0x12, 0x14, 0x0a, 0x10, 0x53, 0x50, 0x45, 0x43, 0x54, 0x52, 0x55, 0x4d, 0x5f, 0x55,
 	0x4e, 0x4b, 0x4e, 0x4f, 0x57, 0x4e, 0x10, 0x00, 0x12, 0x10, 0x0a, 0x0c, 0x53, 0x50, 0x45, 0x43,
@@ -329,8 +501,13 @@ var file_spectrum_proto_rawDesc = []byte{
 	0x45, 0x43, 0x54, 0x52, 0x55, 0x4d, 0x5f, 0x42, 0x55, 0x4c, 0x4b, 0x10, 0x02, 0x12, 0x13, 0x0a,
 	0x0f, 0x53, 0x50, 0x45, 0x43, 0x54, 0x52, 0x55, 0x4d, 0x5f, 0x4e, 0x4f, 0x52, 0x4d, 0x41, 0x4c,
 	0x10, 0x03, 0x12, 0x12, 0x0a, 0x0e, 0x53, 0x50, 0x45, 0x43, 0x54, 0x52, 0x55, 0x4d, 0x5f, 0x44,
-	0x57, 0x45, 0x4c, 0x4c, 0x10, 0x04, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x57, 0x45, 0x4c, 0x4c, 0x10, 0x04, 0x2a, 0x4a, 0x0a, 0x17, 0x45, 0x6e, 0x65, 0x72, 0x67, 0x79,
+	0x43, 0x61, 0x6c, 0x69, 0x62, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x6f, 0x75, 0x72, 0x63,
+	0x65, 0x12, 0x0f, 0x0a, 0x0b, 0x43, 0x41, 0x4c, 0x5f, 0x55, 0x4e, 0x4b, 0x4e, 0x4f, 0x57, 0x4e,
+	0x10, 0x00, 0x12, 0x10, 0x0a, 0x0c, 0x43, 0x41, 0x4c, 0x5f, 0x42, 0x55, 0x4c, 0x4b, 0x5f, 0x53,
+	0x55, 0x4d, 0x10, 0x01, 0x12, 0x0c, 0x0a, 0x08, 0x43, 0x41, 0x4c, 0x5f, 0x55, 0x53, 0x45, 0x52,
+	0x10, 0x02, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -345,30 +522,36 @@ func file_spectrum_proto_rawDescGZIP() []byte {
 	return file_spectrum_proto_rawDescData
 }
 
-var file_spectrum_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_spectrum_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_spectrum_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_spectrum_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_spectrum_proto_goTypes = []interface{}{
-	(SpectrumType)(0),        // 0: SpectrumType
-	(*Spectrum)(nil),         // 1: Spectrum
-	(*Spectra)(nil),          // 2: Spectra
-	(*ClientSpectrum)(nil),   // 3: ClientSpectrum
-	nil,                      // 4: Spectrum.MetaEntry
-	nil,                      // 5: ClientSpectrum.MetaEntry
-	(*ScanMetaDataItem)(nil), // 6: ScanMetaDataItem
+	(SpectrumType)(0),                       // 0: SpectrumType
+	(EnergyCalibrationSource)(0),            // 1: EnergyCalibrationSource
+	(*Spectrum)(nil),                        // 2: Spectrum
+	(*Spectra)(nil),                         // 3: Spectra
+	(*ClientSpectrum)(nil),                  // 4: ClientSpectrum
+	(*ClientSpectrumEnergyCalibration)(nil), // 5: ClientSpectrumEnergyCalibration
+	(*ClientEnergyCalibration)(nil),         // 6: ClientEnergyCalibration
+	nil,                                     // 7: Spectrum.MetaEntry
+	nil,                                     // 8: ClientSpectrum.MetaEntry
+	nil,                                     // 9: ClientEnergyCalibration.DetectorCalibrationsEntry
+	(*ScanMetaDataItem)(nil),                // 10: ScanMetaDataItem
 }
 var file_spectrum_proto_depIdxs = []int32{
-	0, // 0: Spectrum.type:type_name -> SpectrumType
-	4, // 1: Spectrum.meta:type_name -> Spectrum.MetaEntry
-	1, // 2: Spectra.spectra:type_name -> Spectrum
-	0, // 3: ClientSpectrum.type:type_name -> SpectrumType
-	5, // 4: ClientSpectrum.meta:type_name -> ClientSpectrum.MetaEntry
-	6, // 5: Spectrum.MetaEntry.value:type_name -> ScanMetaDataItem
-	6, // 6: ClientSpectrum.MetaEntry.value:type_name -> ScanMetaDataItem
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	0,  // 0: Spectrum.type:type_name -> SpectrumType
+	7,  // 1: Spectrum.meta:type_name -> Spectrum.MetaEntry
+	2,  // 2: Spectra.spectra:type_name -> Spectrum
+	0,  // 3: ClientSpectrum.type:type_name -> SpectrumType
+	8,  // 4: ClientSpectrum.meta:type_name -> ClientSpectrum.MetaEntry
+	9,  // 5: ClientEnergyCalibration.DetectorCalibrations:type_name -> ClientEnergyCalibration.DetectorCalibrationsEntry
+	10, // 6: Spectrum.MetaEntry.value:type_name -> ScanMetaDataItem
+	10, // 7: ClientSpectrum.MetaEntry.value:type_name -> ScanMetaDataItem
+	5,  // 8: ClientEnergyCalibration.DetectorCalibrationsEntry.value:type_name -> ClientSpectrumEnergyCalibration
+	9,  // [9:9] is the sub-list for method output_type
+	9,  // [9:9] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_spectrum_proto_init() }
@@ -414,14 +597,38 @@ func file_spectrum_proto_init() {
 				return nil
 			}
 		}
+		file_spectrum_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ClientSpectrumEnergyCalibration); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_spectrum_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ClientEnergyCalibration); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_spectrum_proto_rawDesc,
-			NumEnums:      1,
-			NumMessages:   5,
+			NumEnums:      2,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
