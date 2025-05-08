@@ -16,6 +16,9 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
+// Based on: https://fluhus.github.io/snopher/
+// and: https://medium.com/analytics-vidhya/running-go-code-from-python-a65b3ae34a2d
+
 type ClientConfig struct {
 	Host     string
 	User     string
@@ -172,31 +175,6 @@ func (c *APIClient) sendMessageWaitResponse(msg *protos.WSMessage) ([]*protos.WS
 	return resps, nil
 }
 
-/*
-	func (c *APIClient) GetSpectrum(scanId string, pmc int, spectrumType protos.SpectrumType, detector string) ([]int32, error) {
-		req := &protos.SpectrumReq{ScanId: scanId, Entries: &protos.ScanEntryRange{Indexes: []int32{int32(pmc)}}}
-		msg := &protos.WSMessage{Contents: &protos.WSMessage_SpectrumReq{
-			SpectrumReq: req,
-		}}
-
-		resps, err := c.sendMessageWaitResponse(msg)
-		if err != nil {
-			return []int32{}, err
-		}
-
-		resp := resps[0].GetSpectrumResp()
-		for _, spectra := range resp.SpectraPerLocation {
-			for _, spectrum := range spectra.Spectra {
-				if spectrum.Type == spectrumType && spectrum.Detector == detector {
-					spectrumCounts := zeroRunDecode(spectrum.Counts)
-					return spectrumCounts, nil
-				}
-			}
-		}
-
-		return []int32{}, nil
-	}
-*/
 func (c *APIClient) ensureScanSpectra(scanId string) error {
 	req := &protos.SpectrumReq{ScanId: scanId, BulkSum: true, MaxValue: true /*, Entries: &protos.ScanEntryRange{}*/}
 	msg := &protos.WSMessage{Contents: &protos.WSMessage_SpectrumReq{

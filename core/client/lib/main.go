@@ -12,7 +12,9 @@ import (
 )
 
 // Based on: https://fluhus.github.io/snopher/
+// and: https://medium.com/analytics-vidhya/running-go-code-from-python-a65b3ae34a2d
 
+// NOTE: the comment before import "C" can contain code such as helpers to be included in the generated C directly
 /*
 #include <stdlib.h>
 #include <stdint.h>
@@ -78,56 +80,6 @@ func authenticate(allocFunc C.alloc_f) *C.char {
 	allocFn = allocFunc
 	return emptyCString
 }
-
-/*
-//export getSpectrum
-func getSpectrum(scanId string, pmc int, spectrumType int, detector string) *C.char {
-	if socket == nil {
-		return C.CString("Not authenticated")
-	}
-
-	fmt.Printf("getSpectrum called!\n")
-	fmt.Printf("scanId: \"%v\"\n", scanId)
-	fmt.Printf("pmc: \"%v\"\n", pmc)
-	fmt.Printf("spectrumType: \"%v\"\n", spectrumType)
-	fmt.Printf("detector: \"%v\"\n", detector)
-
-	counts, err := apiClient.GetSpectrum(socket, scanId, pmc, protos.SpectrumType(spectrumType), detector)
-	if err != nil {
-		return C.CString(fmt.Sprintf("%v", err))
-	}
-
-	mem := allocInts(len(counts))
-	for c, v := range counts {
-		mem[c] = int64(v)
-	}
-
-	return emptyCString
-}
-
-//export testStrings
-func testStrings(scanId string, pmc int) *C.char {
-	r := fmt.Sprintf("testStrings %v, %v", scanId, pmc)
-	fmt.Println(r)
-	return C.CString(r) // Something will need to call C.free(unsafe.Pointer(...))
-}
-
-//export testIntArray
-func testIntArray(scanId string, pmc int) {
-	r := fmt.Sprintf("testIntArray %v, %v", scanId, pmc)
-	fmt.Println(r)
-
-	result := []int32{20, 30, 40}
-	mem := allocInts(len(result))
-
-	fmt.Printf("mem: %v\n", len(mem))
-
-	for c, v := range result {
-		mem[c] = int64(v)
-	}
-
-	// Python can access it in its own array... return uintptr(unsafe.Pointer(&result[0])) //<-- note: result[0]
-}*/
 
 func serialiseForPython(msg proto.Message) *C.char {
 	// Write it to python buffer
@@ -287,43 +239,3 @@ func createROI(roiBuff string, isMist bool) *C.char {
 
 func main() {
 }
-
-/* What to implement:
-
-From expression language:
-[x] Reading Quant columns as map
-[x] Reading Housekeeping columns as map
-[ ] Read diffraction as map
-[ ] Read roughness as map
-[x] Read x,y,z
-
-Other ideas:
-[x] List scans
-[x] List scan PMCs
-[x] List meta fields in scans
-[x] List quants per scan
-[x] List columns in quants
-[x] List images per scan
-[x] Get image beam versions
-[x] Get i,j per image
-[x] List ROIs per scan
-[x] Get ROI
-
-[x] Read spectrum
-[ ] Set/get spectrum calibration?
-[ ] Read spectrum as a range map
-
-Saving new stuff:
-[x] Create ROI
-[ ] Create Quant?
-[ ] Create beam locations?
-[ ] Create a named map? Update UI if map changes?
-
-[ ] Make sure client has some kind of rate limit so people can't update stuff?
-[ ] Maybe make a sleep-based soft limit for rate limit of gets, and exception for hard-limit
-[x] Make public endpoint to get client connection details for auth0 (and api host address)
-[x] Make authenticate() not take parameters, just look in predefined path + env var for user/pass/host
-[ ] Maybe add some python-specific helper stuff to turn maps into numpy/pandas thingies
-[ ] If UI viewing ROI, update if ROI changes?
-
-*/
