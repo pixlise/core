@@ -13,11 +13,12 @@ docker run -it --rm \
   --build-cmd "go build -buildmode=c-shared -o ./_out/client/pixlise-linux-amd64.so ./core/client/lib" \
   -p "linux/amd64"
 
+# Unfortunately this doesn't work on Peters machine??
 docker run -it --rm \
   -v $PWD:/usr/src/app \
   -w /usr/src/app \
   -e CGO_ENABLED=1 \
-  docker.elastic.co/beats-dev/golang-crossbuild:1.24.2-armm \
+  docker.elastic.co/beats-dev/golang-crossbuild:1.24.2-arm \
   --build-cmd "go build -buildmode=c-shared -o ./_out/client/pixlise-linux-arm64.so ./core/client/lib" \
    -p "linux/arm64"
 
@@ -35,14 +36,12 @@ docker run -it --rm \
   -p "windows/amd64"
 
 
-exit
-
-
 echo ""
 echo "Darwin build..."
 #CC=o64-clang CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -buildmode=c-shared -o pixlise-darwin-amd64.so main.go
 #CC=o64-clang CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -v -buildmode=c-shared -o pixlise-darwin-arm64.so main.go
 
+# Also doesn't work on Peters machine?
 docker run -it \
   -v $PWD:/usr/src/app \
   -w /usr/src/app \
