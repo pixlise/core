@@ -20,6 +20,9 @@ func main() {
 	// spectrum, err = apiClient.GetScanSpectrum("261161477", 8383824, protos.SpectrumType_SPECTRUM_BULK, "B")
 	// fmt.Printf("%v|%v|%v\n", err, len(spectrum.Counts), spectrum)
 
+	xyzs, err := apiClient.GetScanBeamLocations("261161477")
+	fmt.Print(len(xyzs.Locations))
+
 	diff, err := apiClient.GetDiffractionPeaks("261161477", protos.EnergyCalibrationSource_CAL_BULK_SUM)
 	fmt.Printf("err: %v\n", err)
 	if diff != nil {

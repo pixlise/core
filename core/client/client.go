@@ -607,7 +607,11 @@ func (c *APIClient) GetROI(id string, isMist bool) (*protos.RegionOfInterestGetR
 	return resp, nil
 }
 
-func (c *APIClient) GetScanBeamLocations(scanId string) (*protos.ScanBeamLocationsResp, error) {
+func (c *APIClient) GetScanBeamLocations(scanId string) (*protos.ClientBeamLocations, error) {
+	if err := c.ensureScanEntries(scanId); err != nil {
+		return nil, err
+	}
+
 	req := &protos.ScanBeamLocationsReq{ScanId: scanId}
 
 	msg := &protos.WSMessage{Contents: &protos.WSMessage_ScanBeamLocationsReq{
@@ -619,7 +623,25 @@ func (c *APIClient) GetScanBeamLocations(scanId string) (*protos.ScanBeamLocatio
 		return nil, err
 	}
 
-	return resps[0].GetScanBeamLocationsResp(), nil
+	resp := resps[0].GetScanBeamLocationsResp()
+
+	// Form our output data to contain PMCs along side the x,y,z values we just downloaded
+	result := &protos.ClientBeamLocations{
+		Locations: []*protos.ClientBeamLocation{},
+	}
+
+	for c, entry := range c.scanEntries[scanId].Entries {
+		if entry.Location {
+			loc := &protos.ClientBeamLocation{
+				PMC:        entry.Id,
+				Coordinate: resp.BeamLocations[c],
+			}
+
+			result.Locations = append(result.Locations, loc)
+		}
+	}
+
+	return result, nil
 }
 
 func (c *APIClient) ensureScanEntries(scanId string) error {
