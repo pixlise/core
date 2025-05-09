@@ -28,8 +28,8 @@ func testJobs(apiHost string) {
 	})
 
 	u1.AddSendReqAction("List jobs, should be empty",
-		`{"scanJobListReq":{}}`,
-		`{"msgId":1,"status":"WS_OK","scanJobListResp":{"jobs": []}}`,
+		`{"scanListJobsReq":{}}`,
+		`{"msgId":1,"status":"WS_OK","scanListJobsResp":{"jobs": []}}`,
 	)
 
 	u1.AddSendReqAction("Create job1",
@@ -43,8 +43,8 @@ func testJobs(apiHost string) {
 	)
 
 	u1.AddSendReqAction("List jobs, should be 2",
-		`{"scanJobListReq":{}}`,
-		`{"msgId":1,"status":"WS_OK","scanJobListResp":{"jobs": []}}`,
+		`{"scanListJobsReq":{}}`,
+		`{"msgId":1,"status":"WS_OK","scanListJobsResp":{"jobs": []}}`,
 	)
 
 	u1.AddSendReqAction("Delete job1",
@@ -53,8 +53,8 @@ func testJobs(apiHost string) {
 	)
 
 	u1.AddSendReqAction("List jobs, should be 2",
-		`{"scanJobListReq":{}}`,
-		`{"msgId":1,"status":"WS_OK","scanJobListResp":{"jobs": []}}`,
+		`{"scanListJobsReq":{}}`,
+		`{"msgId":1,"status":"WS_OK","scanListJobsResp":{"jobs": []}}`,
 	)
 
 	u1.AddSendReqAction("Trigger non-existant job",

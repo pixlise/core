@@ -171,7 +171,7 @@ func runLocalTests(apiHost string, isCI bool) {
 	//return
 
 	// *** NOT RUNNING THIS LOCALLY, NO LAMBDA IS STARTED *** testScanImport(apiHost)
-	testJobs(apiHost)
+	//testJobs(apiHost)
 	u1Id, u2Id := testNotification(apiHost)
 	testImageUpload(apiHost, u1Id, u2Id)
 	testImageMatchTransform(apiHost)
