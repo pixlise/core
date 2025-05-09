@@ -98,7 +98,7 @@ func Authenticate() (*APIClient, error) {
 	cfg := ClientConfig{}
 	err = json.Unmarshal([]byte(configStr), &cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read pixlise connection from \"%v\" config: %v", err)
+		return nil, fmt.Errorf("failed to read pixlise connection from \"%v\" config: %v", source, err)
 	}
 
 	// Now that we've got this, read the auth0 connection information from the PIXLISE instance
