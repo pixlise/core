@@ -3,10 +3,12 @@ package wsHandler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/auth0login"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/utils"
@@ -14,6 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"gopkg.in/auth0.v4/management"
 )
 
 func HandleUserGroupAddViewerReq(req *protos.UserGroupAddViewerReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupAddViewerResp, error) {
@@ -44,9 +47,65 @@ func HandleUserGroupAddMemberReq(req *protos.UserGroupAddMemberReq, hctx wsHelpe
 		return nil, err
 	}
 
+	// Now check if the group has any default roles and assign them if so
+	// Only do this for group members, not viewers
+	err = assignDefaultRoles(req.GetUserMemberId(), group, hctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &protos.UserGroupAddMemberResp{
 		Group: group,
 	}, nil
+}
+
+func assignDefaultRoles(targetUserId string, group *protos.UserGroup, hctx wsHelpers.HandlerContext) error {
+	if len(group.Info.DefaultRoles) > 0 {
+		targetUser, err := wsHelpers.GetDBUser(targetUserId, hctx.Svcs.MongoDB)
+		if err != nil {
+			return err
+		}
+
+		auth0API, err := auth0login.InitAuth0ManagementAPI(hctx.Svcs.Config)
+		if err != nil {
+			return errors.New("failed to initialize Auth0 API: " + err.Error())
+		}
+
+		targetUserRoles, err := auth0API.User.Roles(targetUser.Id)
+		if err != nil {
+			return errors.New("failed to fetch roles for user: " + err.Error())
+		}
+
+		allRoles, err := auth0API.Role.List()
+		if err != nil {
+			return errors.New("failed to list roles:" + err.Error())
+		}
+		if len(allRoles.Roles) == 0 {
+			return errors.New("no roles found")
+		}
+
+		userRoleMap := make(map[string]bool)
+		for _, role := range targetUserRoles.Roles {
+			userRoleMap[*role.ID] = true
+		}
+
+		roleMap := make(map[string]*management.Role)
+		for _, role := range allRoles.Roles {
+			roleMap[*role.ID] = role
+		}
+
+		// Only assign missing default roles
+		for _, roleID := range group.Info.DefaultRoles {
+			if !userRoleMap[roleID] {
+				if role, exists := roleMap[roleID]; exists {
+					fmt.Printf("Assigning role: %v to user: %v", roleID, targetUser.Id)
+					auth0API.User.AssignRoles(targetUser.Id, role)
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func HandleUserGroupDeleteMemberReq(req *protos.UserGroupDeleteMemberReq, hctx wsHelpers.HandlerContext) (*protos.UserGroupDeleteMemberResp, error) {
@@ -254,6 +313,7 @@ func decorateUserGroup(dbGroup *protos.UserGroupDB, db *mongo.Database, logger l
 			Description:    dbGroup.Description,
 			CreatedUnixSec: dbGroup.CreatedUnixSec,
 			Joinable:       dbGroup.Joinable,
+			DefaultRoles:   dbGroup.DefaultRoles,
 		},
 		Viewers:    &protos.UserGroupInfoList{},
 		Members:    &protos.UserGroupInfoList{},
@@ -361,6 +421,7 @@ func getUserGroupInfos(userGroupIds []string, db *mongo.Database) (map[string]*p
 			Name:           item.Name,
 			CreatedUnixSec: item.CreatedUnixSec,
 			Joinable:       item.Joinable,
+			DefaultRoles:   item.DefaultRoles,
 		}
 	}
 

@@ -217,7 +217,7 @@ func (x *TagCreateResp) GetTag() *Tag {
 	return nil
 }
 
-// requires(PIXLISE_ADMIN)
+// requires(EDIT_TAGS)
 type TagDeleteReq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
