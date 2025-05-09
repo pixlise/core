@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/wstestlib"
 )
 
@@ -44,7 +45,7 @@ type contentMessaging struct {
 func testUserContent(apiHost string, contentMessaging map[string]contentMessaging) {
 	// One "smart" test sequence that can be configured to test things automatically, applying the same preconditions
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect user 1", &wstestlib.ConnectInfo{
+	u1.AddConnectAction("Connect user 1", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,
@@ -148,7 +149,7 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 	// Login as another user and list items to verify none are coming back here too
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
 
-	u2.AddConnectAction("Connect user 2", &wstestlib.ConnectInfo{
+	u2.AddConnectAction("Connect user 2", &client.ConnectInfo{
 		Host: apiHost,
 		User: test2Username,
 		Pass: test2Password,

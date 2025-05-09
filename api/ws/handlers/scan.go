@@ -598,7 +598,7 @@ func HandleScanAutoShareWriteReq(req *protos.ScanAutoShareWriteReq, hctx wsHelpe
 	return &protos.ScanAutoShareWriteResp{}, nil
 }
 
-func HandleScanTriggerAutoQuantReq(req *protos.ScanTriggerAutoQuantReq, hctx wsHelpers.HandlerContext) (*protos.ScanTriggerAutoQuantResp, error) {
+func HandleScanTriggerJobReq(req *protos.ScanTriggerJobReq, hctx wsHelpers.HandlerContext) (*protos.ScanTriggerJobResp, error) {
 	if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
 		return nil, err
 	}
@@ -606,5 +606,39 @@ func HandleScanTriggerAutoQuantReq(req *protos.ScanTriggerAutoQuantReq, hctx wsH
 	// Run auto-quants no matter if they have run already
 	quantification.RunAutoQuantifications(req.ScanId, hctx.Svcs, false)
 
-	return &protos.ScanTriggerAutoQuantResp{}, nil
+	return &protos.ScanTriggerJobResp{}, nil
+}
+
+func HandleScanListJobsReq(req *protos.ScanListJobsReq, hctx wsHelpers.HandlerContext) (*protos.ScanListJobsResp, error) {
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.JobsName)
+	cursor, err := coll.Find(ctx, nil, options.Find())
+	if err != nil {
+		return nil, err
+	}
+
+	jobs := []*protos.JobGroupConfig{}
+	err = cursor.All(context.TODO(), &jobs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.ScanListJobsResp{
+		Jobs: jobs,
+	}, nil
+}
+
+func HandleScanWriteJobReq(req *protos.ScanWriteJobReq, hctx wsHelpers.HandlerContext) (*protos.ScanWriteJobResp, error) {
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.JobsName)
+	result, err := coll.UpdateByID(ctx, req.Job.JobGroupId, bson.D{{Key: "$set", Value: req.Job}}, options.Update().SetUpsert(true))
+	if err != nil {
+		return nil, err
+	}
+
+	if result.UpsertedCount == 0 && result.ModifiedCount == 0 {
+		hctx.Svcs.Log.Errorf("Unexpected update result for job: %+v", result)
+	}
+
+	return &protos.ScanWriteJobResp{}, nil
 }

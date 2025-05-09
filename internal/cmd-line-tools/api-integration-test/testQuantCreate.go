@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/utils"
 	"github.com/pixlise/core/v4/core/wstestlib"
 )
@@ -13,7 +14,7 @@ func testQuantCreate(apiHost string) {
 	resetDBPiquantAndJobs()
 
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,
@@ -134,7 +135,7 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 
 	// Each quant run creates a new session so we separate out the resp/update streams and can "expect" messages
 	usr := wstestlib.MakeScriptedTestUser(auth0Params)
-	usr.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	usr.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,
