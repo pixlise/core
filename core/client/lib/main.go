@@ -119,6 +119,13 @@ func getScanSpectrum(scanId string, pmc int32, spectrumType int, detector string
 	})
 }
 
+//export getScanSpectrumRangeAsMap
+func getScanSpectrumRangeAsMap(scanId string, channelStart int32, channelEnd int32, detector string) *C.char {
+	return processRequest("getScanSpectrumRangeAsMap", func() (proto.Message, error) {
+		return apiClient.GetScanSpectrumRangeAsMap(scanId, channelStart, channelEnd, detector)
+	})
+}
+
 //export listScans
 func listScans(scanId string) *C.char {
 	return processRequest("listScans", func() (proto.Message, error) { return apiClient.ListScans(scanId) })
@@ -139,9 +146,9 @@ func getScanEntryDataColumns(scanId string) *C.char {
 	return processRequest("getScanEntryDataColumns", func() (proto.Message, error) { return apiClient.GetScanEntryDataColumns(scanId) })
 }
 
-//export getScanEntryDataColumn
-func getScanEntryDataColumn(scanId string, columnName string) *C.char {
-	return processRequest("getScanEntryDataColumn", func() (proto.Message, error) { return apiClient.GetScanEntryDataColumn(scanId, columnName) })
+//export getScanEntryDataColumnAsMap
+func getScanEntryDataColumnAsMap(scanId string, columnName string) *C.char {
+	return processRequest("getScanEntryDataColumnAsMap", func() (proto.Message, error) { return apiClient.GetScanEntryDataColumnAsMap(scanId, columnName) })
 }
 
 //export listScanQuants
@@ -216,14 +223,28 @@ func getDiffractionPeaks(scanId string, calibrationSource int) *C.char {
 	})
 }
 
+//export getDiffractionAsMap
+func getDiffractionAsMap(scanId string, calibrationSource int, channelStart int32, channelEnd int32) *C.char {
+	return processRequest("getDiffractionAsMap", func() (proto.Message, error) {
+		return apiClient.GetDiffractionAsMap(scanId, protos.EnergyCalibrationSource(calibrationSource), channelStart, channelEnd)
+	})
+}
+
+//export getRoughnessAsMap
+func getRoughnessAsMap(scanId string, calibrationSource int) *C.char {
+	return processRequest("getRoughnessAsMap", func() (proto.Message, error) {
+		return apiClient.GetRoughnessAsMap(scanId, protos.EnergyCalibrationSource(calibrationSource))
+	})
+}
+
 //export getQuantColumns
 func getQuantColumns(quantId string) *C.char {
 	return processRequest("getQuantColumns", func() (proto.Message, error) { return apiClient.GetQuantColumns(quantId) })
 }
 
-//export getQuantColumn
-func getQuantColumn(quantId string, columnName string, detector string) *C.char {
-	return processRequest("getQuantColumn", func() (proto.Message, error) { return apiClient.GetQuantColumn(quantId, columnName, detector) })
+//export getQuantColumnAsMap
+func getQuantColumnAsMap(quantId string, columnName string, detector string) *C.char {
+	return processRequest("getQuantColumnAsMap", func() (proto.Message, error) { return apiClient.GetQuantColumnAsMap(quantId, columnName, detector) })
 }
 
 //export createROI

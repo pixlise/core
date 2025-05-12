@@ -14,11 +14,33 @@ func main() {
 
 	// Dev: 500302337 is missing bulk sum?
 
-	// spectrum, err := apiClient.GetScanSpectrum("261161477", 15, protos.SpectrumType_SPECTRUM_NORMAL, "A")
-	// fmt.Printf("%v|%v|%v\n", err, len(spectrum.Counts), spectrum)
+	spectrum, err := apiClient.GetScanSpectrum("261161477", 15, protos.SpectrumType_SPECTRUM_NORMAL, "A")
+	fmt.Printf("%v|%v|%v\n", err, len(spectrum.Counts), spectrum)
 
-	// spectrum, err = apiClient.GetScanSpectrum("261161477", 8383824, protos.SpectrumType_SPECTRUM_BULK, "B")
-	// fmt.Printf("%v|%v|%v\n", err, len(spectrum.Counts), spectrum)
+	spectrum, err = apiClient.GetScanSpectrum("261161477", 8383824, protos.SpectrumType_SPECTRUM_BULK, "B")
+	fmt.Printf("%v|%v|%v\n", err, len(spectrum.Counts), spectrum)
+
+	rangeMap, err := apiClient.GetScanSpectrumRangeAsMap("475070977", 300, 302, "B")
+	fmt.Printf("%v|%v\n", err, len(rangeMap.EntryPMCs))
+
+	// diffMap, err := apiClient.GetDiffractionAsMap("475070977", protos.EnergyCalibrationSource_CAL_BULK_SUM, 0, 4096)
+	// fmt.Printf("err: %v\n", err)
+	// if diffMap != nil {
+	// 	fmt.Printf("PMC, Value\n")
+	// 	for k, v := range diffMap.EntryPMCs {
+	// 		fmt.Printf("All Points,%v,%v\n", v, diffMap.FloatValues[k])
+	// 	}
+	// }
+
+	// ruffMap, err := apiClient.GetRoughnessAsMap("475070977", protos.EnergyCalibrationSource_CAL_BULK_SUM)
+	// fmt.Printf("err: %v\n", err)
+	// if ruffMap != nil {
+	// 	fmt.Printf("PMC, Value\n")
+	// 	for k, v := range ruffMap.EntryPMCs {
+	// 		fmt.Printf("All Points,%v,%v\n", v, ruffMap.FloatValues[k])
+	// 	}
+	// }
+	return
 
 	xyzs, err := apiClient.GetScanBeamLocations("261161477")
 	fmt.Print(len(xyzs.Locations))
