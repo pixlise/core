@@ -29,12 +29,13 @@ import (
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/core/awsutil"
+	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/wstestlib"
 )
 
-var auth0Params wstestlib.Auth0Info
+var auth0Params client.Auth0Info
 
 var test1Username, test1Password, test2Username, test2Password string
 
@@ -68,7 +69,7 @@ func main() {
 	flag.StringVar(&apiUsersBucket, "usersBucket", "", "User Data bucket the API is using")
 	flag.StringVar(&auth0Params.Domain, "auth0Domain", "", "Auth0 domain for management API")
 	flag.StringVar(&auth0Params.ClientId, "auth0ClientId", "", "Auth0 client id for management API")
-	flag.StringVar(&auth0Params.Secret, "auth0Secret", "", "Auth0 secret for management API")
+	//flag.StringVar(&auth0Params.Secret, "auth0Secret", "", "Auth0 secret for management API")
 	flag.StringVar(&auth0Params.Audience, "auth0Audience", "", "Auth0 audience")
 	flag.StringVar(&expectedAPIVersion, "expectedAPIVersion", "", "Expected API version (version not checked if blank)")
 	flag.StringVar(&testType, "testType", "local", "Test type to run: local, env")
@@ -170,6 +171,7 @@ func runLocalTests(apiHost string, isCI bool) {
 	//return
 
 	// *** NOT RUNNING THIS LOCALLY, NO LAMBDA IS STARTED *** testScanImport(apiHost)
+	//testJobs(apiHost)
 	u1Id, u2Id := testNotification(apiHost)
 	testImageUpload(apiHost, u1Id, u2Id)
 	testImageMatchTransform(apiHost)
@@ -450,7 +452,7 @@ func runLocalTests(apiHost string, isCI bool) {
 	testUserSearch(apiHost)
 	testUserDetails(apiHost, u1Id, u2Id)
 	if !isCI {
-		wstestlib.ClearJWTCache()
+		client.ClearJWTCache()
 		testUserManagement(apiHost)
 	}
 	testUserGroups(apiHost)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/wstestlib"
 )
 
@@ -14,7 +15,7 @@ func testQuantFit(apiHost string) {
 	resetDBPiquantAndJobs()
 
 	usr := wstestlib.MakeScriptedTestUser(auth0Params)
-	usr.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	usr.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pixlise/core/v4/core/client"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -18,7 +19,7 @@ type actionItem struct {
 	defLine    string // source file+line that created this action
 
 	// Individual actions that can happen:
-	connect *ConnectInfo
+	connect *client.ConnectInfo
 
 	disconnect bool
 
@@ -42,8 +43,8 @@ type actionGroup struct {
 }
 
 type ScriptedTestUser struct {
-	auth0Params  Auth0Info
-	user         *socketConn
+	auth0Params  client.Auth0Info
+	user         *client.SocketConn
 	actionGroups []actionGroup
 
 	tempGroup *actionGroup
@@ -56,15 +57,15 @@ type ScriptedTestUser struct {
 
 var savedItems = map[string]string{}
 
-func MakeScriptedTestUser(auth0Params Auth0Info) ScriptedTestUser {
+func MakeScriptedTestUser(auth0Params client.Auth0Info) ScriptedTestUser {
 	return ScriptedTestUser{
 		auth0Params:  auth0Params,
-		user:         &socketConn{},
+		user:         &client.SocketConn{},
 		actionGroups: []actionGroup{},
 	}
 }
 func (s *ScriptedTestUser) GetUserId() string {
-	return s.user.userId
+	return s.user.UserId
 }
 
 // Use to reset a user, fails if called before all existing groups are complete
@@ -85,7 +86,7 @@ func (s *ScriptedTestUser) ClearActions() {
 }
 
 // Adding various action types
-func (s *ScriptedTestUser) AddConnectAction(annotation string, params *ConnectInfo) {
+func (s *ScriptedTestUser) AddConnectAction(annotation string, params *client.ConnectInfo) {
 	s.addAction(actionItem{annotation: annotation, connect: params})
 }
 
@@ -186,12 +187,12 @@ func (s *ScriptedTestUser) runSpecificAction(action actionItem, which string) er
 	if action.connect != nil {
 		s.printAction(which, action.annotation, fmt.Sprintf("Connecting to host: %v as user %v", action.connect.Host, action.connect.User))
 		s.userNameConnected = action.connect.User
-		return s.user.connect(*action.connect, s.auth0Params)
+		return s.user.Connect(*action.connect, s.auth0Params)
 	}
 
 	if action.disconnect {
 		s.printAction(which, action.annotation, fmt.Sprintf("Disconnecting user %v", s.userNameConnected))
-		return s.user.disconnect()
+		return s.user.Disconnect()
 	}
 
 	if action.waitMs > 0 {
@@ -219,7 +220,7 @@ func (s *ScriptedTestUser) runSpecificAction(action actionItem, which string) er
 		if err != nil {
 			log.Fatalln(fmt.Errorf("Failed to parse request to be sent: %v.\nAction: %v\nRequest was: %v", err, action.annotation, sendReqReplaced))
 		}
-		return s.user.sendMessage(&wsmsg)
+		return s.user.SendMessage(&wsmsg)
 	}
 
 	return errors.New("No action to take")
@@ -240,13 +241,13 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 	s.printGroup(fmt.Sprintf("Waiting for %v messages or timeout of %vms", len(group.expectedMessages), group.timeoutMs))
 
 	// Check that the expected msgs match
-	msgs := s.user.waitForMessages(len(group.expectedMessages), time.Duration(group.timeoutMs)*time.Millisecond)
+	msgs := s.user.WaitForMessages(len(group.expectedMessages), time.Duration(group.timeoutMs)*time.Millisecond)
 
 	if len(group.expectedMessages) > 0 && len(msgs) <= 0 {
 		return errors.New("No messages received")
 	} else {
 		// In case we got something more than the expected count of messages, put in a small wait here
-		msgs2 := s.user.waitForMessages(0, time.Duration(50)*time.Millisecond)
+		msgs2 := s.user.WaitForMessages(0, time.Duration(50)*time.Millisecond)
 		if len(msgs2) > 0 {
 			fmt.Printf("Received %v more messages than expected!\n", len(msgs2))
 			msgs = append(msgs, msgs2...)
@@ -273,7 +274,7 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 		matchErrors := []error{}
 
 		for c, expStr := range group.expectedMessages {
-			prettyReceivedMsgStr, err, idMatched = checkMatch(expStr, msgStr, s.user.userId, savedItems)
+			prettyReceivedMsgStr, err, idMatched = checkMatch(expStr, msgStr, s.user.UserId, savedItems)
 
 			if err != nil {
 				// If ids were matched, we know not to scan any further

@@ -3,6 +3,7 @@ package wsHandler
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
@@ -35,6 +36,18 @@ func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.Han
 	// At this point we should know that the name is not taken
 	groupId := hctx.Svcs.IDGen.GenObjectID()
 
+	defaultRoles := []string{}
+
+	if len(req.DefaultRoles) > 0 {
+		// If the user is a PIXLISE ADMIN, they can set the default roles
+		isAdmin := hctx.SessUser.Permissions["PIXLISE_ADMIN"]
+		if isAdmin {
+			defaultRoles = req.DefaultRoles
+		} else {
+			hctx.Svcs.Log.Debugf("User %v is not a PIXLISE ADMIN, so default roles will not be set", hctx.SessUser.User.Id)
+		}
+	}
+
 	group := &protos.UserGroupDB{
 		Id:                    groupId,
 		Name:                  req.Name,
@@ -42,6 +55,7 @@ func HandleUserGroupCreateReq(req *protos.UserGroupCreateReq, hctx wsHelpers.Han
 		CreatedUnixSec:        uint32(hctx.Svcs.TimeStamper.GetTimeNowSec()),
 		LastUserJoinedUnixSec: uint32(hctx.Svcs.TimeStamper.GetTimeNowSec()),
 		Joinable:              req.Joinable,
+		DefaultRoles:          defaultRoles,
 		Members: &protos.UserGroupList{
 			UserIds:  []string{},
 			GroupIds: []string{},
@@ -148,10 +162,20 @@ func HandleUserGroupEditDetailsReq(req *protos.UserGroupEditDetailsReq, hctx wsH
 		return nil, err
 	}
 
+	// Validate user is a PIXLISE ADMIN if default roles are changed
+	isAdmin := hctx.SessUser.Permissions["PIXLISE_ADMIN"]
+	existingDefaultRoles := group.DefaultRoles
+	if !reflect.DeepEqual(existingDefaultRoles, req.DefaultRoles) {
+		if !isAdmin {
+			return nil, errorwithstatus.MakeUnauthorisedError(fmt.Errorf("user does not have permission to change default roles"))
+		}
+	}
+
 	// Update the name
 	toSet := bson.M{
-		"name":     req.Name,
-		"joinable": req.Joinable,
+		"name":         req.Name,
+		"joinable":     req.Joinable,
+		"defaultRoles": req.DefaultRoles,
 	}
 	if len(req.Description) > 0 {
 		toSet["description"] = req.Description
@@ -174,6 +198,7 @@ func HandleUserGroupEditDetailsReq(req *protos.UserGroupEditDetailsReq, hctx wsH
 	group.Name = req.Name
 	group.Description = req.Description
 	group.Joinable = req.Joinable
+	group.DefaultRoles = req.DefaultRoles
 	groupSend, err := decorateUserGroup(&group, hctx.Svcs.MongoDB, hctx.Svcs.Log)
 	if err != nil {
 		return nil, err

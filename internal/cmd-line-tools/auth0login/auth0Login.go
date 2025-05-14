@@ -45,7 +45,6 @@ func main() {
 	var username string
 	var password string
 	var clientID string
-	var clientSecret string
 	var auth0domain string
 	var redirectURI string
 	var audience string
@@ -54,7 +53,6 @@ func main() {
 	flag.StringVar(&username, "user", "", "Username")
 	flag.StringVar(&password, "pass", "", "Password")
 	flag.StringVar(&clientID, "id", "", "Client ID")
-	flag.StringVar(&clientSecret, "secret", "", "Client Secret")
 
 	flag.StringVar(&auth0domain, "domain", "pixlise.au.auth0.com", "Auth0 Domain (optional)")
 	flag.StringVar(&audience, "audience", "pixlise-backend", "Auth0 Audience (optional)")
@@ -63,6 +61,6 @@ func main() {
 
 	flag.Parse()
 
-	jwt, err := auth0login.GetJWT(username, password, clientID, clientSecret, auth0domain, redirectURI, audience, scope)
+	jwt, err := auth0login.GetJWT(username, password, clientID, auth0domain, redirectURI, audience, scope)
 	fmt.Printf("%v|%v\n", err, jwt)
 }

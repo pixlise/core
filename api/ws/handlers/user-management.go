@@ -616,14 +616,14 @@ func HandleReviewerMagicLinkLoginReq(req *protos.ReviewerMagicLinkLoginReq, hctx
 		return nil, errors.New("user does not have the 'Reviewer' role")
 	}
 
-	clientSecret := hctx.Svcs.Config.Auth0ClientSecret
+	//clientSecret := hctx.Svcs.Config.Auth0ClientSecret
 	clientID := req.ClientId
 	redirectUri := req.RedirectURI
 	audience := req.Audience
 	domain := req.Domain
 	scope := "openid profile email"
 
-	jwt, err := auth0login.GetJWT(*auth0User.Email, user.Info.NonSecretPassword, clientID, clientSecret, domain, redirectUri, audience, scope)
+	jwt, err := auth0login.GetJWT(*auth0User.Email, user.Info.NonSecretPassword, clientID /*clientSecret,*/, domain, redirectUri, audience, scope)
 	if err != nil {
 		return nil, errors.New("failed to get JWT: " + err.Error())
 	}

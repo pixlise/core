@@ -101,7 +101,7 @@ jobs:
           sleep 5
           cd ./internal/cmd-line-tools/api-integration-test
           echo "unittest_${UNIX_MS}"
-          ./tester -apiHost localhost:8080 -envName "unittest_${UNIX_MS}" -datasetBucket "integration-test-data-pixlise" -usersBucket "integration-test-users-pixlise" -auth0Domain ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }} -auth0ClientId ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }} -auth0Secret ${{ secrets.PIXLISE_API_TEST_AUTH0_SECRET }} -auth0Audience "pixlise-backend" -testType "ci" -test1Username "test1@pixlise.org" -test1Password ${{ secrets.TEST_USER_1_PASSWORD }} -test2Username "test2@pixlise.org" -test2Password ${{ secrets.TEST_USER_2_PASSWORD }}
+          ./tester -apiHost localhost:8080 -envName "unittest_${UNIX_MS}" -datasetBucket "integration-test-data-pixlise" -usersBucket "integration-test-users-pixlise" -auth0Domain ${{ secrets.PIXLISE_API_TEST_AUTH0_DOMAIN }} -auth0ClientId ${{ secrets.PIXLISE_API_TEST_AUTH0_CLIENT_ID }} -auth0Audience "pixlise-backend" -testType "ci" -test1Username "test1@pixlise.org" -test1Password ${{ secrets.TEST_USER_1_PASSWORD }} -test2Username "test2@pixlise.org" -test2Password ${{ secrets.TEST_USER_2_PASSWORD }}
         env:
           AWS_DEFAULT_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -147,6 +147,9 @@ jobs:
           # rm integrationtest-linux
           # zip -q importtest/importtest-linux-${{ needs.version.outputs.version }}.zip importtest-linux test-data/000000001-21-10-2022-15-37-00.zip
           # rm importtest-linux
+          mv job-runner job-runner-${{ needs.version.outputs.version }}
+          mkdir job-runner
+          cp job-runner-${{ needs.version.outputs.version }} ./job-runner
           aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
 
   docker:

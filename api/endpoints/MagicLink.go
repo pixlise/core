@@ -72,14 +72,14 @@ func PostMagicLinkLoginInfo(params apiRouter.ApiHandlerGenericPublicParams) erro
 		return errors.New("user does not have the 'Reviewer' role")
 	}
 
-	clientSecret := params.Svcs.Config.Auth0ClientSecret
+	//clientSecret := params.Svcs.Config.Auth0ClientSecret
 	clientID := req.ClientId
 	redirectUri := req.RedirectURI
 	audience := req.Audience
 	domain := req.Domain
 	scope := "openid profile email"
 
-	jwt, err := auth0login.GetJWT(*auth0User.Email, user.Info.NonSecretPassword, clientID, clientSecret, domain, redirectUri, audience, scope)
+	jwt, err := auth0login.GetJWT(*auth0User.Email, user.Info.NonSecretPassword, clientID /*clientSecret*/, domain, redirectUri, audience, scope)
 	if err != nil {
 		return errors.New("failed to get JWT: " + err.Error())
 	}

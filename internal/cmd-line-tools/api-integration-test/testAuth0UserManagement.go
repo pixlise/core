@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/wstestlib"
 )
 
@@ -21,7 +22,7 @@ func testUserManagement(apiHost string) {
 func testUserManagementFunctionality(apiHost string, userIdToEdit string) {
 	// User 2 has access
 	u2 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u2.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u2.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test2Username,
 		Pass: test2Password,
@@ -170,7 +171,7 @@ func testUserManagementFunctionality(apiHost string, userIdToEdit string) {
 func testUserManagementPermission(apiHost string) string {
 	// User 1 doesn't have the right to do anything user management-wise, check that we do prevent it
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &wstestlib.ConnectInfo{
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
 		Host: apiHost,
 		User: test1Username,
 		Pass: test1Password,
