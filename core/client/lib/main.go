@@ -259,5 +259,34 @@ func createROI(roiBuff string, isMist bool) *C.char {
 	return processRequest("createROI", func() (proto.Message, error) { return apiClient.CreateROI(roiItem, isMist) })
 }
 
+//export saveMapData
+func saveMapData(key string, dataBuff string) *C.char {
+	// Here we can read the data string as a protobuf message and create the right structure
+	mapItem := &protos.ClientMap{}
+	err := protojson.Unmarshal([]byte(dataBuff), mapItem)
+	if err != nil {
+		return C.CString(fmt.Sprintf("saveMapData: Failed to decode data: %v", err))
+	}
+
+	return processRequest("saveMapData", func() (proto.Message, error) { return apiClient.SaveMapData(key, mapItem) })
+}
+
+//export loadMapData
+func loadMapData(key string) *C.char {
+	return processRequest("loadMapData", func() (proto.Message, error) { return apiClient.LoadMapData(key) })
+}
+
+//export uploadImage
+func uploadImage(key string, imageUpload string) *C.char {
+	// Here we can read the data string as a protobuf message and create the right structure
+	upload := &protos.ImageUploadHttpRequest{}
+	err := protojson.Unmarshal([]byte(imageUpload), upload)
+	if err != nil {
+		return C.CString(fmt.Sprintf("uploadImage: Failed to decode imageUpload: %v", err))
+	}
+
+	return processRequest("uploadImage", func() (proto.Message, error) { return apiClient.UploadImage(imageUpload) })
+}
+
 func main() {
 }

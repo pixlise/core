@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,21 +10,24 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pixlise/core/v4/core/indexcompression"
 	"github.com/pixlise/core/v4/core/timestamper"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"google.golang.org/protobuf/proto"
 )
 
 // Based on: https://fluhus.github.io/snopher/
 // and: https://medium.com/analytics-vidhya/running-go-code-from-python-a65b3ae34a2d
 
 type ClientConfig struct {
-	Host     string
-	User     string
-	Password string
+	Host        string
+	User        string
+	Password    string
+	LocalConfig *PIXLISEConfig
 }
 
 type PIXLISEConfig struct {
@@ -36,6 +40,7 @@ type PIXLISEConfig struct {
 var configEnvVar = "PIXLISE_CLIENT_CONFIG"
 var configFileName = ".pixlise-config.json" // We look for this file in home dir
 var responseTimeoutSec = 10
+var clientMapKeyPrefix = "client-map-"
 
 type APIClient struct {
 	socket      *SocketConn
@@ -104,23 +109,27 @@ func Authenticate() (*APIClient, error) {
 		return nil, fmt.Errorf("failed to read pixlise connection from \"%v\" config: %v", source, err)
 	}
 
-	// Now that we've got this, read the auth0 connection information from the PIXLISE instance
-	url := cfg.Host + "/" + "pixlise-config.json"
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read auth config from \"%v\": %v", cfg.Host, err)
-	}
-	defer resp.Body.Close()
+	pixliseConfig := &PIXLISEConfig{}
+	if cfg.LocalConfig == nil {
+		// Now that we've got this, read the auth0 connection information from the PIXLISE instance
+		url := cfg.Host + "/" + "pixlise-config.json"
+		resp, err := http.Get(url)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read auth config from \"%v\": %v", cfg.Host, err)
+		}
+		defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode auth config from \"%v\": %v", cfg.Host, err)
-	}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode auth config from \"%v\": %v", cfg.Host, err)
+		}
 
-	pixliseConfig := PIXLISEConfig{}
-	err = json.Unmarshal(body, &pixliseConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read pixlise connection config: %v", err)
+		err = json.Unmarshal(body, pixliseConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read pixlise connection config: %v", err)
+		}
+	} else {
+		pixliseConfig = cfg.LocalConfig
 	}
 
 	auth0Params := Auth0Info{
@@ -1172,4 +1181,148 @@ func (c *APIClient) CreateROI(roiItem *protos.ROIItem, isMist bool) (*protos.Reg
 	}
 
 	return resps[0].GetRegionOfInterestWriteResp(), nil
+}
+
+func (c *APIClient) SaveMapData(key string, data *protos.ClientMap) error {
+	// Serialise the map to bytes
+	dataBytes, err := proto.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("Failed to SaveMapData %v: %v", key, err)
+	}
+
+	memoItem := &protos.MemoisedItem{
+		Key:  clientMapKeyPrefix + key,
+		Data: dataBytes,
+		// ScanId:              reqItem.ScanId,
+		// QuantId:             reqItem.QuantId,
+		// ExprId:              reqItem.ExprId,
+		DataSize: uint32(len(dataBytes)),
+	}
+
+	reqBody, err := proto.Marshal(memoItem)
+	if err != nil {
+		return fmt.Errorf("SaveMapData failed to create request body: %v", err)
+	}
+
+	// We send this via HTTP endpoints
+	url, err := c.socket.GetHost("/memoise")
+	if err != nil {
+		return fmt.Errorf("SaveMapData failed to get url: %v", err)
+	}
+
+	// Set the key as a query param
+	url.RawQuery = "key=" + clientMapKeyPrefix + key
+
+	client := &http.Client{}
+	urlString := url.String()
+	req, err := http.NewRequest("PUT", urlString, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return fmt.Errorf("SaveMapData failed to create request: %v", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("SaveMapData request failed: %v", err)
+	}
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("SaveMapData failed to read response: %v", err)
+	}
+
+	// Data is just bytes, but really it's a JSON encoded time stamp:
+	// {"timestamp": 1234}
+	// We don't actually need the time stamp here, so just stop... maybe verify that it starts as expected
+	if !strings.Contains(string(b), "\"timestamp\":") {
+		return fmt.Errorf("SaveMapData unexpected response: %v", string(b))
+	}
+
+	return nil
+}
+
+func (c *APIClient) LoadMapData(key string) (*protos.ClientMap, error) {
+	// We send this via HTTP endpoints
+	url, err := c.socket.GetHost("/memoise")
+	if err != nil {
+		return nil, fmt.Errorf("LoadMapData %v failed to get url: %v", key, err)
+	}
+
+	// Set the key as a query param
+	url.RawQuery = "key=" + clientMapKeyPrefix + key
+
+	client := &http.Client{}
+	urlString := url.String()
+	req, err := http.NewRequest("GET", urlString, nil)
+	if err != nil {
+		return nil, fmt.Errorf("LoadMapData %v %v failed to create request: %v", key, err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("LoadMapData request failed: %v", key, err)
+	}
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("LoadMapData %v failed to read response: %v", key, err)
+	}
+
+	respBody := &protos.MemoisedItem{}
+	err = proto.Unmarshal(b, respBody)
+	if err != nil {
+		return nil, fmt.Errorf("LoadMapData %v failed to decode returned MemoisedItem: %v", key, err)
+	}
+
+	// Data is just bytes, decode the client map from it
+	mapResult := &protos.ClientMap{}
+	err = proto.Unmarshal(respBody.Data, mapResult)
+	if err != nil {
+		return nil, fmt.Errorf("LoadMapData %v failed to decode ClientMap from returned MemoisedItem: %v", key, err)
+	}
+
+	return mapResult, nil
+}
+
+func (c *APIClient) UploadImage(imageUpload *protos.ImageUploadHttpRequest) error {
+	reqBody, err := proto.Marshal(imageUpload)
+	if err != nil {
+		return fmt.Errorf("UploadImage failed to create request body: %v", err)
+	}
+
+	// We send this via HTTP endpoints
+	url, err := c.socket.GetHost("/images")
+	if err != nil {
+		return fmt.Errorf("UploadImage failed to get url: %v", err)
+	}
+
+	client := &http.Client{}
+	req, err := http.NewRequest("PUT", url.String(), bytes.NewBuffer(reqBody))
+	if err != nil {
+		return fmt.Errorf("UploadImage failed to create request: %v", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("UploadImage request failed: %v", err)
+	}
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("UploadImage failed to read response: %v", err)
+	}
+
+	if len(b) > 0 {
+		return fmt.Errorf("Upload image unexpected result: %v", string(b))
+	}
+
+	return nil
 }
