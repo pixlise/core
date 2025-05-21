@@ -1257,14 +1257,14 @@ func (c *APIClient) LoadMapData(key string) (*protos.ClientMap, error) {
 	urlString := url.String()
 	req, err := http.NewRequest("GET", urlString, nil)
 	if err != nil {
-		return nil, fmt.Errorf("LoadMapData %v %v failed to create request: %v", key, err)
+		return nil, fmt.Errorf("LoadMapData %v failed to create request: %v", key, err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("LoadMapData request failed: %v", key, err)
+		return nil, fmt.Errorf("LoadMapData %v request failed: %v", key, err)
 	}
 
 	defer resp.Body.Close()
