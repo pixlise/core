@@ -1119,7 +1119,7 @@ func (c *APIClient) GetDiffractionAsMap(scanId string, energyCalibrationSource p
 		if entry.Location && (entry.NormalSpectra > 0 || entry.DwellSpectra > 0 || entry.BulkSpectra > 0 || entry.MaxSpectra > 0) {
 			pmcToIdx[entry.Id] = len(diffractionMap.EntryPMCs)
 			diffractionMap.EntryPMCs = append(diffractionMap.EntryPMCs, entry.Id)
-			diffractionMap.FloatValues = append(diffractionMap.FloatValues, 0)
+			diffractionMap.IntValues = append(diffractionMap.IntValues, 0)
 		}
 	}
 
@@ -1273,6 +1273,10 @@ func (c *APIClient) LoadMapData(key string) (*protos.ClientMap, error) {
 		return nil, fmt.Errorf("LoadMapData %v failed to read response: %v", key, err)
 	}
 
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("LoadMapData got status %v: %v", resp.StatusCode, string(b))
+	}
+
 	respBody := &protos.MemoisedItem{}
 	err = proto.Unmarshal(b, respBody)
 	if err != nil {
@@ -1287,6 +1291,21 @@ func (c *APIClient) LoadMapData(key string) (*protos.ClientMap, error) {
 	}
 
 	return mapResult, nil
+}
+
+func (c *APIClient) DeleteImage(imageName string) error {
+	req := &protos.ImageDeleteReq{Name: imageName}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageDeleteReq{
+		ImageDeleteReq: req,
+	}}
+
+	_, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *APIClient) UploadImage(imageUpload *protos.ImageUploadHttpRequest) error {

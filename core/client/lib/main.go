@@ -268,7 +268,16 @@ func saveMapData(key string, dataBuff string) *C.char {
 		return C.CString(fmt.Sprintf("saveMapData: Failed to decode data: %v", err))
 	}
 
-	return processRequest("saveMapData", func() (proto.Message, error) { return apiClient.SaveMapData(key, mapItem) })
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	err = apiClient.SaveMapData(key, mapItem)
+	if err != nil {
+		return C.CString(fmt.Sprintf("saveMapData error: %v", err))
+	}
+
+	return emptyCString
 }
 
 //export loadMapData
@@ -277,7 +286,7 @@ func loadMapData(key string) *C.char {
 }
 
 //export uploadImage
-func uploadImage(key string, imageUpload string) *C.char {
+func uploadImage(imageUpload string) *C.char {
 	// Here we can read the data string as a protobuf message and create the right structure
 	upload := &protos.ImageUploadHttpRequest{}
 	err := protojson.Unmarshal([]byte(imageUpload), upload)
@@ -285,7 +294,30 @@ func uploadImage(key string, imageUpload string) *C.char {
 		return C.CString(fmt.Sprintf("uploadImage: Failed to decode imageUpload: %v", err))
 	}
 
-	return processRequest("uploadImage", func() (proto.Message, error) { return apiClient.UploadImage(imageUpload) })
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	err = apiClient.UploadImage(upload)
+	if err != nil {
+		return C.CString(fmt.Sprintf("uploadImage error: %v", err))
+	}
+
+	return emptyCString
+}
+
+//export deleteImage
+func deleteImage(imageName string) *C.char {
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	err := apiClient.DeleteImage(imageName)
+	if err != nil {
+		return C.CString(fmt.Sprintf("deleteImage error: %v", err))
+	}
+
+	return emptyCString
 }
 
 func main() {
