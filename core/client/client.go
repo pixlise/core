@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,20 +10,24 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pixlise/core/v4/core/indexcompression"
+	"github.com/pixlise/core/v4/core/timestamper"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"google.golang.org/protobuf/proto"
 )
 
 // Based on: https://fluhus.github.io/snopher/
 // and: https://medium.com/analytics-vidhya/running-go-code-from-python-a65b3ae34a2d
 
 type ClientConfig struct {
-	Host     string
-	User     string
-	Password string
+	Host        string
+	User        string
+	Password    string
+	LocalConfig *PIXLISEConfig
 }
 
 type PIXLISEConfig struct {
@@ -35,9 +40,11 @@ type PIXLISEConfig struct {
 var configEnvVar = "PIXLISE_CLIENT_CONFIG"
 var configFileName = ".pixlise-config.json" // We look for this file in home dir
 var responseTimeoutSec = 10
+var clientMapKeyPrefix = "client-map-"
 
 type APIClient struct {
-	socket *SocketConn
+	socket      *SocketConn
+	rateLimiter *utils.RateLimiter
 
 	// Local caching of things we need to build responses to things that are easier to digest on client-side
 	// For example, we download meta labels, and pass back maps of string->value to client
@@ -53,6 +60,7 @@ type APIClient struct {
 	scanDiffractionDetected      map[string]*protos.DetectedDiffractionPeaksResp
 	scanBulkSumEnergyCalibration map[string]*protos.ClientEnergyCalibration
 	scanUserEnergyCalibration    map[string]*protos.ClientEnergyCalibration
+	scanDiffractionData          map[string]map[protos.EnergyCalibrationSource]*protos.ClientDiffractionData
 }
 
 // Authenticates using one of several methods:
@@ -101,23 +109,27 @@ func Authenticate() (*APIClient, error) {
 		return nil, fmt.Errorf("failed to read pixlise connection from \"%v\" config: %v", source, err)
 	}
 
-	// Now that we've got this, read the auth0 connection information from the PIXLISE instance
-	url := cfg.Host + "/" + "pixlise-config.json"
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read auth config from \"%v\": %v", cfg.Host, err)
-	}
-	defer resp.Body.Close()
+	pixliseConfig := &PIXLISEConfig{}
+	if cfg.LocalConfig == nil {
+		// Now that we've got this, read the auth0 connection information from the PIXLISE instance
+		url := cfg.Host + "/" + "pixlise-config.json"
+		resp, err := http.Get(url)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read auth config from \"%v\": %v", cfg.Host, err)
+		}
+		defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode auth config from \"%v\": %v", cfg.Host, err)
-	}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode auth config from \"%v\": %v", cfg.Host, err)
+		}
 
-	pixliseConfig := PIXLISEConfig{}
-	err = json.Unmarshal(body, &pixliseConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read pixlise connection config: %v", err)
+		err = json.Unmarshal(body, pixliseConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read pixlise connection config: %v", err)
+		}
+	} else {
+		pixliseConfig = cfg.LocalConfig
 	}
 
 	auth0Params := Auth0Info{
@@ -143,6 +155,7 @@ func AuthenticateWithAuth0Info(connectParams ConnectInfo, auth0Params Auth0Info)
 
 	return &APIClient{
 		socket:                       socket,
+		rateLimiter:                  utils.MakeRateLimiter(&timestamper.UnixTimeNowStamper{}, 50, 70, 10, 3),
 		scanPMCToLocIdx:              map[string]map[int]int{},
 		scanLocIdxToPMC:              map[string]map[int]int{},
 		scanMetaLabels:               map[string]*protos.ScanMetaLabelsAndTypesResp{},
@@ -155,10 +168,14 @@ func AuthenticateWithAuth0Info(connectParams ConnectInfo, auth0Params Auth0Info)
 		scanDiffractionDetected:      map[string]*protos.DetectedDiffractionPeaksResp{},
 		scanBulkSumEnergyCalibration: map[string]*protos.ClientEnergyCalibration{},
 		scanUserEnergyCalibration:    map[string]*protos.ClientEnergyCalibration{},
+		scanDiffractionData:          map[string]map[protos.EnergyCalibrationSource]*protos.ClientDiffractionData{},
 	}, err
 }
 
 func (c *APIClient) sendMessageWaitResponse(msg *protos.WSMessage) ([]*protos.WSMessage, error) {
+	// Check if we need rate limiting
+	c.rateLimiter.CheckRateLimit()
+
 	if err := c.socket.SendMessage(msg); err != nil {
 		return []*protos.WSMessage{}, err
 	}
@@ -186,7 +203,17 @@ func (c *APIClient) ensureScanSpectra(scanId string) error {
 		return err
 	}
 
-	c.scanSpectra[scanId] = resps[0].GetSpectrumResp()
+	resp := resps[0].GetSpectrumResp()
+
+	// Decode (decompress) all spectra we receive
+	for _, spectra := range resp.SpectraPerLocation {
+		for _, spectrum := range spectra.Spectra {
+			spectrum.Counts = zeroRunDecode(spectrum.Counts)
+		}
+	}
+
+	c.scanSpectra[scanId] = resp
+
 	return nil
 }
 
@@ -207,7 +234,7 @@ func (c *APIClient) makeClientSpectrum(scanId string, spectrum *protos.Spectrum)
 	return &protos.ClientSpectrum{
 		Detector: spectrum.Detector,
 		Type:     spectrum.Type,
-		Counts:   zeroRunDecode(spectrum.Counts),
+		Counts:   spectrum.Counts,
 		MaxCount: spectrum.MaxCount,
 		Meta:     meta,
 	}, nil
@@ -248,6 +275,57 @@ func (c *APIClient) GetScanSpectrum(scanId string, pmc int32, spectrumType proto
 	}
 
 	return nil, fmt.Errorf("Failed to find spectrum for scan %v, pmc %v, spectrumType %v, detector %v", scanId, pmc, spectrumType, detector)
+}
+
+// Adds up all channels from channelStart, to channel at index channelEnd-1
+// Therefore if you request just one channel, you would have to set it to channelStart=10, channelEnd=11
+// NOTE:
+// channelStart can be -1, which will just make it start from 0
+// channelEnd can be -1, which will be interpreted as all channels
+func (c *APIClient) GetScanSpectrumRangeAsMap(scanId string, channelStart int32, channelEnd int32, detector string) (*protos.ClientMap, error) {
+	if err := c.ensureScanSpectra(scanId); err != nil {
+		return nil, err
+	}
+	if err := c.ensureScanEntries(scanId); err != nil {
+		return nil, err
+	}
+
+	spectra := c.scanSpectra[scanId]
+
+	if channelStart >= channelEnd {
+		return nil, fmt.Errorf("Invalid channel start %v, end %v for spectrum range map retrieval in scan %v", channelStart, channelEnd, scanId)
+	}
+	if channelStart < 0 {
+		channelStart = 0
+	}
+	if channelEnd < 0 {
+		channelEnd = int32(spectra.ChannelCount)
+	}
+
+	spectrumRangeMap := &protos.ClientMap{
+		EntryPMCs: []int32{},
+		IntValues: []int64{},
+	}
+
+	locToPMC := c.scanLocIdxToPMC[scanId]
+
+	for locIdx, locSpectra := range spectra.SpectraPerLocation {
+		for _, spectrum := range locSpectra.Spectra {
+			if spectrum.Type == protos.SpectrumType_SPECTRUM_NORMAL && spectrum.Detector == detector {
+				// Add up the counts and store for this PMC
+				total := uint32(0)
+				for i := channelStart; i < channelEnd; i++ {
+					total += spectrum.Counts[i]
+				}
+
+				// Store and move on
+				spectrumRangeMap.EntryPMCs = append(spectrumRangeMap.EntryPMCs, int32(locToPMC[locIdx]))
+				spectrumRangeMap.IntValues = append(spectrumRangeMap.IntValues, int64(total))
+			}
+		}
+	}
+
+	return spectrumRangeMap, nil
 }
 
 func (c *APIClient) ListScans(scanId string) (*protos.ScanListResp, error) {
@@ -360,7 +438,7 @@ func (c *APIClient) GetScanEntryDataColumns(scanId string) (*protos.ClientString
 	return &protos.ClientStringList{Strings: names}, nil
 }
 
-func (c *APIClient) GetScanEntryDataColumn(scanId string, columnName string) (*protos.ClientMap, error) {
+func (c *APIClient) GetScanEntryDataColumnAsMap(scanId string, columnName string) (*protos.ClientMap, error) {
 	if err := c.ensureScanMetaData(scanId); err != nil {
 		return nil, err
 	}
@@ -486,7 +564,7 @@ func (c *APIClient) GetQuantColumns(quantId string) (*protos.ClientStringList, e
 	return &protos.ClientStringList{Strings: c.quants[quantId].Data.Labels}, nil
 }
 
-func (c *APIClient) GetQuantColumn(quantId string, columnName string, detector string) (*protos.ClientMap, error) {
+func (c *APIClient) GetQuantColumnAsMap(quantId string, columnName string, detector string) (*protos.ClientMap, error) {
 	if err := c.ensureQuant(quantId); err != nil {
 		return nil, err
 	}
@@ -890,6 +968,12 @@ func (c *APIClient) SetUserScanCalibration(scanId string, detector string, start
 }
 
 func (c *APIClient) GetDiffractionPeaks(scanId string, energyCalibrationSource protos.EnergyCalibrationSource) (*protos.ClientDiffractionData, error) {
+	if cachedForScan, ok := c.scanDiffractionData[scanId]; ok {
+		if cachedData, ok2 := cachedForScan[energyCalibrationSource]; ok2 {
+			return cachedData, nil
+		}
+	}
+
 	if err := c.ensureDiffractionDetected(scanId); err != nil {
 		return nil, err
 	}
@@ -1002,8 +1086,86 @@ func (c *APIClient) GetDiffractionPeaks(scanId string, energyCalibrationSource p
 		}
 	}
 
+	result := &protos.ClientDiffractionData{Peaks: allPeaks, Roughnesses: roughnessItems}
+
+	// Cache this!
+	if existing, ok := c.scanDiffractionData[scanId]; ok {
+		existing[energyCalibrationSource] = result
+	} else {
+		c.scanDiffractionData[scanId] = map[protos.EnergyCalibrationSource]*protos.ClientDiffractionData{energyCalibrationSource: result}
+	}
+
 	// We return these separately
-	return &protos.ClientDiffractionData{Peaks: allPeaks, Roughnesses: roughnessItems}, nil
+	return result, nil
+}
+
+func (c *APIClient) GetDiffractionAsMap(scanId string, energyCalibrationSource protos.EnergyCalibrationSource, channelStart int32, channelEnd int32) (*protos.ClientMap, error) {
+	diffractionData, err := c.GetDiffractionPeaks(scanId, energyCalibrationSource)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.ensureScanEntries(scanId); err != nil {
+		return nil, err
+	}
+
+	diffractionMap := &protos.ClientMap{
+		EntryPMCs: []int32{},
+		IntValues: []int64{},
+	}
+	pmcToIdx := map[int32]int{}
+
+	for _, entry := range c.scanEntries[scanId].Entries {
+		if entry.Location && (entry.NormalSpectra > 0 || entry.DwellSpectra > 0 || entry.BulkSpectra > 0 || entry.MaxSpectra > 0) {
+			pmcToIdx[entry.Id] = len(diffractionMap.EntryPMCs)
+			diffractionMap.EntryPMCs = append(diffractionMap.EntryPMCs, entry.Id)
+			diffractionMap.IntValues = append(diffractionMap.IntValues, 0)
+		}
+	}
+
+	// Run through diffraction peaks to find all that sit within the channel range
+	for _, peak := range diffractionData.Peaks {
+		withinChannelRange := (channelStart == -1 || peak.Peak.PeakChannel >= channelStart) && (channelEnd == -1 || peak.Peak.PeakChannel < channelEnd)
+		if withinChannelRange && peak.Status != "not-anomaly" {
+			if idx, ok := pmcToIdx[peak.Id]; ok {
+				// verify
+				if diffractionMap.EntryPMCs[idx] != peak.Id {
+					return nil, fmt.Errorf("Failed to build map, pmc %v not found at position %v", peak.Id, idx)
+				} else {
+					diffractionMap.IntValues[idx] = diffractionMap.IntValues[idx] + 1
+				}
+			}
+
+		}
+	}
+
+	// NOTE: The UI code is identical so far, but here it runs through user peaks and adds their counts too
+	//       but we don't do this here. Could implement it easily though. See expression-data-sources.ts getDiffractionPeakEffectData()
+
+	return diffractionMap, nil
+}
+
+func (c *APIClient) GetRoughnessAsMap(scanId string, energyCalibrationSource protos.EnergyCalibrationSource) (*protos.ClientMap, error) {
+	diffractionData, err := c.GetDiffractionPeaks(scanId, energyCalibrationSource)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.ensureScanEntries(scanId); err != nil {
+		return nil, err
+	}
+
+	roughnessMap := &protos.ClientMap{
+		EntryPMCs:   []int32{},
+		FloatValues: []float64{},
+	}
+
+	for _, item := range diffractionData.Roughnesses {
+		roughnessMap.EntryPMCs = append(roughnessMap.EntryPMCs, item.Id)
+		roughnessMap.FloatValues = append(roughnessMap.FloatValues, float64(item.GlobalDifference))
+	}
+
+	return roughnessMap, nil
 }
 
 func (c *APIClient) CreateROI(roiItem *protos.ROIItem, isMist bool) (*protos.RegionOfInterestWriteResp, error) {
@@ -1019,4 +1181,167 @@ func (c *APIClient) CreateROI(roiItem *protos.ROIItem, isMist bool) (*protos.Reg
 	}
 
 	return resps[0].GetRegionOfInterestWriteResp(), nil
+}
+
+func (c *APIClient) SaveMapData(key string, data *protos.ClientMap) error {
+	// Serialise the map to bytes
+	dataBytes, err := proto.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("Failed to SaveMapData %v: %v", key, err)
+	}
+
+	memoItem := &protos.MemoisedItem{
+		Key:  clientMapKeyPrefix + key,
+		Data: dataBytes,
+		// ScanId:              reqItem.ScanId,
+		// QuantId:             reqItem.QuantId,
+		// ExprId:              reqItem.ExprId,
+		DataSize: uint32(len(dataBytes)),
+	}
+
+	reqBody, err := proto.Marshal(memoItem)
+	if err != nil {
+		return fmt.Errorf("SaveMapData failed to create request body: %v", err)
+	}
+
+	// We send this via HTTP endpoints
+	url, err := c.socket.GetHost("/memoise")
+	if err != nil {
+		return fmt.Errorf("SaveMapData failed to get url: %v", err)
+	}
+
+	// Set the key as a query param
+	url.RawQuery = "key=" + clientMapKeyPrefix + key
+
+	client := &http.Client{}
+	urlString := url.String()
+	req, err := http.NewRequest("PUT", urlString, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return fmt.Errorf("SaveMapData failed to create request: %v", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("SaveMapData request failed: %v", err)
+	}
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("SaveMapData failed to read response: %v", err)
+	}
+
+	// Data is just bytes, but really it's a JSON encoded time stamp:
+	// {"timestamp": 1234}
+	// We don't actually need the time stamp here, so just stop... maybe verify that it starts as expected
+	if !strings.Contains(string(b), "\"timestamp\":") {
+		return fmt.Errorf("SaveMapData unexpected response: %v", string(b))
+	}
+
+	return nil
+}
+
+func (c *APIClient) LoadMapData(key string) (*protos.ClientMap, error) {
+	// We send this via HTTP endpoints
+	url, err := c.socket.GetHost("/memoise")
+	if err != nil {
+		return nil, fmt.Errorf("LoadMapData %v failed to get url: %v", key, err)
+	}
+
+	// Set the key as a query param
+	url.RawQuery = "key=" + clientMapKeyPrefix + key
+
+	client := &http.Client{}
+	urlString := url.String()
+	req, err := http.NewRequest("GET", urlString, nil)
+	if err != nil {
+		return nil, fmt.Errorf("LoadMapData %v failed to create request: %v", key, err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("LoadMapData %v request failed: %v", key, err)
+	}
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("LoadMapData %v failed to read response: %v", key, err)
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("LoadMapData got status %v: %v", resp.StatusCode, string(b))
+	}
+
+	respBody := &protos.MemoisedItem{}
+	err = proto.Unmarshal(b, respBody)
+	if err != nil {
+		return nil, fmt.Errorf("LoadMapData %v failed to decode returned MemoisedItem: %v", key, err)
+	}
+
+	// Data is just bytes, decode the client map from it
+	mapResult := &protos.ClientMap{}
+	err = proto.Unmarshal(respBody.Data, mapResult)
+	if err != nil {
+		return nil, fmt.Errorf("LoadMapData %v failed to decode ClientMap from returned MemoisedItem: %v", key, err)
+	}
+
+	return mapResult, nil
+}
+
+func (c *APIClient) DeleteImage(imageName string) error {
+	req := &protos.ImageDeleteReq{Name: imageName}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageDeleteReq{
+		ImageDeleteReq: req,
+	}}
+
+	_, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *APIClient) UploadImage(imageUpload *protos.ImageUploadHttpRequest) error {
+	reqBody, err := proto.Marshal(imageUpload)
+	if err != nil {
+		return fmt.Errorf("UploadImage failed to create request body: %v", err)
+	}
+
+	// We send this via HTTP endpoints
+	url, err := c.socket.GetHost("/images")
+	if err != nil {
+		return fmt.Errorf("UploadImage failed to get url: %v", err)
+	}
+
+	client := &http.Client{}
+	req, err := http.NewRequest("PUT", url.String(), bytes.NewBuffer(reqBody))
+	if err != nil {
+		return fmt.Errorf("UploadImage failed to create request: %v", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("UploadImage request failed: %v", err)
+	}
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("UploadImage failed to read response: %v", err)
+	}
+
+	if len(b) > 0 {
+		return fmt.Errorf("Upload image unexpected result: %v", string(b))
+	}
+
+	return nil
 }
