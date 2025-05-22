@@ -31,7 +31,7 @@ func collectGarbage(mongoDB *mongo.Database, oldestAllowedSec uint32, ts timesta
 	delResult, err := coll.DeleteMany(ctx, filter, opts)
 	if err != nil {
 		log.Errorf("Memoisation GC delete error: %v", err)
+	} else {
+		log.Infof("Memoisation GC deleted %v items", delResult.DeletedCount)
 	}
-
-	log.Infof("Memoisation GC deleted %v items", delResult.DeletedCount)
 }
