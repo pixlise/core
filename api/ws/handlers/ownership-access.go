@@ -52,10 +52,18 @@ func HandleObjectEditAccessReq(req *protos.ObjectEditAccessReq, hctx wsHelpers.H
 
 	ctx := context.TODO()
 
+	viewOnlyAccess := false
+
 	// Determine if we have edit access to the object
 	owner, err := wsHelpers.CheckObjectAccess(true, req.ObjectId, req.ObjectType, hctx)
 	if err != nil {
-		return nil, err
+		owner, err = wsHelpers.CheckObjectAccess(false, req.ObjectId, req.ObjectType, hctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// If we have view access, we can't add editors, but we can add viewers
+		viewOnlyAccess = true
 	}
 
 	viewerUsers := map[string]bool{}
@@ -74,7 +82,7 @@ func HandleObjectEditAccessReq(req *protos.ObjectEditAccessReq, hctx wsHelpers.H
 	}
 
 	// Add new ones
-	if req.AddEditors != nil {
+	if req.AddEditors != nil && !viewOnlyAccess {
 		readToMap(req.AddEditors.UserIds, &editorUsers)
 		readToMap(req.AddEditors.GroupIds, &editorGroups)
 	}
@@ -84,12 +92,12 @@ func HandleObjectEditAccessReq(req *protos.ObjectEditAccessReq, hctx wsHelpers.H
 	}
 
 	// Delete ones that need to be deleted
-	if req.DeleteEditors != nil {
+	if req.DeleteEditors != nil && !viewOnlyAccess {
 		deleteFromMap(req.DeleteEditors.UserIds, &editorUsers)
 		deleteFromMap(req.DeleteEditors.GroupIds, &editorGroups)
 	}
 
-	if req.DeleteViewers != nil {
+	if req.DeleteViewers != nil && !viewOnlyAccess {
 		deleteFromMap(req.DeleteViewers.UserIds, &viewerUsers)
 		deleteFromMap(req.DeleteViewers.GroupIds, &viewerGroups)
 	}
