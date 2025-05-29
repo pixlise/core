@@ -40,7 +40,7 @@ type PIXLISEConfig struct {
 var configEnvVar = "PIXLISE_CLIENT_CONFIG"
 var configFileName = ".pixlise-config.json" // We look for this file in home dir
 var responseTimeoutSec = 10
-var clientMapKeyPrefix = "client-map-"
+var ClientMapKeyPrefix = "client-map-"
 
 type APIClient struct {
 	socket      *SocketConn
@@ -1191,7 +1191,7 @@ func (c *APIClient) SaveMapData(key string, data *protos.ClientMap) error {
 	}
 
 	memoItem := &protos.MemoisedItem{
-		Key:  clientMapKeyPrefix + key,
+		Key:  ClientMapKeyPrefix + key,
 		Data: dataBytes,
 		// ScanId:              reqItem.ScanId,
 		// QuantId:             reqItem.QuantId,
@@ -1211,7 +1211,7 @@ func (c *APIClient) SaveMapData(key string, data *protos.ClientMap) error {
 	}
 
 	// Set the key as a query param
-	url.RawQuery = "key=" + clientMapKeyPrefix + key
+	url.RawQuery = "key=" + ClientMapKeyPrefix + key
 
 	client := &http.Client{}
 	urlString := url.String()
@@ -1251,7 +1251,7 @@ func (c *APIClient) LoadMapData(key string) (*protos.ClientMap, error) {
 	}
 
 	// Set the key as a query param
-	url.RawQuery = "key=" + clientMapKeyPrefix + key
+	url.RawQuery = "key=" + ClientMapKeyPrefix + key
 
 	client := &http.Client{}
 	urlString := url.String()

@@ -13,6 +13,9 @@ type INotifier interface {
 	// NOTE: This does NOT send emails, it's of system-level interest only so UI can update caches as required
 	SysNotifyScanChanged(scanId string)
 
+	// When a map (created by client library saveMapData function) has changed
+	SysNotifyMapChanged(scanId string)
+
 	// When an image is added to a scan
 	NotifyNewScanImage(scanName string, scanId string, imageName string)
 
