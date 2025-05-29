@@ -77,18 +77,16 @@ func (n *NotificationSender) SysNotifyScanChanged(scanId string) {
 	n.sendSysNotification(wsSysNotify)
 }
 
-/*
-func (n *NotificationSender) SysNotifyROIChanged(scanId string) {
+func (n *NotificationSender) SysNotifyROIChanged(roiId string) {
 	wsSysNotify := &protos.NotificationUpd{
 		Notification: &protos.Notification{
 			NotificationType: protos.NotificationType_NT_SYS_DATA_CHANGED,
-			ScanIds:          []string{scanId},
+			RoiId:            roiId,
 		},
 	}
 
 	n.sendSysNotification(wsSysNotify)
 }
-*/
 
 func (n *NotificationSender) SysNotifyMapChanged(mapId string) {
 	wsSysNotify := &protos.NotificationUpd{
