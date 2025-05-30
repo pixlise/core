@@ -320,5 +320,26 @@ func deleteImage(imageName string) *C.char {
 	return emptyCString
 }
 
+//export uploadImageBeamLocations
+func uploadImageBeamLocations(imageName string, locationsForScanBuff string) *C.char {
+	// Here we can read the data string as a protobuf message and create the right structure
+	locForScan := &protos.ImageLocationsForScan{}
+	err := protojson.Unmarshal([]byte(locationsForScanBuff), locForScan)
+	if err != nil {
+		return C.CString(fmt.Sprintf("uploadImageBeamLocations: Failed to decode locationsForScanBuff: %v", err))
+	}
+
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	err = apiClient.UploadImageBeamLocations(imageName, locForScan)
+	if err != nil {
+		return C.CString(fmt.Sprintf("uploadImageBeamLocations error: %v", err))
+	}
+
+	return emptyCString
+}
+
 func main() {
 }
