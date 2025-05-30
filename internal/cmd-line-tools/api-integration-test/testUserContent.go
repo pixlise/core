@@ -196,7 +196,7 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 
 		u2.AddSendReqAction(fmt.Sprintf("%v Share user 1s created item", msgName),
 			fmt.Sprintf(`{"objectEditAccessReq": { "objectId": "${IDLOAD=%vCreated1}", "objectType": "%v", "addViewers": { "userIds": [ "%v" ] }}}`, msgName, msgContents.objectType, u2.GetUserId()),
-			fmt.Sprintf(`{"msgId":%v,"status":"WS_NO_PERMISSION","errorText": "Edit access denied for: %v (%v)","objectEditAccessResp":{}}`, u2ExpectedRespSeqNo, msgContents.objectType, createdId),
+			fmt.Sprintf(`{"msgId":%v,"status":"WS_NO_PERMISSION","errorText": "View access denied for: %v (%v)","objectEditAccessResp":{}}`, u2ExpectedRespSeqNo, msgContents.objectType, createdId),
 		)
 		u2ExpectedRespSeqNo++
 	}
