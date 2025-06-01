@@ -77,6 +77,28 @@ func (n *NotificationSender) SysNotifyScanChanged(scanId string) {
 	n.sendSysNotification(wsSysNotify)
 }
 
+func (n *NotificationSender) SysNotifyROIChanged(roiId string) {
+	wsSysNotify := &protos.NotificationUpd{
+		Notification: &protos.Notification{
+			NotificationType: protos.NotificationType_NT_SYS_DATA_CHANGED,
+			RoiId:            roiId,
+		},
+	}
+
+	n.sendSysNotification(wsSysNotify)
+}
+
+func (n *NotificationSender) SysNotifyMapChanged(mapId string) {
+	wsSysNotify := &protos.NotificationUpd{
+		Notification: &protos.Notification{
+			NotificationType: protos.NotificationType_NT_SYS_DATA_CHANGED,
+			MapId:            mapId,
+		},
+	}
+
+	n.sendSysNotification(wsSysNotify)
+}
+
 func (n *NotificationSender) NotifyNewScanImage(scanName string, scanId string, imageName string) {
 	notifMsg := &protos.NotificationUpd{
 		Notification: &protos.Notification{
