@@ -61,6 +61,7 @@ type APIClient struct {
 	scanBulkSumEnergyCalibration map[string]*protos.ClientEnergyCalibration
 	scanUserEnergyCalibration    map[string]*protos.ClientEnergyCalibration
 	scanDiffractionData          map[string]map[protos.EnergyCalibrationSource]*protos.ClientDiffractionData
+	tags                         map[string]*protos.Tag
 }
 
 // Authenticates using one of several methods:
@@ -169,6 +170,7 @@ func AuthenticateWithAuth0Info(connectParams ConnectInfo, auth0Params Auth0Info)
 		scanBulkSumEnergyCalibration: map[string]*protos.ClientEnergyCalibration{},
 		scanUserEnergyCalibration:    map[string]*protos.ClientEnergyCalibration{},
 		scanDiffractionData:          map[string]map[protos.EnergyCalibrationSource]*protos.ClientDiffractionData{},
+		tags:                         map[string]*protos.Tag{},
 	}, err
 }
 
@@ -1344,4 +1346,40 @@ func (c *APIClient) UploadImage(imageUpload *protos.ImageUploadHttpRequest) erro
 	}
 
 	return nil
+}
+
+func (c *APIClient) ensureTags() error {
+	if len(c.tags) > 0 {
+		return nil // already downloaded
+	}
+
+	req := &protos.TagListReq{}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_TagListReq{
+		TagListReq: req,
+	}}
+
+	resps, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return err
+	}
+
+	resp := resps[0].GetTagListResp()
+	for _, tag := range resp.Tags {
+		c.tags[tag.Id] = tag
+	}
+
+	return nil
+}
+
+func (c *APIClient) GetTag(tagId string) (*protos.Tag, error) {
+	if err := c.ensureTags(); err != nil {
+		return nil, err
+	}
+
+	if tag, ok := c.tags[tagId]; !ok {
+		return nil, fmt.Errorf("Failed to find tag id: %v", tagId)
+	} else {
+		return tag, nil
+	}
 }

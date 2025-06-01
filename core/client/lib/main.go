@@ -320,5 +320,10 @@ func deleteImage(imageName string) *C.char {
 	return emptyCString
 }
 
+//export getTag
+func getTag(tagId string) *C.char {
+	return processRequest("getTag", func() (proto.Message, error) { return apiClient.GetTag(tagId) })
+}
+
 func main() {
 }
