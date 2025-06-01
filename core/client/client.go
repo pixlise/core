@@ -40,7 +40,7 @@ type PIXLISEConfig struct {
 var configEnvVar = "PIXLISE_CLIENT_CONFIG"
 var configFileName = ".pixlise-config.json" // We look for this file in home dir
 var responseTimeoutSec = 10
-var clientMapKeyPrefix = "client-map-"
+var ClientMapKeyPrefix = "client-map-"
 
 type APIClient struct {
 	socket      *SocketConn
@@ -61,6 +61,7 @@ type APIClient struct {
 	scanBulkSumEnergyCalibration map[string]*protos.ClientEnergyCalibration
 	scanUserEnergyCalibration    map[string]*protos.ClientEnergyCalibration
 	scanDiffractionData          map[string]map[protos.EnergyCalibrationSource]*protos.ClientDiffractionData
+	tags                         map[string]*protos.Tag
 }
 
 // Authenticates using one of several methods:
@@ -169,6 +170,7 @@ func AuthenticateWithAuth0Info(connectParams ConnectInfo, auth0Params Auth0Info)
 		scanBulkSumEnergyCalibration: map[string]*protos.ClientEnergyCalibration{},
 		scanUserEnergyCalibration:    map[string]*protos.ClientEnergyCalibration{},
 		scanDiffractionData:          map[string]map[protos.EnergyCalibrationSource]*protos.ClientDiffractionData{},
+		tags:                         map[string]*protos.Tag{},
 	}, err
 }
 
@@ -1191,7 +1193,7 @@ func (c *APIClient) SaveMapData(key string, data *protos.ClientMap) error {
 	}
 
 	memoItem := &protos.MemoisedItem{
-		Key:  clientMapKeyPrefix + key,
+		Key:  ClientMapKeyPrefix + key,
 		Data: dataBytes,
 		// ScanId:              reqItem.ScanId,
 		// QuantId:             reqItem.QuantId,
@@ -1211,7 +1213,7 @@ func (c *APIClient) SaveMapData(key string, data *protos.ClientMap) error {
 	}
 
 	// Set the key as a query param
-	url.RawQuery = "key=" + clientMapKeyPrefix + key
+	url.RawQuery = "key=" + ClientMapKeyPrefix + key
 
 	client := &http.Client{}
 	urlString := url.String()
@@ -1251,7 +1253,7 @@ func (c *APIClient) LoadMapData(key string) (*protos.ClientMap, error) {
 	}
 
 	// Set the key as a query param
-	url.RawQuery = "key=" + clientMapKeyPrefix + key
+	url.RawQuery = "key=" + ClientMapKeyPrefix + key
 
 	client := &http.Client{}
 	urlString := url.String()
@@ -1344,6 +1346,42 @@ func (c *APIClient) UploadImage(imageUpload *protos.ImageUploadHttpRequest) erro
 	}
 
 	return nil
+}
+
+func (c *APIClient) ensureTags() error {
+	if len(c.tags) > 0 {
+		return nil // already downloaded
+	}
+
+	req := &protos.TagListReq{}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_TagListReq{
+		TagListReq: req,
+	}}
+
+	resps, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return err
+	}
+
+	resp := resps[0].GetTagListResp()
+	for _, tag := range resp.Tags {
+		c.tags[tag.Id] = tag
+	}
+
+	return nil
+}
+
+func (c *APIClient) GetTag(tagId string) (*protos.Tag, error) {
+	if err := c.ensureTags(); err != nil {
+		return nil, err
+	}
+
+	if tag, ok := c.tags[tagId]; !ok {
+		return nil, fmt.Errorf("Failed to find tag id: %v", tagId)
+	} else {
+		return tag, nil
+	}
 }
 
 func (c *APIClient) UploadImageBeamLocations(imageName string, locForScan *protos.ImageLocationsForScan) error {

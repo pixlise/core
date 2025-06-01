@@ -22,10 +22,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	apiRouter "github.com/pixlise/core/v4/api/router"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -147,6 +149,7 @@ func PutMemoise(params apiRouter.ApiHandlerGenericParams) error {
 		ExprId:              reqItem.ExprId,
 		DataSize:            uint32(len(reqItem.Data)),
 		LastReadTimeUnixSec: timestamp, // Right now this is the last time it was accessed. To be updated in future get calls
+		MemoWriterUserId:    params.UserInfo.UserID,
 	}
 
 	result, err := coll.UpdateByID(ctx, reqItem.Key, bson.D{{Key: "$set", Value: item}}, opt)
@@ -162,6 +165,11 @@ func PutMemoise(params apiRouter.ApiHandlerGenericParams) error {
 
 	ts := fmt.Sprintf(`{"timestamp": %v}`, timestamp)
 	params.Writer.Write([]byte(ts))
+
+	// If user just saved a client-side created map, notify that it changed as they may be viewing it in a PIXLISE UI instance
+	if strings.HasPrefix(key, client.ClientMapKeyPrefix) {
+		params.Svcs.Notifier.SysNotifyMapChanged(key)
+	}
 
 	return nil
 }

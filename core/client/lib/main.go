@@ -320,6 +320,11 @@ func deleteImage(imageName string) *C.char {
 	return emptyCString
 }
 
+//export getTag
+func getTag(tagId string) *C.char {
+	return processRequest("getTag", func() (proto.Message, error) { return apiClient.GetTag(tagId) })
+}
+
 //export uploadImageBeamLocations
 func uploadImageBeamLocations(imageName string, locationsForScanBuff string) *C.char {
 	// Here we can read the data string as a protobuf message and create the right structure

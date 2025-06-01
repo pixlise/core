@@ -359,6 +359,10 @@ func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, editors *prot
 
 	// Return the merged item we validated, which in theory is in the DB now
 	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+
+	// Notify out that this ROI has changed, in case any UIs are interested
+	hctx.Svcs.Notifier.SysNotifyROIChanged(roi.Id)
+
 	return dbItem, nil
 }
 
