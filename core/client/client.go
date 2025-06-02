@@ -1383,3 +1383,21 @@ func (c *APIClient) GetTag(tagId string) (*protos.Tag, error) {
 		return tag, nil
 	}
 }
+
+func (c *APIClient) UploadImageBeamLocations(imageName string, locForScan *protos.ImageLocationsForScan) error {
+	req := &protos.ImageBeamLocationUploadReq{
+		ImageName: imageName,
+		Location:  locForScan,
+	}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageBeamLocationUploadReq{
+		ImageBeamLocationUploadReq: req,
+	}}
+
+	_, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

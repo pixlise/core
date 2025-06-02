@@ -226,6 +226,100 @@ func (x *ImageBeamLocationVersionsResp) GetBeamVersionPerScan() map[string]*Imag
 	return nil
 }
 
+// requires(EDIT_SCAN)
+type ImageBeamLocationUploadReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ImageName string                 `protobuf:"bytes,1,opt,name=imageName,proto3" json:"imageName,omitempty"`
+	Location  *ImageLocationsForScan `protobuf:"bytes,2,opt,name=location,proto3" json:"location,omitempty"`
+}
+
+func (x *ImageBeamLocationUploadReq) Reset() {
+	*x = ImageBeamLocationUploadReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_image_beam_location_msgs_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ImageBeamLocationUploadReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ImageBeamLocationUploadReq) ProtoMessage() {}
+
+func (x *ImageBeamLocationUploadReq) ProtoReflect() protoreflect.Message {
+	mi := &file_image_beam_location_msgs_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ImageBeamLocationUploadReq.ProtoReflect.Descriptor instead.
+func (*ImageBeamLocationUploadReq) Descriptor() ([]byte, []int) {
+	return file_image_beam_location_msgs_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ImageBeamLocationUploadReq) GetImageName() string {
+	if x != nil {
+		return x.ImageName
+	}
+	return ""
+}
+
+func (x *ImageBeamLocationUploadReq) GetLocation() *ImageLocationsForScan {
+	if x != nil {
+		return x.Location
+	}
+	return nil
+}
+
+type ImageBeamLocationUploadResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *ImageBeamLocationUploadResp) Reset() {
+	*x = ImageBeamLocationUploadResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_image_beam_location_msgs_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ImageBeamLocationUploadResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ImageBeamLocationUploadResp) ProtoMessage() {}
+
+func (x *ImageBeamLocationUploadResp) ProtoReflect() protoreflect.Message {
+	mi := &file_image_beam_location_msgs_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ImageBeamLocationUploadResp.ProtoReflect.Descriptor instead.
+func (*ImageBeamLocationUploadResp) Descriptor() ([]byte, []int) {
+	return file_image_beam_location_msgs_proto_rawDescGZIP(), []int{5}
+}
+
 type ImageBeamLocationVersionsResp_AvailableVersions struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -237,7 +331,7 @@ type ImageBeamLocationVersionsResp_AvailableVersions struct {
 func (x *ImageBeamLocationVersionsResp_AvailableVersions) Reset() {
 	*x = ImageBeamLocationVersionsResp_AvailableVersions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_image_beam_location_msgs_proto_msgTypes[5]
+		mi := &file_image_beam_location_msgs_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -250,7 +344,7 @@ func (x *ImageBeamLocationVersionsResp_AvailableVersions) String() string {
 func (*ImageBeamLocationVersionsResp_AvailableVersions) ProtoMessage() {}
 
 func (x *ImageBeamLocationVersionsResp_AvailableVersions) ProtoReflect() protoreflect.Message {
-	mi := &file_image_beam_location_msgs_proto_msgTypes[5]
+	mi := &file_image_beam_location_msgs_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -323,8 +417,17 @@ var file_image_beam_location_msgs_proto_rawDesc = []byte{
 	0x2e, 0x49, 0x6d, 0x61, 0x67, 0x65, 0x42, 0x65, 0x61, 0x6d, 0x4c, 0x6f, 0x63, 0x61, 0x74, 0x69,
 	0x6f, 0x6e, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x2e, 0x41,
 	0x76, 0x61, 0x69, 0x6c, 0x61, 0x62, 0x6c, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x73,
-	0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x42, 0x0a, 0x5a, 0x08, 0x2e,
-	0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x6e, 0x0a, 0x1a, 0x49,
+	0x6d, 0x61, 0x67, 0x65, 0x42, 0x65, 0x61, 0x6d, 0x4c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x52, 0x65, 0x71, 0x12, 0x1c, 0x0a, 0x09, 0x69, 0x6d, 0x61,
+	0x67, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x69, 0x6d,
+	0x61, 0x67, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x32, 0x0a, 0x08, 0x6c, 0x6f, 0x63, 0x61, 0x74,
+	0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x49, 0x6d, 0x61, 0x67,
+	0x65, 0x4c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x46, 0x6f, 0x72, 0x53, 0x63, 0x61,
+	0x6e, 0x52, 0x08, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x1d, 0x0a, 0x1b, 0x49,
+	0x6d, 0x61, 0x67, 0x65, 0x42, 0x65, 0x61, 0x6d, 0x4c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x52, 0x65, 0x73, 0x70, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -339,27 +442,31 @@ func file_image_beam_location_msgs_proto_rawDescGZIP() []byte {
 	return file_image_beam_location_msgs_proto_rawDescData
 }
 
-var file_image_beam_location_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_image_beam_location_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_image_beam_location_msgs_proto_goTypes = []interface{}{
-	(*ImageBeamLocationsReq)(nil),         // 0: ImageBeamLocationsReq
-	(*ImageBeamLocationsResp)(nil),        // 1: ImageBeamLocationsResp
-	(*ImageBeamLocationVersionsReq)(nil),  // 2: ImageBeamLocationVersionsReq
-	(*ImageBeamLocationVersionsResp)(nil), // 3: ImageBeamLocationVersionsResp
-	nil,                                   // 4: ImageBeamLocationsReq.ScanBeamVersionsEntry
-	(*ImageBeamLocationVersionsResp_AvailableVersions)(nil), // 5: ImageBeamLocationVersionsResp.AvailableVersions
-	nil,                    // 6: ImageBeamLocationVersionsResp.BeamVersionPerScanEntry
-	(*ImageLocations)(nil), // 7: ImageLocations
+	(*ImageBeamLocationsReq)(nil),                           // 0: ImageBeamLocationsReq
+	(*ImageBeamLocationsResp)(nil),                          // 1: ImageBeamLocationsResp
+	(*ImageBeamLocationVersionsReq)(nil),                    // 2: ImageBeamLocationVersionsReq
+	(*ImageBeamLocationVersionsResp)(nil),                   // 3: ImageBeamLocationVersionsResp
+	(*ImageBeamLocationUploadReq)(nil),                      // 4: ImageBeamLocationUploadReq
+	(*ImageBeamLocationUploadResp)(nil),                     // 5: ImageBeamLocationUploadResp
+	nil,                                                     // 6: ImageBeamLocationsReq.ScanBeamVersionsEntry
+	(*ImageBeamLocationVersionsResp_AvailableVersions)(nil), // 7: ImageBeamLocationVersionsResp.AvailableVersions
+	nil,                           // 8: ImageBeamLocationVersionsResp.BeamVersionPerScanEntry
+	(*ImageLocations)(nil),        // 9: ImageLocations
+	(*ImageLocationsForScan)(nil), // 10: ImageLocationsForScan
 }
 var file_image_beam_location_msgs_proto_depIdxs = []int32{
-	4, // 0: ImageBeamLocationsReq.scanBeamVersions:type_name -> ImageBeamLocationsReq.ScanBeamVersionsEntry
-	7, // 1: ImageBeamLocationsResp.locations:type_name -> ImageLocations
-	6, // 2: ImageBeamLocationVersionsResp.beamVersionPerScan:type_name -> ImageBeamLocationVersionsResp.BeamVersionPerScanEntry
-	5, // 3: ImageBeamLocationVersionsResp.BeamVersionPerScanEntry.value:type_name -> ImageBeamLocationVersionsResp.AvailableVersions
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	6,  // 0: ImageBeamLocationsReq.scanBeamVersions:type_name -> ImageBeamLocationsReq.ScanBeamVersionsEntry
+	9,  // 1: ImageBeamLocationsResp.locations:type_name -> ImageLocations
+	8,  // 2: ImageBeamLocationVersionsResp.beamVersionPerScan:type_name -> ImageBeamLocationVersionsResp.BeamVersionPerScanEntry
+	10, // 3: ImageBeamLocationUploadReq.location:type_name -> ImageLocationsForScan
+	7,  // 4: ImageBeamLocationVersionsResp.BeamVersionPerScanEntry.value:type_name -> ImageBeamLocationVersionsResp.AvailableVersions
+	5,  // [5:5] is the sub-list for method output_type
+	5,  // [5:5] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_image_beam_location_msgs_proto_init() }
@@ -417,7 +524,31 @@ func file_image_beam_location_msgs_proto_init() {
 				return nil
 			}
 		}
+		file_image_beam_location_msgs_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ImageBeamLocationUploadReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 		file_image_beam_location_msgs_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ImageBeamLocationUploadResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_image_beam_location_msgs_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ImageBeamLocationVersionsResp_AvailableVersions); i {
 			case 0:
 				return &v.state
@@ -436,7 +567,7 @@ func file_image_beam_location_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_image_beam_location_msgs_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

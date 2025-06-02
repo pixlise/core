@@ -254,6 +254,9 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 		}
 	}
 
+	// For debugger inspection only
+	matchedMsgs := []string{}
+
 	for _, msg := range msgs {
 		// Compare resp to an expected one
 		b, err := protojson.Marshal(msg)
@@ -291,6 +294,7 @@ func (s *ScriptedTestUser) completeGroup(group actionGroup) error {
 				// Found a match, remove it
 				matched = true
 				group.expectedMessages = append(group.expectedMessages[:c], group.expectedMessages[c+1:]...)
+				matchedMsgs = append(matchedMsgs, expStr)
 				break
 			}
 		}

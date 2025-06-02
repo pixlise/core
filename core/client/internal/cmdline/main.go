@@ -15,19 +15,54 @@ func main() {
 		return
 	}
 
+	roi, err := apiClient.GetROI("k0adnljtrszqv1e9", false)
+	fmt.Printf("getRGetROIOI: %v|%v", err, roi.RegionOfInterest.ScanEntryIndexesEncoded)
+
+	if len(roi.RegionOfInterest.ScanEntryIndexesEncoded) > 29 {
+		roi.RegionOfInterest.ScanEntryIndexesEncoded = []int32{659, 660, 661, 662, 663, 664, 665, 666,
+			667, 668, 669, 670, 671, 672, 673,
+			726, 727, 728, 729, 730, 731, 732,
+			733, 734, 735, 736, 737, 738, 739}
+	} else {
+		roi.RegionOfInterest.ScanEntryIndexesEncoded = []int32{406, 461, 462, 471, 472, 527, 528, 537,
+			538, 587, 588, 593, 594, 596, 601,
+			602, 603, 608, 609, 610, 611, 650,
+			651, 653, 654, 655, 656, 678, 679,
+			680, 681, 682, 683, 684, 685, 686,
+			714, 715, 716, 717, 718, 719, 720,
+			743, 744, 745, 746, 783, 784, 785,
+			786, 787, 788, 789, 790, 811}
+	}
+
+	roi.RegionOfInterest.Owner = nil
+
+	roiWriteResult, err := apiClient.CreateROI(roi.RegionOfInterest, false)
+	fmt.Printf("CreateROI: %v|%v", err, roiWriteResult)
+
+	return
+
 	// err = apiClient.UploadImage(&protos.ImageUploadHttpRequest{
 	// 	Name:         "myimage.png",
 	// 	ImageData:    []byte{0x89, 0x50, 0x4e, 0x47, 0xd, 0xa, 0x1a, 0xa, 0x0, 0x0, 0x0, 0xd, 0x49, 0x48, 0x44, 0x52, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x1, 0x8, 0x2, 0x0, 0x0, 0x0, 0x90, 0x77, 0x53, 0xde, 0x0, 0x0, 0x0, 0x1, 0x73, 0x52, 0x47, 0x42, 0x0, 0xae, 0xce, 0x1c, 0xe9, 0x0, 0x0, 0x0, 0xc, 0x49, 0x44, 0x41, 0x54, 0x18, 0x57, 0x63, 0x28, 0x3d, 0xaf, 0xb, 0x0, 0x3, 0x2e, 0x1, 0x72, 0x50, 0x4e, 0xda, 0xdf, 0x0, 0x0, 0x0, 0x0, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82},
 	// 	OriginScanId: "069927431",
 	// })
 
+	// spectrum, err := apiClient.GetScanSpectrum("500302337", 4, protos.SpectrumType_SPECTRUM_NORMAL, "B")
+	// fmt.Printf("%v|%v|%v\n", err, len(spectrum.Counts), spectrum.Counts)
 	// return
 
-	// err = apiClient.SaveMapData("my-data", &protos.ClientMap{
-	// 	EntryPMCs:   []int32{7, 8, 10, 12},
-	// 	FloatValues: []float64{79.4, 89.4, 109.4, 129.4},
-	// })
-	// fmt.Printf("SaveMapData: %v\n", err)
+	err = apiClient.SaveMapData("my-data", &protos.ClientMap{
+		EntryPMCs:   []int32{17000, 17002, 17003, 17005},
+		FloatValues: []float64{79.4, 89.4, 90.4, 129.4},
+	})
+	fmt.Printf("saveMap my-data err: %v\n", err)
+
+	err = apiClient.SaveMapData("my-data2", &protos.ClientMap{
+		EntryPMCs:   []int32{17000, 17002, 17003, 17005},
+		FloatValues: []float64{3.1415926, 5, 12.83, 23.21},
+	})
+	fmt.Printf("saveMap my-data2 err: %v\n", err)
+	return
 
 	// mapData, err := apiClient.LoadMapData("my-data")
 	// fmt.Printf("LoadMapData: %v|%v\n", err, mapData)
