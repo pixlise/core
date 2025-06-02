@@ -345,6 +345,7 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 
 	// Test sharing by user 1
 	u1.ClearActions()
+	expMsgs = []string{}
 
 	for msgName, msgContents := range contentMessaging {
 		u1.AddSendReqAction(fmt.Sprintf("%v Get permissions for created item as user 1", msgName),
@@ -446,6 +447,7 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 
 	// Back to user 2 - we should be able to view the shared item but still not edit
 	u2.ClearActions()
+	expMsgs = []string{}
 
 	for msgName, msgContents := range contentMessaging {
 		createdId := createdItemIds[msgName][0]
@@ -509,9 +511,20 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 				u2ExpectedRespSeqNo, msgContents.objectType, createdId, msgName),
 		)
 		u2ExpectedRespSeqNo++
+
+		if msgName == "regionOfInterest" {
+			expMsgs = append(expMsgs, fmt.Sprintf(`{"notificationUpd": {
+						"notification": {
+							"notificationType": "NT_SYS_DATA_CHANGED",
+							"roiId": "${IDCHK=%vCreated1}"
+						}
+					}
+				}`, msgName))
+		}
+
 	}
 
-	u2.CloseActionGroup([]string{}, 60000)
+	u2.CloseActionGroup(expMsgs, 60000)
 
 	wstestlib.ExecQueuedActions(&u2)
 
