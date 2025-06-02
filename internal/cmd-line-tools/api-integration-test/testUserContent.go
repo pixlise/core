@@ -210,6 +210,7 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 	// Back to user 1
 	u1.ClearActions()
 
+	expMsgs := []string{}
 	for msgName, msgContents := range contentMessaging {
 		u1.AddSendReqAction(fmt.Sprintf("%v Get created item for user 1", msgName),
 			fmt.Sprintf(`{"%vGetReq": { "id": "${IDLOAD=%vCreated1}"}}`, msgName, msgName),
@@ -278,14 +279,13 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 
 			// For ROIs only, we expect a notification coming through
 			if msgName == "regionOfInterest" {
-				u1.CloseActionGroup([]string{
-					fmt.Sprintf(`{"notificationUpd": {
+				expMsgs = append(expMsgs, fmt.Sprintf(`{"notificationUpd": {
 						"notification": {
 							"notificationType": "NT_SYS_DATA_CHANGED",
 							"roiId": "${IDCHK=%vCreated1}"
 						}
 					}
-				}`, msgName)}, 6000)
+				}`, msgName))
 			}
 
 			// Item has been edited
@@ -339,7 +339,7 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 		}
 	}
 
-	u1.CloseActionGroup([]string{}, 60000)
+	u1.CloseActionGroup(expMsgs, 60000)
 
 	wstestlib.ExecQueuedActions(&u1)
 
