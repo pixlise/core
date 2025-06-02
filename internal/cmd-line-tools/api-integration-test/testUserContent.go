@@ -276,6 +276,18 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 			)
 			u1ExpectedRespSeqNo++
 
+			// For ROIs only, we expect a notification coming through
+			if msgName == "regionOfInterest" {
+				u1.CloseActionGroup([]string{
+					fmt.Sprintf(`{"notificationUpd": {
+						"notification": {
+							"notificationType": "NT_SYS_DATA_CHANGED",
+							"roiId": "${IDCHK=%vCreated1}"
+						}
+					}
+				}`, msgName)}, 6000)
+			}
+
 			// Item has been edited
 			u1ItemsForGet[msgName] = []string{editItem[1]}
 			u1ItemsForList[msgName] = []string{editItem[2]}
