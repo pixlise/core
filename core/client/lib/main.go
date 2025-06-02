@@ -339,6 +339,11 @@ func getTag(tagId string) *C.char {
 	return processRequest("getTag", func() (proto.Message, error) { return apiClient.GetTag(tagId) })
 }
 
+//export getTagByName
+func getTagByName(tagName string) *C.char {
+	return processRequest("getTagByName", func() (proto.Message, error) { return apiClient.GetTagByName(tagName) })
+}
+
 //export uploadImageBeamLocations
 func uploadImageBeamLocations(imageName string, locationsForScanBuff string) *C.char {
 	// Here we can read the data string as a protobuf message and create the right structure

@@ -1399,6 +1399,23 @@ func (c *APIClient) GetTag(tagId string) (*protos.Tag, error) {
 	}
 }
 
+func (c *APIClient) GetTagByName(tagName string) (*protos.ClientTagList, error) {
+	resultTags := &protos.ClientTagList{Tags: []*protos.Tag{}}
+
+	if err := c.ensureTags(); err != nil {
+		return resultTags, err
+	}
+
+	// Find all that match the name (there may be more than one!)
+	for _, tag := range c.tags {
+		if tag.Name == tagName {
+			resultTags.Tags = append(resultTags.Tags, tag)
+		}
+	}
+
+	return resultTags, nil
+}
+
 func (c *APIClient) UploadImageBeamLocations(imageName string, locForScan *protos.ImageLocationsForScan) error {
 	req := &protos.ImageBeamLocationUploadReq{
 		ImageName: imageName,
