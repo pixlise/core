@@ -687,6 +687,21 @@ func (c *APIClient) GetROI(id string, isMist bool) (*protos.RegionOfInterestGetR
 	return resp, nil
 }
 
+func (c *APIClient) DeleteROI(roiId string) error {
+	req := &protos.RegionOfInterestDeleteReq{Id: roiId}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_RegionOfInterestDeleteReq{
+		RegionOfInterestDeleteReq: req,
+	}}
+
+	_, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *APIClient) GetScanBeamLocations(scanId string) (*protos.ClientBeamLocations, error) {
 	if err := c.ensureScanEntries(scanId); err != nil {
 		return nil, err
