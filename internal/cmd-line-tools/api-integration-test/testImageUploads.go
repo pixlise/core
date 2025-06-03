@@ -627,7 +627,7 @@ func testImageMatchTransform(apiHost string) {
 			Name:         "file_Name.png",
 			OriginScanId: scanId,
 			ImageData:    uploadImgPNGData,
-			Assocation: &protos.ImageUploadHttpRequest_BeamImageRef{
+			Association: &protos.ImageUploadHttpRequest_BeamImageRef{
 				BeamImageRef: &protos.ImageMatchTransform{
 					BeamImageFileName: "match_image.png",
 					XOffset:           0,
