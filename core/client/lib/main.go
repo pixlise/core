@@ -184,6 +184,20 @@ func getROI(id string, isMist bool) *C.char {
 	return processRequest("getROI", func() (proto.Message, error) { return apiClient.GetROI(id, isMist) })
 }
 
+//export deleteROI
+func deleteROI(id string) *C.char {
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	err := apiClient.DeleteROI(id)
+	if err != nil {
+		return C.CString(fmt.Sprintf("deleteROI error: %v", err))
+	}
+
+	return emptyCString
+}
+
 //export getScanBeamLocations
 func getScanBeamLocations(scanId string) *C.char {
 	return processRequest("getScanBeamLocations", func() (proto.Message, error) { return apiClient.GetScanBeamLocations(scanId) })
@@ -323,6 +337,11 @@ func deleteImage(imageName string) *C.char {
 //export getTag
 func getTag(tagId string) *C.char {
 	return processRequest("getTag", func() (proto.Message, error) { return apiClient.GetTag(tagId) })
+}
+
+//export getTagByName
+func getTagByName(tagName string) *C.char {
+	return processRequest("getTagByName", func() (proto.Message, error) { return apiClient.GetTagByName(tagName) })
 }
 
 //export uploadImageBeamLocations

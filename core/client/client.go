@@ -687,6 +687,21 @@ func (c *APIClient) GetROI(id string, isMist bool) (*protos.RegionOfInterestGetR
 	return resp, nil
 }
 
+func (c *APIClient) DeleteROI(roiId string) error {
+	req := &protos.RegionOfInterestDeleteReq{Id: roiId}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_RegionOfInterestDeleteReq{
+		RegionOfInterestDeleteReq: req,
+	}}
+
+	_, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *APIClient) GetScanBeamLocations(scanId string) (*protos.ClientBeamLocations, error) {
 	if err := c.ensureScanEntries(scanId); err != nil {
 		return nil, err
@@ -1382,6 +1397,23 @@ func (c *APIClient) GetTag(tagId string) (*protos.Tag, error) {
 	} else {
 		return tag, nil
 	}
+}
+
+func (c *APIClient) GetTagByName(tagName string) (*protos.ClientTagList, error) {
+	resultTags := &protos.ClientTagList{Tags: []*protos.Tag{}}
+
+	if err := c.ensureTags(); err != nil {
+		return resultTags, err
+	}
+
+	// Find all that match the name (there may be more than one!)
+	for _, tag := range c.tags {
+		if tag.Name == tagName {
+			resultTags.Tags = append(resultTags.Tags, tag)
+		}
+	}
+
+	return resultTags, nil
 }
 
 func (c *APIClient) UploadImageBeamLocations(imageName string, locForScan *protos.ImageLocationsForScan) error {

@@ -333,12 +333,22 @@ func HandleImageBeamLocationUploadReq(req *protos.ImageBeamLocationUploadReq, hc
 	}
 
 	if beamResult.MatchedCount == 0 && beamResult.ModifiedCount == 0 {
-		hctx.Svcs.Log.Errorf("ImageBeamLocationUploadReq got unexpected upsert result: %+v", beamResult)
+		hctx.Svcs.Log.Errorf("ImageBeamLocationUploadReq got unexpected image beam location upsert result: %+v", beamResult)
 	}
 
 	// Update the associated scans of the image itself
 	if !utils.ItemInSlice(req.Location.ScanId, img.AssociatedScanIds) {
 		// Add it here
+		img.AssociatedScanIds = append(img.AssociatedScanIds, req.Location.ScanId)
+
+		coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+		imgUpdResult, err := coll.UpdateByID(ctx, req.ImageName, bson.D{{Key: "$set", Value: dbLocs}}, opt)
+		if err != nil {
+			return nil, err
+		}
+		if imgUpdResult.MatchedCount == 0 && imgUpdResult.ModifiedCount == 0 {
+			hctx.Svcs.Log.Errorf("ImageBeamLocationUploadReq got unexpected image upsert result: %+v", imgUpdResult)
+		}
 	}
 
 	return &protos.ImageBeamLocationUploadResp{}, nil
