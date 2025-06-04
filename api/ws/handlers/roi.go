@@ -183,7 +183,8 @@ func validateROI(roi *protos.ROIItem) error {
 	return nil
 }
 
-func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, needMistEntry bool, editors *protos.UserGroupList, viewers *protos.UserGroupList) (*protos.ROIItem, error) {
+// id can be empty, then one is generated otherwise specify one!
+func createROI(roi *protos.ROIItem, id string, hctx wsHelpers.HandlerContext, needMistEntry bool, editors *protos.UserGroupList, viewers *protos.UserGroupList) (*protos.ROIItem, error) {
 	ctx := context.TODO()
 
 	// It's a new item, check these fields...
@@ -192,8 +193,10 @@ func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, needMistEntry
 		return nil, errorwithstatus.MakeBadRequestError(err)
 	}
 
-	// Generate a new id
-	id := hctx.Svcs.IDGen.GenObjectID()
+	// Generate a new id if needed
+	if len(id) <= 0 {
+		id = hctx.Svcs.IDGen.GenObjectID()
+	}
 	roi.Id = id
 
 	// We need to create an ownership item along with it
@@ -394,7 +397,7 @@ func HandleRegionOfInterestWriteReq(req *protos.RegionOfInterestWriteReq, hctx w
 
 	var err error
 	if len(req.RegionOfInterest.Id) <= 0 {
-		item, err = createROI(req.RegionOfInterest, hctx, req.IsMIST, nil, nil)
+		item, err = createROI(req.RegionOfInterest, "", hctx, req.IsMIST, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -478,7 +481,8 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 	}
 
 	writtenROIs := []*protos.ROIItem{}
-	for _, item := range req.RegionsOfInterest {
+	associatedROIId := ""
+	for c, item := range req.RegionsOfInterest {
 		item.Owner = nil
 		item.IsMIST = req.IsMIST
 
@@ -513,7 +517,7 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 				}
 			} else {
 				// Create new ROI
-				item, err = createROI(item, hctx, req.IsMIST, editors, viewers)
+				item, err = createROI(item, "", hctx, req.IsMIST, editors, viewers)
 				if err != nil {
 					return nil, err
 				}
@@ -542,7 +546,7 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 					continue
 				} else {
 					// Create new ROI
-					item, err = createROI(item, hctx, req.IsMIST, editors, viewers)
+					item, err = createROI(item, "", hctx, req.IsMIST, editors, viewers)
 					if err != nil {
 						return nil, err
 					}
@@ -551,7 +555,18 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 
 		} else {
 			// Create new ROI
-			item, err = createROI(item, hctx, req.IsMIST, editors, viewers)
+			// NOTE: if writing multiple and they need to be associated in future, we specify the first id
+			//       and set that as the associated id in all items written too
+			id := ""
+			if len(req.RegionsOfInterest) > 1 {
+				if c == 0 {
+					associatedROIId = hctx.Svcs.IDGen.GenObjectID()
+					id = associatedROIId
+				}
+
+				item.AssociatedROIId = associatedROIId
+			}
+			item, err = createROI(item, id, hctx, req.IsMIST, editors, viewers)
 			if err != nil {
 				return nil, err
 			}
