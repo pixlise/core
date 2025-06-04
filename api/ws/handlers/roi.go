@@ -77,6 +77,7 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 		{Key: "tags", Value: true},
 		{Key: "modifiedunixsec", Value: true},
 		{Key: "ismist", Value: true},
+		{Key: "associatedroiid", Value: true},
 	})
 
 	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName).Find(context.TODO(), filter, opts)
@@ -589,6 +590,7 @@ func HandleRegionOfInterestBulkDuplicateReq(req *protos.RegionOfInterestBulkDupl
 			Tags:            newROI.Tags,
 			ModifiedUnixSec: newROI.ModifiedUnixSec,
 			IsMIST:          newROI.IsMIST,
+			AssociatedROIId: newROI.AssociatedROIId,
 		}
 	}
 
