@@ -125,6 +125,8 @@ func PutMemoise(params apiRouter.ApiHandlerGenericParams) error {
 		return err
 	}
 
+	isClientSavedMap := strings.HasPrefix(key, client.ClientMapKeyPrefix)
+
 	// Ensure key is either empty or the same as the key in the query param
 	if len(reqItem.Key) > 0 && key != reqItem.Key {
 		return errorwithstatus.MakeBadRequestError(errors.New("Memoisation item key doesn't match query parameter"))
@@ -152,6 +154,11 @@ func PutMemoise(params apiRouter.ApiHandlerGenericParams) error {
 		MemoWriterUserId:    params.UserInfo.UserID,
 	}
 
+	// If we're a client-library side saved map, we don't want this item wiped out by garbage collection!
+	if isClientSavedMap {
+		item.NoGC = true
+	}
+
 	result, err := coll.UpdateByID(ctx, reqItem.Key, bson.D{{Key: "$set", Value: item}}, opt)
 	if err != nil {
 		return err
@@ -167,7 +174,7 @@ func PutMemoise(params apiRouter.ApiHandlerGenericParams) error {
 	params.Writer.Write([]byte(ts))
 
 	// If user just saved a client-side created map, notify that it changed as they may be viewing it in a PIXLISE UI instance
-	if strings.HasPrefix(key, client.ClientMapKeyPrefix) {
+	if isClientSavedMap {
 		params.Svcs.Notifier.SysNotifyMapChanged(key)
 	}
 

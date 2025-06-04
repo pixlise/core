@@ -25,7 +25,7 @@ func collectGarbage(mongoDB *mongo.Database, oldestAllowedSec uint32, ts timesta
 
 	ctx := context.TODO()
 	opts := options.Delete()
-	filter := bson.M{"lastreadtimeunixsec": bson.M{"$lt": oldestAllowedUnixSec}}
+	filter := bson.M{"lastreadtimeunixsec": bson.M{"$lt": oldestAllowedUnixSec}, "nogc": false}
 	coll := mongoDB.Collection(dbCollections.MemoisedItemsName)
 
 	delResult, err := coll.DeleteMany(ctx, filter, opts)

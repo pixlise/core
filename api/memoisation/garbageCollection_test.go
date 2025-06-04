@@ -20,7 +20,7 @@ func Example_CollectGarbage() {
 
 	// Insert an item that's too old, and one that's newly accessed
 	ts := &timestamper.MockTimeNowStamper{
-		QueuedTimeStamps: []int64{1234567890, 1234567890, 1234567890, 1234567890},
+		QueuedTimeStamps: []int64{1234567890, 1234567890, 1234567890},
 	}
 
 	now := uint32(ts.GetTimeNowSec())
@@ -50,12 +50,32 @@ func Example_CollectGarbage() {
 	_, err = coll.UpdateByID(ctx, item.Key, bson.D{{Key: "$set", Value: item}}, opt)
 	fmt.Printf("Insert 2: %v\n", err)
 
+	item = &protos.MemoisedItem{
+		Key:                 "key789",
+		MemoTimeUnixSec:     now - maxAge - 60,
+		Data:                []byte{10, 20, 30},
+		ScanId:              "scan222",
+		DataSize:            uint32(5),
+		LastReadTimeUnixSec: now - 5,
+		NoGC:                true,
+	}
+	_, err = coll.UpdateByID(ctx, item.Key, bson.D{{Key: "$set", Value: item}}, opt)
+	fmt.Printf("Insert 3: %v\n", err)
+
 	log := &logger.StdOutLogger{}
+	// Should delete one based on time
+	collectGarbage(db, maxAge, ts, log)
+
+	// Should delete the other based on time, no GC should stay
+	maxAge = 1
 	collectGarbage(db, maxAge, ts, log)
 
 	// Output:
 	// Insert 1: <nil>
 	// Insert 2: <nil>
+	// Insert 3: <nil>
+	// INFO: Memoisation GC starting...
+	// INFO: Memoisation GC deleted 1 items
 	// INFO: Memoisation GC starting...
 	// INFO: Memoisation GC deleted 1 items
 }
