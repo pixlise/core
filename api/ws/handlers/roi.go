@@ -55,6 +55,19 @@ func HandleRegionOfInterestDeleteReq(req *protos.RegionOfInterestDeleteReq, hctx
 		}
 	}
 
+	// If the specified id is to be treated as an associatedROIId, we have to delete all ROIs that contain that id!
+	if req.IsAssociatedROIId {
+		// Use the delete version that allows specifying field and allows multiple items to be deleted
+		delCount, err := wsHelpers.DeleteUserObjectByIdField("associatedroiid", req.Id, protos.ObjectType_OT_ROI, false, dbCollections.RegionsOfInterestName, hctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return &protos.RegionOfInterestDeleteResp{
+			DeleteCount: uint32(delCount),
+		}, nil
+	}
+
 	return wsHelpers.DeleteUserObject[protos.RegionOfInterestDeleteResp](req.Id, protos.ObjectType_OT_ROI, dbCollections.RegionsOfInterestName, hctx)
 }
 

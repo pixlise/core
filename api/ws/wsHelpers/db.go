@@ -15,11 +15,22 @@ import (
 )
 
 func DeleteUserObject[T any](objectId string, objectType protos.ObjectType, collectionName string, hctx HandlerContext) (*T, error) {
+	_, err := DeleteUserObjectByIdField("_id", objectId, objectType, true, collectionName, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Delete responses are just empty msgs
+	var resp T
+	return &resp, nil
+}
+
+func DeleteUserObjectByIdField(idField string, objectId string, objectType protos.ObjectType, deleteOneOnly bool, collectionName string, hctx HandlerContext) (int, error) {
 	ctx := context.TODO()
 
 	_, err := CheckObjectAccess(true, objectId, objectType, hctx)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	// Delete element set AND corresponding ownership item
@@ -29,13 +40,13 @@ func DeleteUserObject[T any](objectId string, objectType protos.ObjectType, coll
 
 	sess, err := hctx.Svcs.MongoDB.Client().StartSession()
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	defer sess.EndSession(ctx)
 
-	// Write the 2 items in a single transaction
-	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		result, err := hctx.Svcs.MongoDB.Collection(collectionName).DeleteOne(context.TODO(), bson.M{"_id": objectId})
+	// Deleting in a single transaction - we have 2 copies of this, one calls DeleteOne, the other DeleteMany
+	callbackDeleteOne := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		result, err := hctx.Svcs.MongoDB.Collection(collectionName).DeleteOne(context.TODO(), bson.M{idField: objectId})
 		if err != nil {
 			return nil, errorwithstatus.MakeBadRequestError(err)
 		}
@@ -44,7 +55,7 @@ func DeleteUserObject[T any](objectId string, objectType protos.ObjectType, coll
 			return nil, errorwithstatus.MakeNotFoundError(objectId)
 		}
 
-		result, err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteOne(context.TODO(), bson.M{"_id": objectId})
+		result, err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteOne(context.TODO(), bson.M{idField: objectId})
 		if err != nil {
 			return nil, errorwithstatus.MakeBadRequestError(err)
 		}
@@ -53,17 +64,40 @@ func DeleteUserObject[T any](objectId string, objectType protos.ObjectType, coll
 			return nil, errorwithstatus.MakeNotFoundError(objectId)
 		}
 
-		return nil, nil
+		return 1, nil
 	}
 
-	_, err = sess.WithTransaction(ctx, callback, txnOpts)
+	callbackDeleteMany := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		_, err := hctx.Svcs.MongoDB.Collection(collectionName).DeleteMany(context.TODO(), bson.M{idField: objectId})
+		if err != nil {
+			return nil, errorwithstatus.MakeBadRequestError(err)
+		}
+
+		result, err := hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteMany(context.TODO(), bson.M{idField: objectId})
+		if err != nil {
+			return nil, errorwithstatus.MakeBadRequestError(err)
+		}
+
+		return result.DeletedCount, nil
+	}
+
+	callback := callbackDeleteMany
+	if deleteOneOnly {
+		callback = callbackDeleteOne
+	}
+
+	result, err := sess.WithTransaction(ctx, callback, txnOpts)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	// Delete responses are just empty msgs
-	var resp T
-	return &resp, nil
+	delCount, ok := result.(int)
+	if !ok {
+		hctx.Svcs.Log.Errorf("Expected transaction to return delete count, but got: %v", result)
+		return 0, nil
+	}
+
+	return delCount, nil
 }
 
 func GetUserObjectById[T any](forEditing bool, objectId string, objectType protos.ObjectType, collectionName string, hctx HandlerContext) (*T, *protos.OwnershipItem, error) {
