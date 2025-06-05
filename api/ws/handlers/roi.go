@@ -206,7 +206,12 @@ func createROI(roi *protos.ROIItem, id string, hctx wsHelpers.HandlerContext, ne
 			ownerItem.Editors = &protos.UserGroupList{}
 		}
 
-		ownerItem.Editors.UserIds = editors.UserIds
+		// If the editor user (the creator) is assigned, make sure we preserve it
+		for _, id := range editors.UserIds {
+			if !utils.ItemInSlice(id, ownerItem.Editors.UserIds) {
+				ownerItem.Editors.UserIds = append(ownerItem.Editors.UserIds, id)
+			}
+		}
 		ownerItem.Editors.GroupIds = editors.GroupIds
 	}
 

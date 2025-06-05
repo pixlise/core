@@ -14,6 +14,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
+type ItemWithId struct {
+	Id string `bson:"_id,omitempty"`
+}
+
 func DeleteUserObject[T any](objectId string, objectType protos.ObjectType, collectionName string, hctx HandlerContext) (*T, error) {
 	_, err := DeleteUserObjectByIdField("_id", objectId, objectType, true, collectionName, hctx)
 	if err != nil {
@@ -25,7 +29,7 @@ func DeleteUserObject[T any](objectId string, objectType protos.ObjectType, coll
 	return &resp, nil
 }
 
-func DeleteUserObjectByIdField(idField string, objectId string, objectType protos.ObjectType, deleteOneOnly bool, collectionName string, hctx HandlerContext) (int, error) {
+func DeleteUserObjectByIdField(idField string, objectId string, objectType protos.ObjectType, deleteOneOnly bool, collectionName string, hctx HandlerContext) (int64, error) {
 	ctx := context.TODO()
 
 	_, err := CheckObjectAccess(true, objectId, objectType, hctx)
@@ -55,7 +59,7 @@ func DeleteUserObjectByIdField(idField string, objectId string, objectType proto
 			return nil, errorwithstatus.MakeNotFoundError(objectId)
 		}
 
-		result, err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteOne(context.TODO(), bson.M{idField: objectId})
+		result, err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteOne(context.TODO(), bson.M{"_id": objectId})
 		if err != nil {
 			return nil, errorwithstatus.MakeBadRequestError(err)
 		}
@@ -68,17 +72,31 @@ func DeleteUserObjectByIdField(idField string, objectId string, objectType proto
 	}
 
 	callbackDeleteMany := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		_, err := hctx.Svcs.MongoDB.Collection(collectionName).DeleteMany(context.TODO(), bson.M{idField: objectId})
+		// First, lets get the ids of the individual ROI items here
+		filter := bson.M{idField: objectId}
+		cursor, err := hctx.Svcs.MongoDB.Collection(collectionName).Find(context.TODO(), filter, options.Find().SetProjection(bson.D{{Key: "_id", Value: true}}))
+		ids := []*ItemWithId{}
+		err = cursor.All(context.TODO(), &ids)
 		if err != nil {
 			return nil, errorwithstatus.MakeBadRequestError(err)
 		}
 
-		result, err := hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteMany(context.TODO(), bson.M{idField: objectId})
+		delResult, err := hctx.Svcs.MongoDB.Collection(collectionName).DeleteMany(context.TODO(), bson.M{idField: objectId})
 		if err != nil {
 			return nil, errorwithstatus.MakeBadRequestError(err)
 		}
 
-		return result.DeletedCount, nil
+		idList := []string{}
+		for _, id := range ids {
+			idList = append(idList, id.Id)
+		}
+
+		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteMany(context.TODO(), bson.M{"_id": bson.M{"$in": idList}})
+		if err != nil {
+			return nil, errorwithstatus.MakeBadRequestError(err)
+		}
+
+		return delResult.DeletedCount, nil
 	}
 
 	callback := callbackDeleteMany
@@ -91,7 +109,7 @@ func DeleteUserObjectByIdField(idField string, objectId string, objectType proto
 		return 0, err
 	}
 
-	delCount, ok := result.(int)
+	delCount, ok := result.(int64)
 	if !ok {
 		hctx.Svcs.Log.Errorf("Expected transaction to return delete count, but got: %v", result)
 		return 0, nil
