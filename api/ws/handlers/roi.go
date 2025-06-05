@@ -603,7 +603,7 @@ func HandleRegionOfInterestBulkDuplicateReq(req *protos.RegionOfInterestBulkDupl
 		item.IsMIST = req.IsMIST
 
 		// Create new ROI
-		newROI, err := createROI(item, hctx, req.IsMIST, nil, nil)
+		newROI, err := createROI(item, "", hctx, req.IsMIST, nil, nil)
 		if err != nil {
 			return nil, err
 		}
