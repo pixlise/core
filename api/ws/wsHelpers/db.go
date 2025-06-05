@@ -29,7 +29,7 @@ func DeleteUserObject[T any](objectId string, objectType protos.ObjectType, coll
 	return &resp, nil
 }
 
-func DeleteUserObjectByIdField(idField string, objectId string, objectType protos.ObjectType, deleteOneOnly bool, collectionName string, hctx HandlerContext) (int64, error) {
+func DeleteUserObjectByIdField(idField string, objectId string, objectType protos.ObjectType, deleteOneOnly bool, collectionName string, hctx HandlerContext) ([]string, error) {
 	ctx := context.TODO()
 
 	_, err := CheckObjectAccess(true, objectId, objectType, hctx)
@@ -50,53 +50,61 @@ func DeleteUserObjectByIdField(idField string, objectId string, objectType proto
 
 	// Deleting in a single transaction - we have 2 copies of this, one calls DeleteOne, the other DeleteMany
 	callbackDeleteOne := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		txResult := []string{}
 		result, err := hctx.Svcs.MongoDB.Collection(collectionName).DeleteOne(context.TODO(), bson.M{idField: objectId})
 		if err != nil {
-			return nil, errorwithstatus.MakeBadRequestError(err)
+			return txResult, errorwithstatus.MakeBadRequestError(err)
 		}
 
 		if result.DeletedCount != 1 {
-			return nil, errorwithstatus.MakeNotFoundError(objectId)
+			return txResult, errorwithstatus.MakeNotFoundError(objectId)
 		}
 
 		result, err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteOne(context.TODO(), bson.M{"_id": objectId})
 		if err != nil {
-			return nil, errorwithstatus.MakeBadRequestError(err)
+			return txResult, errorwithstatus.MakeBadRequestError(err)
 		}
 
 		if result.DeletedCount != 1 {
-			return nil, errorwithstatus.MakeNotFoundError(objectId)
+			return txResult, errorwithstatus.MakeNotFoundError(objectId)
 		}
 
-		return 1, nil
+		txResult = append(txResult, objectId)
+		return txResult, nil
 	}
 
 	callbackDeleteMany := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		txResult := []string{}
+
 		// First, lets get the ids of the individual ROI items here
 		filter := bson.M{idField: objectId}
 		cursor, err := hctx.Svcs.MongoDB.Collection(collectionName).Find(context.TODO(), filter, options.Find().SetProjection(bson.D{{Key: "_id", Value: true}}))
 		ids := []*ItemWithId{}
 		err = cursor.All(context.TODO(), &ids)
 		if err != nil {
-			return nil, errorwithstatus.MakeBadRequestError(err)
+			return txResult, errorwithstatus.MakeBadRequestError(err)
 		}
 
 		delResult, err := hctx.Svcs.MongoDB.Collection(collectionName).DeleteMany(context.TODO(), bson.M{idField: objectId})
 		if err != nil {
-			return nil, errorwithstatus.MakeBadRequestError(err)
+			return txResult, errorwithstatus.MakeBadRequestError(err)
 		}
 
-		idList := []string{}
+		if delResult.DeletedCount != int64(len(ids)) {
+			// Just log this, nothing we can really do here
+			hctx.Svcs.Log.Errorf("Deleting bulk items for id %v, field name: %v, from collection: %v. Expected %v deletes, got %v", objectId, idField, collectionName, len(ids), delResult)
+		}
+
 		for _, id := range ids {
-			idList = append(idList, id.Id)
+			txResult = append(txResult, id.Id)
 		}
 
-		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteMany(context.TODO(), bson.M{"_id": bson.M{"$in": idList}})
+		_, err = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).DeleteMany(context.TODO(), bson.M{"_id": bson.M{"$in": txResult}})
 		if err != nil {
-			return nil, errorwithstatus.MakeBadRequestError(err)
+			return []string{}, errorwithstatus.MakeBadRequestError(err)
 		}
 
-		return delResult.DeletedCount, nil
+		return txResult, nil
 	}
 
 	callback := callbackDeleteMany
@@ -106,16 +114,16 @@ func DeleteUserObjectByIdField(idField string, objectId string, objectType proto
 
 	result, err := sess.WithTransaction(ctx, callback, txnOpts)
 	if err != nil {
-		return 0, err
+		return []string{}, err
 	}
 
-	delCount, ok := result.(int64)
+	delIds, ok := result.([]string)
 	if !ok {
 		hctx.Svcs.Log.Errorf("Expected transaction to return delete count, but got: %v", result)
-		return 0, nil
+		return []string{}, nil
 	}
 
-	return delCount, nil
+	return delIds, nil
 }
 
 func GetUserObjectById[T any](forEditing bool, objectId string, objectType protos.ObjectType, collectionName string, hctx HandlerContext) (*T, *protos.OwnershipItem, error) {
