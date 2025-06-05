@@ -34,7 +34,7 @@ func DeleteUserObjectByIdField(idField string, objectId string, objectType proto
 
 	_, err := CheckObjectAccess(true, objectId, objectType, hctx)
 	if err != nil {
-		return 0, err
+		return []string{}, err
 	}
 
 	// Delete element set AND corresponding ownership item
@@ -44,7 +44,7 @@ func DeleteUserObjectByIdField(idField string, objectId string, objectType proto
 
 	sess, err := hctx.Svcs.MongoDB.Client().StartSession()
 	if err != nil {
-		return 0, err
+		return []string{}, err
 	}
 	defer sess.EndSession(ctx)
 
