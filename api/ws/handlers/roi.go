@@ -68,7 +68,12 @@ func HandleRegionOfInterestDeleteReq(req *protos.RegionOfInterestDeleteReq, hctx
 		}, nil
 	}
 
-	return wsHelpers.DeleteUserObject[protos.RegionOfInterestDeleteResp](req.Id, protos.ObjectType_OT_ROI, dbCollections.RegionsOfInterestName, hctx)
+	resp, err := wsHelpers.DeleteUserObject[protos.RegionOfInterestDeleteResp](req.Id, protos.ObjectType_OT_ROI, dbCollections.RegionsOfInterestName, hctx)
+	if err != nil {
+		return nil, err
+	}
+	resp.DeletedIds = append(resp.DeletedIds, req.Id)
+	return resp, nil
 }
 
 func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestListResp, error) {
@@ -419,6 +424,10 @@ func HandleRegionOfInterestWriteReq(req *protos.RegionOfInterestWriteReq, hctx w
 }
 
 func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestBulkWriteResp, error) {
+	if len(req.RegionsOfInterest) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("No regions specified for creation"))
+	}
+
 	if req.IsMIST && req.MistROIScanIdsToDelete != nil && len(req.MistROIScanIdsToDelete) > 0 {
 		ctx := context.TODO()
 		coll := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName)
