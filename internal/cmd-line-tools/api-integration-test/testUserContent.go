@@ -196,7 +196,7 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 
 		u2.AddSendReqAction(fmt.Sprintf("%v Share user 1s created item", msgName),
 			fmt.Sprintf(`{"objectEditAccessReq": { "objectId": "${IDLOAD=%vCreated1}", "objectType": "%v", "addViewers": { "userIds": [ "%v" ] }}}`, msgName, msgContents.objectType, u2.GetUserId()),
-			fmt.Sprintf(`{"msgId":%v,"status":"WS_NO_PERMISSION","errorText": "Edit access denied for: %v (%v)","objectEditAccessResp":{}}`, u2ExpectedRespSeqNo, msgContents.objectType, createdId),
+			fmt.Sprintf(`{"msgId":%v,"status":"WS_NO_PERMISSION","errorText": "View access denied for: %v (%v)","objectEditAccessResp":{}}`, u2ExpectedRespSeqNo, msgContents.objectType, createdId),
 		)
 		u2ExpectedRespSeqNo++
 	}
@@ -210,6 +210,7 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 	// Back to user 1
 	u1.ClearActions()
 
+	expMsgs := []string{}
 	for msgName, msgContents := range contentMessaging {
 		u1.AddSendReqAction(fmt.Sprintf("%v Get created item for user 1", msgName),
 			fmt.Sprintf(`{"%vGetReq": { "id": "${IDLOAD=%vCreated1}"}}`, msgName, msgName),
@@ -276,6 +277,17 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 			)
 			u1ExpectedRespSeqNo++
 
+			// For ROIs only, we expect a notification coming through
+			if msgName == "regionOfInterest" {
+				expMsgs = append(expMsgs, fmt.Sprintf(`{"notificationUpd": {
+						"notification": {
+							"notificationType": "NT_SYS_DATA_CHANGED",
+							"roiId": "${IDCHK=%vCreated1}"
+						}
+					}
+				}`, msgName))
+			}
+
 			// Item has been edited
 			u1ItemsForGet[msgName] = []string{editItem[1]}
 			u1ItemsForList[msgName] = []string{editItem[2]}
@@ -327,12 +339,13 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 		}
 	}
 
-	u1.CloseActionGroup([]string{}, 60000)
+	u1.CloseActionGroup(expMsgs, 60000)
 
 	wstestlib.ExecQueuedActions(&u1)
 
 	// Test sharing by user 1
 	u1.ClearActions()
+	expMsgs = []string{}
 
 	for msgName, msgContents := range contentMessaging {
 		u1.AddSendReqAction(fmt.Sprintf("%v Get permissions for created item as user 1", msgName),
@@ -434,6 +447,7 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 
 	// Back to user 2 - we should be able to view the shared item but still not edit
 	u2.ClearActions()
+	expMsgs = []string{}
 
 	for msgName, msgContents := range contentMessaging {
 		createdId := createdItemIds[msgName][0]
@@ -497,9 +511,20 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 				u2ExpectedRespSeqNo, msgContents.objectType, createdId, msgName),
 		)
 		u2ExpectedRespSeqNo++
+
+		if msgName == "regionOfInterest" {
+			expMsgs = append(expMsgs, fmt.Sprintf(`{"notificationUpd": {
+						"notification": {
+							"notificationType": "NT_SYS_DATA_CHANGED",
+							"roiId": "${IDCHK=%vCreated1}"
+						}
+					}
+				}`, msgName))
+		}
+
 	}
 
-	u2.CloseActionGroup([]string{}, 60000)
+	u2.CloseActionGroup(expMsgs, 60000)
 
 	wstestlib.ExecQueuedActions(&u2)
 
@@ -509,9 +534,13 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 	u1.ClearActions()
 
 	for msgName := range contentMessaging {
+		delContents := ""
+		if msgName == "regionOfInterest" {
+			delContents = fmt.Sprintf("\"deletedIds\": [\"${IDCHK=%vCreated1}\"]", msgName)
+		}
 		u1.AddSendReqAction(fmt.Sprintf("%v Delete created item", msgName),
 			fmt.Sprintf(`{"%vDeleteReq": { "id": "${IDLOAD=%vCreated1}" }}`, msgName, msgName),
-			fmt.Sprintf(`{"msgId":%v,"status":"WS_OK","%vDeleteResp":{}}`, u1ExpectedRespSeqNo, msgName),
+			fmt.Sprintf(`{"msgId":%v,"status":"WS_OK","%vDeleteResp":{%v}}`, u1ExpectedRespSeqNo, msgName, delContents),
 		)
 		u1ExpectedRespSeqNo++
 

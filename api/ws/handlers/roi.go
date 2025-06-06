@@ -55,7 +55,25 @@ func HandleRegionOfInterestDeleteReq(req *protos.RegionOfInterestDeleteReq, hctx
 		}
 	}
 
-	return wsHelpers.DeleteUserObject[protos.RegionOfInterestDeleteResp](req.Id, protos.ObjectType_OT_ROI, dbCollections.RegionsOfInterestName, hctx)
+	// If the specified id is to be treated as an associatedROIId, we have to delete all ROIs that contain that id!
+	if req.IsAssociatedROIId {
+		// Use the delete version that allows specifying field and allows multiple items to be deleted
+		deletedIds, err := wsHelpers.DeleteUserObjectByIdField("associatedroiid", req.Id, protos.ObjectType_OT_ROI, false, dbCollections.RegionsOfInterestName, hctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return &protos.RegionOfInterestDeleteResp{
+			DeletedIds: deletedIds,
+		}, nil
+	}
+
+	resp, err := wsHelpers.DeleteUserObject[protos.RegionOfInterestDeleteResp](req.Id, protos.ObjectType_OT_ROI, dbCollections.RegionsOfInterestName, hctx)
+	if err != nil {
+		return nil, err
+	}
+	resp.DeletedIds = append(resp.DeletedIds, req.Id)
+	return resp, nil
 }
 
 func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestListResp, error) {
@@ -77,6 +95,7 @@ func HandleRegionOfInterestListReq(req *protos.RegionOfInterestListReq, hctx wsH
 		{Key: "tags", Value: true},
 		{Key: "modifiedunixsec", Value: true},
 		{Key: "ismist", Value: true},
+		{Key: "associatedroiid", Value: true},
 	})
 
 	cursor, err := hctx.Svcs.MongoDB.Collection(dbCollections.RegionsOfInterestName).Find(context.TODO(), filter, opts)
@@ -169,7 +188,8 @@ func validateROI(roi *protos.ROIItem) error {
 	return nil
 }
 
-func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, needMistEntry bool, editors *protos.UserGroupList, viewers *protos.UserGroupList) (*protos.ROIItem, error) {
+// id can be empty, then one is generated otherwise specify one!
+func createROI(roi *protos.ROIItem, id string, hctx wsHelpers.HandlerContext, needMistEntry bool, editors *protos.UserGroupList, viewers *protos.UserGroupList) (*protos.ROIItem, error) {
 	ctx := context.TODO()
 
 	// It's a new item, check these fields...
@@ -178,8 +198,10 @@ func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, needMistEntry
 		return nil, errorwithstatus.MakeBadRequestError(err)
 	}
 
-	// Generate a new id
-	id := hctx.Svcs.IDGen.GenObjectID()
+	// Generate a new id if needed
+	if len(id) <= 0 {
+		id = hctx.Svcs.IDGen.GenObjectID()
+	}
 	roi.Id = id
 
 	// We need to create an ownership item along with it
@@ -189,7 +211,12 @@ func createROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, needMistEntry
 			ownerItem.Editors = &protos.UserGroupList{}
 		}
 
-		ownerItem.Editors.UserIds = editors.UserIds
+		// If the editor user (the creator) is assigned, make sure we preserve it
+		for _, id := range editors.UserIds {
+			if !utils.ItemInSlice(id, ownerItem.Editors.UserIds) {
+				ownerItem.Editors.UserIds = append(ownerItem.Editors.UserIds, id)
+			}
+		}
 		ownerItem.Editors.GroupIds = editors.GroupIds
 	}
 
@@ -359,6 +386,10 @@ func updateROI(roi *protos.ROIItem, hctx wsHelpers.HandlerContext, editors *prot
 
 	// Return the merged item we validated, which in theory is in the DB now
 	dbItem.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+
+	// Notify out that this ROI has changed, in case any UIs are interested
+	hctx.Svcs.Notifier.SysNotifyROIChanged(roi.Id)
+
 	return dbItem, nil
 }
 
@@ -376,7 +407,7 @@ func HandleRegionOfInterestWriteReq(req *protos.RegionOfInterestWriteReq, hctx w
 
 	var err error
 	if len(req.RegionOfInterest.Id) <= 0 {
-		item, err = createROI(req.RegionOfInterest, hctx, req.IsMIST, nil, nil)
+		item, err = createROI(req.RegionOfInterest, "", hctx, req.IsMIST, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -393,6 +424,10 @@ func HandleRegionOfInterestWriteReq(req *protos.RegionOfInterestWriteReq, hctx w
 }
 
 func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq, hctx wsHelpers.HandlerContext) (*protos.RegionOfInterestBulkWriteResp, error) {
+	if len(req.RegionsOfInterest) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("No regions specified for creation"))
+	}
+
 	if req.IsMIST && req.MistROIScanIdsToDelete != nil && len(req.MistROIScanIdsToDelete) > 0 {
 		ctx := context.TODO()
 		coll := hctx.Svcs.MongoDB.Collection(dbCollections.MistROIsName)
@@ -460,7 +495,8 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 	}
 
 	writtenROIs := []*protos.ROIItem{}
-	for _, item := range req.RegionsOfInterest {
+	associatedROIId := ""
+	for c, item := range req.RegionsOfInterest {
 		item.Owner = nil
 		item.IsMIST = req.IsMIST
 
@@ -495,7 +531,7 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 				}
 			} else {
 				// Create new ROI
-				item, err = createROI(item, hctx, req.IsMIST, editors, viewers)
+				item, err = createROI(item, "", hctx, req.IsMIST, editors, viewers)
 				if err != nil {
 					return nil, err
 				}
@@ -524,7 +560,7 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 					continue
 				} else {
 					// Create new ROI
-					item, err = createROI(item, hctx, req.IsMIST, editors, viewers)
+					item, err = createROI(item, "", hctx, req.IsMIST, editors, viewers)
 					if err != nil {
 						return nil, err
 					}
@@ -533,7 +569,18 @@ func HandleRegionOfInterestBulkWriteReq(req *protos.RegionOfInterestBulkWriteReq
 
 		} else {
 			// Create new ROI
-			item, err = createROI(item, hctx, req.IsMIST, editors, viewers)
+			// NOTE: if writing multiple and they need to be associated in future, we specify the first id
+			//       and set that as the associated id in all items written too
+			id := ""
+			if len(req.RegionsOfInterest) > 1 {
+				if c == 0 {
+					associatedROIId = hctx.Svcs.IDGen.GenObjectID()
+					id = associatedROIId
+				}
+
+				item.AssociatedROIId = associatedROIId
+			}
+			item, err = createROI(item, id, hctx, req.IsMIST, editors, viewers)
 			if err != nil {
 				return nil, err
 			}
@@ -570,7 +617,7 @@ func HandleRegionOfInterestBulkDuplicateReq(req *protos.RegionOfInterestBulkDupl
 		item.IsMIST = req.IsMIST
 
 		// Create new ROI
-		newROI, err := createROI(item, hctx, req.IsMIST, nil, nil)
+		newROI, err := createROI(item, "", hctx, req.IsMIST, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -585,6 +632,7 @@ func HandleRegionOfInterestBulkDuplicateReq(req *protos.RegionOfInterestBulkDupl
 			Tags:            newROI.Tags,
 			ModifiedUnixSec: newROI.ModifiedUnixSec,
 			IsMIST:          newROI.IsMIST,
+			AssociatedROIId: newROI.AssociatedROIId,
 		}
 	}
 

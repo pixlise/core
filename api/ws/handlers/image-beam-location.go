@@ -9,6 +9,7 @@ import (
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
+	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -235,4 +236,120 @@ func HandleImageBeamLocationVersionsReq(req *protos.ImageBeamLocationVersionsReq
 	return &protos.ImageBeamLocationVersionsResp{
 		BeamVersionPerScan: vers,
 	}, nil
+}
+
+func HandleImageBeamLocationUploadReq(req *protos.ImageBeamLocationUploadReq, hctx wsHelpers.HandlerContext) (*protos.ImageBeamLocationUploadResp, error) {
+	ctx := context.TODO()
+
+	if err := wsHelpers.CheckStringField(&req.ImageName, "ImageName", 1, 255); err != nil {
+		return nil, err
+	}
+
+	if req.Location == nil {
+		return nil, fmt.Errorf("Request missing location")
+	}
+
+	// For now, we only allow uploading version 0 so we don't clash with FM versioning
+	if req.Location.BeamVersion != 0 {
+		return nil, fmt.Errorf("Currently only version 0 supported for image beam location upload")
+	}
+
+	// Check that it's a valid image name
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+	imgResult := coll.FindOne(ctx, bson.M{"_id": req.ImageName})
+	if imgResult.Err() != nil {
+		if imgResult.Err() == mongo.ErrNoDocuments {
+			return nil, errorwithstatus.MakeNotFoundError(req.ImageName)
+		}
+		return nil, imgResult.Err()
+	}
+
+	img := protos.ScanImage{}
+	err := imgResult.Decode(&img)
+	if err != nil {
+		return nil, err
+	}
+
+	// NOTE: Once beam location saving works, we will update the "associated scans" list for the image!!
+
+	// Check that the scan ID is valid too
+	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ScansName)
+	scanResult := coll.FindOne(ctx, bson.M{"_id": req.Location.ScanId})
+
+	if scanResult.Err() != nil {
+		if scanResult.Err() == mongo.ErrNoDocuments {
+			return nil, errorwithstatus.MakeNotFoundError(req.Location.ScanId)
+		}
+		return nil, scanResult.Err()
+	}
+
+	// Now load beam locations if any already stored.
+	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
+
+	// Read what's there now
+	var dbLocs *protos.ImageLocations
+
+	imgBeamResult := coll.FindOne(ctx, bson.M{"_id": req.ImageName})
+	if imgBeamResult.Err() != nil {
+		if imgBeamResult.Err() != mongo.ErrNoDocuments {
+			return nil, imgBeamResult.Err()
+		}
+
+		// Doesn't exist yet, that's OK - we're new, just start with a blank structure
+		dbLocs = &protos.ImageLocations{
+			ImageName:       req.ImageName,
+			LocationPerScan: []*protos.ImageLocationsForScan{},
+		}
+	} else {
+		err := imgBeamResult.Decode(&dbLocs)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Add ours to the list. If there's an existing one, overwrite it
+	added := false
+	for _, locPerScan := range dbLocs.LocationPerScan {
+		if locPerScan.ScanId == req.Location.ScanId && locPerScan.BeamVersion == req.Location.BeamVersion {
+			// Overwriting this one
+			locPerScan.Instrument = req.Location.Instrument
+			locPerScan.Locations = req.Location.Locations
+			added = true
+			break
+		}
+	}
+
+	if !added {
+		// We need to add one
+		dbLocs.LocationPerScan = append(dbLocs.LocationPerScan, req.Location)
+	}
+
+	// Now we put it back
+	opt := options.Update().SetUpsert(true)
+
+	beamResult, err := coll.UpdateByID(ctx, req.ImageName, bson.D{{Key: "$set", Value: dbLocs}}, opt)
+	if err != nil {
+		return nil, err
+	}
+
+	if beamResult.MatchedCount == 0 && beamResult.ModifiedCount == 0 {
+		hctx.Svcs.Log.Errorf("ImageBeamLocationUploadReq got unexpected image beam location upsert result: %+v", beamResult)
+	}
+
+	// Update the associated scans of the image itself
+	if !utils.ItemInSlice(req.Location.ScanId, img.AssociatedScanIds) {
+		// Add it here
+		img.AssociatedScanIds = append(img.AssociatedScanIds, req.Location.ScanId)
+
+		coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+		imgUpdResult, err := coll.UpdateByID(ctx, req.ImageName, bson.D{{Key: "$set", Value: dbLocs}}, opt)
+		if err != nil {
+			return nil, err
+		}
+		if imgUpdResult.MatchedCount == 0 && imgUpdResult.ModifiedCount == 0 {
+			hctx.Svcs.Log.Errorf("ImageBeamLocationUploadReq got unexpected image upsert result: %+v", imgUpdResult)
+		}
+	}
+
+	return &protos.ImageBeamLocationUploadResp{}, nil
 }

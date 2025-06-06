@@ -31,17 +31,28 @@ type Auth0Info struct {
 }
 
 type SocketConn struct {
-	JWT       string
-	UserId    string
-	send      chan []byte
-	recv      chan []byte
-	recvList  [][]byte // msgs received in past
-	interrupt chan os.Signal
-	done      chan struct{}
-	reqCount  uint32
+	Host         string
+	HostProtocol string
+	JWT          string
+	UserId       string
+	send         chan []byte
+	recv         chan []byte
+	recvList     [][]byte // msgs received in past
+	interrupt    chan os.Signal
+	done         chan struct{}
+	reqCount     uint32
 }
 
 const maxResponsesBuffered = 100
+
+func (s *SocketConn) GetHost(path string) (*url.URL, error) {
+	if len(s.HostProtocol) <= 0 || len(s.Host) <= 0 {
+		// Host is empty, stop here
+		return nil, fmt.Errorf("Host not set")
+	}
+
+	return &url.URL{Scheme: s.HostProtocol, Host: s.Host, Path: path}, nil
+}
 
 // Inspired by: https://tradermade.com/tutorials/golang-websocket-client
 func (s *SocketConn) Connect(connectParams ConnectInfo, auth0Params Auth0Info) error {
@@ -238,6 +249,10 @@ func (s *SocketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Au
 	if err != nil {
 		return "", err
 	}
+
+	// Remember this host for later
+	s.Host = hostUrl
+	s.HostProtocol = protocol
 
 	return respBody.ConnToken, nil
 }

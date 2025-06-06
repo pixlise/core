@@ -317,13 +317,60 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	}`}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 
+	// Upload beam locations for this image
+	u1.AddSendReqAction("Upload image beam locations with missing fields",
+		`{"imageBeamLocationUploadReq":{"imageName": "048300551/file_Name.png"}}`,
+		`{"msgId": 5,
+			"status": "WS_SERVER_ERROR",
+			"errorText": "Request missing location",
+			"imageBeamLocationUploadResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Upload image beam locations with version 1",
+		`{"imageBeamLocationUploadReq":{"imageName": "048300551/file_Name.png", "location": {
+			"scanId": "123",
+			"beamVersion": 1,
+			"instrument": 2,
+			"locations": [{"i": 3.2, "j": 8.3}, {"i": 7.2, "j": 28.3}]
+		}}}`,
+		`{"msgId": 6,
+			"status": "WS_SERVER_ERROR",
+			"errorText": "Currently only version 0 supported for image beam location upload",
+			"imageBeamLocationUploadResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Upload image beam locations non-existant scan",
+		`{"imageBeamLocationUploadReq":{"imageName": "048300551/file_Name.png", "location": {
+			"scanId": "non-existant-scan123",
+			"beamVersion": 0,
+			"instrument": 2,
+			"locations": [{"i": 3.2, "j": 8.3}, {"i": 7.2, "j": 28.3}]
+		}}}`,
+		`{"msgId": 7,
+			"status": "WS_NOT_FOUND",
+			"errorText": "non-existant-scan123 not found",
+			"imageBeamLocationUploadResp":{}}`,
+	)
+
+	u1.AddSendReqAction("Upload image beam locations should succeed",
+		fmt.Sprintf(`{"imageBeamLocationUploadReq":{"imageName": "048300551/file_Name.png", "location": {
+			"scanId": "%v",
+			"beamVersion": 0,
+			"instrument": 2,
+			"locations": [{"i": 3.2, "j": 8.3}, {"i": 7.2, "j": 28.3}]
+		}}}`, scanId),
+		`{"msgId": 8,
+			"status": "WS_OK",
+			"imageBeamLocationUploadResp":{}}`,
+	)
+
 	// Try to delete
 	u1.AddSendReqAction("Delete uploaded image, should fail because it's default",
 		`{"imageDeleteReq":{
 		"name": "048300551/file_Name.png"
 	}}`,
 		`{
-		"msgId": 5,
+		"msgId": 9,
 		"status": "WS_BAD_REQUEST",
 		"errorText": "Cannot delete image: \"048300551/file_Name.png\" because it is the default image for scans: [048300551]",
 		"imageDeleteResp": {}
@@ -333,7 +380,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	// Unset default image
 	u1.AddSendReqAction("set default image",
 		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "048300551/another.png"}}`,
-		`{"msgId":6,
+		`{"msgId": 10,
 		"status": "WS_OK",
 		"imageSetDefaultResp": {}
 	}`,
@@ -345,7 +392,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 			"name": "048300551/file_Name.png"
 		}}`,
 		`{
-			"msgId": 7,
+			"msgId": 11,
 			"status": "WS_OK",
 			"imageDeleteResp": {}
 		}`,
@@ -580,7 +627,7 @@ func testImageMatchTransform(apiHost string) {
 			Name:         "file_Name.png",
 			OriginScanId: scanId,
 			ImageData:    uploadImgPNGData,
-			Assocation: &protos.ImageUploadHttpRequest_BeamImageRef{
+			Association: &protos.ImageUploadHttpRequest_BeamImageRef{
 				BeamImageRef: &protos.ImageMatchTransform{
 					BeamImageFileName: "match_image.png",
 					XOffset:           0,

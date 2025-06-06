@@ -119,6 +119,13 @@ func getScanSpectrum(scanId string, pmc int32, spectrumType int, detector string
 	})
 }
 
+//export getScanSpectrumRangeAsMap
+func getScanSpectrumRangeAsMap(scanId string, channelStart int32, channelEnd int32, detector string) *C.char {
+	return processRequest("getScanSpectrumRangeAsMap", func() (proto.Message, error) {
+		return apiClient.GetScanSpectrumRangeAsMap(scanId, channelStart, channelEnd, detector)
+	})
+}
+
 //export listScans
 func listScans(scanId string) *C.char {
 	return processRequest("listScans", func() (proto.Message, error) { return apiClient.ListScans(scanId) })
@@ -139,9 +146,9 @@ func getScanEntryDataColumns(scanId string) *C.char {
 	return processRequest("getScanEntryDataColumns", func() (proto.Message, error) { return apiClient.GetScanEntryDataColumns(scanId) })
 }
 
-//export getScanEntryDataColumn
-func getScanEntryDataColumn(scanId string, columnName string) *C.char {
-	return processRequest("getScanEntryDataColumn", func() (proto.Message, error) { return apiClient.GetScanEntryDataColumn(scanId, columnName) })
+//export getScanEntryDataColumnAsMap
+func getScanEntryDataColumnAsMap(scanId string, columnName string) *C.char {
+	return processRequest("getScanEntryDataColumnAsMap", func() (proto.Message, error) { return apiClient.GetScanEntryDataColumnAsMap(scanId, columnName) })
 }
 
 //export listScanQuants
@@ -175,6 +182,20 @@ func listScanROIs(scanId string) *C.char {
 //export getROI
 func getROI(id string, isMist bool) *C.char {
 	return processRequest("getROI", func() (proto.Message, error) { return apiClient.GetROI(id, isMist) })
+}
+
+//export deleteROI
+func deleteROI(id string) *C.char {
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	err := apiClient.DeleteROI(id)
+	if err != nil {
+		return C.CString(fmt.Sprintf("deleteROI error: %v", err))
+	}
+
+	return emptyCString
 }
 
 //export getScanBeamLocations
@@ -216,14 +237,28 @@ func getDiffractionPeaks(scanId string, calibrationSource int) *C.char {
 	})
 }
 
+//export getDiffractionAsMap
+func getDiffractionAsMap(scanId string, calibrationSource int, channelStart int32, channelEnd int32) *C.char {
+	return processRequest("getDiffractionAsMap", func() (proto.Message, error) {
+		return apiClient.GetDiffractionAsMap(scanId, protos.EnergyCalibrationSource(calibrationSource), channelStart, channelEnd)
+	})
+}
+
+//export getRoughnessAsMap
+func getRoughnessAsMap(scanId string, calibrationSource int) *C.char {
+	return processRequest("getRoughnessAsMap", func() (proto.Message, error) {
+		return apiClient.GetRoughnessAsMap(scanId, protos.EnergyCalibrationSource(calibrationSource))
+	})
+}
+
 //export getQuantColumns
 func getQuantColumns(quantId string) *C.char {
 	return processRequest("getQuantColumns", func() (proto.Message, error) { return apiClient.GetQuantColumns(quantId) })
 }
 
-//export getQuantColumn
-func getQuantColumn(quantId string, columnName string, detector string) *C.char {
-	return processRequest("getQuantColumn", func() (proto.Message, error) { return apiClient.GetQuantColumn(quantId, columnName, detector) })
+//export getQuantColumnAsMap
+func getQuantColumnAsMap(quantId string, columnName string, detector string) *C.char {
+	return processRequest("getQuantColumnAsMap", func() (proto.Message, error) { return apiClient.GetQuantColumnAsMap(quantId, columnName, detector) })
 }
 
 //export createROI
@@ -236,6 +271,98 @@ func createROI(roiBuff string, isMist bool) *C.char {
 	}
 
 	return processRequest("createROI", func() (proto.Message, error) { return apiClient.CreateROI(roiItem, isMist) })
+}
+
+//export saveMapData
+func saveMapData(key string, dataBuff string) *C.char {
+	// Here we can read the data string as a protobuf message and create the right structure
+	mapItem := &protos.ClientMap{}
+	err := protojson.Unmarshal([]byte(dataBuff), mapItem)
+	if err != nil {
+		return C.CString(fmt.Sprintf("saveMapData: Failed to decode data: %v", err))
+	}
+
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	err = apiClient.SaveMapData(key, mapItem)
+	if err != nil {
+		return C.CString(fmt.Sprintf("saveMapData error: %v", err))
+	}
+
+	return emptyCString
+}
+
+//export loadMapData
+func loadMapData(key string) *C.char {
+	return processRequest("loadMapData", func() (proto.Message, error) { return apiClient.LoadMapData(key) })
+}
+
+//export uploadImage
+func uploadImage(imageUpload string) *C.char {
+	// Here we can read the data string as a protobuf message and create the right structure
+	upload := &protos.ImageUploadHttpRequest{}
+	err := protojson.Unmarshal([]byte(imageUpload), upload)
+	if err != nil {
+		return C.CString(fmt.Sprintf("uploadImage: Failed to decode imageUpload: %v", err))
+	}
+
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	err = apiClient.UploadImage(upload)
+	if err != nil {
+		return C.CString(fmt.Sprintf("uploadImage error: %v", err))
+	}
+
+	return emptyCString
+}
+
+//export deleteImage
+func deleteImage(imageName string) *C.char {
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	err := apiClient.DeleteImage(imageName)
+	if err != nil {
+		return C.CString(fmt.Sprintf("deleteImage error: %v", err))
+	}
+
+	return emptyCString
+}
+
+//export getTag
+func getTag(tagId string) *C.char {
+	return processRequest("getTag", func() (proto.Message, error) { return apiClient.GetTag(tagId) })
+}
+
+//export getTagByName
+func getTagByName(tagName string) *C.char {
+	return processRequest("getTagByName", func() (proto.Message, error) { return apiClient.GetTagByName(tagName) })
+}
+
+//export uploadImageBeamLocations
+func uploadImageBeamLocations(imageName string, locationsForScanBuff string) *C.char {
+	// Here we can read the data string as a protobuf message and create the right structure
+	locForScan := &protos.ImageLocationsForScan{}
+	err := protojson.Unmarshal([]byte(locationsForScanBuff), locForScan)
+	if err != nil {
+		return C.CString(fmt.Sprintf("uploadImageBeamLocations: Failed to decode locationsForScanBuff: %v", err))
+	}
+
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	err = apiClient.UploadImageBeamLocations(imageName, locForScan)
+	if err != nil {
+		return C.CString(fmt.Sprintf("uploadImageBeamLocations error: %v", err))
+	}
+
+	return emptyCString
 }
 
 func main() {
