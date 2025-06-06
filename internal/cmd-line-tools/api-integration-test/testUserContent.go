@@ -536,7 +536,7 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 	for msgName := range contentMessaging {
 		delContents := ""
 		if msgName == "regionOfInterest" {
-			delContents = "\"deletedIds\": [\"${IDCHK=%vCreated1}\"]"
+			delContents = fmt.Sprintf("\"deletedIds\": [\"${IDCHK=%vCreated1}\"]", msgName)
 		}
 		u1.AddSendReqAction(fmt.Sprintf("%v Delete created item", msgName),
 			fmt.Sprintf(`{"%vDeleteReq": { "id": "${IDLOAD=%vCreated1}" }}`, msgName, msgName),
