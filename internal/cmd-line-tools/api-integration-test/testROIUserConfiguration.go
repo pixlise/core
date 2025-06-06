@@ -129,7 +129,7 @@ func testROIUserConfiguration(apiHost string) {
 
 	u1.AddSendReqAction("Delete ROI",
 		`{"regionOfInterestDeleteReq":{"id": "${IDLOAD=ROI_USER_CONFIG_SAVED_ID}"}}`,
-		`{"msgId":5,"status":"WS_OK", "regionOfInterestDeleteResp":{}}`,
+		`{"msgId":5,"status":"WS_OK", "regionOfInterestDeleteResp":{"deletedIds": ["${IDCHK=ROI_USER_CONFIG_SAVED_ID}"]}}`,
 	)
 
 	u1.CloseActionGroup([]string{}, 5000)

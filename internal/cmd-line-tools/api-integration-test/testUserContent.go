@@ -534,9 +534,13 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 	u1.ClearActions()
 
 	for msgName := range contentMessaging {
+		delContents := ""
+		if msgName == "regionOfInterest" {
+			delContents = fmt.Sprintf("\"deletedIds\": [\"${IDCHK=%vCreated1}\"]", msgName)
+		}
 		u1.AddSendReqAction(fmt.Sprintf("%v Delete created item", msgName),
 			fmt.Sprintf(`{"%vDeleteReq": { "id": "${IDLOAD=%vCreated1}" }}`, msgName, msgName),
-			fmt.Sprintf(`{"msgId":%v,"status":"WS_OK","%vDeleteResp":{}}`, u1ExpectedRespSeqNo, msgName),
+			fmt.Sprintf(`{"msgId":%v,"status":"WS_OK","%vDeleteResp":{%v}}`, u1ExpectedRespSeqNo, msgName, delContents),
 		)
 		u1ExpectedRespSeqNo++
 
