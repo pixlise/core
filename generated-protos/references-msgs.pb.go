@@ -297,6 +297,109 @@ func (x *ReferenceDataWriteResp) GetReferenceData() *ReferenceData {
 }
 
 // requires(EDIT_TAGS)
+type ReferenceDataBulkWriteReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ReferenceData []*ReferenceData `protobuf:"bytes,1,rep,name=referenceData,proto3" json:"referenceData,omitempty"`
+	MatchByFields bool             `protobuf:"varint,2,opt,name=matchByFields,proto3" json:"matchByFields,omitempty"`
+}
+
+func (x *ReferenceDataBulkWriteReq) Reset() {
+	*x = ReferenceDataBulkWriteReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_references_msgs_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ReferenceDataBulkWriteReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReferenceDataBulkWriteReq) ProtoMessage() {}
+
+func (x *ReferenceDataBulkWriteReq) ProtoReflect() protoreflect.Message {
+	mi := &file_references_msgs_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReferenceDataBulkWriteReq.ProtoReflect.Descriptor instead.
+func (*ReferenceDataBulkWriteReq) Descriptor() ([]byte, []int) {
+	return file_references_msgs_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ReferenceDataBulkWriteReq) GetReferenceData() []*ReferenceData {
+	if x != nil {
+		return x.ReferenceData
+	}
+	return nil
+}
+
+func (x *ReferenceDataBulkWriteReq) GetMatchByFields() bool {
+	if x != nil {
+		return x.MatchByFields
+	}
+	return false
+}
+
+type ReferenceDataBulkWriteResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ReferenceData []*ReferenceData `protobuf:"bytes,1,rep,name=referenceData,proto3" json:"referenceData,omitempty"`
+}
+
+func (x *ReferenceDataBulkWriteResp) Reset() {
+	*x = ReferenceDataBulkWriteResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_references_msgs_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ReferenceDataBulkWriteResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReferenceDataBulkWriteResp) ProtoMessage() {}
+
+func (x *ReferenceDataBulkWriteResp) ProtoReflect() protoreflect.Message {
+	mi := &file_references_msgs_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReferenceDataBulkWriteResp.ProtoReflect.Descriptor instead.
+func (*ReferenceDataBulkWriteResp) Descriptor() ([]byte, []int) {
+	return file_references_msgs_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ReferenceDataBulkWriteResp) GetReferenceData() []*ReferenceData {
+	if x != nil {
+		return x.ReferenceData
+	}
+	return nil
+}
+
+// requires(EDIT_TAGS)
 type ReferenceDataDeleteReq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -308,7 +411,7 @@ type ReferenceDataDeleteReq struct {
 func (x *ReferenceDataDeleteReq) Reset() {
 	*x = ReferenceDataDeleteReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_references_msgs_proto_msgTypes[6]
+		mi := &file_references_msgs_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -321,7 +424,7 @@ func (x *ReferenceDataDeleteReq) String() string {
 func (*ReferenceDataDeleteReq) ProtoMessage() {}
 
 func (x *ReferenceDataDeleteReq) ProtoReflect() protoreflect.Message {
-	mi := &file_references_msgs_proto_msgTypes[6]
+	mi := &file_references_msgs_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -334,7 +437,7 @@ func (x *ReferenceDataDeleteReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReferenceDataDeleteReq.ProtoReflect.Descriptor instead.
 func (*ReferenceDataDeleteReq) Descriptor() ([]byte, []int) {
-	return file_references_msgs_proto_rawDescGZIP(), []int{6}
+	return file_references_msgs_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ReferenceDataDeleteReq) GetId() string {
@@ -353,7 +456,7 @@ type ReferenceDataDeleteResp struct {
 func (x *ReferenceDataDeleteResp) Reset() {
 	*x = ReferenceDataDeleteResp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_references_msgs_proto_msgTypes[7]
+		mi := &file_references_msgs_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -366,7 +469,7 @@ func (x *ReferenceDataDeleteResp) String() string {
 func (*ReferenceDataDeleteResp) ProtoMessage() {}
 
 func (x *ReferenceDataDeleteResp) ProtoReflect() protoreflect.Message {
-	mi := &file_references_msgs_proto_msgTypes[7]
+	mi := &file_references_msgs_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -379,7 +482,7 @@ func (x *ReferenceDataDeleteResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReferenceDataDeleteResp.ProtoReflect.Descriptor instead.
 func (*ReferenceDataDeleteResp) Descriptor() ([]byte, []int) {
-	return file_references_msgs_proto_rawDescGZIP(), []int{7}
+	return file_references_msgs_proto_rawDescGZIP(), []int{9}
 }
 
 var File_references_msgs_proto protoreflect.FileDescriptor
@@ -411,12 +514,25 @@ var file_references_msgs_proto_rawDesc = []byte{
 	0x0a, 0x0d, 0x72, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63,
 	0x65, 0x44, 0x61, 0x74, 0x61, 0x52, 0x0d, 0x72, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65,
-	0x44, 0x61, 0x74, 0x61, 0x22, 0x28, 0x0a, 0x16, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63,
-	0x65, 0x44, 0x61, 0x74, 0x61, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x12, 0x0e,
-	0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x19,
-	0x0a, 0x17, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x44,
-	0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x44, 0x61, 0x74, 0x61, 0x22, 0x77, 0x0a, 0x19, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63,
+	0x65, 0x44, 0x61, 0x74, 0x61, 0x42, 0x75, 0x6c, 0x6b, 0x57, 0x72, 0x69, 0x74, 0x65, 0x52, 0x65,
+	0x71, 0x12, 0x34, 0x0a, 0x0d, 0x72, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x44, 0x61,
+	0x74, 0x61, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x52, 0x65, 0x66, 0x65, 0x72,
+	0x65, 0x6e, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x52, 0x0d, 0x72, 0x65, 0x66, 0x65, 0x72, 0x65,
+	0x6e, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x12, 0x24, 0x0a, 0x0d, 0x6d, 0x61, 0x74, 0x63, 0x68,
+	0x42, 0x79, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0d,
+	0x6d, 0x61, 0x74, 0x63, 0x68, 0x42, 0x79, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x73, 0x22, 0x52, 0x0a,
+	0x1a, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x42, 0x75,
+	0x6c, 0x6b, 0x57, 0x72, 0x69, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x12, 0x34, 0x0a, 0x0d, 0x72,
+	0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20, 0x03,
+	0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x44, 0x61,
+	0x74, 0x61, 0x52, 0x0d, 0x72, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x44, 0x61, 0x74,
+	0x61, 0x22, 0x28, 0x0a, 0x16, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x44, 0x61,
+	0x74, 0x61, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x12, 0x0e, 0x0a, 0x02, 0x69,
+	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x19, 0x0a, 0x17, 0x52,
+	0x65, 0x66, 0x65, 0x72, 0x65, 0x6e, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x44, 0x65, 0x6c, 0x65,
+	0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -431,28 +547,32 @@ func file_references_msgs_proto_rawDescGZIP() []byte {
 	return file_references_msgs_proto_rawDescData
 }
 
-var file_references_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_references_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_references_msgs_proto_goTypes = []interface{}{
-	(*ReferenceDataListReq)(nil),    // 0: ReferenceDataListReq
-	(*ReferenceDataListResp)(nil),   // 1: ReferenceDataListResp
-	(*ReferenceDataGetReq)(nil),     // 2: ReferenceDataGetReq
-	(*ReferenceDataGetResp)(nil),    // 3: ReferenceDataGetResp
-	(*ReferenceDataWriteReq)(nil),   // 4: ReferenceDataWriteReq
-	(*ReferenceDataWriteResp)(nil),  // 5: ReferenceDataWriteResp
-	(*ReferenceDataDeleteReq)(nil),  // 6: ReferenceDataDeleteReq
-	(*ReferenceDataDeleteResp)(nil), // 7: ReferenceDataDeleteResp
-	(*ReferenceData)(nil),           // 8: ReferenceData
+	(*ReferenceDataListReq)(nil),       // 0: ReferenceDataListReq
+	(*ReferenceDataListResp)(nil),      // 1: ReferenceDataListResp
+	(*ReferenceDataGetReq)(nil),        // 2: ReferenceDataGetReq
+	(*ReferenceDataGetResp)(nil),       // 3: ReferenceDataGetResp
+	(*ReferenceDataWriteReq)(nil),      // 4: ReferenceDataWriteReq
+	(*ReferenceDataWriteResp)(nil),     // 5: ReferenceDataWriteResp
+	(*ReferenceDataBulkWriteReq)(nil),  // 6: ReferenceDataBulkWriteReq
+	(*ReferenceDataBulkWriteResp)(nil), // 7: ReferenceDataBulkWriteResp
+	(*ReferenceDataDeleteReq)(nil),     // 8: ReferenceDataDeleteReq
+	(*ReferenceDataDeleteResp)(nil),    // 9: ReferenceDataDeleteResp
+	(*ReferenceData)(nil),              // 10: ReferenceData
 }
 var file_references_msgs_proto_depIdxs = []int32{
-	8, // 0: ReferenceDataListResp.referenceData:type_name -> ReferenceData
-	8, // 1: ReferenceDataGetResp.referenceData:type_name -> ReferenceData
-	8, // 2: ReferenceDataWriteReq.referenceData:type_name -> ReferenceData
-	8, // 3: ReferenceDataWriteResp.referenceData:type_name -> ReferenceData
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	10, // 0: ReferenceDataListResp.referenceData:type_name -> ReferenceData
+	10, // 1: ReferenceDataGetResp.referenceData:type_name -> ReferenceData
+	10, // 2: ReferenceDataWriteReq.referenceData:type_name -> ReferenceData
+	10, // 3: ReferenceDataWriteResp.referenceData:type_name -> ReferenceData
+	10, // 4: ReferenceDataBulkWriteReq.referenceData:type_name -> ReferenceData
+	10, // 5: ReferenceDataBulkWriteResp.referenceData:type_name -> ReferenceData
+	6,  // [6:6] is the sub-list for method output_type
+	6,  // [6:6] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_references_msgs_proto_init() }
@@ -535,7 +655,7 @@ func file_references_msgs_proto_init() {
 			}
 		}
 		file_references_msgs_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReferenceDataDeleteReq); i {
+			switch v := v.(*ReferenceDataBulkWriteReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -547,6 +667,30 @@ func file_references_msgs_proto_init() {
 			}
 		}
 		file_references_msgs_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ReferenceDataBulkWriteResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_references_msgs_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ReferenceDataDeleteReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_references_msgs_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ReferenceDataDeleteResp); i {
 			case 0:
 				return &v.state
@@ -565,7 +709,7 @@ func file_references_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_references_msgs_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -176,3 +176,42 @@ func HandleReferenceDataWriteReq(req *protos.ReferenceDataWriteReq, hctx wsHelpe
 		ReferenceData: req.ReferenceData,
 	}, nil
 }
+
+func HandleReferenceDataBulkWriteReq(req *protos.ReferenceDataBulkWriteReq, hctx wsHelpers.HandlerContext) (*protos.ReferenceDataBulkWriteResp, error) {
+	if req.ReferenceData == nil {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("ReferenceData must be specified"))
+	}
+
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ReferencesName)
+
+	if req.MatchByFields {
+		// Check if the items exist
+		for _, item := range req.ReferenceData {
+			existsResult := coll.FindOne(ctx, bson.D{{Key: "mineralsamplename", Value: item.MineralSampleName}, {Key: "category", Value: item.Category}, {Key: "group", Value: item.Group}})
+			if existsResult.Err() != nil {
+				// If the item doesn't exist, we'll just insert it
+				if existsResult.Err() == mongo.ErrNoDocuments {
+					continue
+				}
+				return nil, existsResult.Err()
+			}
+			// Update the id with the existing id so we can use it to update the document
+			var decodedItem protos.ReferenceData
+			err := existsResult.Decode(&decodedItem)
+			if err != nil {
+				return nil, err
+			}
+			item.Id = decodedItem.Id
+		}
+	}
+
+	// Insert or update the items
+	for _, item := range req.ReferenceData {
+		if _, err := coll.UpdateOne(ctx, bson.D{{Key: "_id", Value: item.Id}}, bson.D{{Key: "$set", Value: item}}, options.Update().SetUpsert(true)); err != nil {
+			return nil, err
+		}
+	}
+
+	return &protos.ReferenceDataBulkWriteResp{ReferenceData: req.ReferenceData}, nil
+}
