@@ -192,6 +192,7 @@ func HandleReferenceDataBulkWriteReq(req *protos.ReferenceDataBulkWriteReq, hctx
 			if existsResult.Err() != nil {
 				// If the item doesn't exist, we'll just insert it
 				if existsResult.Err() == mongo.ErrNoDocuments {
+					item.Id = hctx.Svcs.IDGen.GenObjectID()
 					continue
 				}
 				return nil, existsResult.Err()
