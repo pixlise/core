@@ -25,6 +25,7 @@ const OwnershipName = "ownership"
 const PiquantVersionName = "piquantVersion"
 const QuantificationsName = "quantifications"
 const QuantificationZStacksName = "quantificationZStacks"
+const ReferencesName = "references"
 const RegionsOfInterestName = "regionsOfInterest"
 const ScanAutoShareName = "scanAutoShare"
 const ScanDefaultImagesName = "scanDefaultImages"
@@ -56,6 +57,7 @@ func GetAllCollections() []string {
 		ImageBeamLocationsName,
 		ImagesName,
 		JobStatusName,
+		JobHandlersName,
 		MemoisedItemsName,
 		MistROIsName,
 		ModulesName,
@@ -65,6 +67,7 @@ func GetAllCollections() []string {
 		PiquantVersionName,
 		QuantificationsName,
 		QuantificationZStacksName,
+		ReferencesName,
 		RegionsOfInterestName,
 		ScanAutoShareName,
 		ScanDefaultImagesName,
@@ -75,7 +78,9 @@ func GetAllCollections() []string {
 		UserGroupJoinRequestsName,
 		UserGroupsName,
 		UserROIDisplaySettings,
+		UserExpressionDisplaySettings,
 		UsersName,
+		UserImpersonatorsName,
 		ViewStatesName,
 		WidgetDataName,
 		ConnectTempTokensName,
