@@ -176,6 +176,7 @@ func runLocalTests(apiHost string, isCI bool) {
 	testImageUpload(apiHost, u1Id, u2Id)
 	testImageMatchTransform(apiHost)
 	testSelectionMsgs(apiHost)
+	testNormalROIBulkWrite(apiHost)
 	testQuants(apiHost, !isCI) // We only run the tests that need to start PIQUANT outside of CI for now
 	testDiffractionManualPeaks(apiHost)
 	testDiffractionStatus(apiHost)
