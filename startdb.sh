@@ -1,6 +1,14 @@
 #!/bin/bash
 
-aws s3 sync s3://pixlise-backup/DB/pixlise-prodv4/ ./db-restore/
+if [ -z "$1" ]; then
+    echo "Syncing all db files..."
+    aws s3 sync s3://pixlise-backup/DB/pixlise-prodv4/ ./db-restore/
+else
+    echo "Syncing all db files excluding '$1'..."
+    aws s3 sync --exclude $1.* s3://pixlise-backup/DB/pixlise-prodv4/ ./db-restore/
+    rm ./db-restore/$1.*
+fi
+
 
 # Start Mongo
 # Initiate a replica set (rs.initiate())

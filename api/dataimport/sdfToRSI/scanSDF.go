@@ -115,6 +115,12 @@ func scanSDF(sdfPath string) ([]EventEntry, error) {
 			refs = append(refs, EventEntry{Line: lineNo, What: "science", Value: "end"})
 		}
 
+		// For scans that are prematurely ended, we may not get the above, so treat the scan log printing out
+		// less points than actual as a science end!
+		if isPrematureEnd(lineData) {
+			refs = append(refs, EventEntry{Line: lineNo, What: "science", Value: "end"})
+		}
+
 		if strings.Contains(lineData, "Open the Dust Cover\"") {
 			refs = append(refs, EventEntry{Line: lineNo, What: "dust-cover", Value: "opening"})
 		}
@@ -140,6 +146,37 @@ func scanSDF(sdfPath string) ([]EventEntry, error) {
 	}
 
 	return refs, nil
+}
+
+func isPrematureEnd(lineData string) bool {
+	// Example line:
+	// Planned Points:         2339   Actual:    761
+	plannedToken := "Planned Points:"
+	actualToken := "Actual:"
+
+	plannedPtsIdx := strings.Index(lineData, plannedToken)
+	actualPtsIdx := strings.Index(lineData, actualToken)
+
+	if plannedPtsIdx > -1 && actualPtsIdx > plannedPtsIdx {
+		plannedPtsIdx += len(plannedToken)
+
+		// Check further... does the point count differ?
+		plannedPtsStr := strings.Trim(lineData[plannedPtsIdx:actualPtsIdx], " \t")
+
+		actualPtsIdx += len(actualToken)
+		actualPtsStr := strings.Trim(lineData[actualPtsIdx:], " \r\n\t")
+
+		plannedPts, err := strconv.Atoi(plannedPtsStr)
+		if err == nil {
+			actualPts, err := strconv.Atoi(actualPtsStr)
+			if err == nil {
+				// Both are ints, check!
+				return plannedPts > actualPts
+			}
+		}
+	}
+
+	return false
 }
 
 func readRTT(tok string) (int64, error) {

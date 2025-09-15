@@ -58,7 +58,13 @@ func logHandlerErrors(err error, log logger.ILogger, w http.ResponseWriter, r *h
 	case errorwithstatus.Error:
 		// We can retrieve the status here and write out a specific
 		// HTTP status code.
-		log.Errorf("Request: %v (%v), Result: status=%v, error=%v", r.URL, r.Method, e.Status(), e)
+		// Memoisation spams this a lot, we can switch this to debug level for those
+		err := fmt.Sprintf("Request: %v (%v), Result: status=%v, error=%v", r.URL, r.Method, e.Status(), e)
+		if strings.HasPrefix(r.URL.String(), "/memoise?key=") && r.Method == "GET" {
+			log.Debugf(err)
+		} else {
+			log.Errorf(err)
+		}
 		http.Error(w, e.Error(), e.Status())
 	default:
 		log.Errorf("Request: %v (%v), Result: status=%v, error=%v", r.URL, r.Method, http.StatusInternalServerError, e)
