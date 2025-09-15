@@ -168,7 +168,7 @@ func Example_makeBulkMaxSpectra() {
 	// [3]=meta [DETECTOR_ID:B/s LIVETIME:9.75/f OFFSET:50/f PMC:3/i READTYPE:MaxValue/s SOURCEFILE:GeneratedByPIXLISEConverter/s XPERCHAN:40/f] spectrum [21 22 23]
 }
 
-func Example_EVCalibrationOverride() {
+func Example_jplbreadboard_EVCalibrationOverride() {
 	spectrumLookup := dataConvertModels.DetectorSampleByPMC{
 		1: []dataConvertModels.DetectorSample{
 			dataConvertModels.DetectorSample{
