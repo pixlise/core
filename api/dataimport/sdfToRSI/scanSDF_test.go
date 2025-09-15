@@ -49,3 +49,16 @@ func Example_scanSDF() {
 	// 276000: science: 'end'
 	//
 }
+
+func Example_isPrematureEnd() {
+	fmt.Printf("end: %v\n", isPrematureEnd("     Planned Points:         2339   Actual:    761"))
+	fmt.Printf("end: %v\n", isPrematureEnd("     Planned Points:         2339   Actual:    761 "))
+	fmt.Printf("end: %v\n", isPrematureEnd("     Planned Points:         2339   Actual:    761\n"))
+	fmt.Printf("end: %v\n", isPrematureEnd("     Planned Points:         2339   Actual:    7611"))
+
+	// Output:
+	// end: true
+	// end: true
+	// end: true
+	// end: false
+}

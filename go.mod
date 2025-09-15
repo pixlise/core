@@ -1,6 +1,8 @@
 module github.com/pixlise/core/v4
 
-go 1.21
+go 1.22
+
+toolchain go1.24.4
 
 require (
 	github.com/auth0-community/go-auth0 v1.0.0
@@ -18,7 +20,7 @@ require (
 	go.mongodb.org/mongo-driver v1.16.0
 	golang.org/x/exp v0.0.0-20240529005216-23cca8864a10
 	golang.org/x/image v0.9.0
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.36.6
 	gopkg.in/auth0.v4 v4.7.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	k8s.io/api v0.28.4
@@ -38,7 +40,7 @@ require (
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect

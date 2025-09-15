@@ -157,15 +157,22 @@ func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath str
 		out := strings.Builder{}
 		err = nil
 		if tok == "gv" {
+			sliSpotlistFilenameToken := "Filename token: \"_MCC_SLI_SpotList_BF\""
 			if state != "gv" {
 				// NOTE: we ignore gv until we find startTok on the line - we then expect/read gv lines until they stop coming
-				startTok := "Filename token: \"_MCC_SLI_SpotList_BF\""
-
-				if strings.HasSuffix(lineData, startTok) {
+				if strings.HasSuffix(lineData, sliSpotlistFilenameToken) {
 					state = "gv" // expect gv from now
 					continue
 				} else {
 					// We're not interested in this gv
+					continue
+				}
+			} else {
+				// We're already in state=gv so reading lines for MCC_SLI_SpotList_BF already...
+				// but there's a chance it's the start of another file name. Check for this
+				startTok := "Filename token: \""
+				if (strings.Contains(lineData, startTok)) && !strings.HasSuffix(lineData, sliSpotlistFilenameToken) {
+					state = "" // yep we've ended our state reading, stop here
 					continue
 				}
 			}

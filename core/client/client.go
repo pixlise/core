@@ -576,7 +576,6 @@ func (c *APIClient) GetQuantColumnAsMap(quantId string, columnName string, detec
 	columnType := protos.Quantification_QT_FLOAT
 	for i, l := range quant.Data.Labels {
 		if l == columnName {
-			fmt.Println(l)
 			// We've found our column!
 			columnIdx = i
 			columnType = quant.Data.Types[i]
