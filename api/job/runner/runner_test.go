@@ -9,7 +9,7 @@ import (
 	"github.com/pixlise/core/v4/core/fileaccess"
 )
 
-func Example_RunJob_NoConfig() {
+func Example_jobrunner_RunJob_NoConfig() {
 	os.Setenv(JobConfigEnvVar, "")
 	fmt.Printf("%v\n", RunJob(false))
 
@@ -17,7 +17,7 @@ func Example_RunJob_NoConfig() {
 	// JOB_CONFIG env var not set
 }
 
-func Example_RunJob_BadConfig() {
+func Example_jobrunner_RunJob_BadConfig() {
 	os.Setenv(JobConfigEnvVar, "{ \"Some\": \"unfinished JSON }")
 	fmt.Printf("%v\n", RunJob(false))
 
@@ -25,7 +25,7 @@ func Example_RunJob_BadConfig() {
 	// Failed to parse env var JOB_CONFIG: unexpected end of JSON input
 }
 
-func Example_RunJob_NoCommand() {
+func Example_jobrunner_RunJob_NoCommand() {
 	cfg := JobConfig{
 		JobId: "Job001",
 	}
@@ -44,7 +44,7 @@ func Example_RunJob_NoCommand() {
 	// Job: No command specified
 }
 
-func Example_RunJob_BadInputLocalPath() {
+func Example_jobrunner_RunJob_BadInputLocalPath() {
 	cfg := JobConfig{
 		JobId:         "Job001",
 		RequiredFiles: []JobFilePath{{LocalPath: "", RemoteBucket: "test-piquant", RemotePath: "jobs/Job001/input.csv"}},
@@ -68,7 +68,7 @@ func Example_RunJob_BadInputLocalPath() {
 	// Job: No localPath specified
 }
 
-func Example_RunJob_BadInputRemotePath() {
+func Example_jobrunner_RunJob_BadInputRemotePath() {
 	cfg := JobConfig{
 		JobId:         "Job001",
 		RequiredFiles: []JobFilePath{{LocalPath: "input.csv", RemoteBucket: "test-piquant", RemotePath: "jobs/Job001/input.csv"}},
@@ -93,7 +93,7 @@ func Example_RunJob_BadInputRemotePath() {
 	// Job: Failed to download s3://test-piquant/jobs/Job001/input.csv: Not found
 }
 
-func Example_RunJob_UploadNotThere() {
+func Example_jobrunner_RunJob_UploadNotThere() {
 	cfg := JobConfig{
 		JobId:   "Job001",
 		Command: NoOpCommand,
@@ -121,7 +121,7 @@ func Example_RunJob_UploadNotThere() {
 	// Job: Job Job001 failed to generate/upload output files: nofile.txt
 }
 
-func Example_RunJob_DownloadUploadOK() {
+func Example_jobrunner_RunJob_DownloadUploadOK() {
 	// Before we do anything, ensure the file is in S3
 	sess, err := awsutil.GetSession()
 	fmt.Printf("GetSession: %v\n", err)

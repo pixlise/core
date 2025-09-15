@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func Example_CollectGarbage() {
+func Example_memoisation_CollectGarbage() {
 	db := wstestlib.GetDB()
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.MemoisedItemsName)

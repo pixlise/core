@@ -471,7 +471,7 @@ func Example_importForTrigger_Manual_SBU() {
 }
 
 // Import a breadboard dataset from manual uploaded zip file
-func Example_ImportForTrigger_Manual_SBU_NoAutoShare() {
+func Example_dataimport_ImportForTrigger_Manual_SBU_NoAutoShare() {
 	remoteFS, log, configBucket, datasetBucket, manualBucket, db := initTest("Manual_SBU_NoAutoShare", "Manual_OK2", specialUserIds.JPLImport, "JPLTestUserGroupId")
 
 	trigger := `{

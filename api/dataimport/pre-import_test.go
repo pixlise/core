@@ -28,7 +28,7 @@ import (
 )
 
 // Trigger for a manual dataset regeneration (user clicks save button on dataset edit page)
-func Example_ProcessEM() {
+func Example_dataimport_ProcessEM() {
 	p := "./test-data/PreImport/20240805_EM_V8.2_ATP_Test_65_A_Day_in_the_Life.zip"
 	zFile, err := os.ReadFile(p)
 
