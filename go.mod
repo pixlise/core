@@ -1,6 +1,6 @@
 module github.com/pixlise/core/v4
 
-go 1.21
+go 1.22
 
 toolchain go1.24.4
 
