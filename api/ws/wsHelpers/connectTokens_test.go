@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func Example_ConnectTokens() {
+func Example_wsHelpers_ConnectTokens() {
 	db := wstestlib.GetDB()
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.ConnectTempTokensName)

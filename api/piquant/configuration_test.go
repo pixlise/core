@@ -2,7 +2,7 @@ package piquant
 
 import "fmt"
 
-func Example_ReadFieldFromPIQUANTConfigMSA() {
+func Example_piquant_ReadFieldFromPIQUANTConfigMSA() {
 	piquantMSA := `##INCSR      : 0.0152   Solid angle from source in steradians (can include normalization for optic file - use this for tuning 0.00355)
 ##INCANGLE   : 90.00   Incident angle of primary X-ray beam in degrees (90 is normal incidence)
 #ELEVANGLE   : 48.03   Elevation angle of detector, in degrees (90 is normal to surface)

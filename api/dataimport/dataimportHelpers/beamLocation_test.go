@@ -159,7 +159,7 @@ func Example_parseBeamLocations() {
 }
 
 // This is kind of redunant, was already tested elsewhere, but this is an easy point to add a file and run the test to make sure it imports!
-func Example_ReadBeamLocationsFile() {
+func Example_dataImportHelpers_ReadBeamLocationsFile() {
 	rxl, pmcs, err := ReadBeamLocationsFile("./test-data/GeomCorrMoved.CSV", true, 4, []string{}, &logger.StdOutLoggerForTest{})
 	fmt.Printf("%v\npmcs: %v\nrxl: %v\n", err, pmcs, len(rxl))
 
