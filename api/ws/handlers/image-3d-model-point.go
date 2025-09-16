@@ -69,7 +69,7 @@ func HandleImage3DModelPointUploadReq(req *protos.Image3DModelPointUploadReq, hc
 		return nil, err
 	}
 
-	if result.MatchedCount == 0 && result.ModifiedCount == 0 {
+	if result.UpsertedCount == 0 && result.ModifiedCount == 0 {
 		hctx.Svcs.Log.Errorf("HandleImage3DModelPointUploadReq got unexpected upsert result: %+v", result)
 	}
 
