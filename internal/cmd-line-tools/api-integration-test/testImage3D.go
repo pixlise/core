@@ -52,14 +52,39 @@ func testImage3DPoint(apiHost string) {
 		}`,
 	)
 
-	u1.AddSendReqAction("Get points for real image",
-		`{"image3DModelPointsReq":{"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
+	u1.AddSendReqAction("Get points for real image v2",
+		`{"image3DModelPointsReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
 		`{
 			"msgId":5,
 			"status": "WS_OK",
 			"image3DModelPointsResp": {
 				"points": {
-					"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png",
+					"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J__.png",
+					"points": [
+						{
+							"x": 1,
+							"y": 2,
+							"z": 3
+						},
+						{
+							"x": 4,
+							"y": 5,
+							"z": 6
+						}
+					]
+				}
+			}
+		}`,
+	)
+
+	u1.AddSendReqAction("Get points for real image v3",
+		`{"image3DModelPointsReq":{"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J03.png"}}`,
+		`{
+			"msgId":5,
+			"status": "WS_OK",
+			"image3DModelPointsResp": {
+				"points": {
+					"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J__.png",
 					"points": [
 						{
 							"x": 1,
