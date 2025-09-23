@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
+	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
+	"github.com/pixlise/core/v4/core/gdsfilename"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,9 +18,12 @@ import (
 )
 
 func HandleImage3DModelPointsReq(req *protos.Image3DModelPointsReq, hctx wsHelpers.HandlerContext) (*protos.Image3DModelPointsResp, error) {
+	// We want to store the image name sans version (applicable to MCC image names mainly!)
+	imageReadName := dataImportHelpers.GetImageNameSansVersion(req.ImageName)
+
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.Image3DPointsName)
-	imgFound := coll.FindOne(ctx, bson.M{"_id": req.ImageName}, options.FindOne())
+	imgFound := coll.FindOne(ctx, bson.M{"_id": imageReadName}, options.FindOne())
 	if imgFound.Err() != nil {
 		if imgFound.Err() == mongo.ErrNoDocuments {
 			return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("3D points not found for image: \"%v\"", req.ImageName))
@@ -51,20 +57,46 @@ func HandleImage3DModelPointUploadReq(req *protos.Image3DModelPointUploadReq, hc
 
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
-	imgFound := coll.FindOne(ctx, bson.M{"_id": req.Points.ImageName}, options.FindOne())
+	imagePath := req.Points.ImageName
+	imgFound := coll.FindOne(ctx, bson.M{"_id": imagePath}, options.FindOne())
 	if imgFound.Err() != nil {
 		if imgFound.Err() == mongo.ErrNoDocuments {
-			return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Image \"%v\" not found", req.Points.ImageName))
+			// Check, maybe the path part is missing
+			found := false
+
+			if !strings.Contains(imagePath, "/") {
+				// If it's a PDS style file name, we can get the RTT and prepend it and look up again
+				meta, err := gdsfilename.ParseFileName(imagePath)
+				if err == nil {
+					rtt, err := meta.RTT()
+
+					if err == nil {
+						imagePath = fmt.Sprintf("%v/%v", rtt, imagePath)
+
+						imgFound = coll.FindOne(ctx, bson.M{"_id": imagePath}, options.FindOne())
+						if imgFound.Err() == nil {
+							found = true
+						}
+					}
+				}
+			}
+			if !found {
+				return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Image \"%v\" not found", imagePath))
+			}
+		} else {
+			return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Failed to check image \"%v\": %v", imagePath, imgFound.Err()))
 		}
-		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Failed to check image \"%v\": %v", req.Points.ImageName, imgFound.Err()))
 	}
 
 	// Request is valid, image exists, so lets store this
+	// We want to store the image name sans version (applicable to MCC image names mainly!)
+	imageStoreName := dataImportHelpers.GetImageNameSansVersion(imagePath)
 	coll = hctx.Svcs.MongoDB.Collection(dbCollections.Image3DPointsName)
 
 	opt := options.Update().SetUpsert(true)
 
-	result, err := coll.UpdateByID(ctx, req.Points.ImageName, bson.D{{Key: "$set", Value: req.Points}}, opt)
+	req.Points.ImageName = imageStoreName
+	result, err := coll.UpdateByID(ctx, imageStoreName, bson.D{{Key: "$set", Value: req.Points}}, opt)
 	if err != nil {
 		return nil, err
 	}
