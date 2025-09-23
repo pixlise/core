@@ -80,7 +80,7 @@ func testImage3DPoint(apiHost string) {
 	u1.AddSendReqAction("Get points for real image v3",
 		`{"image3DModelPointsReq":{"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J03.png"}}`,
 		`{
-			"msgId":5,
+			"msgId":6,
 			"status": "WS_OK",
 			"image3DModelPointsResp": {
 				"points": {
