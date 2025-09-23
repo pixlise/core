@@ -43,8 +43,8 @@ func testImage3DPoint(apiHost string) {
 		}`,
 	)
 
-	u1.AddSendReqAction("Upload points for real image",
-		`{"image3DModelPointUploadReq":{"points": {"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png", "points": [{"x": 1, "y": 2, "z": 3}, {"x": 4, "y": 5, "z": 6}]}}}`,
+	u1.AddSendReqAction("Upload points for real image with RTT missing at start of path",
+		`{"image3DModelPointUploadReq":{"points": {"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png", "points": [{"x": 1, "y": 2, "z": 3}, {"x": 4, "y": 5, "z": 6}]}}}`,
 		`{
 			"msgId":4,
 			"status": "WS_OK",
@@ -53,7 +53,7 @@ func testImage3DPoint(apiHost string) {
 	)
 
 	u1.AddSendReqAction("Get points for real image v2",
-		`{"image3DModelPointsReq":{"imageName": "PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
+		`{"image3DModelPointsReq":{"imageName": "048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"}}`,
 		`{
 			"msgId":5,
 			"status": "WS_OK",
