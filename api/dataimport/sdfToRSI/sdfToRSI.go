@@ -94,6 +94,8 @@ func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath str
 	lineNo := 0
 	lastPMC := 0
 
+	scanLogPMCsRead := map[int]bool{}
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		lineNo++
@@ -205,7 +207,12 @@ func sdfToRSI(sdfPath string, rtt int64, startLine int, endLine int, outPath str
 			lastHKTime = hktime
 			lineNo += 23
 		} else if tok == "scanlog" {
-			err = processScanLog(lineNo, lineData, sclk, rtt, pmc, &out)
+			if !scanLogPMCsRead[pmc] {
+				err = processScanLog(lineNo, lineData, sclk, rtt, pmc, &out)
+				scanLogPMCsRead[pmc] = true
+			}
+			// else: new EM datasets have multiple copies of the scan log, we don't want to output more than one copy otherwise
+			// we end up with beam geometry problems for duplicate PMC entries
 		} else if tok == "mcc_ram" {
 			// If we're at entry 00384 we check which detector is being dumped for future reference as we read the centroids
 			detector, ok, err := checkMCCDetector(lineData)
