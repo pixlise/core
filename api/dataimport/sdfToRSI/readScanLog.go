@@ -9,7 +9,7 @@ import (
 
 // Expects:
 // 1655: |   -0.1360000    0.1310000    0.2462323  0x00120000 |    0.0000000    0.0000000    0.0000000    1657
-func processScanLog(lineNo int, lineData string, sclk string, rtt int64, pmc int, fout io.StringWriter) error {
+func processScanLog(lineNo int, lineData string, sclk string, rtt int64, pmc int, fout io.StringWriter, pmcsAlreadyWritten map[int]bool) error {
 	// Check line starts with a number followed by ": | ", otherwise it's not a scan log line we're interested in
 	pos := strings.Index(lineData, ": | ")
 	if pos < 0 {
@@ -77,10 +77,16 @@ func processScanLog(lineNo int, lineData string, sclk string, rtt int64, pmc int
 	// TODO: what's the last value? always seems to be 0
 
 	// 3???, C6F0202, 1657, 34, _Grand_Scan_Log, -0.136000, 0.131000, 0.246230, 0.000000, 0.000000, 0.000000, 1657, 0012, 0
-	_, err = fout.WriteString(fmt.Sprintf("3, %X, %v, 34, _Grand_Scan_Log, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %v, %v, 0\n",
-		/*makeWriteSCLK(sclk),*/ rtt, pmc, fValues[0], fValues[1], fValues[2], fValues[3], fValues[4], fValues[5], readPMC, hexval[2:6]))
-	if err != nil {
-		return fmt.Errorf("Failed to write to output CSV: %v", err)
+
+	// If we've got duplicates, don't write again!
+	if !pmcsAlreadyWritten[int(readPMC)] {
+		_, err = fout.WriteString(fmt.Sprintf("3, %X, %v, 34, _Grand_Scan_Log, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %v, %v, 0\n",
+			/*makeWriteSCLK(sclk),*/ rtt, pmc, fValues[0], fValues[1], fValues[2], fValues[3], fValues[4], fValues[5], readPMC, hexval[2:6]))
+		if err != nil {
+			return fmt.Errorf("Failed to write to output CSV: %v", err)
+		} else {
+			pmcsAlreadyWritten[int(readPMC)] = true
+		}
 	}
 
 	return nil
