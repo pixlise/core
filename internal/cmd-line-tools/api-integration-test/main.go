@@ -161,7 +161,10 @@ func runEnvTests(apiHost string) {
 }
 
 func runLocalTests(apiHost string, isCI bool) {
+
 	jwt := testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
+
+	testImage3DPoint(apiHost)
 
 	// Should run anywhere, but easy to do here
 	testMemoisation(apiHost, jwt)
