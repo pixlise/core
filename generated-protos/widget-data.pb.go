@@ -69,6 +69,64 @@ func (LightMode) EnumDescriptor() ([]byte, []int) {
 	return file_widget_data_proto_rawDescGZIP(), []int{0}
 }
 
+type ModelStyle int32
+
+const (
+	ModelStyle_MS_UNKNOWN                       ModelStyle = 0 // https://protobuf.dev/programming-guides/dos-donts/ says specify an unknown as 0
+	ModelStyle_MS_FLAT_BOTTOM_GROUND_PLANE      ModelStyle = 1
+	ModelStyle_MS_MID_GROUND_PLANE              ModelStyle = 2
+	ModelStyle_MS_MCC_MODEL_ONLY                ModelStyle = 3
+	ModelStyle_MS_MCC_MODEL_PMCS_DROPPED        ModelStyle = 4
+	ModelStyle_MS_MCC_MODEL_PMCS_POKING_THROUGH ModelStyle = 5
+)
+
+// Enum value maps for ModelStyle.
+var (
+	ModelStyle_name = map[int32]string{
+		0: "MS_UNKNOWN",
+		1: "MS_FLAT_BOTTOM_GROUND_PLANE",
+		2: "MS_MID_GROUND_PLANE",
+		3: "MS_MCC_MODEL_ONLY",
+		4: "MS_MCC_MODEL_PMCS_DROPPED",
+		5: "MS_MCC_MODEL_PMCS_POKING_THROUGH",
+	}
+	ModelStyle_value = map[string]int32{
+		"MS_UNKNOWN":                       0,
+		"MS_FLAT_BOTTOM_GROUND_PLANE":      1,
+		"MS_MID_GROUND_PLANE":              2,
+		"MS_MCC_MODEL_ONLY":                3,
+		"MS_MCC_MODEL_PMCS_DROPPED":        4,
+		"MS_MCC_MODEL_PMCS_POKING_THROUGH": 5,
+	}
+)
+
+func (x ModelStyle) Enum() *ModelStyle {
+	p := new(ModelStyle)
+	*p = x
+	return p
+}
+
+func (x ModelStyle) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ModelStyle) Descriptor() protoreflect.EnumDescriptor {
+	return file_widget_data_proto_enumTypes[1].Descriptor()
+}
+
+func (ModelStyle) Type() protoreflect.EnumType {
+	return &file_widget_data_proto_enumTypes[1]
+}
+
+func (x ModelStyle) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ModelStyle.Descriptor instead.
+func (ModelStyle) EnumDescriptor() ([]byte, []int) {
+	return file_widget_data_proto_rawDescGZIP(), []int{1}
+}
+
 type VisibleROI struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3250,8 +3308,19 @@ var file_widget_data_proto_rawDesc = []byte{
 	0x0a, 0x0a, 0x4c, 0x4d, 0x5f, 0x55, 0x4e, 0x4b, 0x4e, 0x4f, 0x57, 0x4e, 0x10, 0x00, 0x12, 0x0c,
 	0x0a, 0x08, 0x4c, 0x4d, 0x5f, 0x50, 0x4f, 0x49, 0x4e, 0x54, 0x10, 0x01, 0x12, 0x12, 0x0a, 0x0e,
 	0x4c, 0x4d, 0x5f, 0x45, 0x4e, 0x56, 0x49, 0x52, 0x4f, 0x4e, 0x4d, 0x45, 0x4e, 0x54, 0x10, 0x03,
-	0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x33,
+	0x2a, 0xb2, 0x01, 0x0a, 0x0a, 0x4d, 0x6f, 0x64, 0x65, 0x6c, 0x53, 0x74, 0x79, 0x6c, 0x65, 0x12,
+	0x0e, 0x0a, 0x0a, 0x4d, 0x53, 0x5f, 0x55, 0x4e, 0x4b, 0x4e, 0x4f, 0x57, 0x4e, 0x10, 0x00, 0x12,
+	0x1f, 0x0a, 0x1b, 0x4d, 0x53, 0x5f, 0x46, 0x4c, 0x41, 0x54, 0x5f, 0x42, 0x4f, 0x54, 0x54, 0x4f,
+	0x4d, 0x5f, 0x47, 0x52, 0x4f, 0x55, 0x4e, 0x44, 0x5f, 0x50, 0x4c, 0x41, 0x4e, 0x45, 0x10, 0x01,
+	0x12, 0x17, 0x0a, 0x13, 0x4d, 0x53, 0x5f, 0x4d, 0x49, 0x44, 0x5f, 0x47, 0x52, 0x4f, 0x55, 0x4e,
+	0x44, 0x5f, 0x50, 0x4c, 0x41, 0x4e, 0x45, 0x10, 0x02, 0x12, 0x15, 0x0a, 0x11, 0x4d, 0x53, 0x5f,
+	0x4d, 0x43, 0x43, 0x5f, 0x4d, 0x4f, 0x44, 0x45, 0x4c, 0x5f, 0x4f, 0x4e, 0x4c, 0x59, 0x10, 0x03,
+	0x12, 0x1d, 0x0a, 0x19, 0x4d, 0x53, 0x5f, 0x4d, 0x43, 0x43, 0x5f, 0x4d, 0x4f, 0x44, 0x45, 0x4c,
+	0x5f, 0x50, 0x4d, 0x43, 0x53, 0x5f, 0x44, 0x52, 0x4f, 0x50, 0x50, 0x45, 0x44, 0x10, 0x04, 0x12,
+	0x24, 0x0a, 0x20, 0x4d, 0x53, 0x5f, 0x4d, 0x43, 0x43, 0x5f, 0x4d, 0x4f, 0x44, 0x45, 0x4c, 0x5f,
+	0x50, 0x4d, 0x43, 0x53, 0x5f, 0x50, 0x4f, 0x4b, 0x49, 0x4e, 0x47, 0x5f, 0x54, 0x48, 0x52, 0x4f,
+	0x55, 0x47, 0x48, 0x10, 0x05, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -3266,81 +3335,82 @@ func file_widget_data_proto_rawDescGZIP() []byte {
 	return file_widget_data_proto_rawDescData
 }
 
-var file_widget_data_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_widget_data_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_widget_data_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_widget_data_proto_goTypes = []interface{}{
 	(LightMode)(0),                    // 0: LightMode
-	(*VisibleROI)(nil),                // 1: VisibleROI
-	(*SpectrumXRFLineState)(nil),      // 2: SpectrumXRFLineState
-	(*EnergyCalibration)(nil),         // 3: EnergyCalibration
-	(*SpectrumLines)(nil),             // 4: SpectrumLines
-	(*SpectrumWidgetState)(nil),       // 5: SpectrumWidgetState
-	(*HistogramState)(nil),            // 6: HistogramState
-	(*ChordState)(nil),                // 7: ChordState
-	(*BinaryState)(nil),               // 8: BinaryState
-	(*TernaryState)(nil),              // 9: TernaryState
-	(*VisibleROIAndQuant)(nil),        // 10: VisibleROIAndQuant
-	(*TableState)(nil),                // 11: TableState
-	(*ROIQuantTableState)(nil),        // 12: ROIQuantTableState
-	(*VariogramState)(nil),            // 13: VariogramState
-	(*MapLayerGroupDisplayRange)(nil), // 14: MapLayerGroupDisplayRange
-	(*MapLayerVisibility)(nil),        // 15: MapLayerVisibility
-	(*ROILayerVisibility)(nil),        // 16: ROILayerVisibility
-	(*ContextImageState)(nil),         // 17: ContextImageState
-	(*Coordinate4D)(nil),              // 18: Coordinate4D
-	(*Scan3DViewState)(nil),           // 19: Scan3DViewState
-	(*AnnotationPoint)(nil),           // 20: AnnotationPoint
-	(*FullScreenAnnotationItem)(nil),  // 21: FullScreenAnnotationItem
-	(*AnnotationDisplayState)(nil),    // 22: AnnotationDisplayState
-	(*ROIDisplayState)(nil),           // 23: ROIDisplayState
-	(*RGBUPlotWidgetState)(nil),       // 24: RGBUPlotWidgetState
-	(*SingleAxisRGBUWidgetState)(nil), // 25: SingleAxisRGBUWidgetState
-	(*RGBUImagesWidgetState)(nil),     // 26: RGBUImagesWidgetState
-	(*ParallelogramWidgetState)(nil),  // 27: ParallelogramWidgetState
-	(*MarkdownViewState)(nil),         // 28: MarkdownViewState
-	(*WidgetData)(nil),                // 29: WidgetData
-	nil,                               // 30: ROIDisplayState.RoiColoursEntry
-	nil,                               // 31: ROIDisplayState.RoiShapesEntry
-	(*ElementLine)(nil),               // 32: ElementLine
-	(*Coordinate3D)(nil),              // 33: Coordinate3D
+	(ModelStyle)(0),                   // 1: ModelStyle
+	(*VisibleROI)(nil),                // 2: VisibleROI
+	(*SpectrumXRFLineState)(nil),      // 3: SpectrumXRFLineState
+	(*EnergyCalibration)(nil),         // 4: EnergyCalibration
+	(*SpectrumLines)(nil),             // 5: SpectrumLines
+	(*SpectrumWidgetState)(nil),       // 6: SpectrumWidgetState
+	(*HistogramState)(nil),            // 7: HistogramState
+	(*ChordState)(nil),                // 8: ChordState
+	(*BinaryState)(nil),               // 9: BinaryState
+	(*TernaryState)(nil),              // 10: TernaryState
+	(*VisibleROIAndQuant)(nil),        // 11: VisibleROIAndQuant
+	(*TableState)(nil),                // 12: TableState
+	(*ROIQuantTableState)(nil),        // 13: ROIQuantTableState
+	(*VariogramState)(nil),            // 14: VariogramState
+	(*MapLayerGroupDisplayRange)(nil), // 15: MapLayerGroupDisplayRange
+	(*MapLayerVisibility)(nil),        // 16: MapLayerVisibility
+	(*ROILayerVisibility)(nil),        // 17: ROILayerVisibility
+	(*ContextImageState)(nil),         // 18: ContextImageState
+	(*Coordinate4D)(nil),              // 19: Coordinate4D
+	(*Scan3DViewState)(nil),           // 20: Scan3DViewState
+	(*AnnotationPoint)(nil),           // 21: AnnotationPoint
+	(*FullScreenAnnotationItem)(nil),  // 22: FullScreenAnnotationItem
+	(*AnnotationDisplayState)(nil),    // 23: AnnotationDisplayState
+	(*ROIDisplayState)(nil),           // 24: ROIDisplayState
+	(*RGBUPlotWidgetState)(nil),       // 25: RGBUPlotWidgetState
+	(*SingleAxisRGBUWidgetState)(nil), // 26: SingleAxisRGBUWidgetState
+	(*RGBUImagesWidgetState)(nil),     // 27: RGBUImagesWidgetState
+	(*ParallelogramWidgetState)(nil),  // 28: ParallelogramWidgetState
+	(*MarkdownViewState)(nil),         // 29: MarkdownViewState
+	(*WidgetData)(nil),                // 30: WidgetData
+	nil,                               // 31: ROIDisplayState.RoiColoursEntry
+	nil,                               // 32: ROIDisplayState.RoiShapesEntry
+	(*ElementLine)(nil),               // 33: ElementLine
+	(*Coordinate3D)(nil),              // 34: Coordinate3D
 }
 var file_widget_data_proto_depIdxs = []int32{
-	32, // 0: SpectrumXRFLineState.lineInfo:type_name -> ElementLine
-	4,  // 1: SpectrumWidgetState.spectrumLines:type_name -> SpectrumLines
-	1,  // 2: HistogramState.visibleROIs:type_name -> VisibleROI
-	1,  // 3: BinaryState.visibleROIs:type_name -> VisibleROI
-	1,  // 4: TernaryState.visibleROIs:type_name -> VisibleROI
-	10, // 5: TableState.visibleROIs:type_name -> VisibleROIAndQuant
-	1,  // 6: VariogramState.visibleROIs:type_name -> VisibleROI
-	14, // 7: MapLayerVisibility.displayValueRanges:type_name -> MapLayerGroupDisplayRange
-	15, // 8: ContextImageState.mapLayers:type_name -> MapLayerVisibility
-	16, // 9: ContextImageState.roiLayers:type_name -> ROILayerVisibility
+	33, // 0: SpectrumXRFLineState.lineInfo:type_name -> ElementLine
+	5,  // 1: SpectrumWidgetState.spectrumLines:type_name -> SpectrumLines
+	2,  // 2: HistogramState.visibleROIs:type_name -> VisibleROI
+	2,  // 3: BinaryState.visibleROIs:type_name -> VisibleROI
+	2,  // 4: TernaryState.visibleROIs:type_name -> VisibleROI
+	11, // 5: TableState.visibleROIs:type_name -> VisibleROIAndQuant
+	2,  // 6: VariogramState.visibleROIs:type_name -> VisibleROI
+	15, // 7: MapLayerVisibility.displayValueRanges:type_name -> MapLayerGroupDisplayRange
+	16, // 8: ContextImageState.mapLayers:type_name -> MapLayerVisibility
+	17, // 9: ContextImageState.roiLayers:type_name -> ROILayerVisibility
 	0,  // 10: Scan3DViewState.lightMode:type_name -> LightMode
-	33, // 11: Scan3DViewState.cameraPosition:type_name -> Coordinate3D
-	18, // 12: Scan3DViewState.cameraRotation:type_name -> Coordinate4D
-	33, // 13: Scan3DViewState.cameraTarget:type_name -> Coordinate3D
-	33, // 14: Scan3DViewState.pointLightPosition:type_name -> Coordinate3D
-	15, // 15: Scan3DViewState.mapLayers:type_name -> MapLayerVisibility
-	16, // 16: Scan3DViewState.roiLayers:type_name -> ROILayerVisibility
-	20, // 17: FullScreenAnnotationItem.points:type_name -> AnnotationPoint
-	21, // 18: AnnotationDisplayState.savedAnnotations:type_name -> FullScreenAnnotationItem
-	30, // 19: ROIDisplayState.roiColours:type_name -> ROIDisplayState.RoiColoursEntry
-	31, // 20: ROIDisplayState.roiShapes:type_name -> ROIDisplayState.RoiShapesEntry
-	5,  // 21: WidgetData.spectrum:type_name -> SpectrumWidgetState
-	8,  // 22: WidgetData.binary:type_name -> BinaryState
-	9,  // 23: WidgetData.ternary:type_name -> TernaryState
-	6,  // 24: WidgetData.histogram:type_name -> HistogramState
-	17, // 25: WidgetData.contextImage:type_name -> ContextImageState
-	7,  // 26: WidgetData.chord:type_name -> ChordState
-	11, // 27: WidgetData.table:type_name -> TableState
-	12, // 28: WidgetData.roiQuantTable:type_name -> ROIQuantTableState
-	13, // 29: WidgetData.variogram:type_name -> VariogramState
-	24, // 30: WidgetData.rgbuPlot:type_name -> RGBUPlotWidgetState
-	25, // 31: WidgetData.singleAxisRGBU:type_name -> SingleAxisRGBUWidgetState
-	26, // 32: WidgetData.rgbuImage:type_name -> RGBUImagesWidgetState
-	27, // 33: WidgetData.parallelogram:type_name -> ParallelogramWidgetState
-	28, // 34: WidgetData.markdownView:type_name -> MarkdownViewState
-	19, // 35: WidgetData.scan3DView:type_name -> Scan3DViewState
+	34, // 11: Scan3DViewState.cameraPosition:type_name -> Coordinate3D
+	19, // 12: Scan3DViewState.cameraRotation:type_name -> Coordinate4D
+	34, // 13: Scan3DViewState.cameraTarget:type_name -> Coordinate3D
+	34, // 14: Scan3DViewState.pointLightPosition:type_name -> Coordinate3D
+	16, // 15: Scan3DViewState.mapLayers:type_name -> MapLayerVisibility
+	17, // 16: Scan3DViewState.roiLayers:type_name -> ROILayerVisibility
+	21, // 17: FullScreenAnnotationItem.points:type_name -> AnnotationPoint
+	22, // 18: AnnotationDisplayState.savedAnnotations:type_name -> FullScreenAnnotationItem
+	31, // 19: ROIDisplayState.roiColours:type_name -> ROIDisplayState.RoiColoursEntry
+	32, // 20: ROIDisplayState.roiShapes:type_name -> ROIDisplayState.RoiShapesEntry
+	6,  // 21: WidgetData.spectrum:type_name -> SpectrumWidgetState
+	9,  // 22: WidgetData.binary:type_name -> BinaryState
+	10, // 23: WidgetData.ternary:type_name -> TernaryState
+	7,  // 24: WidgetData.histogram:type_name -> HistogramState
+	18, // 25: WidgetData.contextImage:type_name -> ContextImageState
+	8,  // 26: WidgetData.chord:type_name -> ChordState
+	12, // 27: WidgetData.table:type_name -> TableState
+	13, // 28: WidgetData.roiQuantTable:type_name -> ROIQuantTableState
+	14, // 29: WidgetData.variogram:type_name -> VariogramState
+	25, // 30: WidgetData.rgbuPlot:type_name -> RGBUPlotWidgetState
+	26, // 31: WidgetData.singleAxisRGBU:type_name -> SingleAxisRGBUWidgetState
+	27, // 32: WidgetData.rgbuImage:type_name -> RGBUImagesWidgetState
+	28, // 33: WidgetData.parallelogram:type_name -> ParallelogramWidgetState
+	29, // 34: WidgetData.markdownView:type_name -> MarkdownViewState
+	20, // 35: WidgetData.scan3DView:type_name -> Scan3DViewState
 	36, // [36:36] is the sub-list for method output_type
 	36, // [36:36] is the sub-list for method input_type
 	36, // [36:36] is the sub-list for extension type_name
@@ -3710,7 +3780,7 @@ func file_widget_data_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_widget_data_proto_rawDesc,
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   0,
