@@ -290,10 +290,7 @@ func createBeamLocation(isCalTarget bool, rsiPath string, rtt int64, outputBeamL
 	return outRXL, outLog, outSurfaceTop, nil
 }
 
-func ProcessBreadboard(format string, creatorUserId string, datasetID string, zipReader *zip.Reader, zippedData []byte, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
-	var err error
-
-	// Expecting flat zip of MSA files
+func checkExpectedFiles(zipReader *zip.Reader, expectedFormat string) error {
 	count := 0
 	for _, f := range zipReader.File {
 		// If the zip path starts with __MACOSX, ignore it, it's garbage that a mac laptop has included...
@@ -305,15 +302,24 @@ func ProcessBreadboard(format string, creatorUserId string, datasetID string, zi
 			return fmt.Errorf("Zip file must not contain sub-directories. Found: %v", f.Name)
 		}
 
-		if !strings.HasSuffix(f.Name, ".msa") {
-			return fmt.Errorf("Zip file must only contain MSA files. Found: %v", f.Name)
+		if !strings.HasSuffix(strings.ToLower(f.Name), expectedFormat) {
+			return fmt.Errorf("Zip file must only contain %v files. Found: %v", expectedFormat, f.Name)
 		}
 		count++
 	}
 
 	// Make sure it has at least one msa!
 	if count <= 0 {
-		return errors.New("Zip file did not contain any MSA files")
+		return fmt.Errorf("Zip file did not contain any %v files", expectedFormat)
+	}
+
+	return nil
+}
+
+func ProcessBreadboard(format string, creatorUserId string, datasetID string, zipReader *zip.Reader, zippedData []byte, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
+	err := checkExpectedFiles(zipReader, ".msa")
+	if err != nil {
+		return err
 	}
 
 	// Save the contents as a zip file in the uploads area
@@ -365,6 +371,56 @@ func ProcessBreadboard(format string, creatorUserId string, datasetID string, zi
 	if format == "sbu-breadboard" {
 		importerFile.Group = "Stony Brook Breadboard"
 		importerFile.DetectorConfig = "StonyBrookBreadboard"
+	}
+
+	err = fs.WriteJSON(destBucket, savePath, importerFile)
+	if err != nil {
+		return err
+	}
+	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
+	return nil
+}
+
+func ProcessWDS(creatorUserId string, datasetID string, zipReader *zip.Reader, zippedData []byte, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
+	err := checkExpectedFiles(zipReader, ".tif")
+	if err != nil {
+		return err
+	}
+
+	// Save the contents as a zip file in the uploads area
+	savePath := path.Join(s3PathStart, "wds-data.zip")
+	err = fs.WriteObject(destBucket, savePath, zippedData)
+	if err != nil {
+		return err
+	}
+	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
+
+	// Now save detector info
+	savePath = path.Join(s3PathStart, "import.json")
+	importerFile := dataimportModel.BreadboardImportParams{
+		CreatorUserId: creatorUserId,
+
+		// The rest we set to the dataset ID
+		DatasetID: datasetID,
+		//Site: datasetID,
+		//Target: datasetID,
+		Title: datasetID,
+		/*
+			BeamFile // Beam location CSV path
+			HousekeepingFile // Housekeeping CSV path
+			ContextImgDir // Dir to find context images in
+			PseudoIntensityCSVPath // Pseudointensity CSV path
+			IgnoreMSAFiles // MSA files to ignore
+			SingleDetectorMSAs // Expecting single detector (1 column) MSA files
+			DetectorADuplicate // Duplication of detector A to B, because test MSA only had 1 set of spectra
+			BulkQuantFile // Bulk quantification file (for tactical datasets)
+			XPerChanA // eV calibration eV/channel (detector A)
+			OffsetA // eV calibration eV start offset (detector A)
+			XPerChanB // eV calibration eV/channel (detector B)
+			OffsetB // eV calibration eV start offset (detector B)
+			ExcludeNormalDwellSpectra // Hack for tactical datasets - load all MSAs to gen bulk sum, but dont save them in output
+			SOL // Might as well be able to specify SOL. Needed for first spectrum dataset on SOL13
+		*/
 	}
 
 	err = fs.WriteJSON(destBucket, savePath, importerFile)
