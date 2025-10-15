@@ -28,6 +28,7 @@ import (
 	"github.com/pixlise/core/v4/api/dataimport/internal/converters/pixlem"
 	"github.com/pixlise/core/v4/api/dataimport/internal/converters/pixlfm"
 	"github.com/pixlise/core/v4/api/dataimport/internal/converters/soff"
+	importwds "github.com/pixlise/core/v4/api/dataimport/internal/converters/wds"
 	dataimportModel "github.com/pixlise/core/v4/api/dataimport/models"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
@@ -58,6 +59,11 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 	}
 
 	log.Infof("Assuming non-PIXL-FM dataset...")
+
+	// If it's all TIF files, assume it's the image map importer format
+	if importwds.IsWDSMapFormat(importPath) {
+		return &importwds.ImageMaps{}, nil
+	}
 
 	// Check if it's SOFF
 	soffFile, err := soff.GetSOFFDescriptionFile(importPath)
