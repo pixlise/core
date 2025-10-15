@@ -182,7 +182,6 @@ func (im ImageMaps) Import(importPath string, pseudoIntensityRangesPath string, 
 	}
 
 	data.SetPMCData(beamLookup, hkData, spectraLookup, contextImgsPerPMC, pseudoIntensityData, map[int32]string{})
-	//return data, contextImageSrcDir, nil
 
 	return data, importPath, nil
 }
