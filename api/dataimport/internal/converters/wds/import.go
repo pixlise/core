@@ -207,11 +207,11 @@ func (im ImageMaps) readOptical(imagePath string) (dataConvertModels.BeamLocatio
 	width := bounds.Dx()
 
 	for x := bounds.Min.X; x < bounds.Max.X; x++ {
-		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-			if y > bounds.Dy()/2 {
-				continue
-			}
+		if len(beams) > 50000 {
+			break
+		}
 
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 			pixelR, pixelG, pixelB, _ /*pixelA*/ := tiffImg.At(x, y).RGBA()
 			if pixelR == 0 &&
 				pixelG == 0 &&
