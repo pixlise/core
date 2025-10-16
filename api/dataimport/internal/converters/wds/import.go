@@ -161,6 +161,7 @@ func (im ImageMaps) Import(importPath string, pseudoIntensityRangesPath string, 
 		Site:     params.Site,
 		Title:    params.Title,
 		SOL:      params.SOL,*/
+		Title: datasetIDExpected,
 	}
 
 	spectraLookup := dataConvertModels.DetectorSampleByPMC{}
