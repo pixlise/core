@@ -169,8 +169,8 @@ func (im ImageMaps) Import(importPath string, pseudoIntensityRangesPath string, 
 		DatasetID:            datasetIDExpected,
 		Instrument:           protos.ScanInstrument_UNKNOWN_INSTRUMENT,
 		Meta:                 meta,
-		DetectorConfig:       "", //params.DetectorConfig,
-		BulkQuantFile:        "", //params.BulkQuantFile,
+		DetectorConfig:       "Breadboard", //params.DetectorConfig,
+		BulkQuantFile:        "",           //params.BulkQuantFile,
 		PseudoRanges:         pseudoIntensityRanges,
 		PerPMCData:           map[int32]*dataConvertModels.PMCData{},
 		MatchedAlignedImages: matchedAlignedImages,
@@ -290,17 +290,6 @@ func (im ImageMaps) readRelativeElementMap(
 				pixelA == 0 {
 				// We consider black pixels in the "optical" CP image to be un-scanned points, so don't generate a beam location here
 				continue
-			}
-
-			loc := dataConvertModels.BeamLocation{
-				X:  float32(x),
-				Y:  float32(y),
-				IJ: map[int32]dataConvertModels.BeamLocationProj{},
-			}
-
-			loc.IJ[0] = dataConvertModels.BeamLocationProj{
-				I: float32(x),
-				J: float32(y),
 			}
 
 			arr, ok := pseudoIntensityData[pmc]
