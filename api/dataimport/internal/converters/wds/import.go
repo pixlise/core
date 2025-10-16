@@ -207,7 +207,7 @@ func (im ImageMaps) readOptical(imagePath string) (dataConvertModels.BeamLocatio
 	width := bounds.Dx()
 
 	for x := bounds.Min.X; x < bounds.Max.X; x++ {
-		if len(beams) > 50000 {
+		if len(beams) > 8000 {
 			break
 		}
 
