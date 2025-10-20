@@ -47,6 +47,11 @@ type BreadboardImportParams struct {
 	ExcludeNormalDwellSpectra bool    `json:"exclude_normal_dwell"` // Hack for tactical datasets - load all MSAs to gen bulk sum, but dont save them in output
 	SOL                       string  `json:"sol"`                  // Might as well be able to specify SOL. Needed for first spectrum dataset on SOL13
 	CreatorUserId             string  `json:"creatorUserId"`        // Who created it
+
+	// Data reduction for some scan types:s
+	SkipRows     uint32
+	SkipColumns  uint32
+	MaxMapPoints uint32
 }
 
 type DetectorChoice struct {
