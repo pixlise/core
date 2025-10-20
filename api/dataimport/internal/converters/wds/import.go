@@ -245,12 +245,12 @@ func (im ImageMaps) readOptical(imagePath string, params dataimportModel.Breadbo
 			pmc := int32(y*width + x)
 			beams[pmc] = loc
 
-			if len(beams) > int(params.MaxMapPoints) {
+			if params.MaxMapPoints > 0 && len(beams) > int(params.MaxMapPoints) {
 				break
 			}
 		}
 
-		if len(beams) > int(params.MaxMapPoints) {
+		if params.MaxMapPoints > 0 && len(beams) > int(params.MaxMapPoints) {
 			break
 		}
 	}
