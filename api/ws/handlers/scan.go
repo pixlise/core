@@ -397,7 +397,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	if req.Format == "pixl-em" {
 		err = dataimport.ProcessEM(datasetID, zipReader, zippedData, destBucket, s3PathStart, fs, logger)
 	} else if req.Format == "wds" {
-		err = dataimport.ProcessWDS(hctx.SessUser.User.Id, datasetID, zipReader, zippedData, destBucket, s3PathStart, fs, logger)
+		err = dataimport.ProcessWDS(hctx.SessUser.User.Id, datasetID, zipReader, zippedData, req, destBucket, s3PathStart, fs, logger)
 	} else {
 		err = dataimport.ProcessBreadboard(req.Format, hctx.SessUser.User.Id, datasetID, zipReader, zippedData, destBucket, s3PathStart, fs, logger)
 	}

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
+	dataimportModel "github.com/pixlise/core/v4/api/dataimport/models"
 	"github.com/pixlise/core/v4/api/specialUserIds"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
@@ -52,6 +53,15 @@ type ImageMaps struct {
 
 func (im ImageMaps) Import(importPath string, pseudoIntensityRangesPath string, datasetIDExpected string, log logger.ILogger) (*dataConvertModels.OutputData, string, error) {
 	localFS := &fileaccess.FSAccess{}
+
+	// Check if we can load the import instructions JSON file
+	var params dataimportModel.BreadboardImportParams
+	err := localFS.ReadJSON(importPath, "import.json", &params, false)
+	if err != nil {
+		// If there is no import.json file, we can use some suitable defaults, so just warn here
+		//return nil, "", err
+		log.Infof("Warning: No import.json found, defaults will be used")
+	}
 
 	files, err := localFS.ListObjects(importPath, "wds-data") // Allow any file name... previously was expecting to start with: datasetIDExpected+"_")
 
@@ -98,7 +108,7 @@ func (im ImageMaps) Import(importPath string, pseudoIntensityRangesPath string, 
 
 		elem := strings.TrimLeft(file[pos-2:pos], "_ ")
 		if elem == "CP" {
-			beam, imgBounds, err := im.readOptical(path.Join(importPath, file))
+			beam, imgBounds, err := im.readOptical(path.Join(importPath, file), params)
 			if err != nil {
 				return nil, "", err
 			}
@@ -187,7 +197,7 @@ func (im ImageMaps) Import(importPath string, pseudoIntensityRangesPath string, 
 	return data, importPath, nil
 }
 
-func (im ImageMaps) readOptical(imagePath string) (dataConvertModels.BeamLocationByPMC, image.Rectangle, error) {
+func (im ImageMaps) readOptical(imagePath string, params dataimportModel.BreadboardImportParams) (dataConvertModels.BeamLocationByPMC, image.Rectangle, error) {
 	var bounds image.Rectangle
 	beams := dataConvertModels.BeamLocationByPMC{}
 
@@ -207,12 +217,11 @@ func (im ImageMaps) readOptical(imagePath string) (dataConvertModels.BeamLocatio
 	bounds = tiffImg.Bounds()
 	width := bounds.Dx()
 
-	for x := bounds.Min.X; x < bounds.Max.X; x++ {
-		if len(beams) > 8000 {
-			break
-		}
+	xSkip := 1 + int(params.SkipRows)
+	ySkip := 1 + int(params.SkipColumns)
 
-		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+	for x := bounds.Min.X; x < bounds.Max.X; x += xSkip {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y += ySkip {
 			pixelR, pixelG, pixelB, _ /*pixelA*/ := tiffImg.At(x, y).RGBA()
 			if pixelR == 0 &&
 				pixelG == 0 &&
@@ -235,6 +244,14 @@ func (im ImageMaps) readOptical(imagePath string) (dataConvertModels.BeamLocatio
 
 			pmc := int32(y*width + x)
 			beams[pmc] = loc
+
+			if params.MaxMapPoints > 0 && len(beams) > int(params.MaxMapPoints) {
+				break
+			}
+		}
+
+		if params.MaxMapPoints > 0 && len(beams) > int(params.MaxMapPoints) {
+			break
 		}
 	}
 

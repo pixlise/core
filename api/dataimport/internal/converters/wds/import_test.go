@@ -13,5 +13,5 @@ func Example_importwds_Import() {
 	fmt.Printf("%v|%v|%v", len(out.PerPMCData), id, err)
 
 	// Output:
-	// 590535|test-data/2_Zagami5_CP_6.map.tif|<nil>
+	// 590531|./test-data|<nil>
 }

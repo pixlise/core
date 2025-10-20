@@ -35,6 +35,7 @@ import (
 	"github.com/pixlise/core/v4/api/dataimport/sdfToRSI"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func readFromZip(fileInZip *zip.File, outPath string) (string, error) {
@@ -381,7 +382,7 @@ func ProcessBreadboard(format string, creatorUserId string, datasetID string, zi
 	return nil
 }
 
-func ProcessWDS(creatorUserId string, datasetID string, zipReader *zip.Reader, zippedData []byte, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
+func ProcessWDS(creatorUserId string, datasetID string, zipReader *zip.Reader, zippedData []byte, req *protos.ScanUploadReq, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
 	err := checkExpectedFiles(zipReader, ".tif")
 	if err != nil {
 		return err
@@ -421,6 +422,10 @@ func ProcessWDS(creatorUserId string, datasetID string, zipReader *zip.Reader, z
 			ExcludeNormalDwellSpectra // Hack for tactical datasets - load all MSAs to gen bulk sum, but dont save them in output
 			SOL // Might as well be able to specify SOL. Needed for first spectrum dataset on SOL13
 		*/
+
+		SkipRows:     req.SkipRows,
+		SkipColumns:  req.SkipColumns,
+		MaxMapPoints: req.MaxMapPoints,
 	}
 
 	err = fs.WriteJSON(destBucket, savePath, importerFile)

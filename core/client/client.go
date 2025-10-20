@@ -73,7 +73,7 @@ func Authenticate() (*APIClient, error) {
 
 	configPath, err := os.UserHomeDir()
 	if err == nil {
-		configPath = filepath.Join(configPath, ".pixlise-config.json") // "$HOME/.pixlise-config.json"
+		configPath = filepath.Join(configPath, configFileName)
 
 		_, err := os.Stat(configPath)
 		if err == nil {
