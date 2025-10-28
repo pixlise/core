@@ -40,6 +40,10 @@ type JWTInterface interface {
 func InitJWTValidator(auth0Domain string, configBucket string, pemPath string, fs fileaccess.FileAccess) (*auth0.JWTValidator, error) {
 	// Create a configuration with the Auth0 information
 	auth0PEM, err := fs.ReadObject(configBucket, pemPath)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to download PEM file: %v", err.Error())
+	}
+
 	secret, err := loadPublicKey(auth0PEM)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to load PEM file: %v", err.Error())

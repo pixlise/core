@@ -128,7 +128,11 @@ func (j RealJWTReader) GetUserInfo(r *http.Request) (JWTUserInfo, error) {
 	result.UserID = userIDObj.(string)
 
 	// Also get permissions
-	result.Permissions, err = ReadPermissions(claims)
+	permissionsObj, ok := claims["https://pixlise.qut.edu.au/auth"]
+	if !ok {
+		return result, fmt.Errorf("Failed to get permissions object from JWT")
+	}
+	result.Permissions, err = ReadPermissions(permissionsObj.(map[string]interface{}))
 
 	return result, err
 }
