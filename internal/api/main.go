@@ -129,9 +129,9 @@ func main() {
 		endpoints.GetImage,
 	)
 
-	router.AddGenericHandler("/images", apiRouter.MakeMethodPermission("PUT", permission.PermPublic), endpoints.PutImage)
+	router.AddGenericHandler("/images", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutImage)
 
-	router.AddGenericHandler("/scan", apiRouter.MakeMethodPermission("PUT", permission.PermPublic), endpoints.PutScanData)
+	router.AddGenericHandler("/scan", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutScanData)
 
 	router.AddGenericHandler("/memoise", apiRouter.MakeMethodPermission("GET", permission.PermPublic), endpoints.GetMemoise)
 	router.AddGenericHandler("/memoise", apiRouter.MakeMethodPermission("PUT", permission.PermPublic), endpoints.PutMemoise)
@@ -260,6 +260,7 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 	// Authenticaton for endpoints
 	jwtValidator, err := jwtparser.InitJWTValidator(
 		cfg.Auth0Domain,
+		cfg.Auth0Namespace,
 		cfg.ConfigBucket,
 		filepaths.GetConfigFilePath(filepaths.Auth0PemFileName),
 		fs,
@@ -269,7 +270,7 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 		log.Fatalf("Failed to init JWT validator. Error: %v", err)
 	}
 
-	jwt := jwtparser.RealJWTReader{Validator: jwtValidator}
+	jwt := jwtparser.RealJWTReader{Validator: jwtValidator, Auth0Namespace: cfg.Auth0Namespace}
 
 	snsSvc := sns.New(sess)
 	sqsSvc := sqs.New(sess)
