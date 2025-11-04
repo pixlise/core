@@ -19,8 +19,9 @@ auth0dummy-LOCAL-ONLY.go-
 
 db-restore/
 
-local-api-config.json
+local-api-config*.json
 local-api-config-unittest.json
+local-ci-api-config-unittest.json
 
 __pycache__
 python/pixlisemsgs/

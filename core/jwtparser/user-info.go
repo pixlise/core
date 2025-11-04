@@ -20,6 +20,7 @@ package jwtparser
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -38,7 +39,8 @@ type JWTUserInfo struct {
 
 // RealJWTReader - Reader
 type RealJWTReader struct {
-	Validator JWTInterface
+	Validator      JWTInterface
+	Auth0Namespace string
 }
 
 func (j RealJWTReader) GetValidator() JWTInterface {
@@ -63,7 +65,7 @@ func (j RealJWTReader) GetSimpleUserInfo(r *http.Request) (JWTUserInfo, error) {
 		return result, err
 	}
 
-	userNameObj, ok := claims["https://pixlise.org/username"]
+	userNameObj, ok := claims[j.getJWTFieldName("username")]
 	if !ok {
 		return result, fmt.Errorf("Failed to get user name from request JWT")
 	}
@@ -107,13 +109,13 @@ func (j RealJWTReader) GetUserInfo(r *http.Request) (JWTUserInfo, error) {
 		return result, err
 	}
 
-	userNameObj, ok := claims["https://pixlise.org/username"]
+	userNameObj, ok := claims[j.getJWTFieldName("username")]
 	if !ok {
 		return result, fmt.Errorf("Failed to get user name from request JWT")
 	}
 	result.Name = userNameObj.(string)
 
-	userEmailObj, ok := claims["https://pixlise.org/email"]
+	userEmailObj, ok := claims[j.getJWTFieldName("email")]
 	if !ok {
 		return result, fmt.Errorf("Failed to get email address from JWT")
 	}
@@ -127,12 +129,35 @@ func (j RealJWTReader) GetUserInfo(r *http.Request) (JWTUserInfo, error) {
 
 	result.UserID = userIDObj.(string)
 
-	// Also get permissions
-	permissionsObj, ok := claims["https://pixlise.qut.edu.au/auth"]
+	// The permissions field is only in the JWT if RBAC is enabled on Auth0 API and Add Permissions in the Access Token is also enabled
+	_, ok = claims["permissions"]
 	if !ok {
 		return result, fmt.Errorf("Failed to get permissions object from JWT")
 	}
-	result.Permissions, err = ReadPermissions(permissionsObj.(map[string]interface{}))
+
+	result.Permissions, err = ReadPermissions(claims)
 
 	return result, err
+}
+
+func (j RealJWTReader) getJWTFieldName(suffix string) string {
+	// If we're configured with a namespace, just use this... otherwise we have a fallback for PIXLISE v4 prod
+	if len(j.Auth0Namespace) > 0 {
+		name, err := url.JoinPath(j.Auth0Namespace, suffix)
+		if err != nil {
+			return ""
+		}
+		return name
+	}
+
+	// PIXLISE v4 prod was a bit more wild... Eventually we can deprecate this too
+	switch suffix {
+	case "username":
+		return "https://pixlise.org/username"
+	case "email":
+		return "https://pixlise.org/email"
+	}
+
+	// Don't know what else this could be... probably should print an error
+	return ""
 }
