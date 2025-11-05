@@ -109,3 +109,7 @@ func HandlePiquantWriteCurrentVersionReq(req *protos.PiquantWriteCurrentVersionR
 
 	return &protos.PiquantWriteCurrentVersionResp{}, nil
 }
+
+func HandlePiquantConfigFileReq(req *protos.PiquantConfigFileReq, hctx wsHelpers.HandlerContext) (*protos.PiquantConfigFileResp, error) {
+
+}
