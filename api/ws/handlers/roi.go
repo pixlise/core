@@ -41,6 +41,8 @@ func HandleRegionOfInterestGetReq(req *protos.RegionOfInterestGetReq, hctx wsHel
 		dbItem.MistROIItem = mistItem
 	}
 
+	// NOTE: dbItem contains PMCs in the scanEntryIndexesEncoded array!
+	// The name implies it's NOT PMCs but indexes, but that's not the case.
 	return &protos.RegionOfInterestGetResp{
 		RegionOfInterest: dbItem,
 	}, nil

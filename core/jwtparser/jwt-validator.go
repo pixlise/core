@@ -22,6 +22,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/auth0-community/go-auth0"
 	"github.com/pixlise/core/v4/core/fileaccess"
@@ -29,24 +30,35 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
-const apiAudience = "pixlise-backend"
-
 // Implements a JWT validation and claim extraction interface
 type JWTInterface interface {
 	ValidateRequest(r *http.Request) (*jwt.JSONWebToken, error)
 	Claims(r *http.Request, token *jwt.JSONWebToken, values ...interface{}) error
 }
 
-func InitJWTValidator(auth0Domain string, configBucket string, pemPath string, fs fileaccess.FileAccess) (*auth0.JWTValidator, error) {
+func InitJWTValidator(auth0Domain string, auth0Namespace string, configBucket string, pemPath string, fs fileaccess.FileAccess) (*auth0.JWTValidator, error) {
 	// Create a configuration with the Auth0 information
 	auth0PEM, err := fs.ReadObject(configBucket, pemPath)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to download PEM file: %v", err.Error())
+	}
+
 	secret, err := loadPublicKey(auth0PEM)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to load PEM file: %v", err.Error())
 	}
 
 	secretProvider := auth0.NewKeyProvider(secret)
-	audience := []string{apiAudience}
+	audience := []string{}
+	if len(auth0Namespace) <= 0 {
+		audience = append(audience, "pixlise-backend")
+	} else {
+		backendNamespace, err := url.JoinPath(auth0Namespace, "backend")
+		if err != nil {
+			return nil, fmt.Errorf("Failed to create audience name: %v", err.Error())
+		}
+		audience = append(audience, backendNamespace)
+	}
 
 	configuration := auth0.NewConfiguration(secretProvider, audience, "https://"+auth0Domain+"/", jose.RS256)
 

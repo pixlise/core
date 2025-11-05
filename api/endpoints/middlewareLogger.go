@@ -111,7 +111,7 @@ func (h *LoggerMiddleware) Middleware(next http.Handler) http.Handler {
 			respBodyTxt = fmt.Sprintf("Body data length: %v bytes", buf.Len())
 		}
 
-		jwtValidator := jwtparser.RealJWTReader{Validator: h.JwtValidator}
+		jwtValidator := jwtparser.RealJWTReader{Validator: h.JwtValidator, Auth0Namespace: h.Config.Auth0Namespace}
 		requestingUser, _ := jwtValidator.GetSimpleUserInfo(r)
 
 		//level := logger.LogDebug

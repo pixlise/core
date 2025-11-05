@@ -247,6 +247,7 @@ func downloadFile(jobLog logger.ILogger, remoteFS fileaccess.FileAccess, bucket 
 		if remoteFS.IsNotFoundError(err) {
 			return fmt.Errorf("Failed to download s3://%v/%v: Not found", bucket, remotePathAndFile)
 		}
+		return fmt.Errorf("Failed to download s3://%v/%v: %v", bucket, remotePathAndFile, err)
 	} else {
 		jobLog.Infof(" Downloaded %v bytes", len(data))
 	}
