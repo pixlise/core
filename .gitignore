@@ -6,18 +6,9 @@ __debug_bin.exe
 /_out/
 #generated-protos/
 api/ws/wsMessage.go
-/OLDCODE
-auth0dummy-LOCAL-ONLY.go-
-/local-mongo/dbseed/from-prod-Jan2024/
-/local-mongo/dbseed/migrated/
-/local-mongo/dbseed/migration-source/
-/local-mongo/dbseed/old/
-/local-mongo/dbseed/*.json
-/local-mongo/dbseed/*.sh
-/local-mongo/dbseed/json/
-/local-mongo/3repl/
 
 db-restore/
+mongo-db-local-*/
 
 local-api-config*.json
 local-api-config-unittest.json

@@ -318,7 +318,7 @@ func PublishExpressionToZenodo(id string, output string, metadata *protos.DOIMet
 }
 
 func HandlePublishExpressionToZenodoReq(req *protos.PublishExpressionToZenodoReq, hctx wsHelpers.HandlerContext) (*protos.PublishExpressionToZenodoResp, error) {
-	if hctx.Svcs.Config.EnvironmentName == "unittest" || hctx.Svcs.Config.EnvironmentName == "local" {
+	if hctx.Svcs.Config.EnvironmentName == "unittest" || strings.Contains(hctx.Svcs.Config.EnvironmentName, "local") {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 

@@ -24,6 +24,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -101,6 +102,10 @@ func main() {
 	}
 
 	apiStorageFileAccess = fileaccess.MakeS3Access(s3svc)
+	err = seedBuckets(apiStorageFileAccess, apiDatasetBucket)
+	if err != nil {
+		panic("Failed to seed buckets")
+	}
 
 	if len(expectedAPIVersion) > 0 {
 		printTestStart("API Version")
@@ -161,7 +166,6 @@ func runEnvTests(apiHost string) {
 }
 
 func runLocalTests(apiHost string, isCI bool) {
-
 	jwt := testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
 	testImage3DPoint(apiHost)
@@ -471,4 +475,36 @@ func runLocalTests(apiHost string, isCI bool) {
 
 	// Removed for now, looks like zenodo API changed recently?
 	//testDOI(apiHost)
+}
+
+func seedBuckets(s3 fileaccess.FileAccess, apiDatasetBucket string) error {
+	fs := fileaccess.FSAccess{}
+	rootPath := "test-files/seed-scans"
+	files, err := fs.ListObjects(".", rootPath)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return err
+		}
+
+		// Lop off the start of the path
+		pos := strings.Index(file, rootPath)
+		if pos < 0 {
+			return fmt.Errorf("Unexpected scan seed data path: %v", file)
+		}
+
+		upPath := path.Join("Scans", file[pos+len(rootPath):])
+		err = s3.WriteObject(apiDatasetBucket, upPath, data)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Wrote s3://%v/%v...", apiDatasetBucket, upPath)
+	}
+
+	return nil
 }
