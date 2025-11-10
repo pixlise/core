@@ -53,6 +53,7 @@ var test1Username, test1Password, test2Username, test2Password string
 var apiStorageFileAccess fileaccess.FileAccess
 var apiDatasetBucket string
 var apiUsersBucket string
+var apiJobsBucket string
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
@@ -68,6 +69,7 @@ func main() {
 	flag.StringVar(&apiDBSecret, "apiDBSecret", "", "Mongo secret of the DB the API is connected")
 	flag.StringVar(&apiDatasetBucket, "datasetBucket", "", "Dataset bucket the API is using")
 	flag.StringVar(&apiUsersBucket, "usersBucket", "", "User Data bucket the API is using")
+	flag.StringVar(&apiJobsBucket, "jobsBucket", "", "Job Data bucket the API is using")
 	flag.StringVar(&auth0Params.Domain, "auth0Domain", "", "Auth0 domain for management API")
 	flag.StringVar(&auth0Params.ClientId, "auth0ClientId", "", "Auth0 client id for management API")
 	//flag.StringVar(&auth0Params.Secret, "auth0Secret", "", "Auth0 secret for management API")
@@ -503,7 +505,7 @@ func seedBuckets(s3 fileaccess.FileAccess, apiDatasetBucket string) error {
 			return err
 		}
 
-		fmt.Printf("Wrote s3://%v/%v...", apiDatasetBucket, upPath)
+		fmt.Printf("Wrote s3://%v/%v...\n", apiDatasetBucket, upPath)
 	}
 
 	return nil
