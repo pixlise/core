@@ -38,7 +38,8 @@ func Example_sdfToRSI_ConvertSDFtoRSI_EndingPrematurely() {
 	// Output:
 	// mkdir worked: true
 	// Getwd: true
-	// [RSI-453.csv HK-453.csv RSI-453.csv HK-453.csv], [453 453]: <nil>
+	// INFO: ConvertSDFtoRSIs "./test-data/sdf_raw_premature_end.txt" [138693]: Already detected end of RTT 453 - skipping...
+	// [RSI-453.csv HK-453.csv], [453]: <nil>
 }
 
 func ensureSDFRawExists() {
