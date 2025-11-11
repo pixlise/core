@@ -78,7 +78,7 @@ func ProcessEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 	isCalTarget := strings.Contains(lowerId, "cal-target") || strings.Contains(lowerId, "cal_target") || strings.Contains(lowerId, "caltarget")
 
 	// Create an RSI file from the sdf_raw file
-	genFiles, rtts, err := sdfToRSI.ConvertSDFtoRSIs(sdfLocalPath, localTemp)
+	genFiles, rtts, err := sdfToRSI.ConvertSDFtoRSIs(sdfLocalPath, localTemp, logger)
 
 	if err != nil {
 		return fmt.Errorf("Failed to scan %v for RSI creation: %v", sdfLocalPath, err)
@@ -100,7 +100,7 @@ func ProcessEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 
 		// Every second file is a HK file not an actual RSI file... make sure we have the right prefix here
 		if !strings.HasPrefix(f, "RSI-") || !strings.HasPrefix(hkFile, "HK-") {
-			logger.Errorf("ConvertSDFtoRSIs generated : %v. Error: %v", f, err)
+			logger.Errorf("ConvertSDFtoRSIs generated: \"%v\". Error: %v", f, err)
 			continue
 		}
 
@@ -112,7 +112,7 @@ func ProcessEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 			continue
 		}
 
-		// Upoad the output files (beam locations, log and surface)
+		// Upload the output files (beam locations, log and surface)
 		files := []string{filepath.Join(localTemp, hkFile), rxlPath, logPath, surfPath, rsiLocalPath}
 		name := []string{"housekeeping", "beam location", "log", "surface", "rsi"}
 		for i, file := range files {
@@ -234,24 +234,45 @@ func createBeamLocation(isCalTarget bool, rsiPath string, rtt int64, outputBeamL
 	if _, err := os.Stat(bgtPath + "BGT"); err != nil {
 		// Try the path used in local testing
 		bgtPath = ".." + string(os.PathSeparator) + ".." + string(os.PathSeparator) + "beam-tool" + string(os.PathSeparator)
+		if _, err = os.Stat(bgtPath + "BGT"); err != nil {
+			return "", "", "", errors.New("BGT tool not found")
+		}
 	}
 
-	if _, err := os.Stat(bgtPath + "Geometry_PIXL_EM_Landing_25Jan2021.csv"); err != nil {
+	// Ensure output files don't exist yet!
+	toDel := []string{outSurfaceTop, outRXL, outLog}
+	for _, f := range toDel {
+		err := os.Remove(f)
+		if err != nil {
+			logger.Errorf("Error deleting existing \"%v\": %v", f, err)
+		}
+	}
+
+	// Find an absolute path because after Go 1.19 exec.Command doesn't work with relative paths... strange this wasn't noticed earlier!
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", "", "", fmt.Errorf("Failed to get working dir: %v", err)
+	}
+
+	calibPath := path.Join(wd, bgtPath, "Geometry_PIXL_EM_Landing_25Jan2021.csv")
+
+	if _, err := os.Stat(calibPath); err != nil {
 		return "", "", "", errors.New("Calibration file not found")
 	}
 	if _, err := os.Stat(rsiPath); err != nil {
 		return "", "", "", errors.New("RSI not found")
 	}
 
-	args := []string{bgtPath + "Geometry_PIXL_EM_Landing_25Jan2021.csv", rsiPath, outSurfaceTop, outRXL}
+	args := []string{calibPath, rsiPath, outSurfaceTop, outRXL}
 	if isCalTarget {
 		args = append(args, "-t")
 	}
 	args = append(args, outLog)
 
-	fmt.Printf("Executing: %v %v\n", bgtPath+"BGT", strings.Join(args, " "))
+	exePath := path.Join(wd, bgtPath, "BGT")
 
-	cmd := exec.Command(bgtPath+"BGT", args...)
+	fmt.Printf("Executing: %v %v\n", exePath, strings.Join(args, " "))
+	cmd := exec.Command(exePath, args...)
 
 	// var out bytes.Buffer
 	// var stderr bytes.Buffer
@@ -262,15 +283,28 @@ func createBeamLocation(isCalTarget bool, rsiPath string, rtt int64, outputBeamL
 	// cmd.Stderr = os.Stderr
 	cmd.Dir = bgtPath
 
-	if out, err := cmd.CombinedOutput(); err != nil {
+	errOut := false
+	if out, cmdErr := cmd.CombinedOutput(); cmdErr != nil {
 		logger.Infof("CombinedOutput:\n%s", out)
+		err = cmdErr
+		errOut = true // Don't return just yet, we want to print the log file if it exists..
 		//if err := cmd.Run(); err != nil {
 		// Dump std out
 		// logger.Infof("BGT stdout:\n" + out.String())
 		// logger.Errorf("BGT stderr:\n" + stderr.String())
-		return "", "", "", fmt.Errorf("BGT tool error: %v", err)
 	} else {
 		logger.Infof("CombinedOutput:\n%s", out)
+	}
+
+	// Dump the log file to the log here
+	if bgtLog, logErr := os.ReadFile(outLog); logErr != nil {
+		logger.Infof("Failed to read BGT log \"%v\": %v", outLog, logErr)
+	} else {
+		logger.Infof("BGT Log Output:\n%s", bgtLog)
+	}
+
+	if errOut {
+		return "", "", "", fmt.Errorf("BGT tool error: %v", err)
 	}
 
 	/*

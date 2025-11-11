@@ -41,7 +41,7 @@ func Example_dataimport_ProcessEM() {
 
 			localTemp, sdfLocalPath, _, _, err := startEMProcess("123", z, zFile, &l)
 			fmt.Printf("startEMProcess err=%v\n", err)
-			genFiles, rtts, err := sdfToRSI.ConvertSDFtoRSIs(sdfLocalPath, localTemp)
+			genFiles, rtts, err := sdfToRSI.ConvertSDFtoRSIs(sdfLocalPath, localTemp, &l)
 			fmt.Printf("genFiles: %v\nrtts: %v\nerr: %v\n", genFiles, rtts, err)
 		}
 	}
