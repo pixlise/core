@@ -307,6 +307,118 @@ func (x *PiquantConfigVersionResp) GetPiquantConfig() *PiquantConfig {
 	return nil
 }
 
+// Getting a specific PIQUANT file
+// requires(READ_PIQUANT_SETTINGS)
+type PiquantConfigFileReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ConfigId string `protobuf:"bytes,1,opt,name=configId,proto3" json:"configId,omitempty"`
+	Version  string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	Filename string `protobuf:"bytes,3,opt,name=filename,proto3" json:"filename,omitempty"`
+}
+
+func (x *PiquantConfigFileReq) Reset() {
+	*x = PiquantConfigFileReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_piquant_msgs_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *PiquantConfigFileReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PiquantConfigFileReq) ProtoMessage() {}
+
+func (x *PiquantConfigFileReq) ProtoReflect() protoreflect.Message {
+	mi := &file_piquant_msgs_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PiquantConfigFileReq.ProtoReflect.Descriptor instead.
+func (*PiquantConfigFileReq) Descriptor() ([]byte, []int) {
+	return file_piquant_msgs_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *PiquantConfigFileReq) GetConfigId() string {
+	if x != nil {
+		return x.ConfigId
+	}
+	return ""
+}
+
+func (x *PiquantConfigFileReq) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *PiquantConfigFileReq) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+type PiquantConfigFileResp struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Contents string `protobuf:"bytes,1,opt,name=contents,proto3" json:"contents,omitempty"`
+}
+
+func (x *PiquantConfigFileResp) Reset() {
+	*x = PiquantConfigFileResp{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_piquant_msgs_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *PiquantConfigFileResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PiquantConfigFileResp) ProtoMessage() {}
+
+func (x *PiquantConfigFileResp) ProtoReflect() protoreflect.Message {
+	mi := &file_piquant_msgs_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PiquantConfigFileResp.ProtoReflect.Descriptor instead.
+func (*PiquantConfigFileResp) Descriptor() ([]byte, []int) {
+	return file_piquant_msgs_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *PiquantConfigFileResp) GetContents() string {
+	if x != nil {
+		return x.Contents
+	}
+	return ""
+}
+
 // Listing versions of PIQUANT container to run in API when quant is started
 // requires(READ_PIQUANT_SETTINGS)
 type PiquantVersionListReq struct {
@@ -318,7 +430,7 @@ type PiquantVersionListReq struct {
 func (x *PiquantVersionListReq) Reset() {
 	*x = PiquantVersionListReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_piquant_msgs_proto_msgTypes[6]
+		mi := &file_piquant_msgs_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -331,7 +443,7 @@ func (x *PiquantVersionListReq) String() string {
 func (*PiquantVersionListReq) ProtoMessage() {}
 
 func (x *PiquantVersionListReq) ProtoReflect() protoreflect.Message {
-	mi := &file_piquant_msgs_proto_msgTypes[6]
+	mi := &file_piquant_msgs_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -344,7 +456,7 @@ func (x *PiquantVersionListReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PiquantVersionListReq.ProtoReflect.Descriptor instead.
 func (*PiquantVersionListReq) Descriptor() ([]byte, []int) {
-	return file_piquant_msgs_proto_rawDescGZIP(), []int{6}
+	return file_piquant_msgs_proto_rawDescGZIP(), []int{8}
 }
 
 type PiquantVersionListResp struct {
@@ -358,7 +470,7 @@ type PiquantVersionListResp struct {
 func (x *PiquantVersionListResp) Reset() {
 	*x = PiquantVersionListResp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_piquant_msgs_proto_msgTypes[7]
+		mi := &file_piquant_msgs_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -371,7 +483,7 @@ func (x *PiquantVersionListResp) String() string {
 func (*PiquantVersionListResp) ProtoMessage() {}
 
 func (x *PiquantVersionListResp) ProtoReflect() protoreflect.Message {
-	mi := &file_piquant_msgs_proto_msgTypes[7]
+	mi := &file_piquant_msgs_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -384,7 +496,7 @@ func (x *PiquantVersionListResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PiquantVersionListResp.ProtoReflect.Descriptor instead.
 func (*PiquantVersionListResp) Descriptor() ([]byte, []int) {
-	return file_piquant_msgs_proto_rawDescGZIP(), []int{7}
+	return file_piquant_msgs_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *PiquantVersionListResp) GetPiquantVersions() []string {
@@ -407,7 +519,7 @@ type PiquantWriteCurrentVersionReq struct {
 func (x *PiquantWriteCurrentVersionReq) Reset() {
 	*x = PiquantWriteCurrentVersionReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_piquant_msgs_proto_msgTypes[8]
+		mi := &file_piquant_msgs_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -420,7 +532,7 @@ func (x *PiquantWriteCurrentVersionReq) String() string {
 func (*PiquantWriteCurrentVersionReq) ProtoMessage() {}
 
 func (x *PiquantWriteCurrentVersionReq) ProtoReflect() protoreflect.Message {
-	mi := &file_piquant_msgs_proto_msgTypes[8]
+	mi := &file_piquant_msgs_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -433,7 +545,7 @@ func (x *PiquantWriteCurrentVersionReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PiquantWriteCurrentVersionReq.ProtoReflect.Descriptor instead.
 func (*PiquantWriteCurrentVersionReq) Descriptor() ([]byte, []int) {
-	return file_piquant_msgs_proto_rawDescGZIP(), []int{8}
+	return file_piquant_msgs_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *PiquantWriteCurrentVersionReq) GetPiquantVersion() string {
@@ -454,7 +566,7 @@ type PiquantWriteCurrentVersionResp struct {
 func (x *PiquantWriteCurrentVersionResp) Reset() {
 	*x = PiquantWriteCurrentVersionResp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_piquant_msgs_proto_msgTypes[9]
+		mi := &file_piquant_msgs_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -467,7 +579,7 @@ func (x *PiquantWriteCurrentVersionResp) String() string {
 func (*PiquantWriteCurrentVersionResp) ProtoMessage() {}
 
 func (x *PiquantWriteCurrentVersionResp) ProtoReflect() protoreflect.Message {
-	mi := &file_piquant_msgs_proto_msgTypes[9]
+	mi := &file_piquant_msgs_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -480,7 +592,7 @@ func (x *PiquantWriteCurrentVersionResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PiquantWriteCurrentVersionResp.ProtoReflect.Descriptor instead.
 func (*PiquantWriteCurrentVersionResp) Descriptor() ([]byte, []int) {
-	return file_piquant_msgs_proto_rawDescGZIP(), []int{9}
+	return file_piquant_msgs_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *PiquantWriteCurrentVersionResp) GetPiquantVersion() string {
@@ -501,7 +613,7 @@ type PiquantCurrentVersionReq struct {
 func (x *PiquantCurrentVersionReq) Reset() {
 	*x = PiquantCurrentVersionReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_piquant_msgs_proto_msgTypes[10]
+		mi := &file_piquant_msgs_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -514,7 +626,7 @@ func (x *PiquantCurrentVersionReq) String() string {
 func (*PiquantCurrentVersionReq) ProtoMessage() {}
 
 func (x *PiquantCurrentVersionReq) ProtoReflect() protoreflect.Message {
-	mi := &file_piquant_msgs_proto_msgTypes[10]
+	mi := &file_piquant_msgs_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -527,7 +639,7 @@ func (x *PiquantCurrentVersionReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PiquantCurrentVersionReq.ProtoReflect.Descriptor instead.
 func (*PiquantCurrentVersionReq) Descriptor() ([]byte, []int) {
-	return file_piquant_msgs_proto_rawDescGZIP(), []int{10}
+	return file_piquant_msgs_proto_rawDescGZIP(), []int{12}
 }
 
 type PiquantCurrentVersionResp struct {
@@ -541,7 +653,7 @@ type PiquantCurrentVersionResp struct {
 func (x *PiquantCurrentVersionResp) Reset() {
 	*x = PiquantCurrentVersionResp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_piquant_msgs_proto_msgTypes[11]
+		mi := &file_piquant_msgs_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -554,7 +666,7 @@ func (x *PiquantCurrentVersionResp) String() string {
 func (*PiquantCurrentVersionResp) ProtoMessage() {}
 
 func (x *PiquantCurrentVersionResp) ProtoReflect() protoreflect.Message {
-	mi := &file_piquant_msgs_proto_msgTypes[11]
+	mi := &file_piquant_msgs_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -567,7 +679,7 @@ func (x *PiquantCurrentVersionResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PiquantCurrentVersionResp.ProtoReflect.Descriptor instead.
 func (*PiquantCurrentVersionResp) Descriptor() ([]byte, []int) {
-	return file_piquant_msgs_proto_rawDescGZIP(), []int{11}
+	return file_piquant_msgs_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *PiquantCurrentVersionResp) GetPiquantVersion() *PiquantVersion {
@@ -605,30 +717,40 @@ var file_piquant_msgs_proto_rawDesc = []byte{
 	0x65, 0x73, 0x70, 0x12, 0x34, 0x0a, 0x0d, 0x70, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x43, 0x6f,
 	0x6e, 0x66, 0x69, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x50, 0x69, 0x71,
 	0x75, 0x61, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x0d, 0x70, 0x69, 0x71, 0x75,
-	0x61, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x17, 0x0a, 0x15, 0x50, 0x69, 0x71,
-	0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52,
-	0x65, 0x71, 0x22, 0x42, 0x0a, 0x16, 0x50, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72,
-	0x73, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x12, 0x28, 0x0a, 0x0f,
-	0x70, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x18,
-	0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0f, 0x70, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x56, 0x65,
-	0x72, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x47, 0x0a, 0x1d, 0x50, 0x69, 0x71, 0x75, 0x61, 0x6e,
-	0x74, 0x57, 0x72, 0x69, 0x74, 0x65, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x56, 0x65, 0x72,
-	0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x12, 0x26, 0x0a, 0x0e, 0x70, 0x69, 0x71, 0x75, 0x61,
-	0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x0e, 0x70, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x22,
-	0x48, 0x0a, 0x1e, 0x50, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x57, 0x72, 0x69, 0x74, 0x65, 0x43,
+	0x61, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x68, 0x0a, 0x14, 0x50, 0x69, 0x71,
+	0x75, 0x61, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x46, 0x69, 0x6c, 0x65, 0x52, 0x65,
+	0x71, 0x12, 0x1a, 0x0a, 0x08, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x49, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x08, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x49, 0x64, 0x12, 0x18, 0x0a,
+	0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07,
+	0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x1a, 0x0a, 0x08, 0x66, 0x69, 0x6c, 0x65, 0x6e,
+	0x61, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x66, 0x69, 0x6c, 0x65, 0x6e,
+	0x61, 0x6d, 0x65, 0x22, 0x33, 0x0a, 0x15, 0x50, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x43, 0x6f,
+	0x6e, 0x66, 0x69, 0x67, 0x46, 0x69, 0x6c, 0x65, 0x52, 0x65, 0x73, 0x70, 0x12, 0x1a, 0x0a, 0x08,
+	0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08,
+	0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x73, 0x22, 0x17, 0x0a, 0x15, 0x50, 0x69, 0x71, 0x75,
+	0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65,
+	0x71, 0x22, 0x42, 0x0a, 0x16, 0x50, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73,
+	0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x12, 0x28, 0x0a, 0x0f, 0x70,
+	0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x01,
+	0x20, 0x03, 0x28, 0x09, 0x52, 0x0f, 0x70, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72,
+	0x73, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x47, 0x0a, 0x1d, 0x50, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74,
+	0x57, 0x72, 0x69, 0x74, 0x65, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73,
+	0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x12, 0x26, 0x0a, 0x0e, 0x70, 0x69, 0x71, 0x75, 0x61, 0x6e,
+	0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e,
+	0x70, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x22, 0x48,
+	0x0a, 0x1e, 0x50, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x57, 0x72, 0x69, 0x74, 0x65, 0x43, 0x75,
+	0x72, 0x72, 0x65, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70,
+	0x12, 0x26, 0x0a, 0x0e, 0x70, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69,
+	0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x70, 0x69, 0x71, 0x75, 0x61, 0x6e,
+	0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x22, 0x1a, 0x0a, 0x18, 0x50, 0x69, 0x71, 0x75,
+	0x61, 0x6e, 0x74, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f,
+	0x6e, 0x52, 0x65, 0x71, 0x22, 0x54, 0x0a, 0x19, 0x50, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x43,
 	0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73,
-	0x70, 0x12, 0x26, 0x0a, 0x0e, 0x70, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73,
-	0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x70, 0x69, 0x71, 0x75, 0x61,
-	0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x22, 0x1a, 0x0a, 0x18, 0x50, 0x69, 0x71,
-	0x75, 0x61, 0x6e, 0x74, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69,
-	0x6f, 0x6e, 0x52, 0x65, 0x71, 0x22, 0x54, 0x0a, 0x19, 0x50, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74,
-	0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65,
-	0x73, 0x70, 0x12, 0x37, 0x0a, 0x0e, 0x70, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72,
-	0x73, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x50, 0x69, 0x71,
-	0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x0e, 0x70, 0x69, 0x71,
-	0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x42, 0x0a, 0x5a, 0x08, 0x2e,
-	0x3b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x70, 0x12, 0x37, 0x0a, 0x0e, 0x70, 0x69, 0x71, 0x75, 0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73,
+	0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x50, 0x69, 0x71, 0x75,
+	0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x0e, 0x70, 0x69, 0x71, 0x75,
+	0x61, 0x6e, 0x74, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -643,7 +765,7 @@ func file_piquant_msgs_proto_rawDescGZIP() []byte {
 	return file_piquant_msgs_proto_rawDescData
 }
 
-var file_piquant_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_piquant_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_piquant_msgs_proto_goTypes = []interface{}{
 	(*PiquantConfigListReq)(nil),           // 0: PiquantConfigListReq
 	(*PiquantConfigListResp)(nil),          // 1: PiquantConfigListResp
@@ -651,18 +773,20 @@ var file_piquant_msgs_proto_goTypes = []interface{}{
 	(*PiquantConfigVersionsListResp)(nil),  // 3: PiquantConfigVersionsListResp
 	(*PiquantConfigVersionReq)(nil),        // 4: PiquantConfigVersionReq
 	(*PiquantConfigVersionResp)(nil),       // 5: PiquantConfigVersionResp
-	(*PiquantVersionListReq)(nil),          // 6: PiquantVersionListReq
-	(*PiquantVersionListResp)(nil),         // 7: PiquantVersionListResp
-	(*PiquantWriteCurrentVersionReq)(nil),  // 8: PiquantWriteCurrentVersionReq
-	(*PiquantWriteCurrentVersionResp)(nil), // 9: PiquantWriteCurrentVersionResp
-	(*PiquantCurrentVersionReq)(nil),       // 10: PiquantCurrentVersionReq
-	(*PiquantCurrentVersionResp)(nil),      // 11: PiquantCurrentVersionResp
-	(*PiquantConfig)(nil),                  // 12: PiquantConfig
-	(*PiquantVersion)(nil),                 // 13: PiquantVersion
+	(*PiquantConfigFileReq)(nil),           // 6: PiquantConfigFileReq
+	(*PiquantConfigFileResp)(nil),          // 7: PiquantConfigFileResp
+	(*PiquantVersionListReq)(nil),          // 8: PiquantVersionListReq
+	(*PiquantVersionListResp)(nil),         // 9: PiquantVersionListResp
+	(*PiquantWriteCurrentVersionReq)(nil),  // 10: PiquantWriteCurrentVersionReq
+	(*PiquantWriteCurrentVersionResp)(nil), // 11: PiquantWriteCurrentVersionResp
+	(*PiquantCurrentVersionReq)(nil),       // 12: PiquantCurrentVersionReq
+	(*PiquantCurrentVersionResp)(nil),      // 13: PiquantCurrentVersionResp
+	(*PiquantConfig)(nil),                  // 14: PiquantConfig
+	(*PiquantVersion)(nil),                 // 15: PiquantVersion
 }
 var file_piquant_msgs_proto_depIdxs = []int32{
-	12, // 0: PiquantConfigVersionResp.piquantConfig:type_name -> PiquantConfig
-	13, // 1: PiquantCurrentVersionResp.piquantVersion:type_name -> PiquantVersion
+	14, // 0: PiquantConfigVersionResp.piquantConfig:type_name -> PiquantConfig
+	15, // 1: PiquantCurrentVersionResp.piquantVersion:type_name -> PiquantVersion
 	2,  // [2:2] is the sub-list for method output_type
 	2,  // [2:2] is the sub-list for method input_type
 	2,  // [2:2] is the sub-list for extension type_name
@@ -750,7 +874,7 @@ func file_piquant_msgs_proto_init() {
 			}
 		}
 		file_piquant_msgs_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PiquantVersionListReq); i {
+			switch v := v.(*PiquantConfigFileReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -762,7 +886,7 @@ func file_piquant_msgs_proto_init() {
 			}
 		}
 		file_piquant_msgs_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PiquantVersionListResp); i {
+			switch v := v.(*PiquantConfigFileResp); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -774,7 +898,7 @@ func file_piquant_msgs_proto_init() {
 			}
 		}
 		file_piquant_msgs_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PiquantWriteCurrentVersionReq); i {
+			switch v := v.(*PiquantVersionListReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -786,7 +910,7 @@ func file_piquant_msgs_proto_init() {
 			}
 		}
 		file_piquant_msgs_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PiquantWriteCurrentVersionResp); i {
+			switch v := v.(*PiquantVersionListResp); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -798,7 +922,7 @@ func file_piquant_msgs_proto_init() {
 			}
 		}
 		file_piquant_msgs_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PiquantCurrentVersionReq); i {
+			switch v := v.(*PiquantWriteCurrentVersionReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -810,6 +934,30 @@ func file_piquant_msgs_proto_init() {
 			}
 		}
 		file_piquant_msgs_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*PiquantWriteCurrentVersionResp); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_piquant_msgs_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*PiquantCurrentVersionReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_piquant_msgs_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*PiquantCurrentVersionResp); i {
 			case 0:
 				return &v.state
@@ -828,7 +976,7 @@ func file_piquant_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_piquant_msgs_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
