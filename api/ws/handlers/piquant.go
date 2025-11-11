@@ -110,6 +110,7 @@ func HandlePiquantWriteCurrentVersionReq(req *protos.PiquantWriteCurrentVersionR
 	return &protos.PiquantWriteCurrentVersionResp{}, nil
 }
 
+// TODO: DO A SIMPLE INTEGRATION TEST FOR THIS!!
 func HandlePiquantConfigFileReq(req *protos.PiquantConfigFileReq, hctx wsHelpers.HandlerContext) (*protos.PiquantConfigFileResp, error) {
 	// Validate inputs
 	if err := wsHelpers.CheckStringField(&req.ConfigId, "ConfigId", 1, wsHelpers.IdFieldMaxLength); err != nil {
