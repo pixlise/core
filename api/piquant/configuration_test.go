@@ -11,8 +11,12 @@ func Example_piquant_ReadFieldFromPIQUANTConfigMSA() {
 #SOLIDANGLE  : 0.224 Solid angle collected by the detector in steradians`
 
 	a, err := ReadFieldFromPIQUANTConfigMSA(piquantMSA, "ELEVANGLE")
+	fmt.Printf("%v|%v\n", a, err)
+
+	a, err = ReadFieldFromPIQUANTConfigMSA(piquantMSA, "ELEEEVANGLE")
 	fmt.Printf("%v|%v", a, err)
 
 	// Output:
 	// 48.03|<nil>
+	// 0|Failed to find field ELEEEVANGLE
 }
