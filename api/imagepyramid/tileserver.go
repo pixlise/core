@@ -24,15 +24,29 @@ import (
 )
 
 // ExtractTile extracts a specific tile from a pyramidal TIFF
-// zoom: pyramid level (0 = most zoomed out, higher = more zoomed in)
+// zoom: pyramid level (0 = base image, higher = downsampled levels)
 // x, y: tile coordinates at that zoom level
 // tileSize: tile dimensions (usually 256)
 func ExtractTile(pyramidPath string, zoom, x, y, tileSize int) ([]byte, error) {
-	// Load the specific pyramid level (page)
-	img, err := vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
-		Page: zoom,
-		N:    1,
-	})
+	// Load the specific pyramid level
+	// Level 0 is at page 0, levels 1+ are stored as subIFDs
+	var img *vips.Image
+	var err error
+
+	if zoom == 0 {
+		// Base image at page 0
+		img, err = vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
+			Page: 0,
+			N:    1,
+		})
+	} else {
+		// Pyramid levels stored as subIFDs
+		img, err = vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
+			Subifd: zoom - 1,
+			N:      1,
+		})
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to load pyramid level %d: %w", zoom, err)
 	}
@@ -92,11 +106,25 @@ func ExtractTile(pyramidPath string, zoom, x, y, tileSize int) ([]byte, error) {
 
 // ExtractTilePNG extracts a tile and encodes as PNG (lossless)
 func ExtractTilePNG(pyramidPath string, zoom, x, y, tileSize int) ([]byte, error) {
-	// Load the specific pyramid level (page)
-	img, err := vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
-		Page: zoom,
-		N:    1,
-	})
+	// Load the specific pyramid level
+	// Level 0 is at page 0, levels 1+ are stored as subIFDs
+	var img *vips.Image
+	var err error
+
+	if zoom == 0 {
+		// Base image at page 0
+		img, err = vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
+			Page: 0,
+			N:    1,
+		})
+	} else {
+		// Pyramid levels stored as subIFDs
+		img, err = vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
+			Subifd: zoom - 1,
+			N:      1,
+		})
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to load pyramid level %d: %w", zoom, err)
 	}
@@ -152,4 +180,44 @@ func ExtractTilePNG(pyramidPath string, zoom, x, y, tileSize int) ([]byte, error
 	}
 
 	return buf, nil
+}
+
+// ExtractPyramidLevel extracts a complete pyramid level and saves it as a JPEG
+// level: pyramid level (0 = base image, higher = downsampled levels)
+// outputPath: path to save the extracted level image
+func ExtractPyramidLevel(pyramidPath string, level int, outputPath string) error {
+	// Load the specific pyramid level
+	// Level 0 is at page 0, levels 1+ are stored as subIFDs
+	var img *vips.Image
+	var err error
+
+	if level == 0 {
+		// Base image at page 0
+		img, err = vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
+			Page: 0,
+			N:    1,
+		})
+	} else {
+		// Pyramid levels stored as subIFDs
+		img, err = vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
+			Subifd: level - 1,
+			N:      1,
+		})
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to load pyramid level %d: %w", level, err)
+	}
+	defer img.Close()
+
+	// Save as JPEG
+	err = img.Jpegsave(outputPath, &vips.JpegsaveOptions{
+		Q:              85,
+		OptimizeCoding: true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to save level %d: %w", level, err)
+	}
+
+	return nil
 }

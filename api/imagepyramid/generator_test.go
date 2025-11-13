@@ -18,6 +18,7 @@
 package imagepyramid
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,8 +37,12 @@ func TestGeneratePyramidalTIFF(t *testing.T) {
 		t.Skipf("Test file not found: %s", testFile)
 	}
 
-	// Create temp output directory
-	outputDir := t.TempDir()
+	// Create output directory if it doesn't exist
+	outputDir := filepath.Join(testDir, "Generated")
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatalf("Failed to create output directory: %v", err)
+	}
+
 	outputFile := filepath.Join(outputDir, "pyramid.tiff")
 
 	t.Logf("Generating pyramidal TIFF from: %s", testFile)
@@ -50,9 +55,9 @@ func TestGeneratePyramidalTIFF(t *testing.T) {
 	}
 
 	config := GeneratorConfig{
-		TileSize:    256,
+		TileSize:    64,
 		Compression: "jpeg",
-		Quality:     85,
+		Quality:     20,
 	}
 
 	err := GeneratePyramidalTIFF(input, outputFile, config)
@@ -87,6 +92,20 @@ func TestGeneratePyramidalTIFF(t *testing.T) {
 			layer.Bounds.Max.X,
 			layer.Bounds.Max.Y,
 			len(layer.Tiles))
+	}
+
+	// Extract all pyramid levels for visual inspection
+	t.Logf("✓ Extracting pyramid levels for inspection:")
+	for i := range pyramid.Pyramid {
+		levelFile := filepath.Join(outputDir, fmt.Sprintf("level_%d.jpg", i))
+		err = ExtractPyramidLevel(outputFile, i, levelFile)
+		if err != nil {
+			t.Errorf("Failed to extract level %d: %v", i, err)
+			continue
+		}
+		levelInfo, _ := os.Stat(levelFile)
+		t.Logf("  Level %d saved: %s (%.2f KB)",
+			i, levelFile, float64(levelInfo.Size())/1024)
 	}
 }
 

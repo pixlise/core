@@ -83,10 +83,11 @@ func GeneratePyramidalTIFF(input ImageInput, outputPath string, config Generator
 		Tile:        true,
 		TileWidth:   config.TileSize,
 		TileHeight:  config.TileSize,
-		Pyramid:     true,              // Generate pyramid levels
+		Pyramid:     true, // Generate pyramid levels
 		Compression: compression,
-		Q:           config.Quality,    // JPEG quality
-		Bigtiff:     true,              // Support >4GB files
+		Q:           config.Quality, // JPEG quality
+		Bigtiff:     true,           // Support >4GB files
+		Subifd:      true,           // Makes pyramids into a Subifd instead
 	})
 	if err != nil {
 		return fmt.Errorf("failed to save pyramidal TIFF: %w", err)
@@ -97,7 +98,7 @@ func GeneratePyramidalTIFF(input ImageInput, outputPath string, config Generator
 
 // GetPyramidInfo reads a pyramidal TIFF and returns metadata
 func GetPyramidInfo(pyramidPath string) (*protos.ImagePyramid, error) {
-	// Load first page to get base dimensions
+	// Load base image (page 0) to get dimensions
 	img, err := vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
 		Page: 0,
 		N:    1, // Load just first page
@@ -110,18 +111,19 @@ func GetPyramidInfo(pyramidPath string) (*protos.ImagePyramid, error) {
 	baseHeight := img.Height()
 	img.Close()
 
-	// Count pages by trying to load each level until we get an error
-	pages := 0
-	for {
+	// Count pyramid levels by trying to load each subIFD until we get an error
+	// Level 0 is the base image (page 0), levels 1+ are subIFDs
+	levels := 1 // Start with base level
+	for subifd := 0; ; subifd++ {
 		testImg, err := vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
-			Page: pages,
-			N:    1,
+			Subifd: subifd,
+			N:      1,
 		})
 		if err != nil {
 			break
 		}
 		testImg.Close()
-		pages++
+		levels++
 	}
 
 	// Build protobuf structure
@@ -130,16 +132,28 @@ func GetPyramidInfo(pyramidPath string) (*protos.ImagePyramid, error) {
 			Min: &protos.Coordinate3D{X: 0, Y: 0, Z: 0},
 			Max: &protos.Coordinate3D{X: float32(baseWidth), Y: float32(baseHeight), Z: 0},
 		},
-		Pyramid: make([]*protos.ImagePyramidLayer, 0, pages),
+		Pyramid: make([]*protos.ImagePyramidLayer, 0, levels),
 	}
 
-	// Process each pyramid level (page)
-	for level := 0; level < pages; level++ {
-		// Load this pyramid level
-		levelImg, err := vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
-			Page: level,
-			N:    1,
-		})
+	// Process each pyramid level
+	for level := 0; level < levels; level++ {
+		var levelImg *vips.Image
+		var err error
+
+		if level == 0 {
+			// Level 0 is the base image at page 0
+			levelImg, err = vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
+				Page: 0,
+				N:    1,
+			})
+		} else {
+			// Levels 1+ are stored as subIFDs
+			levelImg, err = vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
+				Subifd: level - 1,
+				N:      1,
+			})
+		}
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to load pyramid level %d: %w", level, err)
 		}
