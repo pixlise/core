@@ -114,7 +114,7 @@ func main() {
 	fmt.Printf("Total pixels: %d (%.2f megapixels)\n", width*height, float64(width*height)/1000000)
 	fmt.Printf("Bands: %d\n", bands)
 	fmt.Printf("Format: %v\n", img.Format())
-	fmt.Printf("Interpretation: %v\n", img.Interpretation())
+	fmt.Printf("Interpretation: %v (%s)\n", img.Interpretation(), interpretationName(img.Interpretation()))
 	if pages > 1 {
 		fmt.Printf("Total pages in file: %d (loaded page %d)\n", pages, pageNum)
 	}

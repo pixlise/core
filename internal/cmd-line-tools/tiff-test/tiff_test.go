@@ -79,7 +79,7 @@ func TestTiffLoading(t *testing.T) {
 			t.Logf("  Dimensions: %dx%d", width, height)
 			t.Logf("  Bands: %d", bands)
 			t.Logf("  Format: %v", img.Format())
-			t.Logf("  Interpretation: %v", img.Interpretation())
+			t.Logf("  Interpretation: %v (%s)", img.Interpretation(), interpretationName(img.Interpretation()))
 			if pages > 1 {
 				t.Logf("  Total pages: %d", pages)
 			}
