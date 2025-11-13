@@ -113,8 +113,8 @@ func main() {
 	fmt.Printf("Dimensions: %d x %d pixels\n", width, height)
 	fmt.Printf("Total pixels: %d (%.2f megapixels)\n", width*height, float64(width*height)/1000000)
 	fmt.Printf("Bands: %d\n", bands)
-	fmt.Printf("Format: %s\n", img.Format())
-	fmt.Printf("Interpretation: %s\n", img.Interpretation())
+	fmt.Printf("Format: %v\n", img.Format())
+	fmt.Printf("Interpretation: %v\n", img.Interpretation())
 	if pages > 1 {
 		fmt.Printf("Total pages in file: %d (loaded page %d)\n", pages, pageNum)
 	}
@@ -124,7 +124,7 @@ func main() {
 
 	if verbose {
 		// Resolution info not directly available in vipsgen API
-		fmt.Printf("Coding: %s\n", img.Coding())
+		fmt.Printf("Coding: %v\n", img.Coding())
 	}
 
 	fmt.Printf("========================================\n")
