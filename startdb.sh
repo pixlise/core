@@ -7,7 +7,7 @@ set -e
 aws_profile="${1:-default}"
 s3_path="${2:-pixlise-backup/DB/pixlise-prodv4/}"
 local_path="${3:-./db-restore}"
-db_name="${4:-local-pixlise}"
+db_name="${4:-pixlise-local-pixlise}"
 db_reset="${5:-false}"
 exclude_collection=$6
 mongo_db_files="./mongo-db-${db_name}"
