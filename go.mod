@@ -1,6 +1,6 @@
 module github.com/pixlise/core/v4
 
-go 1.22
+go 1.24.2
 
 toolchain go1.24.4
 
@@ -32,6 +32,8 @@ require (
 	github.com/PuerkitoBio/rehttp v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/chai2010/tiff v0.0.0-20211005095045-4ec2aa243943 // indirect
+	github.com/cshum/vipsgen v1.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
