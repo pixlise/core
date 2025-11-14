@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/pixlise/core/v4/api/imagepyramid"
 	apiRouter "github.com/pixlise/core/v4/api/router"
@@ -67,6 +68,12 @@ func GetPyramidTileSimple(params apiRouter.ApiHandlerGenericPublicParams) error 
 	// Extract tile directly from pyramid (handles multi-page)
 	tileBytes, err := imagepyramid.ExtractTileFromPage(pyramidPath, page, level, x, y, 256)
 	if err != nil {
+		// If it's an out-of-bounds error (invalid page/level/tile), return 404
+		// Otherwise return 500
+		errStr := err.Error()
+		if strings.Contains(errStr, "out of bounds") || strings.Contains(errStr, "does not exist") {
+			return errorwithstatus.MakeNotFoundError(errStr)
+		}
 		return fmt.Errorf("failed to extract tile: %w", err)
 	}
 

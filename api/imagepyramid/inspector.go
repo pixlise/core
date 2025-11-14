@@ -25,12 +25,12 @@ import (
 
 // TIFFInfo describes the structure of a TIFF file
 type TIFFInfo struct {
-	Width       int  // Width of first page
-	Height      int  // Height of first page
-	Pages       int  // Number of pages/directories (e.g., z-stack slices)
+	Width         int  // Width of first page
+	Height        int  // Height of first page
+	Pages         int  // Number of pages/directories (e.g., z-stack slices)
 	PyramidLevels int  // Number of SubIFDs (pyramid levels), 0 if no pyramid
-	Bands       int  // Number of color channels
-	HasPyramid  bool // True if the TIFF already has pyramid levels
+	Bands         int  // Number of color channels
+	HasPyramid    bool // True if the TIFF already has pyramid levels
 }
 
 // InspectTIFF analyzes a TIFF file and returns its structure
@@ -78,7 +78,7 @@ func (info *TIFFInfo) Print() string {
 	}
 
 	return fmt.Sprintf(
-		"TIFF: %d×%d, %d page(s), %d band(s) - %s",
+		"TIFF: %d x %d, %d page(s), %d band(s) - %s",
 		info.Width, info.Height, info.Pages, info.Bands, status,
 	)
 }
@@ -93,7 +93,17 @@ func (info *TIFFInfo) Print() string {
 //
 // For TIFFs without pyramids:
 //   - only level 0 is available
+//
+// Returns error if page or level doesn't exist
 func GetPageAndLevel(path string, page int, level int) (*vips.Image, error) {
+	// Basic validation
+	if page < 0 {
+		return nil, fmt.Errorf("invalid page %d: page must be >= 0", page)
+	}
+	if level < 0 {
+		return nil, fmt.Errorf("invalid level %d: level must be >= 0", level)
+	}
+
 	opts := &vips.TiffloadOptions{
 		Page: page,
 		N:    1,
@@ -106,7 +116,9 @@ func GetPageAndLevel(path string, page int, level int) (*vips.Image, error) {
 
 	img, err := vips.NewTiffload(path, opts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load page %d, level %d: %w", page, level, err)
+		// vips returns generic error if page/level doesn't exist
+		// Make it clearer for API consumers
+		return nil, fmt.Errorf("page %d or level %d does not exist in TIFF: %w", page, level, err)
 	}
 
 	return img, nil
