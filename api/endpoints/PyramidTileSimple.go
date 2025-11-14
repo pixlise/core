@@ -97,8 +97,17 @@ func GetPyramidInfoSimple(params apiRouter.ApiHandlerGenericPublicParams) error 
 		return fmt.Errorf("failed to read pyramid info: %w", err)
 	}
 
-	// Return protobuf response
-	utils.SendProtoBinary(params.Writer, pyramidInfo)
+	// Check if user wants JSON (via query param or Accept header)
+	wantsJSON := params.Request.URL.Query().Get("format") == "json" ||
+		params.Request.Header.Get("Accept") == "application/json"
+
+	if wantsJSON {
+		// Return JSON response
+		utils.SendProtoJSON(params.Writer, pyramidInfo)
+	} else {
+		// Return protobuf response
+		utils.SendProtoBinary(params.Writer, pyramidInfo)
+	}
 	return nil
 }
 
