@@ -49,10 +49,53 @@ func GeneratePyramidalTIFF(input ImageInput, outputPath string, config Generator
 		config.Quality = 85
 	}
 
-	// Load source image
-	img, err := vips.NewTiffload(input.Path, nil)
+	// First, verify multi-page consistency BEFORE loading all pages
+	// For multi-page TIFFs, all pages MUST have same dimensions
+	// This is critical because we use one ImagePyramid metadata for all pages
+
+	// Load first page to get dimensions and page count
+	firstPage, err := vips.NewTiffload(input.Path, &vips.TiffloadOptions{
+		Page: 0,
+		N:    1,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to load image %s: %w", input.Path, err)
+	}
+
+	firstWidth := firstPage.Width()
+	firstHeight := firstPage.Height()
+	nPages, err := firstPage.GetInt("n-pages")
+	if err != nil {
+		nPages = 1 // Single page TIFF
+	}
+	firstPage.Close()
+
+	// Verify all pages have same dimensions
+	if nPages > 1 {
+		for page := 1; page < nPages; page++ {
+			pageImg, err := vips.NewTiffload(input.Path, &vips.TiffloadOptions{
+				Page: page,
+				N:    1,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to verify page %d dimensions: %w", page, err)
+			}
+
+			if pageImg.Width() != firstWidth || pageImg.Height() != firstHeight {
+				pageImg.Close()
+				return fmt.Errorf("multi-page TIFF has inconsistent dimensions: page 0 is %dx%d but page %d is %dx%d (all pages must match)",
+					firstWidth, firstHeight, page, pageImg.Width(), pageImg.Height())
+			}
+			pageImg.Close()
+		}
+	}
+
+	// Now load ALL pages for pyramid generation
+	img, err := vips.NewTiffload(input.Path, &vips.TiffloadOptions{
+		N: -1, // -1 = load all pages
+	})
+	if err != nil {
+		return fmt.Errorf("failed to load all pages: %w", err)
 	}
 	defer img.Close()
 
@@ -97,8 +140,11 @@ func GeneratePyramidalTIFF(input ImageInput, outputPath string, config Generator
 }
 
 // GetPyramidInfo reads a pyramidal TIFF and returns the ImagePyramid proto
+// For multi-page TIFFs (z-stacks), this returns the pyramid structure that applies to ALL pages
+// All pages are assumed to have identical dimensions and pyramid structure
 func GetPyramidInfo(pyramidPath string) (*protos.ImagePyramid, error) {
 	// Load base image (page 0) to get dimensions
+	// For multi-page TIFFs, we only read page 0 because all pages have the same structure
 	img, err := vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{
 		Page: 0,
 		N:    1, // Load just first page
