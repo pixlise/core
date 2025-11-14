@@ -7,7 +7,7 @@ set -e
 aws_profile="${1:-default}"
 s3_path="${2:-pixlise-backup/DB/pixlise-prodv4/}"
 local_path="${3:-./db-restore}"
-db_name="${4:-local-pixlise}"
+db_name="${4:-pixlise-local-pixlise}"
 db_reset="${5:-false}"
 exclude_collection=$6
 mongo_db_files="./mongo-db-${db_name}"
@@ -49,7 +49,7 @@ if [ "$db_reset" = "true" ]; then
         rm -f $local_path/$exclude_collection.*
     fi
 
-    if [ $(ls -A $local_path) ]; then
+    if [ "$(ls -A $local_path)" ]; then
         echo "Starting docker MongoDB using DB restore..."
         docker run --rm -d -v /$PWD/$local_path:/db-restore -v "$mongo_db_files:/data" -p 27017:27017 -h $(hostname) --name mongo-test "$mongoContainer" --replSet=test && sleep 4 && docker exec mongo-test mongo --eval "rs.initiate();" && sleep 2 && docker exec mongo-test mongorestore --gzip --db $db_name db-restore/
         exit 0
