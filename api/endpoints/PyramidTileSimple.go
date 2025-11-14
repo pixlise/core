@@ -31,7 +31,7 @@ import (
 
 // GetPyramidTileSimple serves tiles from local pyramid files (no S3, no caching, no permissions for now)
 // URL: /pyramid-tiles/{scan}/{filename}/{page}/{level}/{x}/{y}
-func GetPyramidTileSimple(params apiRouter.ApiHandlerGenericParams) error {
+func GetPyramidTileSimple(params apiRouter.ApiHandlerGenericPublicParams) error {
 	// Parse path parameters
 	scanID := params.PathParams[ScanIdentifier]
 	fileName := params.PathParams[FileNameIdentifier]
@@ -79,7 +79,7 @@ func GetPyramidTileSimple(params apiRouter.ApiHandlerGenericParams) error {
 
 // GetPyramidInfoSimple returns ImagePyramid metadata from local pyramid files
 // URL: /pyramid-info/{scan}/{filename}
-func GetPyramidInfoSimple(params apiRouter.ApiHandlerGenericParams) error {
+func GetPyramidInfoSimple(params apiRouter.ApiHandlerGenericPublicParams) error {
 	scanID := params.PathParams[ScanIdentifier]
 	fileName := params.PathParams[FileNameIdentifier]
 
