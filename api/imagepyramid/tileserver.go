@@ -221,3 +221,69 @@ func ExtractPyramidLevel(pyramidPath string, level int, outputPath string) error
 
 	return nil
 }
+
+// ExtractTileFromPage extracts a tile from a specific page and pyramid level
+// Handles both single-page and multi-page pyramids
+// page: which page/z-slice (0 for single-page TIFFs)
+// level: pyramid level (0 = base image, higher = downsampled levels)
+// x, y: tile coordinates at that zoom level
+// tileSize: tile dimensions (usually 256)
+func ExtractTileFromPage(pyramidPath string, page, level, x, y, tileSize int) ([]byte, error) {
+	// Load the specific page and pyramid level
+	img, err := GetPageAndLevel(pyramidPath, page, level)
+	if err != nil {
+		return nil, err
+	}
+	defer img.Close()
+
+	// Calculate crop region
+	left := x * tileSize
+	top := y * tileSize
+	width := tileSize
+	height := tileSize
+
+	// Get actual image dimensions at this level
+	levelWidth := img.Width()
+	levelHeight := img.Height()
+
+	// Clamp tile dimensions if at edge
+	if left+width > levelWidth {
+		width = levelWidth - left
+	}
+	if top+height > levelHeight {
+		height = levelHeight - top
+	}
+
+	// Check if tile is completely out of bounds
+	if left >= levelWidth || top >= levelHeight || width <= 0 || height <= 0 {
+		return nil, fmt.Errorf("tile (%d,%d) out of bounds for page %d, level %d", x, y, page, level)
+	}
+
+	// Extract the tile region (modifies img in-place)
+	err = img.ExtractArea(left, top, width, height)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract tile area: %w", err)
+	}
+
+	// If tile is smaller than expected (edge tile), embed it in a larger canvas
+	if width < tileSize || height < tileSize {
+		err = img.Embed(0, 0, tileSize, tileSize, &vips.EmbedOptions{
+			Extend:     vips.ExtendWhite,
+			Background: []float64{255, 255, 255},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to embed tile: %w", err)
+		}
+	}
+
+	// Encode as JPEG
+	buf, err := img.JpegsaveBuffer(&vips.JpegsaveBufferOptions{
+		Q:              85,
+		OptimizeCoding: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode tile: %w", err)
+	}
+
+	return buf, nil
+}

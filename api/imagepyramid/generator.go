@@ -96,7 +96,7 @@ func GeneratePyramidalTIFF(input ImageInput, outputPath string, config Generator
 	return nil
 }
 
-// GetPyramidInfo reads a pyramidal TIFF and returns metadata
+// GetPyramidInfo reads a pyramidal TIFF and returns the ImagePyramid proto
 func GetPyramidInfo(pyramidPath string) (*protos.ImagePyramid, error) {
 	// Load base image (page 0) to get dimensions
 	img, err := vips.NewTiffload(pyramidPath, &vips.TiffloadOptions{

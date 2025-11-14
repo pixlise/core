@@ -131,6 +131,28 @@ func main() {
 
 	router.AddGenericHandler("/images", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutImage)
 
+	// Requesting pyramid tiles (simple local version for now)
+	router.AddGenericHandler(
+		apiRouter.MakeEndpointPath("/pyramid-tiles",
+			endpoints.ScanIdentifier,
+			endpoints.FileNameIdentifier,
+			endpoints.PageIdentifier,
+			endpoints.LevelIdentifier,
+			endpoints.TileXIdentifier,
+			endpoints.TileYIdentifier),
+		apiRouter.MakeMethodPermission("GET", permission.PermPublic),
+		endpoints.GetPyramidTileSimple,
+	)
+
+	// Requesting pyramid metadata (ImagePyramid proto)
+	router.AddGenericHandler(
+		apiRouter.MakeEndpointPath("/pyramid-info",
+			endpoints.ScanIdentifier,
+			endpoints.FileNameIdentifier),
+		apiRouter.MakeMethodPermission("GET", permission.PermPublic),
+		endpoints.GetPyramidInfoSimple,
+	)
+
 	router.AddGenericHandler("/scan", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutScanData)
 
 	router.AddGenericHandler("/memoise", apiRouter.MakeMethodPermission("GET", permission.PermPublic), endpoints.GetMemoise)
