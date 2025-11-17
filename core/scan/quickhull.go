@@ -3,9 +3,9 @@ package scan
 import "errors"
 
 type HullPoint struct {
-	point  Point
-	idx    int
-	normal *Point
+	Point  Point
+	Idx    int
+	Normal *Point
 }
 
 type QuickHullGenerator struct {
@@ -36,10 +36,10 @@ func getMinMaxPoints(points []HullPoint) (HullPoint, HullPoint) {
 
 	//for(i=1; i<points.length; i++) {
 	for _, pt := range points {
-		if pt.point.x < minPoint.point.x {
+		if pt.Point.X < minPoint.Point.X {
 			minPoint = pt
 		}
-		if pt.point.x > maxPoint.point.x {
+		if pt.Point.X > maxPoint.Point.X {
 			maxPoint = pt
 		}
 	}
@@ -53,9 +53,9 @@ func getMinMaxPoints(points []HullPoint) (HullPoint, HullPoint) {
  * @param {Array} line - Array of two points [ [x1,y1], [x2,y2] ]
  */
 func distanceFromLine(point HullPoint, line1 HullPoint, line2 HullPoint) float64 {
-	vY := line2.point.y - line1.point.y
-	vX := line1.point.x - line2.point.x
-	return (vX*(point.point.y-line1.point.y) + vY*(point.point.x-line1.point.x))
+	vY := line2.Point.Y - line1.Point.Y
+	vX := line1.Point.X - line2.Point.X
+	return (vX*(point.Point.Y-line1.Point.Y) + vY*(point.Point.X-line1.Point.X))
 }
 
 /**

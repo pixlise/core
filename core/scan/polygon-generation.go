@@ -54,10 +54,6 @@ func GeneratePolygons(imageName string,
 		return err
 	}
 
-	// cl, _ := json.MarshalIndent(clusters, "", "    ")
-	// clStr := string(cl)
-	// fmt.Println(clStr)
-
 	// Clear footprints, get from clusters as we process them
 	wholeFootprintHullPoints := [][]HullPoint{}
 
@@ -195,7 +191,7 @@ func fattenFootprint(footprintHullPoints []HullPoint, enlargeBy float64, angleRa
 	// Make rotated boxes for each point, then form the hull around it
 	centers := []Point{}
 	for _, pt := range footprintHullPoints {
-		centers = append(centers, Point{pt.point.x, pt.point.y})
+		centers = append(centers, Point{pt.Point.X, pt.Point.Y})
 	}
 
 	boxes := makeRotatedBoxes(centers, enlargeBy, angleRad)
@@ -203,7 +199,7 @@ func fattenFootprint(footprintHullPoints []HullPoint, enlargeBy float64, angleRa
 	fatHullPoints := []HullPoint{}
 	for c, box := range boxes {
 		for _, pt := range box {
-			fatHullPoints = append(fatHullPoints, HullPoint{point: pt, idx: footprintHullPoints[c].idx})
+			fatHullPoints = append(fatHullPoints, HullPoint{Point: pt, Idx: footprintHullPoints[c].Idx})
 		}
 	}
 
@@ -232,8 +228,8 @@ func calcFootprintNormals(footprintHullPoints []HullPoint) {
 
 		nextPt := footprintHullPoints[nextPtIdx]
 
-		lineVec := normalizeVector(getVectorBetweenPoints(footprintHullPoints[c].point, nextPt.point))
-		normals = append(normals, Point{lineVec.y, -lineVec.x})
+		lineVec := normalizeVector(getVectorBetweenPoints(footprintHullPoints[c].Point, nextPt.Point))
+		normals = append(normals, Point{lineVec.Y, -lineVec.X})
 	}
 
 	// Smooth them and save
@@ -244,8 +240,8 @@ func calcFootprintNormals(footprintHullPoints []HullPoint) {
 		}
 
 		N := normalizeVector(addVectors(normals[c], normals[lastIdx]))
-		footprintHullPoints[c].normal = &Point{}
-		*footprintHullPoints[c].normal = N
+		footprintHullPoints[c].Normal = &Point{}
+		*footprintHullPoints[c].Normal = N
 	}
 }
 
@@ -256,6 +252,24 @@ func makeRotatedBoxes(centers []Point, halfSideLength float64, angleRad float64)
 
 	// Rotate them by the experiment angle
 	rotM := getRotationMatrix(angleRad)
+
+	/* angle -0.6960058151466897
+		         -0.6960058151466897
+
+			matrix:
+			[0.767409204019723, 0.64115763552017, 0]
+		    [-0.64115763552017, 0.767409204019723, 0]
+		    [0, 0, 1]
+
+			[0.767409204019723,0.64115763552017,0]
+	        [-0.64115763552017,0.767409204019723,0]
+	        [0,0,1]
+
+			pt: 0.25164135480895305, 0
+
+				x sum = (matrixrow[0][0]=0.767 * bdata[0][0]=0.25) = 0.19 + (matrixrow[0][1]=0.64 * bdata[1][0]=0) = 0 + (matrixrow[0][2]=0 * bdata[2][0]=1) = 0 = 0.19
+				y sum = (matrixrow[1][0]=-0.64 * bdata[0][0]=0.25) = -0.16 + (matrixrow[1][1]=0.767 * bdata[1][0]=0) = 0 + (matrixrow[1][2]=0 * bdata[2][0]=1) = 0 = -0.16
+	*/
 
 	xAddRotatedVec := pointByMatrix(rotM, xAddVec)
 	yAddRotatedVec := pointByMatrix(rotM, yAddVec)
@@ -302,7 +316,7 @@ func findExperimentAngle(footprintHullPoints []HullPoint) (float64, error) {
 			lastIdx = len(footprintHullPoints) - 1
 		}
 
-		vec := getVectorBetweenPoints(footprintHullPoints[lastIdx].point, footprintHullPoints[c].point)
+		vec := getVectorBetweenPoints(footprintHullPoints[lastIdx].Point, footprintHullPoints[c].Point)
 		vecLen := getVectorLength(vec)
 		if longestVec == nil || vecLen > longestVecLength {
 			longestVec = &vec
@@ -321,7 +335,7 @@ func findExperimentAngle(footprintHullPoints []HullPoint) (float64, error) {
 	// Calculate angle
 	experimentAngleRad = math.Acos(float64(getVectorDotProduct(Point{0, -1}, normalVec)))
 
-	if normalVec.x < 0 {
+	if normalVec.X < 0 {
 		experimentAngleRad = math.Pi/2 - experimentAngleRad
 	}
 
@@ -345,7 +359,7 @@ func (g *gen) makeConvexHull(useLocIdxs []int, scanPoints []ScanPoint) []HullPoi
 
 		if loc.coord != nil && (loc.hasNormalSpectra || loc.hasPseudoIntensities) {
 			// normal spectra may not be down yet!
-			hullPoints = append(hullPoints, HullPoint{point: *loc.coord, idx: locIdx})
+			hullPoints = append(hullPoints, HullPoint{Point: *loc.coord, Idx: locIdx})
 		}
 	}
 
@@ -353,6 +367,7 @@ func (g *gen) makeConvexHull(useLocIdxs []int, scanPoints []ScanPoint) []HullPoi
 	if err != nil {
 		fmt.Printf("ERROR: %v\n", err)
 	}
+
 	return hull
 }
 
@@ -484,7 +499,7 @@ func (g *gen) findMinPointDistances(scanPoints []ScanPoint, scanEntries []*proto
 		47,
 		417}
 	// Now loop through all and find the nearest point to each sample in distance-squared units
-	ExclusionBoxSize := float64(g.locationPointBBox.w+g.locationPointBBox.h) / 2 / 10
+	ExclusionBoxSize := float64(g.locationPointBBox.W+g.locationPointBBox.H) / 2 / 10
 
 	for _, sampleIdx := range samples {
 		samplePt := scanPoints[sampleIdx].coord
@@ -497,8 +512,8 @@ func (g *gen) findMinPointDistances(scanPoints []ScanPoint, scanEntries []*proto
 		for _, locPt := range scanPoints {
 			// Don't compare to itself, don't compare to PMCs without locations!
 			if locPt.coord != nil && locIdx != sampleIdx {
-				xDiff := math.Abs(float64(samplePt.x - locPt.coord.x))
-				yDiff := math.Abs(float64(samplePt.y - locPt.coord.y))
+				xDiff := math.Abs(float64(samplePt.X - locPt.coord.X))
+				yDiff := math.Abs(float64(samplePt.Y - locPt.coord.Y))
 
 				// Could use ptWithinBox but then gotta calculate xDiff and yDiff anyway...
 
@@ -576,7 +591,7 @@ func (g *gen) calcImagePixelsToPhysicalmm(beamUnitsInMeters bool) float64 {
 	// We see the diagonal size of the location points bbox vs the widest X distance between points
 	mmConversion := math.Sqrt(
 		float64(g.locationPointXSize*g.locationPointXSize+g.locationPointYSize*g.locationPointYSize) /
-			float64(g.locationPointBBox.w*g.locationPointBBox.w+g.locationPointBBox.h*g.locationPointBBox.h))
+			float64(g.locationPointBBox.W*g.locationPointBBox.W+g.locationPointBBox.H*g.locationPointBBox.H))
 
 	if beamUnitsInMeters {
 		mmConversion *= 1000.0
@@ -694,7 +709,7 @@ func (g *gen) initLocationCachingForBeams(
 
 				roundedIJ := convertLocationComponentToPixelPosition(pixlX, pixlY)
 				if firstBeam {
-					g.locationPointBBox = Rect{roundedIJ.x, roundedIJ.y, 0, 0}
+					g.locationPointBBox = Rect{roundedIJ.X, roundedIJ.Y, 0, 0}
 					firstBeam = false
 				} else {
 					g.locationPointBBox.expandToFitPoint(roundedIJ)
@@ -724,7 +739,7 @@ func (g *gen) initLocationCachingForBeams(
 		return []ScanPoint{}, errors.New("No location information found")
 	}
 
-	fmt.Printf(`  Location position relative to context image: (x,y)=%v,%v, (w,h)=%v,%v\n`, g.locationPointBBox.x, g.locationPointBBox.y, g.locationPointBBox.w, g.locationPointBBox.h)
+	fmt.Printf(`  Location position relative to context image: (x,y)=%v,%v, (w,h)=%v,%v\n`, g.locationPointBBox.X, g.locationPointBBox.Y, g.locationPointBBox.W, g.locationPointBBox.H)
 
 	// store sizing
 	g.locationPointXSize = locPointXMinMax.getRange()
@@ -751,7 +766,7 @@ func makeScanPointPolygons(bboxExpand float64, cluster PointCluster, scanPoints 
 
 		if loc.coord != nil && (loc.hasNormalSpectra || loc.hasPseudoIntensities) {
 			// normal spectra may not be down yet!
-			pt := vornoi.SiteVertex{Vertex: vornoi.Vertex{X: loc.coord.x, Y: loc.coord.y}, Data: locIdx}
+			pt := vornoi.SiteVertex{Vertex: vornoi.Vertex{X: loc.coord.X, Y: loc.coord.Y}, Data: locIdx}
 			if clusterBBox == nil {
 				clusterBBox = &Rect{pt.X, pt.Y, 0, 0}
 			} else {
@@ -768,7 +783,7 @@ func makeScanPointPolygons(bboxExpand float64, cluster PointCluster, scanPoints 
 		return nil
 	}
 
-	bbox := vornoi.NewBBox((*clusterBBox).x-bboxExpand, clusterBBox.maxX()+bboxExpand, clusterBBox.y-bboxExpand, clusterBBox.maxY()+bboxExpand) // xl is x-left, xr is x-right, yt is y-top, and yb is y-bottom
+	bbox := vornoi.NewBBox((*clusterBBox).X-bboxExpand, clusterBBox.maxX()+bboxExpand, clusterBBox.Y-bboxExpand, clusterBBox.maxY()+bboxExpand) // xl is x-left, xr is x-right, yt is y-top, and yb is y-bottom
 
 	// Compute diagram and close cells (add half edges from bounding box)
 	diagram := vornoi.ComputeDiagram(sites, bbox, true)
@@ -834,7 +849,7 @@ func makePolygolGeom(poly []Point) polygol.Geom {
 	vals := [][]float64{}
 
 	for _, pt := range poly {
-		vals = append(vals, []float64{pt.x, pt.y})
+		vals = append(vals, []float64{pt.X, pt.Y})
 	}
 
 	return polygol.Geom{{vals}}
@@ -844,7 +859,7 @@ func makePolygolGeomFromHull(poly []HullPoint) polygol.Geom {
 	vals := [][]float64{}
 
 	for _, pt := range poly {
-		vals = append(vals, []float64{pt.point.x, pt.point.y})
+		vals = append(vals, []float64{pt.Point.X, pt.Point.Y})
 	}
 
 	return polygol.Geom{{vals}}
@@ -917,8 +932,8 @@ func getAngleForLocation(locIdx int, clusterAngleRad float64, scanPoints []ScanP
 
 	// Get its angle to axis
 	compareAxis := Point{0, -1}
-	if vecN.x < 0 {
-		compareAxis.y = 1
+	if vecN.X < 0 {
+		compareAxis.Y = 1
 	}
 
 	result := math.Acos(getVectorDotProduct(compareAxis, vecN))

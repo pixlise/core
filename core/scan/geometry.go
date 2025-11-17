@@ -3,27 +3,27 @@ package scan
 import "math"
 
 type Point struct {
-	x float64
-	y float64
+	X float64
+	Y float64
 }
 
 func getVectorBetweenPoints(pt1 Point, pt2 Point) Point {
-	return Point{pt2.x - pt1.x, pt2.y - pt1.y}
+	return Point{pt2.X - pt1.X, pt2.Y - pt1.Y}
 }
 
 func getVectorDotProduct(v1 Point, v2 Point) float64 {
-	return v1.x*v2.x + v1.y*v2.y
+	return v1.X*v2.X + v1.Y*v2.Y
 }
 
 func addVectors(v1 Point, v2 Point) Point {
-	return Point{v1.x + v2.x, v1.y + v2.y}
+	return Point{v1.X + v2.X, v1.Y + v2.Y}
 }
 func subtractVectors(v1 Point, v2 Point) Point {
-	return Point{v1.x - v2.x, v1.y - v2.y}
+	return Point{v1.X - v2.X, v1.Y - v2.Y}
 }
 
 func getVectorLength(v Point) float64 {
-	return math.Sqrt(float64(v.x*v.x + v.y*v.y))
+	return math.Sqrt(float64(v.X*v.X + v.Y*v.Y))
 }
 
 func normalizeVector(v Point) Point {
@@ -32,11 +32,11 @@ func normalizeVector(v Point) Point {
 }
 
 func vectorsEqual(v1 Point, v2 Point) bool {
-	return v1.x == v2.x && v1.y == v2.y
+	return v1.X == v2.X && v1.Y == v2.Y
 }
 
 func scaleVector(v Point, s float64) Point {
-	return Point{v.x * s, v.y * s}
+	return Point{v.X * s, v.Y * s}
 }
 
 func getRotationMatrix(angleRad float64) [][]float64 {
@@ -48,10 +48,16 @@ func getRotationMatrix(angleRad float64) [][]float64 {
 }
 
 func pointByMatrix(m [][]float64, v Point) Point {
-	return Point{
-		m[0][0]*v.x + m[1][0]*v.y + m[2][0],
-		m[0][1]*v.x + m[1][1]*v.y + m[2][1],
+	pt := Point{
+		m[0][0]*v.X + m[0][1]*v.Y + m[0][2],
+		m[1][0]*v.X + m[1][1]*v.Y + m[1][2],
 	}
+	w := m[2][0]*v.X + m[2][1]*v.Y + m[2][2]
+
+	if w == 1 || w == 0 {
+		return pt
+	}
+	return Point{pt.X / w, pt.Y / w}
 }
 
 type ScanPointPolygon struct {
@@ -63,7 +69,7 @@ func (p *ScanPointPolygon) updateBBox() {
 	if len(p.points) > 0 {
 		for c, pt := range p.points {
 			if c == 0 {
-				p.bbox = Rect{pt.x, pt.y, 0, 0}
+				p.bbox = Rect{pt.X, pt.Y, 0, 0}
 			} else {
 				p.bbox.expandToFitPoint(pt)
 			}
@@ -72,38 +78,38 @@ func (p *ScanPointPolygon) updateBBox() {
 }
 
 type Rect struct {
-	x float64
-	y float64
-	w float64
-	h float64
+	X float64
+	Y float64
+	W float64
+	H float64
 }
 
 func (r *Rect) maxX() float64 {
-	return r.x + r.w
+	return r.X + r.W
 }
 
 func (r *Rect) maxY() float64 {
-	return r.y + r.h
+	return r.Y + r.H
 }
 
 func (r *Rect) expandToFitPoint(pt Point) {
-	if pt.x < r.x {
-		r.w += r.x - pt.x
-		r.x = pt.x
+	if pt.X < r.X {
+		r.W += r.X - pt.X
+		r.X = pt.X
 	}
 
-	if pt.y < r.y {
-		r.h += r.y - pt.y
-		r.y = pt.y
+	if pt.Y < r.Y {
+		r.H += r.Y - pt.Y
+		r.Y = pt.Y
 	}
 
 	tmp := r.maxX()
-	if pt.x > tmp {
-		r.w += pt.x - tmp
+	if pt.X > tmp {
+		r.W += pt.X - tmp
 	}
 	tmp = r.maxY()
-	if pt.y > tmp {
-		r.h += pt.y - tmp
+	if pt.Y > tmp {
+		r.H += pt.Y - tmp
 	}
 }
 
@@ -116,7 +122,7 @@ func (r *Rect) expandToFitPoint(pt Point) {
 
   updateBBox() {
     if (this.points.length > 0) {
-      this._bbox = new Rect(this.points[0].x, this.points[0].y, 0, 0);
+      this._bbox = new Rect(this.points[0].X, this.points[0].Y, 0, 0);
       this._bbox.expandToFitPoints(this.points);
     }
   }
