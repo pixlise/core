@@ -26,15 +26,16 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pixlise/core/v4/api/config"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/imagepyramid"
+	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -43,7 +44,9 @@ func main() {
 	var outputPath string
 	var scanID string
 	var imageName string
-	var configPath string
+	var mongoSecret string
+	var dbName string
+	var bucket string
 	var tileSize int
 	var quality int
 	var compression string
@@ -51,9 +54,11 @@ func main() {
 
 	flag.StringVar(&inputPath, "input", "", "Path to input TIFF file (required)")
 	flag.StringVar(&outputPath, "output", "", "Path to output pyramid TIFF (for standalone use)")
-	flag.StringVar(&configPath, "config", "", "API config JSON path (for MongoDB/FileAccess integration)")
-	flag.StringVar(&scanID, "scanId", "", "Scan ID (required with -config)")
-	flag.StringVar(&imageName, "imageName", "", "Image name (e.g., 'z-stack.tif') (required with -config)")
+	flag.StringVar(&mongoSecret, "mongoSecret", "", "MongoDB secret (for MongoDB integration)")
+	flag.StringVar(&dbName, "dbName", "", "Database name (e.g., 'pixlise-localdev')")
+	flag.StringVar(&bucket, "bucket", "", "S3 bucket name (e.g., 'yuvraj-test-data')")
+	flag.StringVar(&scanID, "scanId", "", "Scan ID (required with -mongoSecret)")
+	flag.StringVar(&imageName, "imageName", "", "Image name (e.g., 'z-stack.tif') (required with -mongoSecret)")
 	flag.IntVar(&tileSize, "tile-size", 256, "Tile size in pixels (default: 256)")
 	flag.IntVar(&quality, "quality", 85, "JPEG quality 1-100 (default: 85)")
 	flag.StringVar(&compression, "compression", "jpeg", "Compression: jpeg or deflate (default: jpeg)")
@@ -78,8 +83,11 @@ func main() {
 	}
 
 	// Validate flags for integration mode
-	if configPath != "" && (scanID == "" || imageName == "") {
-		fmt.Println("ERROR: When using -config, both -scanId and -imageName are required")
+	// If any MongoDB integration flag is set, require all of them
+	mongoIntegrationMode := dbName != "" || bucket != "" || scanID != "" || imageName != ""
+	if mongoIntegrationMode && (dbName == "" || bucket == "" || scanID == "" || imageName == "") {
+		fmt.Println("ERROR: When using MongoDB integration, all of -dbName, -bucket, -scanId, and -imageName are required")
+		fmt.Println("       (-mongoSecret is optional - leave empty for local MongoDB)")
 		printUsage()
 		os.Exit(1)
 	}
@@ -92,10 +100,17 @@ func main() {
 	fmt.Printf("Pyramidal TIFF Generator\n")
 	fmt.Printf("========================================\n")
 	fmt.Printf("Input:       %s\n", inputPath)
-	if configPath != "" {
-		fmt.Printf("Config:      %s\n", configPath)
+	mongoIntegrationMode = dbName != "" || bucket != "" || scanID != "" || imageName != ""
+	if mongoIntegrationMode {
+		fmt.Printf("Database:    %s\n", dbName)
+		fmt.Printf("Bucket:      %s\n", bucket)
 		fmt.Printf("Scan ID:     %s\n", scanID)
 		fmt.Printf("Image name:  %s\n", imageName)
+		if mongoSecret != "" {
+			fmt.Printf("Mongo:       AWS Secrets Manager (%s)\n", mongoSecret)
+		} else {
+			fmt.Printf("Mongo:       Local (localhost:27017)\n")
+		}
 	} else if outputPath != "" {
 		fmt.Printf("Output:      %s\n", outputPath)
 	}
@@ -162,10 +177,14 @@ func main() {
 	fmt.Printf("Compression:     %.1f%% of original\n", float64(tempInfo.Size())/float64(inputInfo.Size())*100)
 	fmt.Printf("========================================\n")
 
-	// If config provided, integrate with MongoDB and FileAccess
-	if configPath != "" {
+	// If MongoDB integration flags provided, integrate with MongoDB and FileAccess
+	mongoIntegrationMode = dbName != "" || bucket != "" || scanID != "" || imageName != ""
+	if mongoIntegrationMode {
 		fmt.Printf("\n📦 Integrating with PIXLISE storage...\n")
-		err = integrateWithPIXLISE(configPath, scanID, imageName, inputPath, tempPyramid)
+		if mongoSecret == "" {
+			fmt.Printf("  Using local MongoDB (localhost:27017)\n")
+		}
+		err = integrateWithPIXLISE(mongoSecret, dbName, bucket, scanID, imageName, inputPath, tempPyramid)
 		if err != nil {
 			fmt.Printf("ERROR: Integration failed: %v\n", err)
 			os.Exit(1)
@@ -206,9 +225,9 @@ func main() {
 
 	// Print usage instructions
 	fmt.Printf("\n✅ Done!\n")
-	if configPath != "" {
+	if mongoSecret != "" {
 		fmt.Printf("\nTo test the API endpoints:\n")
-		fmt.Printf("  1. Start API:    go run ./internal/api -customConfigPath=%s\n", configPath)
+		fmt.Printf("  1. Start API:    go run ./internal/api\n")
 		fmt.Printf("  2. Get metadata: curl http://localhost:8080/pyramid-info/%s/%s?format=json\n", scanID, imageName)
 		fmt.Printf("  3. Get a tile:   curl http://localhost:8080/pyramid-tiles/%s/%s/0/0/0/0 > tile.jpg\n", scanID, imageName)
 	}
@@ -216,31 +235,36 @@ func main() {
 }
 
 // integrateWithPIXLISE stores the pyramid in FileAccess and updates MongoDB
-func integrateWithPIXLISE(configPath, scanID, imageName, originalImagePath, pyramidTempPath string) error {
-	// Load config
-	cfg, err := config.NewConfigFromFile(configPath)
-	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
-	}
-
+func integrateWithPIXLISE(mongoSecret, dbName, bucket, scanID, imageName, originalImagePath, pyramidTempPath string) error {
 	// Create logger
 	iLog := &logger.StdOutLogger{}
 	iLog.SetLogLevel(logger.LogInfo)
 
+	// Get AWS session
+	sess, err := awsutil.GetSession()
+	if err != nil {
+		return fmt.Errorf("failed to create AWS session: %w", err)
+	}
+
 	// Connect to MongoDB
 	fmt.Printf("  Connecting to MongoDB...\n")
-	mongoClient, _, err := mongoDBConnection.Connect(nil, cfg.MongoSecret, iLog)
+	mongoClient, _, err := mongoDBConnection.Connect(sess, mongoSecret, iLog)
 	if err != nil {
 		return fmt.Errorf("failed to connect to MongoDB: %w", err)
 	}
 	defer mongoClient.Disconnect(context.TODO())
 
-	dbName := mongoDBConnection.GetDatabaseName("pixlise", cfg.EnvironmentName)
 	db := mongoClient.Database(dbName)
 
-	// Create FileAccess (use local filesystem for now)
-	fmt.Printf("  Using local filesystem storage\n")
+	// Create FileAccess - use local filesystem for development
 	fs := &fileaccess.FSAccess{}
+	fmt.Printf("  Using local storage: ~/PIXLISE/%s/\n", bucket)
+
+	// Step 1: Create or verify Scan exists
+	err = createOrVerifyScan(db, scanID, imageName, iLog)
+	if err != nil {
+		return fmt.Errorf("failed to create/verify scan: %w", err)
+	}
 
 	// Read pyramid bytes
 	pyramidBytes, err := os.ReadFile(pyramidTempPath)
@@ -254,15 +278,15 @@ func integrateWithPIXLISE(configPath, scanID, imageName, originalImagePath, pyra
 
 	fmt.Printf("  Storing pyramid at: %s\n", pyramidStoragePath)
 
-	// Store pyramid via FileAccess
-	err = fs.WriteObject(cfg.DatasetsBucket, pyramidStoragePath, pyramidBytes)
+	// Step 2: Store pyramid via FileAccess
+	err = fs.WriteObject(bucket, pyramidStoragePath, pyramidBytes)
 	if err != nil {
 		return fmt.Errorf("failed to write pyramid to storage: %w", err)
 	}
 
 	fmt.Printf("  ✅ Pyramid stored successfully\n")
 
-	// Get pyramid metadata
+	// Step 3: Get pyramid metadata
 	fmt.Printf("  Extracting pyramid metadata...\n")
 	pyramidInfo, err := imagepyramid.GetPyramidInfo(pyramidTempPath)
 	if err != nil {
@@ -282,7 +306,7 @@ func integrateWithPIXLISE(configPath, scanID, imageName, originalImagePath, pyra
 
 	fmt.Printf("  Image dimensions: %dx%d pixels\n", imgWidth, imgHeight)
 
-	// Create or update ScanImage in MongoDB
+	// Step 4: Create or update ScanImage in MongoDB
 	fmt.Printf("  Creating/updating ScanImage in MongoDB...\n")
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.ImagesName)
@@ -322,6 +346,53 @@ func integrateWithPIXLISE(configPath, scanID, imageName, originalImagePath, pyra
 	return nil
 }
 
+// createOrVerifyScan creates a minimal ScanItem if it doesn't exist
+func createOrVerifyScan(db *mongo.Database, scanID, imageName string, log logger.ILogger) error {
+	ctx := context.TODO()
+	coll := db.Collection(dbCollections.ScansName)
+
+	// Check if scan already exists
+	var existingScan protos.ScanItem
+	err := coll.FindOne(ctx, bson.M{"_id": scanID}).Decode(&existingScan)
+
+	if err == nil {
+		// Scan exists
+		fmt.Printf("  ℹ️  Scan '%s' already exists in database\n", scanID)
+		return nil
+	} else if err != mongo.ErrNoDocuments {
+		// Some other error occurred
+		return fmt.Errorf("failed to query scan: %w", err)
+	}
+
+	// Scan doesn't exist, create a minimal one
+	fmt.Printf("  Creating minimal scan '%s'...\n", scanID)
+
+	now := uint32(time.Now().Unix())
+	minimalScan := &protos.ScanItem{
+		Id:                         scanID,
+		Title:                      fmt.Sprintf("Image Upload: %s", imageName),
+		Description:                "Scan created automatically by pyramid-generator CLI tool",
+		Instrument:                 protos.ScanInstrument_UNKNOWN_INSTRUMENT,
+		InstrumentConfig:           "",
+		TimestampUnixSec:           now,
+		Meta:                       map[string]string{},
+		ContentCounts:              map[string]int32{},
+		CreatorUserId:              "pyramid-generator-cli",
+		Tags:                       []string{"pyramid-upload"},
+		PreviousImportTimesUnixSec: []uint32{},
+		CompleteTimeStampUnixSec:   now,
+	}
+
+	_, err = coll.InsertOne(ctx, minimalScan)
+	if err != nil {
+		return fmt.Errorf("failed to create scan: %w", err)
+	}
+
+	fmt.Printf("  ✅ Minimal scan created\n")
+	log.Infof("Created minimal scan: %s", scanID)
+	return nil
+}
+
 func inspectPyramid(pyramidPath string) {
 	pyramid, err := imagepyramid.GetPyramidInfo(pyramidPath)
 	if err != nil {
@@ -350,9 +421,11 @@ func printUsage() {
 	fmt.Println("")
 	fmt.Println("Options:")
 	fmt.Println("  -input string       Path to input TIFF file (required)")
-	fmt.Println("  -config string      API config JSON path (enables MongoDB/FileAccess integration)")
-	fmt.Println("  -scanId string      Scan ID (required with -config)")
-	fmt.Println("  -imageName string   Image name e.g. 'z-stack.tif' (required with -config)")
+	fmt.Println("  -mongoSecret string MongoDB secret (enables MongoDB integration)")
+	fmt.Println("  -dbName string      Database name e.g. 'pixlise-localdev' (required with -mongoSecret)")
+	fmt.Println("  -bucket string      S3 bucket name e.g. 'yuvraj-test-data' (required with -mongoSecret)")
+	fmt.Println("  -scanId string      Scan ID (required with -mongoSecret)")
+	fmt.Println("  -imageName string   Image name e.g. 'z-stack.tif' (required with -mongoSecret)")
 	fmt.Println("  -output string      Output path (for standalone use)")
 	fmt.Println("  -tile-size int      Tile size in pixels (default: 256)")
 	fmt.Println("  -quality int        JPEG quality 1-100 (default: 85)")
@@ -363,8 +436,9 @@ func printUsage() {
 	fmt.Println("  # Standalone generation (local file only)")
 	fmt.Println("  pyramid-generator -input image.tif -output pyramid.tif")
 	fmt.Println("")
-	fmt.Println("  # Full integration with PIXLISE (FileAccess + MongoDB)")
-	fmt.Println("  pyramid-generator -input image.tif -config ./local-api-config.json \\")
+	fmt.Println("  # Full integration with PIXLISE (S3 + MongoDB + Scan creation)")
+	fmt.Println("  pyramid-generator -input image.tif -mongoSecret pixlise \\")
+	fmt.Println("    -dbName pixlise-localdev -bucket yuvraj-test-data \\")
 	fmt.Println("    -scanId biggerpagesscan -imageName z-stack.tif")
 	fmt.Println("")
 	fmt.Println("  # Inspect existing pyramid")
