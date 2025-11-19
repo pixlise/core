@@ -22,9 +22,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"github.com/cshum/vipsgen/vips"
 )
 
 const OUTPUT_BASE_DIR = "~/PIXLISE/TESTING"
@@ -68,93 +65,35 @@ func main() {
 	fmt.Printf("Output:     %s/%s/\n", outputBaseDir, scanID)
 	fmt.Printf("========================================\n")
 
-	// Step 1: Load TIFF and read metadata
-	fmt.Printf("\nReading TIFF metadata...\n")
-	img, err := vips.NewTiffload(inputPath, &vips.TiffloadOptions{
-		Page: 0,
-		N:    1,
-	})
+	// Use the modular generator function
+	opts := DefaultPyramidGenerationOptions()
+	opts.TileSize = tileSize
+
+	fmt.Printf("\nGenerating DeepZoom tiles...\n")
+	result, err := GeneratePyramidTiles(inputPath, outputBaseDir, imageName, scanID, opts)
 	if err != nil {
-		fmt.Printf("ERROR: Failed to load TIFF: %v\n", err)
+		fmt.Printf("ERROR: %v\n", err)
 		os.Exit(1)
 	}
-	defer img.Close()
 
-	// Get metadata
-	nPages := 1
-	if pagesVal, err := img.GetInt("n-pages"); err == nil {
-		nPages = pagesVal
-	}
-
-	bands := img.Bands()
-	width := img.Width()
-	height := img.Height()
-	interpretation := img.Interpretation()
-
-	fmt.Printf("  Pages:          %d\n", nPages)
-	fmt.Printf("  Dimensions:     %d x %d (page 0)\n", width, height)
-	fmt.Printf("  Bands:          %d\n", bands)
-	fmt.Printf("  Interpretation: %v\n", interpretation)
+	// Display metadata
+	fmt.Printf("\nTIFF Metadata:\n")
+	fmt.Printf("  Pages:          %d\n", result.NumberOfPages)
+	fmt.Printf("  Dimensions:     %d x %d (page 0)\n", result.Width, result.Height)
+	fmt.Printf("  Bands:          %d\n", result.Bands)
+	fmt.Printf("  Interpretation: %v\n", result.Interpretation)
 
 	// Try to get OME XML or image description
-	if desc, err := img.GetString("image-description"); err == nil && len(desc) > 0 {
-		if strings.Contains(desc, "OME") || strings.Contains(desc, "<?xml") {
-			fmt.Printf("  OME/XML found:  %d bytes\n", len(desc))
-		}
+	if omeData, err := GetOMEMetadata(inputPath); err == nil && len(omeData) > 0 {
+		fmt.Printf("  OME/XML found:  %d bytes\n", len(omeData))
 	}
 
-	// Step 2: Process each page with dzsave
-	fmt.Printf("\nGenerating DeepZoom tiles for %d page(s)...\n", nPages)
-
-	for page := 0; page < nPages; page++ {
-		fmt.Printf("\n  Page %d/%d:\n", page+1, nPages)
-
-		// Construct output paths
-		// Structure: scan/imageName/page_N/
-		pageName := fmt.Sprintf("page_%d", page)
-		outputDir := filepath.Join(outputBaseDir, scanID, imageName, pageName)
-
-		// Create output directory
-		if err := os.MkdirAll(outputDir, 0755); err != nil {
-			fmt.Printf("    ERROR: Failed to create output directory: %v\n", err)
-			continue
+	// Display generation results
+	fmt.Printf("\nGenerated tiles for %d page(s):\n", result.NumberOfPages)
+	for page := 0; page < result.NumberOfPages; page++ {
+		if basePath, ok := result.OutputPaths[page]; ok {
+			fmt.Printf("  ✓ Page %d: %s.dzi\n", page, basePath)
 		}
-
-		// Output base (dzsave will append .dzi and _files/)
-		outputBase := filepath.Join(outputDir, pageName)
-
-		fmt.Printf("    Generating tiles...\n")
-
-		// Load this specific page using vipsgen
-		pageImg, err := vips.NewTiffload(inputPath, &vips.TiffloadOptions{
-			Page: page,
-			N:    1,
-		})
-		if err != nil {
-			fmt.Printf("    ERROR: Failed to load page %d: %v\n", page, err)
-			continue
-		}
-
-		// Use vipsgen Dzsave
-		err = pageImg.Dzsave(outputBase, &vips.DzsaveOptions{
-			Imagename: pageName,
-			Suffix:    ".jpg",
-			Q:         85,
-			Depth:     vips.DzDepthOnetile,
-			Overlap:   0,
-			TileSize:  tileSize,
-		})
-
-		pageImg.Close()
-
-		if err != nil {
-			fmt.Printf("    ERROR: dzsave failed: %v\n", err)
-			continue
-		}
-
-		fmt.Printf("    ✓ Tiles generated\n")
-		fmt.Printf("       Metadata: %s.dzi\n", outputBase)
-		fmt.Printf("       Tiles:    %s_files/\n", outputBase)
 	}
 
 	fmt.Printf("\n========================================\n")
@@ -163,12 +102,16 @@ func main() {
 	fmt.Printf("\nGenerated structure:\n")
 	fmt.Printf("  %s/\n", outputBaseDir)
 	fmt.Printf("    %s/\n", scanID)
-	for page := 0; page < nPages; page++ {
-		pageImageName := fmt.Sprintf("%s_page_%d", imageName, page)
-		fmt.Printf("      %s/\n", pageImageName)
-		fmt.Printf("        %s.dzi\n", pageImageName)
-		fmt.Printf("        %s_files/\n", pageImageName)
+	fmt.Printf("      %s/\n", imageName)
+	for page := 0; page < result.NumberOfPages; page++ {
+		pageName := fmt.Sprintf("page_%d", page)
+		fmt.Printf("        %s.dzi\n", pageName)
+		fmt.Printf("        %s_files/\n", pageName)
 	}
+	fmt.Printf("\n")
+	fmt.Printf("API endpoint example:\n")
+	fmt.Printf("  GET /pyramid-tiles/%s/%s/0/2/3/3\n", scanID, imageName)
+	fmt.Printf("  (page 0, level 2, tile x=3, y=3)\n")
 	fmt.Printf("\n")
 }
 

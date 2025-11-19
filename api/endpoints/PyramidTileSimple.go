@@ -22,16 +22,14 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
-	"github.com/pixlise/core/v4/api/imagepyramid"
 	apiRouter "github.com/pixlise/core/v4/api/router"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
-	"github.com/pixlise/core/v4/core/utils"
 )
 
-// GetPyramidTileSimple serves tiles from local pyramid files (no S3, no caching, no permissions for now)
+// GetPyramidTileSimple serves tiles from local DeepZoom files (no S3, no caching, no permissions for now)
 // URL: /pyramid-tiles/{scan}/{filename}/{page}/{level}/{x}/{y}
+// Reads from: ~/PIXLISE/TESTING/{scan}/{filename}/page_{page}_files/{level}/{x}_{y}.jpg
 func GetPyramidTileSimple(params apiRouter.ApiHandlerGenericPublicParams) error {
 	// Parse path parameters
 	scanID := params.PathParams[ScanIdentifier]
@@ -57,24 +55,19 @@ func GetPyramidTileSimple(params apiRouter.ApiHandlerGenericPublicParams) error 
 		return errorwithstatus.MakeBadRequestError(fmt.Errorf("invalid y: %v", params.PathParams[TileYIdentifier]))
 	}
 
-	// Construct local pyramid path
-	pyramidPath := getPyramidPath(scanID, fileName)
+	// Construct path to DeepZoom tile
+	// Structure: ~/PIXLISE/TESTING/{scanID}/{fileName}/page_{page}_files/{level}/{x}_{y}.jpg
+	tilePath := getDeepZoomTilePath(scanID, fileName, page, level, x, y)
 
-	// Check if pyramid exists
-	if _, err := os.Stat(pyramidPath); os.IsNotExist(err) {
-		return errorwithstatus.MakeNotFoundError(fmt.Sprintf("pyramid not found: %s", pyramidPath))
+	// Check if tile exists
+	if _, err := os.Stat(tilePath); os.IsNotExist(err) {
+		return errorwithstatus.MakeNotFoundError(fmt.Sprintf("tile not found: %s", tilePath))
 	}
 
-	// Extract tile directly from pyramid (handles multi-page)
-	tileBytes, err := imagepyramid.ExtractTileFromPage(pyramidPath, page, level, x, y, 256)
+	// Read tile file
+	tileBytes, err := os.ReadFile(tilePath)
 	if err != nil {
-		// If it's an out-of-bounds error (invalid page/level/tile), return 404
-		// Otherwise return 500
-		errStr := err.Error()
-		if strings.Contains(errStr, "out of bounds") || strings.Contains(errStr, "does not exist") {
-			return errorwithstatus.MakeNotFoundError(errStr)
-		}
-		return fmt.Errorf("failed to extract tile: %w", err)
+		return fmt.Errorf("failed to read tile: %w", err)
 	}
 
 	// Write JPEG bytes to response
@@ -84,52 +77,34 @@ func GetPyramidTileSimple(params apiRouter.ApiHandlerGenericPublicParams) error 
 	return err
 }
 
-// GetPyramidInfoSimple returns ImagePyramid metadata from local pyramid files
+// GetPyramidInfoSimple returns ImagePyramid metadata from local DeepZoom .dzi files
 // URL: /pyramid-info/{scan}/{filename}
 func GetPyramidInfoSimple(params apiRouter.ApiHandlerGenericPublicParams) error {
-	scanID := params.PathParams[ScanIdentifier]
-	fileName := params.PathParams[FileNameIdentifier]
-
-	// Construct local pyramid path
-	pyramidPath := getPyramidPath(scanID, fileName)
-
-	// Check if pyramid exists
-	if _, err := os.Stat(pyramidPath); os.IsNotExist(err) {
-		return errorwithstatus.MakeNotFoundError(fmt.Sprintf("pyramid not found: %s", pyramidPath))
-	}
-
-	// Get pyramid metadata
-	pyramidInfo, err := imagepyramid.GetPyramidInfo(pyramidPath)
-	if err != nil {
-		return fmt.Errorf("failed to read pyramid info: %w", err)
-	}
-
-	// Check if user wants JSON (via query param or Accept header)
-	wantsJSON := params.Request.URL.Query().Get("format") == "json" ||
-		params.Request.Header.Get("Accept") == "application/json"
-
-	if wantsJSON {
-		// Return JSON response
-		utils.SendProtoJSON(params.Writer, pyramidInfo)
-	} else {
-		// Return protobuf response
-		utils.SendProtoBinary(params.Writer, pyramidInfo)
-	}
-	return nil
+	// For now, just return a basic error since we'd need to parse .dzi XML files
+	// This can be implemented later if needed
+	return errorwithstatus.MakeNotFoundError("pyramid info endpoint not yet implemented for DeepZoom tiles")
 }
 
-// getPyramidPath constructs the local filesystem path for a pyramid TIFF
-// Path: ~/PIXLISE/Pyramids/{scanId}/{fileNameWithoutExt}/pyramid.tiff
-func getPyramidPath(scanID, fileName string) string {
+// getDeepZoomTilePath constructs the local filesystem path for a DeepZoom tile
+// Path: ~/PIXLISE/TESTING/{scanID}/{fileName}/page_{page}_files/{level}/{x}_{y}.jpg
+func getDeepZoomTilePath(scanID, fileName string, page, level, x, y int) string {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		// Fallback to /tmp if home dir unavailable
 		homeDir = "/tmp"
 	}
 
-	// Remove extension from fileName to create subdirectory
-	ext := filepath.Ext(fileName)
-	nameWithoutExt := fileName[:len(fileName)-len(ext)]
+	// Structure matches what pyramid-generator creates
+	tilePath := filepath.Join(
+		homeDir,
+		"PIXLISE",
+		"TESTING",
+		scanID,
+		fileName,
+		fmt.Sprintf("page_%d_files", page),
+		fmt.Sprintf("%d", level),
+		fmt.Sprintf("%d_%d.jpg", x, y),
+	)
 
-	return filepath.Join(homeDir, "PIXLISE", "Pyramids", scanID, nameWithoutExt, "pyramid.tiff")
+	return tilePath
 }
