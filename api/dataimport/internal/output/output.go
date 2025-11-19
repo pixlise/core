@@ -31,6 +31,7 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
+	"github.com/pixlise/core/v4/api/dataimport/internal/pyramid"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
@@ -580,16 +581,32 @@ func copyImagesToOutput(
 	for pmc, item := range data.PerPMCData {
 		if len(item.ContextImageSrc) > 0 {
 			fromImgFile := filepath.Join(contextImgDir, item.ContextImageSrc)
-			outImgFile := filepath.Join(outPath, item.ContextImageDst)
+			outImgFile := filepath.Join(outPath, item.ContextImageDst) // This gives a .png for BigTiff inputs anyways (from models.go), but it's fine. Potential TODO .
 
-			// Make sure output format is PNG
-			if strings.ToUpper(filepath.Ext(fromImgFile)) == ".TIF" {
-				outImgFile = outImgFile[0:len(outImgFile)-3] + "png"
-				jobLog.Infof("  Convert img PMC[%v] %v -> %v", pmc, fromImgFile, outImgFile)
+			// TODO: Pyramid tile generation will go here
+			var bigtiffpyramid *protos.ImagePyramid
+			var err error
+			// Check if tiff and needs conversion
+			ext := strings.ToLower(filepath.Ext(fromImgFile))
+			if ext == ".tif" || ext == ".tiff" {
+				// Check for PY_ prefix and generate pyramid tiles
+				if strings.HasPrefix(filepath.Base(fromImgFile), "PY_") {
 
-				err := convertTiffToPNG(fromImgFile, outImgFile)
-				if err != nil {
-					return "", err
+					// Construct the pyramid output dir with DeepZoom structure
+					bigtiffpyramid, err = pyramid.ImportBigTIFF(fromImgFile, outImgFile, jobLog)
+					if err != nil {
+						return "", err
+					}
+
+				} else {
+					// Just a normal tiff (non pyramid), convert to png
+					outImgFile = outImgFile[0:len(outImgFile)-3] + "png"
+					jobLog.Infof("  Convert img PMC[%v] %v -> %v", pmc, fromImgFile, outImgFile)
+
+					err := convertTiffToPNG(fromImgFile, outImgFile)
+					if err != nil {
+						return "", err
+					}
 				}
 			} else {
 				jobLog.Infof("  Copy img PMC[%v] %v -> %v", pmc, fromImgFile, outImgFile)
@@ -616,7 +633,15 @@ func copyImagesToOutput(
 				}
 			}
 
-			err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_INSTRUMENT, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, originURL, nil, jobLog)
+			// Insert image DB entry - use pyramid version if we generated pyramid tiles
+			if bigtiffpyramid != nil {
+				jobLog.Infof("Inserting pyramid image DB entry for: %s", outImgFile)
+				err = insertImageDBEntryForImageWithPyramid(outImgFile, db, protos.ScanImageSource_SI_INSTRUMENT, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, originURL, nil, bigtiffpyramid, jobLog)
+
+			} else {
+				err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_INSTRUMENT, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, originURL, nil, jobLog)
+			}
+
 			if err != nil {
 				return "", err
 			}
@@ -723,6 +748,57 @@ func copyImagesToOutput(
 	}
 
 	return defaultContextImage, nil
+}
+
+func insertImageDBEntryForImageWithPyramid(
+	imagePath string,
+	db *mongo.Database,
+	source protos.ScanImageSource,
+	purpose protos.ScanImagePurpose,
+	associatedScanIds []string,
+	originScanId string,
+	originImageURL string,
+	matchInfo *protos.ImageMatchTransform,
+	pyramidInfo *protos.ImagePyramid,
+	jobLog logger.ILogger) error {
+	// For pyramid images, we already have metadata from pyramid.ImportBigTIFF()
+	// No need to reopen the image - extract dimensions from pyramidInfo instead
+
+	if pyramidInfo == nil || pyramidInfo.Bounds == nil || pyramidInfo.Bounds.Max == nil {
+		return fmt.Errorf("pyramid metadata is missing or invalid")
+	}
+
+	// Get dimensions from the pyramid bounds (page 0 dimensions)
+	imgWidth := uint32(pyramidInfo.Bounds.Max.X)
+	imgHeight := uint32(pyramidInfo.Bounds.Max.Y)
+
+	// For pyramid images, we don't have a single file size - the pyramid consists of many tiles
+	// We'll use 0 here as the fileSize since it's not meaningful for pyramid structures
+	fileSize := uint32(0)
+
+	saveName := filepath.Base(imagePath)
+	savePath := path.Join(originScanId, saveName)
+
+	// Create the ScanImage with pyramid description
+	img := &protos.ScanImage{
+		ImagePath: savePath,
+
+		Source:   source,
+		Width:    imgWidth,
+		Height:   imgHeight,
+		FileSize: fileSize,
+		Purpose:  purpose,
+
+		AssociatedScanIds: associatedScanIds,
+		OriginScanId:      originScanId,
+		OriginImageURL:    originImageURL,
+
+		MatchInfo: matchInfo,
+
+		PyramidDescription: pyramidInfo,
+	}
+
+	return insertImageDBEntry(db, img, jobLog)
 }
 
 func insertImageDBEntryForImage(

@@ -227,6 +227,7 @@ func ImportFromLocalFileSystem(
 	}
 
 	// Finally, copy scan files to scans, and images to images
+	// NEED TO UPDATE COPY TO BUCKET TO HANDLE FOLDERS
 	log.Infof("Copying generated dataset to bucket: %v...", datasetBucket)
 	err = copyToBucket(remoteFS, data.DatasetID, outputScanPath, datasetBucket, filepaths.DatasetScansRoot, log)
 	if err != nil {

@@ -87,8 +87,9 @@ func (im BigImage) Import(importPath string, pseudoIntensityRangesPath string, d
 	for _, file := range files {
 		ext := strings.ToLower(filepath.Ext(file))
 		if ext == ".tif" || ext == ".tiff" {
-			// Extract just the filename from the path (remove "pyramid/" prefix)
-			tiffFile = filepath.Base(file)
+			// Keep the full relative path including "pyramid/" directory
+			// file = "pyramid/Multi_page24bpp.tif"
+			tiffFile = file
 			break
 		}
 	}
@@ -99,11 +100,14 @@ func (im BigImage) Import(importPath string, pseudoIntensityRangesPath string, d
 
 	log.Infof("Found pyramid source image: %s", tiffFile)
 
-	// Add the image to PMC 1 with PY_ prefix
+	// Add the image to PMC 1 with PY_ prefix on the filename part
 	// The PY_ prefix signals to output.go:copyImagesToOutput() to generate pyramid tiles
 	// instead of doing a simple TIFF->PNG conversion
-	contextImgsPerPMC[1] = "PY_" + tiffFile
-	log.Infof("Registered image for pyramid processing: PY_%s", tiffFile)
+	// Structure: "pyramid/PY_Multi_page24bpp.tif" (actual file is "pyramid/Multi_page24bpp.tif")
+	dir := filepath.Dir(tiffFile)           // "pyramid"
+	base := filepath.Base(tiffFile)         // "Multi_page24bpp.tif"
+	contextImgsPerPMC[1] = filepath.Join(dir, "PY_"+base)  // "pyramid/PY_Multi_page24bpp.tif"
+	log.Infof("Registered image for pyramid processing: %s", contextImgsPerPMC[1])
 
 	matchedAlignedImages := []dataConvertModels.MatchedAlignedImageMeta{}
 	/*	housekeepingFileNameMeta := gdsfilename.FileNameMeta{}
