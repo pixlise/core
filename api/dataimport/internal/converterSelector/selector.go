@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	importBigImage "github.com/pixlise/core/v4/api/dataimport/internal/converters/bigimage"
 	"github.com/pixlise/core/v4/api/dataimport/internal/converters/converter"
 	"github.com/pixlise/core/v4/api/dataimport/internal/converters/jplbreadboard"
 	"github.com/pixlise/core/v4/api/dataimport/internal/converters/pixlem"
@@ -63,6 +64,11 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 	// If it's all TIF files, assume it's the image map importer format
 	if importwds.IsWDSMapFormat(importPath) {
 		return &importwds.ImageMaps{}, nil
+	}
+
+	// Is it a big tiff file that needs to be loaded as pyramids?
+	if importBigImage.IsBigImageDataSet(importPath) {
+		return &importBigImage.BigImage{}, nil
 	}
 
 	// Check if it's SOFF
