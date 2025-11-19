@@ -179,13 +179,6 @@ func GeneratePyramidTiles(
 	return result, nil
 }
 
-// GetImageNameFromPath extracts the image name (without extension) from a file path
-func GetImageNameFromPath(path string) string {
-	baseName := filepath.Base(path)
-	ext := filepath.Ext(baseName)
-	return baseName[:len(baseName)-len(ext)]
-}
-
 // GetOMEMetadata attempts to extract OME/XML metadata from a TIFF file
 func GetOMEMetadata(inputTiffPath string) (string, error) {
 	img, err := vips.NewTiffload(inputTiffPath, &vips.TiffloadOptions{
