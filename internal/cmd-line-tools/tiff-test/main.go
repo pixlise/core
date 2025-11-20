@@ -104,13 +104,24 @@ func main() {
 	width := img.Width()
 	height := img.Height()
 	bands := img.Bands()
+	resX := img.ResX()
+	resY := img.ResY()
 	pages := img.Pages()
+	fields := img.GetFields()
 
 	// Print results
 	fmt.Printf("----------------------------------------\n")
 	fmt.Printf("SUCCESS!\n")
 	fmt.Printf("----------------------------------------\n")
 	fmt.Printf("Dimensions: %d x %d pixels\n", width, height)
+	fmt.Printf("Resolution: %.2f x %.2f DPI\n", resX, resY)
+	fmt.Printf("Fields: %v\n", fields)
+	dumpVipsFields(img)
+	exif := img.Exif()
+	for k, v := range exif {
+		fmt.Println(k, "=", v)
+	}
+
 	fmt.Printf("Total pixels: %d (%.2f megapixels)\n", width*height, float64(width*height)/1000000)
 	fmt.Printf("Bands: %d\n", bands)
 	fmt.Printf("Format: %v\n", img.Format())
@@ -168,5 +179,41 @@ func main() {
 			fmt.Printf("Output size: %.2f MB\n", float64(outInfo.Size())/(1024*1024))
 		}
 		fmt.Printf("========================================\n")
+	}
+}
+
+func dumpVipsFields(img *vips.Image) {
+	fields := img.GetFields()
+	fmt.Printf("Fields: %v\n", fields)
+
+	for _, name := range fields {
+		// Try int
+		if v, err := img.GetInt(name); err == nil {
+			fmt.Printf("%s (int): %d\n", name, v)
+			continue
+		}
+		// Try float
+		if v, err := img.GetDouble(name); err == nil {
+			fmt.Printf("%s (float): %f\n", name, v)
+			continue
+		}
+		// Try string
+		if v, err := img.GetString(name); err == nil {
+			fmt.Printf("%s (string): %q\n", name, v)
+			continue
+		}
+		// Try int array
+		if v, err := img.GetArrayInt(name); err == nil {
+			fmt.Printf("%s (int[]): %v\n", name, v)
+			continue
+		}
+		// Try double array
+		if v, err := img.GetArrayDouble(name); err == nil {
+			fmt.Printf("%s (float64[]): %v\n", name, v)
+			continue
+		}
+
+		// Fallback if we don't know how to interpret it
+		fmt.Printf("%s: (unknown / unsupported type)\n", name)
 	}
 }

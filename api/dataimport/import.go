@@ -26,6 +26,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pixlise/core/v4/api/dataimport/datasetArchive"
@@ -227,14 +228,21 @@ func ImportFromLocalFileSystem(
 	}
 
 	// Finally, copy scan files to scans, and images to images
+	// TODO NEED TO UPDATE COPY TO BUCKET TO HANDLE FOLDERS
 	log.Infof("Copying generated dataset to bucket: %v...", datasetBucket)
-	err = copyToBucket(remoteFS, data.DatasetID, outputScanPath, datasetBucket, filepaths.DatasetScansRoot, log)
+	err = copyToBucket(remoteFS, data.DatasetID, outputScanPath, datasetBucket, filepaths.DatasetScansRoot, false, log)
 	if err != nil {
 		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
 	}
 
 	log.Infof("Copying images to bucket: %v...", datasetBucket)
-	err = copyToBucket(remoteFS, data.DatasetID, outputImagesPath, datasetBucket, filepaths.DatasetImagesRoot, log)
+	// Check if images contain pyramid structure (has .dzi files)
+	imagePath := filepath.Join(outputImagesPath, data.DatasetID) // ..\..\..\output-images\{datasetID} to check for pyramid structure
+	hasPyramid := containsPyramidStructure(imagePath)
+	if hasPyramid {
+		log.Infof("Detected pyramid structure, preserving directory hierarchy for upload")
+	}
+	err = copyToBucket(remoteFS, data.DatasetID, imagePath, datasetBucket, filepaths.DatasetImagesRoot, hasPyramid, log)
 	if err != nil {
 		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
 	}
@@ -284,22 +292,55 @@ func createPeakDiffractionDB(datasetPath string, savepath string, jobLog logger.
 	return nil
 }
 
+// containsPyramidStructure checks if the given path contains DeepZoom pyramid tiles
+// by looking for .dzi files which indicate a pyramid structure
+func containsPyramidStructure(path string) bool {
+	hasDzi := false
+	filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // Ignore errors, just keep walking
+		}
+		if !info.IsDir() && strings.HasSuffix(strings.ToLower(p), ".dzi") {
+			hasDzi = true
+			return filepath.SkipAll // Found one, can stop walking
+		}
+		return nil
+	})
+	return hasDzi
+}
+
 // Copies files to bucket
-// NOTE: Assumes flat list of files, no folder structure!
-func copyToBucket(remoteFS fileaccess.FileAccess, datasetID string, sourcePath string, destBucket string, destPath string, log logger.ILogger) error {
+// If preserveStructure is true, preserves directory structure from sourcePath.
+// If preserveStructure is false, copies all files flat (just filename, no subdirectories).
+func copyToBucket(remoteFS fileaccess.FileAccess, datasetID string, sourcePath string, destBucket string, destPath string, preserveStructure bool, log logger.ILogger) error {
 	var uploadError error
 
-	err := filepath.Walk(sourcePath, func(sourcePath string, info os.FileInfo, err error) error {
+	err := filepath.Walk(sourcePath, func(currentPath string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
-			data, err := os.ReadFile(sourcePath)
+			data, err := os.ReadFile(currentPath)
 			if err != nil {
-				log.Errorf("Failed to read file for upload: %v", sourcePath)
+				log.Errorf("Failed to read file for upload: %v", currentPath)
 				uploadError = err
 			} else {
-				sourceFile := filepath.Base(sourcePath)
-				uploadPath := path.Join(destPath, datasetID, sourceFile)
+				var uploadPath string
 
-				log.Infof("-Uploading: %v", sourcePath)
+				if preserveStructure {
+					// Calculate relative path from sourcePath to preserve directory structure
+					relPath, err := filepath.Rel(sourcePath, currentPath)
+					if err != nil {
+						log.Errorf("Failed to calculate relative path: %v", err)
+						uploadError = err
+						return nil
+					}
+					// Upload to: destPath/datasetID/relPath (e.g., Images/BigTiff/Multi_page24bpp/page_0.dzi)
+					uploadPath = path.Join(destPath, datasetID, filepath.ToSlash(relPath))
+				} else {
+					// Flat structure: just use the base filename
+					sourceFile := filepath.Base(currentPath)
+					uploadPath = path.Join(destPath, datasetID, sourceFile)
+				}
+
+				log.Infof("-Uploading: %v", currentPath)
 				log.Infof("---->to s3://%v/%v", destBucket, uploadPath)
 				err = remoteFS.WriteObject(destBucket, uploadPath, data)
 

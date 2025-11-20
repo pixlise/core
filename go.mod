@@ -9,10 +9,13 @@ require (
 	github.com/aws/aws-lambda-go v1.36.0
 	github.com/aws/aws-sdk-go v1.53.11
 	github.com/aws/aws-secretsmanager-caching-go v1.1.0
+	github.com/cshum/vipsgen v1.2.1
 	github.com/getsentry/sentry-go v0.16.0
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
+	github.com/mongodb/mongo-tools v0.0.0-20240909153453-a5bb3a149a1f
 	github.com/olahol/melody v1.1.3
 	github.com/pixlise/diffraction-peak-detection/v2 v2.0.3
 	github.com/pkg/errors v0.9.1
@@ -20,6 +23,7 @@ require (
 	go.mongodb.org/mongo-driver v1.16.0
 	golang.org/x/exp v0.0.0-20240529005216-23cca8864a10
 	golang.org/x/image v0.9.0
+	golang.org/x/sys v0.26.0
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/auth0.v4 v4.7.0
 	gopkg.in/square/go-jose.v2 v2.6.0
@@ -33,8 +37,6 @@ require (
 	github.com/PuerkitoBio/rehttp v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/chai2010/tiff v0.0.0-20211005095045-4ec2aa243943 // indirect
-	github.com/cshum/vipsgen v1.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/engelsjk/polygol v0.0.3 // indirect
@@ -53,6 +55,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/haddock7/voronoi v0.0.0-20230909033831-9c68effe7a57 // indirect
+	github.com/google/tiff v0.0.0-20161109161721-4b31f3041d9a // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/jessevdk/go-flags v1.5.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
@@ -64,7 +67,6 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/mongodb/mongo-tools v0.0.0-20240909153453-a5bb3a149a1f // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
@@ -79,7 +81,6 @@ require (
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/term v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
