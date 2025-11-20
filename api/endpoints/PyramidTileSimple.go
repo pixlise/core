@@ -15,22 +15,18 @@
 // // specific language governing permissions and limitations
 // // under the License.
 
-// package endpoints
+package endpoints
 
-// import (
-// 	"fmt"
-// 	"os"
-// 	"path/filepath"
-// 	"strconv"
+import (
+	apiRouter "github.com/pixlise/core/v4/api/router"
+)
 
-// 	apiRouter "github.com/pixlise/core/v4/api/router"
-// 	"github.com/pixlise/core/v4/core/errorwithstatus"
-// )
+// GetPyramidTileSimple serves tiles from local DeepZoom files (no S3, no caching, no permissions for now)
+// URL: /pyramid-tiles/{scan}/{filename}/{page}/{level}/{x}/{y}
+// Reads from: ~/PIXLISE/TESTING/{scan}/{filename}/page_{page}_files/{level}/{x}_{y}.jpg
+func GetPyramidTileSimple(params apiRouter.ApiHandlerGenericPublicParams) {
+}
 
-// // GetPyramidTileSimple serves tiles from local DeepZoom files (no S3, no caching, no permissions for now)
-// // URL: /pyramid-tiles/{scan}/{filename}/{page}/{level}/{x}/{y}
-// // Reads from: ~/PIXLISE/TESTING/{scan}/{filename}/page_{page}_files/{level}/{x}_{y}.jpg
-// func GetPyramidTileSimple(params apiRouter.ApiHandlerGenericPublicParams) error {
 // 	// Parse path parameters
 // 	scanID := params.PathParams[ScanIdentifier]
 // 	fileName := params.PathParams[FileNameIdentifier]
