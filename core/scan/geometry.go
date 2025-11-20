@@ -61,17 +61,17 @@ func pointByMatrix(m [][]float64, v Point) Point {
 }
 
 type ScanPointPolygon struct {
-	bbox   Rect
-	points []Point
+	BBox   Rect
+	Points []Point
 }
 
 func (p *ScanPointPolygon) updateBBox() {
-	if len(p.points) > 0 {
-		for c, pt := range p.points {
+	if len(p.Points) > 0 {
+		for c, pt := range p.Points {
 			if c == 0 {
-				p.bbox = Rect{pt.X, pt.Y, 0, 0}
+				p.BBox = Rect{pt.X, pt.Y, 0, 0}
 			} else {
-				p.bbox.expandToFitPoint(pt)
+				p.BBox.expandToFitPoint(pt)
 			}
 		}
 	}

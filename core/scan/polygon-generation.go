@@ -69,28 +69,29 @@ func GeneratePolygons(imageName string,
 		makeScanPointPolygons(50, cluster, scanPoints, scanPointPolygons)
 		wholeFootprintHullPoints = append(wholeFootprintHullPoints, cluster.FootprintPoints)
 	}
+	/*
+		pointScale := 1
+		if scanItem.Instrument == protos.ScanInstrument_UNKNOWN_INSTRUMENT {
+			pointScale = 5
+		}
 
-	/*pointScale := 1
-	if scanItem.Instrument == protos.ScanInstrument_UNKNOWN_INSTRUMENT {
-		pointScale = 5
-	}
-
-	   const result = new ContextImageScanModel(
-	     scanItem.id,
-	     scanItem.title,
-	     imageName,
-	     beamLocVersion,
-	     clusters,
-	     scanPoints,
-	     scanPointPolygons,
-	     wholeFootprintHullPoints,
-	     scanItem.instrument == ScanInstrument.UNKNOWN_INSTRUMENT ? -1 : contextPixelsTommConversion,
-	     beamRadius_pixels * pointScale,
-	     this._locationDisplayPointRadius,// * pointScale,
-	     this._locationPointBBox,
-	     new Map<number, RGBA>()
-	   );
-	   return result;*/
+		const result = new ContextImageScanModel(
+			scanItem.id,
+			scanItem.title,
+			imageName,
+			beamLocVersion,
+			clusters,
+			scanPoints,
+			scanPointPolygons,
+			wholeFootprintHullPoints,
+			scanItem.instrument == ScanInstrument.UNKNOWN_INSTRUMENT ? -1 : contextPixelsTommConversion,
+			beamRadius_pixels * pointScale,
+			this._locationDisplayPointRadius,// * pointScale,
+			this._locationPointBBox,
+			new Map<number, RGBA>()
+		);
+		return result;
+	*/
 	return nil
 }
 
@@ -837,8 +838,11 @@ func makeScanPointPolygons(bboxExpand float64, cluster PointCluster, scanPoints 
 				return fmt.Errorf("Vornoi cell %v doesn't have a corresponding polygon", c)
 			}
 
-			scanPointPolygons[siteLocIdx].points = polyPts
-			scanPointPolygons[siteLocIdx].updateBBox()
+			// Snip off last one, it's a repeat of first point
+			if len(polyPts) > 0 {
+				scanPointPolygons[siteLocIdx].Points = polyPts[0 : len(polyPts)-1]
+				scanPointPolygons[siteLocIdx].updateBBox()
+			}
 		}
 	}
 
