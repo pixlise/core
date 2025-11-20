@@ -583,7 +583,7 @@ func copyImagesToOutput(
 			fromImgFile := filepath.Join(contextImgDir, item.ContextImageSrc)
 			outImgFile := filepath.Join(outPath, item.ContextImageDst)
 
-			// TODO: Pyramid tile generation will go here
+			// Check for pyramid tile generation
 			var bigtiffpyramid *protos.ImagePyramid
 			var err error
 			// Check if tiff and needs conversion
@@ -773,8 +773,7 @@ func insertImageDBEntryForImageWithPyramid(
 	imgHeight := uint32(pyramidInfo.Bounds.Max.Y)
 
 	// For pyramid images, we don't have a single file size - the pyramid consists of many tiles
-	// We'll use 0 here as the fileSize since it's not meaningful for pyramid structures
-	fileSize := uint32(0) // TODO ?
+	fileSize := uint32(0) // TODO What should filesize be ?
 
 	saveName := filepath.Base(imagePath)
 	savePath := path.Join(originScanId, saveName)
