@@ -117,7 +117,7 @@ func ImportBigTIFF(fromImgFile string, outImgFile string, jobLog logger.ILogger)
 
 	// Parse page_0.dzi to extract metadata
 	// NOTE: We only parse page 0 and assume all pages have identical structure
-	page0DziPath := filepath.Join(outputDir, scanID, imageName, "page_0.dzi")
+	page0DziPath := filepath.Join(outputDir, imageName, "page_0.dzi")
 	dzi, err := parseDZIFile(page0DziPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse page_0.dzi: %w", err)
@@ -159,14 +159,15 @@ func generatePyramidTiles(inputTiffPath string, outputBaseDir string, imageName 
 	}
 
 	// Create output directory
-	outputDir := filepath.Join(outputBaseDir, scanID, imageName)
+	// Note: outputBaseDir already includes the scanID, so just append imageName
+	outputDir := filepath.Join(outputBaseDir, imageName)
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create output directory %s: %w", outputDir, err)
 	}
 
 	// Process each page with dzsave
 	for page := 0; page < nPages; page++ {
-		// Structure: outputBaseDir/scanID/imageName/page_N.dzi and page_N_files/
+		// Structure: outputBaseDir/imageName/page_N.dzi and page_N_files/
 		pageName := fmt.Sprintf("page_%d", page)
 		outputBase := filepath.Join(outputDir, pageName)
 

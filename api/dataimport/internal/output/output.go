@@ -581,7 +581,7 @@ func copyImagesToOutput(
 	for pmc, item := range data.PerPMCData {
 		if len(item.ContextImageSrc) > 0 {
 			fromImgFile := filepath.Join(contextImgDir, item.ContextImageSrc)
-			outImgFile := filepath.Join(outPath, item.ContextImageDst) // This gives a .png for BigTiff inputs anyways (from models.go), but it's fine. Potential TODO .
+			outImgFile := filepath.Join(outPath, item.ContextImageDst)
 
 			// TODO: Pyramid tile generation will go here
 			var bigtiffpyramid *protos.ImagePyramid
@@ -774,7 +774,7 @@ func insertImageDBEntryForImageWithPyramid(
 
 	// For pyramid images, we don't have a single file size - the pyramid consists of many tiles
 	// We'll use 0 here as the fileSize since it's not meaningful for pyramid structures
-	fileSize := uint32(0)
+	fileSize := uint32(0) // TODO ?
 
 	saveName := filepath.Base(imagePath)
 	savePath := path.Join(originScanId, saveName)
