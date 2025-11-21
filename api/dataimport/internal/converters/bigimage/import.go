@@ -118,19 +118,13 @@ func (im BigImage) Import(importPath string, pseudoIntensityRangesPath string, d
 
 	// Create PMC entry for each page
 	// All entries point to same source file, but have different destination names
-	sourcePath := filepath.Join(dir, "PY_"+base) // "pyramid/PY_Multi_page24bpp.tif"
+	// sourcePath := filepath.Join(dir, "PY_"+base) // "pyramid/PY_Multi_page24bpp.tif"
 
 	for page := 0; page < pageCount; page++ {
 		pmc := int32(page + 1) // PMC starts at 1
 
-		var destName string
-		if page == 0 {
-			// First page keeps original name: "pyramid/PY_Multi_page24bpp.tif"
-			destName = sourcePath
-		} else {
-			// Subsequent pages: "pyramid/PY_Multi_page24bpp_page1.tif", etc.
-			destName = filepath.Join(dir, fmt.Sprintf("PY_%s_page%d%s", baseWithoutExt, page, filepath.Ext(base)))
-		}
+		// All pages get _pageN suffix: "pyramid/PY_Multi_page24bpp_page0.tif", etc.
+		destName := filepath.Join(dir, fmt.Sprintf("PY_%s_page%d%s", baseWithoutExt, page, filepath.Ext(base)))
 
 		contextImgsPerPMC[pmc] = destName
 		log.Infof("Registered page %d for PMC %d: %s", page, pmc, destName)

@@ -591,9 +591,17 @@ func copyImagesToOutput(
 			if ext == ".tif" || ext == ".tiff" {
 				// Check for PY_ prefix and generate pyramid tiles
 				if strings.HasPrefix(filepath.Base(fromImgFile), "PY_") {
+					// Extract page number from destination filename
+					// e.g., "PY_Multi_page_page1.tif" → page 1, "PY_Multi_page.tif" → page 0
+					pageNum := extractPageNumber(filepath.Base(fromImgFile))
+
+					// Get the real source file path (strip _pageN suffix if present)
+					realSourcePath := getRealSourcePath(fromImgFile, pageNum)
+
+					jobLog.Infof("  Generate pyramid for page %d: PMC[%v] %v -> %v", pageNum, pmc, realSourcePath, outImgFile)
 
 					// Construct the pyramid output dir with DeepZoom structure
-					bigtiffpyramid, err = pyramid.ImportBigTIFF(fromImgFile, outImgFile, jobLog)
+					bigtiffpyramid, err = pyramid.ImportBigTIFF(realSourcePath, outImgFile, pageNum, jobLog)
 					if err != nil {
 						return "", err
 					}
@@ -1148,4 +1156,39 @@ func (s *PIXLISEDataSaver) saveMetaData(exp *protos.Experiment) error {
 	}
 
 	return nil
+}
+
+// extractPageNumber extracts page number from filename like "PY_Multi_page_page1.tif"
+// Returns 0 if no page suffix found (first page)
+func extractPageNumber(filename string) int {
+	nameWithoutExt := filename[:len(filename)-len(filepath.Ext(filename))]
+
+	// Find the last occurrence of "_page"
+	lastIndex := strings.LastIndex(nameWithoutExt, "_page")
+	if lastIndex == -1 {
+		return 0 // No "_page" found
+	}
+
+	// Extract everything after "_page"
+	pageStr := nameWithoutExt[lastIndex+5:] // +5 to skip "_page"
+	pageNum, err := strconv.Atoi(pageStr)
+	if err != nil {
+		return 0
+	}
+
+	return pageNum
+}
+
+// getRealSourcePath strips the _pageN suffix to get actual file path
+// "pyramid/PY_Multi_page_page0.tif" → "pyramid/PY_Multi_page.tif"
+func getRealSourcePath(ghostPath string, pageNum int) string {
+	dir := filepath.Dir(ghostPath)
+	base := filepath.Base(ghostPath)
+	ext := filepath.Ext(base)
+
+	// Remove _pageN from basename
+	nameWithoutExt := base[:len(base)-len(ext)]
+	realName := strings.Replace(nameWithoutExt, fmt.Sprintf("_page%d", pageNum), "", 1)
+
+	return filepath.Join(dir, realName+ext)
 }

@@ -80,7 +80,7 @@ type pyramidResult struct {
 //
 // NOTE: Only page 0 metadata is returned in ImagePyramid proto.
 // All pages are assumed to have identical dimensions and tile structure.
-func ImportBigTIFF(fromImgFile string, outImgFile string, jobLog logger.ILogger) (*protos.ImagePyramid, error) {
+func ImportBigTIFF(fromImgFile string, outImgFile string, pageNum int, jobLog logger.ILogger) (*protos.ImagePyramid, error) {
 	// Parse parameters from paths
 	// fromImgFile = /path/pyramid/PY_Multi_page24bpp.tif (has PY_ prefix, but actual file doesn't)
 	// outImgFile  = /path/output-Images/BigTiff/PY_Multi_page24bpp.png (extension ignored)
@@ -95,29 +95,28 @@ func ImportBigTIFF(fromImgFile string, outImgFile string, jobLog logger.ILogger)
 	}
 
 	// Extract clean image name (remove PY_ prefix and extension)
-	baseName := filepath.Base(outImgFile)                             // "PY_Multi_page24bpp.png"
-	baseName = strings.TrimPrefix(baseName, "PY_")                    // "Multi_page24bpp.png"
-	imageName := baseName[:len(baseName)-len(filepath.Ext(baseName))] // "Multi_page24bpp"
+	baseName := filepath.Base(outImgFile)                             // "PY_Multi_page24bpp.png" or "PY_Multi_page24bpp_page1.png"
+	baseName = strings.TrimPrefix(baseName, "PY_")                    // "Multi_page24bpp.png" or "Multi_page24bpp_page1.png"
+	imageName := baseName[:len(baseName)-len(filepath.Ext(baseName))] // "Multi_page24bpp" or "Multi_page24bpp_page1"
 
 	// Get output directory and scan ID
 	outputDir := filepath.Dir(outImgFile) // "/path/output-Images/BigTiff"
 	scanID := filepath.Base(outputDir)    // "BigTiff"
 
-	jobLog.Infof("Generating DeepZoom pyramid tiles for: %s", imageName)
+	jobLog.Infof("Generating DeepZoom pyramid tiles for page %d: %s", pageNum, imageName)
 	jobLog.Infof("  Source: %s (actual: %s)", fromImgFile, actualTiffPath)
 	jobLog.Infof("  Output: %s/%s/", outputDir, imageName)
 
-	// Generate tiles for ALL pages
-	result, err := generatePyramidTiles(actualTiffPath, outputDir, imageName, scanID, jobLog)
+	// Generate tiles for ONLY the specified page
+	result, err := generatePyramidTiles(actualTiffPath, outputDir, imageName, scanID, pageNum, jobLog)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate pyramid tiles: %w", err)
 	}
 
-	jobLog.Infof("Generated %d pages with dimensions %dx%d", result.NumberOfPages, result.Width, result.Height)
+	jobLog.Infof("Generated page %d with dimensions %dx%d", pageNum, result.Width, result.Height)
 
-	// Parse page_0.dzi to extract metadata
-	// NOTE: We only parse page 0 and assume all pages have identical structure
-	page0DziPath := filepath.Join(outputDir, imageName, "page_0.dzi")
+	// Parse pyramid.dzi to extract metadata
+	page0DziPath := filepath.Join(outputDir, imageName, "pyramid.dzi")
 	dzi, err := parseDZIFile(page0DziPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse page_0.dzi: %w", err)
@@ -135,25 +134,19 @@ func ImportBigTIFF(fromImgFile string, outImgFile string, jobLog logger.ILogger)
 }
 
 // generatePyramidTiles is the core tile generation logic (copied from pyramid-generator)
-func generatePyramidTiles(inputTiffPath string, outputBaseDir string, imageName string, scanID string, jobLog logger.ILogger) (*pyramidResult, error) {
-	// Load TIFF and read metadata
+func generatePyramidTiles(inputTiffPath string, outputBaseDir string, imageName string, scanID string, pageNum int, jobLog logger.ILogger) (*pyramidResult, error) {
+	// Load ONLY the specified page to get dimensions
 	img, err := vips.NewTiffload(inputTiffPath, &vips.TiffloadOptions{
-		Page: 0,
+		Page: pageNum,
 		N:    1,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to load TIFF: %w", err)
+		return nil, fmt.Errorf("failed to load TIFF page %d: %w", pageNum, err)
 	}
 	defer img.Close()
 
-	// Get metadata
-	nPages := 1
-	if pagesVal, err := img.GetInt("n-pages"); err == nil {
-		nPages = pagesVal
-	}
-
 	result := &pyramidResult{
-		NumberOfPages: nPages,
+		NumberOfPages: 1, // We only process one page now
 		Width:         img.Width(),
 		Height:        img.Height(),
 	}
@@ -165,43 +158,41 @@ func generatePyramidTiles(inputTiffPath string, outputBaseDir string, imageName 
 		return nil, fmt.Errorf("failed to create output directory %s: %w", outputDir, err)
 	}
 
-	// Process each page with dzsave
-	for page := 0; page < nPages; page++ {
-		// Structure: outputBaseDir/imageName/page_N.dzi and page_N_files/
-		pageName := fmt.Sprintf("page_%d", page)
-		outputBase := filepath.Join(outputDir, pageName)
+	// Process ONLY the specified page with dzsave
+	// Structure: outputBaseDir/imageName/pyramid.dzi and pyramid_files/
+	pageName := "pyramid"
+	outputBase := filepath.Join(outputDir, pageName)
 
-		// Load this specific page
-		pageImg, err := vips.NewTiffload(inputTiffPath, &vips.TiffloadOptions{
-			Page: page,
-			N:    1,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to load page %d: %w", page, err)
-		}
+	// Load this specific page
+	pageImg, err := vips.NewTiffload(inputTiffPath, &vips.TiffloadOptions{
+		Page: pageNum,
+		N:    1,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load page %d: %w", pageNum, err)
+	}
 
-		// Use vipsgen Dzsave
-		// IMPORTANT: These options are carefully chosen:
-		// - Imagename: The base name for generated files
-		// - Suffix: .jpg for JPEG tiles
-		// - Q: JPEG quality (85 = good balance of quality/size)
-		// - Depth: DzDepthOnetile means generate tiles at all zoom levels
-		// - Overlap: 0 means no pixel overlap between tiles (can be changed if needed)
-		// - TileSize: Size of each tile (254 is default, accounts for overlap)
-		err = pageImg.Dzsave(outputBase, &vips.DzsaveOptions{
-			Imagename: pageName,
-			Suffix:    ".jpg",
-			Q:         85,
-			Depth:     vips.DzDepthOnetile,
-			Overlap:   0,
-			TileSize:  254,
-		})
+	// Use vipsgen Dzsave
+	// IMPORTANT: These options are carefully chosen:
+	// - Imagename: The base name for generated files
+	// - Suffix: .jpg for JPEG tiles
+	// - Q: JPEG quality (85 = good balance of quality/size)
+	// - Depth: DzDepthOnetile means generate tiles at all zoom levels
+	// - Overlap: 0 means no pixel overlap between tiles (can be changed if needed)
+	// - TileSize: Size of each tile (254 is default, accounts for overlap)
+	err = pageImg.Dzsave(outputBase, &vips.DzsaveOptions{
+		Imagename: pageName,
+		Suffix:    ".jpg",
+		Q:         85,
+		Depth:     vips.DzDepthOnetile,
+		Overlap:   0,
+		TileSize:  254,
+	})
 
-		pageImg.Close()
+	pageImg.Close()
 
-		if err != nil {
-			return nil, fmt.Errorf("dzsave failed for page %d: %w", page, err)
-		}
+	if err != nil {
+		return nil, fmt.Errorf("dzsave failed for page %d: %w", pageNum, err)
 	}
 
 	return result, nil
