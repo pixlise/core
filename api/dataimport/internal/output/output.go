@@ -31,6 +31,7 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
+	"github.com/pixlise/core/v4/api/dataimport/internal/importerutils"
 	"github.com/pixlise/core/v4/api/dataimport/internal/pyramid"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
@@ -67,6 +68,8 @@ func (s *PIXLISEDataSaver) Save(
 	outputImagesPath string,
 	db *mongo.Database,
 	creationUnixTimeSec int64,
+	remoteFS fileaccess.FileAccess,
+	datasetBucket string,
 	jobLog logger.ILogger) error {
 	jobLog.Infof("Serializing dataset...")
 
@@ -388,7 +391,7 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	// We work out the default file name when copying output images now... because if there isn't one, we may pick one during that process.
-	defaultContextImage, err := copyImagesToOutput(contextImageSrcPath, []string{data.DatasetID}, data.DatasetID, outputImagesPath, data, db, jobLog)
+	defaultContextImage, err := copyImagesToOutput(contextImageSrcPath, []string{data.DatasetID}, data.DatasetID, outputImagesPath, data, db, remoteFS, datasetBucket, jobLog)
 	if err != nil {
 		return fmt.Errorf("Error copying images: %v", err)
 	}
@@ -569,7 +572,10 @@ func copyImagesToOutput(
 	originScanId string,
 	outPath string,
 	data dataConvertModels.OutputData,
-	db *mongo.Database, jobLog logger.ILogger) (string, error) {
+	db *mongo.Database,
+	remoteFS fileaccess.FileAccess,
+	datasetBucket string,
+	jobLog logger.ILogger) (string, error) {
 	defaultContextImage := ""
 
 	// Copy the context images into the output dir
@@ -645,13 +651,37 @@ func copyImagesToOutput(
 			if bigtiffpyramid != nil {
 				jobLog.Infof("Inserting pyramid image DB entry for: %s", outImgFile)
 				err = insertImageDBEntryForImageWithPyramid(outImgFile, db, protos.ScanImageSource_SI_INSTRUMENT, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, originURL, nil, bigtiffpyramid, jobLog)
+				if err != nil {
+					return "", err
+				}
+
+				// Upload pyramid to S3 immediately and clean up /tmp
+				pyramidFolder := getPyramidFolderPath(outImgFile)
+
+				// Get parent directory so CopyToBucket includes the page folder in S3 path
+				// e.g., parent = "/tmp/.../output-Images/BigTiff"
+				//       pyramidFolder = "/tmp/.../output-Images/BigTiff/Multi_page24bpp_page1"
+				//       S3 path = "Images/BigTiff/Multi_page24bpp_page1/pyramid.dzi"
+				parentDir := filepath.Dir(pyramidFolder)
+
+				// Upload with preserveStructure=true to keep pyramid folder structure
+				err = importerutils.CopyToBucket(remoteFS, originScanId, parentDir, datasetBucket, "Images", true, jobLog)
+				if err != nil {
+					return "", fmt.Errorf("failed to upload pyramid: %w", err)
+				}
+
+				// Delete from /tmp to free space
+				jobLog.Infof("Cleaning up pyramid from /tmp: %s", pyramidFolder)
+				err = os.RemoveAll(pyramidFolder)
+				if err != nil {
+					return "", fmt.Errorf("failed to delete pyramid folder: %w", err)
+				}
 
 			} else {
 				err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_INSTRUMENT, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, originURL, nil, jobLog)
-			}
-
-			if err != nil {
-				return "", err
+				if err != nil {
+					return "", err
+				}
 			}
 
 			// Remember this PMC->file name mapping for any potential "matched" images we import
@@ -1186,9 +1216,20 @@ func getRealSourcePath(ghostPath string, pageNum int) string {
 	base := filepath.Base(ghostPath)
 	ext := filepath.Ext(base)
 
-	// Remove _pageN from basename
+	// Remove _pageN suffix from basename (must remove from END only!)
 	nameWithoutExt := base[:len(base)-len(ext)]
-	realName := strings.Replace(nameWithoutExt, fmt.Sprintf("_page%d", pageNum), "", 1)
+	suffix := fmt.Sprintf("_page%d", pageNum)
+	realName := strings.TrimSuffix(nameWithoutExt, suffix)
 
 	return filepath.Join(dir, realName+ext)
+}
+
+// getPyramidFolderPath converts outImgFile path to pyramid folder path
+// "/tmp/.../output-Images/BigTiff/PY_Multi_page24bpp_page0.png" → "/tmp/.../output-Images/BigTiff/Multi_page24bpp_page0"
+func getPyramidFolderPath(outImgFile string) string {
+	dir := filepath.Dir(outImgFile)
+	baseName := filepath.Base(outImgFile)
+	baseName = strings.TrimPrefix(baseName, "PY_")
+	imageName := baseName[:len(baseName)-len(filepath.Ext(baseName))]
+	return filepath.Join(dir, imageName)
 }
