@@ -633,15 +633,18 @@ func copyImagesToOutput(
 				}
 			}
 
-			// Insert image DB entry - use pyramid version if we generated pyramid tiles
+			// Insert pyramid DB entry if we have a tiled pyramid
 			if bigtiffpyramid != nil {
 				jobLog.Infof("Inserting pyramid image DB entry for: %s", outImgFile)
-				err = insertImageDBEntryForImageWithPyramid(outImgFile, db, protos.ScanImageSource_SI_INSTRUMENT, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, originURL, nil, bigtiffpyramid, jobLog)
+				err = insertImagePyramid(originScanId, outImgFile, db, bigtiffpyramid, jobLog)
 
-			} else {
-				err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_INSTRUMENT, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, originURL, nil, jobLog)
+				if err != nil {
+					return "", err
+				}
 			}
 
+			// Insert image DB entry
+			err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_INSTRUMENT, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, originURL, nil, jobLog)
 			if err != nil {
 				return "", err
 			}
@@ -750,15 +753,10 @@ func copyImagesToOutput(
 	return defaultContextImage, nil
 }
 
-func insertImageDBEntryForImageWithPyramid(
+func insertImagePyramid(
+	originScanId string,
 	imagePath string,
 	db *mongo.Database,
-	source protos.ScanImageSource,
-	purpose protos.ScanImagePurpose,
-	associatedScanIds []string,
-	originScanId string,
-	originImageURL string,
-	matchInfo *protos.ImageMatchTransform,
 	pyramidInfo *protos.ImagePyramid,
 	jobLog logger.ILogger) error {
 	// For pyramid images, we already have metadata from pyramid.ImportBigTIFF()
@@ -768,36 +766,32 @@ func insertImageDBEntryForImageWithPyramid(
 		return fmt.Errorf("pyramid metadata is missing or invalid")
 	}
 
-	// Get dimensions from the pyramid bounds (page 0 dimensions)
-	imgWidth := uint32(pyramidInfo.Bounds.Max.X)
-	imgHeight := uint32(pyramidInfo.Bounds.Max.Y)
-
-	// For pyramid images, we don't have a single file size - the pyramid consists of many tiles
-	fileSize := uint32(0) // TODO What should filesize be ?
-
 	saveName := filepath.Base(imagePath)
 	savePath := path.Join(originScanId, saveName)
 
-	// Create the ScanImage with pyramid description
-	img := &protos.ScanImage{
-		ImagePath: savePath,
-
-		Source:   source,
-		Width:    imgWidth,
-		Height:   imgHeight,
-		FileSize: fileSize,
-		Purpose:  purpose,
-
-		AssociatedScanIds: associatedScanIds,
-		OriginScanId:      originScanId,
-		OriginImageURL:    originImageURL,
-
-		MatchInfo: matchInfo,
-
-		PyramidDescription: pyramidInfo,
+	entry := &protos.ImagePyramidDBEntry{
+		Id:      savePath,
+		Pyramid: pyramidInfo,
 	}
 
-	return insertImageDBEntry(db, img, jobLog)
+	coll := db.Collection(dbCollections.ImagesName)
+	opt := options.InsertOne()
+
+	result, err := coll.InsertOne(context.TODO(), entry, opt)
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			// Don't overwrite, so we're OK with this
+			return nil
+		}
+		return err
+	}
+
+	if result.InsertedID != entry.Id {
+		jobLog.Errorf("insertImagePyramid wrote id %v, got back %v", entry.Id, result.InsertedID)
+		// Not the end of the world... don't error out here
+	}
+
+	return nil
 }
 
 func insertImageDBEntryForImage(

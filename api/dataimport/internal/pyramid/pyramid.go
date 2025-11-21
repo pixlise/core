@@ -27,9 +27,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cshum/vipsgen/vips"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"github.com/pixlise/core/v4/vips"
 )
 
 // DZI XML structures for parsing .dzi metadata files
@@ -169,6 +169,7 @@ func generatePyramidTiles(inputTiffPath string, outputBaseDir string, imageName 
 	for page := 0; page < nPages; page++ {
 		// Structure: outputBaseDir/imageName/page_N.dzi and page_N_files/
 		pageName := fmt.Sprintf("page_%d", page)
+		fmt.Printf("Reading: %v...\n", pageName)
 		outputBase := filepath.Join(outputDir, pageName)
 
 		// Load this specific page
@@ -191,10 +192,10 @@ func generatePyramidTiles(inputTiffPath string, outputBaseDir string, imageName 
 		err = pageImg.Dzsave(outputBase, &vips.DzsaveOptions{
 			Imagename: pageName,
 			Suffix:    ".jpg",
-			Q:         85,
+			Q:         90,
 			Depth:     vips.DzDepthOnetile,
 			Overlap:   0,
-			TileSize:  254,
+			TileSize:  1024,
 		})
 
 		pageImg.Close()

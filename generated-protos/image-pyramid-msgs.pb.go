@@ -26,7 +26,7 @@ type ImagePyramidGetReq struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // Perhaps add controls to limit what layer of the pyramid to return?
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
 func (x *ImagePyramidGetReq) Reset() {
