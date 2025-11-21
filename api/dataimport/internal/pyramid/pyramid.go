@@ -27,9 +27,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cshum/vipsgen/vips"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"github.com/pixlise/core/v4/vips"
 )
 
 // DZI XML structures for parsing .dzi metadata files
@@ -183,10 +183,10 @@ func generatePyramidTiles(inputTiffPath string, outputBaseDir string, imageName 
 	err = pageImg.Dzsave(outputBase, &vips.DzsaveOptions{
 		Imagename: pageName,
 		Suffix:    ".jpg",
-		Q:         85,
+		Q:         90,
 		Depth:     vips.DzDepthOnetile,
 		Overlap:   0,
-		TileSize:  254,
+		TileSize:  1024,
 	})
 
 	pageImg.Close()

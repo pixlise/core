@@ -217,7 +217,7 @@ func ImportFromLocalFileSystem(
 	saver := output.PIXLISEDataSaver{}
 	err = saver.Save(*data, contextImageSrcPath, outPath, filepath.Join(outputImagesPath, data.DatasetID), db, time.Now().Unix(), remoteFS, datasetBucket, log)
 	if err != nil {
-		return "", fmt.Errorf("Failed to write dataset file: %v. Error: %v", outPath, err)
+		return "", fmt.Errorf("Error when writing scan data: %v. Error: %v", outPath, err)
 	}
 
 	log.Infof("Running diffraction DB generator...")

@@ -17,7 +17,7 @@
 
 package main
 
-import "github.com/cshum/vipsgen/vips"
+import "github.com/pixlise/core/v4/vips"
 
 func interpretationName(i vips.Interpretation) string {
 	switch i {
