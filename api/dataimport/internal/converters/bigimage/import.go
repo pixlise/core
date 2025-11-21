@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/cshum/vipsgen/vips"
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 	dataimportModel "github.com/pixlise/core/v4/api/dataimport/models"
 	"github.com/pixlise/core/v4/api/specialUserIds"
@@ -100,14 +101,40 @@ func (im BigImage) Import(importPath string, pseudoIntensityRangesPath string, d
 
 	log.Infof("Found pyramid source image: %s", tiffFile)
 
-	// Add the image to PMC 1 with PY_ prefix on the filename part
+	// Add the image(s) to PMC(s) with PY_ prefix on the filename part
 	// The PY_ prefix signals to output.go:copyImagesToOutput() to generate pyramid tiles
-	// instead of doing a simple TIFF->PNG conversion
-	// Structure: "pyramid/PY_Multi_page24bpp.tif" (actual file is "pyramid/Multi_page24bpp.tif")
-	dir := filepath.Dir(tiffFile)           // "pyramid"
-	base := filepath.Base(tiffFile)         // "Multi_page24bpp.tif"
-	contextImgsPerPMC[1] = filepath.Join(dir, "PY_"+base)  // "pyramid/PY_Multi_page24bpp.tif"
-	log.Infof("Registered image for pyramid processing: %s", contextImgsPerPMC[1])
+	dir := filepath.Dir(tiffFile)                              // "pyramid"
+	base := filepath.Base(tiffFile)                            // "Multi_page24bpp.tif"
+	baseWithoutExt := base[:len(base)-len(filepath.Ext(base))] // "Multi_page24bpp"
+
+	// Detect if multi-page TIFF
+	fullTiffPath := filepath.Join(importPath, tiffFile)
+	pageCount, err := getPageCount(fullTiffPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to load tiff (couldn't get page count or invalid dimensions) %s: %v", tiffFile, err)
+	}
+
+	log.Infof("TIFF has %d page(s)", pageCount)
+
+	// Create PMC entry for each page
+	// All entries point to same source file, but have different destination names
+	sourcePath := filepath.Join(dir, "PY_"+base) // "pyramid/PY_Multi_page24bpp.tif"
+
+	for page := 0; page < pageCount; page++ {
+		pmc := int32(page + 1) // PMC starts at 1
+
+		var destName string
+		if page == 0 {
+			// First page keeps original name: "pyramid/PY_Multi_page24bpp.tif"
+			destName = sourcePath
+		} else {
+			// Subsequent pages: "pyramid/PY_Multi_page24bpp_page1.tif", etc.
+			destName = filepath.Join(dir, fmt.Sprintf("PY_%s_page%d%s", baseWithoutExt, page, filepath.Ext(base)))
+		}
+
+		contextImgsPerPMC[pmc] = destName
+		log.Infof("Registered page %d for PMC %d: %s", page, pmc, destName)
+	}
 
 	matchedAlignedImages := []dataConvertModels.MatchedAlignedImageMeta{}
 	/*	housekeepingFileNameMeta := gdsfilename.FileNameMeta{}
@@ -160,11 +187,27 @@ func (im BigImage) Import(importPath string, pseudoIntensityRangesPath string, d
 		CreatorUserId:        specialUserIds.PIXLISESystemUserId, // TODO: set a real creator
 	}
 
-	if len(contextImgsPerPMC) != 1 {
+	if len(contextImgsPerPMC) < 1 {
 		return nil, "", fmt.Errorf("Failed to read context image")
 	}
 
 	data.SetPMCData(beamLookup, hkData, spectraLookup, contextImgsPerPMC, pseudoIntensityData, map[int32]string{})
 
 	return data, importPath, nil
+}
+
+// getPageCount detects how many pages are in a TIFF file without loading the entire file
+func getPageCount(tiffPath string) (int, error) {
+	// Can also return error if the pages are not same dimensions
+	// Load TIFF and read metadata
+	// TODO ? : Right now we don't *explicitly* check for dimension limits here, but vips.NewTiffload() will fail if the dimensions are invalid (e.g. too large). TEST this properly.
+	img, err := vips.NewTiffload(tiffPath, &vips.TiffloadOptions{
+		Page: 0,
+		N:    -1, // Loads all pages in a 'toilet paper' strip format.
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to load TIFF, potentially incorrect dimensions: %w", err)
+	}
+	defer img.Close()
+	return img.Pages(), err
 }

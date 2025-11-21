@@ -228,15 +228,14 @@ func ImportFromLocalFileSystem(
 	}
 
 	// Finally, copy scan files to scans, and images to images
-	// TODO NEED TO UPDATE COPY TO BUCKET TO HANDLE FOLDERS
 	log.Infof("Copying generated dataset to bucket: %v...", datasetBucket)
 	err = copyToBucket(remoteFS, data.DatasetID, outputScanPath, datasetBucket, filepaths.DatasetScansRoot, false, log)
 	if err != nil {
 		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
 	}
 
+	// Check if images contain pyramid structure (has .dzi files), and if so, keep nested directory structure
 	log.Infof("Copying images to bucket: %v...", datasetBucket)
-	// Check if images contain pyramid structure (has .dzi files)
 	imagePath := filepath.Join(outputImagesPath, data.DatasetID) // ..\..\..\output-images\{datasetID} to check for pyramid structure
 	hasPyramid := containsPyramidStructure(imagePath)
 	if hasPyramid {
