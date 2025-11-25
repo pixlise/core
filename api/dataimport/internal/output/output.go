@@ -888,7 +888,7 @@ func insertImageAndPyramidToDB(
 		FileSize: uint32(0), // TODO What should filesize be ?
 		Purpose:  purpose,
 
-		AssociatedScanIds: []string{},
+		AssociatedScanIds: []string{originScanId},
 		OriginScanId:      originScanId,
 		OriginImageURL:    originImageURL,
 
