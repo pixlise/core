@@ -29,13 +29,17 @@ func HandleImagePyramidGetReq(req *protos.ImagePyramidGetReq, hctx wsHelpers.Han
 		return nil, pyramidResult.Err()
 	}
 
-	pyramid := &protos.ImagePyramid{}
+	pyramid := &protos.ImagePyramidDBEntry{}
 	err := pyramidResult.Decode(pyramid)
 	if err != nil {
 		return nil, err
 	}
 
-	return &protos.ImagePyramidGetResp{Image: pyramid}, nil
+	if pyramid.Id != req.Id {
+		hctx.Svcs.Log.Errorf("Unexpected image pyramid id: %v in pyramid %v", pyramid.Id, req.Id)
+	}
+
+	return &protos.ImagePyramidGetResp{Image: pyramid.Pyramid}, nil
 }
 
 func HandleImageTileDataGetReq(req *protos.ImageTileDataGetReq, hctx wsHelpers.HandlerContext) (*protos.ImageTileDataGetResp, error) {
