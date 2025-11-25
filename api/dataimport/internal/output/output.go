@@ -391,7 +391,7 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	// We work out the default file name when copying output images now... because if there isn't one, we may pick one during that process.
-	defaultContextImage, err := copyImagesToOutput(contextImageSrcPath, []string{data.DatasetID}, data.DatasetID, outputImagesPath, data, db, remoteFS, datasetBucket, jobLog)
+	defaultContextImage, err := copyImagesToOutput(contextImageSrcPath, []string{data.DatasetID}, data.DatasetID, outputImagesPath, data, db, remoteFS, datasetBucket, 1024, 90, jobLog)
 	if err != nil {
 		return fmt.Errorf("Error copying images: %v", err)
 	}
@@ -575,6 +575,8 @@ func copyImagesToOutput(
 	db *mongo.Database,
 	remoteFS fileaccess.FileAccess,
 	datasetBucket string,
+	tileSize int,
+	tileQuality int,
 	jobLog logger.ILogger) (string, error) {
 	defaultContextImage := ""
 
@@ -584,14 +586,19 @@ func copyImagesToOutput(
 
 	pmcToImage := map[int32]string{}
 
+	// Only used for pyramid tile generation
+	var bigtiffpyramid *protos.ImagePyramid
+	var bigtiffPyramidId string
+	var firstPageNum int
+	var pageNum int
+
 	for pmc, item := range data.PerPMCData {
 		if len(item.ContextImageSrc) > 0 {
 			fromImgFile := filepath.Join(contextImgDir, item.ContextImageSrc)
 			outImgFile := filepath.Join(outPath, item.ContextImageDst)
 
-			// Check for pyramid tile generation
-			var bigtiffpyramid *protos.ImagePyramid
 			var err error
+
 			// Check if tiff and needs conversion
 			ext := strings.ToLower(filepath.Ext(fromImgFile))
 			if ext == ".tif" || ext == ".tiff" {
@@ -599,7 +606,7 @@ func copyImagesToOutput(
 				if strings.HasPrefix(filepath.Base(fromImgFile), "PY_") {
 					// Extract page number from destination filename
 					// e.g., "PY_Multi_page_page1.tif" → page 1, "PY_Multi_page.tif" → page 0
-					pageNum := extractPageNumber(filepath.Base(fromImgFile))
+					pageNum = extractPageNumber(filepath.Base(fromImgFile))
 
 					// Get the real source file path (strip _pageN suffix if present)
 					realSourcePath := getRealSourcePath(fromImgFile, pageNum)
@@ -607,11 +614,28 @@ func copyImagesToOutput(
 					jobLog.Infof("  Generate pyramid for page %d: PMC[%v] %v -> %v", pageNum, pmc, realSourcePath, outImgFile)
 
 					// Construct the pyramid output dir with DeepZoom structure
-					bigtiffpyramid, err = pyramid.ImportBigTIFF(realSourcePath, outImgFile, pageNum, jobLog)
+					thisBigTifPyramid, err := pyramid.ImportBigTIFF(realSourcePath, outImgFile, pageNum, tileSize, tileQuality, jobLog)
 					if err != nil {
 						return "", err
 					}
 
+					// Only save the first pyramid, subsequent ones should be checked to see they're the same!
+					if bigtiffpyramid == nil {
+						bigtiffpyramid = thisBigTifPyramid
+						bigtiffPyramidId = path.Join(originScanId, filepath.Base(realSourcePath))
+						firstPageNum = pageNum
+					} else {
+						if bigtiffpyramid.Bounds.Min.X != thisBigTifPyramid.Bounds.Min.X ||
+							bigtiffpyramid.Bounds.Min.Y != thisBigTifPyramid.Bounds.Min.Y ||
+							bigtiffpyramid.Bounds.Min.Z != thisBigTifPyramid.Bounds.Min.Z ||
+							bigtiffpyramid.Bounds.Max.X != thisBigTifPyramid.Bounds.Max.X ||
+							bigtiffpyramid.Bounds.Max.Y != thisBigTifPyramid.Bounds.Max.Y ||
+							bigtiffpyramid.Bounds.Max.Z != thisBigTifPyramid.Bounds.Max.Z ||
+							len(bigtiffpyramid.Pyramid) != len(thisBigTifPyramid.Pyramid) ||
+							len(bigtiffpyramid.Pyramid[0].Tiles) != len(thisBigTifPyramid.Pyramid[0].Tiles) {
+							return "", fmt.Errorf("Image pyramid mismatch between page %v and %v", firstPageNum, pageNum)
+						}
+					}
 				} else {
 					// Just a normal tiff (non pyramid), convert to png
 					outImgFile = outImgFile[0:len(outImgFile)-3] + "png"
@@ -648,9 +672,22 @@ func copyImagesToOutput(
 			}
 
 			// Insert pyramid DB entry if we have a tiled pyramid
-			if bigtiffpyramid != nil {
+			if len(bigtiffPyramidId) > 0 {
 				jobLog.Infof("Inserting pyramid image DB entry for: %s", outImgFile)
-				err = insertImageDBEntryForImageWithPyramid(outImgFile, db, protos.ScanImageSource_SI_INSTRUMENT, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, originURL, nil, bigtiffpyramid, jobLog) // Doesn't exist so obv breaks.
+
+				err = insertImageAndPyramidToDB(
+					originScanId,
+					outImgFile,
+					db,
+					bigtiffPyramidId,
+					bigtiffpyramid,
+					firstPageNum == pageNum,
+					protos.ScanImageSource_SI_UPLOAD,
+					protos.ScanImagePurpose_SIP_VIEWING,
+					"",
+					nil,
+					jobLog)
+
 				if err != nil {
 					return "", err
 				}
@@ -676,26 +713,23 @@ func copyImagesToOutput(
 				if err != nil {
 					return "", fmt.Errorf("failed to delete pyramid folder: %w", err)
 				}
-
 			} else {
-				err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_INSTRUMENT, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, originURL, nil, jobLog)
+				err = insertImageDBEntryForImage(
+					outImgFile,
+					db,
+					protos.ScanImageSource_SI_INSTRUMENT,
+					protos.ScanImagePurpose_SIP_VIEWING,
+					associatedScanIds,
+					originScanId,
+					originURL,
+					nil,
+					bigtiffPyramidId,
+					jobLog)
+
 				if err != nil {
 					return "", err
 				}
-			// =======
-				// 				err = insertImagePyramid(originScanId, outImgFile, db, bigtiffpyramid, jobLog)
-
-				// 				if err != nil {
-				// 					return "", err
-				// 				}
-				// 			}
-
-				// 			// Insert image DB entry
-				// 			err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_INSTRUMENT, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, originURL, nil, jobLog)
-				// 			if err != nil {
-				// 				return "", err
-				// >>>>>>> origin/feature/backend-polygen
-				// 			}
+			}
 
 			// Remember this PMC->file name mapping for any potential "matched" images we import
 			pmcToImage[pmc] = fileName
@@ -723,7 +757,7 @@ func copyImagesToOutput(
 			return "", err
 		}
 
-		err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_UPLOAD, protos.ScanImagePurpose_SIP_MULTICHANNEL, associatedScanIds, originScanId, "", nil, jobLog)
+		err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_UPLOAD, protos.ScanImagePurpose_SIP_MULTICHANNEL, associatedScanIds, originScanId, "", nil, "", jobLog)
 		if err != nil {
 			return "", err
 		}
@@ -746,7 +780,7 @@ func copyImagesToOutput(
 			return "", err
 		}
 
-		err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_UPLOAD, protos.ScanImagePurpose_SIP_MULTICHANNEL, associatedScanIds, originScanId, "", nil, jobLog)
+		err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_UPLOAD, protos.ScanImagePurpose_SIP_MULTICHANNEL, associatedScanIds, originScanId, "", nil, "", jobLog)
 		if err != nil {
 			return "", err
 		}
@@ -788,7 +822,7 @@ func copyImagesToOutput(
 			YScale:            float64(matchedMeta.YScale),
 		}
 
-		err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_UPLOAD, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, "", matchInfo, jobLog)
+		err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_UPLOAD, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, "", matchInfo, "", jobLog)
 		if err != nil {
 			return "", err
 		}
@@ -801,11 +835,18 @@ func copyImagesToOutput(
 	return defaultContextImage, nil
 }
 
-func insertImagePyramid(
+// Writes ScanImage and ImagePyramidDBEntry to the DB
+func insertImageAndPyramidToDB(
 	originScanId string,
 	imagePath string,
 	db *mongo.Database,
+	pyramidId string,
 	pyramidInfo *protos.ImagePyramid,
+	writePyramid bool,
+	source protos.ScanImageSource,
+	purpose protos.ScanImagePurpose,
+	originImageURL string,
+	matchInfo *protos.ImageMatchTransform,
 	jobLog logger.ILogger) error {
 	// For pyramid images, we already have metadata from pyramid.ImportBigTIFF()
 	// No need to reopen the image - extract dimensions from pyramidInfo instead
@@ -814,32 +855,49 @@ func insertImagePyramid(
 		return fmt.Errorf("pyramid metadata is missing or invalid")
 	}
 
-	saveName := filepath.Base(imagePath)
-	savePath := path.Join(originScanId, saveName)
-
-	entry := &protos.ImagePyramidDBEntry{
-		Id:      savePath,
-		Pyramid: pyramidInfo,
-	}
-
-	coll := db.Collection(dbCollections.ImagesName)
+	coll := db.Collection(dbCollections.ImagePyramidsName)
 	opt := options.InsertOne()
 
-	result, err := coll.InsertOne(context.TODO(), entry, opt)
-	if err != nil {
-		if mongo.IsDuplicateKeyError(err) {
-			// Don't overwrite, so we're OK with this
-			return nil
+	if writePyramid {
+		entry := &protos.ImagePyramidDBEntry{
+			Id:      pyramidId,
+			Pyramid: pyramidInfo,
 		}
-		return err
+
+		result, err := coll.InsertOne(context.TODO(), entry, opt)
+		if err != nil {
+			if mongo.IsDuplicateKeyError(err) {
+				// Don't overwrite, so we're OK with this
+				return nil
+			}
+			return err
+		}
+
+		if result.InsertedID != entry.Id {
+			jobLog.Errorf("insertImagePyramid wrote id %v, got back %v", entry.Id, result.InsertedID)
+			// Not the end of the world... don't error out here
+		}
 	}
 
-	if result.InsertedID != entry.Id {
-		jobLog.Errorf("insertImagePyramid wrote id %v, got back %v", entry.Id, result.InsertedID)
-		// Not the end of the world... don't error out here
+	img := &protos.ScanImage{
+		ImagePath: path.Join(originScanId, filepath.Base(imagePath)),
+
+		Source:   source,
+		Width:    uint32(pyramidInfo.Bounds.Max.X - pyramidInfo.Bounds.Min.X),
+		Height:   uint32(pyramidInfo.Bounds.Max.Y - pyramidInfo.Bounds.Min.Y),
+		FileSize: uint32(0), // TODO What should filesize be ?
+		Purpose:  purpose,
+
+		AssociatedScanIds: []string{},
+		OriginScanId:      originScanId,
+		OriginImageURL:    originImageURL,
+
+		MatchInfo: matchInfo,
+
+		PyramidId: pyramidId,
 	}
 
-	return nil
+	return insertImageDBEntry(db, img, jobLog)
 }
 
 func insertImageDBEntryForImage(
@@ -851,6 +909,7 @@ func insertImageDBEntryForImage(
 	originScanId string,
 	originImageURL string,
 	matchInfo *protos.ImageMatchTransform,
+	pyramidId string,
 	jobLog logger.ILogger) error {
 	// Read the image - we used to only copy files around but here we need to open it for meta data
 	imgbytes, err := os.ReadFile(imagePath)
@@ -880,9 +939,11 @@ func insertImageDBEntryForImage(
 		originScanId,
 		originImageURL,
 		matchInfo,
+		pyramidId,
 		imgWidth,
 		imgHeight,
 	)
+
 	return insertImageDBEntry(db, img, jobLog)
 }
 

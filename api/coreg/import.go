@@ -302,6 +302,7 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, marsViewerExp
 		"", //baseRTT,
 		"",
 		nil,
+		"",
 		imgWidth,
 		imgHeight,
 	)
@@ -557,6 +558,7 @@ func importWarpedImage(warpedImageUrl string, rttWarpedTo string, baseImage stri
 		rttWarpedTo,
 		"",
 		matchInfo,
+		"",
 		imgWidth,
 		imgHeight,
 	)

@@ -414,6 +414,7 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 		req.OriginScanId,
 		"",
 		req.GetBeamImageRef(),
+		"",
 		imgWidth,
 		imgHeight,
 	)

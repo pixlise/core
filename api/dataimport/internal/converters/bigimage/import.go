@@ -5,13 +5,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cshum/vipsgen/vips"
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 	dataimportModel "github.com/pixlise/core/v4/api/dataimport/models"
 	"github.com/pixlise/core/v4/api/specialUserIds"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"github.com/pixlise/core/v4/vips"
 )
 
 // IsBigImageDataSet detects if the import is a big image dataset that needs pyramid tile generation

@@ -115,6 +115,7 @@ func MakeScanImage(
 	originScanId string,
 	originImageURL string,
 	matchInfo *protos.ImageMatchTransform,
+	pyramidId string,
 	width uint32,
 	height uint32) *protos.ScanImage {
 	result := &protos.ScanImage{
@@ -131,6 +132,8 @@ func MakeScanImage(
 		OriginImageURL:    originImageURL,
 
 		MatchInfo: matchInfo,
+
+		PyramidId: pyramidId,
 	}
 
 	return result
