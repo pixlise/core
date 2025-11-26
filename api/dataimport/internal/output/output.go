@@ -625,15 +625,9 @@ func copyImagesToOutput(
 						bigtiffPyramidId = path.Join(originScanId, filepath.Base(realSourcePath))
 						firstPageNum = pageNum
 					} else {
-						if bigtiffpyramid.Bounds.Min.X != thisBigTifPyramid.Bounds.Min.X ||
-							bigtiffpyramid.Bounds.Min.Y != thisBigTifPyramid.Bounds.Min.Y ||
-							bigtiffpyramid.Bounds.Min.Z != thisBigTifPyramid.Bounds.Min.Z ||
-							bigtiffpyramid.Bounds.Max.X != thisBigTifPyramid.Bounds.Max.X ||
-							bigtiffpyramid.Bounds.Max.Y != thisBigTifPyramid.Bounds.Max.Y ||
-							bigtiffpyramid.Bounds.Max.Z != thisBigTifPyramid.Bounds.Max.Z ||
-							len(bigtiffpyramid.Pyramid) != len(thisBigTifPyramid.Pyramid) ||
-							len(bigtiffpyramid.Pyramid[0].Tiles) != len(thisBigTifPyramid.Pyramid[0].Tiles) {
-							return "", fmt.Errorf("Image pyramid mismatch between page %v and %v", firstPageNum, pageNum)
+						err := pyramid.VerifyPyramids(bigtiffpyramid, thisBigTifPyramid, firstPageNum, pageNum)
+						if err != nil {
+							return "", err
 						}
 					}
 				} else {

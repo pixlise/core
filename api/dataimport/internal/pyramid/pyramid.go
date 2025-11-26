@@ -304,3 +304,58 @@ func buildImagePyramidProto(dzi *dziImage, scanID string, imageName string, jobL
 		TileSize:      uint32(dzi.TileSize),
 	}
 }
+
+// VerifyPyramids checks if two ImagePyramid protos have matching structure.
+//
+// Returns an error if the pyramids differ in:
+// - Bounds (min/max X, Y, Z coordinates)
+// - Number of pyramid layers
+// - Number of tiles in the first layer
+func VerifyPyramids(first *protos.ImagePyramid, second *protos.ImagePyramid, firstPageNum int, secondPageNum int) error {
+	if first == nil || second == nil {
+		return fmt.Errorf("cannot compare nil pyramids")
+	}
+
+	// Check bounds
+	if !coordsEqual(first.Bounds.Min, second.Bounds.Min) {
+		return fmt.Errorf("image pyramid min bounds mismatch between page %v and %v: (%.2f,%.2f,%.2f) vs (%.2f,%.2f,%.2f)",
+			firstPageNum, secondPageNum,
+			first.Bounds.Min.X, first.Bounds.Min.Y, first.Bounds.Min.Z,
+			second.Bounds.Min.X, second.Bounds.Min.Y, second.Bounds.Min.Z)
+	}
+
+	if !coordsEqual(first.Bounds.Max, second.Bounds.Max) {
+		return fmt.Errorf("image pyramid max bounds mismatch between page %v and %v: (%.2f,%.2f,%.2f) vs (%.2f,%.2f,%.2f)",
+			firstPageNum, secondPageNum,
+			first.Bounds.Max.X, first.Bounds.Max.Y, first.Bounds.Max.Z,
+			second.Bounds.Max.X, second.Bounds.Max.Y, second.Bounds.Max.Z)
+	}
+
+	// Check number of layers
+	if len(first.Pyramid) != len(second.Pyramid) {
+		return fmt.Errorf("image pyramid layer count mismatch between page %v and %v: %d vs %d",
+			firstPageNum, secondPageNum, len(first.Pyramid), len(second.Pyramid))
+	}
+
+	// Check first layer tile count
+	if len(first.Pyramid) > 0 && len(second.Pyramid) > 0 {
+		if len(first.Pyramid[0].Tiles) != len(second.Pyramid[0].Tiles) {
+			return fmt.Errorf("image pyramid tile count mismatch between page %v and %v: %d vs %d",
+				firstPageNum, secondPageNum, len(first.Pyramid[0].Tiles), len(second.Pyramid[0].Tiles))
+		}
+	}
+
+	if first.TileSize != second.TileSize {
+		return fmt.Errorf("image pyramid tile size mismatch between page %v and %v: %d vs %d",
+			firstPageNum, secondPageNum, first.TileSize, second.TileSize)
+	}
+
+	return nil
+}
+
+func coordsEqual(a, b *protos.Coordinate3D) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.X == b.X && a.Y == b.Y && a.Z == b.Z
+}
