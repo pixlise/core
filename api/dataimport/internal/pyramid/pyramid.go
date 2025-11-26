@@ -301,5 +301,6 @@ func buildImagePyramidProto(dzi *dziImage, scanID string, imageName string, jobL
 		Bounds:        bounds,
 		Pyramid:       layers,
 		ImagePrefixes: []string{imagePrefix},
+		TileSize:      uint32(dzi.TileSize),
 	}
 }
