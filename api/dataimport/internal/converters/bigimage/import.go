@@ -191,10 +191,9 @@ func (im BigImage) Import(importPath string, pseudoIntensityRangesPath string, d
 }
 
 // getPageCount detects how many pages are in a TIFF file without loading the entire file
+// Also return error if the pages are not same dimensions (Tiffload does this)
 func getPageCount(tiffPath string) (int, error) {
-	// Can also return error if the pages are not same dimensions
 	// Load TIFF and read metadata
-	// TODO ? : Right now we don't *explicitly* check for dimension limits here, but vips.NewTiffload() will fail if the dimensions are invalid (e.g. too large). TEST this properly.
 	img, err := vips.NewTiffload(tiffPath, &vips.TiffloadOptions{
 		Page: 0,
 		N:    -1, // Loads all pages in a 'toilet paper' strip format.

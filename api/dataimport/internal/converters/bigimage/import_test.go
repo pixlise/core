@@ -1,17 +1,20 @@
 package importBigImage
 
 import (
-	"fmt"
+	"testing"
 
 	"github.com/pixlise/core/v4/core/logger"
 )
 
-func Example_importBigImage_Import() {
+func TestImportBigImage(t *testing.T) {
+	// Importing an image with different page dimensions should error
 	var im = BigImage{}
-	out, id, err := im.Import("./test-data", "", "Multipager", &logger.StdOutLoggerForTest{})
+	_, _, err := im.Import("./test-data", "", "DimensionsMismatch", &logger.StdOutLoggerForTest{})
 
-	fmt.Printf("%v|%v|%v", len(out.PerPMCData), id, err)
+	// Should fail with dimension mismatch error
+	if err == nil {
+		t.Fatal("Expected error for multi-page TIFF with different page dimensions, but got none")
+	}
 
-	// Output:
-	// 590531|./test-data|<nil>
+	t.Logf("Got expected error: %v", err)
 }
