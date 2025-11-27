@@ -134,6 +134,10 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 
 	// We're still here, so we have access! Check query params for any modifiers
 	finalFileName := dbImage.ImagePath
+
+	// NOTE if it's a pyramid, we read the top level image
+	finalFileName = addPyramidPathIfNeeded(finalFileName, dbImage)
+
 	showLocations, err := getBoolValue(params.PathParams["with-locations"])
 	if err != nil {
 		return nil, "", "", "", 0, err
@@ -190,11 +194,12 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 		if minWidthPx > 0 || showLocations {
 			// If the file doesn't exist, check if the base file name exists, because we may just need to generate
 			// a modified version of it
-			genS3Path := filepaths.GetImageFilePath(requestedFileName)
+			imageGenFrom := addPyramidPathIfNeeded(requestedFileName, dbImage)
+			genS3Path := filepaths.GetImageFilePath(imageGenFrom)
 
 			// Original file exists, generate this modified copy and cache it back in S3 for the rest of this
 			// function to find!
-			err = generateImageVersion(requestedFileName, genS3Path, minWidthPx, showLocations, s3Path, params.Svcs)
+			err = generateImageVersion(imageGenFrom, genS3Path, minWidthPx, showLocations, s3Path, params.Svcs)
 		}
 
 		if err != nil {
@@ -254,6 +259,13 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 	}
 
 	return result, requestedFileName, etag, lm.String(), 0, err
+}
+
+func addPyramidPathIfNeeded(imagePath string, image *protos.ScanImage) string {
+	if len(image.PyramidId) > 0 {
+		imagePath = path.Join(imagePath, "pyramid_files", "0", "0_0.jpg")
+	}
+	return imagePath
 }
 
 const imageSizeStepPx = 200
