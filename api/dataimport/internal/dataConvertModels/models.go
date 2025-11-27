@@ -214,10 +214,11 @@ type OutputData struct {
 	// The group the dataset will belong to
 	Instrument protos.ScanInstrument
 
-	Meta                FileMetaData
-	DetectorConfig      string
-	BulkQuantFile       string
-	DefaultContextImage string
+	Meta                         FileMetaData
+	DetectorConfig               string
+	BulkQuantFile                string
+	DefaultContextImage          string
+	DefaultContextImageIsPyramid bool
 
 	// If file is composed from multiple sources, this stores all sources
 	Sources []FileMetaData
