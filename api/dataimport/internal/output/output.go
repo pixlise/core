@@ -679,8 +679,7 @@ func copyImagesToOutput(
 				// Eg instead of: /tmp/data-converter1058780390/output-Images/MarcoZStackTest/PY_optical_z-stack_page10.tif
 				// We want it to be: MarcoZStackTest/_optical_z-stack_page10/pyramid/0/0_0.jpg
 
-				// Upload pyramid to S3 immediately and clean up /tmp
-				pyramidFolder := getPyramidFolderPath(path.Join(originScanId, item.ContextImageDst))
+				pyramidPageDir := getPyramidFolderPath(item.ContextImageDst)
 
 				// Get parent directory so CopyToBucket includes the page folder in S3 path
 				// e.g., parent = "/tmp/.../output-Images/BigTiff"
@@ -690,7 +689,7 @@ func copyImagesToOutput(
 				// When inserting, we want to point to an actual file - the smallest pyramid level with a single tile in it
 				err = insertImageAndPyramidToDB(
 					originScanId,
-					getPyramidFolderPath(item.ContextImageDst), // path.Join(pyramidFolder, "pyramid_files", "0", "0_0.jpg")
+					pyramidPageDir, // path.Join(pyramidFolder, "pyramid_files", "0", "0_0.jpg")
 					db,
 					bigtiffPyramidId,
 					bigtiffpyramid,
@@ -714,8 +713,9 @@ func copyImagesToOutput(
 				}
 
 				// Delete from /tmp to free space
-				jobLog.Infof("Cleaning up pyramid from /tmp: %s", pyramidFolder)
-				err = os.RemoveAll(pyramidFolder)
+				delPath := filepath.Join(outPath, pyramidPageDir)
+				jobLog.Infof("Cleaning up temp pyramid files from: %s", delPath)
+				err = os.RemoveAll(delPath)
 				if err != nil {
 					return "", fmt.Errorf("failed to delete pyramid folder: %w", err)
 				}
@@ -750,6 +750,7 @@ func copyImagesToOutput(
 	// If it's a pyramid, assume the default matched
 	if len(bigtiffPyramidId) > 0 {
 		defaultContextImage = data.DefaultContextImage
+		data.DefaultContextImageIsPyramid = true
 		defaultMatched = true
 	}
 
