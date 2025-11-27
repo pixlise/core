@@ -25,7 +25,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pixlise/core/v4/api/dataimport/datasetArchive"
@@ -235,17 +234,16 @@ func ImportFromLocalFileSystem(
 	}
 
 	// Check if images contain pyramid structure (has .dzi files), and if so, keep nested directory structure
-	log.Infof("Copying images to bucket: %v...", datasetBucket)
-	imagePath := filepath.Join(outputImagesPath, data.DatasetID) // ..\..\..\output-images\{datasetID} to check for pyramid structure
-	hasPyramid := containsPyramidStructure(data.DefaultContextImage)
-	if hasPyramid {
+	if data.DefaultContextImageIsPyramid {
 		log.Infof("Detected pyramid structure, files should already be uploaded to bucket so skipping here.")
 	} else {
-		err = importerutils.CopyToBucket(remoteFS, data.DatasetID, imagePath, datasetBucket, filepaths.DatasetImagesRoot, hasPyramid, log)
+		log.Infof("Copying images to bucket: %v...", datasetBucket)
+		imagePath := filepath.Join(outputImagesPath, data.DatasetID)
+
+		err = importerutils.CopyToBucket(remoteFS, data.DatasetID, imagePath, datasetBucket, filepaths.DatasetImagesRoot, false, log)
 		if err != nil {
 			return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
 		}
-
 	}
 
 	return data.DatasetID, nil
@@ -291,14 +289,6 @@ func createPeakDiffractionDB(datasetPath string, savepath string, jobLog logger.
 	}
 
 	return nil
-}
-
-// containsPyramidStructure checks if the given path has been tagged to be a Pyramid (via the PY_ prefix)
-func containsPyramidStructure(defaultContextImage string) bool {
-	// Check if default context image is a pyramid (starts with PY_ prefix)
-	// This indicates pyramid images were already uploaded during processing
-	baseName := filepath.Base(defaultContextImage)
-	return strings.HasPrefix(baseName, "PY_")
 }
 
 func getUpdateType(newSummary *protos.ScanItem, oldSummary *protos.ScanItem) (string, error) {
