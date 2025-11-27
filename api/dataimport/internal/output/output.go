@@ -627,9 +627,15 @@ func copyImagesToOutput(
 						bigtiffPyramidId = getPyramidFolderPath(path.Join(originScanId, item.ContextImageDst))
 						//bigtiffPyramidId = path.Join(originScanId, filepath.Base(realSourcePath))
 						firstPageNum = pageNum
-					} // else, we could make sure the bigtiffpyramid and thisBigTifPyramid are equal, but we wouldn't have been
-					// able to load the image if it weren't, apparently the vips lib errors out on that. We have a test for this
-					// somewhere in theory!
+					} else {
+						// Here we check that the pyramid matches the one saved. This might be redundant because
+						// the vips lib should already throw an error if the pyramids don't match, but added this check
+						// anyway
+						err = pyramid.VerifyPyramids(bigtiffpyramid, thisBigTifPyramid, firstPageNum, pageNum)
+						if err != nil {
+							return "", err
+						}
+					}
 				} else {
 					// Just a normal tiff (non pyramid), convert to png
 					outImgFile = outImgFile[0:len(outImgFile)-3] + "png"
