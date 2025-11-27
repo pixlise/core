@@ -187,6 +187,11 @@ func (im BigImage) Import(importPath string, pseudoIntensityRangesPath string, d
 
 	data.SetPMCData(beamLookup, hkData, spectraLookup, contextImgsPerPMC, pseudoIntensityData, map[int32]string{})
 
+	// NOTE: Default context image is pointing to the intermediate file name, but that'll get renamed
+	//       so lets modify it here to match what it'll become
+	data.DefaultContextImage = strings.TrimPrefix(data.DefaultContextImage, "PY_")
+	data.DefaultContextImage = strings.TrimSuffix(data.DefaultContextImage, ".tif")
+
 	return data, importPath, nil
 }
 
