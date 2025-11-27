@@ -592,6 +592,7 @@ func copyImagesToOutput(
 	var firstPageNum int
 	var pageNum int
 
+	// Lets read in PMC order, this wasn't relevant before
 	for pmc, item := range data.PerPMCData {
 		if len(item.ContextImageSrc) > 0 {
 			fromImgFile := filepath.Join(contextImgDir, item.ContextImageSrc)
@@ -622,20 +623,13 @@ func copyImagesToOutput(
 					// Only save the first pyramid, subsequent ones should be checked to see they're the same!
 					if bigtiffpyramid == nil {
 						bigtiffpyramid = thisBigTifPyramid
-						bigtiffPyramidId = path.Join(originScanId, filepath.Base(realSourcePath))
+
+						bigtiffPyramidId = getPyramidFolderPath(path.Join(originScanId, item.ContextImageDst))
+						//bigtiffPyramidId = path.Join(originScanId, filepath.Base(realSourcePath))
 						firstPageNum = pageNum
-					} else {
-						if bigtiffpyramid.Bounds.Min.X != thisBigTifPyramid.Bounds.Min.X ||
-							bigtiffpyramid.Bounds.Min.Y != thisBigTifPyramid.Bounds.Min.Y ||
-							bigtiffpyramid.Bounds.Min.Z != thisBigTifPyramid.Bounds.Min.Z ||
-							bigtiffpyramid.Bounds.Max.X != thisBigTifPyramid.Bounds.Max.X ||
-							bigtiffpyramid.Bounds.Max.Y != thisBigTifPyramid.Bounds.Max.Y ||
-							bigtiffpyramid.Bounds.Max.Z != thisBigTifPyramid.Bounds.Max.Z ||
-							len(bigtiffpyramid.Pyramid) != len(thisBigTifPyramid.Pyramid) ||
-							len(bigtiffpyramid.Pyramid[0].Tiles) != len(thisBigTifPyramid.Pyramid[0].Tiles) {
-							return "", fmt.Errorf("Image pyramid mismatch between page %v and %v", firstPageNum, pageNum)
-						}
-					}
+					} // else, we could make sure the bigtiffpyramid and thisBigTifPyramid are equal, but we wouldn't have been
+					// able to load the image if it weren't, apparently the vips lib errors out on that. We have a test for this
+					// somewhere in theory!
 				} else {
 					// Just a normal tiff (non pyramid), convert to png
 					outImgFile = outImgFile[0:len(outImgFile)-3] + "png"
@@ -675,9 +669,22 @@ func copyImagesToOutput(
 			if len(bigtiffPyramidId) > 0 {
 				jobLog.Infof("Inserting pyramid image DB entry for: %s", outImgFile)
 
+				// From here we want outImgFile to refer to the path to an actual file in the pyramid!
+				// Eg instead of: /tmp/data-converter1058780390/output-Images/MarcoZStackTest/PY_optical_z-stack_page10.tif
+				// We want it to be: MarcoZStackTest/_optical_z-stack_page10/pyramid/0/0_0.jpg
+
+				// Upload pyramid to S3 immediately and clean up /tmp
+				pyramidFolder := getPyramidFolderPath(path.Join(originScanId, item.ContextImageDst))
+
+				// Get parent directory so CopyToBucket includes the page folder in S3 path
+				// e.g., parent = "/tmp/.../output-Images/BigTiff"
+				//       pyramidFolder = "/tmp/.../output-Images/BigTiff/Multi_page24bpp_page1"
+				//       S3 path = "Images/BigTiff/Multi_page24bpp_page1/pyramid.dzi"
+
+				// When inserting, we want to point to an actual file - the smallest pyramid level with a single tile in it
 				err = insertImageAndPyramidToDB(
 					originScanId,
-					outImgFile,
+					getPyramidFolderPath(item.ContextImageDst), // path.Join(pyramidFolder, "pyramid_files", "0", "0_0.jpg")
 					db,
 					bigtiffPyramidId,
 					bigtiffpyramid,
@@ -692,14 +699,7 @@ func copyImagesToOutput(
 					return "", err
 				}
 
-				// Upload pyramid to S3 immediately and clean up /tmp
-				pyramidFolder := getPyramidFolderPath(outImgFile)
-
-				// Get parent directory so CopyToBucket includes the page folder in S3 path
-				// e.g., parent = "/tmp/.../output-Images/BigTiff"
-				//       pyramidFolder = "/tmp/.../output-Images/BigTiff/Multi_page24bpp_page1"
-				//       S3 path = "Images/BigTiff/Multi_page24bpp_page1/pyramid.dzi"
-				parentDir := filepath.Dir(pyramidFolder)
+				parentDir := filepath.Dir(outImgFile)
 
 				// Upload with preserveStructure=true to keep pyramid folder structure
 				err = importerutils.CopyToBucket(remoteFS, originScanId, parentDir, datasetBucket, "Images", true, jobLog)
@@ -739,6 +739,12 @@ func copyImagesToOutput(
 				defaultContextImage = item.ContextImageDst
 			}
 		}
+	}
+
+	// If it's a pyramid, assume the default matched
+	if len(bigtiffPyramidId) > 0 {
+		defaultContextImage = data.DefaultContextImage
+		defaultMatched = true
 	}
 
 	// Copying RGBU images untouched
@@ -868,12 +874,13 @@ func insertImageAndPyramidToDB(
 		if err != nil {
 			if mongo.IsDuplicateKeyError(err) {
 				// Don't overwrite, so we're OK with this
-				return nil
+				//return nil
+				jobLog.Errorf("insertImagePyramid writing pyramid structure to DB skipped due to duplicate pyramid id: %v", pyramidId)
+			} else {
+				// A real error happened!
+				return err
 			}
-			return err
-		}
-
-		if result.InsertedID != entry.Id {
+		} else if result.InsertedID != entry.Id {
 			jobLog.Errorf("insertImagePyramid wrote id %v, got back %v", entry.Id, result.InsertedID)
 			// Not the end of the world... don't error out here
 		}
