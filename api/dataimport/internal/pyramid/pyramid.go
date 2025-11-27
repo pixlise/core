@@ -103,7 +103,7 @@ func ImportBigTIFF(fromImgFile string, outImgFile string, pageNum int, tileSize 
 	outputDir := filepath.Dir(outImgFile) // "/path/output-Images/BigTiff"
 	scanID := filepath.Base(outputDir)    // "BigTiff"
 
-	jobLog.Infof("Generating DeepZoom pyramid tiles for page %d: %s", pageNum, imageName)
+	jobLog.Infof("  Pyramid page %d named: %s", pageNum, imageName)
 	jobLog.Infof("  Source: %s (actual: %s)", fromImgFile, actualTiffPath)
 	jobLog.Infof("  Output: %s/%s/", outputDir, imageName)
 
@@ -116,10 +116,10 @@ func ImportBigTIFF(fromImgFile string, outImgFile string, pageNum int, tileSize 
 	jobLog.Infof("Generated page %d with dimensions %dx%d", pageNum, result.Width, result.Height)
 
 	// Parse pyramid.dzi to extract metadata
-	page0DziPath := filepath.Join(outputDir, imageName, "pyramid.dzi")
-	dzi, err := parseDZIFile(page0DziPath)
+	dziPath := filepath.Join(outputDir, imageName, "pyramid.dzi")
+	dzi, err := parseDZIFile(dziPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse page_0.dzi: %w", err)
+		return nil, fmt.Errorf("failed to parse \"%v\": %w", dziPath, err)
 	}
 
 	jobLog.Infof("Parsed DZI metadata: %dx%d, tileSize=%d, overlap=%d",
