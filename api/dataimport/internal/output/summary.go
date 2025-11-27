@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
+	"github.com/pixlise/core/v4/core/gdsfilename"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
@@ -37,24 +38,33 @@ func makeSummaryFileContent(
 	creatorUserId string,
 	jobLog logger.ILogger) *protos.ScanItem {
 	contextImgCount := len(exp.AlignedContextImages) + len(exp.UnalignedContextImages) + len(exp.MatchedAlignedContextImages)
-	tiffContextImgCount := 0
+	rgbuContextImgCount := 0
 
 	// Count the number of TIFF context images so that we can quickly determine if the dataset is RGBU
 	for _, img := range exp.AlignedContextImages {
 		if strings.HasSuffix(img.Image, ".tif") {
-			tiffContextImgCount++
+			fields, err := gdsfilename.ParseFileName(img.Image)
+
+			// We're pretty strict about what we consider to be an RGBU image!! It's got to be a tif, with a GDS-compatible
+			// file name that has the right product type. Otherwise it can be any tif image... especially with the introduction
+			// of support for "bigtiff" images containing tiled pyramids of images
+			if err == nil && (fields.ProdType == "VIS" || fields.ProdType == "MSA") {
+				rgbuContextImgCount++
+			}
 		}
 	}
-	for _, img := range exp.UnalignedContextImages {
-		if strings.HasSuffix(img, ".tif") {
-			tiffContextImgCount++
+	/*
+		for _, img := range exp.UnalignedContextImages {
+			if strings.HasSuffix(img, ".tif") {
+				rgbuContextImgCount++
+			}
 		}
-	}
-	for _, img := range exp.MatchedAlignedContextImages {
-		if strings.HasSuffix(img.Image, ".tif") {
-			tiffContextImgCount++
+		for _, img := range exp.MatchedAlignedContextImages {
+			if strings.HasSuffix(img.Image, ".tif") {
+				rgbuContextImgCount++
+			}
 		}
-	}
+	*/
 
 	dataTypes := []*protos.ScanItem_ScanTypeCount{}
 
@@ -62,8 +72,8 @@ func makeSummaryFileContent(
 	if contextImgCount > 0 {
 		dataTypes = append(dataTypes, &protos.ScanItem_ScanTypeCount{DataType: protos.ScanDataType_SD_IMAGE, Count: uint32(contextImgCount)})
 	}
-	if tiffContextImgCount > 0 {
-		dataTypes = append(dataTypes, &protos.ScanItem_ScanTypeCount{DataType: protos.ScanDataType_SD_RGBU, Count: uint32(tiffContextImgCount)})
+	if rgbuContextImgCount > 0 {
+		dataTypes = append(dataTypes, &protos.ScanItem_ScanTypeCount{DataType: protos.ScanDataType_SD_RGBU, Count: uint32(rgbuContextImgCount)})
 	}
 	if exp.NormalSpectra > 0 {
 		dataTypes = append(dataTypes, &protos.ScanItem_ScanTypeCount{DataType: protos.ScanDataType_SD_XRF, Count: uint32(exp.NormalSpectra)})
