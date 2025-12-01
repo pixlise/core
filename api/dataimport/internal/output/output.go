@@ -715,7 +715,7 @@ func copyImagesToOutput(
 				// Upload with preserveStructure=true to keep pyramid folder structure
 				err = importerutils.CopyToBucket(remoteFS, originScanId, parentDir, datasetBucket, "Images", true, jobLog)
 				if err != nil {
-					return "", fmt.Errorf("failed to upload pyramid: %w", err)
+					return "", false, fmt.Errorf("failed to upload pyramid: %w", err)
 				}
 
 				// Delete from /tmp to free space
