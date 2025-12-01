@@ -77,18 +77,12 @@ func TestImportBigTIFF(t *testing.T) {
 				t.Error("Expected at least one pyramid layer")
 			}
 
-			// Verify image prefixes
-			if len(pyramid.ImagePrefixes) != 1 {
-				t.Errorf("Expected 1 image prefix, got %d", len(pyramid.ImagePrefixes))
-			}
-
 			t.Logf("Pyramid generated successfully:")
 			t.Logf("  TileSize: %d", pyramid.TileSize)
 			t.Logf("  Layers: %d", len(pyramid.Pyramid))
 			t.Logf("  Bounds: [%.0f,%.0f] to [%.0f,%.0f]",
 				pyramid.Bounds.Min.X, pyramid.Bounds.Min.Y,
 				pyramid.Bounds.Max.X, pyramid.Bounds.Max.Y)
-			t.Logf("  ImagePrefix: %s", pyramid.ImagePrefixes[0])
 		})
 	}
 }
@@ -189,12 +183,6 @@ func TestBuildImagePyramidProto(t *testing.T) {
 	}
 	if countTotalTiles((pyramid)) != 5 {
 		t.Errorf("Expected total of 5 tiles, got %d", countTotalTiles(pyramid))
-	}
-
-	// Verify image prefix
-	expectedPrefix := "TestScan/TestImage"
-	if len(pyramid.ImagePrefixes) != 1 || pyramid.ImagePrefixes[0] != expectedPrefix {
-		t.Errorf("Expected ImagePrefix '%s', got %v", expectedPrefix, pyramid.ImagePrefixes)
 	}
 
 	t.Logf("Pyramid proto created successfully:")

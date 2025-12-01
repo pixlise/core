@@ -80,7 +80,7 @@ type pyramidResult struct {
 //
 // NOTE: Only page 0 metadata is returned in ImagePyramid proto.
 // All pages are assumed to have identical dimensions and tile structure.
-func ImportBigTIFF(fromImgFile string, outImgFile string, pageNum int, tileSize int, tileQuality int, jobLog logger.ILogger) (*protos.ImagePyramid, error) {
+func ImportBigTIFF(fromImgFile string, outImgFile string, pageNum int, tileSize int, tileQuality int, jobLog logger.ILogger) (*protos.ImagePyramid, string, error) {
 	// Parse parameters from paths
 	// fromImgFile = /path/pyramid/PY_Multi_page24bpp.tif (has PY_ prefix, but actual file doesn't)
 	// outImgFile  = /path/output-Images/BigTiff/PY_Multi_page24bpp.png (extension ignored)
@@ -108,9 +108,9 @@ func ImportBigTIFF(fromImgFile string, outImgFile string, pageNum int, tileSize 
 	jobLog.Infof("  Output: %s/%s/", outputDir, imageName)
 
 	// Generate tiles for ONLY the specified page
-	result, err := generatePyramidTiles(actualTiffPath, outputDir, imageName, pageNum, tileSize, tileQuality, jobLog)
+	result, format, err := generatePyramidTiles(actualTiffPath, outputDir, imageName, pageNum, tileSize, tileQuality, jobLog)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate pyramid tiles: %w", err)
+		return nil, "", fmt.Errorf("failed to generate pyramid tiles: %w", err)
 	}
 
 	jobLog.Infof("Generated page %d with dimensions %dx%d", pageNum, result.Width, result.Height)
@@ -119,7 +119,7 @@ func ImportBigTIFF(fromImgFile string, outImgFile string, pageNum int, tileSize 
 	dziPath := filepath.Join(outputDir, imageName, "pyramid.dzi")
 	dzi, err := parseDZIFile(dziPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse \"%v\": %w", dziPath, err)
+		return nil, "", fmt.Errorf("failed to parse \"%v\": %w", dziPath, err)
 	}
 
 	jobLog.Infof("Parsed DZI metadata: %dx%d, tileSize=%d, overlap=%d",
@@ -129,11 +129,11 @@ func ImportBigTIFF(fromImgFile string, outImgFile string, pageNum int, tileSize 
 
 	jobLog.Infof("Created ImagePyramid proto with %d layers (zoom levels)", len(pyramid.Pyramid))
 
-	return pyramid, nil
+	return pyramid, format, nil
 }
 
 // generatePyramidTiles is the core tile generation logic (copied from pyramid-generator)
-func generatePyramidTiles(inputTiffPath string, outputBaseDir string, imageName string, pageNum int, tileSize int, tileQuality int, jobLog logger.ILogger) (*pyramidResult, error) {
+func generatePyramidTiles(inputTiffPath string, outputBaseDir string, imageName string, pageNum int, tileSize int, tileQuality int, jobLog logger.ILogger) (*pyramidResult, string, error) {
 	// Load ONLY the specified page to get dimensions
 	img, err := vips.NewTiffload(inputTiffPath, &vips.TiffloadOptions{
 		Page: pageNum,
@@ -141,7 +141,7 @@ func generatePyramidTiles(inputTiffPath string, outputBaseDir string, imageName 
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to load TIFF %v page %d: %w", inputTiffPath, pageNum, err)
+		return nil, "", fmt.Errorf("failed to load TIFF %v page %d: %w", inputTiffPath, pageNum, err)
 	}
 
 	defer img.Close()
@@ -156,7 +156,7 @@ func generatePyramidTiles(inputTiffPath string, outputBaseDir string, imageName 
 	// Note: outputBaseDir already includes the scanID, so just append imageName
 	outputDir := filepath.Join(outputBaseDir, imageName)
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create output directory %s: %w", outputDir, err)
+		return nil, "", fmt.Errorf("failed to create output directory %s: %w", outputDir, err)
 	}
 
 	// Process ONLY the specified page with dzsave
@@ -201,11 +201,11 @@ func generatePyramidTiles(inputTiffPath string, outputBaseDir string, imageName 
 	//pageImg.Close()
 
 	if err != nil {
-		return nil, fmt.Errorf("dzsave failed for page %d: %w", pageNum, err)
+		return nil, "", fmt.Errorf("dzsave failed for page %d: %w", pageNum, err)
 	}
 
 	jobLog.Infof("  Tile generation successful")
-	return result, nil
+	return result, suffix[1:], nil
 }
 
 // parseDZIFile reads and parses a .dzi XML file
@@ -288,20 +288,20 @@ func buildImagePyramidProto(dzi *dziImage, scanID string, imageName string, jobL
 				Min: &protos.Coordinate3D{X: 0, Y: 0, Z: 0},
 				Max: &protos.Coordinate3D{X: float32(levelWidth), Y: float32(levelHeight), Z: 0},
 			},
-			Tiles: tiles,
+			Tiles:     tiles,
+			TilesWide: uint32(tilesX),
+			TilesHigh: uint32(tilesY),
 		}
 	}
 
 	// Image prefix (base path for tile files)
 	// Points to the image directory containing all pages
-	// Tiles are at: {imagePrefix}/page_{N}_files/{level}/{x}_{y}.jpg
-	imagePrefix := filepath.Join(scanID, imageName)
 
 	return &protos.ImagePyramid{
-		Bounds:        bounds,
-		Pyramid:       layers,
-		ImagePrefixes: []string{imagePrefix},
-		TileSize:      uint32(dzi.TileSize),
+		Bounds:  bounds,
+		Pyramid: layers,
+		//ImagePrefixes: []string{imagePrefix},
+		TileSize: uint32(dzi.TileSize),
 	}
 }
 

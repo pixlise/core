@@ -391,10 +391,11 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	// We work out the default file name when copying output images now... because if there isn't one, we may pick one during that process.
-	defaultContextImage, err := copyImagesToOutput(contextImageSrcPath, []string{data.DatasetID}, data.DatasetID, outputImagesPath, data, db, remoteFS, datasetBucket, 1024, 90, jobLog)
+	defaultContextImage, defaultContextIsPyramid, err := copyImagesToOutput(contextImageSrcPath, []string{data.DatasetID}, data.DatasetID, outputImagesPath, data, db, remoteFS, datasetBucket, 1024, 90, jobLog)
 	if err != nil {
 		return fmt.Errorf("Error copying images: %v", err)
 	}
+	data.DefaultContextImageIsPyramid = defaultContextIsPyramid
 
 	exp.MainContextImage = defaultContextImage
 
@@ -577,8 +578,9 @@ func copyImagesToOutput(
 	datasetBucket string,
 	tileSize int,
 	tileQuality int,
-	jobLog logger.ILogger) (string, error) {
+	jobLog logger.ILogger) (string, bool, error) {
 	defaultContextImage := ""
+	defaultContextIsPyramid := false
 
 	// Copy the context images into the output dir
 	// Also making sure that one of them matches what we have set as the default image
@@ -589,6 +591,7 @@ func copyImagesToOutput(
 	// Only used for pyramid tile generation
 	var bigtiffpyramid *protos.ImagePyramid
 	var bigtiffPyramidId string
+	var bigtiffFormat string
 	var firstPageNum int
 	var pageNum int
 
@@ -615,10 +618,12 @@ func copyImagesToOutput(
 					jobLog.Infof("  Generate pyramid for page %d: PMC[%v] %v -> %v", pageNum, pmc, realSourcePath, outImgFile)
 
 					// Construct the pyramid output dir with DeepZoom structure
-					thisBigTifPyramid, err := pyramid.ImportBigTIFF(realSourcePath, outImgFile, pageNum, tileSize, tileQuality, jobLog)
+					thisBigTifPyramid, format, err := pyramid.ImportBigTIFF(realSourcePath, outImgFile, pageNum, tileSize, tileQuality, jobLog)
 					if err != nil {
-						return "", err
+						return "", false, err
 					}
+
+					bigtiffFormat = format
 
 					// Only save the first pyramid, subsequent ones should be checked to see they're the same!
 					if bigtiffpyramid == nil {
@@ -633,7 +638,7 @@ func copyImagesToOutput(
 						// anyway
 						err = pyramid.VerifyPyramids(bigtiffpyramid, thisBigTifPyramid, firstPageNum, pageNum)
 						if err != nil {
-							return "", err
+							return "", false, err
 						}
 					}
 				} else {
@@ -643,7 +648,7 @@ func copyImagesToOutput(
 
 					err := convertTiffToPNG(fromImgFile, outImgFile)
 					if err != nil {
-						return "", err
+						return "", false, err
 					}
 				}
 			} else {
@@ -651,7 +656,7 @@ func copyImagesToOutput(
 
 				err := fileaccess.CopyFileLocally(fromImgFile, outImgFile)
 				if err != nil {
-					return "", err
+					return "", false, err
 				}
 			}
 
@@ -689,10 +694,11 @@ func copyImagesToOutput(
 				// When inserting, we want to point to an actual file - the smallest pyramid level with a single tile in it
 				err = insertImageAndPyramidToDB(
 					originScanId,
-					pyramidPageDir, // path.Join(pyramidFolder, "pyramid_files", "0", "0_0.jpg")
+					pyramidPageDir,
 					db,
 					bigtiffPyramidId,
 					bigtiffpyramid,
+					bigtiffFormat,
 					firstPageNum == pageNum,
 					protos.ScanImageSource_SI_UPLOAD,
 					protos.ScanImagePurpose_SIP_VIEWING,
@@ -701,7 +707,7 @@ func copyImagesToOutput(
 					jobLog)
 
 				if err != nil {
-					return "", err
+					return "", false, err
 				}
 
 				parentDir := filepath.Dir(outImgFile)
@@ -717,7 +723,7 @@ func copyImagesToOutput(
 				jobLog.Infof("Cleaning up temp pyramid files from: %s", delPath)
 				err = os.RemoveAll(delPath)
 				if err != nil {
-					return "", fmt.Errorf("failed to delete pyramid folder: %w", err)
+					return "", false, fmt.Errorf("failed to delete pyramid folder: %w", err)
 				}
 			} else {
 				err = insertImageDBEntryForImage(
@@ -729,11 +735,12 @@ func copyImagesToOutput(
 					originScanId,
 					originURL,
 					nil,
-					bigtiffPyramidId,
+					"",
+					"",
 					jobLog)
 
 				if err != nil {
-					return "", err
+					return "", false, err
 				}
 			}
 
@@ -750,7 +757,7 @@ func copyImagesToOutput(
 	// If it's a pyramid, assume the default matched
 	if len(bigtiffPyramidId) > 0 {
 		defaultContextImage = data.DefaultContextImage
-		data.DefaultContextImageIsPyramid = true
+		defaultContextIsPyramid = true
 		defaultMatched = true
 	}
 
@@ -767,12 +774,12 @@ func copyImagesToOutput(
 
 		err := fileaccess.CopyFileLocally(fromImgFile, outImgFile)
 		if err != nil {
-			return "", err
+			return "", false, err
 		}
 
-		err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_UPLOAD, protos.ScanImagePurpose_SIP_MULTICHANNEL, associatedScanIds, originScanId, "", nil, "", jobLog)
+		err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_UPLOAD, protos.ScanImagePurpose_SIP_MULTICHANNEL, associatedScanIds, originScanId, "", nil, "", "", jobLog)
 		if err != nil {
-			return "", err
+			return "", false, err
 		}
 	}
 
@@ -790,18 +797,19 @@ func copyImagesToOutput(
 
 		err := fileaccess.CopyFileLocally(fromImgFile, outImgFile)
 		if err != nil {
-			return "", err
+			return "", false, err
 		}
 
-		err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_UPLOAD, protos.ScanImagePurpose_SIP_MULTICHANNEL, associatedScanIds, originScanId, "", nil, "", jobLog)
+		err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_UPLOAD, protos.ScanImagePurpose_SIP_MULTICHANNEL, associatedScanIds, originScanId, "", nil, "", "", jobLog)
 		if err != nil {
-			return "", err
+			return "", false, err
 		}
 
 		// This image could be our default context image - this is only for DISCO datasets
 		if data.DefaultContextImage == meta.FileName {
 			defaultMatched = true
 			defaultContextImage = outFileName
+			defaultContextIsPyramid = false
 		}
 	}
 
@@ -817,14 +825,14 @@ func copyImagesToOutput(
 
 		err := fileaccess.CopyFileLocally(fromImgFile, outImgFile)
 		if err != nil {
-			return "", err
+			return "", false, err
 		}
 
 		// Find the beam image file name that we are matched against
 		beamImgName := pmcToImage[matchedMeta.AlignedBeamPMC]
 
 		if len(beamImgName) <= 0 {
-			return "", fmt.Errorf("Matched image for PMC: %v - image not found", matchedMeta.AlignedBeamPMC)
+			return "", false, fmt.Errorf("Matched image for PMC: %v - image not found", matchedMeta.AlignedBeamPMC)
 		}
 
 		matchInfo := &protos.ImageMatchTransform{
@@ -835,17 +843,17 @@ func copyImagesToOutput(
 			YScale:            float64(matchedMeta.YScale),
 		}
 
-		err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_UPLOAD, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, "", matchInfo, "", jobLog)
+		err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_UPLOAD, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, "", matchInfo, "", "", jobLog)
 		if err != nil {
-			return "", err
+			return "", false, err
 		}
 	}
 
 	if len(data.DefaultContextImage) > 0 && !defaultMatched {
-		return "", fmt.Errorf("Main context image \"%v\" was not found when copying to output directory", data.DefaultContextImage)
+		return "", false, fmt.Errorf("Main context image \"%v\" was not found when copying to output directory", data.DefaultContextImage)
 	}
 
-	return defaultContextImage, nil
+	return defaultContextImage, defaultContextIsPyramid, nil
 }
 
 // Writes ScanImage and ImagePyramidDBEntry to the DB
@@ -855,6 +863,7 @@ func insertImageAndPyramidToDB(
 	db *mongo.Database,
 	pyramidId string,
 	pyramidInfo *protos.ImagePyramid,
+	pyramidFormat string,
 	writePyramid bool,
 	source protos.ScanImageSource,
 	purpose protos.ScanImagePurpose,
@@ -908,7 +917,8 @@ func insertImageAndPyramidToDB(
 
 		MatchInfo: matchInfo,
 
-		PyramidId: pyramidId,
+		PyramidId:         pyramidId,
+		PyramidTileFormat: pyramidFormat,
 	}
 
 	return insertImageDBEntry(db, img, jobLog)
@@ -924,6 +934,7 @@ func insertImageDBEntryForImage(
 	originImageURL string,
 	matchInfo *protos.ImageMatchTransform,
 	pyramidId string,
+	pyramidFormat string,
 	jobLog logger.ILogger) error {
 	// Read the image - we used to only copy files around but here we need to open it for meta data
 	imgbytes, err := os.ReadFile(imagePath)
@@ -954,6 +965,7 @@ func insertImageDBEntryForImage(
 		originImageURL,
 		matchInfo,
 		pyramidId,
+		pyramidFormat,
 		imgWidth,
 		imgHeight,
 	)
