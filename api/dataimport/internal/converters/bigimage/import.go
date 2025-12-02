@@ -191,6 +191,7 @@ func (im BigImage) Import(importPath string, pseudoIntensityRangesPath string, d
 	//       so lets modify it here to match what it'll become
 	data.DefaultContextImage = strings.TrimPrefix(data.DefaultContextImage, "PY_")
 	data.DefaultContextImage = strings.TrimSuffix(data.DefaultContextImage, ".tif")
+	data.DefaultContextImageIsPyramid = true
 
 	return data, importPath, nil
 }

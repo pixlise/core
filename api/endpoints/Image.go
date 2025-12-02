@@ -165,7 +165,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 		tilex := tileFieldValues["tilex"]
 		tiley := tileFieldValues["tiley"]
 
-		suffix, err := getTilePathSuffix(params.Svcs.MongoDB, dbImage.PyramidId, layer, tilex, tiley)
+		suffix, err := getTilePathSuffix(params.Svcs.MongoDB, dbImage, layer, tilex, tiley)
 		if err != nil {
 			return nil, "", "", "", 0, fmt.Errorf("Invalid tile requested: %v", err)
 		}
@@ -309,16 +309,16 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 
 func addPyramidPathIfNeeded(imagePath string, image *protos.ScanImage) string {
 	if len(image.PyramidId) > 0 {
-		imagePath = path.Join(imagePath, "pyramid_files", "0", "0_0.jpg")
+		imagePath = path.Join(imagePath, "pyramid_files", "0", "0_0."+image.PyramidTileFormat)
 	}
 	return imagePath
 }
 
-func getTilePathSuffix(db *mongo.Database, pyramidId string, layer, tileX, tileY int) (string, error) {
+func getTilePathSuffix(db *mongo.Database, pyramidImage *protos.ScanImage, layer, tileX, tileY int) (string, error) {
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.ImagePyramidsName)
 
-	filter := bson.M{"_id": pyramidId}
+	filter := bson.M{"_id": pyramidImage.PyramidId}
 	pyramidResult := coll.FindOne(ctx, filter)
 	if pyramidResult.Err() != nil {
 		return "", pyramidResult.Err()
@@ -330,8 +330,8 @@ func getTilePathSuffix(db *mongo.Database, pyramidId string, layer, tileX, tileY
 		return "", err
 	}
 
-	if pyramid.Id != pyramidId {
-		return "", fmt.Errorf("Unexpected image pyramid id: %v in pyramid %v", pyramid.Id, pyramidId)
+	if pyramid.Id != pyramidImage.PyramidId {
+		return "", fmt.Errorf("Unexpected image pyramid id: %v in pyramid %v", pyramid.Id, pyramidImage.PyramidId)
 	}
 
 	if layer < 0 || layer >= len(pyramid.Pyramid.Pyramid) {
@@ -339,15 +339,13 @@ func getTilePathSuffix(db *mongo.Database, pyramidId string, layer, tileX, tileY
 	}
 
 	pyramidLevel := pyramid.Pyramid.Pyramid[layer]
-	width := uint32(pyramidLevel.Bounds.Max.X - pyramidLevel.Bounds.Min.X)
-	tilesWide := int(width / pyramid.Pyramid.TileSize)
 
-	idx := tileY*tilesWide + tileX
+	idx := tileY*int(pyramidLevel.TilesWide) + tileX
 	if idx >= len(pyramidLevel.Tiles) {
-		return "", fmt.Errorf("Invalid pyramid level: %v", layer)
+		return "", fmt.Errorf("Tile x: %v, y: %v for pyramid level: %v does not exist", tileX, tileY, layer)
 	}
 
-	suffix := path.Join("pyramid_files", strconv.Itoa(layer), fmt.Sprintf("%v_%v.jpg", tileX, tileY))
+	suffix := path.Join("pyramid_files", strconv.Itoa(layer), fmt.Sprintf("%v_%v.%v", tileX, tileY, pyramidImage.PyramidTileFormat))
 	return suffix, nil
 }
 

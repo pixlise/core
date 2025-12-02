@@ -567,6 +567,25 @@ func saveSpectrumTypeCounts(exp *protos.Experiment, data dataConvertModels.Outpu
 	exp.PseudoIntensities = pseudoIntensityCount
 }
 
+func getSortedKeys(pmcData map[int32]*dataConvertModels.PMCData) []int32 {
+	pmcs := []int{}
+	pmcKeys := utils.GetMapKeys(pmcData)
+	for _, key := range pmcKeys {
+		pmcs = append(pmcs, int(key))
+	}
+	sort.Ints(pmcs)
+
+	result := []int32{}
+	for _, pmc := range pmcs {
+		result = append(result, int32(pmc))
+	}
+
+	return result
+}
+
+var copyPyramidToBucket bool = true
+var maxPMC = int32(20000000)
+
 func copyImagesToOutput(
 	contextImgDir string,
 	associatedScanIds []string,
@@ -596,7 +615,13 @@ func copyImagesToOutput(
 	var pageNum int
 
 	// Lets read in PMC order, this wasn't relevant before
-	for pmc, item := range data.PerPMCData {
+	pmcs := getSortedKeys(data.PerPMCData)
+	for _, pmc := range pmcs {
+		if pmc >= maxPMC {
+			continue
+		}
+		item := data.PerPMCData[pmc]
+
 		if len(item.ContextImageSrc) > 0 {
 			fromImgFile := filepath.Join(contextImgDir, item.ContextImageSrc)
 			outImgFile := filepath.Join(outPath, item.ContextImageDst)
@@ -710,12 +735,14 @@ func copyImagesToOutput(
 					return "", false, err
 				}
 
-				parentDir := filepath.Dir(outImgFile)
+				if copyPyramidToBucket {
+					parentDir := filepath.Dir(outImgFile)
 
-				// Upload with preserveStructure=true to keep pyramid folder structure
-				err = importerutils.CopyToBucket(remoteFS, originScanId, parentDir, datasetBucket, "Images", true, jobLog)
-				if err != nil {
-					return "", false, fmt.Errorf("failed to upload pyramid: %w", err)
+					// Upload with preserveStructure=true to keep pyramid folder structure
+					err = importerutils.CopyToBucket(remoteFS, originScanId, parentDir, datasetBucket, "Images", true, jobLog)
+					if err != nil {
+						return "", false, fmt.Errorf("failed to upload pyramid: %w", err)
+					}
 				}
 
 				// Delete from /tmp to free space
