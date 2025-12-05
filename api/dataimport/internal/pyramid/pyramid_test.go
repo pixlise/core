@@ -52,7 +52,7 @@ func TestImportBigTIFF(t *testing.T) {
 			outImgFile := filepath.Join(scanDir, "PY_Multi_page24bpp.png")
 
 			// Call the main function we're testing
-			pyramid, err := ImportBigTIFF(fromImgFile, outImgFile, tc.pageNum, tc.tileSize, tc.tileQuality, &logger.StdOutLoggerForTest{})
+			pyramid, format, meta, err := ImportBigTIFF(fromImgFile, outImgFile, tc.pageNum, tc.tileSize, tc.tileQuality, &logger.StdOutLoggerForTest{})
 			if err != nil {
 				t.Fatalf("ImportBigTIFF failed: %v", err)
 			}
@@ -60,6 +60,14 @@ func TestImportBigTIFF(t *testing.T) {
 			// Verify pyramid structure
 			if pyramid == nil {
 				t.Fatal("Expected non-nil pyramid")
+			}
+
+			if format != "jpg" {
+				t.Fatal("Expected jpg format")
+			}
+
+			if len(meta) != 0 {
+				t.Fatal("Expected no meta")
 			}
 
 			// Verify tile size
@@ -146,7 +154,7 @@ func TestBuildImagePyramidProto(t *testing.T) {
 		},
 	}
 
-	pyramid := buildImagePyramidProto(dzi, "TestScan", "TestImage", &logger.StdOutLoggerForTest{})
+	pyramid := buildImagePyramidProto(dzi, &logger.StdOutLoggerForTest{})
 
 	// Verify pyramid structure
 	if pyramid == nil {
@@ -262,5 +270,5 @@ func createTestPyramid(width, height, tileSize int) *protos.ImagePyramid {
 		},
 	}
 
-	return buildImagePyramidProto(dzi, "TestScan", "TestImage", &logger.StdOutLoggerForTest{})
+	return buildImagePyramidProto(dzi, &logger.StdOutLoggerForTest{})
 }

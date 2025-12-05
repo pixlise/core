@@ -583,8 +583,8 @@ func getSortedKeys(pmcData map[int32]*dataConvertModels.PMCData) []int32 {
 	return result
 }
 
-var copyPyramidToBucket bool = true
-var maxPMC = int32(20000000)
+var copyPyramidToBucket bool = false
+var maxPMC = int32(5)
 
 func copyImagesToOutput(
 	contextImgDir string,
@@ -611,6 +611,7 @@ func copyImagesToOutput(
 	var bigtiffpyramid *protos.ImagePyramid
 	var bigtiffPyramidId string
 	var bigtiffFormat string
+	bigtiffMeta := map[string]string{}
 	var firstPageNum int
 	var pageNum int
 
@@ -643,12 +644,13 @@ func copyImagesToOutput(
 					jobLog.Infof("  Generate pyramid for page %d: PMC[%v] %v -> %v", pageNum, pmc, realSourcePath, outImgFile)
 
 					// Construct the pyramid output dir with DeepZoom structure
-					thisBigTifPyramid, format, err := pyramid.ImportBigTIFF(realSourcePath, outImgFile, pageNum, tileSize, tileQuality, jobLog)
+					thisBigTifPyramid, format, meta, err := pyramid.ImportBigTIFF(realSourcePath, outImgFile, pageNum, tileSize, tileQuality, jobLog)
 					if err != nil {
 						return "", false, err
 					}
 
 					bigtiffFormat = format
+					bigtiffMeta = meta
 
 					// Only save the first pyramid, subsequent ones should be checked to see they're the same!
 					if bigtiffpyramid == nil {
@@ -729,6 +731,7 @@ func copyImagesToOutput(
 					protos.ScanImagePurpose_SIP_VIEWING,
 					"",
 					nil,
+					bigtiffMeta,
 					jobLog)
 
 				if err != nil {
@@ -896,6 +899,7 @@ func insertImageAndPyramidToDB(
 	purpose protos.ScanImagePurpose,
 	originImageURL string,
 	matchInfo *protos.ImageMatchTransform,
+	meta map[string]string,
 	jobLog logger.ILogger) error {
 	// For pyramid images, we already have metadata from pyramid.ImportBigTIFF()
 	// No need to reopen the image - extract dimensions from pyramidInfo instead
@@ -946,6 +950,8 @@ func insertImageAndPyramidToDB(
 
 		PyramidId:         pyramidId,
 		PyramidTileFormat: pyramidFormat,
+
+		MetaData: meta,
 	}
 
 	return insertImageDBEntry(db, img, jobLog)

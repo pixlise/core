@@ -9,6 +9,7 @@ api/ws/wsMessage.go
 
 db-restore/
 mongo-db-local-*/
+mongo-db-pixlise-*/
 
 local-api-config*.json
 local-api-config-unittest.json
