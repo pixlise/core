@@ -304,6 +304,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 		params.Svcs.Log.Debugf("Last Modified for cache: %v, s3://%v/%v", lm, imgBucket, s3Path)
 	}
 
+	params.Svcs.Log.Debugf("Image GET: s3://%v/%v", imgBucket, s3Path)
 	return result, requestedFileName, etag, lm.String(), 0, err
 }
 
