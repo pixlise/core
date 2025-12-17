@@ -33,9 +33,9 @@ import (
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 	"github.com/pixlise/core/v4/api/dataimport/internal/importerutils"
 	"github.com/pixlise/core/v4/api/dataimport/internal/pyramid"
+	"github.com/pixlise/core/v4/api/dataimport/scanOwner"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
-	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/beamLocation"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/gdsfilename"
@@ -285,45 +285,9 @@ func (s *PIXLISEDataSaver) Save(
 		}
 	}
 
-	// Look up who to auto-share with based on creator ID
-	coll := db.Collection(dbCollections.ScanAutoShareName)
-	optFind := options.FindOne()
-
-	autoShare := &protos.ScanAutoShareEntry{}
-	sharer := data.CreatorUserId
-
-	if len(sharer) <= 0 {
-		// we dont have a creator, so probably started as an automated process. Here we
-		// try to look up the auto-share destination by instrument type
-		sharer = data.Instrument.String()
-	}
-
-	jobLog.Infof("Looking up auto-share group(s) for: \"%v\"", sharer)
-
-	autoShareResult := coll.FindOne(context.TODO(), bson.D{{Key: "_id", Value: sharer}}, optFind)
-	if autoShareResult.Err() != nil {
-		// We couldn't find someone to auto-share it with, if we don't have anyone to share with, just fail here
-		if autoShareResult.Err() == mongo.ErrNoDocuments {
-			// If the user has no auto-share destination configured, share with just the user - BUT if we're
-			// not dealing with a user here, we must be importing via the pipeline, in which case it should've
-			// been configured to share already...
-			if len(data.CreatorUserId) > 0 {
-				jobLog.Infof("No auto-share destination found, so only importing user will be able to access this dataset.")
-				autoShare.Id = data.CreatorUserId
-				autoShare.Viewers = &protos.UserGroupList{UserIds: []string{}, GroupIds: []string{}}
-				autoShare.Editors = &protos.UserGroupList{UserIds: []string{data.CreatorUserId}, GroupIds: []string{}}
-			} else {
-				return fmt.Errorf("Cannot work out groups to auto-share imported dataset with")
-			}
-		} else {
-			return autoShareResult.Err()
-		}
-	} else {
-		err := autoShareResult.Decode(autoShare)
-
-		if err != nil {
-			return fmt.Errorf("Failed to decode auto share configuration: %v", err)
-		}
+	autoShare, err := scanOwner.ReadAutoSharer(data.CreatorUserId, data.Instrument, db, jobLog)
+	if err != nil {
+		return err
 	}
 
 	// Delete images and other DB entries if need be
@@ -442,7 +406,7 @@ func (s *PIXLISEDataSaver) Save(
 
 	jobLog.Infof("Writing summary to DB for %v...", summaryData.Id)
 
-	coll = db.Collection(dbCollections.ScansName)
+	coll := db.Collection(dbCollections.ScansName)
 	opt := options.Update().SetUpsert(true)
 
 	result, err := coll.UpdateOne(context.TODO(), bson.D{{Key: "_id", Value: summaryData.Id}}, bson.D{{Key: "$set", Value: summaryData}}, opt)
@@ -455,18 +419,8 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	// Set ownership
-	ownerItem := wsHelpers.MakeOwnerForWrite(summaryData.Id, protos.ObjectType_OT_SCAN, summaryData.CreatorUserId, creationUnixTimeSec)
-
-	ownerItem.Viewers = autoShare.Viewers
-	ownerItem.Editors = autoShare.Editors
-
-	coll = db.Collection(dbCollections.OwnershipName)
-	opt = options.Update().SetUpsert(true)
-
-	jobLog.Infof("Writing ownership to DB for scan %v...", ownerItem.Id)
-	result, err = coll.UpdateOne(context.TODO(), bson.D{{Key: "_id", Value: ownerItem.Id}}, bson.D{{Key: "$set", Value: ownerItem}}, opt)
+	err = scanOwner.WriteAutoSharedOwnership(summaryData.Id, protos.ObjectType_OT_SCAN, autoShare, summaryData.CreatorUserId, creationUnixTimeSec, db, jobLog)
 	if err != nil {
-		jobLog.Errorf("Failed to write ownership item to DB: %v", err)
 		return err
 	}
 

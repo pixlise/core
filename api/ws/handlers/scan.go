@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"time"
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dataimport"
 	dataimportModel "github.com/pixlise/core/v4/api/dataimport/models"
+	"github.com/pixlise/core/v4/api/dataimport/scanOwner"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
@@ -643,4 +645,77 @@ func HandleScanWriteJobReq(req *protos.ScanWriteJobReq, hctx wsHelpers.HandlerCo
 	}
 
 	return &protos.ScanWriteJobResp{}, nil
+}
+
+func HandleScanCreateUserDefinedReq(req *protos.ScanCreateUserDefinedReq, hctx wsHelpers.HandlerContext) (*protos.ScanCreateUserDefinedResp, error) {
+	// This just creates a blank scan - just a ScanItem DB entry. Items can be added separately to the scan:
+	// - image uploads (via HTTP endpoint due to size concerns)
+	// - scan point locations - eg PIXL beam locations CSV
+	// - scan point data like housekeeping, spectra, etc
+
+	instrument := protos.ScanInstrument_GENERIC_XRF
+
+	autoShare, err := scanOwner.ReadAutoSharer(hctx.SessUser.User.Id, instrument, hctx.Svcs.MongoDB, hctx.Svcs.Log)
+	if err != nil {
+		return nil, err
+	}
+
+	// Write out the scan item
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ScansName)
+
+	hctx.Svcs.Log.Infof("Creating user-defined empty scan %v...", req.Id)
+
+	dataTypes := []*protos.ScanItem_ScanTypeCount{}
+	creationUnixTimeSec := time.Now().Unix()
+	detectorConfig := "Breadboard" // TODO <-- set this properly!
+
+	contentCounts := map[string]int32{
+		"NormalSpectra":     0,
+		"DwellSpectra":      0,
+		"BulkSpectra":       0,
+		"MaxSpectra":        0,
+		"PseudoIntensities": 0,
+	}
+
+	saveMeta := map[string]string{}
+
+	scan := &protos.ScanItem{
+		Id:                         req.Id,
+		Title:                      req.Id,
+		Description:                "",
+		DataTypes:                  dataTypes,
+		Instrument:                 instrument,
+		InstrumentConfig:           detectorConfig,
+		TimestampUnixSec:           uint32(creationUnixTimeSec),
+		Meta:                       saveMeta,
+		ContentCounts:              contentCounts,
+		CreatorUserId:              hctx.SessUser.User.Id,
+		PreviousImportTimesUnixSec: []uint32{},
+	}
+
+	opt := options.InsertOne()
+	result, err := coll.InsertOne(ctx, scan, opt)
+
+	if err != nil {
+		hctx.Svcs.Log.Errorf("Failed to write scan to DB: %v", err)
+		return nil, err
+	} else if result.InsertedID != req.Id {
+		hctx.Svcs.Log.Errorf("Expected written scan id %v to match requested scan id %v", result.InsertedID, req.Id)
+	}
+
+	// And its ownership
+	err = scanOwner.WriteAutoSharedOwnership(req.Id,
+		protos.ObjectType_OT_SCAN,
+		autoShare,
+		hctx.SessUser.User.Id,
+		creationUnixTimeSec,
+		hctx.Svcs.MongoDB,
+		hctx.Svcs.Log)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.ScanCreateUserDefinedResp{}, nil
 }
