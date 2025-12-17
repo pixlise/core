@@ -39,11 +39,12 @@ func Connect(
 	sess *session.Session, // Can be nil for local connection
 	mongoSecret string, // empty for local connection
 	iLog logger.ILogger,
+	mongoDebug bool,
 ) (*mongo.Client, MongoConnectionDetails, error) {
 	// If the secret is blank, assume we're connecting to a local DB with no auth
 	if len(mongoSecret) <= 0 {
 		// Connect to local mongo
-		return connectToLocalMongoDB(iLog)
+		return connectToLocalMongoDB(iLog, mongoDebug)
 	}
 
 	// We're connecting to a remote one, first get the details from secret cache
@@ -58,6 +59,7 @@ func Connect(
 		mongoConnectionInfo.Username,
 		mongoConnectionInfo.Password,
 		iLog,
+		mongoDebug,
 	)
 }
 

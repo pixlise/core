@@ -121,6 +121,8 @@ type APIConfig struct {
 	RestoreEnabled   bool
 
 	ImpersonateEnabled bool
+
+	MongoDebug bool
 }
 
 func homeDir() string {

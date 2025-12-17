@@ -253,7 +253,7 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 	iLog.SetLogLevel(cfg.LogLevel)
 
 	// Connect to mongo
-	mongoClient, mongoDetails, err := mongoDBConnection.Connect(sess, cfg.MongoSecret, iLog)
+	mongoClient, mongoDetails, err := mongoDBConnection.Connect(sess, cfg.MongoSecret, iLog, cfg.MongoDebug)
 	if err != nil {
 		log.Fatal(err)
 	}
