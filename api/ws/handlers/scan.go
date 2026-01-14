@@ -218,9 +218,18 @@ func HandleScanDeleteReq(req *protos.ScanDeleteReq, hctx wsHelpers.HandlerContex
 		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Specified title did not match scan title of: \"%v\"", dbItem.Title))
 	}
 
-	// Check that it's not an FM dataset
-	if dbItem.Instrument == protos.ScanInstrument_PIXL_FM {
-		return nil, errorwithstatus.MakeBadRequestError(errors.New("Cannot delete FM datasets using this feature"))
+	// Only allow deleting an FM dataset if it doesn't have any spectra or images - as it might be a safety survey or other failed scan
+	// that we don't want to keep around
+	imageCount := 0
+	for _, dt := range dbItem.DataTypes {
+		if dt.DataType == protos.ScanDataType_SD_IMAGE && dt.Count > 0 {
+			imageCount = int(dt.Count)
+			break
+		}
+	}
+
+	if dbItem.Instrument == protos.ScanInstrument_PIXL_FM && (dbItem.ContentCounts["BulkSpectra"] > 0 || dbItem.ContentCounts["NormalSpectra"] > 0 || imageCount > 0) {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Cannot delete FM datasets containing spectra or images using this feature"))
 	}
 
 	// TODO: Should we stop deletion if images or quants reference it???
