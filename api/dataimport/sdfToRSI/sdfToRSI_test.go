@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/pixlise/core/v4/core/logger"
 )
 
 func Example_sdfToRSI_ConvertSDFtoRSI() {
@@ -16,7 +18,7 @@ func Example_sdfToRSI_ConvertSDFtoRSI() {
 	wd, err := os.Getwd()
 	fmt.Printf("Getwd: %v\n", err == nil)
 	p := filepath.Join(wd, "output")
-	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", p)
+	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw.txt", p, &logger.StdOutLogger{})
 	fmt.Printf("%v, %v: %v\n", files, rtts, err)
 
 	// Output:
@@ -30,13 +32,14 @@ func Example_sdfToRSI_ConvertSDFtoRSI_EndingPrematurely() {
 	wd, err := os.Getwd()
 	fmt.Printf("Getwd: %v\n", err == nil)
 	p := filepath.Join(wd, "output")
-	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw_premature_end.txt", p)
+	files, rtts, err := ConvertSDFtoRSIs("./test-data/sdf_raw_premature_end.txt", p, &logger.StdOutLogger{})
 	fmt.Printf("%v, %v: %v\n", files, rtts, err)
 
 	// Output:
 	// mkdir worked: true
 	// Getwd: true
-	// [RSI-453.csv HK-453.csv RSI-453.csv HK-453.csv], [453 453]: <nil>
+	// INFO: ConvertSDFtoRSIs "./test-data/sdf_raw_premature_end.txt" [138693]: Already detected end of RTT 453 - skipping...
+	// [RSI-453.csv HK-453.csv], [453]: <nil>
 }
 
 func ensureSDFRawExists() {

@@ -141,6 +141,7 @@ func scanSDF(sdfPath string) ([]EventEntry, error) {
 		pos := strings.Index(lineData, sciPlace)
 		if pos > -1 {
 			lineData = lineData[pos+len(sciPlace):]
+			lineData = strings.TrimRight(lineData, "\"")
 			refs = append(refs, EventEntry{Line: lineNo, What: "sci-place", Value: lineData})
 		}
 	}

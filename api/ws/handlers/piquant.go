@@ -109,3 +109,31 @@ func HandlePiquantWriteCurrentVersionReq(req *protos.PiquantWriteCurrentVersionR
 
 	return &protos.PiquantWriteCurrentVersionResp{}, nil
 }
+
+// TODO: DO A SIMPLE INTEGRATION TEST FOR THIS!!
+func HandlePiquantConfigFileReq(req *protos.PiquantConfigFileReq, hctx wsHelpers.HandlerContext) (*protos.PiquantConfigFileResp, error) {
+	// Validate inputs
+	if err := wsHelpers.CheckStringField(&req.ConfigId, "ConfigId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&req.Version, "Version", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&req.Filename, "Filename", 1, 255); err != nil {
+		return nil, err
+	}
+
+	// Build the file path
+	filePath := filepaths.GetDetectorConfigPath(req.ConfigId, req.Version, req.Filename)
+
+	// Read the file from S3
+	fileBytes, err := hctx.Svcs.FS.ReadObject(hctx.Svcs.Config.ConfigBucket, filePath)
+	if err != nil {
+		hctx.Svcs.Log.Errorf("Failed to read piquant config file %v/%v: %v", hctx.Svcs.Config.ConfigBucket, filePath, err)
+		return nil, err
+	}
+
+	return &protos.PiquantConfigFileResp{
+		Contents: string(fileBytes),
+	}, nil
+}

@@ -7,11 +7,14 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/utils"
 )
 
 // Given an SDF path and an output path, this generates RSI files for each scan mentioned in the SDF.
 // Returns the file names generated and an error if any
-func ConvertSDFtoRSIs(sdfPath string, outPath string) ([]string, []int64, error) {
+func ConvertSDFtoRSIs(sdfPath string, outPath string, logger logger.ILogger) ([]string, []int64, error) {
 	files := []string{}
 	rtts := []int64{}
 
@@ -36,14 +39,19 @@ func ConvertSDFtoRSIs(sdfPath string, outPath string) ([]string, []int64, error)
 			} else if ref.Value != "end" {
 				return files, rtts, fmt.Errorf("End not found for science RTT: %v", rtt)
 			} else {
-				nameRSI := fmt.Sprintf("RSI-%v.csv", rtt)
-				nameHK := fmt.Sprintf("HK-%v.csv", rtt)
-				err = sdfToRSI(sdfPath, rtt, startLine, ref.Line, path.Join(outPath, nameRSI), path.Join(outPath, nameHK))
-				if err != nil {
-					return files, rtts, fmt.Errorf("Failed to generate files %v, %v: %v", nameRSI, nameHK, err)
+				// If we've already seen an "end" for this rtt, ignore
+				if utils.ItemInSlice(rtt, rtts) {
+					logger.Infof("ConvertSDFtoRSIs \"%v\" [%v]: Already detected end of RTT %v - skipping...", sdfPath, ref.Line, rtt)
+				} else {
+					nameRSI := fmt.Sprintf("RSI-%v.csv", rtt)
+					nameHK := fmt.Sprintf("HK-%v.csv", rtt)
+					err = sdfToRSI(sdfPath, rtt, startLine, ref.Line, path.Join(outPath, nameRSI), path.Join(outPath, nameHK))
+					if err != nil {
+						return files, rtts, fmt.Errorf("Failed to generate files %v, %v: %v", nameRSI, nameHK, err)
+					}
+					files = append(files, nameRSI, nameHK)
+					rtts = append(rtts, rtt)
 				}
-				files = append(files, nameRSI, nameHK)
-				rtts = append(rtts, rtt)
 			}
 		}
 	}
