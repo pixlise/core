@@ -84,7 +84,7 @@ func ImagesEqual(aPath, bPath string) error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf(errs)
+		return fmt.Errorf("%v", errs)
 	}
 
 	return nil
@@ -115,6 +115,8 @@ func MakeScanImage(
 	originScanId string,
 	originImageURL string,
 	matchInfo *protos.ImageMatchTransform,
+	pyramidId string,
+	PyramidFormat string,
 	width uint32,
 	height uint32) *protos.ScanImage {
 	result := &protos.ScanImage{
@@ -131,6 +133,9 @@ func MakeScanImage(
 		OriginImageURL:    originImageURL,
 
 		MatchInfo: matchInfo,
+
+		PyramidId:         pyramidId,
+		PyramidTileFormat: PyramidFormat,
 	}
 
 	return result

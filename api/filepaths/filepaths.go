@@ -20,6 +20,7 @@
 package filepaths
 
 import (
+	"fmt"
 	"path"
 )
 
@@ -36,6 +37,8 @@ import (
 // Paths for v4 API:
 const DatasetImagesRoot = "Images"
 const DatasetImageCacheRoot = "Image-Cache"
+const DatasetPyramidsRoot = "Pyramids"
+const DatasetPyramidTileCacheRoot = "Pyramid-Tile-Cache"
 const DatasetScansRoot = "Scans"
 
 func GetScanFilePath(scanID string, fileName string) string {
@@ -48,6 +51,32 @@ func GetImageFilePath(imagePath string) string {
 
 func GetImageCacheFilePath(imagePath string) string {
 	return path.Join(DatasetImageCacheRoot, imagePath)
+}
+
+func GetPyramidFilePath(imagePath string) string {
+	// Pyramid files are stored as pyramid.tiff next to the original image
+	// For example: Pyramids/scanId/image.tif -> Pyramids/scanId/image/pyramid.tiff
+	base := path.Base(imagePath)
+	dir := path.Dir(imagePath)
+
+	// Remove extension from base name to create subdirectory
+	ext := path.Ext(base)
+	nameWithoutExt := base[:len(base)-len(ext)]
+
+	return path.Join(DatasetPyramidsRoot, dir, nameWithoutExt, "pyramid.tiff")
+}
+
+func GetPyramidTileCachePath(imagePath string, page, level, x, y int) string {
+	// Cached tiles: Pyramid-Tile-Cache/scanId/image/page_level_x_y.jpg
+	base := path.Base(imagePath)
+	dir := path.Dir(imagePath)
+
+	// Remove extension from base name
+	ext := path.Ext(base)
+	nameWithoutExt := base[:len(base)-len(ext)]
+
+	tileName := fmt.Sprintf("%d_%d_%d_%d.jpg", page, level, x, y)
+	return path.Join(DatasetPyramidTileCacheRoot, dir, nameWithoutExt, tileName)
 }
 
 /*

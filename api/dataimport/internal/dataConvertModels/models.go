@@ -214,10 +214,11 @@ type OutputData struct {
 	// The group the dataset will belong to
 	Instrument protos.ScanInstrument
 
-	Meta                FileMetaData
-	DetectorConfig      string
-	BulkQuantFile       string
-	DefaultContextImage string
+	Meta                         FileMetaData
+	DetectorConfig               string
+	BulkQuantFile                string
+	DefaultContextImage          string
+	DefaultContextImageIsPyramid bool
 
 	// If file is composed from multiple sources, this stores all sources
 	Sources []FileMetaData
@@ -330,7 +331,8 @@ func (o *OutputData) SetPMCData(
 		// Destination image will be just PMC.ext because we don't want to
 		// upload the long name, potentially exposing internal meta data
 		ext := strings.ToLower(filepath.Ext(img))
-		if ext == ".tif" {
+		baseName := strings.ToLower(filepath.Base(img))
+		if ext == ".tif" && !strings.HasPrefix(baseName, "py_") {
 			ext = ".png"
 		}
 

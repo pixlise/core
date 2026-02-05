@@ -105,7 +105,7 @@ func HandleRequest(ctx context.Context, event awsutil.Event) (string, error) {
 			}
 		}
 
-		mongoClient, _, err := mongoDBConnection.Connect(sess, mongoSecret, iLog)
+		mongoClient, _, err := mongoDBConnection.Connect(sess, mongoSecret, iLog, false)
 		if err != nil {
 			log.Fatal(err)
 		}

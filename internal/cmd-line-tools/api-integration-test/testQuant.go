@@ -52,7 +52,7 @@ func resetDBPiquantAndJobs() {
 	}
 	insertResult, err := coll.InsertOne(context.TODO(), &protos.PiquantVersion{
 		Id:              "current",
-		Version:         "registry.gitlab.com/pixlise/piquant/runner:3.2.16",
+		Version:         "ghcr.io/pixlise/piquant:3.2.17",
 		ModifiedUnixSec: 1234567890,
 		ModifierUserId:  "user-123",
 	})

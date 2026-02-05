@@ -134,15 +134,65 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 
 	// We're still here, so we have access! Check query params for any modifiers
 	finalFileName := dbImage.ImagePath
+
+	// If we have any of the tile fields in the request, we need all of them!
+	tileFields := []string{"layer", "tilex", "tiley"}
+	tileFieldValues := map[string]int{}
+
+	for _, field := range tileFields {
+		if f, ok := params.PathParams[field]; ok {
+			v, err := strconv.ParseInt(f, 10, 0)
+			if err != nil {
+				return nil, "", "", "", 0, fmt.Errorf("Failed to read %v: %v", field, err)
+			}
+
+			if v < 0 {
+				return nil, "", "", "", 0, fmt.Errorf("Invalid input for field %v: %v", field, v)
+			}
+
+			tileFieldValues[field] = int(v)
+		}
+	}
+
+	if len(tileFieldValues) > 0 {
+		// We're expecting tile fields, check that we got them all
+		if len(tileFieldValues) != len(tileFields) {
+			return nil, "", "", "", 0, fmt.Errorf("Not all tile lookup fields were provided. Expected: [%v]", strings.Join(tileFields, ","))
+		}
+
+		// Check they're valid
+		layer := tileFieldValues["layer"]
+		tilex := tileFieldValues["tilex"]
+		tiley := tileFieldValues["tiley"]
+
+		suffix, err := getTilePathSuffix(params.Svcs.MongoDB, dbImage, layer, tilex, tiley)
+		if err != nil {
+			return nil, "", "", "", 0, fmt.Errorf("Invalid tile requested: %v", err)
+		}
+
+		finalFileName = path.Join(finalFileName, suffix)
+	} else {
+		// User didn't request a specific tile, but if it's a pyramid, we read the top level image
+		finalFileName = addPyramidPathIfNeeded(finalFileName, dbImage)
+	}
+
 	showLocations, err := getBoolValue(params.PathParams["with-locations"])
 	if err != nil {
 		return nil, "", "", "", 0, err
 	} else if showLocations {
+		if len(tileFieldValues) > 0 {
+			return nil, "", "", "", 0, fmt.Errorf("Cannot provide locations on image tile")
+		}
+
 		finalFileName = addFileNameSuffix(finalFileName, "-withloc")
 	}
 
 	var minWidthPx = 0
 	if minWStr, ok := params.PathParams["minwidth"]; ok {
+		if len(tileFieldValues) > 0 {
+			return nil, "", "", "", 0, fmt.Errorf("Cannot downscale image tile")
+		}
+
 		// We DO have a value set for this, read it
 		minWidthPx, err = strconv.Atoi(minWStr)
 		if err != nil {
@@ -190,11 +240,12 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 		if minWidthPx > 0 || showLocations {
 			// If the file doesn't exist, check if the base file name exists, because we may just need to generate
 			// a modified version of it
-			genS3Path := filepaths.GetImageFilePath(requestedFileName)
+			imageGenFrom := addPyramidPathIfNeeded(requestedFileName, dbImage)
+			genS3Path := filepaths.GetImageFilePath(imageGenFrom)
 
 			// Original file exists, generate this modified copy and cache it back in S3 for the rest of this
 			// function to find!
-			err = generateImageVersion(requestedFileName, genS3Path, minWidthPx, showLocations, s3Path, params.Svcs)
+			err = generateImageVersion(imageGenFrom, genS3Path, minWidthPx, showLocations, s3Path, params.Svcs)
 		}
 
 		if err != nil {
@@ -253,7 +304,50 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 		params.Svcs.Log.Debugf("Last Modified for cache: %v, s3://%v/%v", lm, imgBucket, s3Path)
 	}
 
+	params.Svcs.Log.Debugf("Image GET: s3://%v/%v", imgBucket, s3Path)
 	return result, requestedFileName, etag, lm.String(), 0, err
+}
+
+func addPyramidPathIfNeeded(imagePath string, image *protos.ScanImage) string {
+	if len(image.PyramidId) > 0 {
+		imagePath = path.Join(imagePath, "pyramid_files", "0", "0_0."+image.PyramidTileFormat)
+	}
+	return imagePath
+}
+
+func getTilePathSuffix(db *mongo.Database, pyramidImage *protos.ScanImage, layer, tileX, tileY int) (string, error) {
+	ctx := context.TODO()
+	coll := db.Collection(dbCollections.ImagePyramidsName)
+
+	filter := bson.M{"_id": pyramidImage.PyramidId}
+	pyramidResult := coll.FindOne(ctx, filter)
+	if pyramidResult.Err() != nil {
+		return "", pyramidResult.Err()
+	}
+
+	pyramid := &protos.ImagePyramidDBEntry{}
+	err := pyramidResult.Decode(pyramid)
+	if err != nil {
+		return "", err
+	}
+
+	if pyramid.Id != pyramidImage.PyramidId {
+		return "", fmt.Errorf("Unexpected image pyramid id: %v in pyramid %v", pyramid.Id, pyramidImage.PyramidId)
+	}
+
+	if layer < 0 || layer >= len(pyramid.Pyramid.Pyramid) {
+		return "", fmt.Errorf("Invalid pyramid level: %v", layer)
+	}
+
+	pyramidLevel := pyramid.Pyramid.Pyramid[layer]
+
+	idx := tileY*int(pyramidLevel.TilesWide) + tileX
+	if idx >= len(pyramidLevel.Tiles) {
+		return "", fmt.Errorf("Tile x: %v, y: %v for pyramid level: %v does not exist", tileX, tileY, layer)
+	}
+
+	suffix := path.Join("pyramid_files", strconv.Itoa(layer), fmt.Sprintf("%v_%v.%v", tileX, tileY, pyramidImage.PyramidTileFormat))
+	return suffix, nil
 }
 
 const imageSizeStepPx = 200
@@ -414,6 +508,8 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 		req.OriginScanId,
 		"",
 		req.GetBeamImageRef(),
+		"",
+		"",
 		imgWidth,
 		imgHeight,
 	)
