@@ -363,7 +363,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	// quant summary file was written with a + instead of a space?!
 	datasetID := fileaccess.MakeValidObjectName(req.Id, false)
 
-	formats := []string{"jpl-breadboard", "sbu-breadboard", "pixl-em", "SEM"}
+	formats := []string{"jpl-breadboard", "sbu-breadboard", "pixl-em", "user-defined"}
 	if !utils.ItemInSlice(req.Format, formats) {
 		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Unexpected format: \"%v\"", req.Format))
 	}
@@ -407,8 +407,8 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	// Validate contents - detector dependent
 	if req.Format == "pixl-em" {
 		err = dataimport.ProcessEM(datasetID, zipReader, zippedData, destBucket, s3PathStart, fs, logger)
-	} else if req.Format == "SEM" {
-		err = dataimport.ProcessSEM(hctx.SessUser.User.Id, datasetID, zipReader, zippedData, req, destBucket, s3PathStart, fs, logger)
+	} else if req.Format == "user-defined" {
+		err = dataimport.ProcessUserDefined(hctx.SessUser.User.Id, datasetID, zipReader, zippedData, req, destBucket, s3PathStart, fs, logger)
 	} else {
 		err = dataimport.ProcessBreadboard(req.Format, hctx.SessUser.User.Id, datasetID, zipReader, zippedData, destBucket, s3PathStart, fs, logger)
 	}

@@ -416,14 +416,14 @@ func ProcessBreadboard(format string, creatorUserId string, datasetID string, zi
 	return nil
 }
 
-func ProcessSEM(creatorUserId string, datasetID string, zipReader *zip.Reader, zippedData []byte, req *protos.ScanUploadReq, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
+func ProcessUserDefined(creatorUserId string, datasetID string, zipReader *zip.Reader, zippedData []byte, req *protos.ScanUploadReq, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
 	err := checkExpectedFiles(zipReader, ".tif")
 	if err != nil {
 		return err
 	}
 
 	// Save the contents as a zip file in the uploads area
-	savePath := path.Join(s3PathStart, "sem-data.zip")
+	savePath := path.Join(s3PathStart, "user-data.zip")
 	err = fs.WriteObject(destBucket, savePath, zippedData)
 	if err != nil {
 		return err

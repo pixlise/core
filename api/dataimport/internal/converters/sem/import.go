@@ -22,16 +22,16 @@ var suffixImageMap = ".map.tif"
 func IsWDSMapFormat(importPath string) bool {
 	localFS := &fileaccess.FSAccess{}
 
-	files, err := localFS.ListObjects(importPath, "sem-data/")
+	files, err := localFS.ListObjects(importPath, "user-data/")
 
 	if err != nil {
 		return false
 	}
 
-	// We only care about the sem-data directory, any other unzipped files we ignore...
+	// We only care about the user-data directory, any other unzipped files we ignore...
 	count := 0
 	for _, file := range files {
-		//if strings.HasPrefix(file, "sem-data/") {
+		//if strings.HasPrefix(file, "user-data/") {
 		if strings.HasSuffix(file, suffixImageMap) {
 			count++
 		} else {
@@ -63,7 +63,7 @@ func (im ImageMaps) Import(importPath string, pseudoIntensityRangesPath string, 
 		log.Infof("Warning: No import.json found, defaults will be used")
 	}
 
-	files, err := localFS.ListObjects(importPath, "sem-data") // Allow any file name... previously was expecting to start with: datasetIDExpected+"_")
+	files, err := localFS.ListObjects(importPath, "user-data") // Allow any file name... previously was expecting to start with: datasetIDExpected+"_")
 
 	if err != nil {
 		return nil, "", err
