@@ -77,6 +77,7 @@ func HandleImageBeamLocationsReq(req *protos.ImageBeamLocationsReq, hctx wsHelpe
 		if err != nil {
 			return nil, err
 		}
+		wsHelpers.FixScanImageFileSize(&img)
 
 		// Read the image, and follow the matched image link if there is one
 		imageForBeamRead := req.ImageName
@@ -194,6 +195,7 @@ func HandleImageBeamLocationVersionsReq(req *protos.ImageBeamLocationVersionsReq
 	if err != nil {
 		return nil, err
 	}
+	wsHelpers.FixScanImageFileSize(&img)
 
 	// Read the image, and follow the matched image link if there is one
 	imageForBeamRead := req.ImageName
@@ -269,6 +271,7 @@ func HandleImageBeamLocationUploadReq(req *protos.ImageBeamLocationUploadReq, hc
 	if err != nil {
 		return nil, err
 	}
+	wsHelpers.FixScanImageFileSize(&img)
 
 	// NOTE: Once beam location saving works, we will update the "associated scans" list for the image!!
 

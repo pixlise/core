@@ -890,11 +890,11 @@ func insertImageAndPyramidToDB(
 	img := &protos.ScanImage{
 		ImagePath: path.Join(originScanId, filepath.Base(imagePath)),
 
-		Source:   source,
-		Width:    uint32(pyramidInfo.Bounds.Max.X - pyramidInfo.Bounds.Min.X),
-		Height:   uint32(pyramidInfo.Bounds.Max.Y - pyramidInfo.Bounds.Min.Y),
-		FileSize: uint32(0), // TODO What should filesize be ?
-		Purpose:  purpose,
+		Source:     source,
+		Width:      uint32(pyramidInfo.Bounds.Max.X - pyramidInfo.Bounds.Min.X),
+		Height:     uint32(pyramidInfo.Bounds.Max.Y - pyramidInfo.Bounds.Min.Y),
+		FileSize64: uint64(0), // TODO What should filesize be ?
+		Purpose:    purpose,
 
 		AssociatedScanIds: []string{originScanId},
 		OriginScanId:      originScanId,
@@ -944,7 +944,7 @@ func insertImageDBEntryForImage(
 
 	img := utils.MakeScanImage(
 		savePath,
-		uint32(stats.Size()),
+		uint64(stats.Size()),
 		source,
 		purpose,
 		associatedScanIds,

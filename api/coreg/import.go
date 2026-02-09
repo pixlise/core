@@ -295,7 +295,7 @@ func importNewImage(jobId string, imageUrl string, baseRTT string, marsViewerExp
 	savePath := path.Join(baseRTT, imageFileName)
 	scanImage := utils.MakeScanImage(
 		savePath,
-		uint32(len(imgData)),
+		uint64(len(imgData)),
 		protos.ScanImageSource_SI_UPLOAD,
 		protos.ScanImagePurpose_SIP_VIEWING,
 		associatedScanIds,
@@ -552,7 +552,7 @@ func importWarpedImage(warpedImageUrl string, rttWarpedTo string, baseImage stri
 	savePath := path.Join(rttWarpedTo, nicerSaveName)
 	scanImage := utils.MakeScanImage(
 		savePath,
-		uint32(len(imgData)),
+		uint64(len(imgData)),
 		protos.ScanImageSource_SI_UPLOAD,
 		protos.ScanImagePurpose_SIP_VIEWING,
 		[]string{rttWarpedTo},

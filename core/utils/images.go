@@ -29,7 +29,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-// Returns width, height and error
+// Returns width, height and error. Try it with the Go libraries, if it fails, read it with libvips
 func ReadImageDimensions(imageName string, imgBytes []byte) (uint32, uint32, error) {
 	// Try to read the image
 	img, _, err := image.Decode(bytes.NewReader(imgBytes))
@@ -40,7 +40,14 @@ func ReadImageDimensions(imageName string, imgBytes []byte) (uint32, uint32, err
 			// We can't read these tif files, but it's an RGBU image, and they have a known resolution - the same as our MCC images
 			return 752, 580, nil
 		}
-
+		/*
+			if strings.HasSuffix(strings.ToLower(imageName), ".tif") {
+				img, err := vips.NewTiffload(imageName, &vips.TiffloadOptions{
+					Page: pageNum,
+					N:    1,
+				})
+			}
+		*/
 		return 0, 0, err
 	}
 	return uint32(img.Bounds().Dx()), uint32(img.Bounds().Dy()), nil
@@ -108,7 +115,7 @@ func WritePNGImageFile(pathPrefix string, img image.Image) error {
 
 func MakeScanImage(
 	imgPath string,
-	fileSize uint32,
+	fileSize uint64,
 	source protos.ScanImageSource,
 	purpose protos.ScanImagePurpose,
 	associatedScanIds []string,
@@ -122,11 +129,11 @@ func MakeScanImage(
 	result := &protos.ScanImage{
 		ImagePath: imgPath,
 
-		Source:   source,
-		Width:    width,
-		Height:   height,
-		FileSize: fileSize,
-		Purpose:  purpose,
+		Source:     source,
+		Width:      width,
+		Height:     height,
+		FileSize64: fileSize,
+		Purpose:    purpose,
 
 		AssociatedScanIds: associatedScanIds,
 		OriginScanId:      originScanId,

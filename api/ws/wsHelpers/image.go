@@ -73,12 +73,21 @@ func GenerateIJs(imageName string, scanId string, instrument protos.ScanInstrume
 // func (s ScanImages) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 // func (s ScanImages) Less(i, j int) bool { return s[i].ImagePath < s[j].ImagePath }
 
+func FixScanImageFileSize(img *protos.ScanImage) {
+	// Check file size field
+	if img.FileSize64 == 0 && img.FileSize > 0 {
+		img.FileSize64 = uint64(img.FileSize)
+	}
+}
+
 func GetLatestImagesOnly(images []*protos.ScanImage) ([]*protos.ScanImage, error) {
 	result := []*protos.ScanImage{}
 	latestImage := map[string]*protos.ScanImage{}
 
 	// Loop through all images, find the latest version of each, and return only that
 	for _, img := range images {
+		FixScanImageFileSize(img)
+
 		// Try to decode the file name
 		meta, err := gdsfilename.ParseFileName(img.ImagePath)
 		if err != nil {
