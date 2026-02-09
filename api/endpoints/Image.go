@@ -45,6 +45,7 @@ import (
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/gdsfilename"
 	"github.com/pixlise/core/v4/core/imageedit"
+	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"github.com/pixlise/core/v4/vips"
@@ -315,7 +316,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 
 func addPyramidPathIfNeeded(imagePath string, image *protos.ScanImage) string {
 	if len(image.PyramidId) > 0 {
-		imagePath = path.Join(imagePath, "pyramid_files", "0", "0_0."+image.PyramidTileFormat)
+		imagePath = path.Join(imagePath, "0", "0_0."+image.PyramidTileFormat)
 	}
 	return imagePath
 }
@@ -351,7 +352,7 @@ func getTilePathSuffix(db *mongo.Database, pyramidImage *protos.ScanImage, layer
 		return "", fmt.Errorf("Tile x: %v, y: %v for pyramid level: %v does not exist", tileX, tileY, layer)
 	}
 
-	suffix := path.Join("pyramid_files", strconv.Itoa(layer), fmt.Sprintf("%v_%v.%v", tileX, tileY, pyramidImage.PyramidTileFormat))
+	suffix := path.Join(strconv.Itoa(layer), fmt.Sprintf("%v_%v.%v", tileX, tileY, pyramidImage.PyramidTileFormat))
 	return suffix, nil
 }
 
@@ -591,40 +592,53 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 		imgHeight,
 	)
 
-	data := req.ImageData
-	if isMultipart {
-		data = []byte{}
-	}
-	generateCoords, err := saveReceivedImage(params.Svcs.MongoDB, scanImage, localFilePath, data, savePath, params.Svcs.Config.DatasetsBucket, params.Svcs.FS)
+	asPyramid := isPyramidImport(scanImage.Width, scanImage.Height, scanImage.FileSize64)
 
-	// Regardless of what happened, we want to clear our locally saved copy of the image right now
-	if isMultipart {
-		delete(filePartsRecvd, req.Name)
+	pyramidTileSize := uint32(1024)
+	pyramidQuality := uint32(90)
 
-		if err2 := os.Remove(localFilePath); err2 != nil {
-			params.Svcs.Log.Errorf("Failed to delete local copy of downloaded image %v, error: %v", localFilePath, err2)
-		} else {
-			params.Svcs.Log.Infof("Deleted temp download image %v, size: %v", localFilePath, req.ImageByteSize)
+	if asPyramid {
+		// Set the id to be the image id
+		scanImage.PyramidId = scanImage.ImagePath
+		// Add other pyramid related fields
+
+		scanImage.PyramidTileFormat = "jpg"
+		if pyramidQuality >= 100 {
+			scanImage.PyramidTileFormat = "png"
+		}
+
+		pyramidLevels := wsHelpers.BuildImagePyramidLevels(scanImage.Width, scanImage.Height, pyramidTileSize)
+
+		params.Svcs.Log.Infof("Importing image %v (%vx%v) as pyramid with tile size: %v, levels: %v. Pyramid ID generated: %v", req.Name, scanImage.Width, scanImage.Height, pyramidLevels.TileSize, len(pyramidLevels.Pyramid), scanImage.PyramidId)
+
+		err = savePyramidEntry(params.Svcs.MongoDB, scanImage.PyramidId, pyramidLevels, params.Svcs.Log)
+		if err != nil {
+			return err
 		}
 	}
 
+	generateCoords, err := saveScanImage(params.Svcs.MongoDB, scan, scanImage)
 	if err != nil {
+		undoScanImagePUT(params.Svcs.MongoDB, req.Name, scanImage.ImagePath, scanImage.PyramidId, localFilePath, req.ImageByteSize, params.Svcs.Log)
 		return err
 	}
 
-	// Check if this scan even has XRF points to generate for!
-	if generateCoords {
-		hasXRF := false
-		for _, dt := range scan.DataTypes {
-			if dt.DataType == protos.ScanDataType_SD_XRF && dt.Count > 0 {
-				hasXRF = true
-				break
-			}
+	if len(localFilePath) > 0 {
+		if asPyramid {
+			err = saveImageDataAsPyramid(params.Svcs.FS, params.Svcs.Config.DatasetsBucket, savePath, localFilePath, pyramidTileSize, pyramidQuality, params.Svcs.Log)
+		} else {
+			err = saveImageDataFromFile(params.Svcs.FS, params.Svcs.Config.DatasetsBucket, savePath, localFilePath)
 		}
-		if !hasXRF {
-			generateCoords = false
-		}
+	} else {
+		err = saveImageDataFromMemory(params.Svcs.FS, params.Svcs.Config.DatasetsBucket, savePath, req.ImageData)
 	}
+
+	if err != nil {
+		undoScanImagePUT(params.Svcs.MongoDB, req.Name, scanImage.ImagePath, scanImage.PyramidId, localFilePath, req.ImageByteSize, params.Svcs.Log)
+		return err
+	}
+
+	// From this point on, we consider the image created. If IJ generation fails or anything else, we don't roll back and delete
 
 	if generateCoords {
 		_, err = wsHelpers.GenerateIJs(scanImage.ImagePath, req.OriginScanId, scan.Instrument, params.Svcs)
@@ -646,24 +660,33 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 	return nil
 }
 
-// Saves the received image and various reference data structures for it
-// NOTE: you can supply either localImageDataPath or imageBytesInMemory, NOT both!
-// Returns flag to say if we need to generate IJs, and error if any
-func saveReceivedImage(
-	db *mongo.Database,
-	scanImage *protos.ScanImage,
-	localImageDataPath string,
-	imageBytesInMemory []byte,
-	savePath string,
-	datasetBucket string,
-	fs fileaccess.FileAccess) (bool, error) {
-	if len(localImageDataPath) > 0 && len(imageBytesInMemory) > 0 {
-		return false, fmt.Errorf("Error saving image %v, both local path and in memory image are present", savePath)
-	}
-	if len(localImageDataPath) <= 0 && len(imageBytesInMemory) <= 0 {
-		return false, fmt.Errorf("Error saving image %v, neither local path and in memory image are present", savePath)
+func savePyramidEntry(db *mongo.Database, pyramidId string, pyramidInfo *protos.ImagePyramid, l logger.ILogger) error {
+	entry := &protos.ImagePyramidDBEntry{
+		Id:      pyramidId,
+		Pyramid: pyramidInfo,
 	}
 
+	coll := db.Collection(dbCollections.ImagePyramidsName)
+	opt := options.InsertOne()
+	result, err := coll.InsertOne(context.TODO(), entry, opt)
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			// Don't overwrite, so we're OK with this
+			//return nil
+			l.Errorf("insertImagePyramid writing pyramid structure to DB skipped due to duplicate pyramid id: %v", pyramidId)
+		} else {
+			// A real error happened!
+			return err
+		}
+	} else if result.InsertedID != entry.Id {
+		l.Errorf("insertImagePyramid wrote id %v, got back %v", entry.Id, result.InsertedID)
+		// Not the end of the world... don't error out here
+	}
+
+	return nil
+}
+
+func saveScanImage(db *mongo.Database, scan *protos.ScanItem, scanImage *protos.ScanImage) (bool, error) {
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.ImagesName)
 
@@ -679,6 +702,18 @@ func saveReceivedImage(
 	if !generateCoords {
 		// Check if the count is 0
 		generateCoords = !foundItems.Next(ctx)
+	}
+
+	hasXRF := false
+	for _, dt := range scan.DataTypes {
+		if dt.DataType == protos.ScanDataType_SD_XRF && dt.Count > 0 {
+			hasXRF = true
+			break
+		}
+	}
+
+	if !hasXRF {
+		generateCoords = false
 	}
 
 	if generateCoords && scanImage.MatchInfo == nil {
@@ -704,28 +739,117 @@ func saveReceivedImage(
 		return generateCoords, fmt.Errorf("HandleImageUploadReq wrote id %v, got back %v", scanImage.ImagePath, result.InsertedID)
 	}
 
-	// Save the image to S3
-	s3Path := filepaths.GetImageFilePath(savePath)
-	if len(localImageDataPath) > 0 {
-		f, err := os.Open(localImageDataPath)
-		if err != nil {
-			return generateCoords, err
-		}
-		err = fs.WriteObjectStream(datasetBucket, s3Path, f)
+	return generateCoords, nil
+}
+
+// Call to abort an image upload operation - if anything happens here we delete all the things that the
+// image upload may have affected/saved/created
+func undoScanImagePUT(db *mongo.Database, reqName string, scanImageId string, pyramidId string, localFilePath string, imageByteSize uint64, l logger.ILogger) {
+	// DB Image
+	ctx := context.TODO()
+	coll := db.Collection(dbCollections.ImagesName)
+	filter := bson.D{{Key: "_id", Value: scanImageId}}
+	delOpt := options.Delete()
+	_ /*delImgResult*/, err := coll.DeleteOne(ctx, filter, delOpt)
+	if err != nil {
+		l.Errorf("Failed to delete scan image %v while handling image upload error. Error was: %v", scanImageId, err)
 	} else {
-		err = fs.WriteObject(datasetBucket, s3Path, imageBytesInMemory)
+		l.Infof("Deleted imported scan image %v due to image upload error", scanImageId)
 	}
+
+	// DB ImagePyramid
+	coll = db.Collection(dbCollections.ImagePyramidsName)
+	filter = bson.D{{Key: "_id", Value: pyramidId}}
+	delOpt = options.Delete()
+	_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
+	if err != nil {
+		l.Errorf("Failed to delete scan image pyramid %v while handling image upload error. Error was: %v", pyramidId, err)
+	} else {
+		l.Infof("Deleted imported scan image pyramid %v due to image upload error", pyramidId)
+	}
+
+	// Upload parts received log
+	delete(filePartsRecvd, reqName)
+
+	// Local image file (containing uploaded chunks)
+	if err2 := os.Remove(localFilePath); err2 != nil {
+		l.Errorf("Failed to delete local copy of downloaded image %v, error: %v", localFilePath, err2)
+	} else {
+		l.Infof("Deleted temp download image %v, size: %v", localFilePath, imageByteSize)
+	}
+}
+
+func saveImageDataAsPyramid(
+	fs fileaccess.FileAccess,
+	bucket string,
+	savePath string,
+	localImageDataPath string,
+	tileSize uint32,
+	tileQuality uint32,
+	l logger.ILogger) error {
+	// This is the most complex situation. We take the locally saved file (constructed from chunks sent) and
+	// break it up into tiles. We write these to S3 as separate images in a tree structure
+
+	// Read the image
+	img, err := vips.NewImageFromFile(localImageDataPath, &vips.LoadOptions{ /*Page: , N: */ })
+	if err != nil {
+		return err
+	}
+
+	// Use vipsgen Dzsave
+	// IMPORTANT: These options are carefully chosen:
+	// - Imagename: The base name for generated files
+	// - Suffix: .jpg for JPEG tiles
+	// - Q: JPEG quality (85 = good balance of quality/size)
+	// - Depth: DzDepthOnetile means generate tiles at all zoom levels
+	// - Overlap: 0 means no pixel overlap between tiles (can be changed if needed)
+	// - TileSize: Size of each tile (254 is default, accounts for overlap)
+	// If quality is 100% we do PNG output
+	suffix := ".jpg"
+	if tileQuality == 100 {
+		suffix = ".png"
+	}
+
+	l.Infof("  Generating tiles of size %v, quality: %v, format: %v...", tileSize, tileQuality, suffix)
+
+	err = img.Dzsave(localImageDataPath, &vips.DzsaveOptions{
+		Imagename: filepath.Base(localImageDataPath),
+		Suffix:    suffix,
+		Q:         int(tileQuality),
+		Depth:     vips.DzDepthOnetile,
+		Overlap:   0,
+		TileSize:  int(tileSize),
+	})
 
 	if err != nil {
-		// Failed to upload image data, so no point in having a DB entry now either...
-		coll = db.Collection(dbCollections.ImagesName)
-		filter := bson.D{{Key: "_id", Value: scanImage.ImagePath}}
-		delOpt := options.Delete()
-		_ /*delImgResult*/, err = coll.DeleteOne(ctx, filter, delOpt)
-		return generateCoords, err
+		return err
 	}
 
-	return generateCoords, nil
+	// Write to S3 (need to use a multithreaded approach as it'd take way too long otherwise)
+	// Save the image we saved to local storage in chunks as one file to S3
+	s3Path := filepaths.GetImageFilePath(savePath)
+	return fileaccess.CopyToBucket(fs, "", localImageDataPath+"_files", bucket, s3Path, true, l)
+}
+
+func saveImageDataFromFile(fs fileaccess.FileAccess, bucket string, savePath string, localImageDataPath string) error {
+	// Save the image we saved to local storage in chunks as one file to S3
+	s3Path := filepaths.GetImageFilePath(savePath)
+
+	f, err := os.Open(localImageDataPath)
+	if err != nil {
+		return err
+	}
+	return fs.WriteObjectStream(bucket, s3Path, f)
+}
+
+func saveImageDataFromMemory(fs fileaccess.FileAccess, bucket string, savePath string, imageData []byte) error {
+	// Save the image we have in memory to S3
+	s3Path := filepaths.GetImageFilePath(savePath)
+	return fs.WriteObject(bucket, s3Path, imageData)
+}
+
+func isPyramidImport(imageWidth uint32, imageHeight uint32, imageFileSize uint64) bool {
+	return imageWidth > 4000 || imageHeight > 4000 || imageFileSize > 35*1024*1024
 }
 
 func getImageChunkPath(fileName string) (string, error) {

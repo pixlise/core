@@ -31,7 +31,6 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
-	"github.com/pixlise/core/v4/api/dataimport/internal/importerutils"
 	"github.com/pixlise/core/v4/api/dataimport/internal/pyramid"
 	"github.com/pixlise/core/v4/api/dataimport/scanOwner"
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -696,7 +695,7 @@ func copyImagesToOutput(
 					parentDir := filepath.Dir(outImgFile)
 
 					// Upload with preserveStructure=true to keep pyramid folder structure
-					err = importerutils.CopyToBucket(remoteFS, originScanId, parentDir, datasetBucket, "Images", true, jobLog)
+					err = fileaccess.CopyToBucket(remoteFS, originScanId, parentDir, datasetBucket, "Images", true, jobLog)
 					if err != nil {
 						return "", false, fmt.Errorf("failed to upload pyramid: %w", err)
 					}
