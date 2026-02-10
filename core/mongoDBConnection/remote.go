@@ -66,7 +66,7 @@ func connectToRemoteMongoDB(
 		options.Client().
 			ApplyURI(connectionURI).
 			SetMonitor(cmdMonitor).
-			SetTLSConfig(tlsConfig).
+			//SetTLSConfig(tlsConfig).
 			SetRetryWrites(false).
 			SetDirect(true).
 			SetAuth(
