@@ -213,7 +213,7 @@ func ImportFromLocalFileSystem(
 
 	log.Infof("Writing dataset file...")
 	saver := output.PIXLISEDataSaver{}
-	err = saver.Save(*data, contextImageSrcPath, outPath, filepath.Join(outputImagesPath, data.DatasetID), db, time.Now().Unix(), remoteFS, datasetBucket, log)
+	err = saver.Save(*data, contextImageSrcPath, outPath, filepath.Join(outputImagesPath, data.DatasetID), db, time.Now().Unix(), log)
 	if err != nil {
 		return "", fmt.Errorf("Error when writing scan data: %v. Error: %v", outPath, err)
 	}
@@ -232,17 +232,12 @@ func ImportFromLocalFileSystem(
 		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
 	}
 
-	// Check if images contain pyramid structure (has .dzi files), and if so, keep nested directory structure
-	if data.DefaultContextImageIsPyramid {
-		log.Infof("Detected pyramid structure, files should already be uploaded to bucket so skipping here.")
-	} else {
-		log.Infof("Copying images to bucket: %v...", datasetBucket)
-		imagePath := filepath.Join(outputImagesPath, data.DatasetID)
+	log.Infof("Copying images to bucket: %v...", datasetBucket)
+	imagePath := filepath.Join(outputImagesPath, data.DatasetID)
 
-		err = fileaccess.CopyToBucket(remoteFS, data.DatasetID, imagePath, datasetBucket, filepaths.DatasetImagesRoot, false, log)
-		if err != nil {
-			return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
-		}
+	err = fileaccess.CopyToBucket(remoteFS, data.DatasetID, imagePath, datasetBucket, filepaths.DatasetImagesRoot, false, log)
+	if err != nil {
+		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
 	}
 
 	return data.DatasetID, nil
