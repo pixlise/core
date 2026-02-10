@@ -24,7 +24,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/cshum/vipsgen/vips"
+	"github.com/cshum/vipsgen/vips816"
 )
 
 func main() {

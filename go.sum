@@ -22,6 +22,8 @@ github.com/cespare/xxhash/v2 v2.2.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XL
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/cshum/vipsgen v1.2.1 h1:Es305Zf7C9T+8QbsiWn3BtQ+2/uHz6sp/SFnvwnO/kU=
 github.com/cshum/vipsgen v1.2.1/go.mod h1:1GboZQcNmo4NwuNnGogM24m3O+1i6UpnvurqMcsFItE=
+github.com/cshum/vipsgen v1.3.1 h1:deDY4MCgb0YNlQLBS1LSNknU02AUEex6p3L5/chZGls=
+github.com/cshum/vipsgen v1.3.1/go.mod h1:AmCpW+vKfu16ZFPN/PBgtLsAl3kt7c0y2uA4bD5Lzk8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

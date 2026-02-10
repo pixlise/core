@@ -9,7 +9,6 @@ require (
 	github.com/aws/aws-lambda-go v1.36.0
 	github.com/aws/aws-sdk-go v1.53.11
 	github.com/aws/aws-secretsmanager-caching-go v1.1.0
-	github.com/cshum/vipsgen v1.2.1
 	github.com/engelsjk/polygol v0.0.3
 	github.com/getsentry/sentry-go v0.16.0
 	github.com/gorilla/handlers v1.5.1
@@ -37,6 +36,7 @@ require (
 	github.com/PuerkitoBio/rehttp v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cshum/vipsgen v1.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/engelsjk/splay-tree v0.0.1 // indirect

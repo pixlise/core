@@ -35,6 +35,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	vips "github.com/cshum/vipsgen/vips816"
 	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
@@ -48,7 +49,6 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
-	"github.com/pixlise/core/v4/vips"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

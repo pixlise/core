@@ -40,14 +40,7 @@ func ReadImageDimensions(imageName string, imgBytes []byte) (uint32, uint32, err
 			// We can't read these tif files, but it's an RGBU image, and they have a known resolution - the same as our MCC images
 			return 752, 580, nil
 		}
-		/*
-			if strings.HasSuffix(strings.ToLower(imageName), ".tif") {
-				img, err := vips.NewTiffload(imageName, &vips.TiffloadOptions{
-					Page: pageNum,
-					N:    1,
-				})
-			}
-		*/
+
 		return 0, 0, err
 	}
 	return uint32(img.Bounds().Dx()), uint32(img.Bounds().Dy()), nil

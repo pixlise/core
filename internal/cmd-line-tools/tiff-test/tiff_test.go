@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pixlise/core/v4/vips"
+	"github.com/cshum/vipsgen/vips816"
 )
 
 func TestTiffLoading(t *testing.T) {
