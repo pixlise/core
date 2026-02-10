@@ -134,17 +134,11 @@ jobs:
         run: |
           ls -al
           mkdir -p _out
-          echo ">>> go build directly"
-          echo "====================="
-          GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -v -o ./_out/pixlise-api-linux ./internal/api
-
-          echo ">>> using make"
-          echo "====================="
-          BUILD_VERSION="${{ needs.version.outputs.version }}" make -d --trace --no-silent -p build-linux
+          BUILD_VERSION="${{ needs.version.outputs.version }}" make build-linux-aux
       - name: Copy to S3 Archive
         run: |
           cd _out
-          rm pixlise-api-linux
+          #rm pixlise-api-linux
           # WAS USING: wget https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
           wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
           mkdir dataimport integrationtest
