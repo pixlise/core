@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"math/rand"
 
 	"github.com/engelsjk/polygol"
 	vornoi "github.com/haddock7/voronoi"
@@ -172,8 +171,8 @@ func (g *gen) makePointClusters(scanPoints []ScanPoint, treateAsSingleCluster bo
 		)
 
 		fmt.Printf(
-			`  Point cluster %v contains %v PMCs, %v footprint points, %.3f degrees rotated`,
-			c+1, len(cluster.LocIdxs), len(cluster.FootprintPoints), cluster.AngleRadiansToContextImage*180/math.Pi)
+			`  Point cluster %v contains %v PMCs, %v footprint points, %.3f degrees rotated
+`, c+1, len(cluster.LocIdxs), len(cluster.FootprintPoints), cluster.AngleRadiansToContextImage*180/math.Pi)
 	}
 
 	return clusters, nil
@@ -474,31 +473,34 @@ func (g *gen) findMinPointDistances(scanPoints []ScanPoint, scanEntries []*proto
 		return errors.New("findMinPointDistances with no location data")
 	}
 
-	NumSamples := 100
+	//NumSamples := 1000
 
 	// Randomly pick a few points, find the min distance to between any other point to that point
 	// and then average this out
 	samples := []int{}
 	nearestDistanceToSamples := []float64{}
+	/*
+		for c := 0; c < NumSamples; c++ {
+			sampleIdx := int64(-1)
 
-	for c := 0; c < NumSamples; c++ {
-		sampleIdx := int64(-1)
-
-		// Make sure it's got a location
-		for sampleIdx < 0 {
-			sampleIdx = rand.Int63() % int64(len(scanPoints)-1)
-			if scanEntries[sampleIdx].Location {
-				sampleIdx = -1
+			// Make sure it's got a location
+			for sampleIdx < 0 {
+				sampleIdx = rand.Int63() % int64(len(scanPoints)-1)
+				if !scanEntries[sampleIdx].Location {
+					sampleIdx = -1
+				}
 			}
-		}
 
-		samples = append(samples, int(sampleIdx))
+			samples = append(samples, int(sampleIdx))
+		}
+	*/
+
+	for c := 0; c < len(scanEntries); c++ {
+		if scanEntries[c].Location {
+			samples = append(samples, c)
+		}
 	}
 
-	samples = []int{
-		177,
-		47,
-		417}
 	// Now loop through all and find the nearest point to each sample in distance-squared units
 	ExclusionBoxSize := float64(g.locationPointBBox.W+g.locationPointBBox.H) / 2 / 10
 
@@ -740,7 +742,8 @@ func (g *gen) initLocationCachingForBeams(
 		return []ScanPoint{}, errors.New("No location information found")
 	}
 
-	fmt.Printf(`  Location position relative to context image: (x,y)=%v,%v, (w,h)=%v,%v\n`, g.locationPointBBox.X, g.locationPointBBox.Y, g.locationPointBBox.W, g.locationPointBBox.H)
+	fmt.Printf(`  Location position relative to context image: (x,y)=%v,%v, (w,h)=%v,%v
+`, g.locationPointBBox.X, g.locationPointBBox.Y, g.locationPointBBox.W, g.locationPointBBox.H)
 
 	// store sizing
 	g.locationPointXSize = locPointXMinMax.getRange()
@@ -749,7 +752,8 @@ func (g *gen) initLocationCachingForBeams(
 
 	g.locationPointZMax = *locPointZMinMax.Max
 
-	fmt.Printf(`  Location data physical size X=%v, Y=%v, Z=%v\n`, g.locationPointXSize, g.locationPointYSize, g.locationPointZSize)
+	fmt.Printf(`  Location data physical size X=%v, Y=%v, Z=%v
+`, g.locationPointXSize, g.locationPointYSize, g.locationPointZSize)
 	return scanPoints, nil
 }
 

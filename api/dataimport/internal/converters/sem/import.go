@@ -63,7 +63,7 @@ func (im ImageMaps) Import(importPath string, pseudoIntensityRangesPath string, 
 		log.Infof("Warning: No import.json found, defaults will be used")
 	}
 
-	files, err := localFS.ListObjects(importPath, "user-data") // Allow any file name... previously was expecting to start with: datasetIDExpected+"_")
+	files, err := localFS.ListObjects(importPath, "wds-data") // Allow any file name... previously was expecting to start with: datasetIDExpected+"_")
 
 	if err != nil {
 		return nil, "", err
