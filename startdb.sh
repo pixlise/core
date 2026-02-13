@@ -12,7 +12,7 @@ db_reset="${5:-false}"
 exclude_collection=$6
 mongo_db_files="./mongo-db-${db_name}"
 
-mongoContainer="mongo:4.0.28"
+mongoContainer="mongo:8"
 
 echo "Startup variables:"
 echo "  aws_profile: ${aws_profile}"
@@ -51,10 +51,10 @@ if [ "$db_reset" = "true" ]; then
 
     if [ "$(ls -A $local_path)" ]; then
         echo "Starting docker MongoDB using DB restore..."
-        docker run --rm -d -v /$PWD/$local_path:/db-restore -v "$mongo_db_files:/data" -p 27017:27017 -h $(hostname) --name mongo-test "$mongoContainer" --replSet=test && sleep 4 && docker exec mongo-test mongo --eval "rs.initiate();" && sleep 2 && docker exec mongo-test mongorestore --gzip --db $db_name db-restore/
+        docker run --rm -d -v /$PWD/$local_path:/db-restore -v "$mongo_db_files:/data" -p 27017:27017 -h $(hostname) --name mongo-test "$mongoContainer" --replSet=test && sleep 4 && docker exec mongo-test mongosh --eval "rs.initiate();" && sleep 2 && docker exec mongo-test mongorestore --gzip --db $db_name db-restore/
         exit 0
     fi
 fi
 
 echo "Starting docker MongoDB using previous volume..."
-docker run --rm -d -v /$PWD/$local_path:/db-restore -v "$mongo_db_files:/data" -p 27017:27017 -h $(hostname) --name mongo-test "$mongoContainer" --replSet=test && sleep 4 && docker exec mongo-test mongo --eval "rs.initiate();"
+docker run --rm -d -v /$PWD/$local_path:/db-restore -v "$mongo_db_files:/data" -p 27017:27017 -h $(hostname) --name mongo-test "$mongoContainer" --replSet=test && sleep 4 && docker exec mongo-test mongosh --eval "rs.initiate();"
