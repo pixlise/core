@@ -2,5 +2,5 @@
 
 set -e
 
-go install github.com/cshum/vipsgen/cmd/vipsgen@latest
+go install github.com/cshum/vipsgen/cmd/vipsgen@v1.3.1
 vipsgen -out ./vips
