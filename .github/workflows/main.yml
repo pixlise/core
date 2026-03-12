@@ -94,9 +94,11 @@ jobs:
         # NOTE: integration-test-config.json must have EnvironmentName at the end, so we can append a suffix
         #       to it, to make DB names unique for builds to not clash!
         run: |
+          echo "Installing libvips..."
           apt install libvips
           apt install libvips-tools
           apt install libvips-dev
+          ./genvips.sh
           make integrationtest
           truncate -s-3 ./integration-test-config.json
           UNIX_MS=$(date +%s%N | cut -b1-13)
@@ -136,7 +138,6 @@ jobs:
           echo "Tag name: ${{ needs.version.outputs.version_tag }}"
       - name: Build Package
         run: |
-          ls -al
           mkdir -p _out
           BUILD_VERSION="${{ needs.version.outputs.version }}" make build-linux-aux
       - name: Copy to S3 Archive

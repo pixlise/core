@@ -14,11 +14,10 @@ lint: ## Lint the files
 	golint ${PKG_LIST}
 
 unittest: ## Run unittests
-	./genvips.sh
 	mkdir -p _out
 	go install github.com/favadi/protoc-go-inject-tag@latest
 	go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
-	protoc-go-inject-tag -remove_tag_comment -input="./generated-protos/*.pb.go"
+	echo  -remove_tag_comment -input="./generated-protos/*.pb.go"
 	go test -v ./...
 
 integrationtest:
