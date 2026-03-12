@@ -87,8 +87,8 @@ jobs:
       - name: Unit Test
         run: |
           echo "Installing libvips..."
-          sudo apt install libvips
-          sudo apt install libvips-tools
+          #sudo apt install libvips
+          #sudo apt install libvips-tools
           sudo apt install libvips-dev
           ./genvips.sh
           make unittest
@@ -101,8 +101,8 @@ jobs:
         #       to it, to make DB names unique for builds to not clash!
         run: |
           echo "Installing libvips..."
-          sudo apt install libvips
-          sudo apt install libvips-tools
+          #sudo apt install libvips
+          #sudo apt install libvips-tools
           sudo apt install libvips-dev
           ./genvips.sh
           make integrationtest

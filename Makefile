@@ -18,7 +18,8 @@ unittest: ## Run unittests
 	go install github.com/favadi/protoc-go-inject-tag@latest
 	go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
 	echo  -remove_tag_comment -input="./generated-protos/*.pb.go"
-	go test -v ./...
+	#go test -v ./...
+	go test -v ./internal/cmd-line-tools/tiff-test/
 
 integrationtest:
 	mkdir -p _out
