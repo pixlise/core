@@ -151,6 +151,7 @@ jobs:
       - name: Setup VIPS lib
         run: |
           echo "Installing libvips quietly..."
+          sudo apt-get update
           sudo apt-get -y install libvips-dev
           sudo apt list --installed | grep libvips
           echo "Running genvips..."
