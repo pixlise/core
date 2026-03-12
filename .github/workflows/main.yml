@@ -151,10 +151,11 @@ jobs:
       - name: Setup VIPS lib
         run: |
           echo "Installing libvips quietly..."
-          sudo apt-get -q install libvips-dev
+          sudo apt-get -q -y -qq install libvips-dev
           sudo apt list --installed | grep libvips
           echo "Running genvips..."
           ./genvips.sh
+          go test -v ./api/ws/wsHelpers/
       - name: Start MongoDB
         uses: supercharge/mongodb-github-action@1.10.0
         with:
