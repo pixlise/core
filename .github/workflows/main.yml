@@ -61,6 +61,11 @@ jobs:
         with:
           fetch-depth: 0
           submodules: true
+      - name: Print Version
+        run: |
+          echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
+          echo "Tag name: ${{ needs.version.outputs.version_tag }}"
+
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -71,11 +76,6 @@ jobs:
           mongodb-version: 8
           mongodb-replica-set: test
           mongodb-port: 27017
-      - name: Print Version
-        run: |
-          echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
-          echo "Tag name: ${{ needs.version.outputs.version_tag }}"
-
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
@@ -109,13 +109,14 @@ jobs:
         uses: docker/build-push-action@v4.0.0
         with:
           context: .
+          add-host: host.docker.internal=host-gateway .
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VERSION=${{ needs.version.outputs.version }}
             GITHUB_SHA=${{ needs.version.outputs.github_sha_short }}
-            
+
       - name: Build Lambdas
         run: |
           mkdir -p _out
