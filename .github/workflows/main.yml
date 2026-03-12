@@ -85,7 +85,13 @@ jobs:
           mongodb-replica-set: test
           mongodb-port: 27017
       - name: Unit Test
-        run: make unittest
+        run: |
+          echo "Installing libvips..."
+          apt install libvips
+          apt install libvips-tools
+          apt install libvips-dev
+          ./genvips.sh
+          make unittest
         env:
           AWS_DEFAULT_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
