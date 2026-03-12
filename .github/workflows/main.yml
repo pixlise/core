@@ -151,7 +151,7 @@ jobs:
       - name: Setup VIPS lib
         run: |
           echo "Installing libvips..."
-          sudo apt install -y --quiet libvips-dev
+          sudo apt install -qq libvips-dev
           sudo apt list --installed | grep libvips
           echo "Running genvips..."
           ./genvips.sh
@@ -162,17 +162,7 @@ jobs:
           mongodb-replica-set: test
           mongodb-port: 27017
       - name: Unit Test
-        run: |
-          echo "Installing libvips..."
-          #sudo apt install libvips
-          #sudo apt install libvips-tools
-          sudo apt install libvips-dev
-          echo "Show libvips version..."
-          sudo apt list --installed | grep libvips
-          echo "Running genvips..."
-          ./genvips.sh
-          echo "Running unit tests..."
-          make unittest
+        run: make unittest
         env:
           AWS_DEFAULT_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
