@@ -91,7 +91,7 @@ jobs:
           #sudo apt install libvips-tools
           sudo apt install libvips-dev
           echo "Show libvips version..."
-          sudo apt list --installed | libvips
+          sudo apt list --installed | grep libvips
           echo "Running genvips..."
           ./genvips.sh
           echo "Running unit tests..."
