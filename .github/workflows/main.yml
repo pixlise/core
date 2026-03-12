@@ -151,8 +151,8 @@ jobs:
       - name: Setup VIPS lib
         run: |
           echo "Installing libvips quietly..."
-          sudo apt-get install -qq libvips-dev
-          sudo apt-get list --installed | grep libvips
+          sudo apt-get -q install libvips-dev
+          sudo apt list --installed | grep libvips
           echo "Running genvips..."
           ./genvips.sh
       - name: Start MongoDB
