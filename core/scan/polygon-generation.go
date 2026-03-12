@@ -14,18 +14,17 @@ func GeneratePolygons(imageName string,
 	scanItem *protos.ScanItem,
 	scanEntries []*protos.ScanEntry,
 	beamXYZs []*protos.Coordinate3D,
-	beamLocVersion int,
 	beamIJs *[]*protos.Coordinate2D,
 	detectorConfig *protos.DetectorConfig,
-) error {
+) (*protos.ImageScanEntryDisplayElementsGetResp, error) {
 	g := gen{}
 	scanPoints, err := g.initLocationCachingForBeams(scanItem.Instrument, scanEntries, beamXYZs, beamIJs, imageName, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if g.locationCount <= 0 {
-		return fmt.Errorf("Failed to generate scan points for scan: %v", scanItem.Id)
+		return nil, fmt.Errorf("Failed to generate scan points for scan: %v", scanItem.Id)
 	}
 
 	beamUnitsInMeters := decideBeamUnitsIsMeters(scanItem.Instrument, g.locationPointZMax)
@@ -41,7 +40,10 @@ func GeneratePolygons(imageName string,
 		beamRadius_mm = 0.06
 	}
 
-	contextPixelsTommConversion := g.calcImagePixelsToPhysicalmm(beamUnitsInMeters)
+	contextPixelsTommConversion := float64(-1)
+	if scanItem.Instrument != protos.ScanInstrument_UNKNOWN_INSTRUMENT {
+		contextPixelsTommConversion = g.calcImagePixelsToPhysicalmm(beamUnitsInMeters)
+	}
 
 	fmt.Printf("  Conversion factor for image pixels to mm: %v\n", contextPixelsTommConversion)
 
@@ -50,7 +52,7 @@ func GeneratePolygons(imageName string,
 
 	clusters, err := g.makePointClusters(scanPoints, scanItem.Instrument == protos.ScanInstrument_UNKNOWN_INSTRUMENT)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Clear footprints, get from clusters as we process them
@@ -68,30 +70,78 @@ func GeneratePolygons(imageName string,
 		makeScanPointPolygons(50, cluster, scanPoints, scanPointPolygons)
 		wholeFootprintHullPoints = append(wholeFootprintHullPoints, cluster.FootprintPoints)
 	}
-	/*
-		pointScale := 1
-		if scanItem.Instrument == protos.ScanInstrument_UNKNOWN_INSTRUMENT {
-			pointScale = 5
+
+	// Convert to proto-compatible structures... might be worth doing it this way initially, but this provided
+	// a perfect 1:1 typescript->Go conversion up to this point.
+
+	protoClusters := []*protos.PointCluster{}
+	for _, cl := range clusters {
+		idxs := make([]uint64, len(cl.LocIdxs))
+		for c, i := range cl.LocIdxs {
+			idxs[c] = uint64(i)
 		}
 
-		const result = new ContextImageScanModel(
-			scanItem.id,
-			scanItem.title,
-			imageName,
-			beamLocVersion,
-			clusters,
-			scanPoints,
-			scanPointPolygons,
-			wholeFootprintHullPoints,
-			scanItem.instrument == ScanInstrument.UNKNOWN_INSTRUMENT ? -1 : contextPixelsTommConversion,
-			beamRadius_pixels * pointScale,
-			this._locationDisplayPointRadius,// * pointScale,
-			this._locationPointBBox,
-			new Map<number, RGBA>()
-		);
-		return result;
-	*/
-	return nil
+		hullPts := makeProtoHullPoints(cl.FootprintPoints)
+		protoClusters = append(protoClusters, &protos.PointCluster{
+			ScanEntryIndexes:     idxs,
+			AveragePointDistance: cl.PointDistance,
+			AngleRadiansToImage:  cl.AngleRadiansToContextImage,
+			FootprintPoints:      hullPts,
+		})
+	}
+
+	protoPolys := []*protos.ScanEntryPolygon{}
+	for _, p := range scanPointPolygons {
+		pts := []*protos.Coordinate2D{}
+		for _, pt := range p.Points {
+			pts = append(pts, &protos.Coordinate2D{I: float32(pt.X), J: float32(pt.Y)})
+		}
+
+		protoPolys = append(protoPolys, &protos.ScanEntryPolygon{
+			Points: pts,
+			Bbox:   makeProtoRect(p.BBox),
+		})
+	}
+
+	protoFootprints := []*protos.Footprint{}
+	for _, f := range wholeFootprintHullPoints {
+		hullPts := makeProtoHullPoints(f)
+		protoFootprints = append(protoFootprints, &protos.Footprint{
+			HullPoints: hullPts,
+		})
+	}
+
+	resp := &protos.ImageScanEntryDisplayElementsGetResp{
+		PointClusters:          protoClusters,
+		ScanEntryPolygons:      protoPolys,
+		Footprints:             protoFootprints,
+		PixelToMMConversion:    contextPixelsTommConversion,
+		ScanPointDisplayRadius: g.locationDisplayPointRadius,
+		ScanPointBBox:          makeProtoRect(g.locationPointBBox),
+	}
+
+	return resp, nil
+}
+
+func makeProtoRect(r Rect) *protos.Rectangle {
+	return &protos.Rectangle{
+		X: r.X,
+		Y: r.Y,
+		W: r.W,
+		H: r.H,
+	}
+}
+
+func makeProtoHullPoints(pts []HullPoint) []*protos.HullPoint {
+	hullPts := []*protos.HullPoint{}
+	for _, p := range pts {
+		hullPts = append(hullPts, &protos.HullPoint{
+			Point:          &protos.Coordinate2D{I: float32(p.Point.X), J: float32(p.Point.Y)},
+			Normal:         &protos.Coordinate2D{I: float32(p.Normal.X), J: float32(p.Normal.Y)},
+			ScanEntryIndex: uint64(p.Idx),
+		})
+	}
+	return hullPts
 }
 
 type PointCluster struct {

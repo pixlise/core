@@ -14,7 +14,7 @@ import (
 func Example_scan_GeneratePolygons() {
 	scanId := "189137412"
 	imgName := "189137412/PCO_0545_0715357896_000RCM_N02651501891374120096075J__.png"
-	beamVersion := 3
+	//beamVersion := 3
 
 	// db := wstestlib.GetDBWithEnvironment("local-pixlise")
 	// ctx := context.TODO()
@@ -124,17 +124,18 @@ func Example_scan_GeneratePolygons() {
 		panic(err)
 	}
 
-	err = GeneratePolygons(
+	resp, err := GeneratePolygons(
 		imgName,
 		scanItem,
 		scanEntries,
 		xyz,
-		beamVersion,
+		//beamVersion,
 		&ij,
 		config,
 	)
 
-	fmt.Printf("%v\n", err)
+	//json, err := protojson.Marshal(resp)
+	fmt.Printf("%v|clusters=%v|footprints=%v|mmconversion=%v|dispradius=%v\n", err, len(resp.PointClusters), len(resp.Footprints), resp.PixelToMMConversion, resp.ScanPointDisplayRadius)
 
 	// The output text is comparing the chrome debug console output with what happened in Go. Changes
 	// allowed for:
@@ -165,7 +166,7 @@ func Example_scan_GeneratePolygons() {
 	//   Point cluster 13 contains 51 PMCs, 15 footprint points, 42.187 degrees rotated
 	//   Point cluster 14 contains 51 PMCs, 14 footprint points, 42.403 degrees rotated
 	//   Point cluster 15 contains 51 PMCs, 14 footprint points, 42.584 degrees rotated
-	// <nil>
+	// <nil>|clusters=15|footprints=15|mmconversion=0.04709422455222193|dispradius=2.543132907103864
 }
 
 /* Text from PIXLISE in chrome dev console:
