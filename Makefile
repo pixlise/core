@@ -26,6 +26,7 @@ integrationtest:
 	mkdir -p _out
 	echo "version: ${BUILD_VERSION}"
 	echo "sha: ${GITHUB_SHA}"
+	./genvips.sh
 	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -v -o ./api-service ./internal/api
 	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -v -o ./internal/cmd-line-tools/api-integration-test/tester ./internal/cmd-line-tools/api-integration-test
 
