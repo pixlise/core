@@ -136,7 +136,7 @@ jobs:
           aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
 
   test:
-    runs-on: ubuntu-25.10
+    runs-on: ubuntu-latest
     needs: [version]
     steps:
       - uses: actions/checkout@v3
@@ -155,6 +155,7 @@ jobs:
           mongodb-port: 27017
       - name: Unit Test
         run: |
+          lsb_release -a
           echo "Installing libvips..."
           #sudo apt install libvips
           #sudo apt install libvips-tools
