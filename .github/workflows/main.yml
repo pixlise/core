@@ -90,7 +90,11 @@ jobs:
           #sudo apt install libvips
           #sudo apt install libvips-tools
           sudo apt install libvips-dev
+          echo "Show libvips version..."
+          sudo apt list --installed | libvips
+          echo "Running genvips..."
           ./genvips.sh
+          echo "Running unit tests..."
           make unittest
         env:
           AWS_DEFAULT_REGION: us-east-1
