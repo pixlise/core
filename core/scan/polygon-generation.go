@@ -111,13 +111,32 @@ func GeneratePolygons(imageName string,
 		})
 	}
 
+	protoScanPoints := []*protos.ScanPoint{}
+	for _, pt := range scanPoints {
+		sendPt := &protos.ScanPoint{
+			PMC:                  uint64(pt.PMC),
+			Coord:                nil,
+			LocationIdx:          uint64(pt.locationIdx),
+			HasNormalSpectra:     pt.hasNormalSpectra,
+			HasDwellSpectra:      pt.hasDwellSpectra,
+			HasPseudoIntensities: pt.hasPseudoIntensities,
+			HasMissingData:       pt.hasMissingData,
+		}
+		if pt.coord != nil {
+			sendPt.Coord = &protos.Coordinate2D{I: float32(pt.coord.X), J: float32(pt.coord.Y)}
+		}
+		protoScanPoints = append(protoScanPoints, sendPt)
+	}
+
 	resp := &protos.ImageScanEntryDisplayElementsGetResp{
+		ScanPoints:             protoScanPoints,
 		PointClusters:          protoClusters,
 		ScanEntryPolygons:      protoPolys,
 		Footprints:             protoFootprints,
 		PixelToMMConversion:    contextPixelsTommConversion,
 		ScanPointDisplayRadius: g.locationDisplayPointRadius,
 		ScanPointBBox:          makeProtoRect(g.locationPointBBox),
+		BeamRadiusMM:           beamRadius_mm,
 	}
 
 	return resp, nil
