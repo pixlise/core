@@ -20,13 +20,15 @@ unittest: ## Run unittests
 	protoc-go-inject-tag -remove_tag_comment -input="./generated-protos/*.pb.go"
 	go test ./...
 
-
 integrationtest:
 	mkdir -p _out
 	echo "version: ${BUILD_VERSION}"
 	echo "sha: ${GITHUB_SHA}"
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -v -o ./api-service ./internal/api
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -v -o ./internal/cmd-line-tools/api-integration-test/tester ./internal/cmd-line-tools/api-integration-test
+	go install github.com/favadi/protoc-go-inject-tag@latest
+	go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
+	protoc-go-inject-tag -remove_tag_comment -input="./generated-protos/*.pb.go"
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -o ./api-service ./internal/api
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -o ./internal/cmd-line-tools/api-integration-test/tester ./internal/cmd-line-tools/api-integration-test
 
 codegen:
 	./genproto.sh checkgen
@@ -39,15 +41,15 @@ build-linux-api:
 	echo "sha: ${GITHUB_SHA}"
 
 	GOOS=linux GOARCH=amd64 go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -v -o ./_out/pixlise-api-linux ./internal/api
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -o ./_out/pixlise-api-linux ./internal/api
 
 build-linux-aux:
 	mkdir -p _out
 	echo "version: ${BUILD_VERSION}"
 	echo "sha: ${GITHUB_SHA}"
 	GOOS=linux GOARCH=amd64 go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -v -o ./_out/bootstrap ./internal/lambdas/data-import
-	GOOS=linux GOARCH=amd64 go build -v -o ./_out/job-runner ./internal/cmd-line-tools/job-runner
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -o ./_out/bootstrap ./internal/lambdas/data-import
+	GOOS=linux GOARCH=amd64 go build -o ./_out/job-runner ./internal/cmd-line-tools/job-runner
 #	GOOS=linux GOARCH=amd64 go build -v -o ./_out/importtest-linux ./internal/cmdline-tools/import-integration-test
 #	GOOS=linux GOARCH=amd64 go build -v -o ./_out/integrationtest-linux ./internal/cmdline-tools/api-integration-test
 
