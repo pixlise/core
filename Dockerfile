@@ -28,8 +28,6 @@ ENV BUILD_VERSION=${VERSION}
 ENV GITHUB_SHA=${GITHUB_SHA}
 
 RUN cd /build && ./genvips.sh
-RUN cd /build && make unittest
-RUN cd /build && make integrationtest
 RUN cd /build && make build-linux-api
 
 

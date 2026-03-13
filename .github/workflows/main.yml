@@ -113,6 +113,7 @@ jobs:
           PIXLISE_CONFIG_Auth0ManagementClientID: ${{ secrets.PIXLISE_API_MGMT_AUTH0_CLIENT_ID }}
           PIXLISE_CONFIG_Auth0ManagementSecret: ${{ secrets.PIXLISE_API_MGMT_AUTH0_SECRET }}
           PIXLISE_CONFIG_ZenodoAccessToken: ${{ secrets.ZENODO_ACCESS_TOKEN }}
+
   build-lambdas:
     if: false
     runs-on: ubuntu-latest
