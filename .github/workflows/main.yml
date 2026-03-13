@@ -77,7 +77,7 @@ jobs:
         uses: supercharge/mongodb-github-action@1.10.0
         with:
           mongodb-version: 8
-          mongodb-replica-set: testi
+          mongodb-replica-set: testu
           mongodb-port: 27017
       - name: Unit Test
         run: make unittest
@@ -111,7 +111,7 @@ jobs:
         uses: supercharge/mongodb-github-action@1.10.0
         with:
           mongodb-version: 8
-          mongodb-replica-set: testu
+          mongodb-replica-set: testi
           mongodb-port: 27017
       - name: Integration Test
         # NOTE: integration-test-config.json must have EnvironmentName at the end, so we can append a suffix
