@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cshum/vipsgen/vips816"
+	"github.com/pixlise/core/v4/vips"
 )
 
 // PyramidGenerationOptions contains configuration for pyramid tile generation
