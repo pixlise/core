@@ -142,20 +142,32 @@ func main() {
 
 	// Sample pixel from center to verify we can access data
 	if width > 0 && height > 0 {
-		centerX := width / 2
-		centerY := height / 2
-		pixel, err := img.Getpoint(centerX, centerY, nil)
-		if err == nil {
-			fmt.Printf("Center pixel (%d, %d): ", centerX, centerY)
-			for i, val := range pixel {
-				if i > 0 {
-					fmt.Printf(", ")
+		// At one point this was valid:
+		// img.Getpoint(centerX, centerY, nil)
+		// But builds had an older libvips without the options param:
+		// img.Getpoint(centerX, centerY)
+		//
+		// Build is a github action and uses ubuntu 24, this has a different libvips than locally on ubuntu 25
+		// To fix, we'd either have to run the build in docker (breaking tests because they can't talk to mongo... maybe
+		// there's a solution to that?) OR we figure out a way to get a compatible libvips on there. The docker container
+		// we run PIXLISE API in on AWS though is based on alpine linux so things may differ again. For now, since these
+		// are just tests, we skip it
+		/*
+			centerX := width / 2
+			centerY := height / 2
+			pixel, err := img.Getpoint(centerX, centerY, nil)
+			if err == nil {
+				fmt.Printf("Center pixel (%d, %d): ", centerX, centerY)
+				for i, val := range pixel {
+					if i > 0 {
+						fmt.Printf(", ")
+					}
+					fmt.Printf("Band%d=%.0f", i, val)
 				}
-				fmt.Printf("Band%d=%.0f", i, val)
+				fmt.Printf("\n")
+				fmt.Printf("========================================\n")
 			}
-			fmt.Printf("\n")
-			fmt.Printf("========================================\n")
-		}
+		*/
 	}
 
 	// Save to output file if requested
