@@ -206,7 +206,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 				"source": "SI_UPLOAD",
 				"width": 5,
 				"height": 5,
-				"fileSize": 596,
+				"fileSize64": "596",
 				"purpose": "SIP_VIEWING",
 				"associatedScanIds": [
 					"%v"
@@ -717,7 +717,7 @@ func testImageMatchTransform(apiHost string) {
 					"source": "SI_UPLOAD",
 					"width": 5,
 					"height": 5,
-					"fileSize": 596,
+					"fileSize64": "596",
 					"purpose": "SIP_VIEWING",
 					"associatedScanIds": [
 						"048300551"

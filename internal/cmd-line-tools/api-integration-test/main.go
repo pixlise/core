@@ -488,11 +488,6 @@ func seedBuckets(s3 fileaccess.FileAccess, apiDatasetBucket string) error {
 	}
 
 	for _, file := range files {
-		data, err := os.ReadFile(file)
-		if err != nil {
-			return err
-		}
-
 		// Lop off the start of the path
 		pos := strings.Index(file, rootPath)
 		if pos < 0 {
@@ -500,6 +495,16 @@ func seedBuckets(s3 fileaccess.FileAccess, apiDatasetBucket string) error {
 		}
 
 		upPath := path.Join("Scans", file[pos+len(rootPath):])
+		if exists, err := apiStorageFileAccess.ObjectExists(apiDatasetBucket, upPath); err == nil && exists {
+			fmt.Printf("s3://%v/%v already exists, skipping upload\n", apiDatasetBucket, upPath)
+			continue
+		}
+
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return err
+		}
+
 		err = s3.WriteObject(apiDatasetBucket, upPath, data)
 		if err != nil {
 			return err

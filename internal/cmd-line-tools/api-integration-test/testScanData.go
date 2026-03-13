@@ -1448,7 +1448,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 					"source": "SI_INSTRUMENT",
 					"width": 752,
 					"height": 580,
-					"fileSize": 240084,
+					"fileSize64": "240084",
 					"purpose": "SIP_VIEWING",
 					"associatedScanIds": [
 						"048300551"

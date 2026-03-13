@@ -558,6 +558,7 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 	}
 
 	var imgWidth, imgHeight uint32
+	imgFileSize := uint64(req.ImageByteSize)
 
 	// If it's a multi-part image, we read from the file we saved
 	// otherwise we just read what's in memory
@@ -573,13 +574,14 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 		if err != nil {
 			return err
 		}
+		imgFileSize = uint64(len(req.ImageData))
 	}
 
 	// We make the names more unique this way...
 	savePath := path.Join(req.OriginScanId, req.Name)
 	scanImage := utils.MakeScanImage(
 		savePath,
-		req.ImageByteSize,
+		imgFileSize,
 		protos.ScanImageSource_SI_UPLOAD,
 		purpose,
 		associatedScanIds,
@@ -617,9 +619,14 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 		}
 	}
 
-	generateCoords, err := saveScanImage(params.Svcs.MongoDB, scan, scanImage)
+	generateCoords, isDuplicate, err := saveScanImage(params.Svcs.MongoDB, scan, scanImage)
 	if err != nil {
-		undoScanImagePUT(params.Svcs.MongoDB, req.Name, scanImage.ImagePath, scanImage.PyramidId, localFilePath, req.ImageByteSize, params.Svcs.Log)
+		// If this isn't an "already exists" error, we delete what we've saved already. We don't want
+		// to delete otherwise though, or we'd wipe out the one that already existed!
+		// TODO: Probably should do this with transactions
+		if !isDuplicate {
+			undoScanImagePUT(params.Svcs.MongoDB, req.Name, scanImage.ImagePath, scanImage.PyramidId, localFilePath, req.ImageByteSize, params.Svcs.Log)
+		}
 		return err
 	}
 
@@ -686,7 +693,8 @@ func savePyramidEntry(db *mongo.Database, pyramidId string, pyramidInfo *protos.
 	return nil
 }
 
-func saveScanImage(db *mongo.Database, scan *protos.ScanItem, scanImage *protos.ScanImage) (bool, error) {
+// Returns generate flag, is duplicate flag, and error
+func saveScanImage(db *mongo.Database, scan *protos.ScanItem, scanImage *protos.ScanImage) (bool, bool, error) {
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.ImagesName)
 
@@ -695,7 +703,7 @@ func saveScanImage(db *mongo.Database, scan *protos.ScanItem, scanImage *protos.
 	foundItems, err := coll.Find(ctx, bson.M{"originscanid": scanImage.OriginScanId}, options.Find())
 	// If there was an error, stop here
 	if err != nil && err != mongo.ErrNoDocuments {
-		return false, fmt.Errorf("Error while querying for other images for scan %v. Error was: %v", scanImage.OriginScanId, err)
+		return false, false, fmt.Errorf("Error while querying for other images for scan %v. Error was: %v", scanImage.OriginScanId, err)
 	}
 
 	generateCoords := err == mongo.ErrNoDocuments // This won't really happen... Find() doesn't return an error for none!
@@ -730,16 +738,16 @@ func saveScanImage(db *mongo.Database, scan *protos.ScanItem, scanImage *protos.
 	result, err := coll.InsertOne(ctx, scanImage, options.InsertOne())
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			return false, errorwithstatus.MakeBadRequestError(fmt.Errorf("%v already exists", scanImage.ImagePath))
+			return false, true, errorwithstatus.MakeBadRequestError(fmt.Errorf("%v already exists", scanImage.ImagePath))
 		}
-		return generateCoords, err
+		return generateCoords, false, err
 	}
 
 	if result.InsertedID != scanImage.ImagePath {
-		return generateCoords, fmt.Errorf("HandleImageUploadReq wrote id %v, got back %v", scanImage.ImagePath, result.InsertedID)
+		return generateCoords, false, fmt.Errorf("HandleImageUploadReq wrote id %v, got back %v", scanImage.ImagePath, result.InsertedID)
 	}
 
-	return generateCoords, nil
+	return generateCoords, false, nil
 }
 
 // Call to abort an image upload operation - if anything happens here we delete all the things that the
