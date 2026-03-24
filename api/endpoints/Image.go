@@ -496,6 +496,17 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 	if len(req.ImageData) <= 0 {
 		resp := &protos.ImageUploadHttpPartialInfo{}
 
+		// This is a good time to check if the image exists yet, otherwise we wait for the upload
+		// and then say it already exists - fail!
+		savePath := path.Join(req.OriginScanId, req.Name)
+
+		coll := params.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+		imgResult := coll.FindOne(context.TODO(), bson.M{"_id": savePath}, options.FindOne())
+		if imgResult.Err() == nil {
+			return errorwithstatus.MakeStatusError(409, fmt.Errorf("%v already exists", savePath))
+		} // else we could check for errors here but if we have a DB connectivity issue the last ScanItem check would've found it
+		//   and a not found error is actually what we want to continue on!
+
 		item, ok := filePartsRecvd[req.Name]
 		if ok {
 			resp.BytesReceived = item.BytesSoFar
