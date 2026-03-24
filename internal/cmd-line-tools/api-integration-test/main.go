@@ -183,6 +183,7 @@ func runLocalTests(apiHost string, isCI bool) {
 	//testJobs(apiHost)
 	u1Id, u2Id := testNotification(apiHost)
 	testImageUpload(apiHost, u1Id, u2Id)
+	testImageMultipartUpload(apiHost)
 	testImageMatchTransform(apiHost)
 	testSelectionMsgs(apiHost)
 	testNormalROIBulkWrite(apiHost)

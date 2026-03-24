@@ -462,7 +462,7 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 	// We only allow a few formats:
 	nameLowerCase := strings.ToLower(req.Name)
 	if !strings.HasSuffix(nameLowerCase, ".png") && !strings.HasSuffix(nameLowerCase, ".jpg") && !strings.HasSuffix(nameLowerCase, ".tif") {
-		return errorwithstatus.MakeBadRequestError(fmt.Errorf("Unexpected format: %v. Must be either PNG, JPG or 32bit float 4-channel TIF file", req.Name))
+		return errorwithstatus.MakeBadRequestError(fmt.Errorf("Unexpected format: %v. Must be PNG, JPG or TIF, or the special RGBU 32bit float 4-channel TIF format", req.Name))
 	}
 
 	if err := wsHelpers.CheckStringField(&req.OriginScanId, "OriginScanId", 1, wsHelpers.IdFieldMaxLength); err != nil {
@@ -538,6 +538,9 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 		if err != nil {
 			return err
 		}
+
+		// Also delete the image from our parts received log
+		delete(filePartsRecvd, req.Name)
 	}
 
 	// It's the last part, so here we finish everything...
@@ -885,7 +888,10 @@ func getMultipartImageRecvState(fileName string, partNo uint32, totalParts uint3
 
 	// It's more than 1 part, if we've got parts for it before we can verify a few things...
 	if item, ok := filePartsRecvd[fileName]; !ok {
-		// We don't have a log item for this
+		// We don't have a log item for this, so assume it's a start... we should be getting part 0!
+		if partNo != 0 {
+			return false, true, fmt.Errorf("Expected multipart upload to start with file part number 0, got: %v", partNo)
+		}
 		// Expecting more, signal to save the chunk
 		return false, true, nil
 	} else {
@@ -903,7 +909,7 @@ func getMultipartImageRecvState(fileName string, partNo uint32, totalParts uint3
 		}
 
 		// If it's the last part, process it as such
-		return item.LastPartNo == item.TotalParts-1, true, nil
+		return partNo == item.TotalParts-1, true, nil
 	}
 }
 
