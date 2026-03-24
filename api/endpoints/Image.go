@@ -659,6 +659,13 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 		return err
 	}
 
+	// Delete the temp file now!
+	err = os.Remove(localFilePath)
+	if err != nil {
+		params.Svcs.Log.Errorf("Failed to delete uploaded image file cache for: %v. Error: %v", localFilePath, err)
+		// No need to stop here though!
+	}
+
 	// From this point on, we consider the image created. If IJ generation fails or anything else, we don't roll back and delete
 
 	if generateCoords {
