@@ -711,16 +711,10 @@ func testImageMultipartUpload(apiHost string) {
 			OriginScanId: scanId,
 		},
 		imageUploadJWT,
-		http.StatusOK,
+		http.StatusConflict,
 	)
-
-	err = protojson.Unmarshal(respBody, resp)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	if resp.BytesReceived != 0 {
-		log.Fatalf("Expected resp body BytesReceived to be 0, got: %v", resp.BytesReceived)
+	if string(respBody) != "048300551/toResume.png already exists\n" {
+		log.Fatalf("Expected \"%v\", got \"%v\"", "048300551/toResume.png already exists", string(respBody))
 	}
 
 	respBody = getImageUploadResult(
