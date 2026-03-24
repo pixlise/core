@@ -516,7 +516,7 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 	if isMultipart {
 		params.Svcs.Log.Infof("Saving file %v chunk %v/%v", req.Name, req.PartNo, req.TotalParts)
 
-		err = saveChunk(req.Name, req.PartNo == 0, req.ImageData)
+		err = saveChunk(req.Name, req.PartNo, req.TotalParts, req.ImageData)
 		if err != nil {
 			return err
 		}
@@ -885,13 +885,7 @@ func getMultipartImageRecvState(fileName string, partNo uint32, totalParts uint3
 
 	// It's more than 1 part, if we've got parts for it before we can verify a few things...
 	if item, ok := filePartsRecvd[fileName]; !ok {
-		// We don't have a log item for this, save one
-		filePartsRecvd[fileName] = FilePartRecvItem{
-			LastPartNo: partNo,
-			TotalParts: totalParts,
-			BytesSoFar: byteLength,
-		}
-
+		// We don't have a log item for this
 		// Expecting more, signal to save the chunk
 		return false, true, nil
 	} else {
@@ -908,18 +902,14 @@ func getMultipartImageRecvState(fileName string, partNo uint32, totalParts uint3
 			return false, true, fmt.Errorf("Total parts changed from: %v, to: %v", item.TotalParts, totalParts)
 		}
 
-		// Update and save
-		item.BytesSoFar += byteLength
-		item.LastPartNo = partNo
-
-		filePartsRecvd[fileName] = item
-
 		// If it's the last part, process it as such
 		return item.LastPartNo == item.TotalParts-1, true, nil
 	}
 }
 
-func saveChunk(fileName string, truncate bool, data []byte) error {
+func saveChunk(fileName string, partNo uint32, totalParts uint32, data []byte) error {
+	truncate := partNo == 0
+
 	// Write it
 	imgPath, err := getImageChunkPath(fileName)
 	if err != nil {
@@ -953,7 +943,27 @@ func saveChunk(fileName string, truncate bool, data []byte) error {
 		return err
 	}
 
-	return f.Close()
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+
+	// We saved it, no errors, now update filePartsRecvd
+	if item, ok := filePartsRecvd[fileName]; !ok {
+		// We don't have a log item for this, save one
+		filePartsRecvd[fileName] = FilePartRecvItem{
+			LastPartNo: partNo,
+			TotalParts: totalParts,
+			BytesSoFar: uint64(len(data)),
+		}
+	} else {
+		item.BytesSoFar += uint64(len(data))
+		item.LastPartNo = partNo
+
+		filePartsRecvd[fileName] = item
+	}
+
+	return nil
 }
 
 // Returns local image path, error if needed
