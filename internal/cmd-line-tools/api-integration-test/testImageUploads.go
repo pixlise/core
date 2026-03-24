@@ -757,7 +757,7 @@ func testImageMultipartUpload(apiHost string) {
 		http.StatusInternalServerError,
 	)
 
-	if string(respBody) != "EExpected multipart upload to start with file part number 0, got: 3\n" {
+	if string(respBody) != "Expected multipart upload to start with file part number 0, got: 3\n" {
 		log.Fatalf("Expected \"%v\", got \"%v\"", "Expected multipart upload to start with file part number 0, got: 3", string(respBody))
 	}
 }
