@@ -108,8 +108,9 @@ func HandleScanListReq(req *protos.ScanListReq, hctx wsHelpers.HandlerContext) (
 	}
 
 	for _, scan := range scans {
-		owner := idToOwner[scan.Id]
-		scan.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+		if owner, ok := idToOwner[scan.Id]; ok {
+			scan.Owner = wsHelpers.MakeOwnerSummary(owner, hctx.SessUser, hctx.Svcs.MongoDB, hctx.Svcs.TimeStamper)
+		}
 	}
 
 	return &protos.ScanListResp{
