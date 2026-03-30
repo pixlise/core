@@ -22,12 +22,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/jwtparser"
+	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/utils"
 )
 
 const UrlStreamDownloadIndicator = "download"
@@ -120,7 +123,7 @@ func (h ApiCacheControlledStreamFromS3Handler) ServeHTTP(w http.ResponseWriter, 
 					if err != nil {
 						err = fmt.Errorf("Error copying file to the http response %s", err.Error())
 					} else {
-						h.APIServices.Log.Debugf("Download of \"%s\" complete. Wrote %v bytes", name, bytesWritten)
+						h.APIServices.Log.Debugf("Download of \"%s\" query: [%v] (CC) complete. Wrote %v bytes", name, printDebugPathParams(h.APIServices.Log, pathParams), bytesWritten)
 					}
 				}
 			}
@@ -185,7 +188,7 @@ func (h ApiStreamFromS3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request
 				if err != nil {
 					err = fmt.Errorf("error copying file to the http response %s", err.Error())
 				} else {
-					h.APIServices.Log.Debugf("Download of \"%s\" complete. Wrote %v bytes", name, bytesWritten)
+					h.APIServices.Log.Debugf("Download of \"%s\" query: [%v] complete. Wrote %v bytes", name, printDebugPathParams(h.APIServices.Log, pathParams), bytesWritten)
 				}
 			}
 		}
@@ -194,4 +197,23 @@ func (h ApiStreamFromS3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		logHandlerErrors(err, h.APIServices.Log, w, r)
 	}
+}
+
+// Prevents printing redundant query params that are built out of the path in router
+func printDebugPathParams(iLog logger.ILogger, pathParams map[string]string) string {
+	if iLog.GetLogLevel() != logger.LogDebug {
+		return "" // Don't do any processing if we're not even going to bother printing it
+	}
+
+	result := ""
+
+	keys := utils.GetMapKeys(pathParams)
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		if key != "hostname" && key != "scan" /*endpoints.ScanIdentifier*/ && key != "filename" /*endpoints.FileNameIdentifier*/ {
+			result += fmt.Sprintf("%v:%v ", key, pathParams[key])
+		}
+	}
+	return result
 }

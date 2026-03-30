@@ -22,7 +22,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -30,6 +32,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/utils"
 )
 
@@ -274,4 +277,132 @@ func GetPathFromS3Url(url string) (string, error) {
 	}
 
 	return trimmedUrl[slashPos+1:], nil
+}
+
+// Copies files to bucket
+// If preserveStructure is true, preserves directory structure from sourcePath.
+// If preserveStructure is false, copies all files flat (just filename, no subdirectories).
+func CopyToBucket(remoteFS FileAccess, datasetID string, sourcePath string, destBucket string, destPath string, preserveStructure bool, log logger.ILogger) error {
+	var uploadError error
+
+	localFS := FSAccess{}
+	fileList, _ := localFS.ListObjects(sourcePath, "")
+	count := 0
+	totalCount := len(fileList)
+
+	jobs := make(chan uploadJob, totalCount)
+	results := make(chan uploadResult, totalCount)
+
+	// Start workers
+	numUploaders := 1
+	if totalCount > 10 {
+		numUploaders = 5
+		for w := 1; w <= numUploaders; w++ {
+			go uploadWorker(w, jobs, results)
+		}
+	}
+
+	err := filepath.Walk(sourcePath, func(currentPath string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			var uploadPath string
+
+			if preserveStructure {
+				// Calculate relative path from sourcePath to preserve directory structure
+				relPath, err := filepath.Rel(sourcePath, currentPath)
+				if err != nil {
+					log.Errorf("Failed to calculate relative path: %v", err)
+					uploadError = err
+					return nil
+				}
+				uploadPath = path.Join(destPath, filepath.ToSlash(relPath))
+			} else {
+				// Flat structure: just use the base filename
+				sourceFile := filepath.Base(currentPath)
+				uploadPath = path.Join(destPath, sourceFile)
+			}
+
+			jobs <- uploadJob{
+				currentPath:  currentPath,
+				uploadPath:   uploadPath,
+				destBucket:   destBucket,
+				log:          log,
+				remoteFS:     remoteFS,
+				currentCount: count + 1,
+				totalCount:   totalCount,
+			}
+
+			count++
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if numUploaders > 1 && uploadError == nil {
+		close(jobs)
+
+		// Check each upload for an error
+		fails := 0
+		failedPaths := []string{}
+		var firstError error
+		for c := 0; c < totalCount; c++ {
+			result := <-results
+			if result.err != nil {
+				if firstError == nil {
+					firstError = result.err
+				}
+				fails++
+
+				if len(failedPaths) < 10 {
+					failedPaths = append(failedPaths, result.uploadPath)
+				}
+			}
+		}
+
+		if fails > 0 {
+			uploadError = fmt.Errorf("Failed to upload %v files. Paths (up to 10): %v. First error: %v", fails, strings.Join(failedPaths, ","), firstError)
+		}
+	}
+
+	return uploadError
+}
+
+type uploadJob struct {
+	currentPath string
+	uploadPath  string
+
+	destBucket string
+
+	totalCount   int
+	currentCount int
+
+	log logger.ILogger
+
+	remoteFS FileAccess
+}
+
+type uploadResult struct {
+	uploadPath string
+	err        error
+}
+
+func uploadWorker(id int, jobs <-chan uploadJob, results chan<- uploadResult) {
+	for j := range jobs {
+		data, err := os.ReadFile(j.currentPath)
+		if err != nil {
+			j.log.Errorf("Failed to read file for upload: %v", j.currentPath)
+		} else {
+			j.log.Infof("-Uploading [%v/%v]: %v", j.currentCount, j.totalCount, j.currentPath)
+			j.log.Infof("---->to s3://%v/%v", j.destBucket, j.uploadPath)
+			err = j.remoteFS.WriteObject(j.destBucket, j.uploadPath, data)
+
+			if err != nil {
+				j.log.Errorf("Failed to upload to s3://%v/%v: %v", j.destBucket, j.uploadPath, err)
+			}
+		}
+
+		results <- uploadResult{err: err, uploadPath: j.uploadPath}
+	}
 }

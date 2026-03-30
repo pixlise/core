@@ -246,6 +246,8 @@ func HandleImageDeleteReq(req *protos.ImageDeleteReq, hctx wsHelpers.HandlerCont
 		return nil, err
 	}
 
+	wsHelpers.FixScanImageFileSize(&img)
+
 	// If it's the default image in any scan, we can't delete it
 	filter := bson.D{{Key: "defaultimagefilename", Value: img.ImagePath}}
 	opt := options.Find()
@@ -353,6 +355,7 @@ func HandleImageSetMatchTransformReq(req *protos.ImageSetMatchTransformReq, hctx
 	if err != nil {
 		return nil, err
 	}
+	wsHelpers.FixScanImageFileSize(&img)
 
 	// Now look up any associated ids
 	if len(img.AssociatedScanIds) <= 0 {

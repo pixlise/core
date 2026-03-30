@@ -21,6 +21,7 @@ package apiRouter
 
 import (
 	"net/http"
+	"strings"
 
 	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/gorilla/mux"
@@ -80,7 +81,7 @@ func (r *ApiObjectRouter) addHandler(path string, methodPerm MethodPermission, h
 	handlerToSave := handler
 
 	// If needed, wrap in a sentry handler
-	if r.Svcs.Config.EnvironmentName != "unittest" && r.Svcs.Config.EnvironmentName != "local" {
+	if r.Svcs.Config.EnvironmentName != "unittest" && strings.Contains(r.Svcs.Config.EnvironmentName, "local") {
 		sentryHandler := sentryhttp.New(sentryhttp.Options{
 			Repanic:         true,
 			WaitForDelivery: true,

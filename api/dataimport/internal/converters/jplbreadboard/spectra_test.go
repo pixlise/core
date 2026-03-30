@@ -47,11 +47,11 @@ func Example_getSpectraFiles() {
 	f, l := getSpectraFiles(files, true, &logger.StdErrLogger{})
 
 	for _, v := range f {
-		fmt.Printf(v + "\n")
+		fmt.Println(v)
 	}
 
 	for _, v := range l {
-		fmt.Printf(v + "\n")
+		fmt.Println(v)
 	}
 
 	// Output:

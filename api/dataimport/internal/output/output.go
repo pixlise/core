@@ -31,9 +31,9 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
+	"github.com/pixlise/core/v4/api/dataimport/scanOwner"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
-	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/beamLocation"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/gdsfilename"
@@ -281,45 +281,9 @@ func (s *PIXLISEDataSaver) Save(
 		}
 	}
 
-	// Look up who to auto-share with based on creator ID
-	coll := db.Collection(dbCollections.ScanAutoShareName)
-	optFind := options.FindOne()
-
-	autoShare := &protos.ScanAutoShareEntry{}
-	sharer := data.CreatorUserId
-
-	if len(sharer) <= 0 {
-		// we dont have a creator, so probably started as an automated process. Here we
-		// try to look up the auto-share destination by instrument type
-		sharer = data.Instrument.String()
-	}
-
-	jobLog.Infof("Looking up auto-share group(s) for: \"%v\"", sharer)
-
-	autoShareResult := coll.FindOne(context.TODO(), bson.D{{Key: "_id", Value: sharer}}, optFind)
-	if autoShareResult.Err() != nil {
-		// We couldn't find someone to auto-share it with, if we don't have anyone to share with, just fail here
-		if autoShareResult.Err() == mongo.ErrNoDocuments {
-			// If the user has no auto-share destination configured, share with just the user - BUT if we're
-			// not dealing with a user here, we must be importing via the pipeline, in which case it should've
-			// been configured to share already...
-			if len(data.CreatorUserId) > 0 {
-				jobLog.Infof("No auto-share destination found, so only importing user will be able to access this dataset.")
-				autoShare.Id = data.CreatorUserId
-				autoShare.Viewers = &protos.UserGroupList{UserIds: []string{}, GroupIds: []string{}}
-				autoShare.Editors = &protos.UserGroupList{UserIds: []string{data.CreatorUserId}, GroupIds: []string{}}
-			} else {
-				return fmt.Errorf("Cannot work out groups to auto-share imported dataset with")
-			}
-		} else {
-			return autoShareResult.Err()
-		}
-	} else {
-		err := autoShareResult.Decode(autoShare)
-
-		if err != nil {
-			return fmt.Errorf("Failed to decode auto share configuration: %v", err)
-		}
+	autoShare, err := scanOwner.ReadAutoSharer(data.CreatorUserId, data.Instrument, db, jobLog)
+	if err != nil {
+		return err
 	}
 
 	// Delete images and other DB entries if need be
@@ -437,7 +401,7 @@ func (s *PIXLISEDataSaver) Save(
 
 	jobLog.Infof("Writing summary to DB for %v...", summaryData.Id)
 
-	coll = db.Collection(dbCollections.ScansName)
+	coll := db.Collection(dbCollections.ScansName)
 	opt := options.Update().SetUpsert(true)
 
 	result, err := coll.UpdateOne(context.TODO(), bson.D{{Key: "_id", Value: summaryData.Id}}, bson.D{{Key: "$set", Value: summaryData}}, opt)
@@ -450,18 +414,8 @@ func (s *PIXLISEDataSaver) Save(
 	}
 
 	// Set ownership
-	ownerItem := wsHelpers.MakeOwnerForWrite(summaryData.Id, protos.ObjectType_OT_SCAN, summaryData.CreatorUserId, creationUnixTimeSec)
-
-	ownerItem.Viewers = autoShare.Viewers
-	ownerItem.Editors = autoShare.Editors
-
-	coll = db.Collection(dbCollections.OwnershipName)
-	opt = options.Update().SetUpsert(true)
-
-	jobLog.Infof("Writing ownership to DB for scan %v...", ownerItem.Id)
-	result, err = coll.UpdateOne(context.TODO(), bson.D{{Key: "_id", Value: ownerItem.Id}}, bson.D{{Key: "$set", Value: ownerItem}}, opt)
+	err = scanOwner.WriteAutoSharedOwnership(summaryData.Id, protos.ObjectType_OT_SCAN, autoShare, summaryData.CreatorUserId, creationUnixTimeSec, db, jobLog)
 	if err != nil {
-		jobLog.Errorf("Failed to write ownership item to DB: %v", err)
 		return err
 	}
 
@@ -562,13 +516,30 @@ func saveSpectrumTypeCounts(exp *protos.Experiment, data dataConvertModels.Outpu
 	exp.PseudoIntensities = pseudoIntensityCount
 }
 
+func getSortedKeys(pmcData map[int32]*dataConvertModels.PMCData) []int32 {
+	pmcs := []int{}
+	pmcKeys := utils.GetMapKeys(pmcData)
+	for _, key := range pmcKeys {
+		pmcs = append(pmcs, int(key))
+	}
+	sort.Ints(pmcs)
+
+	result := []int32{}
+	for _, pmc := range pmcs {
+		result = append(result, int32(pmc))
+	}
+
+	return result
+}
+
 func copyImagesToOutput(
 	contextImgDir string,
 	associatedScanIds []string,
 	originScanId string,
 	outPath string,
 	data dataConvertModels.OutputData,
-	db *mongo.Database, jobLog logger.ILogger) (string, error) {
+	db *mongo.Database,
+	jobLog logger.ILogger) (string, error) {
 	defaultContextImage := ""
 
 	// Copy the context images into the output dir
@@ -577,13 +548,20 @@ func copyImagesToOutput(
 
 	pmcToImage := map[int32]string{}
 
-	for pmc, item := range data.PerPMCData {
+	// Lets read in PMC order, this wasn't relevant before
+	//for pmc, item := range data.PerPMCData {
+	pmcs := getSortedKeys(data.PerPMCData)
+	for _, pmc := range pmcs {
+		item := data.PerPMCData[pmc]
+
 		if len(item.ContextImageSrc) > 0 {
 			fromImgFile := filepath.Join(contextImgDir, item.ContextImageSrc)
 			outImgFile := filepath.Join(outPath, item.ContextImageDst)
 
-			// Make sure output format is PNG
-			if strings.ToUpper(filepath.Ext(fromImgFile)) == ".TIF" {
+			// Check if tiff and needs conversion
+			ext := strings.ToLower(filepath.Ext(fromImgFile))
+			if ext == ".tif" || ext == ".tiff" {
+				// Just a normal tiff (non pyramid), convert to png
 				outImgFile = outImgFile[0:len(outImgFile)-3] + "png"
 				jobLog.Infof("  Convert img PMC[%v] %v -> %v", pmc, fromImgFile, outImgFile)
 
@@ -616,7 +594,17 @@ func copyImagesToOutput(
 				}
 			}
 
-			err = insertImageDBEntryForImage(outImgFile, db, protos.ScanImageSource_SI_INSTRUMENT, protos.ScanImagePurpose_SIP_VIEWING, associatedScanIds, originScanId, originURL, nil, jobLog)
+			err = insertImageDBEntryForImage(
+				outImgFile,
+				db,
+				protos.ScanImageSource_SI_INSTRUMENT,
+				protos.ScanImagePurpose_SIP_VIEWING,
+				associatedScanIds,
+				originScanId,
+				originURL,
+				nil,
+				jobLog)
+
 			if err != nil {
 				return "", err
 			}
@@ -756,16 +744,19 @@ func insertImageDBEntryForImage(
 
 	img := utils.MakeScanImage(
 		savePath,
-		uint32(stats.Size()),
+		uint64(stats.Size()),
 		source,
 		purpose,
 		associatedScanIds,
 		originScanId,
 		originImageURL,
 		matchInfo,
+		"",
+		"",
 		imgWidth,
 		imgHeight,
 	)
+
 	return insertImageDBEntry(db, img, jobLog)
 }
 

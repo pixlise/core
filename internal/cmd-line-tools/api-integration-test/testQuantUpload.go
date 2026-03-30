@@ -158,9 +158,9 @@ func testQuantUpload(apiHost string) {
 							"elements": ["Ca"],
 							"quantMode": "ABManual"
 						},
-						"dataBucket": "devpixlise-datasets0030ee04-ox1crk4uej2x",
+						"dataBucket": "%v",
 						"scanFilePath": "Scans/the-scan-id/dataset.bin",
-						"piquantJobsBucket": "devpixlise-piquantjobs2a7b0239-wcx2ijxt49jc",
+						"piquantJobsBucket": "%v",
 						"startUnixTimeSec": "${SECAGO=3}",
 						"requestorUserId": "${USERID}",
 						"PIQUANTVersion": "N/A",
@@ -176,7 +176,7 @@ func testQuantUpload(apiHost string) {
 						"message": "user-supplied quantification processed",
 						"startUnixTimeSec": "${SECAGO=3}",
 						"endUnixTimeSec": "${SECAGO=3}",
-						"outputFilePath": "Quantifications/the-scan-id/auth0|649e54491154cac52ec21718",
+						"outputFilePath": "Quantifications/the-scan-id/%v",
 						"name": "uploaded Quant",
 						"elements": [
 							"Ca"
@@ -184,7 +184,7 @@ func testQuantUpload(apiHost string) {
 					},
 					"owner": {
 						"creatorUser": {
-							"id": "auth0|649e54491154cac52ec21718",
+							"id": "%v",
 							"name": "test1@pixlise.org - WS Integration Test",
 							"email": "test1@pixlise.org"
 						},
@@ -223,7 +223,7 @@ func testQuantUpload(apiHost string) {
 					]
 				}
 			}
-		}`, scanId, scanId),
+		}`, scanId, scanId, apiDatasetBucket, apiJobsBucket, u1.GetUserId(), u1.GetUserId()),
 	)
 
 	u1.AddSendReqAction("Delete uploaded quant (should work)",

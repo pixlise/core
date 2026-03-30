@@ -131,6 +131,28 @@ func main() {
 
 	router.AddGenericHandler("/images", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutImage)
 
+	// // Requesting pyramid tiles (simple local version for now)
+	// router.AddPublicHandler(
+	// 	apiRouter.MakeEndpointPath("/pyramid-tiles",
+	// 		endpoints.ScanIdentifier,
+	// 		endpoints.FileNameIdentifier,
+	// 		endpoints.PageIdentifier,
+	// 		endpoints.LevelIdentifier,
+	// 		endpoints.TileXIdentifier,
+	// 		endpoints.TileYIdentifier),
+	// 	"GET",
+	// 	endpoints.GetPyramidTileSimple,
+	// )
+
+	// // Requesting pyramid metadata (ImagePyramid proto)
+	// router.AddPublicHandler(
+	// 	apiRouter.MakeEndpointPath("/pyramid-info",
+	// 		endpoints.ScanIdentifier,
+	// 		endpoints.FileNameIdentifier),
+	// 	"GET",
+	// 	endpoints.GetPyramidInfoSimple,
+	// )
+
 	router.AddGenericHandler("/scan", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutScanData)
 
 	router.AddGenericHandler("/memoise", apiRouter.MakeMethodPermission("GET", permission.PermPublic), endpoints.GetMemoise)
@@ -231,7 +253,7 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 	iLog.SetLogLevel(cfg.LogLevel)
 
 	// Connect to mongo
-	mongoClient, mongoDetails, err := mongoDBConnection.Connect(sess, cfg.MongoSecret, iLog)
+	mongoClient, mongoDetails, err := mongoDBConnection.Connect(sess, cfg.MongoSecret, iLog, cfg.MongoDebug)
 	if err != nil {
 		log.Fatal(err)
 	}

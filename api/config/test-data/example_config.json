@@ -17,11 +17,8 @@
     "MongoSecret": "someSecret",
     "PiquantDockerImage": "ghcr.io/pixlise/piquant/runner:3.2.14",
     "PiquantJobsBucket": "piquantJobsBucket",
-    "PosterImage": "registry.gitlab.com/pixlise/ocs-poster:latest",
-    "QuantDestinationPackage": "package-id",
     "QuantExecutor": "kubernetes",
     "QuantNamespace": "piquant-map",
-    "QuantObjectType": "object-type",
     "SentryEndpoint": "sentry.example.com",
     "UsersBucket": "usersBucket"
   }

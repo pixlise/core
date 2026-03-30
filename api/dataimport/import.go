@@ -23,7 +23,6 @@ package dataimport
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -216,7 +215,7 @@ func ImportFromLocalFileSystem(
 	saver := output.PIXLISEDataSaver{}
 	err = saver.Save(*data, contextImageSrcPath, outPath, filepath.Join(outputImagesPath, data.DatasetID), db, time.Now().Unix(), log)
 	if err != nil {
-		return "", fmt.Errorf("Failed to write dataset file: %v. Error: %v", outPath, err)
+		return "", fmt.Errorf("Error when writing scan data: %v. Error: %v", outPath, err)
 	}
 
 	log.Infof("Running diffraction DB generator...")
@@ -228,13 +227,15 @@ func ImportFromLocalFileSystem(
 
 	// Finally, copy scan files to scans, and images to images
 	log.Infof("Copying generated dataset to bucket: %v...", datasetBucket)
-	err = copyToBucket(remoteFS, data.DatasetID, outputScanPath, datasetBucket, filepaths.DatasetScansRoot, log)
+	err = fileaccess.CopyToBucket(remoteFS, data.DatasetID, outputScanPath, datasetBucket, filepaths.DatasetScansRoot, false, log)
 	if err != nil {
 		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
 	}
 
 	log.Infof("Copying images to bucket: %v...", datasetBucket)
-	err = copyToBucket(remoteFS, data.DatasetID, outputImagesPath, datasetBucket, filepaths.DatasetImagesRoot, log)
+	imagePath := filepath.Join(outputImagesPath, data.DatasetID)
+
+	err = fileaccess.CopyToBucket(remoteFS, data.DatasetID, imagePath, datasetBucket, filepaths.DatasetImagesRoot, false, log)
 	if err != nil {
 		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
 	}
@@ -282,41 +283,6 @@ func createPeakDiffractionDB(datasetPath string, savepath string, jobLog logger.
 	}
 
 	return nil
-}
-
-// Copies files to bucket
-// NOTE: Assumes flat list of files, no folder structure!
-func copyToBucket(remoteFS fileaccess.FileAccess, datasetID string, sourcePath string, destBucket string, destPath string, log logger.ILogger) error {
-	var uploadError error
-
-	err := filepath.Walk(sourcePath, func(sourcePath string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			data, err := os.ReadFile(sourcePath)
-			if err != nil {
-				log.Errorf("Failed to read file for upload: %v", sourcePath)
-				uploadError = err
-			} else {
-				sourceFile := filepath.Base(sourcePath)
-				uploadPath := path.Join(destPath, datasetID, sourceFile)
-
-				log.Infof("-Uploading: %v", sourcePath)
-				log.Infof("---->to s3://%v/%v", destBucket, uploadPath)
-				err = remoteFS.WriteObject(destBucket, uploadPath, data)
-
-				if err != nil {
-					log.Errorf("Failed to upload to s3://%v/%v: %v", destBucket, uploadPath, err)
-					uploadError = err
-				}
-			}
-		}
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	return uploadError
 }
 
 func getUpdateType(newSummary *protos.ScanItem, oldSummary *protos.ScanItem) (string, error) {

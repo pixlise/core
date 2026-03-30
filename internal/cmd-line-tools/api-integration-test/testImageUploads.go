@@ -28,6 +28,7 @@ import (
 	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/wstestlib"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -52,7 +53,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		},
 	})
 
-	checkImageUploadError(
+	checkImageUploadResult(
 		"Upload bad format image for scan",
 		apiHost,
 		&protos.ImageUploadHttpRequest{
@@ -61,10 +62,10 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		},
 		imageUploadJWT,
 		http.StatusBadRequest,
-		"Unexpected format: file_Name.bmp. Must be either PNG, JPG or 32bit float 4-channel TIF file",
+		"Unexpected format: file_Name.bmp. Must be PNG, JPG or TIF, or the special RGBU 32bit float 4-channel TIF format",
 	)
 
-	checkImageUploadError(
+	checkImageUploadResult(
 		"Upload with missing name",
 		apiHost,
 		&protos.ImageUploadHttpRequest{
@@ -75,7 +76,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		"Name is too short",
 	)
 
-	checkImageUploadError(
+	checkImageUploadResult(
 		"Upload missing origin id for scan",
 		apiHost,
 		&protos.ImageUploadHttpRequest{
@@ -87,7 +88,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		"OriginScanId is too short",
 	)
 
-	checkImageUploadError(
+	checkImageUploadResult(
 		"Upload missing origin id for scan",
 		apiHost,
 		&protos.ImageUploadHttpRequest{
@@ -102,7 +103,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 
 	// TODO: test uploading corrupt image
 	/*
-		checkImageUploadError(
+		checkImageUploadResult(
 			"Upload corrupt image",
 			apiHost,
 			&protos.ImageUploadHttpRequest{
@@ -138,7 +139,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 
-	checkImageUploadError(
+	checkImageUploadResult(
 		"Upload should fail because no access to originScanId",
 		apiHost,
 		&protos.ImageUploadHttpRequest{
@@ -155,7 +156,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, &protos.UserGroupList{UserIds: []string{u1.GetUserId()}}, nil)
 
 	// Upload success
-	checkImageUploadError(
+	checkImageUploadResult(
 		"Upload OK",
 		apiHost,
 		&protos.ImageUploadHttpRequest{
@@ -169,7 +170,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	)
 
 	// Upload another so we can switch default images
-	checkImageUploadError(
+	checkImageUploadResult(
 		"Upload another OK",
 		apiHost,
 		&protos.ImageUploadHttpRequest{
@@ -183,7 +184,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	)
 
 	// Duplicate upload should fail
-	checkImageUploadError(
+	checkImageUploadResult(
 		"Duplicate upload should fail",
 		apiHost,
 		&protos.ImageUploadHttpRequest{
@@ -206,7 +207,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 				"source": "SI_UPLOAD",
 				"width": 5,
 				"height": 5,
-				"fileSize": 596,
+				"fileSize64": "596",
 				"purpose": "SIP_VIEWING",
 				"associatedScanIds": [
 					"%v"
@@ -420,8 +421,343 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	wstestlib.ExecQueuedActions(&u1)
 }
 
-func checkImageUploadError(action string, apiHost string, req *protos.ImageUploadHttpRequest, imageUploadJWT string, expStatus int, expBody string) {
-	fmt.Printf("%v sending request:", action)
+func testImageMultipartUpload(apiHost string) {
+	imageUploadJWT := client.GetJWTFromCache(apiHost, test1Username, test1Password)
+
+	// TODO: test uploading corrupt image
+	/*
+		checkImageUploadResult(
+			"Upload corrupt image",
+			apiHost,
+			&protos.ImageUploadHttpRequest{
+				Name:      "file_Name.png",
+				OriginScanId: "scan123",
+				ImageData: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			},
+			imageUploadJWT,
+			http.StatusNotFound,
+			"scan123 not found"
+		)*/
+
+	scanId := scan_Naltsos.Id
+
+	respBody := getImageUploadResult(
+		"Checking resume status",
+		apiHost,
+		&protos.ImageUploadHttpRequest{
+			Name:         "toResume.png",
+			OriginScanId: scanId,
+		},
+		imageUploadJWT,
+		http.StatusOK,
+	)
+
+	resp := &protos.ImageUploadHttpPartialInfo{}
+	err := protojson.Unmarshal(respBody, resp)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if resp.BytesReceived != 0 {
+		log.Fatalf("Expected resp body BytesReceived to be 0, got: %v", resp.BytesReceived)
+	}
+
+	respBody = getImageUploadResult(
+		"Send 3rd chunk of image, should fail, not the first one expected",
+		apiHost,
+		&protos.ImageUploadHttpRequest{
+			Name:          "toResume.png",
+			OriginScanId:  scanId,
+			ImageData:     uploadImgPNGData[20:60],
+			ImageByteSize: uint64(len(uploadImgPNGData)),
+			PartNo:        3,
+			TotalParts:    4,
+		},
+		imageUploadJWT,
+		http.StatusInternalServerError,
+	)
+
+	if string(respBody) != "Expected multipart upload to start with file part number 0, got: 3\n" {
+		log.Fatalf("Expected \"%v\", got \"%v\"", "Expected multipart upload to start with file part number 0, got: 3", string(respBody))
+	}
+
+	respBody = getImageUploadResult(
+		"Send first chunk of image",
+		apiHost,
+		&protos.ImageUploadHttpRequest{
+			Name:          "toResume.png",
+			OriginScanId:  scanId,
+			ImageData:     uploadImgPNGData[0:20],
+			ImageByteSize: uint64(len(uploadImgPNGData)),
+			PartNo:        0,
+			TotalParts:    4,
+		},
+		imageUploadJWT,
+		http.StatusOK,
+	)
+
+	if len(respBody) > 0 {
+		log.Fatalln("Expected empty response")
+	}
+
+	respBody = getImageUploadResult(
+		"Send second chunk of image",
+		apiHost,
+		&protos.ImageUploadHttpRequest{
+			Name:          "toResume.png",
+			OriginScanId:  scanId,
+			ImageData:     uploadImgPNGData[20:50],
+			ImageByteSize: uint64(len(uploadImgPNGData)),
+			PartNo:        1,
+			TotalParts:    4,
+		},
+		imageUploadJWT,
+		http.StatusOK,
+	)
+
+	if len(respBody) > 0 {
+		log.Fatalln("Expected empty response")
+	}
+
+	respBody = getImageUploadResult(
+		"Checking resume status after 2 chunks uploaded",
+		apiHost,
+		&protos.ImageUploadHttpRequest{
+			Name:         "toResume.png",
+			OriginScanId: scanId,
+		},
+		imageUploadJWT,
+		http.StatusOK,
+	)
+
+	err = protojson.Unmarshal(respBody, resp)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if resp.BytesReceived != 50 {
+		log.Fatalf("Expected resp body BytesReceived to be 50, got: %v", resp.BytesReceived)
+	}
+
+	respBody = getImageUploadResult(
+		"Send duplicate 2nd chunk of image, should error",
+		apiHost,
+		&protos.ImageUploadHttpRequest{
+			Name:          "toResume.png",
+			OriginScanId:  scanId,
+			ImageData:     uploadImgPNGData[50:70],
+			ImageByteSize: uint64(len(uploadImgPNGData)),
+			PartNo:        1,
+			TotalParts:    4,
+		},
+		imageUploadJWT,
+		http.StatusInternalServerError,
+	)
+
+	if string(respBody) != "Expected file part number: 2, got: 1\n" {
+		log.Fatalf("Expected \"%v\", got \"%v\"", "Expected file part number: 2, got: 1", string(respBody))
+	}
+
+	respBody = getImageUploadResult(
+		"Send 4th chunk (skipping 3rd), should error",
+		apiHost,
+		&protos.ImageUploadHttpRequest{
+			Name:          "toResume.png",
+			OriginScanId:  scanId,
+			ImageData:     uploadImgPNGData[180:],
+			ImageByteSize: uint64(len(uploadImgPNGData)),
+			PartNo:        3,
+			TotalParts:    4,
+		},
+		imageUploadJWT,
+		http.StatusInternalServerError,
+	)
+
+	if string(respBody) != "Expected file part number: 2, got: 3\n" {
+		log.Fatalf("Expected \"%v\", got \"%v\"", "Expected file part number: 2, got: 3", string(respBody))
+	}
+
+	respBody = getImageUploadResult(
+		"Checking resume status after 2 chunks and some errors uploaded",
+		apiHost,
+		&protos.ImageUploadHttpRequest{
+			Name:         "toResume.png",
+			OriginScanId: scanId,
+		},
+		imageUploadJWT,
+		http.StatusOK,
+	)
+
+	err = protojson.Unmarshal(respBody, resp)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if resp.BytesReceived != 50 {
+		log.Fatalf("Expected resp body BytesReceived to be 50, got: %v", resp.BytesReceived)
+	}
+
+	// Check that we can't request partially uploaded image yet
+	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
+		Host: apiHost,
+		User: test1Username,
+		Pass: test1Password,
+	})
+	u1.AddSendReqAction("Get image",
+		`{"imageGetReq":{"imageName": "048300551/toResume.png"}}`,
+		`{
+			"msgId": 1,
+  			"status": "WS_SERVER_ERROR",
+			"errorText": "Failed to find image 048300551/toResume.png, version count was 0",
+			"imageGetResp": {}
+		}`,
+	)
+
+	u1.CloseActionGroup([]string{}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
+
+	respBody = getImageUploadResult(
+		"Send third chunk of image",
+		apiHost,
+		&protos.ImageUploadHttpRequest{
+			Name:          "toResume.png",
+			OriginScanId:  scanId,
+			ImageData:     uploadImgPNGData[50:200],
+			ImageByteSize: uint64(len(uploadImgPNGData)),
+			PartNo:        2,
+			TotalParts:    4,
+		},
+		imageUploadJWT,
+		http.StatusOK,
+	)
+
+	if len(respBody) > 0 {
+		log.Fatalln("Expected empty response")
+	}
+
+	respBody = getImageUploadResult(
+		"Send last chunk of image, should be finished",
+		apiHost,
+		&protos.ImageUploadHttpRequest{
+			Name:          "toResume.png",
+			OriginScanId:  scanId,
+			ImageData:     uploadImgPNGData[200:],
+			ImageByteSize: uint64(len(uploadImgPNGData)),
+			PartNo:        3,
+			TotalParts:    4,
+		},
+		imageUploadJWT,
+		http.StatusOK,
+	)
+
+	if len(respBody) > 0 {
+		log.Fatalln("Expected empty response")
+	}
+
+	// Check that we CAN request fully uploaded image
+	u1.AddSendReqAction("Get image",
+		`{"imageGetReq":{"imageName": "048300551/toResume.png"}}`,
+		fmt.Sprintf(`{"msgId": 2,
+			"status": "WS_OK",
+			"imageGetResp":{
+				"image": {
+					"source": "SI_UPLOAD",
+					"width": 5,
+					"height": 5,
+					"fileSize64": "596",
+					"purpose": "SIP_VIEWING",
+					"associatedScanIds": [
+						"%v"
+					],
+					"originScanId": "%v",
+					"imagePath": "%v/toResume.png"
+				}
+			}
+		}`, scanId, scanId, scanId),
+	)
+
+	u1.CloseActionGroup([]string{
+		`{"notificationUpd": {
+			"notification": {
+				"id": "${IGNORE}",
+				"notificationType": "NT_USER_MESSAGE",
+				"subject": "New image added to scan: 048300551",
+				"contents": "A new image named toResume.png was added to scan: 048300551 (id: 048300551)",
+				"from": "Data Importer",
+				"timeStampUnixSec": "${SECAGO=10}",
+				"actionLink": "analysis?scan_id=048300551&image=048300551/toResume.png"
+			}
+		}}`,
+		`{"notificationUpd": {
+				"notification": {
+					"notificationType": "NT_SYS_DATA_CHANGED",
+					"imageName": "048300551/toResume.png",
+					"scanIds": [
+						"048300551"
+					]
+				}
+			}
+		}`,
+	}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
+
+	respBody = getImageUploadResult(
+		"Checking resume status after image upload completed, should signal received 0 bytes because it's been completed/processed/cleared",
+		apiHost,
+		&protos.ImageUploadHttpRequest{
+			Name:         "toResume.png",
+			OriginScanId: scanId,
+		},
+		imageUploadJWT,
+		http.StatusConflict,
+	)
+	if string(respBody) != "048300551/toResume.png already exists\n" {
+		log.Fatalf("Expected \"%v\", got \"%v\"", "048300551/toResume.png already exists", string(respBody))
+	}
+
+	respBody = getImageUploadResult(
+		"Send extra 5th chunk of image, should fail",
+		apiHost,
+		&protos.ImageUploadHttpRequest{
+			Name:          "toResume.png",
+			OriginScanId:  scanId,
+			ImageData:     uploadImgPNGData[200:230],
+			ImageByteSize: uint64(len(uploadImgPNGData)),
+			PartNo:        4,
+			TotalParts:    4,
+		},
+		imageUploadJWT,
+		http.StatusInternalServerError,
+	)
+
+	if string(respBody) != "Expected multipart upload to start with file part number 0, got: 4\n" {
+		log.Fatalf("Expected \"%v\", got \"%v\"", "Expected multipart upload to start with file part number 0, got: 4", string(respBody))
+	}
+
+	respBody = getImageUploadResult(
+		"Send last chunk of image again, should fail",
+		apiHost,
+		&protos.ImageUploadHttpRequest{
+			Name:          "toResume.png",
+			OriginScanId:  scanId,
+			ImageData:     uploadImgPNGData[200:],
+			ImageByteSize: uint64(len(uploadImgPNGData)),
+			PartNo:        3,
+			TotalParts:    4,
+		},
+		imageUploadJWT,
+		http.StatusInternalServerError,
+	)
+
+	if string(respBody) != "Expected multipart upload to start with file part number 0, got: 3\n" {
+		log.Fatalf("Expected \"%v\", got \"%v\"", "Expected multipart upload to start with file part number 0, got: 3", string(respBody))
+	}
+}
+
+func getImageUploadResult(action string, apiHost string, req *protos.ImageUploadHttpRequest, imageUploadJWT string, expStatus int) []byte {
+	fmt.Printf("%v sending request:\n", action)
 
 	uploadBody, err := proto.Marshal(req)
 	if err != nil {
@@ -434,13 +770,23 @@ func checkImageUploadError(action string, apiHost string, req *protos.ImageUploa
 		log.Fatalln(err)
 	}
 
+	if status != expStatus {
+		log.Fatalf("[%v] Expected status=%v, got status=%v", action, expStatus, status)
+	}
+
+	return respBody
+}
+
+func checkImageUploadResult(action string, apiHost string, req *protos.ImageUploadHttpRequest, imageUploadJWT string, expStatus int, expBody string) {
+	respBody := getImageUploadResult(action, apiHost, req, imageUploadJWT, expStatus)
+
 	expBodyCompare := expBody
 	if len(expBody) > 0 {
 		expBodyCompare += "\n"
 	}
 
-	if status != expStatus || string(respBody) != expBodyCompare {
-		log.Fatalf("[%v] Expected status=%v, body=%v.\nGot status=%v, body=%v", action, expStatus, expBody, status, string(respBody))
+	if string(respBody) != expBodyCompare {
+		log.Fatalf("[%v] Expected body=%v.\nGot, body=%v", action, expBody, string(respBody))
 	}
 }
 
@@ -513,7 +859,7 @@ func testImageMatchTransform(apiHost string) {
 
 	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, &protos.UserGroupList{UserIds: []string{u1.GetUserId()}}, nil)
 
-	checkImageUploadError(
+	checkImageUploadResult(
 		"Upload matched OK",
 		apiHost,
 		&protos.ImageUploadHttpRequest{
@@ -620,7 +966,7 @@ func testImageMatchTransform(apiHost string) {
 	)
 
 	// Re-upload as matched image
-	checkImageUploadError(
+	checkImageUploadResult(
 		"Upload Matched OK",
 		apiHost,
 		&protos.ImageUploadHttpRequest{
@@ -717,7 +1063,7 @@ func testImageMatchTransform(apiHost string) {
 					"source": "SI_UPLOAD",
 					"width": 5,
 					"height": 5,
-					"fileSize": 596,
+					"fileSize64": "596",
 					"purpose": "SIP_VIEWING",
 					"associatedScanIds": [
 						"048300551"

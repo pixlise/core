@@ -39,6 +39,7 @@ func connectToRemoteMongoDB(
 	MongoUsername string,
 	MongoPassword string,
 	iLog logger.ILogger,
+	mongoDebug bool,
 ) (*mongo.Client, MongoConnectionDetails, error) {
 	//ctx := context.Background()
 	var err error
@@ -58,14 +59,14 @@ func connectToRemoteMongoDB(
 	const extraOptions = "" //"&retryWrites=false&tlsAllowInvalidHostnames=true" //"&replicaSet=rs0&readpreference=secondaryPreferred"
 	connectionURI := fmt.Sprintf("mongodb://%s/%s", MongoEndpoint, extraOptions)
 
-	cmdMonitor := makeMongoCommandMonitor(iLog)
+	cmdMonitor := makeMongoCommandMonitor(iLog, mongoDebug)
 
 	client, err = mongo.Connect(
 		context.TODO(),
 		options.Client().
 			ApplyURI(connectionURI).
 			SetMonitor(cmdMonitor).
-			SetTLSConfig(tlsConfig).
+			//SetTLSConfig(tlsConfig).
 			SetRetryWrites(false).
 			SetDirect(true).
 			SetAuth(
@@ -111,13 +112,17 @@ func getCustomTLSConfig(caFile string) (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
-func makeMongoCommandMonitor(log logger.ILogger) *event.CommandMonitor {
+func makeMongoCommandMonitor(log logger.ILogger, mongoDebug bool) *event.CommandMonitor {
 	return &event.CommandMonitor{
 		Started: func(_ context.Context, evt *event.CommandStartedEvent) {
-			log.Debugf("Mongo request:\n%v", evt.Command)
+			if mongoDebug {
+				log.Debugf("Mongo request:\n%v", evt.Command)
+			}
 		},
 		Succeeded: func(_ context.Context, evt *event.CommandSucceededEvent) {
-			log.Debugf("Mongo success:\n%v", evt.CommandFinishedEvent)
+			if mongoDebug {
+				log.Debugf("Mongo success:\n%v", evt.CommandFinishedEvent)
+			}
 		},
 		Failed: func(_ context.Context, evt *event.CommandFailedEvent) {
 			log.Errorf("Mongo err:\n%v", evt.Failure)

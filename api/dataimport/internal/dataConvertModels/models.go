@@ -330,7 +330,8 @@ func (o *OutputData) SetPMCData(
 		// Destination image will be just PMC.ext because we don't want to
 		// upload the long name, potentially exposing internal meta data
 		ext := strings.ToLower(filepath.Ext(img))
-		if ext == ".tif" {
+		baseName := strings.ToLower(filepath.Base(img))
+		if ext == ".tif" && !strings.HasPrefix(baseName, "py_") {
 			ext = ".png"
 		}
 

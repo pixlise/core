@@ -78,7 +78,7 @@ func RunJob(logWD bool) error {
 	cfgStr := os.Getenv(JobConfigEnvVar)
 
 	if len(cfgStr) <= 0 {
-		return fmt.Errorf(JobConfigEnvVar + " env var not set")
+		return fmt.Errorf("%v env var not set", JobConfigEnvVar)
 	}
 
 	var cfg JobConfig

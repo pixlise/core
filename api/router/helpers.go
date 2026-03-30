@@ -44,7 +44,7 @@ func makePathParams(svcs *services.APIServices, r *http.Request) map[string]stri
 
 	// Set the host name in case anything needs it
 	// TODO: get the host name in some sane way
-	if svcs.Config.EnvironmentName == "local" {
+	if strings.Contains(svcs.Config.EnvironmentName, "local") {
 		pathParams[HostParamName] = "http://" + r.Host
 	} else {
 		pathParams[HostParamName] = "https://" + r.Host

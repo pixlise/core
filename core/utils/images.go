@@ -29,7 +29,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-// Returns width, height and error
+// Returns width, height and error. Try it with the Go libraries, if it fails, read it with libvips
 func ReadImageDimensions(imageName string, imgBytes []byte) (uint32, uint32, error) {
 	// Try to read the image
 	img, _, err := image.Decode(bytes.NewReader(imgBytes))
@@ -84,7 +84,7 @@ func ImagesEqual(aPath, bPath string) error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf(errs)
+		return fmt.Errorf("%v", errs)
 	}
 
 	return nil
@@ -108,29 +108,34 @@ func WritePNGImageFile(pathPrefix string, img image.Image) error {
 
 func MakeScanImage(
 	imgPath string,
-	fileSize uint32,
+	fileSize uint64,
 	source protos.ScanImageSource,
 	purpose protos.ScanImagePurpose,
 	associatedScanIds []string,
 	originScanId string,
 	originImageURL string,
 	matchInfo *protos.ImageMatchTransform,
+	pyramidId string,
+	PyramidFormat string,
 	width uint32,
 	height uint32) *protos.ScanImage {
 	result := &protos.ScanImage{
 		ImagePath: imgPath,
 
-		Source:   source,
-		Width:    width,
-		Height:   height,
-		FileSize: fileSize,
-		Purpose:  purpose,
+		Source:     source,
+		Width:      width,
+		Height:     height,
+		FileSize64: fileSize,
+		Purpose:    purpose,
 
 		AssociatedScanIds: associatedScanIds,
 		OriginScanId:      originScanId,
 		OriginImageURL:    originImageURL,
 
 		MatchInfo: matchInfo,
+
+		PyramidId:         pyramidId,
+		PyramidTileFormat: PyramidFormat,
 	}
 
 	return result
