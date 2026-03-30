@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -52,7 +53,7 @@ func resetDBPiquantAndJobs() {
 	}
 	insertResult, err := coll.InsertOne(context.TODO(), &protos.PiquantVersion{
 		Id:              "current",
-		Version:         "registry.gitlab.com/pixlise/piquant/runner:3.2.16",
+		Version:         "ghcr.io/pixlise/piquant:3.2.17",
 		ModifiedUnixSec: 1234567890,
 		ModifierUserId:  "user-123",
 	})
@@ -87,6 +88,11 @@ func seedDBQuants(quants []*protos.QuantificationSummary) {
 }
 
 func seedS3File(fileName string, s3Path string /*userId string, scanId string*/, bucket string) {
+	if exists, err := apiStorageFileAccess.ObjectExists(bucket, s3Path); err == nil && exists {
+		fmt.Printf("s3://%v/%v already exists, skipping upload\n", bucket, s3Path)
+		return
+	}
+
 	data, err := os.ReadFile("./test-files/" + fileName)
 	if err != nil {
 		log.Fatalln(err)

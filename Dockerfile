@@ -14,30 +14,39 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-FROM golang:1.22-alpine AS builder
+
+FROM golang:1.24-alpine AS builder
+
 ARG VERSION
 ARG GITHUB_SHA
 
-RUN apk --no-cache add ca-certificates libc6-compat wget make bash
+RUN apk add --no-cache ca-certificates libc6-compat wget make bash build-base pkgconfig vips-dev
 
 COPY . /build
+ENV CGO_ENABLED=1
+ENV BUILD_VERSION=${VERSION}
+ENV GITHUB_SHA=${GITHUB_SHA}
 
-RUN cd /build && export BUILD_VERSION=${VERSION} && export GITHUB_SHA=${GITHUB_SHA} && make build-linux
+RUN cd /build && ./genvips.sh
+RUN cd /build && make build-linux-api
+
 
 FROM alpine:latest
+
 RUN apk --no-cache add ca-certificates libc6-compat wget
 WORKDIR /root
-# Copy the Pre-built binary file from the previous stage
 
+# Copy the Pre-built binary file from the previous stage
 COPY --from=builder /build/_out/pixlise-api-linux ./
-#COPY ./_out/pixlise-api-linux ./
-#RUN ls -al
+
 COPY beam-tool/BGT ./
 COPY beam-tool/Geometry_PIXL_EM_Landing_25Jan2021.csv ./
-#RUN ls -al
+
+RUN apk add --no-cache vips-dev
 
 RUN chmod +x ./pixlise-api-linux && wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
 RUN chmod +x ./BGT
+
 # Expose port 8080 to the outside world
 EXPOSE 8080
 

@@ -1,4 +1,6 @@
 name: Bump Version
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 on:
   pull_request:
     types:
@@ -8,7 +10,7 @@ on:
       - development
 jobs:
   tag:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
       with:

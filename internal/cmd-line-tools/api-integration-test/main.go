@@ -24,6 +24,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -52,6 +53,7 @@ var test1Username, test1Password, test2Username, test2Password string
 var apiStorageFileAccess fileaccess.FileAccess
 var apiDatasetBucket string
 var apiUsersBucket string
+var apiJobsBucket string
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
@@ -67,6 +69,7 @@ func main() {
 	flag.StringVar(&apiDBSecret, "apiDBSecret", "", "Mongo secret of the DB the API is connected")
 	flag.StringVar(&apiDatasetBucket, "datasetBucket", "", "Dataset bucket the API is using")
 	flag.StringVar(&apiUsersBucket, "usersBucket", "", "User Data bucket the API is using")
+	flag.StringVar(&apiJobsBucket, "jobsBucket", "", "Job Data bucket the API is using")
 	flag.StringVar(&auth0Params.Domain, "auth0Domain", "", "Auth0 domain for management API")
 	flag.StringVar(&auth0Params.ClientId, "auth0ClientId", "", "Auth0 client id for management API")
 	//flag.StringVar(&auth0Params.Secret, "auth0Secret", "", "Auth0 secret for management API")
@@ -101,6 +104,10 @@ func main() {
 	}
 
 	apiStorageFileAccess = fileaccess.MakeS3Access(s3svc)
+	err = seedBuckets(apiStorageFileAccess, apiDatasetBucket)
+	if err != nil {
+		panic("Failed to seed buckets")
+	}
 
 	if len(expectedAPIVersion) > 0 {
 		printTestStart("API Version")
@@ -161,7 +168,6 @@ func runEnvTests(apiHost string) {
 }
 
 func runLocalTests(apiHost string, isCI bool) {
-
 	jwt := testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
 	testImage3DPoint(apiHost)
@@ -177,6 +183,7 @@ func runLocalTests(apiHost string, isCI bool) {
 	//testJobs(apiHost)
 	u1Id, u2Id := testNotification(apiHost)
 	testImageUpload(apiHost, u1Id, u2Id)
+	testImageMultipartUpload(apiHost)
 	testImageMatchTransform(apiHost)
 	testSelectionMsgs(apiHost)
 	testNormalROIBulkWrite(apiHost)
@@ -471,4 +478,41 @@ func runLocalTests(apiHost string, isCI bool) {
 
 	// Removed for now, looks like zenodo API changed recently?
 	//testDOI(apiHost)
+}
+
+func seedBuckets(s3 fileaccess.FileAccess, apiDatasetBucket string) error {
+	fs := fileaccess.FSAccess{}
+	rootPath := "test-files/seed-scans"
+	files, err := fs.ListObjects(".", rootPath)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		// Lop off the start of the path
+		pos := strings.Index(file, rootPath)
+		if pos < 0 {
+			return fmt.Errorf("Unexpected scan seed data path: %v", file)
+		}
+
+		upPath := path.Join("Scans", file[pos+len(rootPath):])
+		if exists, err := apiStorageFileAccess.ObjectExists(apiDatasetBucket, upPath); err == nil && exists {
+			fmt.Printf("s3://%v/%v already exists, skipping upload\n", apiDatasetBucket, upPath)
+			continue
+		}
+
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return err
+		}
+
+		err = s3.WriteObject(apiDatasetBucket, upPath, data)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Wrote s3://%v/%v...\n", apiDatasetBucket, upPath)
+	}
+
+	return nil
 }

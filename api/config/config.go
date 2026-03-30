@@ -70,13 +70,8 @@ type APIConfig struct {
 	PiquantDockerImage string // PIQUANT docker image to use to run a job
 	PiquantJobsBucket  string // PIQUANT job scratch drive
 
-	PosterImage             string
-	QuantDestinationPackage string
-
 	QuantExecutor  string
 	QuantNamespace string // Used for running large multi-node quants
-
-	QuantObjectType string
 
 	SentryEndpoint string
 
@@ -121,6 +116,8 @@ type APIConfig struct {
 	RestoreEnabled   bool
 
 	ImpersonateEnabled bool
+
+	MongoDebug bool
 }
 
 func homeDir() string {

@@ -2,4 +2,7 @@
 
 package quantRunner
 
-var dockerCommand = "/usr/local/bin/docker"
+var dockerCommand = "docker"
+
+// var dockerCommand = "usr/bin/docker"
+// var dockerCommand = "/usr/local/bin/docker"

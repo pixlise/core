@@ -13,6 +13,7 @@ const ElementSetsName = "elementSets"
 const ExpressionGroupsName = "expressionGroups"
 const ExpressionsName = "expressions"
 const ImageBeamLocationsName = "imageBeamLocations"
+const ImagePyramidsName = "imagePyramids"
 const Image3DPointsName = "image3DPoints"
 const ImagesName = "images"
 const JobStatusName = "jobStatuses"
@@ -56,6 +57,8 @@ func GetAllCollections() []string {
 		ExpressionGroupsName,
 		ExpressionsName,
 		ImageBeamLocationsName,
+		ImagePyramidsName,
+		Image3DPointsName,
 		ImagesName,
 		JobStatusName,
 		JobHandlersName,

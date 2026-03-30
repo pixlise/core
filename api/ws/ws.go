@@ -107,7 +107,7 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 		if impersonateResult.Err() != nil {
 			if impersonateResult.Err() != mongo.ErrNoDocuments {
 				msg := fmt.Sprintf("Error checking for user impersonation setting: %v", impersonateResult.Err())
-				fmt.Printf(msg)
+				fmt.Print(msg)
 				s.CloseWithMsg([]byte("--" + msg))
 				return
 			}
@@ -118,7 +118,7 @@ func (ws *WSHandler) HandleConnect(s *melody.Session) {
 
 			if err != nil {
 				msg := fmt.Sprintf("Failed to read user impersonation setting: %v", err)
-				fmt.Printf(msg)
+				fmt.Print(msg)
 				s.CloseWithMsg([]byte("--" + msg))
 				return
 			}

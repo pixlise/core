@@ -81,7 +81,7 @@ func main() {
 
 func readRTTs(sess *session.Session, iLog logger.ILogger) map[string]string {
 	// Connect to mongo
-	destMongoClient, _, err := mongoDBConnection.Connect(sess, destMongoSecret, iLog)
+	destMongoClient, _, err := mongoDBConnection.Connect(sess, destMongoSecret, iLog, false)
 	if err != nil {
 		fatalError(err)
 	}

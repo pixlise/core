@@ -2,6 +2,7 @@ package wsHandler
 
 import (
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/scan"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
@@ -11,22 +12,7 @@ func HandleScanBeamLocationsReq(req *protos.ScanBeamLocationsReq, hctx wsHelpers
 		return nil, err
 	}
 
-	beams := []*protos.Coordinate3D{}
-	for _, c := range indexes {
-		loc := exprPB.Locations[c]
-
-		var beamSave *protos.Coordinate3D
-
-		if loc.Beam != nil {
-			beamSave = &protos.Coordinate3D{
-				X: loc.Beam.X,
-				Y: loc.Beam.Y,
-				Z: loc.Beam.Z,
-			}
-		}
-
-		beams = append(beams, beamSave)
-	}
+	beams := scan.ReadXYZ(exprPB, indexes)
 
 	return &protos.ScanBeamLocationsResp{
 		BeamLocations: beams,

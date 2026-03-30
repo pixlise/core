@@ -1,0 +1,40 @@
+{
+  "id": "189137412",
+  "title": "Cal Target",
+  "description": "",
+  "dataTypes": [
+    {
+      "dataType": 1,
+      "count": "55"
+    },
+    {
+      "dataType": 2,
+      "count": "1730"
+    }
+  ],
+  "instrument": 1,
+  "instrumentConfig": "PIXL",
+  "timestampUnixSec": 1731028677,
+  "meta": {
+    "Site": "",
+    "Sol": "0545",
+    "RTT": "189137412",
+    "SCLK": "715356580",
+    "TargetId": "?",
+    "SiteId": "26",
+    "DriveId": "5150",
+    "Target": ""
+  },
+  "contentCounts": {
+    "NormalSpectra": 1730,
+    "DwellSpectra": 0,
+    "BulkSpectra": 2,
+    "MaxSpectra": 2,
+    "PseudoIntensities": 865
+  },
+  "creatorUserId": "PIXLISEImport",
+  "tags": [
+    "7qndwrc4z3ptkcpo"
+  ],
+  "completeTimeStampUnixSec": 1731016077
+}

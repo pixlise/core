@@ -15,6 +15,7 @@ env:
   REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   slug:
@@ -28,7 +29,7 @@ jobs:
           submodules: true
       - name: GitHub Slug Action
         uses: rlespinasse/github-slug-action@v4.4.0
-  feature:
+  step:
     uses: ./.github/workflows/main.yml
     needs: slug
     with:

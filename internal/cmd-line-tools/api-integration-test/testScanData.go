@@ -1415,6 +1415,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 						"width": 752,
 						"height": 580,
 						"fileSize": 256736,
+						"fileSize64": "256736",
 						"purpose": "SIP_VIEWING",
 						"associatedScanIds": [
 							"048300551"
@@ -1427,6 +1428,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 						"width": 752,
 						"height": 580,
 						"fileSize": 240084,
+						"fileSize64": "240084",
 						"purpose": "SIP_VIEWING",
 						"associatedScanIds": [
 							"048300551"
@@ -1449,6 +1451,7 @@ func testScanDataHasPermission(apiHost string, actionMsg string, editAllowed boo
 					"width": 752,
 					"height": 580,
 					"fileSize": 240084,
+					"fileSize64": "240084",
 					"purpose": "SIP_VIEWING",
 					"associatedScanIds": [
 						"048300551"

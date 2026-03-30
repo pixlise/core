@@ -41,7 +41,7 @@ func testQuantFit(apiHost string) {
 		`{"msgId":2,"status":"WS_OK","quantLastOutputGetResp":{}}`,
 	)
 
-	expData := "   PIQUANT 3.2.16-master  Normal_Combined_AllPoints\nEnergy (keV), meas, calc, bkg, sigma, residual, DetCE, Ti_K, Ca_K, Rh_K_coh, Rh_L_coh, Rh_K_inc, Pileup, Rh_L_coh_Lb1\n-0.0154067, 0, 0, 0, 1.41421, 0, 0, 0, 0, 0, 0, 0, 0, 0\n-0.0075045, 0, 0, 0, 1.41421, 0, 0, 0, 0, 0, 0, 0, 0, 0\n0.000397676, 0, 0, 0, 1.41421, 0, 0, 0, 0, 0, 0, 0, 0, 0"
+	expData := "   PIQUANT 3.2.17-master  Normal_Combined_AllPoints\nEnergy (keV), meas, calc, bkg, sigma, residual, DetCE, Ti_K, Ca_K, Rh_K_coh, Rh_L_coh, Rh_K_inc, Pileup, Rh_L_coh_Lb1\n-0.0154067, 0, 0, 0, 1.41421, 0, 0, 0, 0, 0, 0, 0, 0, 0\n-0.0075045, 0, 0, 0, 1.41421, 0, 0, 0, 0, 0, 0, 0, 0, 0\n0.000397676, 0, 0, 0, 1.41421, 0, 0, 0, 0, 0, 0, 0, 0, 0"
 	expData64 := base64.StdEncoding.EncodeToString([]byte(expData))
 
 	// Snip off any garbage at the end
@@ -110,7 +110,7 @@ func testQuantFit(apiHost string) {
 		}}`,
 		// NOTE: had to convert the , to . so we dont break the parser thats reading REGEXMATCH=...
 		`{"msgId":4,"status":"WS_OK","quantLastOutputGetResp":{
-			"output": "${REGEXMATCH=-+\nPIQUANT   Quantitative X-ray Fluorescence Analysis\nWritten for PIXL. the Planetary Instrument for X-ray Lithochemistry\n3.2.16-master   W. T. Elam.+}"
+			"output": "${REGEXMATCH=-+\nPIQUANT   Quantitative X-ray Fluorescence Analysis\nWritten for PIXL. the Planetary Instrument for X-ray Lithochemistry\n3.2.17-master   W. T. Elam.+}"
 		}}`,
 	)
 
@@ -123,7 +123,7 @@ func testQuantFit(apiHost string) {
 		// NOTE: had to convert the , to . so we dont break the parser thats reading REGEXMATCH=...
 		// Also replace the () in the string to prevent regex match from failing. Putting \( and \) in didn't help...
 		`{"msgId":5,"status":"WS_OK","quantLastOutputGetResp":{
-			"output": "${REGEXMATCH=   PIQUANT 3.2.16-master  Normal_Combined_AllPoints\nEnergy .keV.. meas. calc. bkg. sigma. residual. DetCE. Ti_K. Ca_K. Rh_K_coh. Rh_L_coh. Rh_K_inc. Pileup. Rh_L_coh_Lb1\n-0.0154067.+}"
+			"output": "${REGEXMATCH=   PIQUANT 3.2.17-master  Normal_Combined_AllPoints\nEnergy .keV.. meas. calc. bkg. sigma. residual. DetCE. Ti_K. Ca_K. Rh_K_coh. Rh_L_coh. Rh_K_inc. Pileup. Rh_L_coh_Lb1\n-0.0154067.+}"
 		}}`,
 	)
 
