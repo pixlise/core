@@ -67,8 +67,6 @@ func connectToRemoteMongoDB(
 			ApplyURI(connectionURI).
 			SetMonitor(cmdMonitor).
 			//SetTLSConfig(tlsConfig).
-			SetRetryWrites(false).
-			SetDirect(true).
 			SetAuth(
 				options.Credential{
 					Username:    MongoUsername,
