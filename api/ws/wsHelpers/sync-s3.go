@@ -15,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func SyncScans(svcs *services.APIServices) error {
+func SyncScans(destS3Path string, svcs *services.APIServices) error {
 	ctx := context.TODO()
 	coll := svcs.MongoDB.Collection(dbCollections.ScansName)
 
@@ -40,10 +40,17 @@ func SyncScans(svcs *services.APIServices) error {
 		scanPaths = append(scanPaths, path.Join(id, "diffraction-db.bin"))
 	}
 
-	return syncFiles(svcs.Config.DatasetsBucket, filepaths.DatasetScansRoot, scanPaths, svcs.Config.DataBackupBucket, filepaths.DatasetScansRoot, svcs.FS, svcs.Log)
+	return syncFiles(
+		svcs.Config.DatasetsBucket,
+		filepaths.DatasetScansRoot,
+		scanPaths,
+		svcs.Config.DataBackupBucket,
+		path.Join(destS3Path, filepaths.DatasetScansRoot),
+		svcs.FS,
+		svcs.Log)
 }
 
-func SyncImages(svcs *services.APIServices) error {
+func SyncImages(destS3Path string, svcs *services.APIServices) error {
 	ctx := context.TODO()
 	coll := svcs.MongoDB.Collection(dbCollections.ImagesName)
 
@@ -66,10 +73,17 @@ func SyncImages(svcs *services.APIServices) error {
 		imagePaths = append(imagePaths, item["_id"].(string))
 	}
 
-	return syncFiles(svcs.Config.DatasetsBucket, filepaths.DatasetImagesRoot, imagePaths, svcs.Config.DataBackupBucket, filepaths.DatasetImagesRoot, svcs.FS, svcs.Log)
+	return syncFiles(
+		svcs.Config.DatasetsBucket,
+		filepaths.DatasetImagesRoot,
+		imagePaths,
+		svcs.Config.DataBackupBucket,
+		path.Join(destS3Path, filepaths.DatasetImagesRoot),
+		svcs.FS,
+		svcs.Log)
 }
 
-func SyncQuants(svcs *services.APIServices) error {
+func SyncQuants(destS3Path string, svcs *services.APIServices) error {
 	ctx := context.TODO()
 	coll := svcs.MongoDB.Collection(dbCollections.QuantificationsName)
 
@@ -110,10 +124,17 @@ func SyncQuants(svcs *services.APIServices) error {
 		return err
 	}
 
-	return syncFiles(svcs.Config.UsersBucket, filepaths.RootQuantificationPath, relativeQuantFiles, svcs.Config.DataBackupBucket, filepaths.RootQuantificationPath, svcs.FS, svcs.Log)
+	return syncFiles(
+		svcs.Config.UsersBucket,
+		filepaths.RootQuantificationPath,
+		relativeQuantFiles,
+		svcs.Config.DataBackupBucket,
+		path.Join(destS3Path, filepaths.RootQuantificationPath),
+		svcs.FS,
+		svcs.Log)
 }
 
-func RestoreScans(svcs *services.APIServices) error {
+func RestoreScans(envS3Path string, svcs *services.APIServices) error {
 	// List source files
 	scanFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, filepaths.DatasetScansRoot)
 	if err != nil {
@@ -126,10 +147,17 @@ func RestoreScans(svcs *services.APIServices) error {
 		return err
 	}
 
-	return syncFiles(svcs.Config.DataBackupBucket, filepaths.DatasetScansRoot, relativeScanFiles, svcs.Config.DatasetsBucket, filepaths.DatasetScansRoot, svcs.FS, svcs.Log)
+	return syncFiles(
+		svcs.Config.DataBackupBucket,
+		filepaths.DatasetScansRoot,
+		relativeScanFiles,
+		svcs.Config.DatasetsBucket,
+		path.Join(envS3Path, filepaths.DatasetScansRoot),
+		svcs.FS,
+		svcs.Log)
 }
 
-func RestoreQuants(svcs *services.APIServices) error {
+func RestoreQuants(envS3Path string, svcs *services.APIServices) error {
 	// List source files
 	quantFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, filepaths.RootQuantificationPath)
 	if err != nil {
@@ -146,12 +174,12 @@ func RestoreQuants(svcs *services.APIServices) error {
 		filepaths.RootQuantificationPath,
 		relativeQuantFiles,
 		svcs.Config.UsersBucket,
-		filepaths.RootQuantificationPath,
+		path.Join(envS3Path, filepaths.RootQuantificationPath),
 		svcs.FS,
 		svcs.Log)
 }
 
-func RestoreImages(svcs *services.APIServices) error {
+func RestoreImages(envS3Path string, svcs *services.APIServices) error {
 	// List source files
 	imageFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, filepaths.DatasetImagesRoot)
 	if err != nil {
@@ -163,7 +191,14 @@ func RestoreImages(svcs *services.APIServices) error {
 		return err
 	}
 
-	return syncFiles(svcs.Config.DataBackupBucket, filepaths.DatasetImagesRoot, relativeImageFiles, svcs.Config.DatasetsBucket, filepaths.DatasetImagesRoot, svcs.FS, svcs.Log)
+	return syncFiles(
+		svcs.Config.DataBackupBucket,
+		filepaths.DatasetImagesRoot,
+		relativeImageFiles,
+		svcs.Config.DatasetsBucket,
+		path.Join(envS3Path, filepaths.DatasetImagesRoot),
+		svcs.FS,
+		svcs.Log)
 }
 
 func makeRelativePaths(fullPaths []string, root string) ([]string, error) {

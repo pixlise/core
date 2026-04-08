@@ -279,6 +279,29 @@ func GetPathFromS3Url(url string) (string, error) {
 	return trimmedUrl[slashPos+1:], nil
 }
 
+func ClearBucketDir(bucket string, s3Path string, remoteFS FileAccess, logger logger.ILogger) error {
+	files, err := remoteFS.ListObjects(bucket, s3Path)
+	if err != nil {
+		return err
+	}
+
+	logger.Infof("Clearing %v files from bucket path: s3://%v/%v...", len(files), bucket, s3Path)
+
+	for c, file := range files {
+		if c%100 == 0 {
+			logger.Infof("  Clearing file %v of %v...", c, len(files))
+		}
+
+		err = remoteFS.DeleteObject(bucket, file)
+		if err != nil {
+			return err
+		}
+	}
+
+	logger.Infof("Bucket dir cleared: s3://%v/%v...", bucket, s3Path)
+	return nil
+}
+
 // Copies files to bucket
 // If preserveStructure is true, preserves directory structure from sourcePath.
 // If preserveStructure is false, copies all files flat (just filename, no subdirectories).
