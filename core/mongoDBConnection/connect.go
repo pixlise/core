@@ -56,6 +56,7 @@ func Connect(
 
 	return connectToRemoteMongoDB(
 		mongoConnectionInfo.Host,
+		mongoConnectionInfo.Options,
 		mongoConnectionInfo.Username,
 		mongoConnectionInfo.Password,
 		iLog,

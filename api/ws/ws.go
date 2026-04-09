@@ -40,6 +40,10 @@ func MakeWSHandler(m *melody.Melody, svcs *services.APIServices) *WSHandler {
 func (ws *WSHandler) HandleBeginWSConnection(params apiRouter.ApiHandlerGenericParams) error {
 	token := wsHelpers.CreateConnectToken(params.Svcs, params.UserInfo)
 
+	if len(token) <= 0 {
+		return fmt.Errorf("Failed to generate connect token")
+	}
+
 	result := &protos.BeginWSConnectionResponse{}
 	result.ConnToken = token
 	utils.SendProtoBinary(params.Writer, result)

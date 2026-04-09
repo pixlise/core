@@ -3,16 +3,15 @@ package wsHandler
 import (
 	"errors"
 	"fmt"
-	"strings"
+	"path"
 	"sync"
 
-	"github.com/mongodb/mongo-tools/mongodump"
 	"github.com/mongodb/mongo-tools/mongorestore"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/fileaccess"
-	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/core/mongobackup"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
@@ -30,58 +29,22 @@ func HandleBackupDBReq(req *protos.BackupDBReq, hctx wsHelpers.HandlerContext) (
 	}
 
 	// Delete any local backups already done so we don't run out of space/have issues with overwriting
-	err := wsHelpers.ResetLocalMongoBackupDir()
+	err := wsHelpers.ResetLocalMongoBackupDir("./backup")
 	if err != nil {
 		return nil, err
 	}
 
 	startTimestamp := hctx.Svcs.TimeStamper.GetTimeNowSec()
-
 	hctx.Svcs.Log.Infof("PIXLISE Backup Requested, will be written to bucket: %v", hctx.Svcs.Config.DataBackupBucket)
 
-	// Run MongoDump, save to a local archive file
-	dump, err := wsHelpers.MakeMongoDumpInstance(hctx.Svcs.MongoDetails, hctx.Svcs.Log, mongoDBConnection.GetDatabaseName("pixlise", hctx.Svcs.Config.EnvironmentName))
-
-	if err != nil {
-		hctx.Svcs.Log.Errorf("Failed to create dump instance: %v", err)
-		return nil, err
-	}
-
-	err = dump.Init()
-	if err != nil {
-		hctx.Svcs.Log.Errorf("PIXLISE Backup failed to initialise: %v", err)
-		return nil, err
-	}
-
-	go runBackup(dump, startTimestamp, hctx.Svcs)
+	go runBackup(mongoDBConnection.GetDatabaseName("pixlise", hctx.Svcs.Config.EnvironmentName), startTimestamp, hctx.Svcs)
 
 	return &protos.BackupDBResp{}, nil
 }
 
-func clearBucket(bucket string, fs fileaccess.FileAccess, logger logger.ILogger) error {
-	files, err := fs.ListObjects(bucket, "")
-	if err != nil {
-		return err
-	}
+var envS3Path = "WholeEnvBackup"
 
-	logger.Infof("Clearing %v files from bucket: %v", len(files), bucket)
-
-	for c, file := range files {
-		if c%100 == 0 {
-			logger.Infof("Clearing file %v of %v...", c, len(files))
-		}
-
-		err = fs.DeleteObject(bucket, file)
-		if err != nil {
-			return err
-		}
-	}
-
-	logger.Infof("Bucket cleared: %v", bucket)
-	return nil
-}
-
-func runBackup(dump *mongodump.MongoDump, startTimestamp int64, svcs *services.APIServices) {
+func runBackup(dbName string, startTimestamp int64, svcs *services.APIServices) {
 	var wg sync.WaitGroup
 	var errDBDump error
 	var errScanSync error
@@ -90,7 +53,7 @@ func runBackup(dump *mongodump.MongoDump, startTimestamp int64, svcs *services.A
 
 	svcs.Log.Infof("Clearing PIXLISE backup bucket: %v", svcs.Config.DataBackupBucket)
 
-	err := clearBucket(svcs.Config.DataBackupBucket, svcs.FS, svcs.Log)
+	err := fileaccess.ClearBucketDir(svcs.Config.DataBackupBucket, envS3Path, svcs.FS, svcs.Log)
 	if err != nil {
 		svcs.Log.Errorf("PIXLISE Backup bucket clear failed: %v", err)
 		return
@@ -99,39 +62,33 @@ func runBackup(dump *mongodump.MongoDump, startTimestamp int64, svcs *services.A
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
-		errDBDump = dump.Dump()
-
-		if errDBDump == nil {
-			svcs.Log.Infof("PIXLISE DB Dump complete")
-			errDBDump = wsHelpers.UploadArchive(svcs)
-		}
+		errDBDump = mongobackup.BackupDB(dbName, svcs.Config.DataBackupBucket, path.Join(envS3Path, "DB"), false, svcs)
 	}()
+	/*
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			svcs.Log.Infof("Syncing scans to bucket")
+			errScanSync = wsHelpers.SyncScans(envS3Path, svcs)
+			svcs.Log.Infof("Syncing scans to bucket COMPLETE")
+		}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		svcs.Log.Infof("Syncing scans to bucket")
-		errScanSync = wsHelpers.SyncScans(svcs)
-		svcs.Log.Infof("Syncing scans to bucket COMPLETE")
-	}()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			svcs.Log.Infof("Syncing quants to bucket")
+			errQuantSync = wsHelpers.SyncQuants(envS3Path, svcs)
+			svcs.Log.Infof("Syncing quants to bucket COMPLETE")
+		}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		svcs.Log.Infof("Syncing quants to bucket")
-		errQuantSync = wsHelpers.SyncQuants(svcs)
-		svcs.Log.Infof("Syncing quants to bucket COMPLETE")
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		svcs.Log.Infof("Syncing images to bucket")
-		errImageSync = wsHelpers.SyncImages(svcs)
-		svcs.Log.Infof("Syncing images to bucket COMPLETE")
-	}()
-
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			svcs.Log.Infof("Syncing images to bucket")
+			errImageSync = wsHelpers.SyncImages(envS3Path, svcs)
+			svcs.Log.Infof("Syncing images to bucket COMPLETE")
+		}()
+	*/ /*  */
 	// Wait for all sync tasks
 	wg.Wait()
 
@@ -170,17 +127,17 @@ func HandleRestoreDBReq(req *protos.RestoreDBReq, hctx wsHelpers.HandlerContext)
 		return nil, errors.New(err)
 	}
 
-	if strings.Contains(strings.ToLower(hctx.Svcs.Config.EnvironmentName), "prod") {
-		err := "PIXLISE Restore not allowed on environment: " + hctx.Svcs.Config.EnvironmentName
-		hctx.Svcs.Log.Errorf(err)
-		return nil, errors.New(err)
-	}
+	// if strings.Contains(strings.ToLower(hctx.Svcs.Config.EnvironmentName), "prod") {
+	// 	err := "PIXLISE Restore not allowed on environment: " + hctx.Svcs.Config.EnvironmentName
+	// 	hctx.Svcs.Log.Errorf(err)
+	// 	return nil, errors.New(err)
+	// }
 
 	deleteLocal := true
 
 	if deleteLocal {
 		// Delete any local backups already done so we don't run out of space/have issues with overwriting
-		err := wsHelpers.ResetLocalMongoBackupDir()
+		err := wsHelpers.ResetLocalMongoBackupDir("./backup")
 		if err != nil {
 			return nil, err
 		}
@@ -206,7 +163,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 
 		restoreFromDBName := ""
 		if downloadRemoteFiles {
-			restoreFromDBName, errDBRestore = wsHelpers.DownloadArchive(svcs)
+			restoreFromDBName, errDBRestore = wsHelpers.DownloadArchive(envS3Path, svcs)
 		}
 
 		if errDBRestore == nil {
@@ -223,7 +180,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 
 					if downloadRemoteFiles {
 						// Delete the local db archive
-						errDBRestore = wsHelpers.ClearLocalMongoArchive()
+						errDBRestore = wsHelpers.ClearLocalMongoArchive("./backup")
 					}
 				}
 			}
@@ -234,7 +191,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 	go func() {
 		defer wg.Done()
 		svcs.Log.Infof("Restoring scans to bucket")
-		errScanSync = wsHelpers.RestoreScans(svcs)
+		errScanSync = wsHelpers.RestoreScans(envS3Path, svcs)
 		svcs.Log.Infof("Restoring scans to bucket COMPLETE")
 	}()
 
@@ -242,7 +199,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 	go func() {
 		defer wg.Done()
 		svcs.Log.Infof("Restoring quants to bucket")
-		errQuantSync = wsHelpers.RestoreQuants(svcs)
+		errQuantSync = wsHelpers.RestoreQuants(envS3Path, svcs)
 		svcs.Log.Infof("Restoring quants to bucket COMPLETE")
 	}()
 
@@ -250,7 +207,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 	go func() {
 		defer wg.Done()
 		svcs.Log.Infof("Restoring images to bucket")
-		errImageSync = wsHelpers.RestoreImages(svcs)
+		errImageSync = wsHelpers.RestoreImages(envS3Path, svcs)
 		svcs.Log.Infof("Restoring images to bucket COMPLETE")
 	}()
 

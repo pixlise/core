@@ -28,13 +28,14 @@ import (
 )
 
 type MongoConnectionInfo struct {
-	DbClusterIdentifier string `json:"dbClusterIdentifier"`
-	Password            string `json:"password"`
-	Engine              string `json:"engine"`
-	Port                string `json:"port"`
-	Host                string `json:"host"`
-	Ssl                 string `json:"ssl"`
-	Username            string `json:"username"`
+	Host     string `json:"host"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Options  string `json:"options"`
+	//DbClusterIdentifier string `json:"dbClusterIdentifier"`
+	//Engine              string `json:"engine"`
+	//Port                string `json:"port"`
+	//Ssl                 string `json:"ssl"`
 }
 
 func getMongoConnectionInfoFromSecretCache(session *session.Session, secretName string) (MongoConnectionInfo, error) {

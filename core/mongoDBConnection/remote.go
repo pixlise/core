@@ -35,7 +35,8 @@ import (
 )
 
 func connectToRemoteMongoDB(
-	MongoEndpoint string,
+	MongoEndpoint string, // eg localhost or 192.168.1.1:27017,192.168.1.1:27018,192.168.1.1:27019
+	MongoOptions string, // eg "&replicaSet=rs0&readpreference=secondaryPreferred"
 	MongoUsername string,
 	MongoPassword string,
 	iLog logger.ILogger,
@@ -45,7 +46,7 @@ func connectToRemoteMongoDB(
 	var err error
 	var client *mongo.Client
 
-	iLog.Infof("Connecting to remote mongo db: %v, user: %v", MongoEndpoint, MongoUsername)
+	iLog.Infof("Connecting to remote mongo db: %v", MongoEndpoint)
 
 	tlsConfig, err := getCustomTLSConfig("./global-bundle.pem")
 	if err != nil {
@@ -56,8 +57,7 @@ func connectToRemoteMongoDB(
 		tlsConfig.InsecureSkipVerify = true
 	}
 
-	const extraOptions = "" //"&retryWrites=false&tlsAllowInvalidHostnames=true" //"&replicaSet=rs0&readpreference=secondaryPreferred"
-	connectionURI := fmt.Sprintf("mongodb://%s/%s", MongoEndpoint, extraOptions)
+	connectionURI := fmt.Sprintf("mongodb://%s/%s", MongoEndpoint, MongoOptions)
 
 	cmdMonitor := makeMongoCommandMonitor(iLog, mongoDebug)
 
@@ -67,8 +67,6 @@ func connectToRemoteMongoDB(
 			ApplyURI(connectionURI).
 			SetMonitor(cmdMonitor).
 			//SetTLSConfig(tlsConfig).
-			SetRetryWrites(false).
-			SetDirect(true).
 			SetAuth(
 				options.Credential{
 					Username:    MongoUsername,
