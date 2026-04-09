@@ -53,12 +53,6 @@ build-linux-aux:
 #	GOOS=linux GOARCH=amd64 go build -v -o ./_out/importtest-linux ./internal/cmdline-tools/import-integration-test
 #	GOOS=linux GOARCH=amd64 go build -v -o ./_out/integrationtest-linux ./internal/cmdline-tools/api-integration-test
 
-build-linux-mongo-backup:
-	mkdir -p _out
-	echo "version: ${BUILD_VERSION}"
-	echo "sha: ${GITHUB_SHA}"
-	GOOS=linux GOARCH=amd64 go build -o ./internal/cmd-line-tools/mongo-backup/mongo-backup ./internal/cmd-line-tools/mongo-backup
-
 # build-mac:
 # 	GOPRIVATE=github.com/pixlise GOOS=darwin GOARCH=amd64 go build -ldflags "-X services.ApiVersion=${BUILD_VERSION} -X services.GitHash=${GITHUB_SHA}" -v -o ./_out/pixlise-api-mac ./internal/api
 # 	GOPRIVATE=github.com/pixlise GOOS=darwin GOARCH=amd64 go build -v -o ./_out/jobupdater-mac ./internal/lambdas/quant-job-updater

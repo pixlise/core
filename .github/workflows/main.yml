@@ -251,21 +251,3 @@ jobs:
       #   # This step uses the identity token to provision an ephemeral certificate
       #   # against the sigstore community Fulcio instance.
       #   run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
-
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: "1.24.5"
-      - name: Build mongo backup tool
-        run: make build-linux-mongo-backup && pwd && ls -al && ls -al /home/runner/work/core/core/internal/cmd-line-tools/mongo-backup
-      - name: Build and push mongo backup Docker image
-        id: build-and-push-backup
-        uses: docker/build-push-action@v4.0.0
-        with:
-          context: ./internal/cmd-line-tools/mongo-backup
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            VERSION=${{ needs.version.outputs.version }}
-            GITHUB_SHA=${{ needs.version.outputs.github_sha_short }}
