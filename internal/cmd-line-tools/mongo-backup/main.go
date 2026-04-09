@@ -79,12 +79,12 @@ func main() {
 
 	sess, err := awsutil.GetSession()
 	if err != nil {
-		log.Fatalln("Failed to create AWS S3 service. Error: %v", err)
+		log.Fatalf("Failed to create AWS S3 service. Error: %v", err)
 	}
 
 	s3svc, err := awsutil.GetS3(sess)
 	if err != nil {
-		log.Fatalln("Failed to create AWS S3 service. Error: %v", err)
+		log.Fatalf("Failed to create AWS S3 service. Error: %v", err)
 	}
 
 	remoteFS := fileaccess.MakeS3Access(s3svc)
