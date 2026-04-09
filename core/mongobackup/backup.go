@@ -139,7 +139,7 @@ func MakeMongoToolOptions(mongoDetails mongoDBConnection.MongoConnectionDetails,
 	protocolPrefix := "mongodb://"
 	connection.Host = strings.TrimPrefix(connection.Host, protocolPrefix)
 
-	connectionURI := fmt.Sprintf("mongodb://%s/%s", connection.Host, "")
+	connectionURI := fmt.Sprintf("mongodb://%s", connection.Host)
 
 	uri, err := options.NewURI(connectionURI)
 	if err != nil {
