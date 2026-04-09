@@ -253,7 +253,7 @@ jobs:
       #   run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
 
       - name: Build and push mongo backup Docker image
-        id: build-and-push
+        id: build-and-push-backup
         uses: docker/build-push-action@v4.0.0
         with:
           context: ./internal/cmd-line-tools/mongo-backup
