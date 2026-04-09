@@ -252,6 +252,19 @@ jobs:
       #   # against the sigstore community Fulcio instance.
       #   run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
 
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.24.5"
+      - name: Build mongo backup tool
+        run: make build-linux-mongo-backup && pwd && ls -al
+        with:
+          name: mongo-backuper
+          path: ./mongo-backup
+      - uses: actions/download-artifact@v4
+        with:
+          name: mongo-backuper
+          path: ./mongo-backup
       - name: Build and push mongo backup Docker image
         id: build-and-push-backup
         uses: docker/build-push-action@v4.0.0
