@@ -10,7 +10,7 @@ ENV CGO_ENABLED=1
 ENV BUILD_VERSION=${VERSION}
 ENV GITHUB_SHA=${GITHUB_SHA}
 
-RUN cd /build && make build-linux-mongo-backup
+RUN cd /build && pwd && ls -al && make build-linux-mongo-backup
 
 
 

@@ -830,6 +830,24 @@ func convertLocationComponentToPixelPosition(x float32, y float32) Point {
 	return Point{math.Round(float64(x)), math.Round(float64(y))}
 }
 
+/* Example mismatch: Polygon 78 in 214827527
+
+UI poly:
+_Point {x: 356.66934535179854, y: 329.0211977576498}
+_Point {x: 359.4916058411135, y: 328.67925887021966}
+_Point {x: 359.51126609973596, y: 330.0440661473042} <-- extra point generated
+_Point {x: 359.52045041687984, y: 330.681637763922}
+_Point {x: 356.7454157761925, y: 330.73726411015747}
+_Point {x: 356.6791169221013, y: 329.79581908243364}
+
+API poly:
+{i: 356.6693420410156, j: 329.0212097167969}
+{i: 359.4916076660156, j: 328.67926025390625}
+{i: 359.52044677734375, j: 330.681640625}
+{i: 356.74542236328125, j: 330.7372741699219}
+{i: 356.6791076660156, j: 329.7958068847656}
+*/
+
 func makeScanPointPolygons(bboxExpand float64, cluster PointCluster, scanPoints []ScanPoint, scanPointPolygons []ScanPointPolygon) error {
 	// Create a larger bbox to ensure all polygons generated extend past the hull
 	var clusterBBox *Rect
