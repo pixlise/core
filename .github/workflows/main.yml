@@ -257,7 +257,7 @@ jobs:
         with:
           go-version: "1.24.5"
       - name: Build mongo backup tool
-        run: make build-linux-mongo-backup && pwd && ls -al
+        run: make build-linux-mongo-backup && pwd && ls -al && ls -al /home/runner/work/core/internal/cmd-line-tools/mongo-backup
       - name: Build and push mongo backup Docker image
         id: build-and-push-backup
         uses: docker/build-push-action@v4.0.0

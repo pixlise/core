@@ -57,7 +57,7 @@ build-linux-mongo-backup:
 	mkdir -p _out
 	echo "version: ${BUILD_VERSION}"
 	echo "sha: ${GITHUB_SHA}"
-	GOOS=linux GOARCH=amd64 go build -o ./_out/mongo-backup ./internal/cmd-line-tools/mongo-backup
+	GOOS=linux GOARCH=amd64 go build -o ./internal/cmd-line-tools/mongo-backup/mongo-backup ./internal/cmd-line-tools/mongo-backup
 
 # build-mac:
 # 	GOPRIVATE=github.com/pixlise GOOS=darwin GOARCH=amd64 go build -ldflags "-X services.ApiVersion=${BUILD_VERSION} -X services.GitHash=${GITHUB_SHA}" -v -o ./_out/pixlise-api-mac ./internal/api
