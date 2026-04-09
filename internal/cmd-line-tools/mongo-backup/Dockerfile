@@ -3,15 +3,14 @@ FROM golang:1.24-alpine AS builder
 ARG VERSION
 ARG GITHUB_SHA
 
-RUN apk add --no-cache libc6-compat bash build-base
+RUN apk add --no-cache libc6-compat make bash build-base
 
 COPY . /build
 ENV CGO_ENABLED=1
 ENV BUILD_VERSION=${VERSION}
 ENV GITHUB_SHA=${GITHUB_SHA}
 
-RUN mkdir -p _out
-RUN cd /build && GOOS=linux GOARCH=amd64 go build -o ./_out/mongo-backup .
+RUN cd /build && make build-linux-mongo-backup
 
 
 
