@@ -14,7 +14,7 @@ import (
 	"github.com/pixlise/core/v4/core/utils"
 )
 
-func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, restoreToDBName string, restoreFromDBName string) (*mongorestore.MongoRestore, error) {
+func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionInfo, logger logger.ILogger, restoreToDBName string, restoreFromDBName string) (*mongorestore.MongoRestore, error) {
 	toolOptions, err := mongobackup.MakeMongoToolOptions(mongoDetails, logger, restoreToDBName)
 	if err != nil {
 		return nil, err

@@ -32,10 +32,6 @@ type MongoConnectionInfo struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Options  string `json:"options"`
-	//DbClusterIdentifier string `json:"dbClusterIdentifier"`
-	//Engine              string `json:"engine"`
-	//Port                string `json:"port"`
-	//Ssl                 string `json:"ssl"`
 }
 
 func getMongoConnectionInfoFromSecretCache(session *session.Session, secretName string) (MongoConnectionInfo, error) {

@@ -31,7 +31,7 @@ func BackupDB(dbName string, s3Bucket string, s3Path string, zipDBFiles bool, sv
 	// Run MongoDump, save to a local archive file
 	svcs.Log.Infof("DB Backup connecting...")
 
-	dump, err := makeMongoDumpInstance(svcs.MongoDetails, svcs.Log, dbName, localDBDumpDir)
+	dump, err := makeMongoDumpInstance(svcs.MongoConnectInfo, svcs.Log, dbName, localDBDumpDir)
 	if err != nil {
 		return fmt.Errorf("DB Bacup failed to create dump instance: %v", err)
 	}
@@ -107,7 +107,7 @@ func (w LogWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func MakeMongoToolOptions(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, dbNamespace string) (*options.ToolOptions, error) {
+func MakeMongoToolOptions(mongoDetails mongoDBConnection.MongoConnectionInfo, logger logger.ILogger, dbNamespace string) (*options.ToolOptions, error) {
 	var toolOptions *options.ToolOptions
 
 	log.SetVerbosity(nil /*toolOptions.Verbosity*/)
@@ -116,7 +116,7 @@ func MakeMongoToolOptions(mongoDetails mongoDBConnection.MongoConnectionDetails,
 
 	ssl := options.SSL{}
 
-	isLocal := strings.Contains(mongoDetails.Host, "localhost") && len(mongoDetails.User) <= 0 && len(mongoDetails.Password) <= 0
+	isLocal := strings.Contains(mongoDetails.Host, "localhost") && len(mongoDetails.Username) <= 0 && len(mongoDetails.Password) <= 0
 
 	if !isLocal {
 		ssl = options.SSL{
@@ -127,7 +127,7 @@ func MakeMongoToolOptions(mongoDetails mongoDBConnection.MongoConnectionDetails,
 	}
 
 	auth := options.Auth{
-		Username: mongoDetails.User,
+		Username: mongoDetails.Username,
 		Password: mongoDetails.Password,
 	}
 
@@ -161,7 +161,7 @@ func MakeMongoToolOptions(mongoDetails mongoDBConnection.MongoConnectionDetails,
 	return toolOptions, nil
 }
 
-func makeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, dbName string, writePath string) (*mongodump.MongoDump, error) {
+func makeMongoDumpInstance(mongoDetails mongoDBConnection.MongoConnectionInfo, logger logger.ILogger, dbName string, writePath string) (*mongodump.MongoDump, error) {
 	toolOptions, err := MakeMongoToolOptions(mongoDetails, logger, dbName)
 	if err != nil {
 		return nil, err
