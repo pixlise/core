@@ -107,19 +107,20 @@ func (w LogWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func MakeMongoToolOptions(mongoDetails mongoDBConnection.MongoConnectionInfo, logger logger.ILogger, dbNamespace string) (*options.ToolOptions, error) {
+func MakeMongoToolOptions(mongoInfo mongoDBConnection.MongoConnectionInfo, logger logger.ILogger, dbNamespace string) (*options.ToolOptions, error) {
 	var toolOptions *options.ToolOptions
 
 	log.SetVerbosity(nil /*toolOptions.Verbosity*/)
 	lw := LogWriter{logger: logger}
 	log.SetWriter(lw)
 
-	ssl := options.SSL{}
+	var ssl *options.SSL
 
-	isLocal := strings.Contains(mongoDetails.Host, "localhost") && len(mongoDetails.Username) <= 0 && len(mongoDetails.Password) <= 0
+	useSSL := strings.Contains(mongoInfo.Host, "docdb.amazonaws.com")
+	//isLocal := strings.Contains(mongoDetails.Host, "localhost") && len(mongoDetails.Username) <= 0 && len(mongoDetails.Password) <= 0
 
-	if !isLocal {
-		ssl = options.SSL{
+	if useSSL {
+		ssl = &options.SSL{
 			UseSSL:        true,
 			SSLCAFile:     "./global-bundle.pem",
 			SSLPEMKeyFile: "./global-bundle.pem",
@@ -127,21 +128,11 @@ func MakeMongoToolOptions(mongoDetails mongoDBConnection.MongoConnectionInfo, lo
 	}
 
 	auth := options.Auth{
-		Username: mongoDetails.Username,
-		Password: mongoDetails.Password,
+		Username: mongoInfo.Username,
+		Password: mongoInfo.Password,
 	}
 
-	connection := &options.Connection{
-		Host: mongoDetails.Host,
-	}
-
-	// Trim excess
-	protocolPrefix := "mongodb://"
-	connection.Host = strings.TrimPrefix(connection.Host, protocolPrefix)
-
-	connectionURI := fmt.Sprintf("mongodb://%s", connection.Host)
-
-	uri, err := options.NewURI(connectionURI)
+	uri, err := options.NewURI(mongoInfo.Host)
 	if err != nil {
 		return nil, err
 	}
@@ -150,8 +141,7 @@ func MakeMongoToolOptions(mongoDetails mongoDBConnection.MongoConnectionInfo, lo
 
 	toolOptions = &options.ToolOptions{
 		RetryWrites: &retryWrites,
-		SSL:         &ssl,
-		Connection:  connection,
+		SSL:         ssl,
 		Auth:        &auth,
 		Verbosity:   &options.Verbosity{},
 		URI:         uri,
