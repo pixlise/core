@@ -83,7 +83,7 @@ type APIServices struct {
 	MongoDB *mongo.Database
 
 	// And how we connected to it (so we can run mongodump later if needed)
-	MongoDetails mongoDBConnection.MongoConnectionDetails
+	MongoConnectInfo mongoDBConnection.MongoConnectionInfo
 
 	Notifier INotifier
 
