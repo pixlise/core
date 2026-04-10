@@ -143,12 +143,12 @@ func main() {
 	iLog.SetLogLevel(logger.LogInfo)
 
 	// Connect to mongo
-	sourceMongoClient, _, err := mongoDBConnection.Connect(sess, sourceMongoSecret, iLog, false)
+	sourceMongoClient, _, err := mongoDBConnection.ConnectToMongo(sess, sourceMongoSecret, iLog, false)
 	if err != nil {
 		fatalError(err)
 	}
 
-	destMongoClient, _, err := mongoDBConnection.Connect(sess, destMongoSecret, iLog, false)
+	destMongoClient, _, err := mongoDBConnection.ConnectToMongo(sess, destMongoSecret, iLog, false)
 	if err != nil {
 		fatalError(err)
 	}
