@@ -108,7 +108,7 @@ func (w LogWriter) Write(p []byte) (n int, err error) {
 }
 
 func MakeMongoToolOptions(mongoInfo mongoDBConnection.MongoConnectionInfo, logger logger.ILogger, dbNamespace string) (*options.ToolOptions, error) {
-	var toolOptions *options.ToolOptions
+	toolOptions := options.New("", "", "", "", false, options.EnabledOptions{Auth: true, URI: true})
 
 	log.SetVerbosity(nil /*toolOptions.Verbosity*/)
 	lw := LogWriter{logger: logger}
@@ -125,11 +125,16 @@ func MakeMongoToolOptions(mongoInfo mongoDBConnection.MongoConnectionInfo, logge
 			SSLCAFile:     "./global-bundle.pem",
 			SSLPEMKeyFile: "./global-bundle.pem",
 		}
+	} else {
+		ssl = &options.SSL{
+			UseSSL: false,
+		}
 	}
 
 	auth := options.Auth{
 		Username: mongoInfo.Username,
 		Password: mongoInfo.Password,
+		Source:   "admin", //?????
 	}
 
 	uri, err := options.NewURI(mongoInfo.Host)
@@ -139,14 +144,29 @@ func MakeMongoToolOptions(mongoInfo mongoDBConnection.MongoConnectionInfo, logge
 
 	retryWrites := false
 
-	toolOptions = &options.ToolOptions{
-		RetryWrites: &retryWrites,
-		SSL:         ssl,
-		Auth:        &auth,
-		Verbosity:   &options.Verbosity{},
-		URI:         uri,
-		Namespace:   &options.Namespace{DB: dbNamespace},
+	toolOptions.URI = uri
+	toolOptions.ReplicaSetName = uri.ConnString.ReplicaSet
+	toolOptions.SSL = ssl
+	toolOptions.RetryWrites = &retryWrites
+	toolOptions.Auth = &auth
+	toolOptions.Namespace = &options.Namespace{DB: dbNamespace}
+	toolOptions.Connection = &options.Connection{
+		Timeout:             3,
+		TCPKeepAliveSeconds: 30,
+		Compressors:         "none",
 	}
+
+	// toolOptions = &options.ToolOptions{
+	// 	Connection: &options.Connection{
+	// 		Timeout: 3,
+	// 	},
+	// 	URI:         uri,
+	// 	RetryWrites: &retryWrites,
+	// 	SSL:         ssl,
+	// 	Auth:        &auth,
+	// 	Verbosity:   &options.Verbosity{},
+	// 	Namespace:   &options.Namespace{DB: dbNamespace},
+	// }
 
 	return toolOptions, nil
 }
