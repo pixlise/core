@@ -6,8 +6,8 @@ func Example_mongobackup_BackupDB() {
 	svcs := &services.APIServices{
 		Log:     &logger.StdOutLoggerForTest{},
 		MongoDB: db,
-		MongoDetails: mongoDBConnection.MongoConnectionInfo{
-			Host: "localhost:27017",
+		MongoConnectInfo: mongoDBConnection.MongoConnectionInfo{
+			Host: mongoDBConnection.MakeMongoURI("", "replicaSet=rs0"),
 		},
 		TimeStamper: &timestamper.MockTimeNowStamper{
 			QueuedTimeStamps: []int64{1234567890},

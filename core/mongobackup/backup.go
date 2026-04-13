@@ -28,12 +28,17 @@ func BackupDB(dbName string, s3Bucket string, s3Path string, zipDBFiles bool, sv
 		zipPath = fmt.Sprintf("./%v %v.zip", dbName, time.Now().UTC().Format("02-Jan-2006 15-04-05"))
 	}
 
+	err := os.MkdirAll(localDBDumpDir, 0777)
+	if err != nil {
+		return fmt.Errorf("DB Backup failed to create local output directory: %v. Error: %v", localDBDumpDir, err)
+	}
+
 	// Run MongoDump, save to a local archive file
 	svcs.Log.Infof("DB Backup connecting...")
 
 	dump, err := makeMongoDumpInstance(svcs.MongoConnectInfo, svcs.Log, dbName, localDBDumpDir)
 	if err != nil {
-		return fmt.Errorf("DB Bacup failed to create dump instance: %v", err)
+		return fmt.Errorf("DB Backup failed to create dump instance: %v", err)
 	}
 
 	err = dump.Init()
