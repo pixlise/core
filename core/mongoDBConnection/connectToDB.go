@@ -90,7 +90,7 @@ func connectAndCheckDB(
 		return nil, err
 	}
 
-	iLog.Infof("Successfully connected to remote mongo db!")
+	iLog.Infof("Successfully connected to mongo db %v!", mongoInfo.Host)
 
 	//defer client.Disconnect(ctx)
 	return client, nil
