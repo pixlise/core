@@ -64,31 +64,31 @@ func runBackup(dbName string, startTimestamp int64, svcs *services.APIServices) 
 		defer wg.Done()
 		errDBDump = mongobackup.BackupDB(dbName, svcs.Config.DataBackupBucket, path.Join(envS3Path, "DB"), false, svcs)
 	}()
-	/*
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			svcs.Log.Infof("Syncing scans to bucket")
-			errScanSync = wsHelpers.SyncScans(envS3Path, svcs)
-			svcs.Log.Infof("Syncing scans to bucket COMPLETE")
-		}()
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			svcs.Log.Infof("Syncing quants to bucket")
-			errQuantSync = wsHelpers.SyncQuants(envS3Path, svcs)
-			svcs.Log.Infof("Syncing quants to bucket COMPLETE")
-		}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		svcs.Log.Infof("Syncing scans to bucket")
+		errScanSync = wsHelpers.SyncScans(envS3Path, svcs)
+		svcs.Log.Infof("Syncing scans to bucket COMPLETE")
+	}()
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			svcs.Log.Infof("Syncing images to bucket")
-			errImageSync = wsHelpers.SyncImages(envS3Path, svcs)
-			svcs.Log.Infof("Syncing images to bucket COMPLETE")
-		}()
-	*/ /*  */
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		svcs.Log.Infof("Syncing quants to bucket")
+		errQuantSync = wsHelpers.SyncQuants(envS3Path, svcs)
+		svcs.Log.Infof("Syncing quants to bucket COMPLETE")
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		svcs.Log.Infof("Syncing images to bucket")
+		errImageSync = wsHelpers.SyncImages(envS3Path, svcs)
+		svcs.Log.Infof("Syncing images to bucket COMPLETE")
+	}()
+
 	// Wait for all sync tasks
 	wg.Wait()
 
@@ -157,13 +157,28 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 	var errImageSync error
 	var errQuantSync error
 
+	envReadPath := envS3Path
+
+	// Check if we're restoring old style backups (at root of bucket) or if we've got a directory in S3. Use the directory
+	// otherwise the bucket.
+	exists, err := svcs.FS.ObjectExists(svcs.Config.DataBackupBucket, envS3Path)
+	// If it doesn't exist, use the root
+	if err != nil {
+		svcs.Log.Errorf("Failed to check backup bucket path \"%v\" exists: %v", envS3Path, err)
+		return
+	}
+
+	if !exists {
+		envReadPath = ""
+	}
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
 		restoreFromDBName := ""
 		if downloadRemoteFiles {
-			restoreFromDBName, errDBRestore = wsHelpers.DownloadArchive(envS3Path, svcs)
+			restoreFromDBName, errDBRestore = wsHelpers.DownloadArchive(envReadPath, svcs)
 		}
 
 		if errDBRestore == nil {
@@ -191,7 +206,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 	go func() {
 		defer wg.Done()
 		svcs.Log.Infof("Restoring scans to bucket")
-		errScanSync = wsHelpers.RestoreScans(envS3Path, svcs)
+		errScanSync = wsHelpers.RestoreScans(envReadPath, svcs)
 		svcs.Log.Infof("Restoring scans to bucket COMPLETE")
 	}()
 
@@ -199,7 +214,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 	go func() {
 		defer wg.Done()
 		svcs.Log.Infof("Restoring quants to bucket")
-		errQuantSync = wsHelpers.RestoreQuants(envS3Path, svcs)
+		errQuantSync = wsHelpers.RestoreQuants(envReadPath, svcs)
 		svcs.Log.Infof("Restoring quants to bucket COMPLETE")
 	}()
 
@@ -207,16 +222,15 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 	go func() {
 		defer wg.Done()
 		svcs.Log.Infof("Restoring images to bucket")
-		errImageSync = wsHelpers.RestoreImages(envS3Path, svcs)
+		errImageSync = wsHelpers.RestoreImages(envReadPath, svcs)
 		svcs.Log.Infof("Restoring images to bucket COMPLETE")
 	}()
 
 	// Wait for all sync tasks
 	wg.Wait()
 
-	var err error
 	if errDBRestore != nil {
-		err = fmt.Errorf("PIXLISE Restore DB restore failed: %v", errDBRestore)
+		err = fmt.Errorf("PIXLISE Restore DB failed: %v", errDBRestore)
 	}
 
 	if errScanSync != nil {
