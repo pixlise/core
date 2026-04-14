@@ -76,11 +76,17 @@ func DownloadArchive(envS3Path string, svcs *services.APIServices) (string, erro
 
 	for _, dbFile := range remoteDBFiles {
 		// Check if it's one to exclude
+		isExcluded := false
 		for _, excludeColl := range svcs.Config.RestoreExcludeCollections {
 			if strings.Contains(dbFile, excludeColl) {
 				svcs.Log.Infof(" Skipping restore of collection %v as it containing RestoreExcludeCollections item %v", dbFile, excludeColl)
-				continue
+				isExcluded = true
+				break
 			}
+		}
+
+		if isExcluded {
+			continue
 		}
 
 		// Report free space remaining
