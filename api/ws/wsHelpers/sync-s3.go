@@ -149,10 +149,10 @@ func RestoreScans(envS3Path string, svcs *services.APIServices) error {
 
 	return syncFiles(
 		svcs.Config.DataBackupBucket,
-		filepaths.DatasetScansRoot,
+		path.Join(envS3Path, filepaths.DatasetScansRoot),
 		relativeScanFiles,
 		svcs.Config.DatasetsBucket,
-		path.Join(envS3Path, filepaths.DatasetScansRoot),
+		filepaths.DatasetScansRoot,
 		svcs.FS,
 		svcs.Log)
 }
@@ -171,10 +171,10 @@ func RestoreQuants(envS3Path string, svcs *services.APIServices) error {
 
 	return syncFiles(
 		svcs.Config.DataBackupBucket,
-		filepaths.RootQuantificationPath,
+		path.Join(envS3Path, filepaths.RootQuantificationPath),
 		relativeQuantFiles,
 		svcs.Config.UsersBucket,
-		path.Join(envS3Path, filepaths.RootQuantificationPath),
+		filepaths.RootQuantificationPath,
 		svcs.FS,
 		svcs.Log)
 }
@@ -193,10 +193,10 @@ func RestoreImages(envS3Path string, svcs *services.APIServices) error {
 
 	return syncFiles(
 		svcs.Config.DataBackupBucket,
-		filepaths.DatasetImagesRoot,
+		path.Join(envS3Path, filepaths.DatasetImagesRoot),
 		relativeImageFiles,
 		svcs.Config.DatasetsBucket,
-		path.Join(envS3Path, filepaths.DatasetImagesRoot),
+		filepaths.DatasetImagesRoot,
 		svcs.FS,
 		svcs.Log)
 }
