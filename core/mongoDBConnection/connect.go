@@ -52,6 +52,17 @@ func ConnectToMongo(
 		mongoInfo.Host = mongoUri
 	}
 
+	if strings.Contains(mongoInfo.Host, "docdb.") {
+		cl, err := connectToRemoteMongoDB(
+			mongoInfo.Host,
+			mongoInfo.Username,
+			mongoInfo.Password,
+			iLog,
+			mongoDebug,
+		)
+		return cl, mongoInfo, err
+	}
+
 	mongoInfo.Host = MakeMongoURI(mongoInfo.Host, mongoInfo.Options)
 
 	cl, err := connectAndCheckDB(mongoInfo, iLog, mongoDebug)
