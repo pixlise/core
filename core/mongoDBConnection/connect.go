@@ -52,33 +52,11 @@ func ConnectToMongo(
 		mongoInfo.Host = mongoUri
 	}
 
-	if strings.Contains(mongoInfo.Host, "docdb.") {
-		cl, err := connectToRemoteDocDB(
-			mongoInfo.Host,
-			mongoInfo.Username,
-			mongoInfo.Password,
-			iLog,
-			mongoDebug,
-		)
-		return cl, mongoInfo, err
-	}
-
 	mongoInfo.Host = MakeMongoURI(mongoInfo.Host, mongoInfo.Options)
-
 	cl, err := connectAndCheckDB(mongoInfo, iLog, mongoDebug)
 
 	return cl, mongoInfo, err
 }
-
-// server selection error:
-// server selection timeout, current topology:
-// { Type: Unknown, Servers: [{
-//   Addr: pixlise-db.cluster-clcm0b2sosn0.us-east-1.docdb.amazonaws.com:27017,
-//   Type: Unknown,
-//   Last error:  connection(pixlise-db.cluster-clcm0b2sosn0.us-east-1.docdb.amazonaws.com:27017[-3])
-//   incomplete read of message header: read tcp 192.168.157.130:60298->192.168.11.233:27017: i/o timeout:
-//   connection(pixlise-db.cluster-clcm0b2sosn0.us-east-1.docdb.amazonaws.com:27017[-3])
-//   incomplete read of message header: read tcp 192.168.157.130:60298->192.168.11.233:27017: i/o timeout }, ] }
 
 func GetDatabaseName(dbName string, envName string) string {
 	return dbName + "-" + envName
