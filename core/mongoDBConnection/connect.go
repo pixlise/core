@@ -53,7 +53,7 @@ func ConnectToMongo(
 	}
 
 	if strings.Contains(mongoInfo.Host, "docdb.") {
-		cl, err := connectToRemoteMongoDB(
+		cl, err := connectToRemoteDocDB(
 			mongoInfo.Host,
 			mongoInfo.Username,
 			mongoInfo.Password,
