@@ -39,7 +39,6 @@ import (
 // mongoInfo.Options: eg "&replicaSet=rs0&readpreference=secondaryPreferred"
 func connectAndCheckDB(
 	mongoInfo MongoConnectionInfo,
-	UseSSL bool,
 	iLog logger.ILogger,
 	mongoDebug bool,
 ) (*mongo.Client, error) {
@@ -47,28 +46,58 @@ func connectAndCheckDB(
 	var err error
 	var client *mongo.Client
 
-	iLog.Infof("Connecting to mongo db: %v", mongoInfo.Host)
+	// We're only using SSL to connect to document DB right now
+	useSSL := strings.Contains(mongoInfo.Host, "docdb.amazonaws.com")
 
-	if UseSSL {
+	isLocalConnection := strings.Contains(mongoInfo.Host, "localhost")
+
+	iLog.Infof("Connecting to mongo db: %v", mongoInfo.Host)
+	iLog.Infof("mongoInfo: %+v", mongoInfo)
+
+	if useSSL {
+		iLog.Infof("Using SSL")
+
 		tlsConfig, err := getCustomTLSConfig("./global-bundle.pem")
 		if err != nil {
 			return nil, fmt.Errorf("Failed getting TLS configuration: %v", err)
 		}
 
-		if strings.Contains(mongoInfo.Host, "localhost") {
+		if isLocalConnection {
 			tlsConfig.InsecureSkipVerify = true
+			iLog.Infof("Using InsecureSkipVerify = true")
 		}
 	}
 
 	cmdMonitor := makeMongoCommandMonitor(iLog, mongoDebug)
 
-	opts := options.Client().ApplyURI(mongoInfo.Host).SetMonitor(cmdMonitor)
+	opts := options.Client().ApplyURI(mongoInfo.Host).SetMonitor(cmdMonitor).SetRetryWrites(false)
 
-	if strings.Contains(mongoInfo.Host, "localhost") {
+	// To conform to how the document DB connection code was:
+	/*
+		client, err = mongo.Connect(
+			context.TODO(),
+			options.Client().
+				ApplyURI(connectionURI).
+				SetMonitor(cmdMonitor).
+				//SetTLSConfig(tlsConfig).
+				SetRetryWrites(false).
+				SetDirect(true).
+				SetAuth(
+					options.Credential{
+						Username:    MongoUsername,
+						Password:    MongoPassword,
+						PasswordSet: true,
+						AuthSource:  "admin",
+					}))
+	*/
+
+	// We weren't even applying the SSL settings it seems, but we had the direct flag on
+	if useSSL || isLocalConnection {
 		opts = opts.SetDirect(true)
 	}
 
 	if len(mongoInfo.Username) > 0 {
+		iLog.Infof("Connect: Setting user name: %v, password length: %v", mongoInfo.Username, len(mongoInfo.Password))
 		opts = opts.SetAuth(
 			options.Credential{
 				Username:    mongoInfo.Username,
@@ -79,6 +108,7 @@ func connectAndCheckDB(
 		)
 	}
 
+	iLog.Infof("Connect: %+v", opts)
 	client, err = mongo.Connect(context.TODO(), opts)
 
 	if err != nil {
