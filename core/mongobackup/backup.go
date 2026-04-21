@@ -136,10 +136,13 @@ func MakeMongoToolOptions(mongoInfo mongoDBConnection.MongoConnectionInfo, logge
 		}
 	}
 
-	auth := options.Auth{
-		Username: mongoInfo.Username,
-		Password: mongoInfo.Password,
-		Source:   "admin", //?????
+	var auth *options.Auth
+	if len(mongoInfo.Username) > 0 {
+		auth = &options.Auth{
+			Username: mongoInfo.Username,
+			Password: mongoInfo.Password,
+			Source:   "admin", //?????
+		}
 	}
 
 	uri, err := options.NewURI(mongoInfo.Host)
@@ -153,7 +156,7 @@ func MakeMongoToolOptions(mongoInfo mongoDBConnection.MongoConnectionInfo, logge
 	toolOptions.ReplicaSetName = uri.ConnString.ReplicaSet
 	toolOptions.SSL = ssl
 	toolOptions.RetryWrites = &retryWrites
-	toolOptions.Auth = &auth
+	toolOptions.Auth = auth
 	toolOptions.Namespace = &options.Namespace{DB: dbNamespace}
 	toolOptions.Connection = &options.Connection{
 		Timeout:             3,

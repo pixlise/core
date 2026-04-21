@@ -20,7 +20,7 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionInfo
 		return nil, err
 	}
 
-	logger.Infof("MongoRestore connecting to: %v, user %v, restore-to-db: %v, restore-from-db: %v...", toolOptions.URI.ConnectionString, toolOptions.Auth.Username, restoreToDBName, restoreFromDBName)
+	logger.Infof("MongoRestore connecting to: %v, user %v, restore-to-db: %v, restore-from-db: %v...", toolOptions.URI.ConnectionString, mongoDetails.Username, restoreToDBName, restoreFromDBName)
 
 	outputOptions := &mongorestore.OutputOptions{
 		NumParallelCollections: 1,
