@@ -20,6 +20,8 @@ package mongoDBConnection
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/pixlise/core/v4/core/logger"
@@ -29,40 +31,56 @@ import (
 // Helpers for connecting to Mongo DB
 // NOTE: we support remote, local and "test" connections as per https://medium.com/@victor.neuret/mocking-the-official-mongo-golang-driver-5aad5b226a78
 
-type MongoConnectionDetails struct {
-	Host     string
-	User     string
-	Password string
-}
-
-func Connect(
+func ConnectToMongo(
 	sess *session.Session, // Can be nil for local connection
 	mongoSecret string, // empty for local connection
 	iLog logger.ILogger,
 	mongoDebug bool,
-) (*mongo.Client, MongoConnectionDetails, error) {
-	// If the secret is blank, assume we're connecting to a local DB with no auth
-	if len(mongoSecret) <= 0 {
-		// Connect to local mongo
-		return connectToLocalMongoDB(iLog, mongoDebug)
+) (*mongo.Client, MongoConnectionInfo, error) {
+	var mongoInfo MongoConnectionInfo
+	var err error
+
+	if len(mongoSecret) > 0 {
+		// If the secret is NOT blank, assume we're connect to remote DB and get the details from secret cache
+		mongoInfo, err = getMongoConnectionInfoFromSecretCache(sess, mongoSecret)
+		if err != nil {
+			return nil, mongoInfo, fmt.Errorf("Failed to read mongo secret \"%v\" info from secrets cache: %v", mongoSecret, err)
+		}
+	} else {
+		// assume we're connecting to a local DB with no auth
+		mongoUri, _ := os.LookupEnv("LOCAL_MONGO_URI")
+		mongoInfo.Host = mongoUri
 	}
 
-	// We're connecting to a remote one, first get the details from secret cache
-	// Get a session for the bucket region
-	mongoConnectionInfo, err := getMongoConnectionInfoFromSecretCache(sess, mongoSecret)
-	if err != nil {
-		return nil, MongoConnectionDetails{}, fmt.Errorf("Failed to read mongo secret \"%v\" info from secrets cache: %v", mongoSecret, err)
-	}
+	mongoInfo.Host = MakeMongoURI(mongoInfo.Host, mongoInfo.Options)
+	cl, err := connectAndCheckDB(mongoInfo, iLog, mongoDebug)
 
-	return connectToRemoteMongoDB(
-		mongoConnectionInfo.Host,
-		mongoConnectionInfo.Username,
-		mongoConnectionInfo.Password,
-		iLog,
-		mongoDebug,
-	)
+	return cl, mongoInfo, err
 }
 
 func GetDatabaseName(dbName string, envName string) string {
 	return dbName + "-" + envName
+}
+
+func MakeMongoURI(host, options string) string {
+	uri := strings.Trim(host, "\t ")
+	options = strings.Trim(options, "\t& ")
+	if len(uri) <= 0 {
+		uri = "localhost"
+	}
+
+	// Add mongodb prefix if needed
+	if !strings.HasPrefix(uri, "mongodb://") {
+		uri = "mongodb://" + uri
+	}
+
+	// Now make sure the 2 are joined with /? but only if there are options
+	if len(options) > 0 {
+		uri = strings.TrimRight(uri, "/?")
+		options = strings.TrimLeft(options, "/?")
+
+		uri = uri + "/?" + options
+	}
+
+	return uri
 }

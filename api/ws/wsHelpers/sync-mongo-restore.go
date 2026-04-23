@@ -10,16 +10,17 @@ import (
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/core/mongobackup"
 	"github.com/pixlise/core/v4/core/utils"
 )
 
-func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDetails, logger logger.ILogger, restoreToDBName string, restoreFromDBName string) (*mongorestore.MongoRestore, error) {
-	toolOptions, err := makeMongoToolOptions(mongoDetails, logger, restoreToDBName)
+func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionInfo, logger logger.ILogger, restoreToDBName string, restoreFromDBName string) (*mongorestore.MongoRestore, error) {
+	toolOptions, err := mongobackup.MakeMongoToolOptions(mongoDetails, logger, restoreToDBName)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Infof("MongoRestore connecting to: %v, user %v, restore-to-db: %v, restore-from-db: %v...", toolOptions.URI.ConnectionString, toolOptions.Auth.Username, restoreToDBName, restoreFromDBName)
+	logger.Infof("MongoRestore connecting to: %v, user %v, restore-to-db: %v, restore-from-db: %v...", toolOptions.URI.ConnectionString, mongoDetails.Username, restoreToDBName, restoreFromDBName)
 
 	outputOptions := &mongorestore.OutputOptions{
 		NumParallelCollections: 1,
@@ -31,7 +32,7 @@ func MakeMongoRestoreInstance(mongoDetails mongoDBConnection.MongoConnectionDeta
 	inputOptions := &mongorestore.InputOptions{
 		Gzip: true,
 		//Archive:                path.Join(dataBackupLocalPath, "archive.gzip"),
-		Directory:              "./" + path.Join(dataBackupLocalPath, restoreFromDBName),
+		Directory:              "./" + path.Join("backup", restoreFromDBName),
 		RestoreDBUsersAndRoles: false,
 	}
 
@@ -59,9 +60,10 @@ func (w LogWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func DownloadArchive(svcs *services.APIServices) (string, error) {
+func DownloadArchive(envS3Path string, svcs *services.APIServices) (string, error) {
 	svcs.Log.Infof("Downloading PIXLISE DB Dump files...")
 
+	dataBackupS3Path := path.Join(envS3Path, "DB")
 	remoteDBFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, dataBackupS3Path)
 	if err != nil {
 		return "", fmt.Errorf("Failed to list remote DB dump files: %v", err)
@@ -73,6 +75,20 @@ func DownloadArchive(svcs *services.APIServices) (string, error) {
 	dbName := ""
 
 	for _, dbFile := range remoteDBFiles {
+		// Check if it's one to exclude
+		isExcluded := false
+		for _, excludeColl := range svcs.Config.RestoreExcludeCollections {
+			if strings.Contains(dbFile, excludeColl) {
+				svcs.Log.Infof(" Skipping restore of collection %v as it containing RestoreExcludeCollections item %v", dbFile, excludeColl)
+				isExcluded = true
+				break
+			}
+		}
+
+		if isExcluded {
+			continue
+		}
+
 		// Report free space remaining
 		freeBytes, err := utils.GetDiskAvailableBytes()
 		if err != nil {
@@ -89,7 +105,7 @@ func DownloadArchive(svcs *services.APIServices) (string, error) {
 		// Save locally
 		// Remove remote root dir
 		dbFilePathLocal := strings.TrimPrefix(dbFile, dataBackupS3Path+"/")
-		err = localFS.WriteObjectStream(dataBackupLocalPath, dbFilePathLocal, dbStream)
+		err = localFS.WriteObjectStream("./backup", dbFilePathLocal, dbStream)
 
 		if err != nil {
 			return "", fmt.Errorf("Failed to write local DB dump file: %v. Error: %v", dbFilePathLocal, err)

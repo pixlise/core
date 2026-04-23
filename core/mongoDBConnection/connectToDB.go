@@ -34,64 +34,78 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func connectToRemoteMongoDB(
-	MongoEndpoint string,
-	MongoUsername string,
-	MongoPassword string,
+// Does the actual job of connecting:
+// mongoInfo.Host: eg localhost or 192.168.1.1:27017,192.168.1.1:27018,192.168.1.1:27019
+// mongoInfo.Options: eg "&replicaSet=rs0&readpreference=secondaryPreferred"
+func connectAndCheckDB(
+	mongoInfo MongoConnectionInfo,
 	iLog logger.ILogger,
 	mongoDebug bool,
-) (*mongo.Client, MongoConnectionDetails, error) {
+) (*mongo.Client, error) {
 	//ctx := context.Background()
 	var err error
 	var client *mongo.Client
 
-	iLog.Infof("Connecting to remote mongo db: %v, user: %v", MongoEndpoint, MongoUsername)
+	// We're only using SSL to connect to document DB right now
+	useSSL := strings.Contains(mongoInfo.Host, "docdb.amazonaws.com")
 
-	tlsConfig, err := getCustomTLSConfig("./global-bundle.pem")
-	if err != nil {
-		return nil, MongoConnectionDetails{}, fmt.Errorf("Failed getting TLS configuration: %v", err)
-	}
+	isLocalConnection := strings.Contains(mongoInfo.Host, "localhost")
 
-	if strings.Contains(MongoEndpoint, "localhost") {
-		tlsConfig.InsecureSkipVerify = true
-	}
-
-	const extraOptions = "" //"&retryWrites=false&tlsAllowInvalidHostnames=true" //"&replicaSet=rs0&readpreference=secondaryPreferred"
-	connectionURI := fmt.Sprintf("mongodb://%s/%s", MongoEndpoint, extraOptions)
+	//iLog.Infof("Connecting to mongo db: %v", mongoInfo.Host)
+	//iLog.Infof("mongoInfo: %+v", mongoInfo)
 
 	cmdMonitor := makeMongoCommandMonitor(iLog, mongoDebug)
 
-	client, err = mongo.Connect(
-		context.TODO(),
-		options.Client().
-			ApplyURI(connectionURI).
-			SetMonitor(cmdMonitor).
-			//SetTLSConfig(tlsConfig).
-			SetRetryWrites(false).
-			SetDirect(true).
-			SetAuth(
-				options.Credential{
-					Username:    MongoUsername,
-					Password:    MongoPassword,
-					PasswordSet: true,
-					AuthSource:  "admin",
-				}))
+	opts := options.Client().ApplyURI(mongoInfo.Host).SetMonitor(cmdMonitor).SetRetryWrites(false)
+
+	if useSSL {
+		iLog.Infof("Using SSL")
+		tlsConfig, err := getCustomTLSConfig("./global-bundle.pem")
+		if err != nil {
+			return nil, fmt.Errorf("Failed getting TLS configuration: %v", err)
+		}
+
+		if isLocalConnection {
+			tlsConfig.InsecureSkipVerify = true
+			//iLog.Infof("Using InsecureSkipVerify = true")
+		}
+
+		opts = opts.SetTLSConfig(tlsConfig)
+	}
+
+	// DocDB and local need the direct connection flag
+	if useSSL || isLocalConnection {
+		opts = opts.SetDirect(true)
+	}
+
+	if len(mongoInfo.Username) > 0 {
+		iLog.Infof("Connect: Setting user name: %v, password length: %v", mongoInfo.Username, len(mongoInfo.Password))
+		opts = opts.SetAuth(
+			options.Credential{
+				Username:    mongoInfo.Username,
+				Password:    mongoInfo.Password,
+				PasswordSet: true,
+				AuthSource:  "admin",
+			},
+		)
+	}
+
+	//iLog.Infof("Connect: %+v", opts)
+	client, err = mongo.Connect(context.TODO(), opts)
 
 	if err != nil {
-		return nil, MongoConnectionDetails{}, fmt.Errorf("Failed to create new mongo DB connection: %v", err)
+		return nil, fmt.Errorf("Failed to create new mongo DB connection: %v", err)
 	}
 
 	// Try to ping the DB to confirm connection
-	var result bson.M
-	err = client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Decode(&result)
-	if err != nil {
-		return nil, MongoConnectionDetails{}, err
+	if err := mongoTestPingDB(client); err != nil {
+		return nil, err
 	}
 
-	iLog.Infof("Successfully connected to remote mongo db!")
+	iLog.Infof("Successfully connected to mongo db %v!", mongoInfo.Host)
 
 	//defer client.Disconnect(ctx)
-	return client, MongoConnectionDetails{Host: connectionURI, User: MongoUsername, Password: MongoPassword}, nil
+	return client, nil
 }
 
 func getCustomTLSConfig(caFile string) (*tls.Config, error) {
@@ -128,4 +142,10 @@ func makeMongoCommandMonitor(log logger.ILogger, mongoDebug bool) *event.Command
 			log.Errorf("Mongo err:\n%v", evt.Failure)
 		},
 	}
+}
+
+func mongoTestPingDB(client *mongo.Client) error {
+	// Try to ping the DB to confirm connection
+	var result bson.M
+	return client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Decode(&result)
 }

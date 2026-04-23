@@ -28,13 +28,10 @@ import (
 )
 
 type MongoConnectionInfo struct {
-	DbClusterIdentifier string `json:"dbClusterIdentifier"`
-	Password            string `json:"password"`
-	Engine              string `json:"engine"`
-	Port                string `json:"port"`
-	Host                string `json:"host"`
-	Ssl                 string `json:"ssl"`
-	Username            string `json:"username"`
+	Host     string `json:"host"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Options  string `json:"options"`
 }
 
 func getMongoConnectionInfoFromSecretCache(session *session.Session, secretName string) (MongoConnectionInfo, error) {
@@ -56,7 +53,7 @@ func getMongoConnectionInfoFromSecretCache(session *session.Session, secretName 
 	// Secret cache seems to return these types... Unmarshall it
 	err = json.Unmarshal([]byte(secretValue), &info)
 	if err != nil {
-		return info, fmt.Errorf("failed to parse secret: %v", secretName)
+		return info, fmt.Errorf("failed to parse secret: \"%v\". Error: %v", secretName, err)
 	}
 
 	return info, nil

@@ -253,7 +253,7 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 	iLog.SetLogLevel(cfg.LogLevel)
 
 	// Connect to mongo
-	mongoClient, mongoDetails, err := mongoDBConnection.Connect(sess, cfg.MongoSecret, iLog, cfg.MongoDebug)
+	mongoClient, mongoConnectInfo, err := mongoDBConnection.ConnectToMongo(sess, cfg.MongoSecret, iLog, cfg.MongoDebug)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -272,7 +272,7 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 	*/
 
 	// Ensure prod doesn't have restore and impersonate enabled, so we don't overwrite it via the UI
-	if strings.Contains(strings.ToLower(cfg.EnvironmentName), "prod") {
+	if strings.Contains(strings.ToLower(cfg.EnvironmentName), "prodv4") {
 		cfg.RestoreEnabled = false
 		cfg.ImpersonateEnabled = false
 	}
@@ -299,17 +299,17 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 
 	// Set up services
 	svcs := &services.APIServices{
-		Config:       cfg,
-		Log:          iLog,
-		S3:           s3svc,
-		SNS:          awsutil.RealSNS{SNS: snsSvc},
-		SQS:          awsutil.RealSQS{SQS: sqsSvc},
-		FS:           fs,
-		JWTReader:    jwt,
-		IDGen:        &idgen.IDGen{},
-		TimeStamper:  &timestamper.UnixTimeNowStamper{},
-		MongoDB:      db,
-		MongoDetails: mongoDetails,
+		Config:           cfg,
+		Log:              iLog,
+		S3:               s3svc,
+		SNS:              awsutil.RealSNS{SNS: snsSvc},
+		SQS:              awsutil.RealSQS{SQS: sqsSvc},
+		FS:               fs,
+		JWTReader:        jwt,
+		IDGen:            &idgen.IDGen{},
+		TimeStamper:      &timestamper.UnixTimeNowStamper{},
+		MongoDB:          db,
+		MongoConnectInfo: mongoConnectInfo,
 		// Notifier is configured after ws is created
 		InstanceId: apiInstanceId,
 	}
