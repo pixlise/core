@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"strings"
 	"sync"
 
 	"github.com/mongodb/mongo-tools/mongorestore"
@@ -127,11 +128,11 @@ func HandleRestoreDBReq(req *protos.RestoreDBReq, hctx wsHelpers.HandlerContext)
 		return nil, errors.New(err)
 	}
 
-	// if strings.Contains(strings.ToLower(hctx.Svcs.Config.EnvironmentName), "prod") {
-	// 	err := "PIXLISE Restore not allowed on environment: " + hctx.Svcs.Config.EnvironmentName
-	// 	hctx.Svcs.Log.Errorf(err)
-	// 	return nil, errors.New(err)
-	// }
+	if strings.Contains(strings.ToLower(hctx.Svcs.Config.EnvironmentName), "prodv4") {
+		err := "PIXLISE Restore not allowed on environment: " + hctx.Svcs.Config.EnvironmentName
+		hctx.Svcs.Log.Errorf(err)
+		return nil, errors.New(err)
+	}
 
 	deleteLocal := true
 
