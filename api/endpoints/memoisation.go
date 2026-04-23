@@ -164,7 +164,7 @@ func PutMemoise(params apiRouter.ApiHandlerGenericParams) error {
 		return err
 	}
 
-	if result.UpsertedCount != 1 {
+	if result.MatchedCount != 1 || result.ModifiedCount != 1 {
 		params.Svcs.Log.Errorf("MemoiseWriteReq for: %v got unexpected DB write result: %+v", reqItem.Key, result)
 	}
 
