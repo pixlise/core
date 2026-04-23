@@ -272,10 +272,10 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 	*/
 
 	// Ensure prod doesn't have restore and impersonate enabled, so we don't overwrite it via the UI
-	// if strings.Contains(strings.ToLower(cfg.EnvironmentName), "prod") {
-	// 	cfg.RestoreEnabled = false
-	// 	cfg.ImpersonateEnabled = false
-	// }
+	if strings.Contains(strings.ToLower(cfg.EnvironmentName), "prodv4") {
+		cfg.RestoreEnabled = false
+		cfg.ImpersonateEnabled = false
+	}
 
 	dbCollections.InitCollections(db, iLog, cfg.EnvironmentName)
 
