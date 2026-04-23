@@ -53,7 +53,7 @@ func getMongoConnectionInfoFromSecretCache(session *session.Session, secretName 
 	// Secret cache seems to return these types... Unmarshall it
 	err = json.Unmarshal([]byte(secretValue), &info)
 	if err != nil {
-		return info, fmt.Errorf("failed to parse secret: %v", secretName)
+		return info, fmt.Errorf("failed to parse secret: \"%v\". Error: %v", secretName, err)
 	}
 
 	return info, nil
