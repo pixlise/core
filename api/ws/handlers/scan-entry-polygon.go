@@ -47,6 +47,10 @@ func HandleImageScanEntryDisplayElementsGetReq(req *protos.ImageScanEntryDisplay
 		return nil, err
 	}
 
+	if len(locs.LocationPerScan) <= 0 {
+		return nil, fmt.Errorf("Image %v associated with scan: %v has no beam locations", req.ImageName, req.ScanId)
+	}
+
 	cfg, err := piquant.GetDetectorConfig(scanItem.InstrumentConfig, hctx.Svcs.MongoDB)
 	if err != nil {
 		return nil, err
