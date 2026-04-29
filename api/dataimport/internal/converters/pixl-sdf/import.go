@@ -68,9 +68,9 @@ func (p PIXLSDF) Import(importPath string, pseudoIntensityRangesPath string, dat
 	if p.isFM {
 		// These are hard-coded, the calibration values are the same hard codes that we get from the iSDS pipeline
 		device = &importValues{
-			deviceName: "EM",
+			deviceName: "FM",
 			instrument: protos.ScanInstrument_PIXL_FM,
-			detector:   "PIXL-FM",
+			detector:   "PIXL",
 			calibrationA: importCalibrationOverride{
 				evStart:   -18.5,
 				evPerChan: 7.862,
