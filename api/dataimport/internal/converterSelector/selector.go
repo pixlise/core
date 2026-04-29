@@ -88,12 +88,9 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 		if strings.HasSuffix(detectorFile.Detector, "-breadboard") {
 			log.Infof("Assuming breadboard dataset...")
 			return jplbreadboard.MSATestData{}, nil
-		} else if detectorFile.Detector == "pixl-em" {
-			log.Infof("Assuming PIXL EM dataset...")
-			return pixlsdf.MakePIXLSDF(false), nil
-		} else if detectorFile.Detector == "pixl-fm" {
-			log.Infof("Assuming PIXL FM dataset...")
-			return pixlsdf.MakePIXLSDF(true), nil
+		} else if detectorFile.Detector == "pixl-em" || detectorFile.Detector == "pixl-fm" {
+			log.Infof("Assuming PIXL %v dataset...", strings.ToUpper(detectorFile.Detector[5:]))
+			return pixlsdf.MakePIXLSDF(detectorFile.Detector == "pixl-fm"), nil
 		}
 	} else {
 		log.Errorf("Failed to open detector.json when determining dataset type. Error: %v", err)
