@@ -4,7 +4,6 @@ package dbCollections
 
 // NOTE DON'T FORGET TO UPDATE GetAllCollections() BELOW!!!
 
-const CoregJobCollection = "coregJobs"
 const DetectorConfigsName = "detectorConfigs"
 const DiffractionDetectedPeakStatusesName = "diffractionDetectedPeakStatuses"
 const DiffractionManualPeaksName = "diffractionManualPeaks"
@@ -48,7 +47,6 @@ const JobsName = "jobs"
 
 func GetAllCollections() []string {
 	return []string{
-		CoregJobCollection,
 		DetectorConfigsName,
 		DiffractionDetectedPeakStatusesName,
 		DiffractionManualPeaksName,
