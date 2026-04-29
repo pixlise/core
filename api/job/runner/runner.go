@@ -53,11 +53,25 @@ func (c JobConfig) Copy() JobConfig {
 		RequiredFiles: []JobFilePath{},
 		Command:       c.Command,
 		Args:          c.Args,
-		OutputFiles:   c.OutputFiles,
+		OutputFiles:   []JobFilePath{},
 	}
 
-	copy(newCfg.RequiredFiles, c.RequiredFiles)
-	copy(newCfg.OutputFiles, c.OutputFiles)
+	for _, f := range c.RequiredFiles {
+		newCfg.RequiredFiles = append(newCfg.RequiredFiles, JobFilePath{
+			RemoteBucket: f.RemoteBucket,
+			RemotePath:   f.RemotePath,
+			LocalPath:    f.LocalPath,
+		})
+	}
+
+	for _, f := range c.OutputFiles {
+		newCfg.OutputFiles = append(newCfg.OutputFiles, JobFilePath{
+			RemoteBucket: f.RemoteBucket,
+			RemotePath:   f.RemotePath,
+			LocalPath:    f.LocalPath,
+		})
+	}
+
 	return newCfg
 }
 

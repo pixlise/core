@@ -42,7 +42,7 @@ func (jg JobGroupConfig) GetNodeConfig(nodeIdx int) jobrunner.JobConfig {
 }
 
 type JobStarter interface {
-	StartJob(dockerImage string, jobConfig JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error
+	StartJob(jobConfig JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error
 }
 
 func GetJobStarter(name string) (JobStarter, error) {

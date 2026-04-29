@@ -27,6 +27,7 @@ import (
 
 	"github.com/pixlise/core/v4/api/config"
 	jobrunner "github.com/pixlise/core/v4/api/job/runner"
+	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/logger"
 )
 
@@ -36,7 +37,7 @@ import (
 type dockerJobStarter struct {
 }
 
-func runDockerInstance(wg *sync.WaitGroup, config jobrunner.JobConfig, dockerImage string, log logger.ILogger) {
+func runDockerInstance(wg *sync.WaitGroup, config jobrunner.JobConfig, dockerImage string, awsKey string, awsSecret string, awsRegion string, log logger.ILogger) {
 	defer wg.Done()
 
 	// Make a JSON string out of params so it can be passed in
@@ -52,9 +53,9 @@ func runDockerInstance(wg *sync.WaitGroup, config jobrunner.JobConfig, dockerIma
 	cmd := exec.Command(dockerCommand,
 		"run",
 		"--rm",
-		"-e", "AWS_ACCESS_KEY_ID="+os.Getenv("AWS_ACCESS_KEY_ID"),
-		"-e", "AWS_SECRET_ACCESS_KEY="+os.Getenv("AWS_SECRET_ACCESS_KEY"),
-		"-e", "AWS_DEFAULT_REGION="+os.Getenv("AWS_DEFAULT_REGION"),
+		"-e", "AWS_ACCESS_KEY_ID="+awsKey,
+		"-e", "AWS_SECRET_ACCESS_KEY="+awsSecret,
+		"-e", "AWS_DEFAULT_REGION="+awsRegion,
 		"-e", fmt.Sprintf("%v=%v", jobrunner.JobConfigEnvVar, configStr),
 		dockerImage,
 		// <-- Assumed that the runner is the default command and it will pick up what to do from the config env var
@@ -71,20 +72,77 @@ func runDockerInstance(wg *sync.WaitGroup, config jobrunner.JobConfig, dockerIma
 	log.Infof(string(out))
 }
 
-func (r *dockerJobStarter) StartJob(jobDockerImage string, jobConfig JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
+func (r *dockerJobStarter) StartJob(jobConfig JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
 	// Here we start multiple instances of docker and wait for them all to finish using the WaitGroup
 	var wg sync.WaitGroup
 
 	// Make sure AWS env vars are available, because that's what we'll be passing to job docker container
-	if len(os.Getenv("AWS_ACCESS_KEY_ID")) <= 0 || len(os.Getenv("AWS_SECRET_ACCESS_KEY")) <= 0 || len(os.Getenv("AWS_DEFAULT_REGION")) <= 0 {
-		txt := "No AWS environment variables defined"
+	awsKey := os.Getenv("AWS_ACCESS_KEY_ID")
+	awsSecret := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	awsRegion := os.Getenv("AWS_DEFAULT_REGION")
+
+	sess, err := awsutil.GetSession()
+	if err != nil {
+		return err
+	}
+	v, err := sess.Config.Credentials.Get()
+	if err != nil {
+		return err
+	}
+	awsKey = v.AccessKeyID
+	awsSecret = v.SecretAccessKey
+	if len(awsKey) > 0 && len(awsSecret) > 0 && len(awsRegion) <= 0 {
+		awsRegion = "us-east-1"
+	}
+
+	/*
+		// If we don't have the AWS var stuff, try using the default profile
+		if len(awsKey) <= 0 || len(awsSecret) <= 0 || len(awsRegion) <= 0 {
+			foundDefault := false
+			f, err := os.ReadFile("~/.aws/credentials")
+			if err == nil {
+				lines := strings.Split(string(f), "\n")
+				cutset := " \t\r\n"
+				for c, line := range lines {
+					if strings.Trim(line, cutset) == "[default]" {
+						// Next 2 lines should have what we're after
+						for i := range []int{c + 1, c + 2} {
+							v := strings.Trim(lines[i], cutset)
+							if strings.HasPrefix(v, "aws_access_key_id") {
+								pos := strings.Index(v, "=")
+								if pos > -1 {
+									awsKey = strings.Trim(v[pos+1:], cutset)
+								}
+							}
+							if strings.HasPrefix(v, "aws_secret_access_key") {
+								pos := strings.Index(v, "=")
+								if pos > -1 {
+									awsSecret = strings.Trim(v[pos+1:], cutset)
+								}
+							}
+						}
+
+						foundDefault = len(awsKey) > 0 && len(awsSecret) > 0
+						break
+					}
+				}
+			}
+
+			if foundDefault && len(awsRegion) <= 0 {
+				awsRegion = "us-east-1"
+			}
+		}
+	*/
+
+	if len(awsKey) <= 0 || len(awsSecret) <= 0 || len(awsRegion) <= 0 {
+		txt := "Failed to define AWS variables"
 		log.Errorf(txt)
 		return errors.New(txt)
 	}
 
 	for nodeIdx := 0; nodeIdx < jobConfig.NodeCount; nodeIdx++ {
 		wg.Add(1)
-		go runDockerInstance(&wg, jobConfig.GetNodeConfig(nodeIdx), jobDockerImage, log)
+		go runDockerInstance(&wg, jobConfig.GetNodeConfig(nodeIdx), jobConfig.DockerImage, awsKey, awsSecret, awsRegion, log)
 	}
 
 	// Wait for all nodes to finish

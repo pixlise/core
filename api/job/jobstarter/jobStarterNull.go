@@ -34,7 +34,7 @@ import (
 type nullJobStarter struct {
 }
 
-func (r *nullJobStarter) StartJob(dockerImage string, jobConfig JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error {
+func (r *nullJobStarter) StartJob(jobConfig JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error {
 	namespace := fmt.Sprintf("job-%v", jobConfig.NodeConfig.JobId)
 
 	// Start each container in the namespace
@@ -42,7 +42,7 @@ func (r *nullJobStarter) StartJob(dockerImage string, jobConfig JobGroupConfig, 
 
 	for nodeIdx := 0; nodeIdx < jobConfig.NodeCount; nodeIdx++ {
 		wg.Add(1)
-		go runNullJob(&wg, jobConfig.GetNodeConfig(nodeIdx), namespace, dockerImage, log)
+		go runNullJob(&wg, jobConfig.GetNodeConfig(nodeIdx), namespace, log)
 	}
 
 	// Wait for all job instances to finish
@@ -53,7 +53,7 @@ func (r *nullJobStarter) StartJob(dockerImage string, jobConfig JobGroupConfig, 
 
 // This is currently very dumb, we should extend it like the mock s3 backend to mock different failures
 // to allow us to test failure modes.
-func runNullJob(wg *sync.WaitGroup, jobConfig jobrunner.JobConfig, namespace string, dockerImage string, log logger.ILogger) {
+func runNullJob(wg *sync.WaitGroup, jobConfig jobrunner.JobConfig, namespace string, log logger.ILogger) {
 	defer wg.Done()
 
 	fmt.Println("Creating pod...")

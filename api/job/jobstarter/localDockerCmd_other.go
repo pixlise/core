@@ -2,4 +2,4 @@
 
 package jobstarter
 
-var dockerCommand = "/usr/local/bin/docker"
+var dockerCommand = "docker" //"/usr/local/bin/docker"

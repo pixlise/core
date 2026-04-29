@@ -46,7 +46,7 @@ type kubernetesJobStarter struct {
 
 // StartJob executes the job in a Kubernetes cluster, creating and monitoring a Kubernetes
 // Job resource as the parallel job node workers progress
-func (r *kubernetesJobStarter) StartJob(jobDockerImage string, jobConfig JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
+func (r *kubernetesJobStarter) StartJob(jobConfig JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
 	jobId := fmt.Sprintf("job-%v", jobConfig.JobGroupId)
 
 	// Make sure that the kubernetes client is set up
@@ -74,7 +74,7 @@ func (r *kubernetesJobStarter) StartJob(jobDockerImage string, jobConfig JobGrou
 	status := make(chan string)
 
 	// Dispatch as a Kubernetes Job
-	go r.runJob(jobConfig, jobId, kubeNamespace, svcAcctName, jobDockerImage, requestorUserId, cpu, apiCfg.EnvironmentName, jobConfig.NodeCount, status, apiCfg.QuantNodeMaxRuntimeSec)
+	go r.runJob(jobConfig, jobId, kubeNamespace, svcAcctName, requestorUserId, cpu, apiCfg.EnvironmentName, jobConfig.NodeCount, status, apiCfg.QuantNodeMaxRuntimeSec)
 
 	// Wait for all instances to finish
 	log.Infof("Waiting for %v pods...", jobConfig.NodeCount)
@@ -190,7 +190,7 @@ func (r *kubernetesJobStarter) getJobStatus(namespace, jobId string) (jobStatus 
 	return job.Status, err
 }
 
-func (r *kubernetesJobStarter) runJob(jobConfig JobGroupConfig, jobId, namespace, svcAcctName, dockerImage, requestorUserId, cpuResource, runtimeEnv string, count int, status chan string, quantNodeMaxRuntimeSec int32) {
+func (r *kubernetesJobStarter) runJob(jobConfig JobGroupConfig, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, count int, status chan string, quantNodeMaxRuntimeSec int32) {
 	defer close(status)
 
 	// At this point, we're creating a job which will fan out and create multiple nodes (as needed, see count param), so we make sure the job has the same id as
@@ -207,7 +207,7 @@ func (r *kubernetesJobStarter) runJob(jobConfig JobGroupConfig, jobId, namespace
 	// Max time job can run for
 	jobTTLSec := int64(quantNodeMaxRuntimeSec)
 
-	jobSpec := makeJobObject(jobConfig.NodeConfig, configStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv, count, jobTTLSec)
+	jobSpec := makeJobObject(jobConfig.NodeConfig, configStr, jobConfig.DockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv, count, jobTTLSec)
 
 	jobSpecJSON := ""
 	if jobSpecJSONBytes, err := json.MarshalIndent(jobSpec, "", utils.PrettyPrintIndentForJSON); err != nil {
