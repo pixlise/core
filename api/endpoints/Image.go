@@ -857,7 +857,7 @@ func saveImageDataAsPyramid(
 	// Write to S3 (need to use a multithreaded approach as it'd take way too long otherwise)
 	// Save the image we saved to local storage in chunks as one file to S3
 	s3Path := filepaths.GetImageFilePath(savePath)
-	return fileaccess.CopyToBucket(fs, "", localImageDataPath+"_files", bucket, s3Path, true, l)
+	return fileaccess.CopyToBucket(fs, localImageDataPath+"_files", bucket, s3Path, true, l)
 }
 
 func saveImageDataFromFile(fs fileaccess.FileAccess, bucket string, savePath string, localImageDataPath string) error {
