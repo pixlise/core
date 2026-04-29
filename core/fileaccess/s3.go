@@ -305,7 +305,7 @@ func ClearBucketDir(bucket string, s3Path string, remoteFS FileAccess, logger lo
 // Copies files to bucket
 // If preserveStructure is true, preserves directory structure from sourcePath.
 // If preserveStructure is false, copies all files flat (just filename, no subdirectories).
-func CopyToBucket(remoteFS FileAccess, datasetID string, sourcePath string, destBucket string, destPath string, preserveStructure bool, log logger.ILogger) error {
+func CopyToBucket(remoteFS FileAccess, sourcePath string, destBucket string, destPath string, preserveStructure bool, log logger.ILogger) error {
 	var uploadError error
 
 	localFS := FSAccess{}
@@ -320,9 +320,9 @@ func CopyToBucket(remoteFS FileAccess, datasetID string, sourcePath string, dest
 	numUploaders := 1
 	if totalCount > 10 {
 		numUploaders = 5
-		for w := 1; w <= numUploaders; w++ {
-			go uploadWorker(w, jobs, results)
-		}
+	}
+	for w := 1; w <= numUploaders; w++ {
+		go uploadWorker(w, jobs, results)
 	}
 
 	err := filepath.Walk(sourcePath, func(currentPath string, info os.FileInfo, err error) error {
@@ -363,7 +363,7 @@ func CopyToBucket(remoteFS FileAccess, datasetID string, sourcePath string, dest
 		return err
 	}
 
-	if numUploaders > 1 && uploadError == nil {
+	if numUploaders > 0 && uploadError == nil {
 		close(jobs)
 
 		// Check each upload for an error
