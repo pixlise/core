@@ -23,6 +23,7 @@ package dataimport
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -227,7 +228,7 @@ func ImportFromLocalFileSystem(
 
 	// Finally, copy scan files to scans, and images to images
 	log.Infof("Copying generated dataset to bucket: %v...", datasetBucket)
-	err = fileaccess.CopyToBucket(remoteFS, data.DatasetID, outputScanPath, datasetBucket, filepaths.DatasetScansRoot, false, log)
+	err = fileaccess.CopyToBucket(remoteFS, outputScanPath, datasetBucket, path.Join(filepaths.DatasetScansRoot, data.DatasetID), false, log)
 	if err != nil {
 		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
 	}
@@ -235,7 +236,7 @@ func ImportFromLocalFileSystem(
 	log.Infof("Copying images to bucket: %v...", datasetBucket)
 	imagePath := filepath.Join(outputImagesPath, data.DatasetID)
 
-	err = fileaccess.CopyToBucket(remoteFS, data.DatasetID, imagePath, datasetBucket, filepaths.DatasetImagesRoot, false, log)
+	err = fileaccess.CopyToBucket(remoteFS, imagePath, datasetBucket, path.Join(filepaths.DatasetImagesRoot, data.DatasetID), false, log)
 	if err != nil {
 		return "", fmt.Errorf("Error when copying dataset to bucket: %v. Error: %v", datasetBucket, err)
 	}

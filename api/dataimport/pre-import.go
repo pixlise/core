@@ -61,15 +61,15 @@ func readFromZip(fileInZip *zip.File, outPath string) (string, error) {
 	return outFullPath, nil
 }
 
-func ProcessEM(importId string, zipReader *zip.Reader, zippedData []byte, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
-	// EM data comes not via the FM pipeline, but more direct from the instrument via SDF peeks output format.
+func ProcessSDF(importId string, zipReader *zip.Reader, zippedData []byte, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
+	// EM (and now FM if manually uploaded) data comes not via the FM pipeline, but more direct from the instrument via SDF peeks output format.
 	// We search the zip dir tree for:
 	// - sdf_raw.txt
 	// - All *.msa fils
 	// - All *.jpg files (and based on file name decide if they're needed)
 	// SDF raw file may contain data from multiple scans, so we have to generate one scan per RTT found in sdf_raw.
 
-	localTemp, sdfLocalPath, msas, images, err := startEMProcess(importId, zipReader, zippedData, logger)
+	localTemp, sdfLocalPath, msas, images, err := startSDFProcess(importId, zipReader, zippedData, logger)
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func ProcessEM(importId string, zipReader *zip.Reader, zippedData []byte, destBu
 }
 
 // Just broken out to make it testable
-func startEMProcess(importId string, zipReader *zip.Reader, zippedData []byte, logger logger.ILogger) (string, string, []string, []string, error) {
+func startSDFProcess(importId string, zipReader *zip.Reader, zippedData []byte, logger logger.ILogger) (string, string, []string, []string, error) {
 	// We also have to run the beam location tool ourselves - there isn't one coming from sdf_raw.txt
 	localTemp := filepath.Join(os.TempDir(), importId)
 	localMSAPath := filepath.Join(localTemp, "msa")
@@ -211,7 +211,7 @@ func startEMProcess(importId string, zipReader *zip.Reader, zippedData []byte, l
 	logger.Infof("Found %v images", len(images))
 	logger.Infof("Found %v histograms (MSA files)", len(msas))
 
-	// Reject any scans that don't have histograms from the EM
+	// Reject any scans that don't have histograms from the EM (or FM)
 	if len(msas) <= 0 {
 		return localTemp, sdfLocalPath, msas, images, fmt.Errorf("No histograms found")
 	}

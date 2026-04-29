@@ -25,8 +25,8 @@ import (
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/converters/converter"
 	"github.com/pixlise/core/v4/api/dataimport/internal/converters/jplbreadboard"
-	"github.com/pixlise/core/v4/api/dataimport/internal/converters/pixlem"
-	"github.com/pixlise/core/v4/api/dataimport/internal/converters/pixlfm"
+	pixlidspipeline "github.com/pixlise/core/v4/api/dataimport/internal/converters/pixl-ids-pipeline"
+	pixlsdf "github.com/pixlise/core/v4/api/dataimport/internal/converters/pixl-sdf"
 	importwds "github.com/pixlise/core/v4/api/dataimport/internal/converters/sem"
 	"github.com/pixlise/core/v4/api/dataimport/internal/converters/soff"
 	dataimportModel "github.com/pixlise/core/v4/api/dataimport/models"
@@ -52,10 +52,10 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 	*/
 	// Check if it's a PIXL FM style dataset
 	log.Infof("Checking path \"%v\" for PIXL FM structure...", importPath)
-	pathType, err := pixlfm.DetectPIXLFMStructure(importPath)
+	pathType, err := pixlidspipeline.DetectPIXLFMStructure(importPath)
 	if len(pathType) > 0 && err == nil {
 		// We know it's a PIXL FM type dataset... it'll later be determined which one
-		return pixlfm.PIXLFM{}, nil
+		return pixlidspipeline.PIXLFM{}, nil
 	}
 
 	log.Infof("Assuming non-PIXL-FM dataset...")
@@ -88,9 +88,9 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 		if strings.HasSuffix(detectorFile.Detector, "-breadboard") {
 			log.Infof("Assuming breadboard dataset...")
 			return jplbreadboard.MSATestData{}, nil
-		} else if detectorFile.Detector == "pixl-em" {
-			log.Infof("Assuming PIXL EM dataset...")
-			return pixlem.PIXLEM{}, nil
+		} else if detectorFile.Detector == "pixl-em" || detectorFile.Detector == "pixl-fm" {
+			log.Infof("Assuming PIXL %v dataset...", strings.ToUpper(detectorFile.Detector[5:]))
+			return pixlsdf.MakePIXLSDF(detectorFile.Detector == "pixl-fm"), nil
 		}
 	} else {
 		log.Errorf("Failed to open detector.json when determining dataset type. Error: %v", err)
