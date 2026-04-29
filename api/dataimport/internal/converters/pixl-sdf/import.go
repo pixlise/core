@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package pixlem
+package pixlsdf
 
 import (
 	"fmt"
@@ -36,22 +36,77 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-// These are EM files, which we expect to be in the same format as FM but because they come from
-// manual uploads, we expect the actual files to be in a sub dir. We also override the group/detector
-// when importing these
+// This imports EM or FM data from SDF files to ensure we have the ability to manually upload
+// PIXL scans without relying on the JPL iSDS pipeline that delivers them in other formats.
+// Because they come from manual uploads, we expect the actual files to be in a sub dir. We
+// also override the group/detector when importing these
 
-type PIXLEM struct {
+type PIXLSDF struct {
+	isFM bool
 }
 
-func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, datasetIDExpected string, log logger.ILogger) (*dataConvertModels.OutputData, string, error) {
-	log.Infof("PIXL EM Import started for path: %v", importPath)
+func MakePIXLSDF(isFM bool) PIXLSDF {
+	return PIXLSDF{isFM: isFM}
+}
+
+type importCalibrationOverride struct {
+	evStart   float32
+	evPerChan float32
+}
+
+type importValues struct {
+	deviceName   string
+	instrument   protos.ScanInstrument
+	detector     string
+	calibrationA importCalibrationOverride
+	calibrationB importCalibrationOverride
+}
+
+func (p PIXLSDF) Import(importPath string, pseudoIntensityRangesPath string, datasetIDExpected string, log logger.ILogger) (*dataConvertModels.OutputData, string, error) {
+	var device *importValues
+
+	if p.isFM {
+		// These are hard-coded, the calibration values are the same hard codes that we get from the iSDS pipeline
+		device = &importValues{
+			deviceName: "EM",
+			instrument: protos.ScanInstrument_PIXL_FM,
+			detector:   "PIXL-FM",
+			calibrationA: importCalibrationOverride{
+				evStart:   -18.5,
+				evPerChan: 7.862,
+			},
+			calibrationB: importCalibrationOverride{
+				evStart:   -22.4,
+				evPerChan: 7.881,
+			},
+		}
+	} else {
+		device = &importValues{
+			deviceName: "EM",
+			instrument: protos.ScanInstrument_PIXL_EM,
+			detector:   "PIXL-EM-E2E", // Specifying this and the above will allow importer to work, we want to block out weird EM data from FM pipeline normally
+			calibrationA: importCalibrationOverride{
+				evStart:   0,
+				evPerChan: 8,
+			},
+			calibrationB: importCalibrationOverride{
+				evStart:   0,
+				evPerChan: 8,
+			},
+		}
+	}
+
+	log.Infof("PIXL %v Import started for path: %v", device.deviceName, importPath)
 
 	fs := fileaccess.FSAccess{}
 
-	// PIXL EM has evolved over time from being a FM-like dataset, or a bunch of MSA files, to us importing the SDF-Peek output format. We run the beam geometry tool ourselves
-	// when the dataset is imported, and here we're expecting the sdf peek output zip file, and the processed files we generate to make these ready to import.
-	// Check expected files exist
+	// PIXL data delivery to PIXLISE has evolved over time, we initially used the output from some tool that reads SDF files and outputs MSA/images
+	// to then receiving FM data via the iSDS pipeline that JPL provided. Over time we needed the ability to import from the raw SDF files ourselves
+	// (that were run through sdf-peek) for EM data/testing, and this became generalised, so we can import FM data in this format too. We run the
+	// beam geometry tool ourselves when the dataset is imported, and here we're expecting the sdf peek output zip file, and the processed files we
+	// generate to make these ready to import.
 
+	// Check expected files exist
 	msaFiles, err := utils.ReadFileLines(filepath.Join(importPath, "msas.txt"))
 	if err != nil {
 		log.Errorf("%v", err)
@@ -81,13 +136,6 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 	if err != nil {
 		return nil, "", err
 	}
-	/*
-		// Extract RTTs from each beam location file name and import a dataset for each RTT
-		zipName, err := extractZipName(append(msaFiles, imageFiles...))
-		if err != nil {
-			return nil, "", err
-		}
-	*/
 
 	// Assume zip name is the same as dataset id, ie the directory where the files referenced in the above text files exist
 	zipName := datasetIDExpected
@@ -159,7 +207,7 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 		beamPath := filepath.Join(importPath, beamName)
 		// HK file should be here too...
 		hkPath := filepath.Join(importPath, "HK-"+rttStr+".csv")
-		data, err := importEMData(creatorId, rttStr, beamPath, hkPath, imageList, bulkMaxList, msaList, &fs, log)
+		data, err := readSDFConvertedData(creatorId, rttStr, beamPath, hkPath, imageList, bulkMaxList, msaList, device, log)
 		if err != nil {
 			log.Errorf("Import failed for %v: %v", beamName, err)
 			continue
@@ -170,7 +218,7 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 
 		// To ensure we don't overwrite real datasets by RTT, along with ensure we always create a new dataset when importing
 		// because the PIXL testing process means people won't always generate a new RTT for their scan!
-		data.DatasetID = fmt.Sprintf("em_%v_%v", data.DatasetID, ts.GetTimeNowSec())
+		data.DatasetID = fmt.Sprintf("%v_%v_%v", strings.ToLower(device.deviceName), data.DatasetID, ts.GetTimeNowSec())
 
 		log.Infof("Generated Scan ID: %v", data.DatasetID)
 
@@ -198,7 +246,7 @@ func (p PIXLEM) Import(importPath string, pseudoIntensityRangesPath string, data
 			}
 		}
 
-		// NOTE: PIXL EM import - we clear everything before importing so we don't end up with eg images from a bad previous import
+		// NOTE: PIXL EM/FM import - we clear everything before importing so we don't end up with eg images from a bad previous import
 		data.ClearBeforeSave = true
 
 		return data, filepath.Join(importPath, zipName /*, zipName*/), nil
@@ -221,34 +269,16 @@ func readCreator(creatorPath string, fs fileaccess.FileAccess) (string, error) {
 	return creator.Id, nil
 }
 
-/*func extractZipName(files []string) (string, error) {
-	zipName := ""
-	pathSep := string(os.PathSeparator)
-
-	// Unfortunately when unzipped, the zip file name ends up in the path again... so we have to add it here. Once we have the zip name,
-	// verify all files in the list start with it
-	for _, f := range files {
-		if len(zipName) <= 0 {
-			pos := strings.Index(f, pathSep)
-			if pos == -1 {
-				pos = strings.Index(f, fmt.Sprintf("%v", "/"))
-			}
-			if pos > 0 {
-				zipName = f[0:pos]
-			} else {
-				return "", fmt.Errorf("Failed to read path root for PIXL EM importable files from: %v", f)
-			}
-		} else {
-			if !strings.HasPrefix(f, zipName) {
-				return "", fmt.Errorf("Error while reading importable files for PIXL EM: Expected path %v to start with %v", f, zipName)
-			}
-		}
-	}
-
-	return zipName, nil
-}*/
-
-func importEMData(creatorId string, rtt string, beamLocPath string, hkPath string, imagePathList []string, bulkMaxList []string, msaList []string, fs fileaccess.FileAccess, logger logger.ILogger) (*dataConvertModels.OutputData, error) {
+func readSDFConvertedData(
+	creatorId string,
+	rtt string,
+	beamLocPath string,
+	hkPath string,
+	imagePathList []string,
+	bulkMaxList []string,
+	msaList []string,
+	device *importValues,
+	logger logger.ILogger) (*dataConvertModels.OutputData, error) {
 	// Read MSAs
 	locSpectraLookup, err := jplbreadboard.MakeSpectraLookup("", msaList, true, false, "", false, logger)
 	if err != nil {
@@ -262,17 +292,17 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 
 	// We override the calibration values (well, they're actually absent at time of writing!) with hard-coded values
 	// that come from PIXL_EM_GEB_20kVair_SolidAngleAdj_Sep2020.xsp - the config file for PIXL-EM-E2E PIQUANT config
-	err = jplbreadboard.EVCalibrationOverride(&locSpectraLookup, 8, 0, 8, 0)
+	err = jplbreadboard.EVCalibrationOverride(&locSpectraLookup, device.calibrationA.evPerChan, device.calibrationA.evStart, device.calibrationB.evPerChan, device.calibrationB.evStart)
 	if err != nil {
 		return nil, err
 	}
 
-	err = jplbreadboard.EVCalibrationOverride(&bulkMaxSpectraLookup, 8, 0, 8, 0)
+	err = jplbreadboard.EVCalibrationOverride(&bulkMaxSpectraLookup, device.calibrationA.evPerChan, device.calibrationA.evStart, device.calibrationB.evPerChan, device.calibrationB.evStart)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Infof("Energy calibration for spectra set to xperchan=8, offset=0")
+	logger.Infof("Energy calibration for spectra set to A[xperchan=%v, offset=%v], B[xperchan=%v, offset=%v]", device.calibrationA.evPerChan, device.calibrationA.evStart, device.calibrationB.evPerChan, device.calibrationB.evStart)
 
 	// Read Images
 	contextImgsPerPMC := importerutils.GetContextImagesPerPMCFromListing(imagePathList, logger)
@@ -370,8 +400,8 @@ func importEMData(creatorId string, rtt string, beamLocPath string, hkPath strin
 		"",
 		housekeepingFileNameMeta,
 		rtt,
-		protos.ScanInstrument_PIXL_EM,
-		"PIXL-EM-E2E", // Specifying this and the above will allow importer to work, we want to block out weird EM data from FM pipeline normally
+		device.instrument,
+		device.detector,
 		uint32(3),
 		logger,
 	)
