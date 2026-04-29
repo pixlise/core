@@ -17,7 +17,7 @@
 
 // Exposes interfaces and structures required to run PIQUANT in the Kubernetes cluster along with functions
 // to access quantification files, logs, results and summaries of quant jobs.
-package jobstarter
+package jobexecutor
 
 import (
 	"fmt"
@@ -41,17 +41,23 @@ func (jg JobGroupConfig) GetNodeConfig(nodeIdx int) jobrunner.JobConfig {
 	return nodeCfg
 }
 
-type JobStarter interface {
+type JobExecutor interface {
 	StartJob(jobConfig JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error
+	// TODO:
+	// CancelJob
+	// GetJobStatus
+	// RegisterForJobStatusChange
+	// GetJobLogs
 }
 
-func GetJobStarter(name string) (JobStarter, error) {
-	if name == "docker" {
-		return &dockerJobStarter{}, nil
-	} else if name == "kubernetes" {
-		return &kubernetesJobStarter{}, nil
-	} else if name == "null" {
-		return &nullJobStarter{}, nil
+func GetJobExecutor(name string) (JobExecutor, error) {
+	switch name {
+	case "docker":
+		return &dockerJobExecutor{}, nil
+	case "kubernetes":
+		return &kubernetesJobExecutor{}, nil
+	case "null":
+		return &nullJobExecutor{}, nil
 	}
-	return nil, fmt.Errorf("Unknown job starter: %v", name)
+	return nil, fmt.Errorf("Unknown job executor: %v", name)
 }

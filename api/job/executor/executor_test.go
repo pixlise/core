@@ -1,4 +1,4 @@
-package jobstarter
+package jobexecutor
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 )
 
-func Example_jobstarter_Run_docker_Python() {
+func Example_jobexecutor_Run_docker_Python() {
 	nodeCfg := jobrunner.JobConfig{
 		JobId:   "Job003",
 		Command: "python",
@@ -37,7 +37,7 @@ func Example_jobstarter_Run_docker_Python() {
 	// cfgJSON, err := json.Marshal(cfg)
 	// fmt.Printf("cfgErr: %v\n", err)
 
-	r, err := GetJobStarter("docker")
+	r, err := GetJobExecutor("docker")
 	fmt.Printf("GetJobStarter: %v\n", err)
 
 	l := &logger.StdOutLoggerForTest{}
@@ -103,7 +103,7 @@ func Example_jobstarter_Run_docker_Python() {
 	// ==========
 }
 
-func Example_jobstarter_Run_docker_Lua() {
+func Example_jobexecutor_Run_docker_Lua() {
 	nodeCfg := jobrunner.JobConfig{
 		JobId:   "Job004",
 		Command: "lua5.3",
@@ -128,7 +128,7 @@ func Example_jobstarter_Run_docker_Lua() {
 	// cfgJSON, err := json.Marshal(cfg)
 	// fmt.Printf("cfgErr: %v\n", err)
 
-	r, err := GetJobStarter("docker")
+	r, err := GetJobExecutor("docker")
 	fmt.Printf("GetJobStarter: %v\n", err)
 
 	l := &logger.StdOutLoggerForTest{}

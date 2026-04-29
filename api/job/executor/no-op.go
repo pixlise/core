@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package jobstarter
+package jobexecutor
 
 import (
 	"fmt"
@@ -28,13 +28,10 @@ import (
 	jobrunner "github.com/pixlise/core/v4/api/job/runner"
 )
 
-///////////////////////////////////////////////////////////////////////////////////////////
-// nullJobStarter for testing
-
-type nullJobStarter struct {
+type nullJobExecutor struct {
 }
 
-func (r *nullJobStarter) StartJob(jobConfig JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error {
+func (r *nullJobExecutor) StartJob(jobConfig JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error {
 	namespace := fmt.Sprintf("job-%v", jobConfig.NodeConfig.JobId)
 
 	// Start each container in the namespace
@@ -62,8 +59,6 @@ func runNullJob(wg *sync.WaitGroup, jobConfig jobrunner.JobConfig, namespace str
 	startUnix := time.Now().Unix()
 	maxEndUnix := startUnix + config.KubernetesMaxTimeoutSec
 	for currUnix := time.Now().Unix(); currUnix < maxEndUnix; currUnix = time.Now().Unix() {
-		// Check kubernetes pod status
-
 		for i := 1; i < 5; i++ {
 			log.Infof("NullJob Loop: " + string(rune(i)))
 		}

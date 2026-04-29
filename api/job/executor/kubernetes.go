@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package jobstarter
+package jobexecutor
 
 import (
 	"context"
@@ -39,14 +39,14 @@ import (
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Runs job in Kubernetes
 
-type kubernetesJobStarter struct {
+type kubernetesJobExecutor struct {
 	fatalErrors chan error
 	kubeHelper  kubernetes.KubeHelper
 }
 
 // StartJob executes the job in a Kubernetes cluster, creating and monitoring a Kubernetes
 // Job resource as the parallel job node workers progress
-func (r *kubernetesJobStarter) StartJob(jobConfig JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
+func (r *kubernetesJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
 	jobId := fmt.Sprintf("job-%v", jobConfig.JobGroupId)
 
 	// Make sure that the kubernetes client is set up
@@ -185,12 +185,12 @@ func makeJobObject(config jobrunner.JobConfig, configStr, dockerImage, jobId, na
 	}
 }
 
-func (r *kubernetesJobStarter) getJobStatus(namespace, jobId string) (jobStatus batchv1.JobStatus, err error) {
+func (r *kubernetesJobExecutor) getJobStatus(namespace, jobId string) (jobStatus batchv1.JobStatus, err error) {
 	job, err := r.kubeHelper.Clientset.BatchV1().Jobs(namespace).Get(context.Background(), jobId, metav1.GetOptions{})
 	return job.Status, err
 }
 
-func (r *kubernetesJobStarter) runJob(jobConfig JobGroupConfig, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, count int, status chan string, quantNodeMaxRuntimeSec int32) {
+func (r *kubernetesJobExecutor) runJob(jobConfig JobGroupConfig, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, count int, status chan string, quantNodeMaxRuntimeSec int32) {
 	defer close(status)
 
 	// At this point, we're creating a job which will fan out and create multiple nodes (as needed, see count param), so we make sure the job has the same id as

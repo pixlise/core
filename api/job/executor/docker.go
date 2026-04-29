@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package jobstarter
+package jobexecutor
 
 import (
 	"encoding/json"
@@ -34,45 +34,10 @@ import (
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Runs job locally in Docker
 
-type dockerJobStarter struct {
+type dockerJobExecutor struct {
 }
 
-func runDockerInstance(wg *sync.WaitGroup, config jobrunner.JobConfig, dockerImage string, awsKey string, awsSecret string, awsRegion string, log logger.ILogger) {
-	defer wg.Done()
-
-	// Make a JSON string out of params so it can be passed in
-	configJSON, err := json.Marshal(config)
-	if err != nil {
-		log.Errorf("Error serialising config for docker instance: %v", err)
-		return
-	}
-	configStr := string(configJSON)
-
-	// Start up docker, give it env vars for AWS access
-	// and our JSON param blob too
-	cmd := exec.Command(dockerCommand,
-		"run",
-		"--rm",
-		"-e", "AWS_ACCESS_KEY_ID="+awsKey,
-		"-e", "AWS_SECRET_ACCESS_KEY="+awsSecret,
-		"-e", "AWS_DEFAULT_REGION="+awsRegion,
-		"-e", fmt.Sprintf("%v=%v", jobrunner.JobConfigEnvVar, configStr),
-		dockerImage,
-		// <-- Assumed that the runner is the default command and it will pick up what to do from the config env var
-	)
-
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Infof("Running job %v in docker failed: %v\n", config.JobId, err)
-		log.Infof(string(out))
-		return
-	}
-
-	log.Infof("Job %v ran successfully:\n", config.JobId)
-	log.Infof(string(out))
-}
-
-func (r *dockerJobStarter) StartJob(jobConfig JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
+func (r *dockerJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
 	// Here we start multiple instances of docker and wait for them all to finish using the WaitGroup
 	var wg sync.WaitGroup
 
@@ -149,4 +114,40 @@ func (r *dockerJobStarter) StartJob(jobConfig JobGroupConfig, apiCfg config.APIC
 	wg.Wait()
 
 	return nil
+}
+
+func runDockerInstance(wg *sync.WaitGroup, config jobrunner.JobConfig, dockerImage string, awsKey string, awsSecret string, awsRegion string, log logger.ILogger) {
+	defer wg.Done()
+
+	// Make a JSON string out of params so it can be passed in
+	configJSON, err := json.Marshal(config)
+	if err != nil {
+		log.Errorf("Error serialising config for docker instance: %v", err)
+		return
+	}
+	configStr := string(configJSON)
+
+	// Start up docker, give it env vars for AWS access
+	// and our JSON param blob too
+	cmd := exec.Command(
+		"docker",
+		"run",
+		"--rm",
+		"-e", "AWS_ACCESS_KEY_ID="+awsKey,
+		"-e", "AWS_SECRET_ACCESS_KEY="+awsSecret,
+		"-e", "AWS_DEFAULT_REGION="+awsRegion,
+		"-e", fmt.Sprintf("%v=%v", jobrunner.JobConfigEnvVar, configStr),
+		dockerImage,
+		// <-- Assumed that the runner is the default command and it will pick up what to do from the config env var
+	)
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Infof("Running job %v in docker failed: %v\n", config.JobId, err)
+		log.Infof(string(out))
+		return
+	}
+
+	log.Infof("Job %v ran successfully:\n", config.JobId)
+	log.Infof(string(out))
 }

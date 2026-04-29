@@ -15,8 +15,6 @@ const ImageBeamLocationsName = "imageBeamLocations"
 const ImagePyramidsName = "imagePyramids"
 const Image3DPointsName = "image3DPoints"
 const ImagesName = "images"
-const JobStatusName = "jobStatuses"
-const JobHandlersName = "jobHandlers"
 const MemoisedItemsName = "memoisedItems"
 const MistROIsName = "mistROIs"
 const ModulesName = "modules"
@@ -44,6 +42,8 @@ const ViewStatesName = "viewStates"
 const WidgetDataName = "widgetData"
 const ConnectTempTokensName = "connectTempTokens"
 const JobsName = "jobs"
+const JobStatusName = "jobStatuses"
+const JobHandlersName = "jobHandlers"
 
 func GetAllCollections() []string {
 	return []string{
