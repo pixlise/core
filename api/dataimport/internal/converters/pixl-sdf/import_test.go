@@ -1,4 +1,4 @@
-package pixlem
+package pixlsdf
 
 import (
 	"fmt"
