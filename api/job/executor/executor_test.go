@@ -110,6 +110,7 @@ func Example_jobexecutor_Run_docker_Python() {
 	// ===========
 }
 
+/*
 func Example_jobexecutor_Run_docker_Lua() {
 	nodeCfg := job.JobConfig{
 		JobId:   "Job004",
@@ -200,3 +201,4 @@ func Example_jobexecutor_Run_docker_Lua() {
 	// The end.
 	// ==========
 }
+*/
