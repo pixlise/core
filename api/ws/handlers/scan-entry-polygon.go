@@ -42,9 +42,23 @@ func HandleImageScanEntryDisplayElementsGetReq(req *protos.ImageScanEntryDisplay
 		return nil, fmt.Errorf("Failed to decode scan: %v. Error: %v", req.ScanId, err)
 	}
 
-	locs, err := wsHelpers.GetImageBeamLocations(hctx, req.ImageName, map[string]uint32{req.ScanId: req.BeamVersion})
-	if err != nil {
-		return nil, err
+	var locs *protos.ImageLocations
+	if len(req.ImageName) <= 0 && len(req.ScanId) > 0 {
+		// We have no image, so we generate coordinates
+		// NOTE: empty image name implies this won't write to DB
+		locs, err = wsHelpers.GenerateIJs("", req.ScanId, scanItem.Instrument, hctx.Svcs)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		locs, err = wsHelpers.GetImageBeamLocations(hctx, req.ImageName, map[string]uint32{req.ScanId: req.BeamVersion})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if len(locs.LocationPerScan) <= 0 {
+		return nil, fmt.Errorf("Image %v associated with scan: %v has no beam locations", req.ImageName, req.ScanId)
 	}
 
 	cfg, err := piquant.GetDetectorConfig(scanItem.InstrumentConfig, hctx.Svcs.MongoDB)

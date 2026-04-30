@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package jobstarter
+package jobexecutor
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/pixlise/core/v4/api/config"
-	jobrunner "github.com/pixlise/core/v4/api/job/runner"
+	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/core/kubernetes"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/utils"
@@ -39,14 +39,14 @@ import (
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Runs job in Kubernetes
 
-type kubernetesJobStarter struct {
+type kubernetesJobExecutor struct {
 	fatalErrors chan error
 	kubeHelper  kubernetes.KubeHelper
 }
 
 // StartJob executes the job in a Kubernetes cluster, creating and monitoring a Kubernetes
 // Job resource as the parallel job node workers progress
-func (r *kubernetesJobStarter) StartJob(jobDockerImage string, jobConfig JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
+func (r *kubernetesJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
 	jobId := fmt.Sprintf("job-%v", jobConfig.JobGroupId)
 
 	// Make sure that the kubernetes client is set up
@@ -74,7 +74,7 @@ func (r *kubernetesJobStarter) StartJob(jobDockerImage string, jobConfig JobGrou
 	status := make(chan string)
 
 	// Dispatch as a Kubernetes Job
-	go r.runJob(jobConfig, jobId, kubeNamespace, svcAcctName, jobDockerImage, requestorUserId, cpu, apiCfg.EnvironmentName, jobConfig.NodeCount, status, apiCfg.QuantNodeMaxRuntimeSec)
+	go r.runJob(jobConfig, jobId, kubeNamespace, svcAcctName, requestorUserId, cpu, apiCfg.EnvironmentName, jobConfig.NodeCount, status, apiCfg.QuantNodeMaxRuntimeSec)
 
 	// Wait for all instances to finish
 	log.Infof("Waiting for %v pods...", jobConfig.NodeCount)
@@ -109,7 +109,7 @@ func (r *kubernetesJobStarter) StartJob(jobDockerImage string, jobConfig JobGrou
 // - namespace: a string specifying the namespace in which the job should be created
 // - requestorUserId: a string specifying the user ID of the requestor
 // - numPods: an integer specifying the number of pods to create for the job
-func makeJobObject(config jobrunner.JobConfig, configStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, numPods int, jobTTLSec int64) *batchv1.Job {
+func makeJobObject(config job.JobConfig, configStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, numPods int, jobTTLSec int64) *batchv1.Job {
 	imagePullSecret := apiv1.LocalObjectReference{Name: "api-auth"}
 	application := "job-runner" // Used to be piquant-runner
 	name := config.JobId        // Used to be piquant-map or piquant-fit (maybe piquant-quant?)
@@ -169,7 +169,7 @@ func makeJobObject(config jobrunner.JobConfig, configStr, dockerImage, jobId, na
 							},
 
 							Env: []apiv1.EnvVar{
-								{Name: jobrunner.JobConfigEnvVar, Value: configStr},
+								{Name: job.JobConfigEnvVar, Value: configStr},
 								{Name: "PYTHONUNBUFFERED", Value: "TRUE"},
 								/*{Name: "NODE_INDEX", ValueFrom: &apiv1.EnvVarSource{
 									FieldRef: &apiv1.ObjectFieldSelector{
@@ -185,12 +185,12 @@ func makeJobObject(config jobrunner.JobConfig, configStr, dockerImage, jobId, na
 	}
 }
 
-func (r *kubernetesJobStarter) getJobStatus(namespace, jobId string) (jobStatus batchv1.JobStatus, err error) {
+func (r *kubernetesJobExecutor) getJobStatus(namespace, jobId string) (jobStatus batchv1.JobStatus, err error) {
 	job, err := r.kubeHelper.Clientset.BatchV1().Jobs(namespace).Get(context.Background(), jobId, metav1.GetOptions{})
 	return job.Status, err
 }
 
-func (r *kubernetesJobStarter) runJob(jobConfig JobGroupConfig, jobId, namespace, svcAcctName, dockerImage, requestorUserId, cpuResource, runtimeEnv string, count int, status chan string, quantNodeMaxRuntimeSec int32) {
+func (r *kubernetesJobExecutor) runJob(jobConfig JobGroupConfig, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, count int, status chan string, quantNodeMaxRuntimeSec int32) {
 	defer close(status)
 
 	// At this point, we're creating a job which will fan out and create multiple nodes (as needed, see count param), so we make sure the job has the same id as
@@ -207,7 +207,7 @@ func (r *kubernetesJobStarter) runJob(jobConfig JobGroupConfig, jobId, namespace
 	// Max time job can run for
 	jobTTLSec := int64(quantNodeMaxRuntimeSec)
 
-	jobSpec := makeJobObject(jobConfig.NodeConfig, configStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv, count, jobTTLSec)
+	jobSpec := makeJobObject(jobConfig.NodeConfig, configStr, jobConfig.DockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv, count, jobTTLSec)
 
 	jobSpecJSON := ""
 	if jobSpecJSONBytes, err := json.MarshalIndent(jobSpec, "", utils.PrettyPrintIndentForJSON); err != nil {

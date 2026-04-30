@@ -19,7 +19,7 @@ import (
 	"github.com/pixlise/core/v4/api/endpoints"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
-	"github.com/pixlise/core/v4/api/job/jobstarter"
+	jobexecutor "github.com/pixlise/core/v4/api/job/executor"
 	"github.com/pixlise/core/v4/api/memoisation"
 	"github.com/pixlise/core/v4/api/notificationSender"
 	"github.com/pixlise/core/v4/api/permission"
@@ -407,7 +407,7 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 }
 
 func runPostImportJobs(scanId string, svcs *services.APIServices) {
-	_, err := jobstarter.GetJobStarter(svcs.Config.QuantExecutor)
+	_, err := jobexecutor.GetJobExecutor(svcs.Config.QuantExecutor)
 	if err != nil {
 		svcs.Log.Errorf("Failed to create job starter for running post-import jobs: %v", err)
 		return

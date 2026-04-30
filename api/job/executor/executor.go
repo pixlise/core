@@ -17,13 +17,13 @@
 
 // Exposes interfaces and structures required to run PIQUANT in the Kubernetes cluster along with functions
 // to access quantification files, logs, results and summaries of quant jobs.
-package jobstarter
+package jobexecutor
 
 import (
 	"fmt"
 
 	"github.com/pixlise/core/v4/api/config"
-	jobrunner "github.com/pixlise/core/v4/api/job/runner"
+	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/core/logger"
 )
 
@@ -32,26 +32,32 @@ type JobGroupConfig struct {
 	DockerImage string
 	FastStart   bool
 	NodeCount   int
-	NodeConfig  jobrunner.JobConfig
+	NodeConfig  job.JobConfig
 }
 
-func (jg JobGroupConfig) GetNodeConfig(nodeIdx int) jobrunner.JobConfig {
+func (jg JobGroupConfig) GetNodeConfig(nodeIdx int) job.JobConfig {
 	nodeCfg := jg.NodeConfig.Copy()
 	nodeCfg.JobId = fmt.Sprintf("%v-%v", jg.JobGroupId, nodeIdx)
 	return nodeCfg
 }
 
-type JobStarter interface {
-	StartJob(dockerImage string, jobConfig JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error
+type JobExecutor interface {
+	StartJob(jobConfig JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error
+	// TODO:
+	// CancelJob
+	// GetJobStatus
+	// RegisterForJobStatusChange
+	// GetJobLogs
 }
 
-func GetJobStarter(name string) (JobStarter, error) {
-	if name == "docker" {
-		return &dockerJobStarter{}, nil
-	} else if name == "kubernetes" {
-		return &kubernetesJobStarter{}, nil
-	} else if name == "null" {
-		return &nullJobStarter{}, nil
+func GetJobExecutor(name string) (JobExecutor, error) {
+	switch name {
+	case "docker":
+		return &dockerJobExecutor{}, nil
+	case "kubernetes":
+		return &kubernetesJobExecutor{}, nil
+	case "null":
+		return &nullJobExecutor{}, nil
 	}
-	return nil, fmt.Errorf("Unknown job starter: %v", name)
+	return nil, fmt.Errorf("Unknown job executor: %v", name)
 }
