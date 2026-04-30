@@ -155,6 +155,15 @@ func RunJob(logWD bool) error {
 		}
 	}
 
+	jobLog.Infof("Installing required libraries...")
+	if strings.Contains(cfg.Command, "python") {
+		err = installPythonLibs()
+	} else if strings.Contains(cfg.Command, "lua") {
+		err = installLuaLibs()
+	}
+
+	jobLog.Infof("Running job...")
+
 	// Run the actual job
 	jobLog.Debugf("exec.Command starting \"%v\", args: [%v]", cfg.Command, strings.Join(cfg.Args, ","))
 
