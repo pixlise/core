@@ -25,7 +25,7 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 
 	"github.com/pixlise/core/v4/api/config"
-	jobrunner "github.com/pixlise/core/v4/api/job/runner"
+	"github.com/pixlise/core/v4/api/job"
 )
 
 type nullJobExecutor struct {
@@ -50,7 +50,7 @@ func (r *nullJobExecutor) StartJob(jobConfig JobGroupConfig, apiConfig config.AP
 
 // This is currently very dumb, we should extend it like the mock s3 backend to mock different failures
 // to allow us to test failure modes.
-func runNullJob(wg *sync.WaitGroup, jobConfig jobrunner.JobConfig, namespace string, log logger.ILogger) {
+func runNullJob(wg *sync.WaitGroup, jobConfig job.JobConfig, namespace string, log logger.ILogger) {
 	defer wg.Done()
 
 	fmt.Println("Creating pod...")

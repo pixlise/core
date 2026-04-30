@@ -26,7 +26,7 @@ import (
 	"sync"
 
 	"github.com/pixlise/core/v4/api/config"
-	jobrunner "github.com/pixlise/core/v4/api/job/runner"
+	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/logger"
 )
@@ -116,7 +116,7 @@ func (r *dockerJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config.API
 	return nil
 }
 
-func runDockerInstance(wg *sync.WaitGroup, config jobrunner.JobConfig, dockerImage string, awsKey string, awsSecret string, awsRegion string, log logger.ILogger) {
+func runDockerInstance(wg *sync.WaitGroup, config job.JobConfig, dockerImage string, awsKey string, awsSecret string, awsRegion string, log logger.ILogger) {
 	defer wg.Done()
 
 	// Make a JSON string out of params so it can be passed in
@@ -136,7 +136,7 @@ func runDockerInstance(wg *sync.WaitGroup, config jobrunner.JobConfig, dockerIma
 		"-e", "AWS_ACCESS_KEY_ID="+awsKey,
 		"-e", "AWS_SECRET_ACCESS_KEY="+awsSecret,
 		"-e", "AWS_DEFAULT_REGION="+awsRegion,
-		"-e", fmt.Sprintf("%v=%v", jobrunner.JobConfigEnvVar, configStr),
+		"-e", fmt.Sprintf("%v=%v", job.JobConfigEnvVar, configStr),
 		dockerImage,
 		// <-- Assumed that the runner is the default command and it will pick up what to do from the config env var
 	)

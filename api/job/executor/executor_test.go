@@ -5,23 +5,27 @@ import (
 	"os"
 
 	"github.com/pixlise/core/v4/api/config"
-	jobrunner "github.com/pixlise/core/v4/api/job/runner"
+	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/api/specialUserIds"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 )
 
+// var dockerImage = "ghcr.io/pixlise/job-runner:latest"
+var dockerImage = "pixlise-job-runner"
+
 func Example_jobexecutor_Run_docker_Python() {
-	nodeCfg := jobrunner.JobConfig{
+	nodeCfg := job.JobConfig{
 		JobId:   "Job003",
 		Command: "python",
 		Args:    []string{"test-files/test.py", "input.csv"},
-		RequiredFiles: []jobrunner.JobFilePath{
+		RequiredFiles: []job.JobFilePath{
 			{LocalPath: "test-files/test.py", RemoteBucket: "test-piquant", RemotePath: "RunnerTest/Py/test.py"},
+			{LocalPath: "test-files/requirements.txt", RemoteBucket: "test-piquant", RemotePath: "RunnerTest/Py/requirements.txt"},
 			{LocalPath: "test-files/input.csv", RemoteBucket: "test-piquant", RemotePath: "RunnerTest/Py/Input/py-input.csv"},
 		},
-		OutputFiles: []jobrunner.JobFilePath{
+		OutputFiles: []job.JobFilePath{
 			{LocalPath: "stdout", RemoteBucket: "test-piquant", RemotePath: "RunnerTest/Py/Output/stdout"},
 			{LocalPath: "py-output.txt", RemoteBucket: "test-piquant", RemotePath: "RunnerTest/Py/Output/py-output.txt"},
 		},
@@ -29,7 +33,7 @@ func Example_jobexecutor_Run_docker_Python() {
 
 	jobGroup := JobGroupConfig{
 		JobGroupId:  "JG001",
-		DockerImage: "pixlise-job-runner",
+		DockerImage: dockerImage,
 		NodeCount:   1,
 		NodeConfig:  nodeCfg,
 	}
@@ -82,6 +86,7 @@ func Example_jobexecutor_Run_docker_Python() {
 	// GetSession: <nil>
 	// GetS3: <nil>
 	// Read test-files/test.py: <nil>Write S3 s3://test-piquant/RunnerTest/Py/test.py: <nil>
+	// Read test-files/requirements.txt: <nil>Write S3 s3://test-piquant/RunnerTest/Py/requirements.txt: <nil>
 	// Read test-files/input.csv: <nil>Write S3 s3://test-piquant/RunnerTest/Py/Input/py-input.csv: <nil>
 	// StartJob: <nil>
 	// ==========
@@ -90,6 +95,7 @@ func Example_jobexecutor_Run_docker_Python() {
 	// Starting test.py
 	// Contents of /root/test-files
 	// input.csv
+	// requirements.txt
 	// test.py
 	// Writing output...
 	// Finishing test.py
@@ -100,19 +106,19 @@ func Example_jobexecutor_Run_docker_Python() {
 	// Example output from python
 	// 1, 1.6
 	// The end.
-	// ==========
+	// ===========
 }
 
 func Example_jobexecutor_Run_docker_Lua() {
-	nodeCfg := jobrunner.JobConfig{
+	nodeCfg := job.JobConfig{
 		JobId:   "Job004",
 		Command: "lua5.3",
 		Args:    []string{"test-files/test.lua", "input.csv"},
-		RequiredFiles: []jobrunner.JobFilePath{
+		RequiredFiles: []job.JobFilePath{
 			{LocalPath: "test-files/test.lua", RemoteBucket: "test-piquant", RemotePath: "RunnerTest/Lua/test.lua"},
 			{LocalPath: "test-files/input.csv", RemoteBucket: "test-piquant", RemotePath: "RunnerTest/Lua/Input/lua-input.csv"},
 		},
-		OutputFiles: []jobrunner.JobFilePath{
+		OutputFiles: []job.JobFilePath{
 			{LocalPath: "stdout", RemoteBucket: "test-piquant", RemotePath: "RunnerTest/Lua/Output/stdout"},
 			{LocalPath: "lua-output.txt", RemoteBucket: "test-piquant", RemotePath: "RunnerTest/Lua/Output/lua-output.txt"},
 		},
@@ -120,7 +126,7 @@ func Example_jobexecutor_Run_docker_Lua() {
 
 	jobGroup := JobGroupConfig{
 		JobGroupId:  "JG001",
-		DockerImage: "pixlise-job-runner",
+		DockerImage: dockerImage,
 		NodeCount:   1,
 		NodeConfig:  nodeCfg,
 	}

@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/pixlise/core/v4/api/config"
-	jobrunner "github.com/pixlise/core/v4/api/job/runner"
+	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/core/kubernetes"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/utils"
@@ -109,7 +109,7 @@ func (r *kubernetesJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config
 // - namespace: a string specifying the namespace in which the job should be created
 // - requestorUserId: a string specifying the user ID of the requestor
 // - numPods: an integer specifying the number of pods to create for the job
-func makeJobObject(config jobrunner.JobConfig, configStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, numPods int, jobTTLSec int64) *batchv1.Job {
+func makeJobObject(config job.JobConfig, configStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, numPods int, jobTTLSec int64) *batchv1.Job {
 	imagePullSecret := apiv1.LocalObjectReference{Name: "api-auth"}
 	application := "job-runner" // Used to be piquant-runner
 	name := config.JobId        // Used to be piquant-map or piquant-fit (maybe piquant-quant?)
@@ -169,7 +169,7 @@ func makeJobObject(config jobrunner.JobConfig, configStr, dockerImage, jobId, na
 							},
 
 							Env: []apiv1.EnvVar{
-								{Name: jobrunner.JobConfigEnvVar, Value: configStr},
+								{Name: job.JobConfigEnvVar, Value: configStr},
 								{Name: "PYTHONUNBUFFERED", Value: "TRUE"},
 								/*{Name: "NODE_INDEX", ValueFrom: &apiv1.EnvVarSource{
 									FieldRef: &apiv1.ObjectFieldSelector{

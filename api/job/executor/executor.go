@@ -23,7 +23,7 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v4/api/config"
-	jobrunner "github.com/pixlise/core/v4/api/job/runner"
+	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/core/logger"
 )
 
@@ -32,10 +32,10 @@ type JobGroupConfig struct {
 	DockerImage string
 	FastStart   bool
 	NodeCount   int
-	NodeConfig  jobrunner.JobConfig
+	NodeConfig  job.JobConfig
 }
 
-func (jg JobGroupConfig) GetNodeConfig(nodeIdx int) jobrunner.JobConfig {
+func (jg JobGroupConfig) GetNodeConfig(nodeIdx int) job.JobConfig {
 	nodeCfg := jg.NodeConfig.Copy()
 	nodeCfg.JobId = fmt.Sprintf("%v-%v", jg.JobGroupId, nodeIdx)
 	return nodeCfg

@@ -407,7 +407,7 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 }
 
 func runPostImportJobs(scanId string, svcs *services.APIServices) {
-	_, err := jobexecutor.GetJobStarter(svcs.Config.QuantExecutor)
+	_, err := jobexecutor.GetJobExecutor(svcs.Config.QuantExecutor)
 	if err != nil {
 		svcs.Log.Errorf("Failed to create job starter for running post-import jobs: %v", err)
 		return
