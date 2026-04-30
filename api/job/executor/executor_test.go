@@ -12,8 +12,9 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 )
 
-// var dockerImage = "ghcr.io/pixlise/job-runner:latest"
-var dockerImage = "pixlise-job-runner"
+var dockerImage = "ghcr.io/pixlise/job-runner:latest"
+
+// var dockerImage = "pixlise-job-runner"
 
 func Example_jobexecutor_Run_docker_Python() {
 	nodeCfg := job.JobConfig{
