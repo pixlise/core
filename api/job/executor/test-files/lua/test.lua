@@ -3,7 +3,7 @@ print("Starting test.lua")
 local lfs = require("lfs")
 
 -- Get current directory
-local current_dir = lfs.currentdir() .. "/test-files"
+local current_dir = lfs.currentdir() .. "/Input"
 
 print("Contents of " .. current_dir)
 
