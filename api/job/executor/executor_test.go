@@ -39,9 +39,6 @@ func Example_jobexecutor_Run_docker_Python() {
 		NodeConfig:  nodeCfg,
 	}
 
-	// cfgJSON, err := json.Marshal(cfg)
-	// fmt.Printf("cfgErr: %v\n", err)
-
 	r, err := GetJobExecutor("docker")
 	fmt.Printf("GetJobStarter: %v\n", err)
 
@@ -81,15 +78,14 @@ func Example_jobexecutor_Run_docker_Python() {
 	// GetJobStarter: <nil>
 	// GetSession: <nil>
 	// GetS3: <nil>
+	// CopyToBucket: <nil>
 	// StartJob: <nil>
 	// ==========
 	// stdout (<nil>):
 	// ----------
 	// Starting test.py
-	// Contents of /run/test-files
+	// Contents of /run/Input
 	// input.csv
-	// requirements.txt
-	// test.py
 	// Writing output...
 	// Finishing test.py
 	//
@@ -97,9 +93,9 @@ func Example_jobexecutor_Run_docker_Python() {
 	// py-output.txt (<nil>):
 	// ----------
 	// Example output from python
-	// 1, 1.6
+	// 2,  7.3
 	// The end.
-	// ===========
+	// ==========
 }
 
 func Example_jobexecutor_Run_docker_Lua() {
@@ -261,7 +257,7 @@ func Example_jobexecutor_Run_docker_Piquant() {
 	// ----------
 	//    PIQUANT 3.2.17-master  BulkA.msa
 	// Energy (keV), meas, calc, bkg, sigma, residual, DetCE, Fe_K, Ti_K, Ca_K, Rh_K_coh, Rh_L_coh, Rh_K_inc, Pileup, Rh_L_coh_Lb1
-	// line 45
+	// line 45:
 	// 0.328962, 0, 1.50022e-08, 7.38965e-39, 1.41421, -1.50022e-08, 0, 7.38965e-39, 7.38965e-39, 7.38965e-39, 7.38965e-39, 1.50022e-08, 7.38965e-39, 7.38965e-39, 7.38965e-39
 	// ==========
 }
