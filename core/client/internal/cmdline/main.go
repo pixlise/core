@@ -17,6 +17,15 @@ func main() {
 		return
 	}
 
+	k := "my-mapX"
+	//k = `{"scanId":"602735105","exprId":"h43yqjza1m23mmr0","quantId":"quant-aqpxxfk6i05gcsy3","roiId":"AllPoints-602735105","units":0},Resp:false,exprMod:1744785719,spectra:3298,90,0`
+
+	m, err := apiClient.LoadMapData(k)
+	if err != nil {
+		return
+	}
+	fmt.Printf("%+v\n", m)
+
 	// roi, err := apiClient.GetROI("k0adnljtrszqv1e9", false)
 	// fmt.Printf("getRGetROIOI: %v|%v", err, roi.RegionOfInterest.ScanEntryIndexesEncoded)
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -1206,8 +1207,9 @@ func (c *APIClient) SaveMapData(key string, data *protos.ClientMap) error {
 		return fmt.Errorf("Failed to SaveMapData %v: %v", key, err)
 	}
 
+	saveKey := ClientMapKeyPrefix + key
 	memoItem := &protos.MemoisedItem{
-		Key:  ClientMapKeyPrefix + key,
+		Key:  saveKey,
 		Data: dataBytes,
 		// ScanId:              reqItem.ScanId,
 		// QuantId:             reqItem.QuantId,
@@ -1227,7 +1229,7 @@ func (c *APIClient) SaveMapData(key string, data *protos.ClientMap) error {
 	}
 
 	// Set the key as a query param
-	url.RawQuery = "key=" + ClientMapKeyPrefix + key
+	url.RawQuery = "key=" + saveKey
 
 	client := &http.Client{}
 	urlString := url.String()
@@ -1259,6 +1261,30 @@ func (c *APIClient) SaveMapData(key string, data *protos.ClientMap) error {
 	return nil
 }
 
+func (c *APIClient) sendRequest(key string, url *url.URL) (*http.Response, []byte, error) {
+	client := &http.Client{}
+	urlString := url.String()
+	req, err := http.NewRequest("GET", urlString, nil)
+	if err != nil {
+		return nil, nil, fmt.Errorf("LoadMapData %v failed to create request: %v", key, err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, nil, fmt.Errorf("LoadMapData %v request failed: %v", key, err)
+	}
+
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, nil, fmt.Errorf("LoadMapData %v failed to read response: %v", key, err)
+	}
+
+	return resp, b, err
+}
+
 func (c *APIClient) LoadMapData(key string) (*protos.ClientMap, error) {
 	// We send this via HTTP endpoints
 	url, err := c.socket.GetHost("/memoise")
@@ -1267,30 +1293,30 @@ func (c *APIClient) LoadMapData(key string) (*protos.ClientMap, error) {
 	}
 
 	// Set the key as a query param
+	// NOTE: We first try it with the client prefix, and if it fails to load, we try it with just
+	//       the raw key. This is so we can load expression-generated map data, added as a later
+	//       feature - at first it seemed like we'll only want to load client-saved maps.
 	url.RawQuery = "key=" + ClientMapKeyPrefix + key
 
-	client := &http.Client{}
-	urlString := url.String()
-	req, err := http.NewRequest("GET", urlString, nil)
+	resp, b, err := c.sendRequest(key, url)
 	if err != nil {
-		return nil, fmt.Errorf("LoadMapData %v failed to create request: %v", key, err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("LoadMapData %v request failed: %v", key, err)
-	}
-
-	defer resp.Body.Close()
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("LoadMapData %v failed to read response: %v", key, err)
+		return nil, err
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("LoadMapData got status %v: %v", resp.StatusCode, string(b))
+		// If we got a 404, try again but with the key prefix removed
+		if resp.StatusCode == 404 {
+			url.RawQuery = "key=" + key
+
+			resp, b, err = c.sendRequest(key, url)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if resp.StatusCode != 200 {
+			return nil, fmt.Errorf("LoadMapData got status %v: %v", resp.StatusCode, string(b))
+		}
 	}
 
 	respBody := &protos.MemoisedItem{}
