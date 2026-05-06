@@ -1206,8 +1206,9 @@ func (c *APIClient) SaveMapData(key string, data *protos.ClientMap) error {
 		return fmt.Errorf("Failed to SaveMapData %v: %v", key, err)
 	}
 
+	saveKey := ClientMapKeyPrefix + key
 	memoItem := &protos.MemoisedItem{
-		Key:  ClientMapKeyPrefix + key,
+		Key:  saveKey,
 		Data: dataBytes,
 		// ScanId:              reqItem.ScanId,
 		// QuantId:             reqItem.QuantId,
@@ -1227,7 +1228,7 @@ func (c *APIClient) SaveMapData(key string, data *protos.ClientMap) error {
 	}
 
 	// Set the key as a query param
-	url.RawQuery = "key=" + ClientMapKeyPrefix + key
+	url.RawQuery = "key=" + saveKey
 
 	client := &http.Client{}
 	urlString := url.String()
