@@ -17,10 +17,17 @@ func main() {
 		return
 	}
 
+	m, err := apiClient.CalculateExpression("669909507", "9b4h4zjuynpshf7c", "quant-tl2mrnxroian1acm", "AllPoints-669909507", 0)
+	if err != nil {
+		return
+	}
+	fmt.Printf("%+v\n", m)
+
 	k := "my-mapX"
 	//k = `{"scanId":"602735105","exprId":"h43yqjza1m23mmr0","quantId":"quant-aqpxxfk6i05gcsy3","roiId":"AllPoints-602735105","units":0},Resp:false,exprMod:1744785719,spectra:3298,90,0`
+	k = `{"scanId":"669909507","exprId":"9b4h4zjuynpshf7c","quantId":"quant-tl2mrnxroian1acm","roiId":"AllPoints-669909507","units":0},Resp:false,exprMod:1772072860,spectra:2754,6,0`
 
-	m, err := apiClient.LoadMapData(k)
+	m, err = apiClient.LoadMapData(k)
 	if err != nil {
 		return
 	}
