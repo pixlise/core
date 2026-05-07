@@ -1335,6 +1335,52 @@ func (c *APIClient) LoadMapData(key string) (*protos.ClientMap, error) {
 	return mapResult, nil
 }
 
+func (c *APIClient) CalculateExpression(scanId, quantId, expressionId, roiId string, units protos.DataUnit) (*protos.ClientMap, error) {
+	req := &protos.ExpressionCalculateReq{Requests: []*protos.DataSourceParams{{
+		ScanId:       scanId,
+		QuantId:      quantId,
+		ExpressionId: expressionId,
+		RoiId:        roiId,
+		Units:        units,
+	}}}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ExpressionCalculateReq{
+		ExpressionCalculateReq: req,
+	}}
+
+	resps, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := resps[0].GetExpressionCalculateResp()
+
+	// Convert the result to a map
+	result := &protos.ClientMap{
+		EntryPMCs:   []int32{},
+		FloatValues: []float64{},
+	}
+
+	if len(resp.Result.Error) > 0 {
+		return nil, fmt.Errorf("Error calculating expression: %v", resp.Result.Error)
+	}
+
+	if len(resp.Result.QueryResults) != 1 {
+		return nil, fmt.Errorf("Expected 1 expression calculation result, got %v", len(resp.Result.QueryResults))
+	}
+
+	if len(resp.Result.QueryResults[0].Error) > 0 {
+		return nil, fmt.Errorf("Error calculating expression (%v): %v", expressionId, resp.Result.Error)
+	}
+
+	for _, item := range resp.Result.QueryResults[0].ExprResult.ResultValues.Values {
+		result.EntryPMCs = append(result.EntryPMCs, int32(item.Pmc))
+		result.FloatValues = append(result.FloatValues, float64(item.Value))
+	}
+
+	return result, nil
+}
+
 func (c *APIClient) DeleteImage(imageName string) error {
 	req := &protos.ImageDeleteReq{Name: imageName}
 

@@ -299,6 +299,13 @@ func loadMapData(key string) *C.char {
 	return processRequest("loadMapData", func() (proto.Message, error) { return apiClient.LoadMapData(key) })
 }
 
+//export calculateExpression
+func calculateExpression(scanId, quantId, expressionId, roiId string, units int) *C.char {
+	return processRequest("calculateExpression", func() (proto.Message, error) {
+		return apiClient.CalculateExpression(scanId, quantId, expressionId, roiId, protos.DataUnit(units))
+	})
+}
+
 //export uploadImage
 func uploadImage(imageUpload string) *C.char {
 	// Here we can read the data string as a protobuf message and create the right structure
