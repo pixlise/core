@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package jobstarter
+package jobexecutor
 
 import (
 	"fmt"
@@ -25,16 +25,13 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 
 	"github.com/pixlise/core/v4/api/config"
-	jobrunner "github.com/pixlise/core/v4/api/job/runner"
+	"github.com/pixlise/core/v4/api/job"
 )
 
-///////////////////////////////////////////////////////////////////////////////////////////
-// nullJobStarter for testing
-
-type nullJobStarter struct {
+type nullJobExecutor struct {
 }
 
-func (r *nullJobStarter) StartJob(dockerImage string, jobConfig JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error {
+func (r *nullJobExecutor) StartJob(jobConfig JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error {
 	namespace := fmt.Sprintf("job-%v", jobConfig.NodeConfig.JobId)
 
 	// Start each container in the namespace
@@ -42,7 +39,7 @@ func (r *nullJobStarter) StartJob(dockerImage string, jobConfig JobGroupConfig, 
 
 	for nodeIdx := 0; nodeIdx < jobConfig.NodeCount; nodeIdx++ {
 		wg.Add(1)
-		go runNullJob(&wg, jobConfig.GetNodeConfig(nodeIdx), namespace, dockerImage, log)
+		go runNullJob(&wg, jobConfig.GetNodeConfig(nodeIdx), namespace, log)
 	}
 
 	// Wait for all job instances to finish
@@ -53,7 +50,7 @@ func (r *nullJobStarter) StartJob(dockerImage string, jobConfig JobGroupConfig, 
 
 // This is currently very dumb, we should extend it like the mock s3 backend to mock different failures
 // to allow us to test failure modes.
-func runNullJob(wg *sync.WaitGroup, jobConfig jobrunner.JobConfig, namespace string, dockerImage string, log logger.ILogger) {
+func runNullJob(wg *sync.WaitGroup, jobConfig job.JobConfig, namespace string, log logger.ILogger) {
 	defer wg.Done()
 
 	fmt.Println("Creating pod...")
@@ -62,8 +59,6 @@ func runNullJob(wg *sync.WaitGroup, jobConfig jobrunner.JobConfig, namespace str
 	startUnix := time.Now().Unix()
 	maxEndUnix := startUnix + config.KubernetesMaxTimeoutSec
 	for currUnix := time.Now().Unix(); currUnix < maxEndUnix; currUnix = time.Now().Unix() {
-		// Check kubernetes pod status
-
 		for i := 1; i < 5; i++ {
 			log.Infof("NullJob Loop: " + string(rune(i)))
 		}

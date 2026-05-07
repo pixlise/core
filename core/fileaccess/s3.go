@@ -326,7 +326,7 @@ func CopyToBucket(remoteFS FileAccess, sourcePath string, destBucket string, des
 	}
 
 	err := filepath.Walk(sourcePath, func(currentPath string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
+		if err == nil && !info.IsDir() {
 			var uploadPath string
 
 			if preserveStructure {
