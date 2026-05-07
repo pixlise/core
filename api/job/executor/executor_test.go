@@ -94,10 +94,10 @@ func Example_jobexecutor_Run_docker_Python() {
 	// stdout (<nil>):
 	// ----------
 	// Starting test.py
-	// Contents of /root/test-files
+	// Contents of /run/test-files
+	// input.csv
 	// requirements.txt
 	// test.py
-	// input.csv
 	// Writing output...
 	// Finishing test.py
 	//
