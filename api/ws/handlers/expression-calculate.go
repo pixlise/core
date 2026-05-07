@@ -65,7 +65,7 @@ func HandleExpressionCalculateReq(req *protos.ExpressionCalculateReq, hctx wsHel
 			reqItem.ExpressionId,
 			reqItem.QuantId,
 			reqItem.RoiId,
-			reqItem.Units.Number()-1,
+			reqItem.Units.Number(),
 			exprItem.ModifiedUnixSec,
 			normalSpectraCount,
 			dwellSpectraCount,

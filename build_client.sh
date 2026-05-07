@@ -9,7 +9,7 @@ docker run -it --rm \
   -v $PWD:/usr/src/app \
   -w /usr/src/app \
   -e CGO_ENABLED=1 \
-  docker.elastic.co/beats-dev/golang-crossbuild:1.24.2-main \
+  docker.elastic.co/beats-dev/golang-crossbuild:1.24.13-main \
   --build-cmd "go build -buildmode=c-shared -o ./_out/client/pixlise-linux-amd64.so ./core/client/lib" \
   -p "linux/amd64"
 
@@ -18,7 +18,7 @@ docker run -it --rm \
   -v $PWD:/usr/src/app \
   -w /usr/src/app \
   -e CGO_ENABLED=1 \
-  docker.elastic.co/beats-dev/golang-crossbuild:1.24.2-arm \
+  docker.elastic.co/beats-dev/golang-crossbuild:1.24.13-arm \
   --build-cmd "go build -buildmode=c-shared -o ./_out/client/pixlise-linux-arm64.so ./core/client/lib" \
    -p "linux/arm64"
 
@@ -31,7 +31,7 @@ docker run -it --rm \
   -v $PWD:/usr/src/app \
   -w /usr/src/app \
   -e CGO_ENABLED=1 \
-  docker.elastic.co/beats-dev/golang-crossbuild:1.24.2-main \
+  docker.elastic.co/beats-dev/golang-crossbuild:1.24.13-main \
   --build-cmd "go build -buildmode=c-shared -o ./_out/client/pixlise-windows-amd64.dll ./core/client/lib" \
   -p "windows/amd64"
 
@@ -49,7 +49,7 @@ docker run -it \
   -e CC=o64-clang \
   -e GOOS=darwin \
   -e GOARCH=amd64 \
-  docker.elastic.co/beats-dev/golang-crossbuild:1.24.2-darwin \
+  docker.elastic.co/beats-dev/golang-crossbuild:1.24.13-darwin \
   --build-cmd "go build -work -buildmode=c-shared -o ./_out/client/pixlise-darwin-amd64.so ./core/client/lib" \
   -p "darwin/amd64"
 
@@ -62,6 +62,6 @@ docker run -it \
 #   -e CC=o64-clang \
 #   -e GOOS=darwin \
 #   -e GOARCH=arm64 \
-#   docker.elastic.co/beats-dev/golang-crossbuild:1.24.2-darwin \
+#   docker.elastic.co/beats-dev/golang-crossbuild:1.24.13-darwin \
 #   --build-cmd "go build -buildmode=c-shared -o ./_out/client/pixlise-darwin-arm64.so ./core/client/lib" \
 #   -p "darwin/arm64"
