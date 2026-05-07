@@ -1355,12 +1355,6 @@ func (c *APIClient) CalculateExpression(scanId, quantId, expressionId, roiId str
 
 	resp := resps[0].GetExpressionCalculateResp()
 
-	// Convert the result to a map
-	result := &protos.ClientMap{
-		EntryPMCs:   []int32{},
-		FloatValues: []float64{},
-	}
-
 	if len(resp.Result.Error) > 0 {
 		return nil, fmt.Errorf("Error calculating expression: %v", resp.Result.Error)
 	}
@@ -1370,7 +1364,13 @@ func (c *APIClient) CalculateExpression(scanId, quantId, expressionId, roiId str
 	}
 
 	if len(resp.Result.QueryResults[0].Error) > 0 {
-		return nil, fmt.Errorf("Error calculating expression (%v): %v", expressionId, resp.Result.Error)
+		return nil, fmt.Errorf("Error calculating expression (%v): %v", expressionId, resp.Result.QueryResults[0].Error)
+	}
+
+	// Convert the result to a map
+	result := &protos.ClientMap{
+		EntryPMCs:   []int32{},
+		FloatValues: []float64{},
 	}
 
 	for _, item := range resp.Result.QueryResults[0].ExprResult.ResultValues.Values {

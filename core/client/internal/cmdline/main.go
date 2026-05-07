@@ -17,7 +17,7 @@ func main() {
 		return
 	}
 
-	m, err := apiClient.CalculateExpression("669909507", "9b4h4zjuynpshf7c", "quant-tl2mrnxroian1acm", "AllPoints-669909507", 0)
+	m, err := apiClient.CalculateExpression("669909507", "quant-tl2mrnxroian1acm", "9b4h4zjuynpshf7c", "AllPoints-669909507", 0)
 	if err != nil {
 		return
 	}

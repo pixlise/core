@@ -118,7 +118,7 @@ func HandleExpressionCalculateReq(req *protos.ExpressionCalculateReq, hctx wsHel
 			resultItem = &protos.RegionDataResultItem{
 				// ExprResult
 				Expression: exprItem,
-				Error:      "Failed to read cached expression result",
+				Error:      fmt.Sprintf("Failed to read cached expression result with key: %v", memCacheKey),
 				// Warning
 				// RegionSettings
 				// Query
