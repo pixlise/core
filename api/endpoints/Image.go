@@ -560,7 +560,7 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 	purpose := protos.ScanImagePurpose_SIP_VIEWING
 	if strings.HasSuffix(nameLowerCase, ".tif") {
 		meta, err := gdsfilename.ParseFileName(req.Name)
-		if err != nil && meta.ProdType == "MSA" || meta.ProdType == "VIS" {
+		if err == nil && meta.ProdType == "MSA" || meta.ProdType == "VIS" {
 			// It's only considered an RGBU image based on strict file naming!
 			purpose = protos.ScanImagePurpose_SIP_MULTICHANNEL
 		}
