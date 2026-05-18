@@ -1,4 +1,4 @@
-package specialUserIds
+package sessionuser
 
 var PIXLISESystemUserId = "PIXLISEImport"
 var JPLImport = "JPLImport"

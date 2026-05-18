@@ -30,12 +30,19 @@ import (
 
 // Implementation of file access using local file system
 type FSAccess struct {
+	rootPath string
+}
+
+// Special function to create fileaccess that treats a root path as where S3 buckets can be read from
+// Useful for unit tests that we don't want to reach out to S3
+func MakeFSAccessS3Simulator(rootPath string) *FSAccess {
+	return &FSAccess{rootPath: rootPath}
 }
 
 func (fs *FSAccess) ListObjects(rootPath string, prefix string) ([]string, error) {
 	result := []string{}
 
-	rootOnly := filepath.Join(rootPath) // Using filepath.Join to make it match the fullPath cleans off ./ for example
+	rootOnly := filepath.Join(fs.rootPath, rootPath) // Using filepath.Join to make it match the fullPath cleans off ./ for example
 	fullPath := fs.filePath(rootPath, prefix)
 
 	// To have common behaviour on S3 vs local file system, here we check if the path exists
@@ -223,7 +230,7 @@ func (fs *FSAccess) CopyObject(srcRootPath string, srcPath string, dstRootPath s
 func (fs *FSAccess) EmptyObjects(rootPath string) error {
 	// Found we had a function floating around already that does this
 	// and it doesn't delete the original dir, so doesn't need Mkdir as below
-	d, err := os.Open(rootPath)
+	d, err := os.Open(fs.filePath(rootPath, ""))
 	if err != nil {
 		return err
 	}
@@ -233,7 +240,7 @@ func (fs *FSAccess) EmptyObjects(rootPath string) error {
 		return err
 	}
 	for _, name := range names {
-		err = os.RemoveAll(filepath.Join(rootPath, name))
+		err = os.RemoveAll(fs.filePath(rootPath, name))
 		if err != nil {
 			return err
 		}
@@ -255,6 +262,14 @@ func (fs *FSAccess) filePath(rootPath string, filePath string) string {
 	result := filepath.Join(rootPath, filePath)
 	if strings.HasPrefix(rootPath, "./") {
 		result = "./" + result
+	}
+
+	// Prepend the root path if one is specified, and if it's not already there
+	if len(fs.rootPath) > 0 && (!strings.HasPrefix(result, fs.rootPath) && !strings.HasPrefix(result, fs.rootPath[2:])) {
+		result = filepath.Join(fs.rootPath, result)
+		if strings.HasPrefix(fs.rootPath, "./") {
+			result = "./" + result
+		}
 	}
 
 	return result
@@ -288,4 +303,45 @@ func CopyFileLocally(srcPath string, dstPath string) error {
 
 	// Write data to dst
 	return os.WriteFile(dstPath, data, 0644)
+}
+
+func CopyDirectoryLocally(srcPath string, dstPath string, clearDstFirst bool) error {
+	if clearDstFirst {
+		if err := os.RemoveAll(dstPath); err != nil {
+			return err
+		}
+	}
+
+	err := filepath.Walk(srcPath, func(pathFound string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			srcFilePath := pathFound
+			if strings.HasPrefix(srcPath, "./") {
+				srcFilePath = "./" + srcFilePath
+			}
+
+			pathBits := strings.Split(pathFound, string(filepath.Separator))
+
+			dstFilePath := filepath.Join(append([]string{dstPath}, pathBits[1:]...)...)
+			if strings.HasPrefix(dstPath, "./") {
+				dstFilePath = "./" + dstFilePath
+			}
+
+			err = os.MkdirAll(filepath.Dir(dstFilePath), 0777)
+			if err != nil {
+				return err
+			}
+
+			err = CopyFileLocally(srcFilePath, dstFilePath)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	return err
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,7 +28,7 @@ func getROIs(
 	scanId string,
 	roiIds []string,
 	svcs *services.APIServices,
-	requestorSession *wsHelpers.SessionUser,
+	requestorSession *sessionuser.SessionUser,
 	locIdxToPMCLookup map[int32]int32,
 	dataset *protos.Experiment) ([]roiItemWithPMCs, error) {
 	result := []roiItemWithPMCs{}

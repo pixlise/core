@@ -37,9 +37,9 @@ func (r *nullJobExecutor) StartJob(jobConfig JobGroupConfig, apiConfig config.AP
 	// Start each container in the namespace
 	var wg sync.WaitGroup
 
-	for nodeIdx := 0; nodeIdx < jobConfig.NodeCount; nodeIdx++ {
-		wg.Add(1)
-		go runNullJob(&wg, jobConfig.GetNodeConfig(nodeIdx), namespace, log)
+	wg.Add(int(jobConfig.NodeCount))
+	for nodeIdx := uint(0); nodeIdx < jobConfig.NodeCount; nodeIdx++ {
+		go runNullJob(&wg, jobConfig.NodeConfig.FlattenJobConfig(nodeIdx), namespace, log)
 	}
 
 	// Wait for all job instances to finish

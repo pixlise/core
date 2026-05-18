@@ -23,44 +23,10 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/pixlise/core/v4/api/config"
 	"github.com/pixlise/core/v4/api/services"
-	"github.com/pixlise/core/v4/core/awsutil"
-	"github.com/pixlise/core/v4/core/fileaccess"
-	"github.com/pixlise/core/v4/core/idgen"
-	"github.com/pixlise/core/v4/core/jwtparser"
-	"github.com/pixlise/core/v4/core/logger"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
-
-const DatasetsBucketForUnitTest = "datasets-bucket"
-const ConfigBucketForUnitTest = "config-bucket"
-const UsersBucketForUnitTest = "users-bucket"
-const jobBucketForUnitTest = "job-bucket"
-
-type MockJWTReader struct {
-	InfoToReturn *jwtparser.JWTUserInfo
-}
-
-func (m MockJWTReader) GetUserInfo(*http.Request) (jwtparser.JWTUserInfo, error) {
-	if m.InfoToReturn != nil {
-		return *m.InfoToReturn, nil
-	}
-	//This user id is real don't change it....
-	return jwtparser.JWTUserInfo{
-		Name:   "Niko Bellic",
-		UserID: "600f2a0806b6c70071d3d174",
-		Email:  "niko@spicule.co.uk",
-		Permissions: map[string]bool{
-			"read:data-analysis": true,
-		},
-	}, nil
-}
-
-func (m MockJWTReader) GetValidator() jwtparser.JWTInterface {
-	return nil
-}
 
 type MockExporter struct {
 	downloadReturn []byte
@@ -78,40 +44,6 @@ func (m *MockExporter) MakeExportFilesZip(svcs *services.APIServices, fileNamePr
 	m.quantID = quantID
 	m.fileIDs = fileIDs
 	return m.downloadReturn, nil
-}
-
-func MakeMockSvcs(mockS3 *awsutil.MockS3Client, idGen idgen.IDGenerator, logLevel *logger.LogLevel) services.APIServices {
-	logging := logger.LogDebug
-	if logLevel != nil {
-		logging = *logLevel
-	}
-
-	cfg := config.APIConfig{
-		DatasetsBucket:     DatasetsBucketForUnitTest,
-		ConfigBucket:       ConfigBucketForUnitTest,
-		UsersBucket:        UsersBucketForUnitTest,
-		PiquantJobsBucket:  jobBucketForUnitTest,
-		EnvironmentName:    "unit-test",
-		LogLevel:           logging,
-		KubernetesLocation: "external",
-		QuantExecutor:      "null",
-		NodeCountOverride:  0,
-		DataSourceSNSTopic: "arn:1:2:3:4:5",
-	}
-
-	fs := fileaccess.MakeS3Access(mockS3)
-
-	return services.APIServices{
-		Config: cfg,
-		Log:    &logger.NullLogger{},
-		//AWSSessionCW: nil,
-		//S3:           mockS3,
-		SNS:       &awsutil.MockSNS{},
-		JWTReader: MockJWTReader{},
-		IDGen:     idGen,
-		//Signer:       signer,
-		FS: fs,
-	}
 }
 
 // NOTE: The following came from https://semaphoreci.com/community/tutorials/building-and-testing-a-rest-api-in-go-with-gorilla-mux-and-postgresql

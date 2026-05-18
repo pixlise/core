@@ -20,6 +20,7 @@ import (
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
 	jobexecutor "github.com/pixlise/core/v4/api/job/executor"
+	jobmanager "github.com/pixlise/core/v4/api/job/manager"
 	"github.com/pixlise/core/v4/api/memoisation"
 	"github.com/pixlise/core/v4/api/notificationSender"
 	"github.com/pixlise/core/v4/api/permission"
@@ -314,6 +315,12 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 		InstanceId: apiInstanceId,
 	}
 
+	// Create job manager and point it back here
+	svcs.JobManager, err = jobmanager.Create(svcs)
+	if err != nil {
+		log.Fatalf("Failed to init job manager. Error: %v", err)
+	}
+
 	return svcs
 }
 
@@ -413,5 +420,5 @@ func runPostImportJobs(scanId string, svcs *services.APIServices) {
 		return
 	}
 
-	//jobStarter.StartJob(dockerImage, jobConfig, svcs.Config, specialUserIds.PIXLISESystemUserId, svcs.Log)
+	//jobStarter.StartJob(dockerImage, jobConfig, svcs.Config, sessionuser.PIXLISESystemUserId, svcs.Log)
 }

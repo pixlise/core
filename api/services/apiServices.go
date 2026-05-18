@@ -31,6 +31,8 @@ package services
 import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/pixlise/core/v4/api/config"
+	jobexecutor "github.com/pixlise/core/v4/api/job/executor"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/idgen"
@@ -38,6 +40,7 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
 	"github.com/pixlise/core/v4/core/timestamper"
+	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -49,6 +52,12 @@ var GitHash string
 // of using a bunch of global variables we pass around this services object and other
 // code has access to a logger, random string generator etc.
 // This comes in very useful when writing unit tests, since we can mock these interfaces
+
+type JobManagerInterface interface {
+	SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser) error
+	ListJobs() ([]jobexecutor.JobGroupConfig, error)
+	GetJob(JobId string) (jobexecutor.JobGroupConfig, error)
+}
 
 type APIServices struct {
 	// Configuration read in on startup
@@ -89,4 +98,6 @@ type APIServices struct {
 
 	// The unique identifier of this API instance (so we can log/debug issues that are cross-instance!)
 	InstanceId string
+
+	JobManager JobManagerInterface
 }

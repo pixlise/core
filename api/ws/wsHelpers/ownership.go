@@ -6,6 +6,7 @@ import (
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/timestamper"
 	"github.com/pixlise/core/v4/core/utils"
@@ -108,7 +109,7 @@ func CheckObjectAccessForUser(requireEdit bool, objectId string, objectType prot
 // Gets all object IDs which the user has access to - if requireEdit is true, it checks for edit access
 // otherwise just checks for view access
 // Returns a map of object id->creator user id
-func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, svcs *services.APIServices, requestorSession SessionUser) (map[string]*protos.OwnershipItem, error) {
+func ListAccessibleIDs(requireEdit bool, objectType protos.ObjectType, svcs *services.APIServices, requestorSession sessionuser.SessionUser) (map[string]*protos.OwnershipItem, error) {
 	idLookups := []interface{}{
 		bson.D{{Key: "editors.userids", Value: requestorSession.User.Id}},
 	}
@@ -201,7 +202,7 @@ func ListGroupAccessibleIDs(requireEdit bool, objectType protos.ObjectType, grou
 	return result, nil
 }
 
-func FetchOwnershipSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, db *mongo.Database, ts timestamper.ITimeStamper, fullDetails bool) *protos.OwnershipSummary {
+func FetchOwnershipSummary(ownership *protos.OwnershipItem, sessionUser sessionuser.SessionUser, db *mongo.Database, ts timestamper.ITimeStamper, fullDetails bool) *protos.OwnershipSummary {
 	user, err := getUserInfo(ownership.CreatorUserId, db, ts)
 	result := &protos.OwnershipSummary{
 		CreatedUnixSec: ownership.CreatedUnixSec,
@@ -260,11 +261,11 @@ func FetchOwnershipSummary(ownership *protos.OwnershipItem, sessionUser SessionU
 	return result
 }
 
-func MakeOwnerSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, db *mongo.Database, ts timestamper.ITimeStamper) *protos.OwnershipSummary {
+func MakeOwnerSummary(ownership *protos.OwnershipItem, sessionUser sessionuser.SessionUser, db *mongo.Database, ts timestamper.ITimeStamper) *protos.OwnershipSummary {
 	return FetchOwnershipSummary(ownership, sessionUser, db, ts, false)
 }
 
-func MakeFullOwnerSummary(ownership *protos.OwnershipItem, sessionUser SessionUser, db *mongo.Database, ts timestamper.ITimeStamper) *protos.OwnershipSummary {
+func MakeFullOwnerSummary(ownership *protos.OwnershipItem, sessionUser sessionuser.SessionUser, db *mongo.Database, ts timestamper.ITimeStamper) *protos.OwnershipSummary {
 	return FetchOwnershipSummary(ownership, sessionUser, db, ts, true)
 }
 

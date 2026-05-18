@@ -31,7 +31,7 @@ import (
 	"github.com/pixlise/core/v4/api/piquant"
 	"github.com/pixlise/core/v4/api/quantification/quantRunner"
 	"github.com/pixlise/core/v4/api/services"
-	"github.com/pixlise/core/v4/api/specialUserIds"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
@@ -45,7 +45,7 @@ import (
 const JobParamsFileName = "params.json"
 
 // CreateJob - creates a new quantification job
-func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, svcs *services.APIServices, sessUser *wsHelpers.SessionUser, sendUpdate func(*protos.JobStatus)) (*protos.JobStatus, error) {
+func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, svcs *services.APIServices, sessUser *sessionuser.SessionUser, sendUpdate func(*protos.JobStatus)) (*protos.JobStatus, error) {
 	// Get configured PIQUANT docker container
 	piquantVersion, err := piquant.GetPiquantVersion(svcs)
 
@@ -125,7 +125,7 @@ type quantNodeRunner struct {
 	svcs               *services.APIServices
 	isJob              bool
 	logId              string
-	sessUser           *wsHelpers.SessionUser
+	sessUser           *sessionuser.SessionUser
 }
 
 // This should be triggered as a go routine from quant creation endpoint so we can return a job id there quickly and do the processing offline
@@ -179,30 +179,7 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 		svcs.Log.Debugf("Piquant parameters: %v\n", string(piquantParamsStr))
 	}
 
-	// Generate the lists, and then save each, and start the quantification
-	// NOTE: empty == combined, just to honor the previous mode of operation before quantMode field was added
-	combined := userParams.QuantMode == "" || userParams.QuantMode == quantModeCombinedABBulk || userParams.QuantMode == quantModeCombinedAB
-	quantByROI := userParams.QuantMode == quantModeCombinedABBulk || userParams.QuantMode == quantModeSeparateABBulk || userParams.Command != "map"
-
-	// If we're quantifying ROIs, do that
-	pmcFiles := []string{}
-	spectraPerNode := int32(0)
-	err = nil
-	rois := []roiItemWithPMCs{}
-
-	// Download the dataset itself because we'll need it to generate our .pmcs files for each node to run
-	dataset, err := wsHelpers.ReadDatasetFile(userParams.ScanId, svcs)
-	if err != nil {
-		r.completeJobState(false, fmt.Sprintf("Error: %v", err), "", []string{})
-		return
-	}
-	if quantByROI {
-		pmcFile := ""
-		pmcFile, spectraPerNode, rois, err = makePMCListFilesForQuantROI(svcs, r.sessUser, combined, svcs.Config, datasetFileName, jobDataPath, r.quantStartSettings, dataset)
-		pmcFiles = []string{pmcFile}
-	} else {
-		pmcFiles, spectraPerNode, err = makePMCListFilesForQuantPMCs(svcs, combined, svcs.Config, datasetFileName, jobDataPath, r.quantStartSettings, dataset)
-	}
+	pmcFiles, spectraPerNode, rois, combined, quantByROI, err := PreparePMCLists(userParams, r.sessUser, datasetFileName, jobDataPath, svcs)
 
 	if err != nil {
 		r.completeJobState(false, fmt.Sprintf("Error: %v", err), "", []string{})
@@ -396,7 +373,7 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 
 	// If we've got a special import that's done by the internal user, we read the owner entry from DB scan auto share table (ScanAutoShareName)
 	ownerItem := wsHelpers.MakeOwnerForWrite(r.jobId, protos.ObjectType_OT_QUANTIFICATION, r.quantStartSettings.RequestorUserId, now)
-	if r.quantStartSettings.RequestorUserId == specialUserIds.PIXLISESystemUserId {
+	if r.quantStartSettings.RequestorUserId == sessionuser.PIXLISESystemUserId {
 		coll := svcs.MongoDB.Collection(dbCollections.ScanAutoShareName)
 		autoShareResult := coll.FindOne(context.TODO(), bson.D{{Key: "_id", Value: r.quantStartSettings.RequestorUserId}}, options.FindOne())
 		if autoShareResult.Err() != nil {
@@ -422,6 +399,35 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 
 	// Report success
 	r.completeJobState(true, completeMsg, quantOutPath, piquantLogList)
+}
+
+func PreparePMCLists(userParams *protos.QuantCreateParams, sessUser *sessionuser.SessionUser, nodePMCFileName string, jobDataPath string, svcs *services.APIServices) (
+	[]string, uint, []roiItemWithPMCs, bool, bool, error) {
+	// Generate the lists, and then save each, and start the quantification
+	// NOTE: empty == combined, just to honor the previous mode of operation before quantMode field was added
+	combined := userParams.QuantMode == "" || userParams.QuantMode == quantModeCombinedABBulk || userParams.QuantMode == quantModeCombinedAB
+	quantByROI := userParams.QuantMode == quantModeCombinedABBulk || userParams.QuantMode == quantModeSeparateABBulk || userParams.Command != "map"
+
+	// If we're quantifying ROIs, do that
+	pmcFiles := []string{}
+	spectraPerNode := uint(0)
+	rois := []roiItemWithPMCs{}
+
+	// Download the dataset itself because we'll need it to generate our .pmcs files for each node to run
+	dataset, err := wsHelpers.ReadDatasetFile(userParams.ScanId, svcs)
+	if err != nil {
+		return pmcFiles, spectraPerNode, rois, combined, quantByROI, err
+	}
+
+	if quantByROI {
+		pmcFile := ""
+		pmcFile, spectraPerNode, rois, err = makePMCListFilesForQuantROI(svcs, userParams, sessUser, combined, svcs.Config, jobDataPath, nodePMCFileName, dataset)
+		pmcFiles = []string{pmcFile}
+	} else {
+		pmcFiles, spectraPerNode, err = makePMCListFilesForQuantPMCs(svcs, userParams, combined, jobDataPath, nodePMCFileName, dataset)
+	}
+
+	return pmcFiles, spectraPerNode, rois, combined, quantByROI, err
 }
 
 func (r *quantNodeRunner) updateJobState(status protos.JobStatus_Status, message string) {

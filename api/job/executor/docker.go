@@ -42,8 +42,8 @@ func (r *dockerJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config.API
 	var wg sync.WaitGroup
 
 	// Make sure AWS env vars are available, because that's what we'll be passing to job docker container
-	awsKey := os.Getenv("AWS_ACCESS_KEY_ID")
-	awsSecret := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	// awsKey := os.Getenv("AWS_ACCESS_KEY_ID")
+	// awsSecret := os.Getenv("AWS_SECRET_ACCESS_KEY")
 	awsRegion := os.Getenv("AWS_DEFAULT_REGION")
 
 	sess, err := awsutil.GetSession()
@@ -54,8 +54,8 @@ func (r *dockerJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config.API
 	if err != nil {
 		return err
 	}
-	awsKey = v.AccessKeyID
-	awsSecret = v.SecretAccessKey
+	awsKey := v.AccessKeyID
+	awsSecret := v.SecretAccessKey
 	if len(awsKey) > 0 && len(awsSecret) > 0 && len(awsRegion) <= 0 {
 		awsRegion = "us-east-1"
 	}
@@ -105,9 +105,9 @@ func (r *dockerJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config.API
 		return errors.New(txt)
 	}
 
-	for nodeIdx := 0; nodeIdx < jobConfig.NodeCount; nodeIdx++ {
+	for nodeIdx := uint(0); nodeIdx < jobConfig.NodeCount; nodeIdx++ {
 		wg.Add(1)
-		go runDockerInstance(&wg, jobConfig.GetNodeConfig(nodeIdx), jobConfig.DockerImage, awsKey, awsSecret, awsRegion, log)
+		go runDockerInstance(&wg, jobConfig.NodeConfig.FlattenJobConfig(nodeIdx), jobConfig.DockerImage, awsKey, awsSecret, awsRegion, log)
 	}
 
 	// Wait for all nodes to finish
@@ -142,12 +142,13 @@ func runDockerInstance(wg *sync.WaitGroup, config job.JobConfig, dockerImage str
 	)
 
 	out, err := cmd.CombinedOutput()
+	outStr := string(out)
 	if err != nil {
 		log.Infof("Running job %v in docker failed: %v\n", config.JobId, err)
-		log.Infof(string(out))
+		log.Infof(outStr)
 		return
 	}
 
 	log.Infof("Job %v ran successfully:\n", config.JobId)
-	log.Infof(string(out))
+	log.Infof(outStr)
 }

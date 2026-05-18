@@ -154,6 +154,43 @@ func Example_localFileSystem() {
 	// Listing subdir3: <nil>, []
 }
 
+func Example_localFileSystemS3Sim() {
+	// First, clear any files we may have there already
+	fmt.Printf("Setup: %v\n", os.RemoveAll("./test-bucket-root/"))
+
+	// Now run the tests
+	fs := MakeFSAccessS3Simulator("./test-bucket-root")
+	runTest(fs, "my-bucket")
+
+	// NOTE: test output must match the output from S3 (except cleanup steps)
+
+	// Output:
+	// Setup: <nil>
+	// JSON: <nil>
+	// JSON no-indent: <nil>
+	// Exists1: false|<nil>
+	// Binary: <nil>
+	// Exists2: true|<nil>
+	// Copy: <nil>
+	// Copy bad path, got not found error: true
+	// Read JSON: <nil>, {Hello 778 World}
+	// Read JSON no-indent: <nil>, {Hello 778 World}
+	// Read Binary: <nil>, [250 130 10 0 33]
+	// Read bad path, got not found error: true
+	// Read bad JSON: invalid character 'ú' looking for beginning of value
+	// Not a "not found" error: true
+	// Listing: <nil>, [the-files/data.bin the-files/pretty.json the-files/subdir/copied.json the-files/subdir/ugly.json]
+	// Listing subdir: <nil>, [the-files/subdir/copied.json the-files/subdir/ugly.json]
+	// Listing with prefix: <nil>, [the-files/subdir/ugly.json]
+	// Listing bad path: <nil>, []
+	// Delete copy: <nil>
+	// Delete bin: <nil>
+	// Listing2: <nil>, [the-files/pretty.json the-files/subdir/ugly.json]
+	// Listing subdir2: <nil>, [the-files/subdir/ugly.json]
+	// Empty dir: <nil>
+	// Listing subdir3: <nil>, []
+}
+
 func Example_s3() {
 	rand.Seed(time.Now().UnixNano())
 	sess, err := awsutil.GetSessionWithRegion("us-east-1")

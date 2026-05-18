@@ -8,22 +8,23 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v4/api/config"
+	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/services"
-	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func makePMCListFilesForQuantROI(
 	svcs *services.APIServices,
-	requestorSession *wsHelpers.SessionUser,
+	userParams *protos.QuantCreateParams,
+	requestorSession *sessionuser.SessionUser,
 	combinedSpectra bool,
 	cfg config.APIConfig,
-	datasetFileName string,
 	jobDataPath string,
-	params *protos.QuantStartingParameters,
+	nodePMCFileName string,
 	dataset *protos.Experiment,
-) (string, int32, []roiItemWithPMCs, error) {
+) (string, uint, []roiItemWithPMCs, error) {
 	// We're quantifying by ROIs, so we are actually adding all spectra in the ROI before quantifying once. First we need to download the ROIs
 	// We will also need the dataset file so we can convert our roi LocIdx to PMCs
 	locIdxToPMCLookup, err := makeLocToPMCLookup(dataset, true)
@@ -31,13 +32,13 @@ func makePMCListFilesForQuantROI(
 		return "", 0, []roiItemWithPMCs{}, err
 	}
 
-	rois, err := getROIs(params.UserParams.Command, params.UserParams.ScanId, params.UserParams.RoiIDs, svcs, requestorSession, locIdxToPMCLookup, dataset)
+	rois, err := getROIs(userParams.Command, userParams.ScanId, userParams.RoiIDs, svcs, requestorSession, locIdxToPMCLookup, dataset)
 	if err != nil {
 		return "", 0, rois, err
 	}
 
 	// Save list to file in S3 for piquant to pick up
-	quantCount := int32(len(rois))
+	quantCount := uint(len(rois))
 	if !combinedSpectra {
 		quantCount *= 2
 	}
@@ -47,12 +48,12 @@ func makePMCListFilesForQuantROI(
 		return "", 0, rois, err
 	}
 
-	contents, err := makeROIPMCListFileContents(rois, datasetFileName, combinedSpectra, params.UserParams.IncludeDwells, pmcHasDwellLookup)
+	contents, err := makeROIPMCListFileContents(rois, combinedSpectra, userParams.IncludeDwells, pmcHasDwellLookup)
 	if err != nil {
 		return "", 0, rois, fmt.Errorf("Error when preparing quant ROI node list. Error: %v", err)
 	}
 
-	pmcListName, err := savePMCList(svcs, params.PiquantJobsBucket, contents, 0, jobDataPath)
+	pmcListName, err := savePMCList(svcs, svcs.Config.PiquantJobsBucket, contents, nodePMCFileName, 0, jobDataPath)
 	if err != nil {
 		return "", 0, rois, err
 	}
@@ -60,10 +61,10 @@ func makePMCListFilesForQuantROI(
 	return pmcListName, quantCount, rois, nil
 }
 
-func makeROIPMCListFileContents(rois []roiItemWithPMCs, DatasetFileName string, combinedDetectors bool, includeDwells bool, pmcHasDwellLookup map[int32]bool) (string, error) {
+func makeROIPMCListFileContents(rois []roiItemWithPMCs, combinedDetectors bool, includeDwells bool, pmcHasDwellLookup map[int32]bool) (string, error) {
 	// Serialise the data for the list
 	var sb strings.Builder
-	sb.WriteString(DatasetFileName + "\n")
+	sb.WriteString(filepaths.DatasetFileName + "\n")
 
 	for _, roi := range rois {
 		sb.WriteString(fmt.Sprintf("%v:", roi.Id))

@@ -109,7 +109,7 @@ func (r *kubernetesJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config
 // - namespace: a string specifying the namespace in which the job should be created
 // - requestorUserId: a string specifying the user ID of the requestor
 // - numPods: an integer specifying the number of pods to create for the job
-func makeJobObject(config job.JobConfig, configStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, numPods int, jobTTLSec int64) *batchv1.Job {
+func makeJobObject(config job.JobConfig, configStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, numPods uint, jobTTLSec uint64) *batchv1.Job {
 	imagePullSecret := apiv1.LocalObjectReference{Name: "api-auth"}
 	application := "job-runner" // Used to be piquant-runner
 	name := config.JobId        // Used to be piquant-map or piquant-fit (maybe piquant-quant?)
@@ -123,6 +123,8 @@ func makeJobObject(config job.JobConfig, configStr, dockerImage, jobId, namespac
 	// Pointer management for kubernetes API
 	nPods := int32(numPods)
 	cm := batchv1.IndexedCompletion
+
+	ttlSeci64 := int64(jobTTLSec)
 
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -138,7 +140,7 @@ func makeJobObject(config job.JobConfig, configStr, dockerImage, jobId, namespac
 				// Needed? "pixlise.org/piquant-command":  params.Command,
 				"pixlise.org/owner":        safeUserId,
 				"pixlise.org/jobid":        jobId,
-				"pixlise.org/numberofpods": strconv.Itoa(numPods),
+				"pixlise.org/numberofpods": strconv.Itoa(int(numPods)),
 			},
 		},
 		Spec: batchv1.JobSpec{
@@ -146,7 +148,7 @@ func makeJobObject(config job.JobConfig, configStr, dockerImage, jobId, namespac
 			Parallelism:             &nPods,
 			CompletionMode:          &cm,
 			TTLSecondsAfterFinished: &postJobTTLSec,
-			ActiveDeadlineSeconds:   &jobTTLSec,
+			ActiveDeadlineSeconds:   &ttlSeci64,
 			Template: apiv1.PodTemplateSpec{
 				Spec: apiv1.PodSpec{
 					ImagePullSecrets:   []apiv1.LocalObjectReference{imagePullSecret},
@@ -190,7 +192,7 @@ func (r *kubernetesJobExecutor) getJobStatus(namespace, jobId string) (jobStatus
 	return job.Status, err
 }
 
-func (r *kubernetesJobExecutor) runJob(jobConfig JobGroupConfig, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, count int, status chan string, quantNodeMaxRuntimeSec int32) {
+func (r *kubernetesJobExecutor) runJob(jobConfig JobGroupConfig, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, count uint, status chan string, quantNodeMaxRuntimeSec uint) {
 	defer close(status)
 
 	// At this point, we're creating a job which will fan out and create multiple nodes (as needed, see count param), so we make sure the job has the same id as
@@ -205,7 +207,7 @@ func (r *kubernetesJobExecutor) runJob(jobConfig JobGroupConfig, jobId, namespac
 	configStr := string(configJSON)
 
 	// Max time job can run for
-	jobTTLSec := int64(quantNodeMaxRuntimeSec)
+	jobTTLSec := uint64(quantNodeMaxRuntimeSec)
 
 	jobSpec := makeJobObject(jobConfig.NodeConfig, configStr, jobConfig.DockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv, count, jobTTLSec)
 
@@ -259,7 +261,7 @@ func (r *kubernetesJobExecutor) runJob(jobConfig JobGroupConfig, jobId, namespac
 		}
 
 		// If we've been whining for too long, stop logging
-		if time.Now().Unix()-startTS > (jobTTLSec + 60) {
+		if time.Now().Unix()-startTS > (int64(jobTTLSec) + 60) {
 			err2 := fmt.Errorf("Timed out monitoring job %v/%v, %v failed nodes, %v succeeded nodes, %v active nodes. Marking job as failed.", namespace, jobId, jobStatus.Failed, jobStatus.Succeeded, jobStatus.Active)
 			//			status <- statusMsg
 			r.kubeHelper.Log.Errorf("%v", err2)

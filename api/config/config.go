@@ -48,7 +48,7 @@ type APIConfig struct {
 
 	ConfigBucket string
 
-	CoresPerNode int32
+	CoresPerNode uint
 
 	DataSourceSNSTopic string
 	CoregSqsQueueUrl   string
@@ -67,8 +67,8 @@ type APIConfig struct {
 	// Mongo Connection
 	MongoSecret string
 
-	PiquantDockerImage string // PIQUANT docker image to use to run a job
-	PiquantJobsBucket  string // PIQUANT job scratch drive
+	JobRunnerDockerImage string // Docker image to run expressions, python code and PIQUANT on the back end
+	PiquantJobsBucket    string // PIQUANT job scratch drive
 
 	QuantExecutor  string
 	QuantNamespace string // Used for running large multi-node quants
@@ -81,9 +81,9 @@ type APIConfig struct {
 	ZenodoAccessToken string
 
 	// Vars not set by environment
-	NodeCountOverride      int32
-	QuantNodeMaxRuntimeSec int32
-	MaxQuantNodes          int32
+	NodeCountOverride      uint
+	QuantNodeMaxRuntimeSec uint
+	MaxQuantNodes          uint
 	KubeConfig             string // Env sets this via command line parameter
 
 	// Web Socket config
@@ -208,7 +208,7 @@ func Init() (APIConfig, error) {
 	}
 
 	if nodeCountOverride != nil && *nodeCountOverride > 0 {
-		cfg.NodeCountOverride = int32(*nodeCountOverride)
+		cfg.NodeCountOverride = uint(*nodeCountOverride)
 	}
 
 	if cfg.ImportJobMaxTimeSec <= 0 {

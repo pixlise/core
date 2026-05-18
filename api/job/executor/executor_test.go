@@ -6,7 +6,7 @@ import (
 
 	"github.com/pixlise/core/v4/api/config"
 	"github.com/pixlise/core/v4/api/job"
-	"github.com/pixlise/core/v4/api/specialUserIds"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
@@ -55,7 +55,7 @@ func Example_jobexecutor_Run_docker_Python() {
 	err = fileaccess.CopyToBucket(remoteFS, "test-files/python", "test-piquant", "Example_jobexecutor_Run_docker_Python", true, l)
 	fmt.Printf("CopyToBucket: %v\n", err)
 
-	err = r.StartJob(jobGroup, apiCfg, specialUserIds.PIXLISESystemUserId, l)
+	err = r.StartJob(jobGroup, apiCfg, sessionuser.PIXLISESystemUserId, l)
 	fmt.Printf("StartJob: %v\n", err)
 
 	// When it's done, we download the output file and print it
@@ -140,7 +140,7 @@ func Example_jobexecutor_Run_docker_Lua() {
 	err = fileaccess.CopyToBucket(remoteFS, "test-files/lua", "test-piquant", "Example_jobexecutor_Run_docker_Lua", true, l)
 	fmt.Printf("CopyToBucket: %v\n", err)
 
-	err = r.StartJob(jobGroup, apiCfg, specialUserIds.PIXLISESystemUserId, l)
+	err = r.StartJob(jobGroup, apiCfg, sessionuser.PIXLISESystemUserId, l)
 	fmt.Printf("StartJob: %v\n", err)
 
 	// When it's done, we download the output file and print it
@@ -222,7 +222,7 @@ func Example_jobexecutor_Run_docker_Piquant() {
 	err = fileaccess.CopyToBucket(remoteFS, "test-files/piquant", "test-piquant", "Example_jobexecutor_Run_docker_Piquant", true, l)
 	fmt.Printf("CopyToBucket: %v\n", err)
 
-	err = r.StartJob(jobGroup, apiCfg, specialUserIds.PIXLISESystemUserId, l)
+	err = r.StartJob(jobGroup, apiCfg, sessionuser.PIXLISESystemUserId, l)
 	fmt.Printf("StartJob: %v\n", err)
 
 	// When it's done, we download the output file and print it

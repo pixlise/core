@@ -8,7 +8,7 @@ import (
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/services"
-	"github.com/pixlise/core/v4/api/specialUserIds"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -88,7 +88,7 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices, onlyIfNot
 			}
 
 			i := MakeQuantJobUpdater(params, nil, svcs.Notifier, svcs.MongoDB, svcs.FS, svcs.Config.UsersBucket)
-			_, err := CreateJob(params, specialUserIds.PIXLISESystemUserId, svcs, nil, i.SendQuantJobUpdate)
+			_, err := CreateJob(params, sessionuser.PIXLISESystemUserId, svcs, nil, i.SendQuantJobUpdate)
 			if err != nil {
 				svcs.Log.Errorf("AutoQuant failed to create quant job: %v. Error: %v", params.Name, err)
 				return
