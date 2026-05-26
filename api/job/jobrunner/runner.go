@@ -1,93 +1,75 @@
 package jobrunner
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/pixlise/core/v4/api/job"
-	"github.com/pixlise/core/v4/core/awsutil"
+	jobconfig "github.com/pixlise/core/v4/api/job/config"
+	"github.com/pixlise/core/v4/api/quantification"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 )
 
-func logJobPrep(cfgStr string, cfg job.JobConfig, jobLog logger.ILogger) {
-	jobLog.Infof("Preparing job: %v\nConfig: %+v", cfg.JobId, cfgStr)
-	jobLog.Infof("Job config struct: %#v", cfg)
-}
+var EnvBucketName = "bucket"
+var EnvPathName = "path"
+var EnvNodeIndexName = "node"
 
 // Downloads files required for job to run and sets up libraries. Requires JOB_CONFIG environment variable
 // to be set to a JobConfig structure
 // Parameters:
+// - jobBucket - The S3 bucket to read job config from
+// - jobPath - Path to the job in S3
 // - localBucketPath - use this to set a local path to simulate bucket access from, useful for unit tests
-func RunJob(localBucketPath string) error {
-	// Get the config from env var
-	cfgStr := os.Getenv(job.JobConfigEnvVar)
-
-	if len(cfgStr) <= 0 {
-		return fmt.Errorf("%v env var not set", job.JobConfigEnvVar)
+func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileaccess.FileAccess) error {
+	if len(jobBucket) <= 0 {
+		return fmt.Errorf("RunJob: bucket not set")
 	}
-
-	var cfg job.JobConfig
-	err := json.Unmarshal([]byte(cfgStr), &cfg)
-	if err != nil {
-		return fmt.Errorf("Failed to parse env var %v: %v", job.JobConfigEnvVar, err)
+	if len(jobPath) <= 0 {
+		return fmt.Errorf("RunJob: path not set")
 	}
-
-	sess, err := awsutil.GetSession()
-	if err != nil {
-		return fmt.Errorf("Failed to create AWS session. Error: %v", err)
+	if nodeIndex > 100000 {
+		return fmt.Errorf("RunJob: nodeIndex too high")
 	}
 
 	// Init logger - this used to be local=stdout, cloud env=cloudwatch, but we now write all logs to stdout
-	var jobLog logger.ILogger
+	jobLog := &logger.StdOutLogger{}
+	jobLog.Infof("Running job from s3://%v/%v for node %v", jobBucket, jobPath, nodeIndex)
 
-	// if len(cfg.LogCloudwatchGroup) > 0 && len(cfg.LogCloudwatchStream) > 0 {
-	// 	cwlog, err := logger.InitCloudWatchLogger(
-	// 		sess,
-	// 		cfg.LogCloudwatchGroup,
-	// 		cfg.LogCloudwatchStream,
-	// 		logger.LogDebug,
-	// 		30,
-	// 		5,
-	// 	)
+	/*
+		var remoteFS fileaccess.FileAccess
+		if len(localBucketPath) <= 0 {
+			// Init AWS stuff
+			jobLog.Infof("AWS S3 setup...")
 
-	// 	if err == nil {
-	// 		jobLog = cwlog
-	// 	} else {
-	// 		jobLog = logger.StdOutLogger{}
-	// 		jobLog.Errorf("Failed to create cloudwatch logger, logging to stdout")
-	// 	}
-	// } else {
-	jobLog = &logger.StdOutLogger{}
-	// if testMode {
-	// 	jobLog.SetLogLevel(logger.LogInfo)
-	// }
-	//}
+			s3svc, err := awsutil.GetS3(sess)
+			if err != nil {
+				return fmt.Errorf("Failed to create AWS S3 service. Error: %v", err)
+			}
 
-	logJobPrep(cfgStr, cfg, jobLog)
+			remoteFS = fileaccess.MakeS3Access(s3svc)
+		} else {
+			remoteFS = fileaccess.MakeFSAccessS3Simulator(localBucketPath)
+		}*/
+
+	// Read config from S3 (or our local simulator!)
+	jobParamPath := path.Join(jobPath, quantification.JobParamsFileName)
+	var jobGroupCfg jobconfig.JobGroupConfig
+	err := remoteFS.ReadJSON(jobBucket, jobParamPath, &jobGroupCfg, false)
+	if err != nil {
+		return fmt.Errorf("Failed to read job config s3://%v/%v: %v", jobBucket, jobParamPath, err)
+	}
+
+	cfg := jobGroupCfg.NodeConfig.FlattenJobConfig(nodeIndex)
+
+	jobLog.Debugf("Job config struct: %#v", cfg)
 
 	// Validate
 	if len(cfg.Command) <= 0 {
 		return fmt.Errorf("No command specified")
-	}
-
-	var remoteFS fileaccess.FileAccess
-	if len(localBucketPath) <= 0 {
-		// Init AWS stuff
-		jobLog.Infof("AWS S3 setup...")
-
-		s3svc, err := awsutil.GetS3(sess)
-		if err != nil {
-			return fmt.Errorf("Failed to create AWS S3 service. Error: %v", err)
-		}
-
-		remoteFS = fileaccess.MakeS3Access(s3svc)
-	} else {
-		remoteFS = fileaccess.MakeFSAccessS3Simulator(localBucketPath)
 	}
 
 	// Download required files
@@ -143,7 +125,7 @@ func RunJob(localBucketPath string) error {
 		outErr := fmt.Errorf("Job %v failed: %v", cfg.JobId, err)
 		jobLog.Errorf("%v", outErr)
 		if len(cmdStdOut) > 0 {
-			jobLog.Infof(cmdStdOut)
+			jobLog.Infof("%v", cmdStdOut)
 		}
 
 		return outErr

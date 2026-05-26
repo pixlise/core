@@ -141,10 +141,20 @@ func makeQuantJobPMCLists(PMCs []int32, pmcsPerNode int) [][]int32 {
 	return result
 }
 
-func combineQuantOutputs(fs fileaccess.FileAccess, jobsBucket string, jobPath string, header string, pmcFilesUsed []string) (string, error) {
-	// Try to load each PMC file, if any fail, fail due to 1 node either not finishing/crashing/etc
+// The old way - pre general purpose jobs code, we only got the PMC file names, and we had to build the paths ourselves
+func CombineQuantOutputs(fs fileaccess.FileAccess, jobsBucket string, jobPath string, header string, pmcFilesUsed []string) (string, error) {
 	jobOutputPath := path.Join(jobPath, "output")
+	resultFilePaths := []string{}
 
+	for _, v := range pmcFilesUsed {
+		// Make the assumed output path
+		piquantOutputPath := path.Join(jobOutputPath, v+"_result.csv")
+		resultFilePaths = append(resultFilePaths, piquantOutputPath)
+	}
+	return CombineQuantOutputsForResultFilePaths(fs, jobsBucket, header, resultFilePaths)
+}
+
+func CombineQuantOutputsForResultFilePaths(fs fileaccess.FileAccess, jobsBucket string, header string, resultFilePaths []string) (string, error) {
 	var sb strings.Builder
 
 	// Write header:
@@ -153,10 +163,7 @@ func combineQuantOutputs(fs fileaccess.FileAccess, jobsBucket string, jobPath st
 	pmcLineLookup := map[int][]string{}
 	pmcs := []int{}
 
-	for c, v := range pmcFilesUsed {
-		// Make the assumed output path
-		piquantOutputPath := path.Join(jobOutputPath, v+"_result.csv")
-
+	for c, piquantOutputPath := range resultFilePaths {
 		data, err := fs.ReadObject(jobsBucket, piquantOutputPath)
 		if err != nil {
 			return "", errors.New("Failed to combine map segment: " + piquantOutputPath)

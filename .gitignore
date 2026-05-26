@@ -24,6 +24,7 @@ diffraction-detector/test-files/dataset-diffraction.bin
 core/fileaccess/test-output/
 core/fileaccess/test-bucket-root/
 api/job/manager/test-workdir/
+api/job/jobrunner/test-workdir/
 
 # macOS #
 .DS_Store

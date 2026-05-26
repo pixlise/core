@@ -13,7 +13,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-var testROIs = []roiItemWithPMCs{
+var testROIs = []ROIItemWithPMCs{
 	{
 		PMCs: []int{7, 15, 388},
 		ROIItem: &protos.ROIItem{
@@ -118,7 +118,7 @@ PMC, CaO_%, filename, CaO_int, RTT
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)
@@ -158,7 +158,7 @@ PMC, CaO_%, CaO_int, filename, RTT
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", false, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", false, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)
@@ -203,7 +203,7 @@ PMC, CaO_%, CaO_int, filename, RTT
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", false, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", false, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)
@@ -234,7 +234,7 @@ PMC, CaO_%, CaO_int, RTT
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)
@@ -259,7 +259,7 @@ func Example_processQuantROIsToPMCs_Combined_DownloadError() {
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)
@@ -291,7 +291,7 @@ PMC, CaO_%, CaO_int, RTT, filename
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)
@@ -322,7 +322,7 @@ Qwerty, 6.1, 405, Normal_A_roi1-id, 7800
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)

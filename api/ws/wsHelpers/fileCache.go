@@ -30,15 +30,18 @@ var fileCache = map[string]fileCacheItem{}
 var MaxFileCacheAgeSec = int64(60 * 5)
 var MaxFileCacheSizeBytes = uint64(200 * 1024 * 1024)
 
-func ReadDatasetFile(scanId string, svcs *services.APIServices) (*protos.Experiment, error) {
+func ReadDatasetFile(scanId string, svcs *services.APIServices, useFileCache bool) (*protos.Experiment, error) {
 	cacheId := "scan-" + scanId
-	fileBytes := checkCache(cacheId, "scan", svcs)
+	var fileBytes []byte
+	if useFileCache {
+		fileBytes = checkCache(cacheId, "scan", svcs)
+	}
 
 	// If we don't have data by now, download it and add to our cache
 	var err error
 	if fileBytes == nil {
 		s3Path := filepaths.GetScanFilePath(scanId, filepaths.DatasetFileName)
-		svcs.Log.Debugf("Downloading file: s3://%v/%v\n", svcs.Config.DatasetsBucket, s3Path)
+		svcs.Log.Debugf("Downloading file: s3://%v/%v", svcs.Config.DatasetsBucket, s3Path)
 		fileBytes, err = svcs.FS.ReadObject(svcs.Config.DatasetsBucket, s3Path)
 		if err != nil {
 			// Doesn't seem to exist?
@@ -50,8 +53,10 @@ func ReadDatasetFile(scanId string, svcs *services.APIServices) (*protos.Experim
 			return nil, err
 		}
 
-		// Write locally
-		addToCache(cacheId, "-dataset.bin", fmt.Sprintf("s3://%v/%v", svcs.Config.DatasetsBucket, s3Path), fileBytes, svcs)
+		if useFileCache {
+			// Write locally
+			addToCache(cacheId, "-dataset.bin", fmt.Sprintf("s3://%v/%v", svcs.Config.DatasetsBucket, s3Path), fileBytes, svcs)
+		}
 	}
 
 	// Now decode the data & return it
@@ -72,7 +77,7 @@ func ReadQuantificationFile(quantId string, quantPath string, svcs *services.API
 	// If we don't have data by now, download it and add to our cache
 	var err error
 	if fileBytes == nil {
-		svcs.Log.Debugf("Downloading file: s3://%v/%v\n", svcs.Config.UsersBucket, quantPath)
+		svcs.Log.Debugf("Downloading file: s3://%v/%v", svcs.Config.UsersBucket, quantPath)
 		fileBytes, err = svcs.FS.ReadObject(svcs.Config.UsersBucket, quantPath)
 		if err != nil {
 			// Doesn't seem to exist?
@@ -107,7 +112,7 @@ func ReadDiffractionFile(scanId string, svcs *services.APIServices) (*protos.Dif
 	var err error
 	if fileBytes == nil {
 		s3Path := filepaths.GetScanFilePath(scanId, filepaths.DiffractionDBFileName)
-		svcs.Log.Debugf("Downloading file: s3://%v/%v\n", svcs.Config.DatasetsBucket, s3Path)
+		svcs.Log.Debugf("Downloading file: s3://%v/%v", svcs.Config.DatasetsBucket, s3Path)
 		fileBytes, err = svcs.FS.ReadObject(svcs.Config.DatasetsBucket, s3Path)
 		if err != nil {
 			// Doesn't seem to exist?
@@ -157,7 +162,7 @@ func ClearCacheForScanId(scanId string, ts timestamper.ITimeStamper, l logger.IL
 		}
 	}
 
-	l.Infof("Total locally cached files: %v", len(fileCache))
+	l.Debugf("Total locally cached files: %v", len(fileCache))
 }
 
 func checkCache(id string, fileTypeName string, svcs *services.APIServices) []byte {
@@ -267,5 +272,5 @@ func removeOldFileCacheItems(cache map[string]fileCacheItem, l logger.ILogger) {
 		removals++
 	}
 
-	l.Infof("Total locally cached files: %v, %v bytes, removed %v", len(cache), totalSize, removals)
+	l.Debugf("Total locally cached files: %v, %v bytes, removed %v", len(cache), totalSize, removals)
 }

@@ -22,18 +22,18 @@ func EstimateNodeCount(spectraCount uint, elementCount uint, desiredRunTimeSec u
 	// See unit test for why...
 
 	// Add 0.5 to round up, can't have it fractional
-	nodeCount := uint((float32(spectraCount*(elementCount+3)) / float32(3*desiredRunTimeSec*coresPerNode)) + 0.5)
+	nodeCount := int((float32(spectraCount*(elementCount+3)) / float32(3*desiredRunTimeSec*coresPerNode)) + 0.5)
 
 	// Clamp it to reasonable values
 	if nodeCount < 1 {
 		nodeCount = 1
 	}
 	// Don't go way overboard either
-	if maxNodes > 0 && nodeCount > maxNodes {
-		nodeCount = maxNodes
+	if maxNodes > 0 && nodeCount > int(maxNodes) {
+		nodeCount = int(maxNodes)
 	}
 
-	return nodeCount
+	return uint(nodeCount)
 }
 
 func FilesPerNode(spectraCount uint, nodeCount uint) uint {

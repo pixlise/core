@@ -50,6 +50,7 @@ func makeMockSvcs(fs fileaccess.FileAccess, idGen idgen.IDGenerator, logLevel *l
 		JWTReader: MockJWTReader{},
 		IDGen:     idGen,
 		//Signer:       signer,
-		FS: fs,
+		FS:         fs,
+		InstanceId: "the-test-instance",
 	}
 }

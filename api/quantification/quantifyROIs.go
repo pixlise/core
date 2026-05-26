@@ -24,12 +24,12 @@ func makePMCListFilesForQuantROI(
 	jobDataPath string,
 	nodePMCFileName string,
 	dataset *protos.Experiment,
-) (string, uint, []roiItemWithPMCs, error) {
+) (string, uint, []ROIItemWithPMCs, error) {
 	// We're quantifying by ROIs, so we are actually adding all spectra in the ROI before quantifying once. First we need to download the ROIs
 	// We will also need the dataset file so we can convert our roi LocIdx to PMCs
 	locIdxToPMCLookup, err := makeLocToPMCLookup(dataset, true)
 	if err != nil {
-		return "", 0, []roiItemWithPMCs{}, err
+		return "", 0, []ROIItemWithPMCs{}, err
 	}
 
 	rois, err := getROIs(userParams.Command, userParams.ScanId, userParams.RoiIDs, svcs, requestorSession, locIdxToPMCLookup, dataset)
@@ -61,7 +61,7 @@ func makePMCListFilesForQuantROI(
 	return pmcListName, quantCount, rois, nil
 }
 
-func makeROIPMCListFileContents(rois []roiItemWithPMCs, combinedDetectors bool, includeDwells bool, pmcHasDwellLookup map[int32]bool) (string, error) {
+func makeROIPMCListFileContents(rois []ROIItemWithPMCs, combinedDetectors bool, includeDwells bool, pmcHasDwellLookup map[int32]bool) (string, error) {
 	// Serialise the data for the list
 	var sb strings.Builder
 	sb.WriteString(filepaths.DatasetFileName + "\n")
@@ -111,7 +111,7 @@ func makeROIPMCListFileContents(rois []roiItemWithPMCs, combinedDetectors bool, 
 	return sb.String(), nil
 }
 
-func processQuantROIsToPMCs(fs fileaccess.FileAccess, jobsBucket string, jobPath string, header string, piquantCSVFile string, combinedQuant bool, rois []roiItemWithPMCs) (string, error) {
+func ProcessQuantROIsToPMCs(fs fileaccess.FileAccess, jobsBucket string, jobPath string, header string, piquantCSVFile string, combinedQuant bool, rois []ROIItemWithPMCs) (string, error) {
 	// PIQUANT has summed then quantified the spectra belonging to PMCs in each ROI. We now have to take those rows
 	// and copy them so each PMC in the ROI has a copy of the quantification row.
 	jobOutputPath := path.Join(jobPath, "output")

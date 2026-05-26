@@ -1,4 +1,4 @@
-package job
+package jobconfig
 
 import (
 	"fmt"
@@ -96,5 +96,3 @@ func (c JobConfig) FlattenJobConfig(nodeIndex uint) JobConfig {
 
 	return newCfg
 }
-
-var JobConfigEnvVar = "JOB_CONFIG"

@@ -44,6 +44,10 @@ import (
 // JobParamsFileName - File name of job params file
 const JobParamsFileName = "params.json"
 
+// OutputCSVName - File name of piquant output CSV file, may have indexes inserted in the name in case of multiple files (map command)
+// forming something along the lines of result000001.csv
+const OutputCSVName = "result.csv"
+
 // CreateJob - creates a new quantification job
 func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, svcs *services.APIServices, sessUser *sessionuser.SessionUser, sendUpdate func(*protos.JobStatus)) (*protos.JobStatus, error) {
 	// Get configured PIQUANT docker container
@@ -59,10 +63,10 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, s
 	// treated as a long-running job
 	var jobStatus *protos.JobStatus
 	jobId := ""
-	jobType := protos.JobStatus_JT_RUN_QUANT
+	jobType := protos.JobType_JT_RUN_QUANT
 	idPrefix := "quant"
 	if createParams.Command != "map" {
-		jobType = protos.JobStatus_JT_RUN_FIT
+		jobType = protos.JobType_JT_RUN_FIT
 		idPrefix = "fit"
 	}
 
@@ -179,7 +183,7 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 		svcs.Log.Debugf("Piquant parameters: %v\n", string(piquantParamsStr))
 	}
 
-	pmcFiles, spectraPerNode, rois, combined, quantByROI, err := PreparePMCLists(userParams, r.sessUser, datasetFileName, jobDataPath, svcs)
+	pmcFiles, spectraPerNode, rois, combined, quantByROI, err := PreparePMCLists(userParams, r.sessUser, datasetFileName, jobDataPath, svcs, true)
 
 	if err != nil {
 		r.completeJobState(false, fmt.Sprintf("Error: %v", err), "", []string{})
@@ -210,7 +214,7 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 
 	if userParams.Command == "map" {
 		// Gather log files straight away, we want any status updates to include the logs!
-		piquantLogList, err = copyAllLogs(
+		piquantLogList, err = CopyAllLogs(
 			svcs.FS,
 			svcs.Log,
 			r.quantStartSettings.PiquantJobsBucket,
@@ -232,10 +236,10 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 		errMsg := ""
 
 		if quantByROI {
-			outputCSV, err = processQuantROIsToPMCs(svcs.FS, svcs.Config.PiquantJobsBucket, jobDataPath, csvTitleRow, pmcFiles[0], combined, rois)
+			outputCSV, err = ProcessQuantROIsToPMCs(svcs.FS, svcs.Config.PiquantJobsBucket, jobDataPath, csvTitleRow, pmcFiles[0], combined, rois)
 			errMsg = "Error when duplicating quant rows for ROI PMCs"
 		} else {
-			outputCSV, err = combineQuantOutputs(svcs.FS, svcs.Config.PiquantJobsBucket, jobDataPath, csvTitleRow, pmcFiles)
+			outputCSV, err = CombineQuantOutputs(svcs.FS, svcs.Config.PiquantJobsBucket, jobDataPath, csvTitleRow, pmcFiles)
 			errMsg = "Error when combining quants"
 		}
 		if err != nil {
@@ -262,7 +266,7 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 			outputCSVName = ""
 		} else {
 			outputCSVBytes = data
-			outputCSVName = "result.csv"
+			outputCSVName = OutputCSVName
 		}
 	}
 
@@ -391,7 +395,7 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 		}
 	}
 
-	err = writeQuantAndOwnershipToDB(summary, ownerItem, svcs.MongoDB)
+	err = WriteQuantAndOwnershipToDB(summary, ownerItem, svcs.MongoDB)
 	if err != nil {
 		r.completeJobState(false, fmt.Sprintf("Failed to write quantification and ownership to DB: %v. Id: %v", err, r.jobId), quantOutPath, piquantLogList)
 		return
@@ -401,8 +405,8 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 	r.completeJobState(true, completeMsg, quantOutPath, piquantLogList)
 }
 
-func PreparePMCLists(userParams *protos.QuantCreateParams, sessUser *sessionuser.SessionUser, nodePMCFileName string, jobDataPath string, svcs *services.APIServices) (
-	[]string, uint, []roiItemWithPMCs, bool, bool, error) {
+func PreparePMCLists(userParams *protos.QuantCreateParams, sessUser *sessionuser.SessionUser, nodePMCFileName string, jobDataPath string, svcs *services.APIServices, useFileCache bool) (
+	[]string, uint, []ROIItemWithPMCs, bool, bool, error) {
 	// Generate the lists, and then save each, and start the quantification
 	// NOTE: empty == combined, just to honor the previous mode of operation before quantMode field was added
 	combined := userParams.QuantMode == "" || userParams.QuantMode == quantModeCombinedABBulk || userParams.QuantMode == quantModeCombinedAB
@@ -411,10 +415,10 @@ func PreparePMCLists(userParams *protos.QuantCreateParams, sessUser *sessionuser
 	// If we're quantifying ROIs, do that
 	pmcFiles := []string{}
 	spectraPerNode := uint(0)
-	rois := []roiItemWithPMCs{}
+	rois := []ROIItemWithPMCs{}
 
 	// Download the dataset itself because we'll need it to generate our .pmcs files for each node to run
-	dataset, err := wsHelpers.ReadDatasetFile(userParams.ScanId, svcs)
+	dataset, err := wsHelpers.ReadDatasetFile(userParams.ScanId, svcs, useFileCache)
 	if err != nil {
 		return pmcFiles, spectraPerNode, rois, combined, quantByROI, err
 	}
@@ -453,7 +457,7 @@ func (r *quantNodeRunner) completeJobState(success bool, message string, outputF
 	}
 }
 
-func copyAllLogs(fs fileaccess.FileAccess, jobLog logger.ILogger, jobBucket string, jobDataPath string, usersBucket string, logSavePath string, jobID string) ([]string, error) {
+func CopyAllLogs(fs fileaccess.FileAccess, jobLog logger.ILogger, jobBucket string, jobDataPath string, usersBucket string, logSavePath string, jobID string) ([]string, error) {
 	result := []string{}
 
 	logSourcePath := path.Join(jobDataPath, filepaths.PiquantLogSubdir)
@@ -476,7 +480,7 @@ func copyAllLogs(fs fileaccess.FileAccess, jobLog logger.ILogger, jobBucket stri
 		)
 
 		if err != nil {
-			jobLog.Errorf("Failed to copy log file: %v://%v to data bucket destination: %v", jobBucket, item, dstPath)
+			jobLog.Errorf("Failed to copy log file: %v://%v to %v://%v: %v", jobBucket, item, usersBucket, dstPath, err)
 		}
 
 		// Remember link to the file... this is really now just a list of file names

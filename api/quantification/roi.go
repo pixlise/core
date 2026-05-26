@@ -16,7 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type roiItemWithPMCs struct {
+type ROIItemWithPMCs struct {
 	PMCs []int
 	*protos.ROIItem
 }
@@ -30,8 +30,8 @@ func getROIs(
 	svcs *services.APIServices,
 	requestorSession *sessionuser.SessionUser,
 	locIdxToPMCLookup map[int32]int32,
-	dataset *protos.Experiment) ([]roiItemWithPMCs, error) {
-	result := []roiItemWithPMCs{}
+	dataset *protos.Experiment) ([]ROIItemWithPMCs, error) {
+	result := []ROIItemWithPMCs{}
 	var err error
 
 	if len(roiIds) <= 0 {
@@ -109,7 +109,7 @@ func getROIs(
 	return result, nil
 }
 
-func makeROIWithPMCs(roi *protos.ROIItem, locIdxToPMCLookup map[int32]int32) (*roiItemWithPMCs, error) {
+func makeROIWithPMCs(roi *protos.ROIItem, locIdxToPMCLookup map[int32]int32) (*ROIItemWithPMCs, error) {
 	pmcs := []int{}
 	for _, locIdx := range roi.ScanEntryIndexesEncoded {
 		if pmc, ok := locIdxToPMCLookup[locIdx]; ok {
@@ -124,7 +124,7 @@ func makeROIWithPMCs(roi *protos.ROIItem, locIdxToPMCLookup map[int32]int32) (*r
 
 	sort.Ints(pmcs)
 
-	result := &roiItemWithPMCs{
+	result := &ROIItemWithPMCs{
 		PMCs:    pmcs,
 		ROIItem: roi,
 	}
@@ -132,7 +132,7 @@ func makeROIWithPMCs(roi *protos.ROIItem, locIdxToPMCLookup map[int32]int32) (*r
 	return result, nil
 }
 
-func makeAllPointsROI(scanId string, dataset *protos.Experiment) *roiItemWithPMCs {
+func makeAllPointsROI(scanId string, dataset *protos.Experiment) *ROIItemWithPMCs {
 	locIdxs := []int32{}
 	PMCs := []int{}
 
@@ -164,7 +164,7 @@ func makeAllPointsROI(scanId string, dataset *protos.Experiment) *roiItemWithPMC
 
 	sort.Ints(PMCs)
 
-	result := &roiItemWithPMCs{
+	result := &ROIItemWithPMCs{
 		PMCs: PMCs,
 		ROIItem: &protos.ROIItem{
 			Id:                      allPointsROIId,

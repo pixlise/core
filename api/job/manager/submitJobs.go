@@ -9,8 +9,7 @@ import (
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
-	"github.com/pixlise/core/v4/api/job"
-	jobexecutor "github.com/pixlise/core/v4/api/job/executor"
+	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/piquant"
 	"github.com/pixlise/core/v4/api/quantification"
 	"github.com/pixlise/core/v4/api/sessionuser"
@@ -21,8 +20,21 @@ import (
 
 // Submit function for each kind of job type we support
 func (jm *JobManager) SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser) error {
+	prefix := "quant"
+	jobType := protos.JobType_JT_UNKNOWN
+	jobCompletionMethod := ""
+
+	if createParams.Command != "map" {
+		prefix = "piquant" + createParams.Command
+		jobType = protos.JobType_JT_RUN_FIT
+		jobCompletionMethod = JobComplete_SingleCSV
+	} else {
+		jobType = protos.JobType_JT_RUN_QUANT
+		jobCompletionMethod = JobComplete_CombineCSVs
+	}
+
 	// Call the internal one, log the resulting errors if any
-	err := jm.internalSubmitQuantJob(createParams, requestorUserSess)
+	err := jm.internalSubmitQuantJob(createParams, requestorUserSess, prefix, jobType, jobCompletionMethod)
 	if err != nil {
 		jm.svcs.Log.Errorf("SubmitQuantJob error: %v", err)
 	}
@@ -48,7 +60,7 @@ func (jm *JobManager) SubmitQuantJob(createParams *protos.QuantCreateParams, req
 		return err
 	}
 */
-func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser) error {
+func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser, idPrefix string, jobType protos.JobType, completeMethod string) error {
 	err := quantification.IsValidCreateParam(createParams, jm.svcs, requestorUserSess)
 	if err != nil {
 		return errorwithstatus.MakeBadRequestError(err)
@@ -74,15 +86,7 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 	}
 
 	// Generate a job ID
-	prefix := "quant"
-	jobType := protos.JobStatus_JT_UNKNOWN
-	if createParams.Command != "map" {
-		prefix = "piquant" + createParams.Command
-		jobType = protos.JobStatus_JT_RUN_FIT
-	} else {
-		jobType = protos.JobStatus_JT_RUN_QUANT
-	}
-	jobId := fmt.Sprintf("%v-%v", prefix, jm.svcs.IDGen.GenObjectID())
+	jobId := fmt.Sprintf("%v-%v", idPrefix, jm.svcs.IDGen.GenObjectID())
 
 	jobS3Path := filepaths.GetJobDataPath(createParams.ScanId, jobId, "")
 
@@ -93,7 +97,7 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 	}
 
 	// Dataset file
-	requiredFiles := []job.JobFilePath{
+	requiredFiles := []jobconfig.JobFilePath{
 		{
 			LocalPath:    filepaths.DatasetFileName,
 			RemoteBucket: jm.svcs.Config.DatasetsBucket,
@@ -103,21 +107,21 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 
 	// PIQUANT instrument config files (these are config-dependent)
 	if len(piquantCfg.ConfigFile) > 0 {
-		requiredFiles = append(requiredFiles, job.JobFilePath{
+		requiredFiles = append(requiredFiles, jobconfig.JobFilePath{
 			LocalPath:    piquantCfg.ConfigFile,
 			RemoteBucket: jm.svcs.Config.ConfigBucket,
 			RemotePath:   filepaths.GetDetectorConfigPath(detectorConfigBits[0], detectorConfigBits[1], piquantCfg.ConfigFile),
 		})
 	}
 	if len(piquantCfg.CalibrationFile) > 0 {
-		requiredFiles = append(requiredFiles, job.JobFilePath{
+		requiredFiles = append(requiredFiles, jobconfig.JobFilePath{
 			LocalPath:    piquantCfg.CalibrationFile,
 			RemoteBucket: jm.svcs.Config.ConfigBucket,
 			RemotePath:   filepaths.GetDetectorConfigPath(detectorConfigBits[0], detectorConfigBits[1], piquantCfg.CalibrationFile),
 		})
 	}
 	if len(piquantCfg.OpticEfficiencyFile) > 0 {
-		requiredFiles = append(requiredFiles, job.JobFilePath{
+		requiredFiles = append(requiredFiles, jobconfig.JobFilePath{
 			LocalPath:    piquantCfg.OpticEfficiencyFile,
 			RemoteBucket: jm.svcs.Config.ConfigBucket,
 			RemotePath:   filepaths.GetDetectorConfigPath(detectorConfigBits[0], detectorConfigBits[1], piquantCfg.OpticEfficiencyFile),
@@ -126,8 +130,8 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 
 	// PMC list(s)
 	nodePMCFileName := "node.pmcs"
-	pmcFiles, _ /*spectraPerNode*/, _ /*rois*/, _ /*combined*/, _ /*quantByROI*/, err := quantification.PreparePMCLists(
-		createParams, requestorUserSess, nodePMCFileName, jobS3Path, jm.svcs)
+	pmcFiles, _ /*spectraPerNode*/, rois, combined, quantByROI, err := quantification.PreparePMCLists(
+		createParams, requestorUserSess, nodePMCFileName, jobS3Path, jm.svcs, jm.useFileCache)
 
 	if err != nil {
 		return err
@@ -137,14 +141,22 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 	}
 
 	nodePMCPath := path.Join(jobS3Path, nodePMCFileName)
-	requiredFiles = append(requiredFiles, job.JobFilePath{
+	requiredFiles = append(requiredFiles, jobconfig.JobFilePath{
 		LocalPath:      nodePMCFileName,
 		RemoteBucket:   jm.svcs.Config.PiquantJobsBucket,
 		RemotePath:     nodePMCPath,
-		ApplyNodeIndex: job.NodeIndexMethod_Both,
+		ApplyNodeIndex: jobconfig.NodeIndexMethod_Both,
 	})
 
 	elementListStr := strings.Join(createParams.Elements, ",")
+
+	// TODO: Bring this back somehow, or name the job runner docker container to include PIQUANT version
+	// piquantVersion, err := piquant.GetPiquantVersion(jm.svcs)
+	// if err != nil {
+	// 	return err
+	// }
+
+	csvTitleRow := fmt.Sprintf("PIQUANT version: %v DetectorConfig: %v", jm.svcs.Config.JobRunnerDockerImage /*piquantVersion.Version*/, createParams.DetectorConfig)
 
 	userArgs := "-Fe,1"
 	if len(createParams.Parameters) > 0 {
@@ -169,12 +181,13 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 	}
 	allArgs = append(allArgs, extraArgs...)
 
-	jg := &jobexecutor.JobGroupConfig{
-		JobGroupId:  jobId,
-		JobType:     jobType,
-		DockerImage: jm.svcs.Config.JobRunnerDockerImage,
-		NodeCount:   uint(len(pmcFiles)),
-		NodeConfig: job.JobConfig{
+	jg := &jobconfig.JobGroupConfig{
+		JobGroupId:       jobId,
+		JobType:          jobType,
+		CompletionMethod: completeMethod,
+		DockerImage:      jm.svcs.Config.JobRunnerDockerImage,
+		NodeCount:        uint(len(pmcFiles)),
+		NodeConfig: jobconfig.JobConfig{
 			JobId: jobId + "-node",
 
 			RequiredFiles: requiredFiles,
@@ -183,30 +196,34 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 			Args:                       allArgs,
 			ArgIndexToApplyNodeIndexes: []int{3, 5},
 
-			OutputFiles: []job.JobFilePath{
+			OutputFiles: []jobconfig.JobFilePath{
 				{
 					LocalPath:      "stdout",
 					RemoteBucket:   jm.svcs.Config.PiquantJobsBucket,
 					RemotePath:     path.Join(jobS3Path, "piquant-logs", "stdout.log"),
-					ApplyNodeIndex: job.NodeIndexMethod_Remote,
+					ApplyNodeIndex: jobconfig.NodeIndexMethod_Remote,
 				},
 				{
 					LocalPath:      "map.csv_log.txt",
 					RemoteBucket:   jm.svcs.Config.PiquantJobsBucket,
 					RemotePath:     path.Join(jobS3Path, "piquant-logs", "piquant.log"),
-					ApplyNodeIndex: job.NodeIndexMethod_Both,
+					ApplyNodeIndex: jobconfig.NodeIndexMethod_Both,
 				},
 				{
 					LocalPath:      "map.csv",
 					RemoteBucket:   jm.svcs.Config.PiquantJobsBucket,
-					RemotePath:     path.Join(jobS3Path, "output", "result.csv"),
-					ApplyNodeIndex: job.NodeIndexMethod_Both,
+					RemotePath:     path.Join(jobS3Path, "output", quantification.OutputCSVName),
+					ApplyNodeIndex: jobconfig.NodeIndexMethod_Both,
 				},
 			},
 		},
 		AssociatedScanId: createParams.ScanId,
 		JobName:          createParams.Name,
 		ElementList:      createParams.Elements,
+		OutputTitle:      csvTitleRow,
+		Combined:         combined,
+		QuantByROI:       quantByROI,
+		ROIs:             rois,
 		RequestorUserId:  requestorUserId,
 	}
 
@@ -234,7 +251,7 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 /*
 
 	func (jm *JobManager) internalSubmitPythonJob(pythonScriptName string, requestorUserId string) error {
-		jg := &jobexecutor.JobGroupConfig{
+		jg := &JobGroupConfig{
 			DockerImage: jm.svcs.Config.JobRunnerDockerImage,
 			NodeCount: 1,
 	    	NodeConfig:  job.JobConfig{
@@ -298,6 +315,8 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 			return fmt.Errorf("Expression language %v not supported for cloud execution", expr.SourceLanguage)
 		}
 
+job
+
 		// Read all modules associated with the expression
 		sourceFiles := map[string]string{}
 		sourceFiles["main.lua"] = expr.SourceCode
@@ -327,7 +346,7 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 			})
 		}
 
-		jg := &jobexecutor.JobGroupConfig{
+		jg := &JobGroupConfig{
 			DockerImage: jm.svcs.Config.JobRunnerDockerImage,
 			NodeCount: 1,
 	    	NodeConfig:  job.JobConfig{
@@ -351,7 +370,7 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 		return jm.internalSubmitJob(jg)
 	}
 */
-func (jm *JobManager) internalSubmitJob(jg *jobexecutor.JobGroupConfig) error {
+func (jm *JobManager) internalSubmitJob(jg *jobconfig.JobGroupConfig) error {
 	if len(jg.JobGroupId) <= 0 {
 		return errors.New("SubmitJob: JobGroupId not specified")
 	}
@@ -385,7 +404,7 @@ func (jm *JobManager) internalSubmitJob(jg *jobexecutor.JobGroupConfig) error {
 	}
 
 	// Now that we've uploaded the job params, include it in the list of files the job can download
-	jg.NodeConfig.RequiredFiles = append(jg.NodeConfig.RequiredFiles, job.JobFilePath{
+	jg.NodeConfig.RequiredFiles = append(jg.NodeConfig.RequiredFiles, jobconfig.JobFilePath{
 		LocalPath:    quantification.JobParamsFileName,
 		RemoteBucket: jm.svcs.Config.PiquantJobsBucket,
 		RemotePath:   jobsPath,
@@ -398,7 +417,7 @@ func (jm *JobManager) internalSubmitJob(jg *jobexecutor.JobGroupConfig) error {
 	// import jobs have the jobItemId set to the scan id
 	// TODO: Probably can be removed as this is kind of not a real job type that we execute?!
 	itemId := jg.JobGroupId
-	if jg.JobType == protos.JobStatus_JT_IMPORT_SCAN || jg.JobType == protos.JobStatus_JT_REIMPORT_SCAN {
+	if jg.JobType == protos.JobType_JT_IMPORT_SCAN || jg.JobType == protos.JobType_JT_REIMPORT_SCAN {
 		itemId = jg.AssociatedScanId
 	}
 
@@ -436,20 +455,19 @@ func (jm *JobManager) internalSubmitJob(jg *jobexecutor.JobGroupConfig) error {
 		return fmt.Errorf("Inserted job %v doesn't match db id %v", jg.JobGroupId, result.InsertedID)
 	}
 
-	// At this point, if the above worked, we're done and assume the job will be picked up and run
-	executor, err := jobexecutor.GetJobExecutor(jm.svcs.Config.QuantExecutor)
-	if err != nil {
-		return err
-	}
+	// Queue up each individual job so it can run on a node. Job queue will eventually be empty and the job completes
+	return jm.QueueJob(jg)
+	// if err != nil {
+	// 	return err
+	// }
 
-	executor.StartJob(*jg, jm.svcs.Config, jg.RequestorUserId, jm.svcs.Log)
-	return nil
+	// return nil
 }
 
 /*
-func makeJobIdAndType(jg *jobexecutor.JobGroupConfig, idg idgen.IDGenerator) (string, protos.JobStatus_JobType) {
+func makeJobIdAndType(jg *JobGroupConfig, idg idgen.IDGenerator) (string, protos.JobType) {
 	prefix := "job-"
-	jobType := protos.JobStatus_JT_UNKNOWN
+	jobType := protos.JobType_JT_UNKNOWN
 
 	cmd := strings.ToLower(jg.NodeConfig.Command)
 	if strings.Contains(cmd, "lua") {
@@ -460,11 +478,11 @@ func makeJobIdAndType(jg *jobexecutor.JobGroupConfig, idg idgen.IDGenerator) (st
 		// Creating a new quantification command is actually "map"
 		if jg.NodeConfig.Args[0] == "map" {
 			prefix = "quant-"
-			jobType = protos.JobStatus_JT_RUN_QUANT
+			jobType = protos.JobType_JT_RUN_QUANT
 		} else {
 			// Fit command is actually "quant"
 			if jg.NodeConfig.Args[0] == "quant" {
-				jobType = protos.JobStatus_JT_RUN_FIT
+				jobType = protos.JobType_JT_RUN_FIT
 			}
 			prefix = "piquant-" + jg.NodeConfig.Args[0] + "-"
 		}

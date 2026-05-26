@@ -114,7 +114,7 @@ PMC, CaO_%, CaO_int, RTT
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	combinedCSV, err := combineQuantOutputs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", []string{"node001.pmcs", "node002.pmcs", "node003.pmcs"})
+	combinedCSV, err := CombineQuantOutputs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", []string{"node001.pmcs", "node002.pmcs", "node003.pmcs"})
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(combinedCSV)
@@ -172,7 +172,7 @@ PMC, CaO_%, CaO_int, RTT
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	combinedCSV, err := combineQuantOutputs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", []string{"node001.pmcs", "node002.pmcs", "node003.pmcs"})
+	combinedCSV, err := CombineQuantOutputs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", []string{"node001.pmcs", "node002.pmcs", "node003.pmcs"})
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(combinedCSV)
@@ -215,7 +215,7 @@ PMC, CaO_%, CaO_int, RTT
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	combinedCSV, err := combineQuantOutputs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", []string{"node001.pmcs", "node002.pmcs", "node003.pmcs"})
+	combinedCSV, err := CombineQuantOutputs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", []string{"node001.pmcs", "node002.pmcs", "node003.pmcs"})
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(combinedCSV)
@@ -255,7 +255,7 @@ NaN, 7.1, 415, 7840
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	combinedCSV, err := combineQuantOutputs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", []string{"node001.pmcs", "node002.pmcs", "node003.pmcs"})
+	combinedCSV, err := CombineQuantOutputs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", []string{"node001.pmcs", "node002.pmcs", "node003.pmcs"})
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(combinedCSV)
@@ -295,7 +295,7 @@ PMC, CaO_%, CaO_int, RTT
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	combinedCSV, err := combineQuantOutputs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", []string{"node001.pmcs", "node002.pmcs", "node003.pmcs"})
+	combinedCSV, err := CombineQuantOutputs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", []string{"node001.pmcs", "node002.pmcs", "node003.pmcs"})
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(combinedCSV)

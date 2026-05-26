@@ -217,6 +217,13 @@ func (fs *FSAccess) CopyObject(srcRootPath string, srcPath string, dstRootPath s
 	defer fin.Close()
 
 	dstFullPath := fs.filePath(dstRootPath, dstPath)
+
+	// Make the intermediate dirs as needed
+	err = os.MkdirAll(filepath.Dir(dstFullPath), 0777)
+	if err != nil {
+		return err
+	}
+
 	fout, err := os.Create(dstFullPath)
 	if err != nil {
 		return err

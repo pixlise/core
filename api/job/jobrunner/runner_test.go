@@ -3,93 +3,137 @@ package jobrunner
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
+	"path"
 	"path/filepath"
 
-	"github.com/pixlise/core/v4/api/job"
-	"github.com/pixlise/core/v4/core/awsutil"
+	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 )
 
-func Example_jobrunner_RunJob_NoConfig() {
-	os.Setenv(job.JobConfigEnvVar, "")
-	fmt.Printf("%v\n", RunJob(""))
+func Example_jobrunner_RunJob_BadConfigs() {
+	fs := fileaccess.MakeFSAccessS3Simulator("./test-bucket-root")
+
+	fmt.Printf("%v\n", RunJob("", "", 10, fs))
+	fmt.Printf("%v\n", RunJob("bucket", "", 10, fs))
+	fmt.Printf("%v\n", RunJob("bucket", "path/to/job", 1000000, fs))
+	fmt.Printf("%v\n", RunJob("bucket", "path/to/job", 10, fs))
 
 	// Output:
-	// JOB_CONFIG env var not set
+	// RunJob: bucket not set
+	// RunJob: path not set
+	// RunJob: nodeIndex too high
+	// INFO: Running job from s3://bucket/path/to/job for node 10
+	// Failed to read job config s3://bucket/path/to/job/params.json: open ./test-bucket-root/bucket/path/to/job/params.json: no such file or directory
 }
 
-func Example_jobrunner_RunJob_BadConfig() {
-	os.Setenv(job.JobConfigEnvVar, "{ \"Some\": \"unfinished JSON }")
-	fmt.Printf("%v\n", RunJob(""))
+func initTest() (string, fileaccess.FileAccess) {
+	// Move to a working directory!
+	origWD, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// Output:
-	// Failed to parse env var JOB_CONFIG: unexpected end of JSON input
+	wd := filepath.Join(origWD, "test-workdir")
+	err = os.RemoveAll(wd)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = os.MkdirAll(wd, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Copy the bucket seed data to a working dir that represents our bucket(s)
+	// err = fileaccess.CopyDirectoryLocally("./test-files", filepath.Join(wd, "test-bucket-root"), true)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	err = os.Chdir(wd)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return origWD, fileaccess.MakeFSAccessS3Simulator("./test-bucket-root")
+}
+
+func writeConfig(cfg jobconfig.JobGroupConfig, to string) {
+	cfgJSON, err := json.Marshal(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.MkdirAll(path.Dir(to), 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.WriteFile(to, cfgJSON, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func Example_jobrunner_RunJob_NoCommand() {
-	cfg := job.JobConfig{
-		JobId: "Job001",
-	}
+	origWD, fs := initTest()
+	defer os.Chdir(origWD)
 
-	cfgJSON, err := json.Marshal(cfg)
-	fmt.Printf("cfgErr: %v\n", err)
+	writeConfig(jobconfig.JobGroupConfig{
+		JobGroupId: "Job001",
+	}, "./test-bucket-root/job-bucket/path/to/job001/params.json")
 
-	os.Setenv(job.JobConfigEnvVar, string(cfgJSON))
-	fmt.Printf("Job: %v\n", RunJob(""))
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
 
 	// Output:
-	// cfgErr: <nil>
-	// INFO: Preparing job: Job001
-	// Config: {"JobId":"Job001","RequiredFiles":null,"Command":"","Args":null,"ArgIndexToApplyNodeIndexes":null,"OutputFiles":null}
-	// INFO: Job config struct: job.JobConfig{JobId:"Job001", RequiredFiles:[]job.JobFilePath(nil), Command:"", Args:[]string(nil), ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]job.JobFilePath(nil)}
+	// INFO: Running job from s3://job-bucket/path/to/job001 for node 4
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"-4", RequiredFiles:[]jobconfig.JobFilePath{}, Command:"", Args:[]string{}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{}}
 	// Job: No command specified
 }
 
 func Example_jobrunner_RunJob_BadInputLocalPath() {
-	cfg := job.JobConfig{
-		JobId:         "Job001",
-		RequiredFiles: []job.JobFilePath{{LocalPath: "", RemoteBucket: "test-piquant", RemotePath: "jobs/Job001/input.csv"}},
-		Command:       "ls",
-	}
+	origWD, fs := initTest()
+	defer os.Chdir(origWD)
 
-	cfgJSON, err := json.Marshal(cfg)
-	fmt.Printf("cfgErr: %v\n", err)
+	writeConfig(jobconfig.JobGroupConfig{
+		JobGroupId: "Job001",
+		NodeCount:  2,
+		NodeConfig: jobconfig.JobConfig{
+			RequiredFiles: []jobconfig.JobFilePath{{LocalPath: "", RemoteBucket: "test-piquant", RemotePath: "jobs/Job001/input.csv"}},
+			Command:       "ls",
+		},
+	}, "./test-bucket-root/job-bucket/path/to/job001/params.json")
 
-	os.Setenv(job.JobConfigEnvVar, string(cfgJSON))
-	fmt.Printf("Job: %v\n", RunJob(""))
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
 
 	// Output:
-	// cfgErr: <nil>
-	// INFO: Preparing job: Job001
-	// Config: {"JobId":"Job001","RequiredFiles":[{"RemoteBucket":"test-piquant","RemotePath":"jobs/Job001/input.csv","LocalPath":"","ApplyNodeIndex":0}],"Command":"ls","Args":null,"ArgIndexToApplyNodeIndexes":null,"OutputFiles":null}
-	// INFO: Job config struct: job.JobConfig{JobId:"Job001", RequiredFiles:[]job.JobFilePath{job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"jobs/Job001/input.csv", LocalPath:"", ApplyNodeIndex:0}}, Command:"ls", Args:[]string(nil), ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]job.JobFilePath(nil)}
-	// INFO: AWS S3 setup...
+	// INFO: Running job from s3://job-bucket/path/to/job001 for node 4
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"-4", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"jobs/Job001/input.csv", LocalPath:"", ApplyNodeIndex:0}}, Command:"ls", Args:[]string{}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{}}
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://test-piquant/jobs/Job001/input.csv" -> "":
 	// Job: No localPath specified
 }
 
 func Example_jobrunner_RunJob_BadInputRemotePath() {
-	cfg := job.JobConfig{
-		JobId:         "Job001",
-		RequiredFiles: []job.JobFilePath{{LocalPath: "input.csv", RemoteBucket: "test-piquant", RemotePath: "jobs/Job001/input.csv"}},
-		Command:       "ls",
-	}
+	origWD, fs := initTest()
+	defer os.Chdir(origWD)
 
-	cfgJSON, err := json.Marshal(cfg)
-	fmt.Printf("cfgErr: %v\n", err)
+	writeConfig(jobconfig.JobGroupConfig{
+		JobGroupId: "Job001",
+		NodeCount:  2,
+		NodeConfig: jobconfig.JobConfig{
+			JobId:         "Job001-0",
+			RequiredFiles: []jobconfig.JobFilePath{{LocalPath: "input.csv", RemoteBucket: "test-piquant", RemotePath: "jobs/Job001/input.csv"}},
+			Command:       "ls",
+		},
+	}, "./test-bucket-root/job-bucket/path/to/job001/params.json")
 
-	os.Setenv(job.JobConfigEnvVar, string(cfgJSON))
-	fmt.Printf("Job: %v\n", RunJob(""))
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
 
 	// Output:
-	// cfgErr: <nil>
-	// INFO: Preparing job: Job001
-	// Config: {"JobId":"Job001","RequiredFiles":[{"RemoteBucket":"test-piquant","RemotePath":"jobs/Job001/input.csv","LocalPath":"input.csv","ApplyNodeIndex":0}],"Command":"ls","Args":null,"ArgIndexToApplyNodeIndexes":null,"OutputFiles":null}
-	// INFO: Job config struct: job.JobConfig{JobId:"Job001", RequiredFiles:[]job.JobFilePath{job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"jobs/Job001/input.csv", LocalPath:"input.csv", ApplyNodeIndex:0}}, Command:"ls", Args:[]string(nil), ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]job.JobFilePath(nil)}
-	// INFO: AWS S3 setup...
+	// INFO: Running job from s3://job-bucket/path/to/job001 for node 4
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"Job001-0-4", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"jobs/Job001/input.csv", LocalPath:"input.csv", ApplyNodeIndex:0}}, Command:"ls", Args:[]string{}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{}}
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://test-piquant/jobs/Job001/input.csv" -> "input.csv":
 	// DEBUG:  Local path is <CWD>/input.csv
@@ -97,128 +141,98 @@ func Example_jobrunner_RunJob_BadInputRemotePath() {
 }
 
 func Example_jobrunner_RunJob_BadCommand() {
-	cfg := job.JobConfig{
-		JobId:   "Job001",
-		Command: "dostuff",
-		OutputFiles: []job.JobFilePath{
-			{LocalPath: "nofile.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_UploadNotThere/Output/file.csv"},
+	origWD, fs := initTest()
+	defer os.Chdir(origWD)
+
+	writeConfig(jobconfig.JobGroupConfig{
+		JobGroupId: "Job001",
+		NodeCount:  2,
+		NodeConfig: jobconfig.JobConfig{
+			JobId:   "Job001-0",
+			Command: "dostuff",
+			OutputFiles: []jobconfig.JobFilePath{
+				{LocalPath: "nofile.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_UploadNotThere/Output/file.csv"},
+			},
 		},
-	}
+	}, "./test-bucket-root/job-bucket/path/to/job001/params.json")
 
-	cfgJSON, err := json.Marshal(cfg)
-	fmt.Printf("cfgErr: %v\n", err)
-
-	os.Setenv(job.JobConfigEnvVar, string(cfgJSON))
-	fmt.Printf("Job: %v\n", RunJob(""))
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
 
 	// Output:
-	// cfgErr: <nil>
-	// INFO: Preparing job: Job001
-	// Config: {"JobId":"Job001","RequiredFiles":null,"Command":"dostuff","Args":null,"ArgIndexToApplyNodeIndexes":null,"OutputFiles":[{"RemoteBucket":"test-piquant","RemotePath":"Example_jobrunner_RunJob_UploadNotThere/Output/file.csv","LocalPath":"nofile.txt","ApplyNodeIndex":0}]}
-	// INFO: Job config struct: job.JobConfig{JobId:"Job001", RequiredFiles:[]job.JobFilePath(nil), Command:"dostuff", Args:[]string(nil), ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]job.JobFilePath{job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_UploadNotThere/Output/file.csv", LocalPath:"nofile.txt", ApplyNodeIndex:0}}}
-	// INFO: AWS S3 setup...
+	// INFO: Running job from s3://job-bucket/path/to/job001 for node 4
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"Job001-0-4", RequiredFiles:[]jobconfig.JobFilePath{}, Command:"dostuff", Args:[]string{}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_UploadNotThere/Output/file.csv", LocalPath:"nofile.txt", ApplyNodeIndex:0}}}
 	// INFO: Downloading files...
 	// INFO: Checking for required libraries...
 	// INFO: Running job...
 	// DEBUG: exec.Command starting "dostuff", args: []
-	// ERROR: Job Job001 failed: exec: "dostuff": executable file not found in $PATH
-	// Job: Job Job001 failed: exec: "dostuff": executable file not found in $PATH
+	// ERROR: Job Job001-0-4 failed: exec: "dostuff": executable file not found in $PATH
+	// Job: Job Job001-0-4 failed: exec: "dostuff": executable file not found in $PATH
 }
 
 func Example_jobrunner_RunJob_UploadNotThere() {
-	cfg := job.JobConfig{
-		JobId:   "Job001",
-		Command: "ls",
-		OutputFiles: []job.JobFilePath{
-			{LocalPath: "nofile.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_UploadNotThere/Output/file.csv"},
+	origWD, fs := initTest()
+	defer os.Chdir(origWD)
+
+	writeConfig(jobconfig.JobGroupConfig{
+		JobGroupId: "Job001",
+		NodeCount:  2,
+		NodeConfig: jobconfig.JobConfig{
+			JobId:   "Job001-0",
+			Command: "ls",
+			OutputFiles: []jobconfig.JobFilePath{
+				{LocalPath: "nofile.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_UploadNotThere/Output/file.csv"},
+			},
 		},
-	}
+	}, "./test-bucket-root/job-bucket/path/to/job001/params.json")
 
-	cfgJSON, err := json.Marshal(cfg)
-	fmt.Printf("cfgErr: %v\n", err)
-
-	os.Setenv(job.JobConfigEnvVar, string(cfgJSON))
-	fmt.Printf("Job: %v\n", RunJob(""))
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
 
 	// Output:
-	// cfgErr: <nil>
-	// INFO: Preparing job: Job001
-	// Config: {"JobId":"Job001","RequiredFiles":null,"Command":"ls","Args":null,"ArgIndexToApplyNodeIndexes":null,"OutputFiles":[{"RemoteBucket":"test-piquant","RemotePath":"Example_jobrunner_RunJob_UploadNotThere/Output/file.csv","LocalPath":"nofile.txt","ApplyNodeIndex":0}]}
-	// INFO: Job config struct: job.JobConfig{JobId:"Job001", RequiredFiles:[]job.JobFilePath(nil), Command:"ls", Args:[]string(nil), ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]job.JobFilePath{job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_UploadNotThere/Output/file.csv", LocalPath:"nofile.txt", ApplyNodeIndex:0}}}
-	// INFO: AWS S3 setup...
+	// INFO: Running job from s3://job-bucket/path/to/job001 for node 4
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"Job001-0-4", RequiredFiles:[]jobconfig.JobFilePath{}, Command:"ls", Args:[]string{}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_UploadNotThere/Output/file.csv", LocalPath:"nofile.txt", ApplyNodeIndex:0}}}
 	// INFO: Downloading files...
 	// INFO: Checking for required libraries...
 	// INFO: Running job...
 	// DEBUG: exec.Command starting "ls", args: []
-	// INFO: Job Job001 runtime was < 10 sec
-	// ERROR: Job Job001 did not generate expected output file: nofile.txt
-	// Job: Job Job001 failed to generate/upload output files: nofile.txt
+	// INFO: Job Job001-0-4 runtime was < 10 sec
+	// ERROR: Job Job001-0-4 did not generate expected output file: nofile.txt
+	// Job: Job Job001-0-4 failed to generate/upload output files: nofile.txt
 }
 
 func Example_jobrunner_RunJob_DownloadUploadOK() {
-	// Before we do anything, ensure the file is in S3
-	sess, err := awsutil.GetSession()
-	fmt.Printf("GetSession: %v\n", err)
-	s3, err := awsutil.GetS3(sess)
-	fmt.Printf("GetS3: %v\n", err)
-	remoteFS := fileaccess.MakeS3Access(s3)
+	origWD, fs := initTest()
+	defer os.Chdir(origWD)
 
-	origPath, err := os.Getwd()
-	fmt.Printf("Getwd: %v\n", err)
+	writeConfig(jobconfig.JobGroupConfig{
+		JobGroupId: "Job001",
+		NodeCount:  2,
+		NodeConfig: jobconfig.JobConfig{
+			JobId: "Job001-0",
+			RequiredFiles: []jobconfig.JobFilePath{
+				{LocalPath: "inputfile.csv", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_DownloadUploadOK/input.csv"},
+				{LocalPath: "second.csv", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_DownloadUploadOK/input2.csv"},
+			},
+			Command: "ls",
+			OutputFiles: []jobconfig.JobFilePath{
+				{LocalPath: "stdout", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_DownloadUploadOK/Output/stdout"},
+				{LocalPath: "data.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_DownloadUploadOK/Output/file.csv"},
+			},
+		},
+	}, "./test-bucket-root/job-bucket/path/to/job001/params.json")
 
-	tmpdir := filepath.Join(os.TempDir(), "test-download-tmp")
-	fmt.Printf("Clear temp dir: %v\n", os.RemoveAll(tmpdir))
-	err = os.MkdirAll(tmpdir, dirperm)
-	fmt.Printf("MkdirAll: %v\n", err)
-
-	defer os.Chdir(origPath)
-	err = os.Chdir(tmpdir)
-
-	fmt.Printf("Chdir: %v\n", err)
-
-	fmt.Printf("Write S3 input.csv: %v\n", remoteFS.WriteObject("test-piquant", "Example_jobrunner_RunJob_DownloadUploadOK/input.csv", []byte("hello")))
-	fmt.Printf("Write S3 input2.csv: %v\n", remoteFS.WriteObject("test-piquant", "Example_jobrunner_RunJob_DownloadUploadOK/input2.csv", []byte("hello2")))
+	// Before we do anything, ensure files are in our "bucket"
+	fmt.Printf("Write S3 input.csv: %v\n", fs.WriteObject("test-piquant", "Example_jobrunner_RunJob_DownloadUploadOK/input.csv", []byte("hello")))
+	fmt.Printf("Write S3 input2.csv: %v\n", fs.WriteObject("test-piquant", "Example_jobrunner_RunJob_DownloadUploadOK/input2.csv", []byte("hello2")))
 	fmt.Printf("Write local data.txt: %v\n", os.WriteFile("data.txt", []byte("hello"), dirperm))
 
-	cfg := job.JobConfig{
-		JobId: "Job001",
-		RequiredFiles: []job.JobFilePath{
-			{LocalPath: "inputfile.csv", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_DownloadUploadOK/input.csv"},
-			{LocalPath: "second.csv", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_DownloadUploadOK/input2.csv"},
-		},
-		Command: "ls",
-		OutputFiles: []job.JobFilePath{
-			{LocalPath: "stdout", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_DownloadUploadOK/Output/stdout"},
-			{LocalPath: "data.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_DownloadUploadOK/Output/file.csv"},
-		},
-	}
-
-	cfgJSON, err := json.Marshal(cfg)
-	fmt.Printf("cfgErr: %v\n", err)
-
-	os.Setenv("JOB_CONFIG", string(cfgJSON))
-	fmt.Printf("Job: %v\n", RunJob(""))
-
-	// Clean up files
-	os.Remove("inputfile.csv")
-	os.Remove("second.csv")
-	os.Remove("data.txt")
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
 
 	// Output:
-	// GetSession: <nil>
-	// GetS3: <nil>
-	// Getwd: <nil>
-	// Clear temp dir: <nil>
-	// MkdirAll: <nil>
-	// Chdir: <nil>
 	// Write S3 input.csv: <nil>
 	// Write S3 input2.csv: <nil>
 	// Write local data.txt: <nil>
-	// cfgErr: <nil>
-	// INFO: Preparing job: Job001
-	// Config: {"JobId":"Job001","RequiredFiles":[{"RemoteBucket":"test-piquant","RemotePath":"Example_jobrunner_RunJob_DownloadUploadOK/input.csv","LocalPath":"inputfile.csv","ApplyNodeIndex":0},{"RemoteBucket":"test-piquant","RemotePath":"Example_jobrunner_RunJob_DownloadUploadOK/input2.csv","LocalPath":"second.csv","ApplyNodeIndex":0}],"Command":"ls","Args":null,"ArgIndexToApplyNodeIndexes":null,"OutputFiles":[{"RemoteBucket":"test-piquant","RemotePath":"Example_jobrunner_RunJob_DownloadUploadOK/Output/stdout","LocalPath":"stdout","ApplyNodeIndex":0},{"RemoteBucket":"test-piquant","RemotePath":"Example_jobrunner_RunJob_DownloadUploadOK/Output/file.csv","LocalPath":"data.txt","ApplyNodeIndex":0}]}
-	// INFO: Job config struct: job.JobConfig{JobId:"Job001", RequiredFiles:[]job.JobFilePath{job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_DownloadUploadOK/input.csv", LocalPath:"inputfile.csv", ApplyNodeIndex:0}, job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_DownloadUploadOK/input2.csv", LocalPath:"second.csv", ApplyNodeIndex:0}}, Command:"ls", Args:[]string(nil), ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]job.JobFilePath{job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_DownloadUploadOK/Output/stdout", LocalPath:"stdout", ApplyNodeIndex:0}, job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_DownloadUploadOK/Output/file.csv", LocalPath:"data.txt", ApplyNodeIndex:0}}}
-	// INFO: AWS S3 setup...
+	// INFO: Running job from s3://job-bucket/path/to/job001 for node 4
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"Job001-0-4", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_DownloadUploadOK/input.csv", LocalPath:"inputfile.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_DownloadUploadOK/input2.csv", LocalPath:"second.csv", ApplyNodeIndex:0}}, Command:"ls", Args:[]string{}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_DownloadUploadOK/Output/stdout", LocalPath:"stdout", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_DownloadUploadOK/Output/file.csv", LocalPath:"data.txt", ApplyNodeIndex:0}}}
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://test-piquant/Example_jobrunner_RunJob_DownloadUploadOK/input.csv" -> "inputfile.csv":
 	// DEBUG:  Local path is <CWD>/inputfile.csv
@@ -231,78 +245,47 @@ func Example_jobrunner_RunJob_DownloadUploadOK() {
 	// INFO: Checking for required libraries...
 	// INFO: Running job...
 	// DEBUG: exec.Command starting "ls", args: []
-	// INFO: Job Job001 runtime was < 10 sec
+	// INFO: Job Job001-0-4 runtime was < 10 sec
 	// DEBUG: Uploaded stdout log to: s3://test-piquant/Example_jobrunner_RunJob_DownloadUploadOK/Output/stdout
 	// DEBUG: Upload data.txt -> s3://test-piquant/Example_jobrunner_RunJob_DownloadUploadOK/Output/file.csv
 	// Job: <nil>
 }
 
 func Example_jobrunner_RunJob_SeedAndDownloadOK() {
+	origWD, fs := initTest()
+	defer os.Chdir(origWD)
+
+	writeConfig(jobconfig.JobGroupConfig{
+		JobGroupId: "Job001",
+		NodeCount:  2,
+		NodeConfig: jobconfig.JobConfig{
+			JobId: "Job001-0",
+			RequiredFiles: []jobconfig.JobFilePath{
+				{LocalPath: "test.lua", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_SeedAndDownloadOK/test.lua"},
+				{LocalPath: "test.py", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_SeedAndDownloadOK/test.py"},
+				{LocalPath: "requirements.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_SeedAndDownloadOK/requirements.txt"},
+				{LocalPath: "lua-requirements.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_SeedAndDownloadOK/lua-requirements.txt"},
+			},
+			Command: "cp",
+			Args:    []string{"requirements.txt", "data.txt"},
+			OutputFiles: []jobconfig.JobFilePath{
+				{LocalPath: "stdout", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_SeedAndDownloadOK/Output/stdout"},
+				{LocalPath: "data.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_SeedAndDownloadOK/Output/file.csv"},
+			},
+		},
+	}, "./test-bucket-root/job-bucket/path/to/job001/params.json")
+
 	// Before we do anything, ensure the file is in S3
-	sess, err := awsutil.GetSession()
-	fmt.Printf("GetSession: %v\n", err)
-	s3, err := awsutil.GetS3(sess)
-	fmt.Printf("GetS3: %v\n", err)
-	remoteFS := fileaccess.MakeS3Access(s3)
-
-	origPath, err := os.Getwd()
-	fmt.Printf("Getwd: %v\n", err)
-
-	tmpdir := filepath.Join(os.TempDir(), "test-download-tmp")
-	fmt.Printf("Clear temp dir: %v\n", os.RemoveAll(tmpdir))
-	err = os.MkdirAll(tmpdir, dirperm)
-	fmt.Printf("MkdirAll: %v\n", err)
-
-	defer os.Chdir(origPath)
-	err = os.Chdir(tmpdir)
-	fmt.Printf("Chdir: %v\n", err)
-
 	l := &logger.StdOutLoggerForTest{}
-	err = fileaccess.CopyToBucket(remoteFS, filepath.Join(origPath, "test-files"), "test-piquant", "Example_jobrunner_RunJob_SeedAndDownloadOK", false, l)
+	err := fileaccess.CopyToBucket(fs, filepath.Join(origWD, "test-files"), "test-piquant", "Example_jobrunner_RunJob_SeedAndDownloadOK", false, l)
 	fmt.Printf("CopyToBucket: %v\n", err)
 
-	cfg := job.JobConfig{
-		JobId: "Job001",
-		RequiredFiles: []job.JobFilePath{
-			{LocalPath: "test.lua", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_SeedAndDownloadOK/test.lua"},
-			{LocalPath: "test.py", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_SeedAndDownloadOK/test.py"},
-			{LocalPath: "requirements.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_SeedAndDownloadOK/requirements.txt"},
-			{LocalPath: "lua-requirements.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_SeedAndDownloadOK/lua-requirements.txt"},
-		},
-		Command: "cp",
-		Args:    []string{"requirements.txt", "data.txt"},
-		OutputFiles: []job.JobFilePath{
-			{LocalPath: "stdout", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_SeedAndDownloadOK/Output/stdout"},
-			{LocalPath: "data.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobrunner_RunJob_SeedAndDownloadOK/Output/file.csv"},
-		},
-	}
-
-	cfgJSON, err := json.Marshal(cfg)
-	fmt.Printf("cfgErr: %v\n", err)
-
-	os.Setenv("JOB_CONFIG", string(cfgJSON))
-	fmt.Printf("Job: %v\n", RunJob(""))
-
-	// Clean up files
-	os.Remove("inputfile.csv")
-	os.Remove("second.csv")
-	os.Remove("data.txt")
-
-	os.Chdir(origPath)
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
 
 	// Output:
-	// GetSession: <nil>
-	// GetS3: <nil>
-	// Getwd: <nil>
-	// Clear temp dir: <nil>
-	// MkdirAll: <nil>
-	// Chdir: <nil>
 	// CopyToBucket: <nil>
-	// cfgErr: <nil>
-	// INFO: Preparing job: Job001
-	// Config: {"JobId":"Job001","RequiredFiles":[{"RemoteBucket":"test-piquant","RemotePath":"Example_jobrunner_RunJob_SeedAndDownloadOK/test.lua","LocalPath":"test.lua","ApplyNodeIndex":0},{"RemoteBucket":"test-piquant","RemotePath":"Example_jobrunner_RunJob_SeedAndDownloadOK/test.py","LocalPath":"test.py","ApplyNodeIndex":0},{"RemoteBucket":"test-piquant","RemotePath":"Example_jobrunner_RunJob_SeedAndDownloadOK/requirements.txt","LocalPath":"requirements.txt","ApplyNodeIndex":0},{"RemoteBucket":"test-piquant","RemotePath":"Example_jobrunner_RunJob_SeedAndDownloadOK/lua-requirements.txt","LocalPath":"lua-requirements.txt","ApplyNodeIndex":0}],"Command":"cp","Args":["requirements.txt","data.txt"],"ArgIndexToApplyNodeIndexes":null,"OutputFiles":[{"RemoteBucket":"test-piquant","RemotePath":"Example_jobrunner_RunJob_SeedAndDownloadOK/Output/stdout","LocalPath":"stdout","ApplyNodeIndex":0},{"RemoteBucket":"test-piquant","RemotePath":"Example_jobrunner_RunJob_SeedAndDownloadOK/Output/file.csv","LocalPath":"data.txt","ApplyNodeIndex":0}]}
-	// INFO: Job config struct: job.JobConfig{JobId:"Job001", RequiredFiles:[]job.JobFilePath{job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_SeedAndDownloadOK/test.lua", LocalPath:"test.lua", ApplyNodeIndex:0}, job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_SeedAndDownloadOK/test.py", LocalPath:"test.py", ApplyNodeIndex:0}, job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_SeedAndDownloadOK/requirements.txt", LocalPath:"requirements.txt", ApplyNodeIndex:0}, job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_SeedAndDownloadOK/lua-requirements.txt", LocalPath:"lua-requirements.txt", ApplyNodeIndex:0}}, Command:"cp", Args:[]string{"requirements.txt", "data.txt"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]job.JobFilePath{job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_SeedAndDownloadOK/Output/stdout", LocalPath:"stdout", ApplyNodeIndex:0}, job.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_SeedAndDownloadOK/Output/file.csv", LocalPath:"data.txt", ApplyNodeIndex:0}}}
-	// INFO: AWS S3 setup...
+	// INFO: Running job from s3://job-bucket/path/to/job001 for node 4
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"Job001-0-4", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_SeedAndDownloadOK/test.lua", LocalPath:"test.lua", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_SeedAndDownloadOK/test.py", LocalPath:"test.py", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_SeedAndDownloadOK/requirements.txt", LocalPath:"requirements.txt", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_SeedAndDownloadOK/lua-requirements.txt", LocalPath:"lua-requirements.txt", ApplyNodeIndex:0}}, Command:"cp", Args:[]string{"requirements.txt", "data.txt"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_SeedAndDownloadOK/Output/stdout", LocalPath:"stdout", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"test-piquant", RemotePath:"Example_jobrunner_RunJob_SeedAndDownloadOK/Output/file.csv", LocalPath:"data.txt", ApplyNodeIndex:0}}}
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://test-piquant/Example_jobrunner_RunJob_SeedAndDownloadOK/test.lua" -> "test.lua":
 	// DEBUG:  Local path is <CWD>/test.lua
@@ -323,7 +306,7 @@ func Example_jobrunner_RunJob_SeedAndDownloadOK() {
 	// INFO: Checking for required libraries...
 	// INFO: Running job...
 	// DEBUG: exec.Command starting "cp", args: [requirements.txt,data.txt]
-	// INFO: Job Job001 runtime was < 10 sec
+	// INFO: Job Job001-0-4 runtime was < 10 sec
 	// DEBUG: Uploaded stdout log to: s3://test-piquant/Example_jobrunner_RunJob_SeedAndDownloadOK/Output/stdout
 	// DEBUG: Upload data.txt -> s3://test-piquant/Example_jobrunner_RunJob_SeedAndDownloadOK/Output/file.csv
 	// Job: <nil>

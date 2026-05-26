@@ -31,7 +31,6 @@ package services
 import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/pixlise/core/v4/api/config"
-	jobexecutor "github.com/pixlise/core/v4/api/job/executor"
 	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/fileaccess"
@@ -55,8 +54,8 @@ var GitHash string
 
 type JobManagerInterface interface {
 	SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser) error
-	ListJobs() ([]jobexecutor.JobGroupConfig, error)
-	GetJob(JobId string) (jobexecutor.JobGroupConfig, error)
+	// ListJobs() ([]jobmanager.JobGroupConfig, error)
+	// GetJob(JobId string) (jobmanager.JobGroupConfig, error)
 }
 
 type APIServices struct {
