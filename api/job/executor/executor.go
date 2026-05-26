@@ -24,32 +24,12 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v4/api/config"
-	"github.com/pixlise/core/v4/api/job"
+	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/core/logger"
-	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-type JobGroupConfig struct {
-	JobGroupId  string                   `bson:"_id,omitempty"` // Job group ID
-	JobType     protos.JobStatus_JobType // Job type, mostly for annotation of job state
-	DockerImage string                   // Docker image to run in each node
-	FastStart   bool                     // May go unused - but could be a way to run it locally on this machine if we know it's a quick job
-	NodeCount   uint                     // Node count, because NodeConfig can be asked to retrieve config of each node, but here we know the total
-	NodeConfig  job.JobConfig            // Node config sources
-
-	// Job meta-data
-	AssociatedScanId string   // Empty if none, or if it's across scans
-	JobName          string   // Optional job name, eg used for quants
-	ElementList      []string // Optional element list, eg used for quants
-	RequestorUserId  string
-
-	// Need configs for:
-	// NodeOutputCombining - how to combine the outputs, eg PIQUANT map commands
-	// Do we need to write overall job output/logs somewhere?
-}
-
 type JobExecutor interface {
-	StartJob(jobConfig JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error
+	StartJob(jobConfig jobconfig.JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error
 	// TODO:
 	// CancelJob
 	// GetJobStatus

@@ -22,8 +22,7 @@ import (
 	"os"
 
 	"github.com/pixlise/core/v4/api/config"
-	"github.com/pixlise/core/v4/api/job"
-	"github.com/pixlise/core/v4/api/job/jobrunner"
+	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/core/logger"
 )
 
@@ -35,7 +34,7 @@ type localJobExecutor struct {
 	bucketsRootPath string
 }
 
-func (r *localJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
+func (r *localJobExecutor) StartJob(jobConfig jobconfig.JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
 	for nodeIdx := uint(0); nodeIdx < jobConfig.NodeCount; nodeIdx++ {
 		r.runJobLocally(jobConfig.NodeConfig.FlattenJobConfig(nodeIdx), log)
 	}
@@ -44,7 +43,7 @@ func (r *localJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config.APIC
 	return nil
 }
 
-func (r *localJobExecutor) runJobLocally(config job.JobConfig, log logger.ILogger) {
+func (r *localJobExecutor) runJobLocally(config jobconfig.JobConfig, log logger.ILogger) {
 	// Make a JSON string out of params so it can be passed in
 	configJSON, err := json.Marshal(config)
 	if err != nil {
@@ -55,12 +54,14 @@ func (r *localJobExecutor) runJobLocally(config job.JobConfig, log logger.ILogge
 	configStr := string(configJSON)
 
 	// Set it as an env var so the job can pick it up
-	os.Setenv(job.JobConfigEnvVar, configStr)
+	os.Setenv(jobconfig.JobConfigEnvVar, configStr)
+	/*
+	   // NOTE: we're running the job by calling the Go code directly instead of executing it in a docker container. This is primarily for testing
+	   // and if we specify a path, it will only look in that path to download from buckets...
+	   err = jobrunner.RunJob(r.bucketsRootPath)
 
-	// NOTE: we're running the job by calling the Go code directly instead of executing it in a docker container. This is primarily for testing
-	// and if we specify a path, it will only look in that path to download from buckets...
-	err = jobrunner.RunJob(r.bucketsRootPath)
-	if err != nil {
-		log.Errorf("RunJob failed: %v", err)
-	}
+	   	if err != nil {
+	   		log.Errorf("RunJob failed: %v", err)
+	   	}
+	*/
 }

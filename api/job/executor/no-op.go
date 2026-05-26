@@ -25,13 +25,13 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 
 	"github.com/pixlise/core/v4/api/config"
-	"github.com/pixlise/core/v4/api/job"
+	jobconfig "github.com/pixlise/core/v4/api/job/config"
 )
 
 type nullJobExecutor struct {
 }
 
-func (r *nullJobExecutor) StartJob(jobConfig JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error {
+func (r *nullJobExecutor) StartJob(jobConfig jobconfig.JobGroupConfig, apiConfig config.APIConfig, requestorUserId string, log logger.ILogger) error {
 	namespace := fmt.Sprintf("job-%v", jobConfig.NodeConfig.JobId)
 
 	// Start each container in the namespace
@@ -50,7 +50,7 @@ func (r *nullJobExecutor) StartJob(jobConfig JobGroupConfig, apiConfig config.AP
 
 // This is currently very dumb, we should extend it like the mock s3 backend to mock different failures
 // to allow us to test failure modes.
-func runNullJob(wg *sync.WaitGroup, jobConfig job.JobConfig, namespace string, log logger.ILogger) {
+func runNullJob(wg *sync.WaitGroup, jobConfig jobconfig.JobConfig, namespace string, log logger.ILogger) {
 	defer wg.Done()
 
 	fmt.Println("Creating pod...")

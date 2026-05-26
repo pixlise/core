@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/pixlise/core/v4/api/config"
-	"github.com/pixlise/core/v4/api/job"
+	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/fileaccess"
@@ -17,22 +17,22 @@ var dockerImage = "ghcr.io/pixlise/job-runner:latest"
 // var dockerImage = "pixlise-job-runner"
 
 func Example_jobexecutor_Run_docker_Python() {
-	nodeCfg := job.JobConfig{
+	nodeCfg := jobconfig.JobConfig{
 		JobId:   "Job003",
 		Command: "python",
 		Args:    []string{"test.py", "Input/input.csv"},
-		RequiredFiles: []job.JobFilePath{
+		RequiredFiles: []jobconfig.JobFilePath{
 			{LocalPath: "test.py", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Python/test.py"},
 			{LocalPath: "requirements.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Python/requirements.txt"},
 			{LocalPath: "Input/input.csv", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Python/Input/input.csv"},
 		},
-		OutputFiles: []job.JobFilePath{
+		OutputFiles: []jobconfig.JobFilePath{
 			{LocalPath: "stdout", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Python/Output/stdout"},
 			{LocalPath: "py-output.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Python/Output/py-output.txt"},
 		},
 	}
 
-	jobGroup := JobGroupConfig{
+	jobGroup := jobconfig.JobGroupConfig{
 		JobGroupId:  "JG001",
 		DockerImage: dockerImage,
 		NodeCount:   1,
@@ -99,22 +99,22 @@ func Example_jobexecutor_Run_docker_Python() {
 }
 
 func Example_jobexecutor_Run_docker_Lua() {
-	nodeCfg := job.JobConfig{
+	nodeCfg := jobconfig.JobConfig{
 		JobId:   "Job004",
 		Command: "lua5.3",
 		Args:    []string{"test.lua", "input.csv"},
-		RequiredFiles: []job.JobFilePath{
+		RequiredFiles: []jobconfig.JobFilePath{
 			{LocalPath: "test.lua", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Lua/test.lua"},
 			{LocalPath: "lua-requirements.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Lua/lua-requirements.txt"},
 			{LocalPath: "Input/input.csv", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Lua/Input/input.csv"},
 		},
-		OutputFiles: []job.JobFilePath{
+		OutputFiles: []jobconfig.JobFilePath{
 			{LocalPath: "stdout", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Lua/Output/stdout"},
 			{LocalPath: "lua-output.txt", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Lua/Output/lua-output.txt"},
 		},
 	}
 
-	jobGroup := JobGroupConfig{
+	jobGroup := jobconfig.JobGroupConfig{
 		JobGroupId:  "JG001",
 		DockerImage: dockerImage,
 		NodeCount:   1,
@@ -184,22 +184,22 @@ func Example_jobexecutor_Run_docker_Lua() {
 }
 
 func Example_jobexecutor_Run_docker_Piquant() {
-	nodeCfg := job.JobConfig{
+	nodeCfg := jobconfig.JobConfig{
 		JobId:   "Job005",
 		Command: "./Piquant",
 		Args:    []string{"quant", "Config_PIXL_FM_SurfaceOps_Rev1_Jul2021.msa", "Calibrate_Master_ECF_new_BB_01_08_2020.csv", "BulkA.msa", "Fe_K Ca_K Ti_K", "quant.csv"},
-		RequiredFiles: []job.JobFilePath{
+		RequiredFiles: []jobconfig.JobFilePath{
 			{LocalPath: "BulkA.msa", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Piquant/Input/BulkA.msa"},
 			{LocalPath: "Calibrate_Master_ECF_new_BB_01_08_2020.csv", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Piquant/Input/Calibrate_Master_ECF_new_BB_01_08_2020.csv"},
 			{LocalPath: "Config_PIXL_FM_SurfaceOps_Rev1_Jul2021.msa", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Piquant/Input/Config_PIXL_FM_SurfaceOps_Rev1_Jul2021.msa"},
 		},
-		OutputFiles: []job.JobFilePath{
+		OutputFiles: []jobconfig.JobFilePath{
 			{LocalPath: "stdout", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Piquant/Output/stdout"},
 			{LocalPath: "quant.csv", RemoteBucket: "test-piquant", RemotePath: "Example_jobexecutor_Run_docker_Piquant/Output/quant.csv"},
 		},
 	}
 
-	jobGroup := JobGroupConfig{
+	jobGroup := jobconfig.JobGroupConfig{
 		JobGroupId:  "JG001",
 		DockerImage: dockerImage,
 		NodeCount:   1,

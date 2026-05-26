@@ -27,6 +27,7 @@ import (
 
 	"github.com/pixlise/core/v4/api/config"
 	"github.com/pixlise/core/v4/api/job"
+	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/logger"
 )
@@ -37,7 +38,7 @@ import (
 type dockerJobExecutor struct {
 }
 
-func (r *dockerJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
+func (r *dockerJobExecutor) StartJob(jobConfig jobconfig.JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
 	// Here we start multiple instances of docker and wait for them all to finish using the WaitGroup
 	var wg sync.WaitGroup
 

@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/pixlise/core/v4/api/config"
-	"github.com/pixlise/core/v4/api/job"
+	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/core/kubernetes"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/utils"
@@ -46,7 +46,7 @@ type kubernetesJobExecutor struct {
 
 // StartJob executes the job in a Kubernetes cluster, creating and monitoring a Kubernetes
 // Job resource as the parallel job node workers progress
-func (r *kubernetesJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
+func (r *kubernetesJobExecutor) StartJob(jobConfig jobconfig.JobGroupConfig, apiCfg config.APIConfig, requestorUserId string, log logger.ILogger) error {
 	jobId := fmt.Sprintf("job-%v", jobConfig.JobGroupId)
 
 	// Make sure that the kubernetes client is set up
@@ -109,7 +109,7 @@ func (r *kubernetesJobExecutor) StartJob(jobConfig JobGroupConfig, apiCfg config
 // - namespace: a string specifying the namespace in which the job should be created
 // - requestorUserId: a string specifying the user ID of the requestor
 // - numPods: an integer specifying the number of pods to create for the job
-func makeJobObject(config job.JobConfig, configStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, numPods uint, jobTTLSec uint64) *batchv1.Job {
+func makeJobObject(config jobconfig.JobConfig, configStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, numPods uint, jobTTLSec uint64) *batchv1.Job {
 	imagePullSecret := apiv1.LocalObjectReference{Name: "api-auth"}
 	application := "job-runner" // Used to be piquant-runner
 	name := config.JobId        // Used to be piquant-map or piquant-fit (maybe piquant-quant?)
@@ -171,7 +171,7 @@ func makeJobObject(config job.JobConfig, configStr, dockerImage, jobId, namespac
 							},
 
 							Env: []apiv1.EnvVar{
-								{Name: job.JobConfigEnvVar, Value: configStr},
+								{Name: jobconfig.JobConfigEnvVar, Value: configStr},
 								{Name: "PYTHONUNBUFFERED", Value: "TRUE"},
 								/*{Name: "NODE_INDEX", ValueFrom: &apiv1.EnvVarSource{
 									FieldRef: &apiv1.ObjectFieldSelector{
@@ -192,7 +192,7 @@ func (r *kubernetesJobExecutor) getJobStatus(namespace, jobId string) (jobStatus
 	return job.Status, err
 }
 
-func (r *kubernetesJobExecutor) runJob(jobConfig JobGroupConfig, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, count uint, status chan string, quantNodeMaxRuntimeSec uint) {
+func (r *kubernetesJobExecutor) runJob(jobConfig jobconfig.JobGroupConfig, jobId, namespace, svcAcctName, requestorUserId, cpuResource, runtimeEnv string, count uint, status chan string, quantNodeMaxRuntimeSec uint) {
 	defer close(status)
 
 	// At this point, we're creating a job which will fan out and create multiple nodes (as needed, see count param), so we make sure the job has the same id as
