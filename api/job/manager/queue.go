@@ -56,8 +56,8 @@ func (jm *JobManager) startupCheckQueue(startupQueueCheckDelaySec int) {
 	jm.runCheckJobQueueOnce("jobmanager-start")
 }
 
-func (jm *JobManager) listenToJobQueue() {
-	job.ListenToJobQueue([]string{"insert", "update"}, jm.svcs.MongoDB, jm.svcs.Log, jm.onJobQueueChanged)
+func (jm *JobManager) listenToJobQueue() bool {
+	return job.ListenToJobQueue([]string{"insert", "update"}, jm.svcs.MongoDB, jm.svcs.Log, jm.onJobQueueChanged)
 }
 
 func (jm *JobManager) onJobQueueChanged(jobItem *protos.JobQueueItem) {

@@ -13,6 +13,7 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/singleinstance"
 	"github.com/pixlise/core/v4/core/timestamper"
+	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -27,7 +28,9 @@ import (
 // When a job finishes we should start a new one, keeping in mind we will have some life cutoff time
 
 type JobNode struct {
+	jobPrefix    string
 	maxJobs      uint
+	maxIdleSec   uint
 	db           *mongo.Database
 	instanceId   string
 	log          logger.ILogger
@@ -35,22 +38,64 @@ type JobNode struct {
 	jobContainer string // If empty string we run jobs in this process, mainly for testing. Otherwise run jobs in Docker
 	jobBucket    string
 	fs           fileaccess.FileAccess
+
+	jobStartedCount uint
+	//lastJobStartUnixSec uint
 }
 
 func CreateJobNode(
+	jobPrefix string,
 	jobContainer string,
 	jobBucket string,
 	maxJobs uint,
+	maxIdleSec uint,
 	instanceId string,
 	fs fileaccess.FileAccess,
 	db *mongo.Database,
 	log logger.ILogger,
 	ts timestamper.ITimeStamper) *JobNode {
-	return &JobNode{maxJobs, db, instanceId, log, ts, jobContainer, jobBucket, fs}
+	return &JobNode{jobPrefix, maxJobs, maxIdleSec, db, instanceId, log, ts, jobContainer, jobBucket, fs, 0}
 }
 
-func (jn *JobNode) ListenToJobQueue() {
-	job.ListenToJobQueue([]string{"insert"}, jn.db, jn.log, jn.onNewJobQueueItemRunOnce)
+func (jn *JobNode) ListenToJobQueue() bool {
+	return job.ListenToJobQueue([]string{"insert"}, jn.db, jn.log, jn.onNewJobQueueItemRunOnce)
+}
+
+// func (jn *JobNode) GetLastJobStartUnixSec() uint {
+// 	return jn.lastJobStartUnixSec
+// }
+
+func (jn *JobNode) CheckStartupJobs() {
+	jn.log.Infof("Instance %v checking for available jobs on startup...", jn.instanceId)
+	defer jn.log.Infof("Instance: %v startup check complete", jn.instanceId)
+
+	jobCapacity, err := jn.getJobCapacity()
+	if err != nil {
+		jn.log.Errorf("Instance %v failed to check job capacity on startup: %v", jn.instanceId, err)
+		return
+	}
+
+	jobGroups, err := job.ReadJobQueue(jn.db)
+
+	if err != nil {
+		jn.log.Errorf("Instance %v failed to query jobs on node startup: %v", jn.instanceId, err)
+		return
+	}
+
+	for _, jobs := range jobGroups {
+		for _, jobItem := range jobs {
+			if jobItem.State == protos.JobQueueItem_UNKNOWN {
+				if jobCapacity == 0 {
+					return
+				}
+
+				jobCapacity = jobCapacity - 1
+
+				jn.log.Infof("Instance %v startup running job %v (from job group %v)", jn.instanceId, jobItem.JobId, jobItem.JobGroupId)
+				jn.startJob(jobItem)
+			}
+		}
+	}
 }
 
 func (jn *JobNode) onNewJobQueueItemRunOnce(jobItem *protos.JobQueueItem) {
@@ -87,7 +132,9 @@ func (jn *JobNode) onNewJobQueueItem(jobItem *protos.JobQueueItem) {
 		return
 	}
 
-	/*err := */
+	// Remember when we last started a job. This is so we can check if we've been sitting idle waiting for too long
+	//jn.lastJobStartUnixSec = uint(jn.ts.GetTimeNowSec())
+
 	jn.startJob(jobItem)
 }
 
@@ -97,8 +144,24 @@ func (jn *JobNode) getJobCapacity() (uint, error) {
 		return 1, nil
 	}
 
+	instances, err := jn.GetActiveJobCount()
+	if err != nil {
+		return 0, err
+	}
+
+	// Our max node count should be set to how many threads we can run. We want to allow
+	// running that many containers
+	capacity := int(jn.maxJobs) - int(instances)
+	if capacity < 0 {
+		capacity = 0
+	}
+
+	return uint(capacity), nil
+}
+
+func (jn *JobNode) GetActiveJobCount() (uint, error) {
 	// Get docker container count
-	cmd := exec.Command("docker", "ps", "-q")
+	cmd := exec.Command("docker", "ps", "-q", "-f", fmt.Sprintf("name=%v.*", jn.jobPrefix))
 
 	out, err := cmd.CombinedOutput()
 	outStr := string(out)
@@ -117,14 +180,7 @@ func (jn *JobNode) getJobCapacity() (uint, error) {
 		instances = instances - 1
 	}
 
-	// Our max node count should be set to how many threads we can run. We want to allow
-	// running that many containers
-	capacity := int(jn.maxJobs) - instances
-	if capacity < 0 {
-		capacity = 0
-	}
-
-	return uint(capacity), nil
+	return uint(instances), nil
 }
 
 func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
@@ -135,6 +191,9 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 		jn.log.Errorf("%v", err)
 		return err
 	}
+
+	// Start counting up!
+	jn.jobStartedCount = jn.jobStartedCount + 1
 
 	// Set up the path to read the job from
 	jobPath := filepaths.GetJobDataPath(jobItem.AssociatedScanId, jobItem.JobGroupId, "")
@@ -148,6 +207,7 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 	} else {
 		// Run it in docker using our job runner container
 		cmd := exec.Command("docker", "run",
+			"-n", fmt.Sprintf("%v-%v-%v", jn.jobPrefix, jn.jobStartedCount, utils.RandStringBytesMaskImpr(6)),
 			"-e", jobrunner.EnvBucketName, jn.jobBucket,
 			"-e", jobrunner.EnvPathName, jobPath,
 			"-e", jobrunner.EnvNodeIndexName, strconv.Itoa(int(jobItem.NodeIndex)),

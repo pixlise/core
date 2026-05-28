@@ -52,17 +52,20 @@ func ReadJobQueue(db *mongo.Database) (map[string][]*protos.JobQueueItem, error)
 	return groupsAndJobs, nil
 }
 
-func ListenToJobQueue(allowedOps []string, db *mongo.Database, log logger.ILogger, runCheck func(*protos.JobQueueItem)) {
+// Listens to the job queue collection. If the collection is dropped, it returns true signifying it can be retried
+// but if it ends for any other reason, it will return false
+func ListenToJobQueue(allowedOps []string, db *mongo.Database, log logger.ILogger, runCheck func(*protos.JobQueueItem)) bool {
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.JobQueueName)
 
 	stream, err := coll.Watch(ctx, mongo.Pipeline{})
 	if err != nil {
 		log.Errorf("Failed to watch job queue. Error: %v", err)
-		return
+		return false
 	}
 
 	log.Infof("Listening for queued jobs...")
+	lastOpWasInvalidate := false
 	for stream.Next(ctx) {
 		// Work out if we're interested at all
 		operation, _ /*key*/, doc, err := ReadChangeStreamItem[*protos.JobQueueItem](stream)
@@ -80,7 +83,11 @@ func ListenToJobQueue(allowedOps []string, db *mongo.Database, log logger.ILogge
 			//       what we find in the queue
 			runCheck(doc)
 		}
+
+		lastOpWasInvalidate = operation == "invalidate"
 	}
+
+	return lastOpWasInvalidate
 }
 
 // Updates the job queue item and corresponding job group item if needed
