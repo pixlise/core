@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pixlise/core/v4/api/job/jobnode"
+	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
@@ -17,6 +18,8 @@ import (
 )
 
 func main() {
+	fmt.Printf("Job Node version %v...\n", services.ApiVersion)
+
 	// Read args
 	var bucket, jobContainer, instanceId, mongoSecret, envName string
 	var maxJobs, maxIdleSec, maxRunTimeSec int64
