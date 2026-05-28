@@ -180,6 +180,7 @@ jobs:
           mv pixlise-job-node pixlise-job-node-${{ needs.version.outputs.version }}
           mkdir -p pixlise-job-node
           cp pixlise-job-node-${{ needs.version.outputs.version }} ./pixlise-job-node
+          mv pixlise-job-node-${{ needs.version.outputs.version }} ./pixlise-job-node/pixlise-job-node
           aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
 
   build-api-docker:
