@@ -113,6 +113,6 @@ func Example_filesPerNode() {
 	fmt.Println(FilesPerNode(8068, 3))
 
 	// Output:
-	// 1619
-	// 2690
+	// 1618
+	// 2689
 }

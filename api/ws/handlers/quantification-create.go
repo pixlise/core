@@ -13,7 +13,7 @@ import (
 )
 
 func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerContext) (*protos.QuantCreateResp, error) {
-	err := quantification.IsValidCreateParam(req.Params, hctx)
+	err := quantification.IsValidCreateParam(req.Params, hctx.Svcs, &hctx.SessUser)
 	if err != nil {
 		return nil, errorwithstatus.MakeBadRequestError(err)
 	}

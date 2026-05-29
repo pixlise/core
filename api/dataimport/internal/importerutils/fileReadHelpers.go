@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
-	"github.com/pixlise/core/v4/api/specialUserIds"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/gdsfilename"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -119,7 +119,7 @@ func MakeFMDatasetOutput(
 		RGBUImages:           rgbuImages,
 		DISCOImages:          discoImages,
 		MatchedAlignedImages: matchedAlignedImages,
-		CreatorUserId:        specialUserIds.PIXLISESystemUserId, // Auto-importing FM datasets, we don't show a creator... TODO: what about EM though??
+		CreatorUserId:        sessionuser.PIXLISESystemUserId, // Auto-importing FM datasets, we don't show a creator... TODO: what about EM though??
 		BeamVersion:          beamVersion,
 	}
 

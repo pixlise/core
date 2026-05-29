@@ -29,8 +29,11 @@ among others
 package services
 
 import (
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/pixlise/core/v4/api/config"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/idgen"
@@ -38,6 +41,7 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
 	"github.com/pixlise/core/v4/core/timestamper"
+	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -49,6 +53,12 @@ var GitHash string
 // of using a bunch of global variables we pass around this services object and other
 // code has access to a logger, random string generator etc.
 // This comes in very useful when writing unit tests, since we can mock these interfaces
+
+type JobManagerInterface interface {
+	SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser) error
+	// ListJobs() ([]jobmanager.JobGroupConfig, error)
+	// GetJob(JobId string) (jobmanager.JobGroupConfig, error)
+}
 
 type APIServices struct {
 	// Configuration read in on startup
@@ -66,6 +76,10 @@ type APIServices struct {
 
 	// AWS SQS - At time of writing used for triggering Image Coreg importing lambda
 	SQS awsutil.SQSInterface
+
+	EC2 *ec2.EC2
+
+	SecretsManager *secretsmanager.SecretsManager
 
 	// Anything accessing files should use this
 	FS fileaccess.FileAccess
@@ -89,4 +103,6 @@ type APIServices struct {
 
 	// The unique identifier of this API instance (so we can log/debug issues that are cross-instance!)
 	InstanceId string
+
+	JobManager JobManagerInterface
 }

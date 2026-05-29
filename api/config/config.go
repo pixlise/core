@@ -48,7 +48,7 @@ type APIConfig struct {
 
 	ConfigBucket string
 
-	CoresPerNode int32
+	CoresPerNode uint
 
 	DataSourceSNSTopic string
 	CoregSqsQueueUrl   string
@@ -67,8 +67,8 @@ type APIConfig struct {
 	// Mongo Connection
 	MongoSecret string
 
-	PiquantDockerImage string // PIQUANT docker image to use to run a job
-	PiquantJobsBucket  string // PIQUANT job scratch drive
+	JobRunnerDockerImage string // Docker image to run expressions, python code and PIQUANT on the back end
+	PiquantJobsBucket    string // PIQUANT job scratch drive
 
 	QuantExecutor  string
 	QuantNamespace string // Used for running large multi-node quants
@@ -81,10 +81,9 @@ type APIConfig struct {
 	ZenodoAccessToken string
 
 	// Vars not set by environment
-	NodeCountOverride      int32
-	QuantNodeMaxRuntimeSec int32
-	MaxQuantNodes          int32
-	KubeConfig             string // Env sets this via command line parameter
+	NodeCountOverride uint
+	MaxQuantNodes     uint
+	KubeConfig        string // Env sets this via command line parameter
 
 	// Web Socket config
 	WSWriteWaitMs       uint
@@ -104,8 +103,7 @@ type APIConfig struct {
 	// How often we run memoisation GC
 	MemoisationGCIntervalSec uint
 
-	ImportJobMaxTimeSec  uint32
-	PIQUANTJobMaxTimeSec uint32
+	ImportJobMaxTimeSec uint32
 
 	// The GroupId of the group a new user is added to by default as a member
 	DefaultUserGroupId string
@@ -119,6 +117,15 @@ type APIConfig struct {
 
 	MongoDebug                bool
 	RestoreExcludeCollections []string
+
+	// Settings that control what kind of job processing EC2 instances we create
+	JobAMI               string
+	JobInstanceType      string
+	JobKeyName           string
+	JobSecurityGroup     string
+	JobMaxNodeRunTimeSec uint32
+	JobAWSSecret         string
+	JobNodeS3Path        string
 }
 
 func homeDir() string {
@@ -208,15 +215,11 @@ func Init() (APIConfig, error) {
 	}
 
 	if nodeCountOverride != nil && *nodeCountOverride > 0 {
-		cfg.NodeCountOverride = int32(*nodeCountOverride)
+		cfg.NodeCountOverride = uint(*nodeCountOverride)
 	}
 
 	if cfg.ImportJobMaxTimeSec <= 0 {
 		cfg.ImportJobMaxTimeSec = uint32(10 * 60)
-	}
-
-	if cfg.PIQUANTJobMaxTimeSec <= 0 {
-		cfg.PIQUANTJobMaxTimeSec = uint32(15 * 60)
 	}
 
 	if cfg.MaxUnretrievedMemoisationAgeSec <= 0 {

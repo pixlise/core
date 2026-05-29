@@ -17,26 +17,27 @@
 
 package quantRunner
 
-func EstimateNodeCount(spectraCount int32, elementCount int32, desiredRunTimeSec int32, coresPerNode int32, maxNodes int32) int32 {
+func EstimateNodeCount(spectraCount uint, elementCount uint, desiredRunTimeSec uint, coresPerNode uint, maxNodes uint) uint {
 	// Nodes = Spectra*(Elements+3) / 3*(RuntimeDesired * Cores)
 	// See unit test for why...
 
 	// Add 0.5 to round up, can't have it fractional
-	nodeCount := int32((float32(spectraCount*(elementCount+3)) / float32(3*desiredRunTimeSec*coresPerNode)) + 0.5)
+	nodeCount := int((float32(spectraCount*(elementCount+3)) / float32(3*desiredRunTimeSec*coresPerNode)) + 0.5)
 
 	// Clamp it to reasonable values
 	if nodeCount < 1 {
 		nodeCount = 1
 	}
 	// Don't go way overboard either
-	if nodeCount > maxNodes {
-		nodeCount = maxNodes
+	if maxNodes > 0 && nodeCount > int(maxNodes) {
+		nodeCount = int(maxNodes)
 	}
-	return nodeCount
+
+	return uint(nodeCount)
 }
 
-func FilesPerNode(spectraCount int32, nodeCount int32) int32 {
+func FilesPerNode(spectraCount uint, nodeCount uint) uint {
 	// NOTE: this may result in some extra if the spectra don't divide exactly per node. Even for a single
 	// node it'll generate+1, but that's ok, this is a limit, when generating PMC files, this will be ok
-	return int32((float32(spectraCount)/float32(nodeCount))+0.5) + 1 // TODO: the +1 might be redundant here??
+	return uint((float32(spectraCount) / float32(nodeCount)) + 0.5) //+ 1 // TODO: the +1 might be redundant here??
 }

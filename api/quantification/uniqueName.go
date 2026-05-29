@@ -1,13 +1,14 @@
 package quantification
 
 import (
-	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/api/sessionuser"
 )
 
-func checkQuantificationNameExists(name string, scanId string, hctx wsHelpers.HandlerContext) bool {
-	items, _, err := ListUserQuants(nil, hctx)
+func checkQuantificationNameExists(name string, scanId string, svcs *services.APIServices, sessUser sessionuser.SessionUser) bool {
+	items, _, err := ListUserQuants(nil, svcs, sessUser)
 	if err != nil {
-		hctx.Svcs.Log.Errorf("checkQuantificationNameExists: Failed to list user quants, allowing quant creation for name: %v, scan: %v. Error was %v", name, scanId, err)
+		svcs.Log.Errorf("checkQuantificationNameExists: Failed to list user quants, allowing quant creation for name: %v, scan: %v. Error was %v", name, scanId, err)
 		return false
 	}
 

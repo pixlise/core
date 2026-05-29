@@ -110,7 +110,7 @@ func ImportQuantCSV(
 		},
 	}
 
-	err = writeQuantAndOwnershipToDB(&summary, ownerItem, hctx.Svcs.MongoDB)
+	err = WriteQuantAndOwnershipToDB(&summary, ownerItem, hctx.Svcs.MongoDB)
 	if err != nil {
 		return quantId, err
 	}

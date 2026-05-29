@@ -19,6 +19,11 @@
 // and random ID strings, zipping files/directories, reading/writing images
 package utils
 
+import (
+	"fmt"
+	"strings"
+)
+
 // MakeSaveableFileName - Given a name which may not be acceptable as a file name, generate a string for a file name
 // that won't have issues. This replaces bad characters like slashes with spaces, etc
 func MakeSaveableFileName(name string) string {
@@ -44,4 +49,22 @@ func MakeSaveableFileName(name string) string {
 	}
 
 	return result
+}
+
+func ApplyIndexToFileName(name string, index uint, applyIndex bool) string {
+	if !applyIndex {
+		return name
+	}
+
+	// Ideally we could use:
+	//ext := filepath.Ext(name)
+	// But this is not the same behaviour as in PIQUANT when it outputs
+	// a file name, and instead of modifying PIQUANT we can just change
+	// how we generate file names here
+	ext := ""
+	pos := strings.Index(name, ".")
+	if pos >= 0 {
+		ext = name[pos:]
+	}
+	return fmt.Sprintf("%v%06d%v", name[0:len(name)-len(ext)], index, ext)
 }

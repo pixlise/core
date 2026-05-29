@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/gorilla/handlers"
@@ -19,7 +21,7 @@ import (
 	"github.com/pixlise/core/v4/api/endpoints"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
-	jobexecutor "github.com/pixlise/core/v4/api/job/executor"
+	jobmanager "github.com/pixlise/core/v4/api/job/manager"
 	"github.com/pixlise/core/v4/api/memoisation"
 	"github.com/pixlise/core/v4/api/notificationSender"
 	"github.com/pixlise/core/v4/api/permission"
@@ -224,8 +226,8 @@ func loadConfig() config.APIConfig {
 		cfg.MaxQuantNodes = 120
 	}
 
-	if cfg.QuantNodeMaxRuntimeSec <= 0 {
-		cfg.QuantNodeMaxRuntimeSec = 30 * 60
+	if cfg.JobMaxNodeRunTimeSec <= 0 {
+		cfg.JobMaxNodeRunTimeSec = 30 * 60
 	}
 
 	cfgStr := string(cfgJSON)
@@ -296,6 +298,8 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 
 	snsSvc := sns.New(sess)
 	sqsSvc := sqs.New(sess)
+	ec2Svc := ec2.New(sess)
+	smSvc := secretsmanager.New(sess)
 
 	// Set up services
 	svcs := &services.APIServices{
@@ -304,6 +308,8 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 		S3:               s3svc,
 		SNS:              awsutil.RealSNS{SNS: snsSvc},
 		SQS:              awsutil.RealSQS{SQS: sqsSvc},
+		EC2:              ec2Svc,
+		SecretsManager:   smSvc,
 		FS:               fs,
 		JWTReader:        jwt,
 		IDGen:            &idgen.IDGen{},
@@ -312,6 +318,12 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 		MongoConnectInfo: mongoConnectInfo,
 		// Notifier is configured after ws is created
 		InstanceId: apiInstanceId,
+	}
+
+	// Create job manager and point it back here
+	svcs.JobManager, err = jobmanager.Create(svcs, 10, true, true)
+	if err != nil {
+		log.Fatalf("Failed to init job manager. Error: %v", err)
 	}
 
 	return svcs
@@ -342,7 +354,7 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 	}
 
 	// Make sure it's a scan!
-	if status.JobType != protos.JobStatus_JT_IMPORT_SCAN && status.JobType != protos.JobStatus_JT_REIMPORT_SCAN {
+	if status.JobType != protos.JobType_JT_IMPORT_SCAN && status.JobType != protos.JobType_JT_REIMPORT_SCAN {
 		h.svcs.Log.Errorf("handleAutoImportJobStatus got unexpected job type: %+v", status)
 		return
 	}
@@ -375,7 +387,7 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 		}
 
 		// Determine if it's a new scan or an update
-		if status.JobType == protos.JobStatus_JT_IMPORT_SCAN {
+		if status.JobType == protos.JobType_JT_IMPORT_SCAN {
 			// Is this an updated scan?
 			if len(scan.PreviousImportTimesUnixSec) == 0 {
 				// No previous times, must be new
@@ -388,7 +400,8 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 			// If this is the first time the scan was found to be complete (we have all spectra), run auto quants
 			// NOTE: We have to ensure this is only done by 1 active API instance, so we don't end up running the quant on each instance!
 			h.svcs.Log.Infof("Scan complete detected, checking if auto-quantification needed...")
-			singleinstance.HandleOnce(scan.Id+"-quant", h.instanceId, func(sourceId string) {
+			sourceId := scan.Id + "-quant"
+			err = singleinstance.HandleOnce(sourceId, h.instanceId, func(sourceId string) {
 				// We ask it to only run if it hasn't got auto-quants already
 				quantification.RunAutoQuantifications(scan.Id, h.svcs, true)
 
@@ -397,7 +410,11 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 				runPostImportJobs(scan.Id, h.svcs)
 
 			}, h.svcs.MongoDB, h.svcs.TimeStamper, h.svcs.Log)
-		} else if status.JobType == protos.JobStatus_JT_REIMPORT_SCAN {
+
+			if err != nil {
+				h.svcs.Log.Errorf("Failed to HandleOnce scan import, id %v, instance %v. Error: %v", sourceId, h.instanceId, err)
+			}
+		} else if status.JobType == protos.JobType_JT_REIMPORT_SCAN {
 			h.svcs.Notifier.NotifyUpdatedScan(scan.Title, scan.Id)
 		}
 
@@ -407,11 +424,11 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 }
 
 func runPostImportJobs(scanId string, svcs *services.APIServices) {
-	_, err := jobexecutor.GetJobExecutor(svcs.Config.QuantExecutor)
-	if err != nil {
-		svcs.Log.Errorf("Failed to create job starter for running post-import jobs: %v", err)
-		return
-	}
+	// _, err := jobexecutor.GetJobExecutor(svcs.Config.QuantExecutor)
+	// if err != nil {
+	// 	svcs.Log.Errorf("Failed to create job starter for running post-import jobs: %v", err)
+	// 	return
+	// }
 
-	//jobStarter.StartJob(dockerImage, jobConfig, svcs.Config, specialUserIds.PIXLISESystemUserId, svcs.Log)
+	//jobStarter.StartJob(dockerImage, jobConfig, svcs.Config, sessionuser.PIXLISESystemUserId, svcs.Log)
 }

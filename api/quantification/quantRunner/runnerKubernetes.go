@@ -73,7 +73,7 @@ func (r *kubernetesRunner) RunPiquant(piquantDockerImage string, params PiquantP
 	status := make(chan string)
 
 	// Dispatch the piquant run as a Kubernetes Job
-	go r.runQuantJob(params, jobId, kubeNamespace, svcAcctName, piquantDockerImage, requestorUserId, cpu, len(pmcListNames), status, cfg.QuantNodeMaxRuntimeSec)
+	go r.runQuantJob(params, jobId, kubeNamespace, svcAcctName, piquantDockerImage, requestorUserId, cpu, uint(len(pmcListNames)), status, uint(cfg.JobMaxNodeRunTimeSec))
 
 	// Wait for all piquant instances to finish
 	log.Infof("Waiting for %v pods...", len(pmcListNames))
@@ -108,7 +108,7 @@ func (r *kubernetesRunner) RunPiquant(piquantDockerImage string, params PiquantP
 // - namespace: a string specifying the namespace in which the job should be created
 // - requestorUserId: a string specifying the user ID of the requestor
 // - numPods: an integer specifying the number of pods to create for the job
-func makeJobObject(params PiquantParams, paramsStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource string, numPods int, jobTTLSec int64) *batchv1.Job {
+func makeJobObject(params PiquantParams, paramsStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource string, numPods uint, jobTTLSec uint64) *batchv1.Job {
 	imagePullSecret := apiv1.LocalObjectReference{Name: "api-auth"}
 	application := "piquant-runner"
 	name := fmt.Sprintf("piquant-%s", params.Command)
@@ -122,6 +122,8 @@ func makeJobObject(params PiquantParams, paramsStr, dockerImage, jobId, namespac
 	// Pointer management for kubernetes API
 	nPods := int32(numPods)
 	cm := batchv1.IndexedCompletion
+
+	ttlSeci64 := int64(jobTTLSec)
 
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -137,7 +139,7 @@ func makeJobObject(params PiquantParams, paramsStr, dockerImage, jobId, namespac
 				"pixlise.org/piquant-command":  params.Command,
 				"pixlise.org/owner":            safeUserId,
 				"pixlise.org/jobid":            jobId,
-				"pixlise.org/numberofpods":     strconv.Itoa(numPods),
+				"pixlise.org/numberofpods":     strconv.Itoa(int(numPods)),
 			},
 		},
 		Spec: batchv1.JobSpec{
@@ -145,7 +147,7 @@ func makeJobObject(params PiquantParams, paramsStr, dockerImage, jobId, namespac
 			Parallelism:             &nPods,
 			CompletionMode:          &cm,
 			TTLSecondsAfterFinished: &postJobTTLSec,
-			ActiveDeadlineSeconds:   &jobTTLSec,
+			ActiveDeadlineSeconds:   &ttlSeci64,
 			Template: apiv1.PodTemplateSpec{
 				Spec: apiv1.PodSpec{
 					ImagePullSecrets:   []apiv1.LocalObjectReference{imagePullSecret},
@@ -189,7 +191,7 @@ func (r *kubernetesRunner) getJobStatus(namespace, jobId string) (jobStatus batc
 	return job.Status, err
 }
 
-func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, svcAcctName, dockerImage, requestorUserId, cpuResource string, count int, status chan string, quantNodeMaxRuntimeSec int32) {
+func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, svcAcctName, dockerImage, requestorUserId, cpuResource string, count uint, status chan string, quantNodeMaxRuntimeSec uint) {
 	defer close(status)
 	paramsJSON, err := json.Marshal(params)
 	if err != nil {
@@ -199,7 +201,7 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 	paramsStr := string(paramsJSON)
 
 	// Max time job can run for
-	jobTTLSec := int64(quantNodeMaxRuntimeSec)
+	jobTTLSec := uint64(quantNodeMaxRuntimeSec)
 
 	jobSpec := makeJobObject(params, paramsStr, dockerImage, jobId, namespace, svcAcctName, requestorUserId, cpuResource, count, jobTTLSec)
 
@@ -253,7 +255,7 @@ func (r *kubernetesRunner) runQuantJob(params PiquantParams, jobId, namespace, s
 		}
 
 		// If we've been whining for too long, stop logging
-		if time.Now().Unix()-startTS > (jobTTLSec + 60) {
+		if time.Now().Unix()-startTS > (int64(jobTTLSec) + 60) {
 			err2 := fmt.Errorf("Timed out monitoring job %v/%v, %v failed nodes, %v succeeded nodes, %v active nodes. Marking job as failed.", namespace, jobId, jobStatus.Failed, jobStatus.Succeeded, jobStatus.Active)
 			//			status <- statusMsg
 			r.kubeHelper.Log.Errorf("%v", err2)
