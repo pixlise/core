@@ -29,7 +29,9 @@ among others
 package services
 
 import (
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/pixlise/core/v4/api/config"
 	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/awsutil"
@@ -74,6 +76,10 @@ type APIServices struct {
 
 	// AWS SQS - At time of writing used for triggering Image Coreg importing lambda
 	SQS awsutil.SQSInterface
+
+	EC2 *ec2.EC2
+
+	SecretsManager *secretsmanager.SecretsManager
 
 	// Anything accessing files should use this
 	FS fileaccess.FileAccess

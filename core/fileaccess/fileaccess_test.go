@@ -19,6 +19,7 @@ package fileaccess
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"time"
@@ -195,13 +196,11 @@ func Example_s3() {
 	rand.Seed(time.Now().UnixNano())
 	sess, err := awsutil.GetSessionWithRegion("us-east-1")
 	if err != nil {
-		fmt.Println("Failed to get AWS session")
-		return
+		log.Fatalf("Failed to get AWS session: %v", err)
 	}
 	s3svc, err := awsutil.GetS3(sess)
 	if err != nil {
-		fmt.Println("Failed to get S3")
-		return
+		log.Fatalf("Failed to get S3: %v", err)
 	}
 
 	fmt.Printf("Setup: %v\n", err)

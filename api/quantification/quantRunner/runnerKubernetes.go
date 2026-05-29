@@ -73,7 +73,7 @@ func (r *kubernetesRunner) RunPiquant(piquantDockerImage string, params PiquantP
 	status := make(chan string)
 
 	// Dispatch the piquant run as a Kubernetes Job
-	go r.runQuantJob(params, jobId, kubeNamespace, svcAcctName, piquantDockerImage, requestorUserId, cpu, uint(len(pmcListNames)), status, cfg.QuantNodeMaxRuntimeSec)
+	go r.runQuantJob(params, jobId, kubeNamespace, svcAcctName, piquantDockerImage, requestorUserId, cpu, uint(len(pmcListNames)), status, uint(cfg.JobMaxNodeRunTimeSec))
 
 	// Wait for all piquant instances to finish
 	log.Infof("Waiting for %v pods...", len(pmcListNames))

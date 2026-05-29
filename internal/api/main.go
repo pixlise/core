@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/gorilla/handlers"
@@ -224,8 +226,8 @@ func loadConfig() config.APIConfig {
 		cfg.MaxQuantNodes = 120
 	}
 
-	if cfg.QuantNodeMaxRuntimeSec <= 0 {
-		cfg.QuantNodeMaxRuntimeSec = 30 * 60
+	if cfg.JobMaxNodeRunTimeSec <= 0 {
+		cfg.JobMaxNodeRunTimeSec = 30 * 60
 	}
 
 	cfgStr := string(cfgJSON)
@@ -296,6 +298,8 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 
 	snsSvc := sns.New(sess)
 	sqsSvc := sqs.New(sess)
+	ec2Svc := ec2.New(sess)
+	smSvc := secretsmanager.New(sess)
 
 	// Set up services
 	svcs := &services.APIServices{
@@ -304,6 +308,8 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 		S3:               s3svc,
 		SNS:              awsutil.RealSNS{SNS: snsSvc},
 		SQS:              awsutil.RealSQS{SQS: sqsSvc},
+		EC2:              ec2Svc,
+		SecretsManager:   smSvc,
 		FS:               fs,
 		JWTReader:        jwt,
 		IDGen:            &idgen.IDGen{},

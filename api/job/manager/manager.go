@@ -15,6 +15,7 @@ type JobManager struct {
 	svcs                 *services.APIServices
 	jobCompletionMethods map[string]JobManagerCompletionFunction
 	useFileCache         bool
+	nodesStarted         uint
 }
 
 func Create(svcs *services.APIServices, startupQueueCheckDelaySec int, monitorJobQueue bool, useFileCache bool) (*JobManager, error) {

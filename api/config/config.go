@@ -81,10 +81,9 @@ type APIConfig struct {
 	ZenodoAccessToken string
 
 	// Vars not set by environment
-	NodeCountOverride      uint
-	QuantNodeMaxRuntimeSec uint
-	MaxQuantNodes          uint
-	KubeConfig             string // Env sets this via command line parameter
+	NodeCountOverride uint
+	MaxQuantNodes     uint
+	KubeConfig        string // Env sets this via command line parameter
 
 	// Web Socket config
 	WSWriteWaitMs       uint
@@ -104,8 +103,7 @@ type APIConfig struct {
 	// How often we run memoisation GC
 	MemoisationGCIntervalSec uint
 
-	ImportJobMaxTimeSec  uint32
-	PIQUANTJobMaxTimeSec uint32
+	ImportJobMaxTimeSec uint32
 
 	// The GroupId of the group a new user is added to by default as a member
 	DefaultUserGroupId string
@@ -119,6 +117,15 @@ type APIConfig struct {
 
 	MongoDebug                bool
 	RestoreExcludeCollections []string
+
+	// Settings that control what kind of job processing EC2 instances we create
+	JobAMI               string
+	JobInstanceType      string
+	JobKeyName           string
+	JobSecurityGroup     string
+	JobMaxNodeRunTimeSec uint32
+	JobAWSSecret         string
+	JobNodeS3Path        string
 }
 
 func homeDir() string {
@@ -213,10 +220,6 @@ func Init() (APIConfig, error) {
 
 	if cfg.ImportJobMaxTimeSec <= 0 {
 		cfg.ImportJobMaxTimeSec = uint32(10 * 60)
-	}
-
-	if cfg.PIQUANTJobMaxTimeSec <= 0 {
-		cfg.PIQUANTJobMaxTimeSec = uint32(15 * 60)
 	}
 
 	if cfg.MaxUnretrievedMemoisationAgeSec <= 0 {

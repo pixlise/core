@@ -127,5 +127,9 @@ func monitorIdleTime(maxIdleSec, maxRunTimeSec int64, jobNode *jobnode.JobNode, 
 			consecutiveJobCheckFails = consecutiveJobCheckFails + 1
 			l.Errorf("Failed to check active job count %v times. Error: %v", consecutiveJobCheckFails, err)
 		}
+
+		if consecutiveJobCheckFails > 10 {
+			log.Fatalf("Exiting due to %v failures to check active job count", consecutiveJobCheckFails)
+		}
 	}
 }
