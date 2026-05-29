@@ -13,6 +13,20 @@ import (
 )
 
 func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerContext) (*protos.QuantCreateResp, error) {
+	if strings.Contains(req.Params.Name, "(new)") {
+		// Run a new-style job
+		status, err := hctx.Svcs.JobManager.SubmitQuantJob(req.Params, &hctx.SessUser)
+		if err != nil {
+			return nil, err
+		}
+
+		return &protos.QuantCreateResp{Status: status}, nil
+	}
+
+	return legacyHandleQuantCreateReq(req, hctx)
+}
+
+func legacyHandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerContext) (*protos.QuantCreateResp, error) {
 	err := quantification.IsValidCreateParam(req.Params, hctx.Svcs, &hctx.SessUser)
 	if err != nil {
 		return nil, errorwithstatus.MakeBadRequestError(err)

@@ -18,6 +18,10 @@ import (
 )
 
 func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, svcs *services.APIServices) error {
+	if len(jg.AssociatedScanId) <= 0 {
+		return fmt.Errorf("Failed to complete multi-node quant job %v: No associated scan ID found!", jg.JobGroupId)
+	}
+
 	jobId := jg.JobGroupId
 
 	// Generate the output path for all generated data files & logs
@@ -117,12 +121,31 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 		svcs.Log.Errorf("Failed to upload quant CSV file to s3 at \"s3://%v / %v\": %v", svcs.Config.UsersBucket, csvFilePath, err)
 	}
 
+	quantJobReqS3Path := filepaths.GetJobDataPath(jg.AssociatedScanId, jobId, quantification.JobRequestFileName)
+
+	createParams := &protos.QuantCreateParams{}
+	err = svcs.FS.ReadJSON(svcs.Config.PiquantJobsBucket, quantJobReqS3Path, createParams, false)
+	if err != nil {
+		return fmt.Errorf("Failed to read quant creation parameters file \"s3://%v/%v\": %v", svcs.Config.PiquantJobsBucket, quantJobReqS3Path, err)
+	}
+
 	completeMsg := fmt.Sprintf("Nodes ran: %v", jg.NodeCount)
 	now := svcs.TimeStamper.GetTimeNowSec()
 	summary := &protos.QuantificationSummary{
 		Id:     jobId,
 		ScanId: jg.AssociatedScanId,
-		//Params:   quantStartSettings,
+		Params: &protos.QuantStartingParameters{
+			UserParams: createParams,
+			PmcCount:   uint32(len(createParams.Pmcs)),
+			//ScanFilePath: ,
+			DataBucket:        svcs.Config.DatasetsBucket,
+			PiquantJobsBucket: svcs.Config.PiquantJobsBucket,
+			CoresPerNode:      uint32(svcs.Config.CoresPerNode),
+			StartUnixTimeSec:  jstatus.StartUnixTimeSec,
+			RequestorUserId:   jstatus.RequestorUserId,
+			// PIQUANTVersion: ,
+			// Comments: ,
+		},
 		Elements: elements,
 		Status: &protos.JobStatus{
 			JobId:            jobId,
