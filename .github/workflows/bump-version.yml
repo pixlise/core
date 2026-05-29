@@ -17,7 +17,7 @@ jobs:
         ref: ${{ github.sha }}
         fetch-depth: '0'
     - name: Github Tag Bump
-      uses: anothrNick/github-tag-action@1.61.0
+      uses: anothrNick/github-tag-action@1.75.0
       if: github.event.pull_request.base.ref == 'main'
       env:
         # NOTE: Using the GITHUB_TOKEN will prevent this workflow's actions from
@@ -30,7 +30,7 @@ jobs:
         DEFAULT_BUMP: minor
     - name: Github Tag Bump
       if: github.event.pull_request.base.ref == 'development'
-      uses: anothrNick/github-tag-action@1.61.0
+      uses: anothrNick/github-tag-action@1.75.0
       env:
         # NOTE: see above
         GITHUB_TOKEN: ${{ secrets.PIXLISE_GH_PAT }}
