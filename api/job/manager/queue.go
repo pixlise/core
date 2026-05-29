@@ -104,12 +104,17 @@ func (jm *JobManager) checkJobQueue() error {
 	coll := jm.svcs.MongoDB.Collection(dbCollections.JobQueueName)
 
 	// Remove any that have all completed
+	notStarted := 0
 	for jobGroupId, jobs := range groupsAndJobs {
 		ranCount := 0
 		completed := 0
 		for _, job := range jobs {
 			if job.State == protos.JobQueueItem_COMPLETE {
 				completed = completed + 1
+			}
+
+			if job.State == protos.JobQueueItem_UNKNOWN {
+				notStarted = notStarted + 1
 			}
 
 			if job.State == protos.JobQueueItem_COMPLETE || job.State == protos.JobQueueItem_FAILED {
@@ -156,7 +161,10 @@ func (jm *JobManager) checkJobQueue() error {
 		}
 	}
 
-	// NOTE: Job starting doesn't happen here, it happens in the JobNode listener
+	// We just inserted 1 or more jobs - check that we have enough nodes running to handle this: if not, start more!
+	if notStarted > 0 {
+		jm.ensureJobNodesRunning(notStarted)
+	}
 
 	return nil
 }

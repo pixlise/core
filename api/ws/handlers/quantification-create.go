@@ -21,7 +21,7 @@ func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerCont
 	// At this point, we're assuming that the detector config is a valid config name / version. We need this to be the path of the config in S3
 	// so here we convert it and ensure it's valid
 	detectorConfigBits := strings.Split(req.Params.DetectorConfig, "/")
-	if len(detectorConfigBits) != 2 || len(detectorConfigBits[0]) < 0 || len(detectorConfigBits[1]) < 0 {
+	if len(detectorConfigBits) != 2 || len(detectorConfigBits[0]) <= 0 || len(detectorConfigBits[1]) <= 0 {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("DetectorConfig not in expected format"))
 	}
 

@@ -2,6 +2,7 @@ package jobnode
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -92,7 +93,10 @@ func (jn *JobNode) CheckStartupJobs() {
 				jobCapacity = jobCapacity - 1
 
 				jn.log.Infof("Instance %v startup running job %v (from job group %v)", jn.instanceId, jobItem.JobId, jobItem.JobGroupId)
-				jn.startJob(jobItem)
+				err = jn.startJob(jobItem)
+				if err != nil {
+					jn.log.Errorf("StartJob for %v failed: %v", jobItem.JobId, err)
+				}
 			}
 		}
 	}
@@ -135,7 +139,10 @@ func (jn *JobNode) onNewJobQueueItem(jobItem *protos.JobQueueItem) {
 	// Remember when we last started a job. This is so we can check if we've been sitting idle waiting for too long
 	//jn.lastJobStartUnixSec = uint(jn.ts.GetTimeNowSec())
 
-	jn.startJob(jobItem)
+	err = jn.startJob(jobItem)
+	if err != nil {
+		jn.log.Errorf("StartJob for %v failed: %v", jobItem.JobId, err)
+	}
 }
 
 func (jn *JobNode) getJobCapacity() (uint, error) {
@@ -207,10 +214,14 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 	} else {
 		// Run it in docker using our job runner container
 		cmd := exec.Command("docker", "run",
-			"-n", fmt.Sprintf("%v-%v-%v", jn.jobPrefix, jn.jobStartedCount, utils.RandStringBytesMaskImpr(6)),
-			"-e", jobrunner.EnvBucketName, jn.jobBucket,
-			"-e", jobrunner.EnvPathName, jobPath,
-			"-e", jobrunner.EnvNodeIndexName, strconv.Itoa(int(jobItem.NodeIndex)),
+			"--name", fmt.Sprintf("%v-%v-%v", jn.jobPrefix, jn.jobStartedCount, utils.RandStringBytesMaskImpr(6)),
+			"-e", "AWS_ACCESS_KEY_ID="+os.Getenv("AWS_ACCESS_KEY_ID"),
+			"-e", "AWS_SECRET_ACCESS_KEY="+os.Getenv("AWS_SECRET_ACCESS_KEY"),
+			"-e", "AWS_REGION="+os.Getenv("AWS_REGION"),
+			"-e", "AWS_DEFAULT_REGION="+os.Getenv("AWS_DEFAULT_REGION"),
+			"-e", fmt.Sprintf("%v=%v", jobrunner.EnvBucketName, jn.jobBucket),
+			"-e", fmt.Sprintf("%v=%v", jobrunner.EnvPathName, jobPath),
+			"-e", fmt.Sprintf("%v=%v", jobrunner.EnvNodeIndexName, strconv.Itoa(int(jobItem.NodeIndex))),
 			jn.jobContainer)
 
 		out, err := cmd.CombinedOutput()

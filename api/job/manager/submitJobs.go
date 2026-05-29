@@ -19,7 +19,7 @@ import (
 )
 
 // Submit function for each kind of job type we support
-func (jm *JobManager) SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser) error {
+func (jm *JobManager) SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser) (*protos.JobStatus, error) {
 	prefix := "quant"
 	jobType := protos.JobType_JT_UNKNOWN
 	jobCompletionMethod := ""
@@ -34,11 +34,11 @@ func (jm *JobManager) SubmitQuantJob(createParams *protos.QuantCreateParams, req
 	}
 
 	// Call the internal one, log the resulting errors if any
-	err := jm.internalSubmitQuantJob(createParams, requestorUserSess, prefix, jobType, jobCompletionMethod)
+	status, err := jm.internalSubmitQuantJob(createParams, requestorUserSess, prefix, jobType, jobCompletionMethod)
 	if err != nil {
 		jm.svcs.Log.Errorf("SubmitQuantJob error: %v", err)
 	}
-	return err
+	return status, err
 }
 
 /*
@@ -60,17 +60,17 @@ func (jm *JobManager) SubmitQuantJob(createParams *protos.QuantCreateParams, req
 		return err
 	}
 */
-func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser, idPrefix string, jobType protos.JobType, completeMethod string) error {
+func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser, idPrefix string, jobType protos.JobType, completeMethod string) (*protos.JobStatus, error) {
 	err := quantification.IsValidCreateParam(createParams, jm.svcs, requestorUserSess)
 	if err != nil {
-		return errorwithstatus.MakeBadRequestError(err)
+		return nil, errorwithstatus.MakeBadRequestError(err)
 	}
 
 	// At this point, we're assuming that the detector config is a valid config name / version. We need this to be the path of the config in S3
 	// so here we convert it and ensure it's valid
 	detectorConfigBits := strings.Split(createParams.DetectorConfig, "/")
 	if len(detectorConfigBits) != 2 || len(detectorConfigBits[0]) <= 0 || len(detectorConfigBits[1]) <= 0 {
-		return errorwithstatus.MakeBadRequestError(errors.New("DetectorConfig not in expected format"))
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("DetectorConfig not in expected format"))
 	}
 	/*
 		// Form the string
@@ -82,7 +82,7 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 	// Get the config and calibration files
 	piquantCfg, err := piquant.GetPIQUANTConfig(jm.svcs, detectorConfigBits[0], detectorConfigBits[1])
 	if err != nil {
-		return errorwithstatus.MakeBadRequestError(err)
+		return nil, errorwithstatus.MakeBadRequestError(err)
 	}
 
 	// Generate a job ID
@@ -97,12 +97,25 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 	}
 
 	// Dataset file
+	remoteCreateParamsPath := path.Join(jobS3Path, quantification.JobRequestFileName)
+
 	requiredFiles := []jobconfig.JobFilePath{
 		{
 			LocalPath:    filepaths.DatasetFileName,
 			RemoteBucket: jm.svcs.Config.DatasetsBucket,
 			RemotePath:   filepaths.GetScanFilePath(createParams.ScanId, filepaths.DatasetFileName),
 		},
+		{
+			LocalPath:    quantification.JobRequestFileName,
+			RemoteBucket: jm.svcs.Config.PiquantJobsBucket,
+			RemotePath:   remoteCreateParamsPath,
+		},
+	}
+
+	// Write the user request struct out to S3 job, so we can access it later when the job is completed
+	err = jm.svcs.FS.WriteJSON(jm.svcs.Config.PiquantJobsBucket, remoteCreateParamsPath, createParams)
+	if err != nil {
+		return nil, err
 	}
 
 	// PIQUANT instrument config files (these are config-dependent)
@@ -134,10 +147,10 @@ func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreatePar
 		createParams, requestorUserSess, nodePMCFileName, jobS3Path, jm.svcs, jm.useFileCache)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(pmcFiles) <= 0 {
-		return fmt.Errorf("Failed to create required PMC lists for quantification job %v nodes", jobId)
+		return nil, fmt.Errorf("Failed to create required PMC lists for quantification job %v nodes", jobId)
 	}
 
 	nodePMCPath := path.Join(jobS3Path, nodePMCFileName)
@@ -370,37 +383,37 @@ job
 		return jm.internalSubmitJob(jg)
 	}
 */
-func (jm *JobManager) internalSubmitJob(jg *jobconfig.JobGroupConfig) error {
+func (jm *JobManager) internalSubmitJob(jg *jobconfig.JobGroupConfig) (*protos.JobStatus, error) {
 	if len(jg.JobGroupId) <= 0 {
-		return errors.New("SubmitJob: JobGroupId not specified")
+		return nil, errors.New("SubmitJob: JobGroupId not specified")
 	}
 
 	// Check other fields are valid
 	if len(jg.AssociatedScanId) > 100 {
-		return errors.New("SubmitJob: AssociatedScanId too long")
+		return nil, errors.New("SubmitJob: AssociatedScanId too long")
 	}
 
 	if len(jg.DockerImage) <= 0 {
-		return errors.New("SubmitJob: DockerImage not specified")
+		return nil, errors.New("SubmitJob: DockerImage not specified")
 	}
 
 	if len(jg.RequestorUserId) <= 0 {
-		return errors.New("SubmitJob: RequestorUserId not specified")
+		return nil, errors.New("SubmitJob: RequestorUserId not specified")
 	}
 
 	if jg.NodeCount <= 0 {
-		return errors.New("SubmitJob: NodeCount must be at least 1")
+		return nil, errors.New("SubmitJob: NodeCount must be at least 1")
 	}
 
 	if len(jg.NodeConfig.Command) <= 0 {
-		return errors.New("SubmitJob: Command not specified")
+		return nil, errors.New("SubmitJob: Command not specified")
 	}
 
 	// Write job as JSON to S3 jobs bucket
 	jobsPath := filepaths.GetJobDataPath(jg.AssociatedScanId, jg.JobGroupId, quantification.JobParamsFileName)
 	err := jm.svcs.FS.WriteJSON(jm.svcs.Config.PiquantJobsBucket, jobsPath, jg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Now that we've uploaded the job params, include it in the list of files the job can download
@@ -437,31 +450,26 @@ func (jm *JobManager) internalSubmitJob(jg *jobconfig.JobGroupConfig) error {
 	coll := jm.svcs.MongoDB.Collection(dbCollections.JobStatusName)
 	result, err := coll.InsertOne(ctx, job, options.InsertOne())
 	if err != nil {
-		return err
+		return job, err
 	}
 
 	if result.InsertedID != jg.JobGroupId {
-		return fmt.Errorf("Inserted job stats for %v doesn't match db id %v", jg.JobGroupId, result.InsertedID)
+		return job, fmt.Errorf("Inserted job stats for %v doesn't match db id %v", jg.JobGroupId, result.InsertedID)
 	}
 
 	// Also write out the job config we're running to the jobs table. That doesn't get updated as status changes, it's more a record of what we started with
 	coll = jm.svcs.MongoDB.Collection(dbCollections.JobsName)
 	result, err = coll.InsertOne(ctx, jg, options.InsertOne())
 	if err != nil {
-		return err
+		return job, err
 	}
 
 	if result.InsertedID != jg.JobGroupId {
-		return fmt.Errorf("Inserted job %v doesn't match db id %v", jg.JobGroupId, result.InsertedID)
+		return job, fmt.Errorf("Inserted job %v doesn't match db id %v", jg.JobGroupId, result.InsertedID)
 	}
 
 	// Queue up each individual job so it can run on a node. Job queue will eventually be empty and the job completes
-	return jm.QueueJob(jg)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// return nil
+	return job, jm.QueueJob(jg)
 }
 
 /*

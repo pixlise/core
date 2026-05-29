@@ -14,7 +14,7 @@ func checkQuantificationNameExists(name string, scanId string, svcs *services.AP
 
 	// Check if it exists
 	for _, item := range items {
-		if item.Params.UserParams.Name == name {
+		if item.Params != nil && item.Params.UserParams.Name == name {
 			return true
 		}
 	}

@@ -141,3 +141,42 @@ func readSecretsManager(secretsManager *secretsmanager.SecretsManager, secretNam
 
 	return info.Key, info.Secret, info.Region, nil
 }
+
+func (jm *JobManager) getRunningNodes() ([]string, error) {
+	// Only grab instances that are running or just started
+	filters := []*ec2.Filter{
+		{
+			Name:   aws.String("instance-state-name"),
+			Values: []*string{aws.String("running"), aws.String("pending")},
+		},
+	}
+	request := &ec2.DescribeInstancesInput{Filters: filters}
+	result, err := jm.svcs.EC2.DescribeInstances(request)
+
+	if err != nil {
+		return []string{}, err
+	}
+
+	instanceIds := []string{}
+	for _, res := range result.Reservations {
+		for _, inst := range res.Instances {
+			instanceIds = append(instanceIds, *inst.InstanceId)
+		}
+	}
+
+	return instanceIds, nil
+}
+
+// Ensures there's enough nodes waiting for jobs - if we haven't had a quant
+// in a while the old nodes would've shut down already!
+func (jm *JobManager) ensureJobNodesRunning(outstandingJobCount int) error {
+	instanceIds, err := jm.getRunningNodes()
+	if err != nil {
+		return err
+	}
+
+	if outstandingJobCount > 0 && len(instanceIds) <= 0 {
+		return jm.startJobNode(false)
+	}
+	return nil
+}

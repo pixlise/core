@@ -55,7 +55,7 @@ var GitHash string
 // This comes in very useful when writing unit tests, since we can mock these interfaces
 
 type JobManagerInterface interface {
-	SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser) error
+	SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser) (*protos.JobStatus, error)
 	// ListJobs() ([]jobmanager.JobGroupConfig, error)
 	// GetJob(JobId string) (jobmanager.JobGroupConfig, error)
 }
