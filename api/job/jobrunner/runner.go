@@ -14,9 +14,9 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 )
 
-var EnvBucketName = "bucket"
-var EnvPathName = "path"
-var EnvNodeIndexName = "node"
+var EnvBucketName = "JOB_BUCKET"
+var EnvPathName = "JOB_PATH"
+var EnvNodeIndexName = "NODE_INDEX"
 
 // Downloads files required for job to run and sets up libraries. Requires JOB_CONFIG environment variable
 // to be set to a JobConfig structure
