@@ -185,7 +185,7 @@ func (jm *JobManager) checkJobQueue() error {
 	}
 
 	// We just inserted 1 or more jobs - check that we have enough nodes running to handle this: if not, start more!
-	if notStarted > 0 {
+	if notStarted > 0 && jm.ensureNodesRunning {
 		jm.ensureJobNodesRunning(notStarted)
 	}
 

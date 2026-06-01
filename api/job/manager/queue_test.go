@@ -28,7 +28,7 @@ func Example_jobmanager_QueueStartup() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogError)
 
-	jm, err := Create(&svcs, 0, false, false)
+	jm, err := Create(&svcs, 0, false, false, false)
 	fmt.Printf("create: %v, instance: %v\n", err, jm.svcs.InstanceId)
 
 	jm.RegisterCompletionMethod("completeJob", completeJobFunc)
