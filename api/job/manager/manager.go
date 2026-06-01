@@ -2,6 +2,7 @@ package jobmanager
 
 import (
 	jobconfig "github.com/pixlise/core/v4/api/job/config"
+	"github.com/pixlise/core/v4/api/job/jobnode"
 	"github.com/pixlise/core/v4/api/services"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
@@ -16,6 +17,7 @@ type JobManager struct {
 	jobCompletionMethods map[string]JobManagerCompletionFunction
 	useFileCache         bool
 	nodesStarted         uint
+	localJobNode         *jobnode.JobNode
 }
 
 func Create(svcs *services.APIServices, startupQueueCheckDelaySec int, monitorJobQueue bool, useFileCache bool) (*JobManager, error) {

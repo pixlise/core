@@ -71,7 +71,7 @@ func (jm *JobManager) runCheckJobQueueOnce(sourceId string) {
 	// so we only check jobs once (avoiding duplicate starts)
 	err := singleinstance.HandleOnce(sourceId, jm.svcs.InstanceId, func(sourceId string) {
 		// Read all items and work out what
-		jm.svcs.Log.Infof("HandleOnce id %v, instance %v...", sourceId, jm.svcs.InstanceId)
+		//jm.svcs.Log.Infof("HandleOnce id %v, instance %v...", sourceId, jm.svcs.InstanceId)
 		err := jm.checkJobQueue()
 		if err != nil {
 			jm.svcs.Log.Errorf("checkJobQueue (HandleOnce id %v, instance %v) failed: %v", sourceId, jm.svcs.InstanceId, err)
@@ -102,6 +102,29 @@ func (jm *JobManager) checkJobQueue() error {
 
 	ctx := context.TODO()
 	coll := jm.svcs.MongoDB.Collection(dbCollections.JobQueueName)
+
+	// Check if we have any jobs that have timed out - eg if it was started in docker and never finishes... we want to eventually clean it up
+	nowUnixSec := jm.svcs.TimeStamper.GetTimeNowSec()
+	for _, jobs := range groupsAndJobs {
+		for _, jobItem := range jobs {
+			secSinceUpdate := nowUnixSec - jobItem.LastUpdatedTimeStampUnixSec
+			if jobItem.State == protos.JobQueueItem_RUNNING && secSinceUpdate > int64(jm.svcs.Config.JobMaxNodeRunTimeSec) {
+				// Mark this job node as failed
+				jobItem.State = protos.JobQueueItem_FAILED
+				jobItem.Message = fmt.Sprintf("Node timed out after %v seconds.", secSinceUpdate)
+
+				// Write it out
+				err = job.UpdateJobQueueItem(jobItem.JobId, jobItem.State, jobItem.Message, jobItem.JobGroupId, jm.svcs.MongoDB, jm.svcs.TimeStamper)
+				if err != nil {
+					return fmt.Errorf("JobManager queue check failed to mark job %v as timed out. Error: %v", jobItem.JobId, err)
+				}
+
+				// NOTE: At this point we continue, in the hope that the following state handling code will clean it up now...
+
+				//updatedStatus, _ := jm.updateJobStatus(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("Node %v nodes...", len(jobs)), "", existingStatus)
+			}
+		}
+	}
 
 	// Remove any that have all completed
 	notStarted := 0

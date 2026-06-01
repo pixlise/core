@@ -9,10 +9,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
+	"github.com/pixlise/core/v4/api/job/jobnode"
 )
 
 // Called to start a job node
-func (jm *JobManager) startJobNode(waitTillStarted bool) error {
+func (jm *JobManager) startEC2JobNode(waitTillStarted bool) error {
 	jm.nodesStarted = jm.nodesStarted + 1
 	if jm.svcs.Config.JobMaxNodeRunTimeSec < 60 {
 		return fmt.Errorf("Cannot start job node that runs for only %vsec", jm.svcs.Config.JobMaxNodeRunTimeSec)
@@ -169,14 +170,36 @@ func (jm *JobManager) getRunningNodes() ([]string, error) {
 
 // Ensures there's enough nodes waiting for jobs - if we haven't had a quant
 // in a while the old nodes would've shut down already!
+
+// If there is a JobAWSSecret configured we start the node on a new EC2 instance,
+// otherwise (for testing really) we just start it in a new thread and only create
+// one, so ignore future calls
+
 func (jm *JobManager) ensureJobNodesRunning(outstandingJobCount int) error {
-	instanceIds, err := jm.getRunningNodes()
-	if err != nil {
-		return err
+	if len(jm.svcs.Config.JobAWSSecret) > 0 {
+		instanceIds, err := jm.getRunningNodes()
+		if err != nil {
+			return err
+		}
+
+		if outstandingJobCount > 0 && len(instanceIds) <= 0 {
+			return jm.startEC2JobNode(false)
+		}
 	}
 
-	if outstandingJobCount > 0 && len(instanceIds) <= 0 {
-		return jm.startJobNode(false)
+	// No JobAWSSecret configured, so we just run in local mode. If we have not
+	// yet started a job node thread, start one now
+	if jm.localJobNode != nil {
+		jm.svcs.Log.Infof("ensureJobNodesRunning skipped, already running a local one")
+		return nil
 	}
+
+	// Start a local one
+	jm.svcs.Log.Infof("ensureJobNodesRunning starting local job node")
+	jm.localJobNode = jobnode.CreateJobNode("local-job", jm.svcs.Config.JobRunnerDockerImage, jm.svcs.Config.PiquantJobsBucket, 6, jm.svcs.InstanceId, jm.svcs.FS, jm.svcs.MongoDB, jm.svcs.Log, jm.svcs.TimeStamper)
+
+	jm.localJobNode.CheckStartupJobs()
+	go jm.localJobNode.ListenToJobQueue()
+
 	return nil
 }

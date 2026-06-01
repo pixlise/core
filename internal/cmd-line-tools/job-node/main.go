@@ -84,7 +84,7 @@ func main() {
 	l.Infof("Running up to %v nodes. Node will run for up to %v seconds or %v idle seconds...", maxJobs, maxRunTimeSec, maxIdleSec)
 
 	// Create job node
-	jobNode := jobnode.CreateJobNode("job-"+envName, jobContainer, bucket, uint(maxJobs), uint(maxIdleSec), instanceId, fs, db, &l, &ts)
+	jobNode := jobnode.CreateJobNode("job-"+envName, jobContainer, bucket, uint(maxJobs), instanceId, fs, db, &l, &ts)
 
 	// Check if there are any jobs waiting to be picked up
 	jobNode.CheckStartupJobs()

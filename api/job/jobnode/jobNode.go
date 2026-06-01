@@ -31,7 +31,6 @@ import (
 type JobNode struct {
 	jobPrefix    string
 	maxJobs      uint
-	maxIdleSec   uint
 	db           *mongo.Database
 	instanceId   string
 	log          logger.ILogger
@@ -49,13 +48,12 @@ func CreateJobNode(
 	jobContainer string,
 	jobBucket string,
 	maxJobs uint,
-	maxIdleSec uint,
 	instanceId string,
 	fs fileaccess.FileAccess,
 	db *mongo.Database,
 	log logger.ILogger,
 	ts timestamper.ITimeStamper) *JobNode {
-	return &JobNode{jobPrefix, maxJobs, maxIdleSec, db, instanceId, log, ts, jobContainer, jobBucket, fs, 0}
+	return &JobNode{jobPrefix, maxJobs, db, instanceId, log, ts, jobContainer, jobBucket, fs, 0}
 }
 
 func (jn *JobNode) ListenToJobQueue() bool {
@@ -112,7 +110,7 @@ func (jn *JobNode) onNewJobQueueItemRunOnce(jobItem *protos.JobQueueItem) {
 	// so we only check jobs once (avoiding duplicate starts)
 	err := singleinstance.HandleOnce(jobItem.JobId, jn.instanceId, func(sourceId string) {
 		// Read all items and work out what
-		jn.log.Infof("HandleOnce id %v, instance %v...", sourceId, jn.instanceId)
+		//jn.log.Infof("HandleOnce id %v, instance %v...", sourceId, jn.instanceId)
 		jn.onNewJobQueueItem(jobItem)
 	}, jn.db, jn.ts, jn.log)
 
@@ -230,7 +228,16 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 			if len(outStr) > 0 {
 				outStr = "\n" + outStr
 			}
-			return fmt.Errorf("Failed to query docker containers: %v%v", err, outStr)
+
+			logEnd := ""
+			if len(outStr) > 300 {
+				logEnd = "..." + outStr[len(outStr)-300:]
+			} else {
+				logEnd = outStr
+			}
+
+			err = job.UpdateJobQueueItem(jobItem.JobId, protos.JobQueueItem_FAILED, fmt.Sprintf("Job Failed: %v.\nEnd of log: %v", err, logEnd), jobItem.JobGroupId, jn.db, jn.ts)
+			return fmt.Errorf("Job run failed: %v%v", err, outStr)
 		}
 	}
 
