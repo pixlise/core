@@ -240,6 +240,8 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 			jn.log.Errorf("Failed to update job queue item %v to failed status: %v", jobItem.JobId, err2)
 			return fmt.Errorf("Job run failed: %v%v", err, outStr)
 		}
+
+		jn.log.Infof("Job %v run complete, output:\n-----------------\n%v\n-----------------\n", jobItem.JobId, outStr)
 	}
 
 	// Once the job is finished, mark it so
