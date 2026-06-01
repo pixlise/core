@@ -185,7 +185,7 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
 
 	// Run the job node queue processing code
-	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, 6, 20, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
+	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, 6, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
 	jn.OnNewJobQueueItemForTest()
 
 	jm.RunCheckJobQueueForTest()
@@ -306,7 +306,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
 
 	// Run the job node queue processing code
-	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, 6, 20, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
+	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, 6, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
 	jn.OnNewJobQueueItemForTest()
 	jn.OnNewJobQueueItemForTest()
 	jn.OnNewJobQueueItemForTest()
