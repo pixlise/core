@@ -93,7 +93,7 @@ func (jn *JobNode) CheckStartupJobs() {
 				jn.log.Infof("Instance %v startup running job %v (from job group %v)", jn.instanceId, jobItem.JobId, jobItem.JobGroupId)
 				err = jn.startJob(jobItem)
 				if err != nil {
-					jn.log.Errorf("StartJob for %v failed: %v", jobItem.JobId, err)
+					jn.log.Errorf("CheckStartupJobs StartJob for %v failed: %v", jobItem.JobId, err)
 				}
 			}
 		}
@@ -139,7 +139,7 @@ func (jn *JobNode) onNewJobQueueItem(jobItem *protos.JobQueueItem) {
 
 	err = jn.startJob(jobItem)
 	if err != nil {
-		jn.log.Errorf("StartJob for %v failed: %v", jobItem.JobId, err)
+		jn.log.Errorf("onNewJobQueueItem StartJob for %v failed: %v", jobItem.JobId, err)
 	}
 }
 
@@ -203,8 +203,9 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 	// Set up the path to read the job from
 	jobPath := filepaths.GetJobDataPath(jobItem.AssociatedScanId, jobItem.JobGroupId, "")
 
-	//fmt.Println("jn.jobContainer: " + jn.jobContainer)
 	if len(jn.jobContainer) <= 0 {
+		fmt.Println("WARNING: Running job locally, recommended for use for tests only!")
+
 		// Mainly for tests, so we avoid docker and can run/debug all our code in one process
 		err = jobrunner.RunJob(jn.jobBucket, jobPath, uint(jobItem.NodeIndex), jn.fs)
 		if err != nil {

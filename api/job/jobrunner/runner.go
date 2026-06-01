@@ -39,22 +39,6 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 	jobLog := &logger.StdOutLogger{}
 	jobLog.Infof("Running job from s3://%v/%v for node %v", jobBucket, jobPath, nodeIndex)
 
-	/*
-		var remoteFS fileaccess.FileAccess
-		if len(localBucketPath) <= 0 {
-			// Init AWS stuff
-			jobLog.Infof("AWS S3 setup...")
-
-			s3svc, err := awsutil.GetS3(sess)
-			if err != nil {
-				return fmt.Errorf("Failed to create AWS S3 service. Error: %v", err)
-			}
-
-			remoteFS = fileaccess.MakeS3Access(s3svc)
-		} else {
-			remoteFS = fileaccess.MakeFSAccessS3Simulator(localBucketPath)
-		}*/
-
 	// Read config from S3 (or our local simulator!)
 	jobParamPath := path.Join(jobPath, quantification.JobParamsFileName)
 	var jobGroupCfg jobconfig.JobGroupConfig
