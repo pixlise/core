@@ -236,7 +236,8 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 				logEnd = outStr
 			}
 
-			err = job.UpdateJobQueueItem(jobItem.JobId, protos.JobQueueItem_FAILED, fmt.Sprintf("Job Failed: %v.\nEnd of log: %v", err, logEnd), jobItem.JobGroupId, jn.db, jn.ts)
+			err2 := job.UpdateJobQueueItem(jobItem.JobId, protos.JobQueueItem_FAILED, fmt.Sprintf("Job Failed: %v.\nEnd of log: %v", err, logEnd), jobItem.JobGroupId, jn.db, jn.ts)
+			jn.log.Errorf("Failed to update job queue item %v to failed status: %v", jobItem.JobId, err2)
 			return fmt.Errorf("Job run failed: %v%v", err, outStr)
 		}
 	}
