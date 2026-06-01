@@ -80,7 +80,7 @@ jobs:
           mongodb-replica-set: testu
           mongodb-port: 27017
       - name: Unit Test
-        run: make unittest
+        run: docker pull ghcr.io/pixlise/job-runner:latest && make unittest
         env:
           AWS_DEFAULT_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
