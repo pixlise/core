@@ -100,6 +100,8 @@ func (jm *JobManager) checkJobQueue() error {
 		return err
 	}
 
+	jm.svcs.Log.Debugf("CheckJobQueue found %v job groups", len(groupsAndJobs))
+
 	ctx := context.TODO()
 	coll := jm.svcs.MongoDB.Collection(dbCollections.JobQueueName)
 
@@ -112,6 +114,8 @@ func (jm *JobManager) checkJobQueue() error {
 				// Mark this job node as failed
 				jobItem.State = protos.JobQueueItem_FAILED
 				jobItem.Message = fmt.Sprintf("Node timed out after %v seconds.", secSinceUpdate)
+
+				jm.svcs.Log.Debugf("  CheckJobQueue detected timed out job: %v", jobItem.JobId)
 
 				// Write it out
 				err = job.UpdateJobQueueItem(jobItem.JobId, jobItem.State, jobItem.Message, jobItem.JobGroupId, jm.svcs.MongoDB, jm.svcs.TimeStamper)
@@ -145,6 +149,8 @@ func (jm *JobManager) checkJobQueue() error {
 			}
 		}
 
+		jm.svcs.Log.Debugf("  CheckJobQueue job group %v has %v ran, %v completed nodes", jobGroupId, ranCount, completed)
+
 		// If they've all been completed, do the completion task (if there is one)
 		if completed >= len(jobs) {
 			existingStatus, err := jm.readJobStatus(jobGroupId)
@@ -153,6 +159,7 @@ func (jm *JobManager) checkJobQueue() error {
 			} else {
 				// We only try to complete a job if we have a status for it!
 				if existingStatus.Status < protos.JobStatus_GATHERING_RESULTS {
+					jm.svcs.Log.Debugf("  CheckJobQueue running job group %v completion task...", jobGroupId)
 					// Set the job status to gathering results
 					updatedStatus, _ := jm.updateJobStatus(jobGroupId, protos.JobStatus_GATHERING_RESULTS, fmt.Sprintf("Combining CSVs from %v nodes...", len(jobs)), "", existingStatus)
 
@@ -165,6 +172,7 @@ func (jm *JobManager) checkJobQueue() error {
 					} else {
 						// Set the job status to gathering results
 						jm.updateJobStatus(jobGroupId, protos.JobStatus_COMPLETE, fmt.Sprintf("Nodes ran: %v", len(jobs)), "", existingStatus)
+						jm.svcs.Log.Debugf("  CheckJobQueue completed job group %v", jobGroupId)
 					}
 				} else {
 					jm.svcs.Log.Errorf("Skipped job completion for for: %v - its status is %v", jobGroupId, existingStatus.Status)
@@ -174,6 +182,7 @@ func (jm *JobManager) checkJobQueue() error {
 
 		// If they've all been run, delete it
 		if ranCount >= len(jobs) {
+			jm.svcs.Log.Debugf("  CheckJobQueue clearing job queue items for %v", jobGroupId)
 			delete(groupsAndJobs, jobGroupId)
 			delResult, err := coll.DeleteMany(ctx, bson.M{"jobgroupid": jobGroupId})
 			if err != nil {
@@ -185,8 +194,9 @@ func (jm *JobManager) checkJobQueue() error {
 	}
 
 	// We just inserted 1 or more jobs - check that we have enough nodes running to handle this: if not, start more!
+	jm.svcs.Log.Debugf("  CheckJobQueue found %v not-started jobs", notStarted)
 	if notStarted > 0 && jm.ensureNodesRunning {
-		jm.ensureJobNodesRunning(notStarted)
+		return jm.ensureJobNodesRunning(notStarted)
 	}
 
 	return nil
