@@ -394,7 +394,7 @@ func (jm *JobManager) internalSubmitJob(jg *jobconfig.JobGroupConfig) (*protos.J
 	}
 
 	if len(jg.DockerImage) <= 0 {
-		return nil, errors.New("SubmitJob: DockerImage not specified")
+		jm.svcs.Log.Infof("WARNING: SubmitJob - DockerImage not specified, this will result in local job runners, recommended only for testing")
 	}
 
 	if len(jg.RequestorUserId) <= 0 {
