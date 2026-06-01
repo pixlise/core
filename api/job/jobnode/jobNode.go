@@ -203,6 +203,7 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 	// Set up the path to read the job from
 	jobPath := filepaths.GetJobDataPath(jobItem.AssociatedScanId, jobItem.JobGroupId, "")
 
+	//fmt.Println("jn.jobContainer: " + jn.jobContainer)
 	if len(jn.jobContainer) <= 0 {
 		// Mainly for tests, so we avoid docker and can run/debug all our code in one process
 		err = jobrunner.RunJob(jn.jobBucket, jobPath, uint(jobItem.NodeIndex), jn.fs)
@@ -237,7 +238,9 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 			}
 
 			err2 := job.UpdateJobQueueItem(jobItem.JobId, protos.JobQueueItem_FAILED, fmt.Sprintf("Job Failed: %v.\nEnd of log: %v", err, logEnd), jobItem.JobGroupId, jn.db, jn.ts)
-			jn.log.Errorf("Failed to update job queue item %v to failed status: %v", jobItem.JobId, err2)
+			if err2 != nil {
+				jn.log.Errorf("Failed to update job queue item %v to failed status: %v", jobItem.JobId, err2)
+			}
 			return fmt.Errorf("Job run failed: %v%v", err, outStr)
 		}
 
