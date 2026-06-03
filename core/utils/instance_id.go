@@ -8,6 +8,8 @@ import (
 )
 
 func GetInstanceId(timeoutSec int) string {
+	instanceId := RandStringBytesMaskImpr(16)
+
 	// If we are on EC2 we may be able to query its instance ID here
 	putReq, err := http.NewRequest("PUT", "http://169.254.169.254/latest/api/token", nil)
 	if err != nil {
@@ -24,12 +26,11 @@ func GetInstanceId(timeoutSec int) string {
 			putBody, err := io.ReadAll(putResponse.Body)
 			if err != nil {
 				fmt.Printf("Failed to read EC2 metdata instance_id: %v\n", err)
-			} else {
-				return string(putBody)
+			} else if len(putBody) > 0 {
+				instanceId = string(putBody)
 			}
 		}
 	}
 
-	instanceId := RandStringBytesMaskImpr(16)
 	return instanceId
 }
