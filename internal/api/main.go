@@ -58,6 +58,7 @@ func main() {
 	// Deprecated now: rand.Seed(time.Now().UnixNano())
 
 	// Invent an instance ID if we don't already have one set (eg the instance id of the EC2 we're running on!)
+	fmt.Printf("PIXLISE API version \"%v\" starting...\n", services.ApiVersion)
 	instanceId := utils.GetInstanceId(5)
 	fmt.Printf("InstanceId for this API run: \"%v\"\n", instanceId)
 

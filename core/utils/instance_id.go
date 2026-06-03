@@ -10,9 +10,11 @@ import (
 )
 
 func GetInstanceId(timeoutSec int) string {
+	fmt.Println("GetInstanceId called")
 	instanceId := RandStringBytesMaskImpr(16)
 
 	// Warning: this was AI generated
+	fmt.Println("GetInstanceId LoadDefaultConfig")
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		fmt.Printf("Unable to load SDK config: %v\n", err)
@@ -25,18 +27,21 @@ func GetInstanceId(timeoutSec int) string {
 		Path: "instance-id",
 	}
 
+	fmt.Println("GetInstanceId GetMetadata")
 	output, err := client.GetMetadata(context.TODO(), input)
 	if err != nil {
 		fmt.Printf("Failed to fetch instance ID from IMDS: %v\n", err)
 		return instanceId
 	}
 
+	fmt.Println("GetInstanceId ReadAll")
 	instIdBody, err := io.ReadAll(output.Content)
 	if err != nil {
 		fmt.Printf("Failed to read instance ID from IMDS: %v\n", err)
 		return instanceId
 	}
 
+	fmt.Printf("GetInstanceId %v\n", string(instIdBody))
 	instanceId = string(instIdBody)
 	/*
 		// If we are on EC2 we may be able to query its instance ID here
@@ -95,5 +100,6 @@ func GetInstanceId(timeoutSec int) string {
 			instanceId = string(putBodyInst)
 		}
 	*/
+	fmt.Println("GetInstanceId returning at end")
 	return instanceId
 }
