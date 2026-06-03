@@ -229,6 +229,9 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/048300551/quant-id123/piquant-logs/stdout000000.log
 	// DEBUG: Upload map000000.csv_log.txt -> s3://job-bucket/JobData/048300551/quant-id123/piquant-logs/piquant000000.log
 	// DEBUG: Upload map000000.csv -> s3://job-bucket/JobData/048300551/quant-id123/output/result000000.csv
+	// DEBUG: CheckJobQueue found 1 job groups
+	// DEBUG:   CheckJobQueue job group quant-id123 has 1 ran, 1 completed nodes
+	// DEBUG:   CheckJobQueue running job group quant-id123 completion task...
 	// INFO: updateJobStatus: quant-id123 with status GATHERING_RESULTS, message: Combining CSVs from 1 nodes...
 	// INFO: Data Types Saved:
 	// INFO:   FeO-T_% as F
@@ -249,6 +252,9 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	// INFO: Elements found: [FeO-T CaO]
 	// ERROR: Failed to read auto-share info for quantification triggered by PIXLISEImport. Quant won't be shared
 	// INFO: updateJobStatus: quant-id123 with status COMPLETE, message: Nodes ran: 1
+	// DEBUG:   CheckJobQueue completed job group quant-id123
+	// DEBUG:   CheckJobQueue clearing job queue items for quant-id123
+	// DEBUG:   CheckJobQueue found 0 not-started jobs
 	// QueryQ: <nil>
 	// Queue items at end: 0
 	// Query jobs: <nil>
