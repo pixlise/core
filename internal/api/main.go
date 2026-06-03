@@ -57,8 +57,9 @@ func main() {
 
 	// Deprecated now: rand.Seed(time.Now().UnixNano())
 
-	// Invent an instance ID
-	instanceId := utils.RandStringBytesMaskImpr(16)
+	// Invent an instance ID if we don't already have one set (eg the instance id of the EC2 we're running on!)
+	instanceId := utils.GetInstanceId(5)
+	fmt.Printf("InstanceId for this API run: %v\n", instanceId)
 
 	// Turn off date+time prefixing of log msgs, we have timestamps captured in other ways
 	log.SetFlags(0)
