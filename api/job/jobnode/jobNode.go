@@ -12,7 +12,6 @@ import (
 	"github.com/pixlise/core/v4/api/job/jobrunner"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
-	"github.com/pixlise/core/v4/core/singleinstance"
 	"github.com/pixlise/core/v4/core/timestamper"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -29,148 +28,73 @@ import (
 // When a job finishes we should start a new one, keeping in mind we will have some life cutoff time
 
 type JobNode struct {
-	jobPrefix    string
-	maxJobs      uint
-	db           *mongo.Database
-	instanceId   string
-	log          logger.ILogger
-	ts           timestamper.ITimeStamper
-	jobContainer string // If empty string we run jobs in this process, mainly for testing. Otherwise run jobs in Docker
-	jobBucket    string
-	fs           fileaccess.FileAccess
+	jobRunnerNamePrefix string
+	db                  *mongo.Database
+	instanceId          string
+	log                 logger.ILogger
+	ts                  timestamper.ITimeStamper
+	jobContainer        string // If empty string we run jobs in this process, mainly for testing. Otherwise run jobs in Docker
+	jobBucket           string
+	fs                  fileaccess.FileAccess
 
 	jobStartedCount uint
 	//lastJobStartUnixSec uint
 }
 
 func CreateJobNode(
-	jobPrefix string,
+	jobRunnerNamePrefix string,
 	jobContainer string,
 	jobBucket string,
-	maxJobs uint,
 	instanceId string,
 	fs fileaccess.FileAccess,
 	db *mongo.Database,
 	log logger.ILogger,
 	ts timestamper.ITimeStamper) *JobNode {
-	return &JobNode{jobPrefix, maxJobs, db, instanceId, log, ts, jobContainer, jobBucket, fs, 0}
+	return &JobNode{jobRunnerNamePrefix, db, instanceId, log, ts, jobContainer, jobBucket, fs, 0}
 }
 
-func (jn *JobNode) ListenToJobQueue() bool {
-	return job.ListenToJobQueue([]string{"insert"}, jn.db, jn.log, jn.onNewJobQueueItemRunOnce)
-}
-
-// func (jn *JobNode) GetLastJobStartUnixSec() uint {
-// 	return jn.lastJobStartUnixSec
-// }
-
-func (jn *JobNode) CheckStartupJobs() {
-	jn.log.Infof("Instance %v checking for available jobs on startup...", jn.instanceId)
-	defer jn.log.Infof("Instance: %v startup check complete", jn.instanceId)
-
-	jobCapacity, err := jn.getJobCapacity()
-	if err != nil {
-		jn.log.Errorf("Instance %v failed to check job capacity on startup: %v", jn.instanceId, err)
-		return
+func (jn *JobNode) StartJobs(jobIds []string) {
+	// Put them in a map for deduplication and removal purposes
+	jobIdMap := map[string]bool{}
+	for _, id := range jobIds {
+		jobIdMap[id] = true
 	}
-	jn.log.Infof("Instance %v job capacity: %v", jn.instanceId, jobCapacity)
 
+	// Read jobs from job queue
 	jobGroups, err := job.ReadJobQueue(jn.db)
-
 	if err != nil {
 		jn.log.Errorf("Instance %v failed to query jobs on node startup: %v", jn.instanceId, err)
 		return
 	}
 
-	jn.log.Infof("Instance %v read %v job groups", jn.instanceId, len(jobGroups))
-
+	// Find each job we were told to run
 	for _, jobs := range jobGroups {
 		for _, jobItem := range jobs {
-			if jobItem.State == protos.JobQueueItem_UNKNOWN {
-				if jobCapacity == 0 {
-					jn.log.Infof("Instance %v ran out of job capacity")
-					return
-				}
+			if _, ok := jobIdMap[jobItem.JobId]; ok == true {
+				// Mark this job spoken for
+				jobIdMap[jobItem.JobId] = false
 
-				jobCapacity = jobCapacity - 1
-
-				jn.log.Infof("Instance %v startup running job %v (from job group %v)", jn.instanceId, jobItem.JobId, jobItem.JobGroupId)
+				// Run this job
 				err = jn.startJob(jobItem)
+
 				if err != nil {
-					jn.log.Errorf("CheckStartupJobs StartJob for %v failed: %v", jobItem.JobId, err)
+					jn.log.Errorf("Instance %v failed to start job %v. Error: %v", jn.instanceId, jobItem.JobId, err)
 				}
 			}
 		}
 	}
-}
 
-func (jn *JobNode) onNewJobQueueItemRunOnce(jobItem *protos.JobQueueItem) {
-	if jobItem.State != protos.JobQueueItem_UNKNOWN {
-		// we aren't interested, this has already started running somewhere else
-		return
+	// If we have any jobs that weren't found, report
+	for id, waiting := range jobIdMap {
+		if waiting {
+			jn.log.Errorf("Instance %v failed to find job %v in queue, skipped", jn.instanceId, id)
+		}
 	}
-
-	// In case there are multiple APIs running, we here have to decide who is going to do the check
-	// so we only check jobs once (avoiding duplicate starts)
-	err := singleinstance.HandleOnce(jobItem.JobId, jn.instanceId, func(sourceId string) {
-		// Read all items and work out what
-		//jn.log.Infof("HandleOnce id %v, instance %v...", sourceId, jn.instanceId)
-		jn.onNewJobQueueItem(jobItem)
-	}, jn.db, jn.ts, jn.log)
-
-	if err != nil {
-		jn.log.Errorf("Failed to HandleOnce id %v, instance %v. Error: %v", jobItem.JobId, jn.instanceId, err)
-	}
-}
-
-// Detect new not-yet-run jobs and claim them, run them locally if there is spare capacity in terms of docker
-// containers to CPU core ratio
-func (jn *JobNode) onNewJobQueueItem(jobItem *protos.JobQueueItem) {
-	// Start new jobs if we have capacity
-	jobCapacity, err := jn.getJobCapacity()
-	if err != nil {
-		jn.log.Errorf("%v", err)
-		return
-	}
-
-	if jobCapacity <= 0 {
-		jn.log.Infof("Instance %v has no capacity to run job %v, ignored", jn.instanceId, jobItem.JobId)
-		return
-	}
-
-	// Remember when we last started a job. This is so we can check if we've been sitting idle waiting for too long
-	//jn.lastJobStartUnixSec = uint(jn.ts.GetTimeNowSec())
-
-	err = jn.startJob(jobItem)
-	if err != nil {
-		jn.log.Errorf("onNewJobQueueItem StartJob for %v failed: %v", jobItem.JobId, err)
-	}
-}
-
-func (jn *JobNode) getJobCapacity() (uint, error) {
-	if len(jn.jobContainer) <= 0 {
-		// In test mode pretend we always have capacity
-		return 1, nil
-	}
-
-	instances, err := jn.GetActiveJobCount()
-	if err != nil {
-		return 0, err
-	}
-
-	// Our max node count should be set to how many threads we can run. We want to allow
-	// running that many containers
-	capacity := int(jn.maxJobs) - int(instances)
-	if capacity < 0 {
-		capacity = 0
-	}
-
-	return uint(capacity), nil
 }
 
 func (jn *JobNode) GetActiveJobCount() (uint, error) {
 	// Get docker container count
-	cmd := exec.Command("docker", "ps", "-q", "-f", fmt.Sprintf("name=%v.*", jn.jobPrefix))
+	cmd := exec.Command("docker", "ps", "-q", "-f", fmt.Sprintf("name=%v.*", jn.jobRunnerNamePrefix))
 
 	out, err := cmd.CombinedOutput()
 	outStr := string(out)
@@ -194,7 +118,13 @@ func (jn *JobNode) GetActiveJobCount() (uint, error) {
 
 func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 	// Set queue item to running so it doesn't get picked up again
-	err := job.UpdateJobQueueItem(jobItem.JobId, protos.JobQueueItem_RUNNING, fmt.Sprintf("Running on instance: %v", jn.instanceId), jobItem.JobGroupId, jn.db, jn.ts)
+	err := job.UpdateJobQueueItem(
+		jobItem.JobId,
+		protos.JobQueueItem_RUNNING,
+		fmt.Sprintf("Running on instance: %v", jn.instanceId),
+		jobItem.JobGroupId,
+		jn.instanceId,
+		jn.db, jn.ts)
 
 	if err != nil {
 		jn.log.Errorf("%v", err)
@@ -218,7 +148,7 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 	} else {
 		// Run it in docker using our job runner container
 		cmd := exec.Command("docker", "run",
-			"--name", fmt.Sprintf("%v-%v-%v", jn.jobPrefix, jn.jobStartedCount, utils.RandStringBytesMaskImpr(6)),
+			"--name", fmt.Sprintf("%v-%v-%v", jn.jobRunnerNamePrefix, jn.jobStartedCount, utils.RandStringBytesMaskImpr(6)),
 			"-e", "AWS_ACCESS_KEY_ID="+os.Getenv("AWS_ACCESS_KEY_ID"),
 			"-e", "AWS_SECRET_ACCESS_KEY="+os.Getenv("AWS_SECRET_ACCESS_KEY"),
 			"-e", "AWS_REGION="+os.Getenv("AWS_REGION"),
@@ -242,7 +172,13 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 				logEnd = outStr
 			}
 
-			err2 := job.UpdateJobQueueItem(jobItem.JobId, protos.JobQueueItem_FAILED, fmt.Sprintf("Job Failed: %v.\nEnd of log: %v", err, logEnd), jobItem.JobGroupId, jn.db, jn.ts)
+			err2 := job.UpdateJobQueueItem(
+				jobItem.JobId,
+				protos.JobQueueItem_FAILED,
+				fmt.Sprintf("Job Failed: %v.\nEnd of log: %v", err, logEnd),
+				jobItem.JobGroupId,
+				jn.instanceId,
+				jn.db, jn.ts)
 			if err2 != nil {
 				jn.log.Errorf("Failed to update job queue item %v to failed status: %v", jobItem.JobId, err2)
 			}
@@ -261,7 +197,13 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 		msg = fmt.Sprintf("Failed on instance %v: %v", jn.instanceId, err)
 	}
 
-	err = job.UpdateJobQueueItem(jobItem.JobId, state, msg, jobItem.JobGroupId, jn.db, jn.ts)
+	err = job.UpdateJobQueueItem(
+		jobItem.JobId,
+		state,
+		msg,
+		jobItem.JobGroupId,
+		jn.instanceId,
+		jn.db, jn.ts)
 
 	if err != nil {
 		jn.log.Errorf("%v", err)

@@ -438,6 +438,7 @@ type JobQueueItem struct {
 	LastUpdatedTimeStampUnixSec int64              `protobuf:"varint,4,opt,name=lastUpdatedTimeStampUnixSec,proto3" json:"lastUpdatedTimeStampUnixSec,omitempty"`
 	State                       JobQueueItem_State `protobuf:"varint,5,opt,name=state,proto3,enum=JobQueueItem_State" json:"state,omitempty"`
 	Message                     string             `protobuf:"bytes,6,opt,name=message,proto3" json:"message,omitempty"`
+	InstanceId                  string             `protobuf:"bytes,9,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -528,6 +529,13 @@ func (x *JobQueueItem) GetMessage() string {
 	return ""
 }
 
+func (x *JobQueueItem) GetInstanceId() string {
+	if x != nil {
+		return x.InstanceId
+	}
+	return ""
+}
+
 var File_job_proto protoreflect.FileDescriptor
 
 const file_job_proto_rawDesc = "" +
@@ -561,7 +569,7 @@ const file_job_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05jobId\x18\x02 \x01(\tR\x05jobId\x12,\n" +
 	"\x11handlerInstanceId\x18\x03 \x01(\tR\x11handlerInstanceId\x12*\n" +
-	"\x10timeStampUnixSec\x18\x04 \x01(\rR\x10timeStampUnixSec\"\x8c\x03\n" +
+	"\x10timeStampUnixSec\x18\x04 \x01(\rR\x10timeStampUnixSec\"\xac\x03\n" +
 	"\fJobQueueItem\x12\x14\n" +
 	"\x05jobId\x18\x01 \x01(\tR\x05jobId\x12\x1e\n" +
 	"\n" +
@@ -572,7 +580,10 @@ const file_job_proto_rawDesc = "" +
 	"\x17createdTimeStampUnixSec\x18\x03 \x01(\x03R\x17createdTimeStampUnixSec\x12@\n" +
 	"\x1blastUpdatedTimeStampUnixSec\x18\x04 \x01(\x03R\x1blastUpdatedTimeStampUnixSec\x12)\n" +
 	"\x05state\x18\x05 \x01(\x0e2\x13.JobQueueItem.StateR\x05state\x12\x18\n" +
-	"\amessage\x18\x06 \x01(\tR\amessage\";\n" +
+	"\amessage\x18\x06 \x01(\tR\amessage\x12\x1e\n" +
+	"\n" +
+	"instanceId\x18\t \x01(\tR\n" +
+	"instanceId\";\n" +
 	"\x05State\x12\v\n" +
 	"\aUNKNOWN\x10\x00\x12\v\n" +
 	"\aRUNNING\x10\x01\x12\f\n" +

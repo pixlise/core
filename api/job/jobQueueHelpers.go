@@ -91,7 +91,7 @@ func ListenToJobQueue(allowedOps []string, db *mongo.Database, log logger.ILogge
 }
 
 // Updates the job queue item and corresponding job group item if needed
-func UpdateJobQueueItem(jobId string, state protos.JobQueueItem_State, message string, jobGroupId string, db *mongo.Database, ts timestamper.ITimeStamper) error {
+func UpdateJobQueueItem(jobId string, state protos.JobQueueItem_State, message string, jobGroupId string, instanceId string, db *mongo.Database, ts timestamper.ITimeStamper) error {
 	nowUnixSec := ts.GetTimeNowSec()
 	ctx := context.TODO()
 
@@ -135,11 +135,17 @@ func UpdateJobQueueItem(jobId string, state protos.JobQueueItem_State, message s
 
 	// Write the 2 items in a single transaction
 	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		dbResult, err := db.Collection(dbCollections.JobQueueName).UpdateByID(ctx, jobId, bson.D{{Key: "$set", Value: bson.M{
+		upd := bson.M{
 			"state":                       state,
 			"message":                     message,
 			"lastupdatedtimestampunixsec": nowUnixSec,
-		}}})
+		}
+
+		if len(instanceId) > 0 {
+			upd["instanceid"] = instanceId
+		}
+
+		dbResult, err := db.Collection(dbCollections.JobQueueName).UpdateByID(ctx, jobId, bson.D{{Key: "$set", Value: upd}})
 
 		if err != nil {
 			return nil, err

@@ -14,11 +14,17 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
 	"github.com/pixlise/core/v4/core/timestamper"
+	"github.com/pixlise/core/v4/core/utils"
 	"github.com/pixlise/core/v4/internal/cmd-line-tools/job-node/idleTime"
 )
 
 func main() {
 	fmt.Printf("Job Node version %v...\n", services.ApiVersion)
+
+	instanceIdObtained, err := utils.GetInstanceId()
+	if err != nil {
+		log.Fatalf("Error retrieving EC2 instance id: %v\n", err)
+	}
 
 	// Read args
 	var bucket, jobContainer, instanceId, mongoSecret, envName string
@@ -26,7 +32,7 @@ func main() {
 
 	flag.StringVar(&bucket, "bucket", "", "Bucket to read job data from")
 	flag.StringVar(&jobContainer, "jobContainer", "", "The docker container to run jobs with")
-	flag.StringVar(&instanceId, "instanceId", "", "Instance ID (eg of the EC2 instance) - a unique number that identifies this node")
+	flag.StringVar(&instanceId, "instanceId", instanceIdObtained, "Instance ID (defaults to EC2 instance id or random string) - a unique number that identifies this node")
 	flag.StringVar(&mongoSecret, "mongoSecret", "", "Name of mongo login secret")
 	flag.StringVar(&envName, "envName", "", "Name of PIXLISE environment, eg dev, prod. Forms the DB name we connect to")
 	flag.Int64Var(&maxJobs, "maxJobs", -1, "Max number of jobs to run simultaneously - set this to how many CPUs or threads this machine can run")
@@ -38,9 +44,6 @@ func main() {
 	// Some of this stuff can't be left empty
 	if len(bucket) <= 0 {
 		log.Fatalln("bucket can not be empty")
-	}
-	if len(instanceId) <= 0 {
-		log.Fatalln("instanceId can not be empty")
 	}
 	if len(envName) <= 0 {
 		log.Fatalln("envName can not be empty")

@@ -124,7 +124,7 @@ func printResults(svcs services.APIServices) {
 		}
 		fmt.Printf("Job status at end: %v\n", len(statusItems))
 		if len(statusItems) > 0 {
-			fmt.Printf("JobStatus[0] id: %v, status: %v, msg: %v\n", statusItems[0].JobId, statusItems[0].Status, statusItems[0].Message)
+			fmt.Printf("JobStatus[0] id: %v, status: %v, msg: \"%v\"\n", statusItems[0].JobId, statusItems[0].Status, statusItems[0].Message)
 		}
 	}
 
@@ -140,7 +140,7 @@ func printResults(svcs services.APIServices) {
 		}
 		fmt.Printf("Quants at end: %v\n", len(quantItems))
 		if len(quantItems) > 0 {
-			fmt.Printf("Quant[0] id: %v, status: %v, msg: %v\n", quantItems[0].Id, quantItems[0].Status.Status, quantItems[0].Status.Message)
+			fmt.Printf("Quant[0] id: %v, status: %v, msg: \"%v\"\n", quantItems[0].Id, quantItems[0].Status.Status, quantItems[0].Status.Message)
 		}
 	}
 }
@@ -185,8 +185,8 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
 
 	// Run the job node queue processing code
-	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, 6, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
-	jn.OnNewJobQueueItemForTest()
+	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
+	jn.StartJobs([]string{"quant-id123-node-0"})
 
 	jm.RunCheckJobQueueForTest()
 
@@ -262,10 +262,10 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	// Job[0] id: quant-id123
 	// Query status: <nil>
 	// Job status at end: 1
-	// JobStatus[0] id: quant-id123, status: COMPLETE, msg: Nodes ran: 1
+	// JobStatus[0] id: quant-id123, status: COMPLETE, msg: "Nodes ran: 1"
 	// Quant: <nil>
 	// Quants at end: 1
-	// Quant[0] id: quant-id123, status: COMPLETE, msg: Nodes ran: 1
+	// Quant[0] id: quant-id123, status: COMPLETE, msg: "Nodes ran: 1"
 }
 
 func Example_jobmanager_SubmitQuantJob_983561() {
@@ -314,11 +314,8 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
 
 	// Run the job node queue processing code
-	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, 6, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
-	jn.OnNewJobQueueItemForTest()
-	jn.OnNewJobQueueItemForTest()
-	jn.OnNewJobQueueItemForTest()
-	jn.OnNewJobQueueItemForTest()
+	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
+	jn.StartJobs([]string{"quant-id123-node-0", "quant-id123-node-1", "quant-id123-node-2", "quant-id123-node-3"})
 
 	jm.RunCheckJobQueueForTest()
 
@@ -483,8 +480,112 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// Job[0] id: quant-id123
 	// Query status: <nil>
 	// Job status at end: 1
-	// JobStatus[0] id: quant-id123, status: COMPLETE, msg: Nodes ran: 4
+	// JobStatus[0] id: quant-id123, status: COMPLETE, msg: "Nodes ran: 4"
 	// Quant: <nil>
 	// Quants at end: 1
-	// Quant[0] id: quant-id123, status: COMPLETE, msg: Nodes ran: 4
+	// Quant[0] id: quant-id123, status: COMPLETE, msg: "Nodes ran: 4"
+}
+
+func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
+	logLev := logger.LogInfo
+	origWD, _, svcs := initJobManagerTest(&logLev, []int64{
+		1668142579, // dataset local file cache time stamp
+		1668142580, // start time stamp
+		1668142581, // queue time stamp
+		1668142582, // queue time stamp
+		1668142583, // queue time stamp
+		1668142584, // queue time stamp
+		1668142585, // queue time stamp
+		1668142586, // queue time stamp
+		1668142587, // queue time stamp
+		1668142588, // queue time stamp
+		1668142589, // queue time stamp
+		1668142590, // queue time stamp
+		1668142591, // queue time stamp
+		1668142592, // queue time stamp
+	})
+	defer os.Chdir(origWD)
+
+	svcs.Config.NodeCountOverride = 4
+	svcs.Log = &logger.StdOutLogger{}
+	svcs.Log.SetLogLevel(logger.LogDebug)
+
+	jm, err := Create(&svcs, 0, false, false, true)
+	fmt.Printf("jm Create: %v\n", err)
+
+	createParams := &protos.QuantCreateParams{
+		Command:        "map",
+		Name:           "AutoQuant-PIXL(AB)",
+		ScanId:         "983561",
+		Pmcs:           []int32{68, 69, 70, 71, 72, 73, 74},
+		Elements:       []string{"Ca", "Ti"},
+		DetectorConfig: "PIXL/v5",
+		Parameters:     "-q,pPIETXCFsr -b,0,12,60,910,2800,16 -Fe,1",
+		RunTimeSec:     60,
+		QuantMode:      "Combined",
+		//RoiIDs []string: ,
+		//IncludeDwells: ,
+	}
+	var requestorUserSess *sessionuser.SessionUser
+
+	status, err := jm.SubmitQuantJob(createParams, requestorUserSess)
+	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
+
+	// Run the job node queue processing code
+	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
+	jn.StartJobs([]string{"quant-id123-node-0", "id2"})
+
+	//jm.RunCheckJobQueueForTest()
+
+	printResults(svcs)
+
+	// Output:
+	// jm Create: <nil>
+	// DEBUG: Downloading file: s3://datasets-bucket/Scans/983561/dataset.bin
+	// INFO: Using node count override: 4
+	// DEBUG: spectraPerNode: 2, PMCs per node: 2 for 7 spectra, nodes: 4
+	// INFO: WARNING: SubmitJob - DockerImage not specified, this will result in local job runners, recommended only for testing
+	// SubmitQuantJob: STARTING, <nil>
+	// WARNING: Running job locally, recommended for use for tests only!
+	// INFO: Running job from s3://job-bucket/JobData/983561/quant-id123 for node 0
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"quant-id123-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"datasets-bucket", RemotePath:"Scans/983561/dataset.bin", LocalPath:"dataset.bin", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/request.json", LocalPath:"request.json", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", LocalPath:"Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", LocalPath:"Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/node000000.pmcs", LocalPath:"node000000.pmcs", ApplyNodeIndex:3}}, Command:"./Piquant", Args:[]string{"map", "Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", "Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", "node000000.pmcs", "Ca,Ti", "map000000.csv", "-q,pPIETXCFsr", "-b,0,12,60,910,2800,16", "-Fe,1", "-t,4"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/stdout000000.log", LocalPath:"stdout", ApplyNodeIndex:2}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/piquant000000.log", LocalPath:"map000000.csv_log.txt", ApplyNodeIndex:3}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/output/result000000.csv", LocalPath:"map000000.csv", ApplyNodeIndex:3}}}
+	// INFO: Downloading files...
+	// DEBUG: Download "s3://datasets-bucket/Scans/983561/dataset.bin" -> "dataset.bin":
+	// DEBUG:  Local path is <CWD>/dataset.bin
+	// DEBUG:  Downloaded 1851910 bytes
+	// DEBUG:  Wrote file: <CWD>/dataset.bin
+	// DEBUG: Download "s3://job-bucket/JobData/983561/quant-id123/request.json" -> "request.json":
+	// DEBUG:  Local path is <CWD>/request.json
+	// DEBUG:  Downloaded 328 bytes
+	// DEBUG:  Wrote file: <CWD>/request.json
+	// DEBUG: Download "s3://config-bucket/DetectorConfig/PIXL/PiquantConfigs/v5/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa" -> "Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa":
+	// DEBUG:  Local path is <CWD>/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa
+	// DEBUG:  Downloaded 4643 bytes
+	// DEBUG:  Wrote file: <CWD>/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa
+	// DEBUG: Download "s3://config-bucket/DetectorConfig/PIXL/PiquantConfigs/v5/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv" -> "Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv":
+	// DEBUG:  Local path is <CWD>/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv
+	// DEBUG:  Downloaded 7585 bytes
+	// DEBUG:  Wrote file: <CWD>/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv
+	// DEBUG: Download "s3://job-bucket/JobData/983561/quant-id123/node000000.pmcs" -> "node000000.pmcs":
+	// DEBUG:  Local path is <CWD>/node000000.pmcs
+	// DEBUG:  Downloaded 60 bytes
+	// DEBUG:  Wrote file: <CWD>/node000000.pmcs
+	// INFO: Checking for required libraries...
+	// INFO: Running job...
+	// DEBUG: exec.Command starting "./Piquant", args: [map,Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa,Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv,node000000.pmcs,Ca,Ti,map000000.csv,-q,pPIETXCFsr,-b,0,12,60,910,2800,16,-Fe,1,-t,4]
+	// INFO: Job quant-id123-node-0 runtime was < 10 sec
+	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout000000.log
+	// DEBUG: Upload map000000.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant000000.log
+	// DEBUG: Upload map000000.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result000000.csv
+	// ERROR: Instance the-test-instance failed to find job id2 in queue, skipped
+	// QueryQ: <nil>
+	// Queue items at end: 4
+	// Query jobs: <nil>
+	// Jobs at end: 1
+	// Job[0] id: quant-id123
+	// Query status: <nil>
+	// Job status at end: 1
+	// JobStatus[0] id: quant-id123, status: RUNNING, msg: ""
+	// Quant: <nil>
+	// Quants at end: 0
 }

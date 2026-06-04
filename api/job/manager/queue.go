@@ -9,6 +9,7 @@ import (
 	"github.com/pixlise/core/v4/api/job"
 	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/core/singleinstance"
+	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -100,38 +101,52 @@ func (jm *JobManager) checkJobQueue() error {
 		return err
 	}
 
+	runningInstanceIds, err := jm.getRunningNodes()
+	if err != nil {
+		return err
+	}
+
 	jm.svcs.Log.Debugf("CheckJobQueue found %v job groups", len(groupsAndJobs))
 
 	ctx := context.TODO()
 	coll := jm.svcs.MongoDB.Collection(dbCollections.JobQueueName)
 
-	// Check if we have any jobs that have timed out - eg if it was started in docker and never finishes... we want to eventually clean it up
+	// Check if we have any jobs that have timed out - eg if it was started on a job node and that node is no longer
+	// active... or somehow it didn't finish this is where we want to eventually clean it up
 	nowUnixSec := jm.svcs.TimeStamper.GetTimeNowSec()
 	for _, jobs := range groupsAndJobs {
 		for _, jobItem := range jobs {
-			secSinceUpdate := nowUnixSec - jobItem.LastUpdatedTimeStampUnixSec
-			if jobItem.State == protos.JobQueueItem_RUNNING && secSinceUpdate > int64(jm.svcs.Config.JobMaxNodeRunTimeSec) {
-				// Mark this job node as failed
-				jobItem.State = protos.JobQueueItem_FAILED
-				jobItem.Message = fmt.Sprintf("Node timed out after %v seconds.", secSinceUpdate)
+			if jobItem.State == protos.JobQueueItem_RUNNING {
+				// If the instance is no longer with us, or if a long time has passed, we drop the job
+				secSinceUpdate := nowUnixSec - jobItem.LastUpdatedTimeStampUnixSec
 
-				jm.svcs.Log.Debugf("  CheckJobQueue detected timed out job: %v", jobItem.JobId)
+				isNodeAround := utils.ItemInSlice(jobItem.InstanceId, runningInstanceIds)
+				if !isNodeAround || secSinceUpdate > int64(jm.svcs.Config.JobMaxNodeRunTimeSec) {
+					// Mark this job node as failed
+					jobItem.State = protos.JobQueueItem_FAILED
+					jobItem.Message = "Node did not complete job."
+					if isNodeAround {
+						jobItem.Message = fmt.Sprintf("Node timed out after %v seconds.", secSinceUpdate)
+					}
 
-				// Write it out
-				err = job.UpdateJobQueueItem(jobItem.JobId, jobItem.State, jobItem.Message, jobItem.JobGroupId, jm.svcs.MongoDB, jm.svcs.TimeStamper)
-				if err != nil {
-					return fmt.Errorf("JobManager queue check failed to mark job %v as timed out. Error: %v", jobItem.JobId, err)
+					jm.svcs.Log.Debugf("  CheckJobQueue detected timed out/incomplete job: %v", jobItem.JobId)
+
+					// Write it out
+					err = job.UpdateJobQueueItem(jobItem.JobId, jobItem.State, jobItem.Message, jobItem.JobGroupId, "", jm.svcs.MongoDB, jm.svcs.TimeStamper)
+					if err != nil {
+						return fmt.Errorf("JobManager queue check failed to mark job %v as timed out. Error: %v", jobItem.JobId, err)
+					}
+
+					// NOTE: At this point we continue, in the hope that the following state handling code will clean it up now...
+
+					//updatedStatus, _ := jm.updateJobStatus(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("Node %v nodes...", len(jobs)), "", existingStatus)
 				}
-
-				// NOTE: At this point we continue, in the hope that the following state handling code will clean it up now...
-
-				//updatedStatus, _ := jm.updateJobStatus(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("Node %v nodes...", len(jobs)), "", existingStatus)
 			}
 		}
 	}
 
 	// Remove any that have all completed
-	notStarted := 0
+	notStartedIds := []string{}
 	for jobGroupId, jobs := range groupsAndJobs {
 		ranCount := 0
 		completed := 0
@@ -141,7 +156,7 @@ func (jm *JobManager) checkJobQueue() error {
 			}
 
 			if job.State == protos.JobQueueItem_UNKNOWN {
-				notStarted = notStarted + 1
+				notStartedIds = append(notStartedIds, job.JobId)
 			}
 
 			if job.State == protos.JobQueueItem_COMPLETE || job.State == protos.JobQueueItem_FAILED {
@@ -193,10 +208,10 @@ func (jm *JobManager) checkJobQueue() error {
 		}
 	}
 
-	// We just inserted 1 or more jobs - check that we have enough nodes running to handle this: if not, start more!
-	jm.svcs.Log.Debugf("  CheckJobQueue found %v not-started jobs" /*, ensureNodesRunning=%v"*/, notStarted /*, jm.ensureNodesRunning*/)
-	if notStarted > 0 && jm.ensureNodesRunning {
-		return jm.ensureJobNodesRunning(notStarted)
+	// Start nodes as needed, assigning jobs to each one
+	jm.svcs.Log.Debugf("  CheckJobQueue found %v not-started jobs", len(notStartedIds))
+	if len(notStartedIds) > 0 && jm.startNodes {
+		return jm.startJobNodes(notStartedIds)
 	}
 
 	return nil
