@@ -176,19 +176,25 @@ func (jm *JobManager) getRunningNodes() ([]string, error) {
 // one, so ignore future calls
 
 func (jm *JobManager) ensureJobNodesRunning(outstandingJobCount int) error {
+	jm.svcs.Log.Debugf("  ensureJobNodesRunning %v", outstandingJobCount)
+
 	if len(jm.svcs.Config.JobAWSSecret) > 0 {
+		jm.svcs.Log.Debugf("  ensureJobNodesRunning querying running node count...")
 		instanceIds, err := jm.getRunningNodes()
 		if err != nil {
 			return err
 		}
 
 		if outstandingJobCount > 0 && len(instanceIds) <= 0 {
+			jm.svcs.Log.Debugf("  starting EC2 job node...")
 			return jm.startEC2JobNode(false)
 		}
 	}
 
 	// No JobAWSSecret configured, so we just run in local mode. If we have not
 	// yet started a job node thread, start one now
+	jm.svcs.Log.Debugf("  ensureJobNodesRunning running in local mode, ensuring one job node thread is running...")
+
 	if jm.localJobNode != nil {
 		jm.svcs.Log.Infof("ensureJobNodesRunning skipped, already running a local one")
 		return nil
