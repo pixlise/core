@@ -30,6 +30,8 @@ func (jm *JobManager) startEC2JobNode(waitTillStarted bool) error {
 		return fmt.Errorf("JobNode AWS secret read failed: %v", err)
 	}
 
+	jobNodeInstanceName := fmt.Sprintf("job-%v-node-%v-[%v]", jm.svcs.Config.EnvironmentName, jm.nodesStarted, jm.svcs.InstanceId)
+
 	startupScript := fmt.Sprintf(`#!/bin/bash
 set -e
 echo "Starting PIXLISE job node, limited to %v sec runtime"
@@ -72,7 +74,7 @@ echo "PIXLISE job node running"
 		jm.svcs.Config.JobNodeS3Path,
 		jm.svcs.Config.PiquantJobsBucket,
 		jm.svcs.Config.JobRunnerDockerImage,
-		jm.svcs.InstanceId,
+		jobNodeInstanceName,
 		jm.svcs.Config.MongoSecret,
 		jm.svcs.Config.EnvironmentName,
 		jm.svcs.Config.CoresPerNode,
@@ -88,7 +90,7 @@ echo "PIXLISE job node running"
 			{
 				ResourceType: aws.String("instance"),
 				Tags: []*ec2.Tag{
-					{Key: aws.String("Name"), Value: aws.String(fmt.Sprintf("job-%v-node-%v-[%v]", jm.svcs.Config.EnvironmentName, jm.nodesStarted, jm.svcs.InstanceId))},
+					{Key: aws.String("Name"), Value: aws.String(jobNodeInstanceName)},
 					{Key: aws.String("pixlise:instance-use"), Value: aws.String("job-node")},
 					{Key: aws.String("pixlise:environment"), Value: aws.String(jm.svcs.Config.EnvironmentName)},
 					{Key: aws.String("pixlise:starter-instance-id"), Value: aws.String(jm.svcs.InstanceId)},
@@ -150,7 +152,7 @@ func (jm *JobManager) getRunningNodes() ([]string, error) {
 	filters := []*ec2.Filter{
 		{
 			Name:   aws.String("instance-state-name"),
-			Values: []*string{aws.String("running"), aws.String("pending")},
+			Values: []*string{aws.String("running"), aws.String("pending"), aws.String("initializing")},
 		},
 		{
 			Name:   aws.String("tag:pixlise:environment"),
