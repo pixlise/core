@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -150,7 +151,14 @@ func (jm *JobManager) getRunningNodes() ([]string, error) {
 			Name:   aws.String("instance-state-name"),
 			Values: []*string{aws.String("running"), aws.String("pending")},
 		},
+		{
+			Name:   aws.String("pixlise:environment"),
+			Values: []*string{aws.String(jm.svcs.Config.EnvironmentName)},
+		},
 	}
+
+	// TODO: check names too!
+
 	request := &ec2.DescribeInstancesInput{Filters: filters}
 	result, err := jm.svcs.EC2.DescribeInstances(request)
 
@@ -176,32 +184,35 @@ func (jm *JobManager) getRunningNodes() ([]string, error) {
 // one, so ignore future calls
 
 func (jm *JobManager) ensureJobNodesRunning(outstandingJobCount int) error {
-	jm.svcs.Log.Debugf("  ensureJobNodesRunning %v", outstandingJobCount)
-
 	if len(jm.svcs.Config.JobAWSSecret) > 0 {
-		jm.svcs.Log.Debugf("  ensureJobNodesRunning querying running node count...")
+		jm.svcs.Log.Debugf("  Querying running node count...")
 		instanceIds, err := jm.getRunningNodes()
 		if err != nil {
 			return err
 		}
 
+		jm.svcs.Log.Debugf("  Instance IDs retrieved: %v\n", strings.Join(instanceIds, ","))
+
 		if outstandingJobCount > 0 && len(instanceIds) <= 0 {
-			jm.svcs.Log.Debugf("  starting EC2 job node...")
+			jm.svcs.Log.Debugf("  Starting EC2 job node...")
 			return jm.startEC2JobNode(false)
 		}
+
+		jm.svcs.Log.Debugf("  No job node started.\n")
+		return nil
 	}
 
 	// No JobAWSSecret configured, so we just run in local mode. If we have not
 	// yet started a job node thread, start one now
-	jm.svcs.Log.Debugf("  ensureJobNodesRunning running in local mode, ensuring one job node thread is running...")
+	jm.svcs.Log.Debugf("  EnsureJobNodesRunning running in local mode, ensuring one job node thread is running...")
 
 	if jm.localJobNode != nil {
-		jm.svcs.Log.Infof("ensureJobNodesRunning skipped, already running a local one")
+		jm.svcs.Log.Infof("  EnsureJobNodesRunning skipped, already running a local one")
 		return nil
 	}
 
 	// Start a local one
-	jm.svcs.Log.Infof("ensureJobNodesRunning starting local job node")
+	jm.svcs.Log.Infof("  EnsureJobNodesRunning starting local job node")
 	jm.localJobNode = jobnode.CreateJobNode("local-job", jm.svcs.Config.JobRunnerDockerImage, jm.svcs.Config.PiquantJobsBucket, 6, jm.svcs.InstanceId, jm.svcs.FS, jm.svcs.MongoDB, jm.svcs.Log, jm.svcs.TimeStamper)
 
 	jm.localJobNode.CheckStartupJobs()
