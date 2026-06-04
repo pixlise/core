@@ -75,7 +75,7 @@ aws s3 cp "%v" "."
 chmod +x ./pixlise-job-node
 
 echo "Running job node..."
-./pixlise-job-node -bucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxJobs "%v" -maxIdleSec "%v" -maxRunTimeSec "%v" -jobs "%v"
+./pixlise-job-node -bucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxJobs "%v" -maxRunTimeSec "%v" -jobs "%v"
 
 echo "PIXLISE job node running"
 `,
@@ -89,7 +89,6 @@ echo "PIXLISE job node running"
 		jm.svcs.Config.MongoSecret,
 		jm.svcs.Config.EnvironmentName,
 		jm.svcs.Config.CoresPerNode,
-		120,
 		jm.svcs.Config.JobMaxNodeRunTimeSec-5,
 		jobIdListStr,
 	)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pixlise/core/v4/api/job/jobnode"
@@ -15,28 +16,26 @@ import (
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
 	"github.com/pixlise/core/v4/core/timestamper"
 	"github.com/pixlise/core/v4/core/utils"
-	"github.com/pixlise/core/v4/internal/cmd-line-tools/job-node/idleTime"
 )
 
 func main() {
-	fmt.Printf("Job Node version %v...\n", services.ApiVersion)
+	fmt.Printf("Job Node version \"%v\"...\n", services.ApiVersion)
 
 	instanceIdObtained, err := utils.GetInstanceId()
 	if err != nil {
-		log.Fatalf("Error retrieving EC2 instance id: %v\n", err)
-	}
+		fmt.Printf("Error retrieving EC2 instance id: %v\n", err)
+	} // else still OK to continue, GetInstanceId should've generated a random string
 
 	// Read args
-	var bucket, jobContainer, instanceId, mongoSecret, envName string
-	var maxJobs, maxIdleSec, maxRunTimeSec int64
+	var bucket, jobContainer, instanceId, mongoSecret, envName, jobs string
+	var maxRunTimeSec int64
 
 	flag.StringVar(&bucket, "bucket", "", "Bucket to read job data from")
 	flag.StringVar(&jobContainer, "jobContainer", "", "The docker container to run jobs with")
 	flag.StringVar(&instanceId, "instanceId", instanceIdObtained, "Instance ID (defaults to EC2 instance id or random string) - a unique number that identifies this node")
 	flag.StringVar(&mongoSecret, "mongoSecret", "", "Name of mongo login secret")
 	flag.StringVar(&envName, "envName", "", "Name of PIXLISE environment, eg dev, prod. Forms the DB name we connect to")
-	flag.Int64Var(&maxJobs, "maxJobs", -1, "Max number of jobs to run simultaneously - set this to how many CPUs or threads this machine can run")
-	flag.Int64Var(&maxIdleSec, "maxIdleSec", 60, "Max number seconds to wait for new jobs before shutdown")
+	flag.StringVar(&jobs, "jobs", "", "List of job IDs for this job node to run")
 	flag.Int64Var(&maxRunTimeSec, "maxRunTimeSec", 60*15, "Max number seconds this node can exist")
 
 	flag.Parse()
@@ -48,11 +47,27 @@ func main() {
 	if len(envName) <= 0 {
 		log.Fatalln("envName can not be empty")
 	}
-	if maxJobs < 1 {
-		log.Fatalln("maxJobs must be > 0")
-	}
-	if maxIdleSec < 0 {
-		log.Fatalln("maxIdleSec must be > 0")
+
+	jobIds := []string{}
+	if len(jobs) <= 0 {
+		log.Fatalln("jobs can not be empty")
+	} else {
+		// Ensure we can parse it into a list
+		jobIds = strings.Split(jobs, ",")
+		// If there's an empty one, remove it
+		if len(jobIds) > 0 && len(jobIds[len(jobIds)-1]) <= 0 {
+			jobIds = jobIds[0 : len(jobIds)-1]
+		}
+
+		// At this point there should be one or more jobs...
+		if len(jobIds) <= 0 {
+			log.Fatalln("Invalid/empty job id list specified")
+		}
+		for _, id := range jobIds {
+			if len(id) <= 0 {
+				log.Fatalf("Job id list specified had empty ids")
+			}
+		}
 	}
 
 	if len(jobContainer) <= 0 {
@@ -84,55 +99,55 @@ func main() {
 	dbName := mongoDBConnection.GetDatabaseName("pixlise", envName)
 	db := mongoClient.Database(dbName)
 
-	l.Infof("Running up to %v nodes. Node will run for up to %v seconds or %v idle seconds...", maxJobs, maxRunTimeSec, maxIdleSec)
+	l.Infof("Running node until all jobs complete or up to %v seconds...", maxRunTimeSec)
 
 	// Create job node
-	jobNode := jobnode.CreateJobNode("job-"+envName, jobContainer, bucket, uint(maxJobs), instanceId, fs, db, &l, &ts)
+	jobNode := jobnode.CreateJobNode("job-"+envName, jobContainer, bucket, instanceId, fs, db, &l, &ts)
 
 	// Check if there are any jobs waiting to be picked up
-	jobNode.CheckStartupJobs()
+	jobNode.StartJobs(jobIds)
 
-	// At this point we fork into 2 tasks. One monitors how much time we've been idle since the last job completed
-	// while the other listens for further jobs arriving. One of these will cause us to quit eventually!
-	go monitorIdleTime(int64(maxIdleSec), int64(maxRunTimeSec), jobNode, &ts, &l)
+	// At this point we wait until the active job count drops to
+	// zero or our max job time in seconds is breached, and we quit
+	endReason, graceful := waitForJobCompletion(maxRunTimeSec, jobNode, &ts, &l)
 
-	// Set it to listen for jobs. This keeps running until the host machine is shut down (therefore this process is killed)
-	for jobNode.ListenToJobQueue() {
-		// Our listener ended but we can re-listen, so wait a bit and try again
-		time.Sleep(time.Second)
+	if graceful {
+		l.Infof("Exiting due to %v", endReason)
+		os.Exit(0)
 	}
 
-	l.Infof("Exiting due job listener completing")
+	log.Fatalf("Forced exit due to: %v", endReason)
 }
 
-func monitorIdleTime(maxIdleSec, maxRunTimeSec int64, jobNode *jobnode.JobNode, ts timestamper.ITimeStamper, l logger.ILogger) {
-	icheck := idleTime.MakeIdleTimeChecker(maxIdleSec, ts)
-	consecutiveJobCheckFails := 0
+func waitForJobCompletion(maxRunTimeSec int64, jobNode *jobnode.JobNode, ts timestamper.ITimeStamper, l logger.ILogger) (string, bool) {
 	startTime := ts.GetTimeNowSec()
+	errors := 0
 
 	for range time.Tick(time.Second * 5) {
 		now := ts.GetTimeNowSec()
 
 		if now-startTime > maxRunTimeSec {
-			l.Infof("Exiting due to max run time seconds exceeding limit")
-			os.Exit(0)
+			return "max run time seconds exceeding limit", false
 		}
 
 		// If we have no jobs left, check how much time has elapsed since the last job finished
 		activeJobs, err := jobNode.GetActiveJobCount()
-		if err == nil {
-			consecutiveJobCheckFails = 0
-			if icheck.HasIdleTimeExpired(activeJobs) {
-				l.Infof("Exiting due to idle time seconds exceeding limit")
-				os.Exit(0)
+		if err != nil {
+			l.Errorf("Error querying active job count: %v", err)
+			errors = errors + 1
+
+			if errors > 3 {
+				return "failing to query active job count several times", false
 			}
-		} else {
-			consecutiveJobCheckFails = consecutiveJobCheckFails + 1
-			l.Errorf("Failed to check active job count %v times. Error: %v", consecutiveJobCheckFails, err)
+			continue
 		}
 
-		if consecutiveJobCheckFails > 10 {
-			log.Fatalf("Exiting due to %v failures to check active job count", consecutiveJobCheckFails)
+		if activeJobs == 0 {
+			return "all jobs completed", true
 		}
+
+		l.Infof("Waiting for %v active jobs...", activeJobs)
 	}
+
+	return "unknown reason", false
 }
