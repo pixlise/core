@@ -59,7 +59,10 @@ func main() {
 
 	// Invent an instance ID if we don't already have one set (eg the instance id of the EC2 we're running on!)
 	fmt.Printf("PIXLISE API version \"%v\" starting...\n", services.ApiVersion)
-	instanceId := utils.GetInstanceId(5)
+	instanceId, err := utils.GetInstanceId()
+	if err != nil {
+		fmt.Printf("Error retrieving EC2 instance id: %v\n", err)
+	}
 	fmt.Printf("InstanceId for this API run: \"%v\"\n", instanceId)
 
 	// Turn off date+time prefixing of log msgs, we have timestamps captured in other ways
