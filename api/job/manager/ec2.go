@@ -33,7 +33,7 @@ func (jm *JobManager) startEC2JobNode(nodeCount int, waitTillStarted bool) error
 		return fmt.Errorf("JobNode AWS secret read failed: %v", err)
 	}
 
-	jobNodeInstanceName := fmt.Sprintf("job-%v-node-%v-[%v]", jm.svcs.Config.EnvironmentName, jm.nodesStarted, jm.svcs.InstanceId)
+	jobNodeInstanceName := fmt.Sprintf("job-node-%v-node", jm.svcs.Config.EnvironmentName)
 
 	startupScript := fmt.Sprintf(`#!/bin/bash
 set -e
@@ -111,14 +111,21 @@ echo "PIXLISE job node running"
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%+v\n", res)
+
+	// List all instances started
+	instances := []*string{}
+	for _, inst := range res.Instances {
+		instances = append(instances, inst.InstanceId)
+	}
+
+	jm.svcs.Log.Infof("Started %v instances [%v]", len(instances), strings.Join(instances, ","))
 
 	if waitTillStarted {
-		input := &ec2.DescribeInstancesInput{InstanceIds: []*string{aws.String(*res.Instances[0].InstanceId)}}
+		input := &ec2.DescribeInstancesInput{InstanceIds: instances}
 		err = jm.svcs.EC2.WaitUntilInstanceRunning(input)
 	}
 
-	return nil
+	return err
 }
 
 // Expects to find secret value JSON of the form:
@@ -215,7 +222,20 @@ func (jm *JobManager) ensureJobNodesRunning(outstandingJobCount int) error {
 			}
 
 			jm.svcs.Log.Debugf("  Starting %v EC2 job nodes...", nodesNeeded)
-			return jm.startEC2JobNode(nodesNeeded, false)
+			err = jm.startEC2JobNode(nodesNeeded, true)
+			if err != nil {
+				return err
+			}
+
+			// Check how many instances we see now
+			instanceIds, err = jm.getRunningNodes()
+
+			if err != nil {
+				jm.svcs.Log.Errorf("  Error after instance start and getRunningNodes: %v", err)
+			}
+
+			jm.svcs.Log.Infof("  After instance start, getRunningNodes sees %v instances: [%v]", len(instanceIds), string.Join(instanceIds, ","))
+			return nil
 		}
 
 		jm.svcs.Log.Debugf("  No job node started.")
@@ -240,3 +260,299 @@ func (jm *JobManager) ensureJobNodesRunning(outstandingJobCount int) error {
 
 	return nil
 }
+
+
+All jobs started with the same node name??? Did we just start individual nodes??
+JobNodes seem to only have 1 docker container running???
+JobNodes should probably write a log file!
+
+
+DEBUG: CheckJobQueue found 1 job groups
+DEBUG:   CheckJobQueue job group quant-q261zhj8qztn4xgb has 0 ran, 0 completed nodes
+DEBUG:   CheckJobQueue found 6 not-started jobs
+DEBUG:   Querying running node count...
+DEBUG:   Instance IDs retrieved: 
+DEBUG:   Starting 1 EC2 job nodes...
+DEBUG:   Instance IDs retrieved: 
+DEBUG:   Starting 1 EC2 job nodes...
+DEBUG:   Instance IDs retrieved: 
+DEBUG:   Starting 1 EC2 job nodes...
+DEBUG:   Instance IDs retrieved: 
+DEBUG:   Starting 1 EC2 job nodes...
+DEBUG:   Instance IDs retrieved: 
+DEBUG:   Starting 1 EC2 job nodes...
+DEBUG:   Instance IDs retrieved: 
+DEBUG:   Starting 1 EC2 job nodes...
+{
+  Instances: [{
+      AmiLaunchIndex: 0,
+      Architecture: "x86_64",
+      BootMode: "uefi-preferred",
+      CapacityReservationSpecification: {
+        CapacityReservationPreference: "open"
+      },
+      ClientToken: "4E2A5638-6B84-4F93-A2E1-5ECE53021A16",
+      CpuOptions: {
+        CoreCount: 4,
+        ThreadsPerCore: 2
+      },
+      CurrentInstanceBootMode: "uefi",
+      EbsOptimized: false,
+      EnaSupport: true,
+      EnclaveOptions: {
+        Enabled: false
+      },
+      Hypervisor: "xen",
+      ImageId: "ami-00e801948462f718a",
+      InstanceId: "i-0643585eb1e66ec2d",
+      InstanceType: "t3.2xlarge",
+      KeyName: "PixliseEBMongo",
+      LaunchTime: 2026-06-04 04:33:56 +0000 UTC,
+      MaintenanceOptions: {
+        AutoRecovery: "default"
+      },
+      MetadataOptions: {
+        HttpEndpoint: "enabled",
+        HttpProtocolIpv6: "disabled",
+        HttpPutResponseHopLimit: 2,
+        HttpTokens: "required",
+        InstanceMetadataTags: "disabled",
+        State: "pending"
+      },
+      Monitoring: {
+        State: "disabled"
+      },
+      NetworkInterfaces: [{
+          Attachment: {
+            AttachTime: 2026-06-04 04:33:56 +0000 UTC,
+            AttachmentId: "eni-attach-0f40ad213e5b66508",
+            DeleteOnTermination: true,
+            DeviceIndex: 0,
+            NetworkCardIndex: 0,
+            Status: "attaching"
+          },
+          Description: "",
+          Groups: [{
+              GroupId: "sg-03617d16414a3431d",
+              GroupName: "PixliseMongo"
+            }],
+          InterfaceType: "interface",
+          MacAddress: "0e:d3:73:d0:b9:5b",
+          NetworkInterfaceId: "eni-03144092e3382fc18",
+          OwnerId: "963058736014",
+          PrivateDnsName: "ip-172-31-35-79.ec2.internal",
+          PrivateIpAddress: "172.31.35.79",
+          PrivateIpAddresses: [{
+              Primary: true,
+              PrivateDnsName: "ip-172-31-35-79.ec2.internal",
+              PrivateIpAddress: "172.31.35.79"
+            }],
+          SourceDestCheck: true,
+          Status: "in-use",
+          SubnetId: "subnet-6712143b",
+          VpcId: "vpc-00d5837a"
+        }],
+      Placement: {
+        AvailabilityZone: "us-east-1a",
+        GroupName: "",
+        Tenancy: "default"
+      },
+      PrivateDnsName: "ip-172-31-35-79.ec2.internal",
+      PrivateDnsNameOptions: {
+        EnableResourceNameDnsAAAARecord: false,
+        EnableResourceNameDnsARecord: false,
+        HostnameType: "ip-name"
+      },
+      PrivateIpAddress: "172.31.35.79",
+      PublicDnsName: "",
+      RootDeviceName: "/dev/xvda",
+      RootDeviceType: "ebs",
+      SecurityGroups: [{
+          GroupId: "sg-03617d16414a3431d",
+          GroupName: "PixliseMongo"
+        }],
+      SourceDestCheck: true,
+      State: {
+        Code: 0,
+        Name: "pending"
+      },
+      StateReason: {
+        Code: "pending",
+        Message: "pending"
+      },
+      StateTransitionReason: "",
+      SubnetId: "subnet-6712143b",
+      Tags: [
+        {
+          Key: "pixlise:starter-instance-id",
+          Value: "i-0bf0159123e1be326"
+        },
+        {
+          Key: "pixlise:environment",
+          Value: "prod"
+        },
+        {
+          Key: "Name",
+          Value: "job-prod-node-6-[i-0bf0159123e1be326]"
+        },
+        {
+          Key: "pixlise:instance-use",
+          Value: "job-node"
+        }
+      ],
+      VirtualizationType: "hvm",
+      VpcId: "vpc-00d5837a"
+    }],
+  OwnerId: "963058736014",
+  ReservationId: "r-096f985d1ec38483a"
+}
+
+...
+later on we seem to have started more job nodes?
+
+}
+INFO: HandleOnce: i-0bf0159123e1be326 chosen to handle job jobmanager-queue
+DEBUG: CheckJobQueue found 1 job groups
+DEBUG:   CheckJobQueue job group quant-q261zhj8qztn4xgb has 0 ran, 0 completed nodes
+DEBUG:   CheckJobQueue found 2 not-started jobs
+DEBUG:   Querying running node count...
+INFO: HandleOnce: i-0bf0159123e1be326 chosen to handle job jobmanager-queue
+DEBUG: CheckJobQueue found 1 job groups
+DEBUG:   CheckJobQueue job group quant-q261zhj8qztn4xgb has 0 ran, 0 completed nodes
+DEBUG:   CheckJobQueue found 2 not-started jobs
+DEBUG:   Querying running node count...
+DEBUG:   Instance IDs retrieved: i-0f3f62e09cff0645a,i-0e74fd0e014a5265d,i-0643585eb1e66ec2d,i-0526e2a0c2cfaa4a0,i-0b9fb76c50448063d,i-02f4921bcd42e8a62,i-0bb2de7f9b39ad2e6
+DEBUG:   Starting 1 EC2 job nodes...
+DEBUG:   Instance IDs retrieved: i-0f3f62e09cff0645a,i-0e74fd0e014a5265d,i-0643585eb1e66ec2d,i-0526e2a0c2cfaa4a0,i-0b9fb76c50448063d,i-02f4921bcd42e8a62,i-0bb2de7f9b39ad2e6
+DEBUG:   Starting 1 EC2 job nodes...
+INFO: HandleOnce: i-0bf0159123e1be326 chosen to handle job jobmanager-queue
+DEBUG: CheckJobQueue found 1 job groups
+DEBUG:   CheckJobQueue job group quant-q261zhj8qztn4xgb has 0 ran, 0 completed nodes
+DEBUG:   CheckJobQueue found 2 not-started jobs
+DEBUG:   Querying running node count...
+DEBUG:   Instance IDs retrieved: i-0f3f62e09cff0645a,i-0e74fd0e014a5265d,i-0643585eb1e66ec2d,i-0526e2a0c2cfaa4a0,i-0b9fb76c50448063d,i-02f4921bcd42e8a62,i-0bb2de7f9b39ad2e6
+DEBUG:   Starting 1 EC2 job nodes...
+{
+  Instances: [{
+      AmiLaunchIndex: 0,
+      Architecture: "x86_64",
+      BootMode: "uefi-preferred",
+      CapacityReservationSpecification: {
+        CapacityReservationPreference: "open"
+      },
+      ClientToken: "C093B6C4-31DA-4A0F-8447-7C58460127FC",
+      CpuOptions: {
+        CoreCount: 4,
+        ThreadsPerCore: 2
+      },
+      CurrentInstanceBootMode: "uefi",
+      EbsOptimized: false,
+      EnaSupport: true,
+      EnclaveOptions: {
+        Enabled: false
+      },
+      Hypervisor: "xen",
+      ImageId: "ami-00e801948462f718a",
+      InstanceId: "i-0855468baaed9bfe6",
+      InstanceType: "t3.2xlarge",
+      KeyName: "PixliseEBMongo",
+      LaunchTime: 2026-06-04 04:35:12 +0000 UTC,
+      MaintenanceOptions: {
+        AutoRecovery: "default"
+      },
+      MetadataOptions: {
+        HttpEndpoint: "enabled",
+        HttpProtocolIpv6: "disabled",
+        HttpPutResponseHopLimit: 2,
+        HttpTokens: "required",
+        InstanceMetadataTags: "disabled",
+        State: "pending"
+      },
+      Monitoring: {
+        State: "disabled"
+      },
+      NetworkInterfaces: [{
+          Attachment: {
+            AttachTime: 2026-06-04 04:35:12 +0000 UTC,
+            AttachmentId: "eni-attach-0647baaaeaffca1d2",
+            DeleteOnTermination: true,
+            DeviceIndex: 0,
+            NetworkCardIndex: 0,
+            Status: "attaching"
+          },
+          Description: "",
+          Groups: [{
+              GroupId: "sg-03617d16414a3431d",
+              GroupName: "PixliseMongo"
+            }],
+          InterfaceType: "interface",
+          MacAddress: "0e:8a:bf:db:5d:b3",
+          NetworkInterfaceId: "eni-091825d8d2bafdf64",
+          OwnerId: "963058736014",
+          PrivateDnsName: "ip-172-31-41-4.ec2.internal",
+          PrivateIpAddress: "172.31.41.4",
+          PrivateIpAddresses: [{
+              Primary: true,
+              PrivateDnsName: "ip-172-31-41-4.ec2.internal",
+              PrivateIpAddress: "172.31.41.4"
+            }],
+          SourceDestCheck: true,
+          Status: "in-use",
+          SubnetId: "subnet-6712143b",
+          VpcId: "vpc-00d5837a"
+        }],
+      Placement: {
+        AvailabilityZone: "us-east-1a",
+        GroupName: "",
+        Tenancy: "default"
+      },
+      PrivateDnsName: "ip-172-31-41-4.ec2.internal",
+      PrivateDnsNameOptions: {
+        EnableResourceNameDnsAAAARecord: false,
+        EnableResourceNameDnsARecord: false,
+        HostnameType: "ip-name"
+      },
+      PrivateIpAddress: "172.31.41.4",
+      PublicDnsName: "",
+      RootDeviceName: "/dev/xvda",
+      RootDeviceType: "ebs",
+      SecurityGroups: [{
+          GroupId: "sg-03617d16414a3431d",
+          GroupName: "PixliseMongo"
+        }],
+      SourceDestCheck: true,
+      State: {
+        Code: 0,
+        Name: "pending"
+      },
+      StateReason: {
+        Code: "pending",
+        Message: "pending"
+      },
+      StateTransitionReason: "",
+      SubnetId: "subnet-6712143b",
+      Tags: [
+        {
+          Key: "pixlise:starter-instance-id",
+          Value: "i-0bf0159123e1be326"
+        },
+        {
+          Key: "Name",
+          Value: "job-prod-node-9-[i-0bf0159123e1be326]"
+        },
+        {
+          Key: "pixlise:instance-use",
+          Value: "job-node"
+        },
+        {
+          Key: "pixlise:environment",
+          Value: "prod"
+        }
+      ],
+      VirtualizationType: "hvm",
+      VpcId: "vpc-00d5837a"
+    }],
+  OwnerId: "963058736014",
+  ReservationId: "r-0e5250b2a6cb93506"
+}
+{
