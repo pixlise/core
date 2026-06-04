@@ -194,7 +194,7 @@ func (jm *JobManager) checkJobQueue() error {
 	}
 
 	// We just inserted 1 or more jobs - check that we have enough nodes running to handle this: if not, start more!
-	jm.svcs.Log.Debugf("  CheckJobQueue found %v not-started jobs, ensureNodesRunning=%v", notStarted, jm.ensureNodesRunning)
+	jm.svcs.Log.Debugf("  CheckJobQueue found %v not-started jobs" /*, ensureNodesRunning=%v"*/, notStarted /*, jm.ensureNodesRunning*/)
 	if notStarted > 0 && jm.ensureNodesRunning {
 		return jm.ensureJobNodesRunning(notStarted)
 	}

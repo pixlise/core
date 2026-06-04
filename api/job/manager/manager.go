@@ -29,7 +29,8 @@ func Create(svcs *services.APIServices, startupQueueCheckDelaySec int, monitorJo
 			JobComplete_CombineCSVs: completeQuantMultiNodeJob,
 			JobComplete_SingleCSV:   completeQuantSingleMapJob,
 		},
-		useFileCache: useFileCache,
+		useFileCache:       useFileCache,
+		ensureNodesRunning: ensureNodesRunning,
 	}
 
 	if startupQueueCheckDelaySec > 0 {
