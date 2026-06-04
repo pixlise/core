@@ -20,7 +20,7 @@ type JobManager struct {
 	startNodes           bool
 }
 
-func Create(svcs *services.APIServices, startupQueueCheckDelaySec int, monitorJobQueue bool, useFileCache bool, startNodes bool) (*JobManager, error) {
+func CreateJobManager(svcs *services.APIServices, startupQueueCheckDelaySec int, monitorJobQueue bool, useFileCache bool, startNodes bool) (*JobManager, error) {
 	// Make a job manager
 	jm := &JobManager{
 		svcs: svcs,

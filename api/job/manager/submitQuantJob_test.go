@@ -163,7 +163,7 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := Create(&svcs, 0, false, false, true)
+	jm, err := CreateJobManager(&svcs, 0, false, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	createParams := &protos.QuantCreateParams{
@@ -292,7 +292,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := Create(&svcs, 0, false, false, true)
+	jm, err := CreateJobManager(&svcs, 0, false, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	createParams := &protos.QuantCreateParams{
@@ -510,7 +510,7 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := Create(&svcs, 0, false, false, true)
+	jm, err := CreateJobManager(&svcs, 0, false, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	createParams := &protos.QuantCreateParams{

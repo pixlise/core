@@ -326,7 +326,7 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 	}
 
 	// Create job manager and point it back here
-	svcs.JobManager, err = jobmanager.Create(svcs, 10, true, true, true)
+	svcs.JobManager, err = jobmanager.CreateJobManager(svcs, 10, true, true, true)
 	if err != nil {
 		log.Fatalf("Failed to init job manager. Error: %v", err)
 	}
