@@ -89,6 +89,7 @@ echo "PIXLISE job node running"
 				ResourceType: aws.String("instance"),
 				Tags: []*ec2.Tag{
 					{Key: aws.String("Name"), Value: aws.String(fmt.Sprintf("job-%v-node-%v-[%v]", jm.svcs.Config.EnvironmentName, jm.nodesStarted, jm.svcs.InstanceId))},
+					{Key: aws.String("pixlise:instance-use"), Value: aws.String("job-node")},
 					{Key: aws.String("pixlise:environment"), Value: aws.String(jm.svcs.Config.EnvironmentName)},
 					{Key: aws.String("pixlise:starter-instance-id"), Value: aws.String(jm.svcs.InstanceId)},
 				},
@@ -152,8 +153,12 @@ func (jm *JobManager) getRunningNodes() ([]string, error) {
 			Values: []*string{aws.String("running"), aws.String("pending")},
 		},
 		{
-			Name:   aws.String("pixlise:environment"),
+			Name:   aws.String("tag:pixlise:environment"),
 			Values: []*string{aws.String(jm.svcs.Config.EnvironmentName)},
+		},
+		{
+			Name:   aws.String("tag:pixlise:instance-use"),
+			Values: []*string{aws.String("job-node")},
 		},
 	}
 
