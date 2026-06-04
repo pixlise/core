@@ -209,7 +209,7 @@ func (jm *JobManager) checkJobQueue() error {
 	}
 
 	// Start nodes as needed, assigning jobs to each one
-	jm.svcs.Log.Debugf("  CheckJobQueue found %v not-started jobs, start: %v", len(notStartedIds), jm.startNodes)
+	jm.svcs.Log.Debugf("  CheckJobQueue found %v not-started jobs", len(notStartedIds))
 	if len(notStartedIds) > 0 && jm.startNodes {
 		return jm.startJobNodes(notStartedIds)
 	}

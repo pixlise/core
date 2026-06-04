@@ -220,6 +220,9 @@ func getJobsPerNode(jobIds []string, jobsPerNode uint) [][]string {
 	// Pass jobs to each node to fill up their capacity. The last one can have less than full capacity
 	result := [][]string{}
 	nodesNeeded := uint(float32(len(jobIds))/float32(jobsPerNode) + 0.5)
+	if nodesNeeded <= 0 {
+		nodesNeeded = 1 // we need at least ONE! If it has many cores it might run our entire job
+	}
 
 	for c := uint(0); c < nodesNeeded; c++ {
 		jobs := []string{}
