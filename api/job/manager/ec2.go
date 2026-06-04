@@ -14,7 +14,10 @@ import (
 )
 
 // Called to start a job node
-func (jm *JobManager) startEC2JobNode(waitTillStarted bool) error {
+func (jm *JobManager) startEC2JobNode(nodeCount int, waitTillStarted bool) error {
+	if nodeCount <= 0 || nodeCount > int(jm.svcs.Config.MaxQuantNodes) {
+		return fmt.Errorf("Invalid job count when starting EC2 job nodes: %v", nodeCount)
+	}
 	jm.nodesStarted = jm.nodesStarted + 1
 	if jm.svcs.Config.JobMaxNodeRunTimeSec < 60 {
 		return fmt.Errorf("Cannot start job node that runs for only %vsec", jm.svcs.Config.JobMaxNodeRunTimeSec)
@@ -99,8 +102,8 @@ echo "PIXLISE job node running"
 		},
 		KeyName:          aws.String(jm.svcs.Config.JobKeyName),
 		SecurityGroupIds: []*string{aws.String(jm.svcs.Config.JobSecurityGroup)},
-		MaxCount:         aws.Int64(1),
-		MinCount:         aws.Int64(1),
+		MaxCount:         aws.Int64(int64(nodeCount)),
+		MinCount:         aws.Int64(int64(nodeCount)),
 		UserData:         aws.String(base64.StdEncoding.EncodeToString([]byte(startupScript))),
 	}
 
@@ -198,14 +201,24 @@ func (jm *JobManager) ensureJobNodesRunning(outstandingJobCount int) error {
 			return err
 		}
 
-		jm.svcs.Log.Debugf("  Instance IDs retrieved: %v\n", strings.Join(instanceIds, ","))
+		jm.svcs.Log.Debugf("  Instance IDs retrieved: %v", strings.Join(instanceIds, ","))
 
-		if outstandingJobCount > 0 && len(instanceIds) <= 0 {
-			jm.svcs.Log.Debugf("  Starting EC2 job node...")
-			return jm.startEC2JobNode(false)
+		if outstandingJobCount > 0 {
+			// Work out how many job nodes are needed. If we have N outstanding jobs, and we can run X
+			// jobs on a node...
+			nodesNeeded := outstandingJobCount / int(jm.svcs.Config.CoresPerNode)
+
+			if nodesNeeded <= 0 {
+				nodesNeeded = 1
+			} else if nodesNeeded > int(jm.svcs.Config.MaxQuantNodes) {
+				nodesNeeded = int(jm.svcs.Config.MaxQuantNodes)
+			}
+
+			jm.svcs.Log.Debugf("  Starting %v EC2 job nodes...", nodesNeeded)
+			return jm.startEC2JobNode(nodesNeeded, false)
 		}
 
-		jm.svcs.Log.Debugf("  No job node started.\n")
+		jm.svcs.Log.Debugf("  No job node started.")
 		return nil
 	}
 

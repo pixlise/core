@@ -73,6 +73,7 @@ func (jn *JobNode) CheckStartupJobs() {
 		jn.log.Errorf("Instance %v failed to check job capacity on startup: %v", jn.instanceId, err)
 		return
 	}
+	jn.log.Infof("Instance %v job capacity: %v", jn.instanceId, jobCapacity)
 
 	jobGroups, err := job.ReadJobQueue(jn.db)
 
@@ -81,10 +82,13 @@ func (jn *JobNode) CheckStartupJobs() {
 		return
 	}
 
+	jn.log.Infof("Instance %v read %v job groups", jn.instanceId, len(jobGroups))
+
 	for _, jobs := range jobGroups {
 		for _, jobItem := range jobs {
 			if jobItem.State == protos.JobQueueItem_UNKNOWN {
 				if jobCapacity == 0 {
+					jn.log.Infof("Instance %v ran out of job capacity")
 					return
 				}
 
