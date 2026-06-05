@@ -57,11 +57,14 @@ func (jm *JobManager) startupCheckQueue(startupQueueCheckDelaySec int) {
 	jm.runCheckJobQueueOnce("jobmanager-start")
 }
 
+var RATE_LIMIT_SEC = uint(2)
+
 func (jm *JobManager) listenToJobQueue() bool {
-	return job.ListenToJobQueue([]string{"insert", "update"}, jm.svcs.MongoDB, jm.svcs.TimeStamper, jm.svcs.Log, 2, jm.onJobQueueChanged)
+	return job.ListenToJobQueue([]string{"insert", "update"}, jm.svcs.MongoDB, jm.svcs.TimeStamper, jm.svcs.Log, RATE_LIMIT_SEC, jm.onJobQueueChanged)
 }
 
 func (jm *JobManager) onJobQueueChanged(jobItem *protos.JobQueueItem) {
+
 	// Here we ignore the queue item, we want to check the entire queue to find job groups
 	// that have finished or whatever, so run that check here
 	jm.runCheckJobQueueOnce("jobmanager-queue")

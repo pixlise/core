@@ -18,30 +18,30 @@ import (
 )
 
 // Called to start a job node
-func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret string, awsRegion string, waitTillStarted bool) error {
+func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret string, awsRegion string) ([]*string, error) {
 	if len(jobIds) <= 0 || len(jobIds) > int(jm.svcs.Config.CoresPerNode) {
-		return fmt.Errorf("Invalid job count when starting EC2 job nodes: %v", len(jobIds))
+		return []*string{}, fmt.Errorf("Invalid job count when starting EC2 job nodes: %v", len(jobIds))
 	}
 
 	// Ensure no jobs have , in their ids because we'll be putting them in a string list separated by ,
 	for _, id := range jobIds {
 		if strings.Contains(id, ",") {
-			return fmt.Errorf("Invalid job id specified, illegal , character detected: %v", id)
+			return []*string{}, fmt.Errorf("Invalid job id specified, illegal , character detected: %v", id)
 		}
 	}
 
 	jobIdListStr := strings.Join(jobIds, ",")
 
 	if jm.svcs.Config.JobMaxNodeRunTimeSec < 60 {
-		return fmt.Errorf("Cannot start job node that runs for only %vsec", jm.svcs.Config.JobMaxNodeRunTimeSec)
+		return []*string{}, fmt.Errorf("Cannot start job node that runs for only %vsec", jm.svcs.Config.JobMaxNodeRunTimeSec)
 	}
 
 	if len(jm.svcs.Config.JobAWSSecret) <= 0 {
-		return fmt.Errorf("JobNode AWS secret not set")
+		return []*string{}, fmt.Errorf("JobNode AWS secret not set")
 	}
 
 	if jm.startedNodeCount > jm.svcs.Config.MaxQuantNodes || jm.startedNodeCount > 10 {
-		return fmt.Errorf("Not starting job node, hard testing limit has been reached")
+		return []*string{}, fmt.Errorf("Not starting job node, hard testing limit has been reached")
 	}
 
 	jobNodeInstanceName := fmt.Sprintf("job-node-%v", jm.svcs.Config.EnvironmentName)
@@ -116,7 +116,7 @@ shutdown -h now
 
 	res, err := jm.svcs.EC2.RunInstances(input)
 	if err != nil {
-		return err
+		return []*string{}, err
 	}
 
 	// List all instances started
@@ -130,12 +130,7 @@ shutdown -h now
 	jm.svcs.Log.Infof("   Started %v instance(s) [%v]", len(instances), strings.Join(instanceStrs, ","))
 	jm.startedNodeCount = jm.startedNodeCount + 1
 
-	if waitTillStarted {
-		input := &ec2.DescribeInstancesInput{InstanceIds: instances}
-		err = jm.svcs.EC2.WaitUntilInstanceRunning(input)
-	}
-
-	return err
+	return instances, err
 }
 
 // Expects to find secret value JSON of the form:
@@ -296,13 +291,23 @@ func (jm *JobManager) startJobNodes(jobIds []string) error {
 		jobsForNodes := getJobsPerNode(jobIds, jm.svcs.Config.CoresPerNode)
 
 		// Start each node
+		allStartedIds := []*string{}
 		for _, jobs := range jobsForNodes {
 			jm.svcs.Log.Debugf("  Starting EC2 job node for jobs: %v...", strings.Join(jobs, ","))
-			err = jm.startEC2JobNode(jobs, awsKey, awsSecret, awsRegion, true)
+			startedIds, err := jm.startEC2JobNode(jobs, awsKey, awsSecret, awsRegion)
 			if err != nil {
 				return err
 			}
+
+			allStartedIds = append(allStartedIds, startedIds...)
 		}
+
+		input := &ec2.DescribeInstancesInput{InstanceIds: allStartedIds}
+		err = jm.svcs.EC2.WaitUntilInstanceRunning(input)
+		if err != nil {
+			jm.svcs.Log.Infof("  WARNING: Failed to wait for instances to start running: %v", err)
+		}
+
 		jm.svcs.Log.Debugf("  %v nodes started.", len(jobsForNodes))
 		return nil
 	}

@@ -90,7 +90,16 @@ func ListenToJobQueue(allowedOps []string, db *mongo.Database, ts timestamper.IT
 			//       get the item.DocumentKey 6x here.
 			// 		 Instead, we just treat this as a hint to look at the job queue. We take actions based on
 			//       what we find in the queue
+
+			// NOTE: if we update multiple documents at once, this gives them back one-by-one. To avoid
+			// processing the same thing many times, here we wait for the rate limit to time out and notify
+			// the listener at the end, so any DB reads affect the state post all the writes
+			/*go func() {
+				time.Sleep(time.Duration(rateLimitSec) * time.Second)
+				runCheck(doc)
+			}()*/
 			runCheck(doc)
+
 			lastTimeSec = now
 		}
 
