@@ -32,6 +32,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
+	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/config"
 	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/awsutil"
@@ -55,7 +56,7 @@ var GitHash string
 // This comes in very useful when writing unit tests, since we can mock these interfaces
 
 type JobManagerInterface interface {
-	SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser) (*protos.JobStatus, error)
+	SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
 	// ListJobs() ([]jobmanager.JobGroupConfig, error)
 	// GetJob(JobId string) (jobmanager.JobGroupConfig, error)
 }

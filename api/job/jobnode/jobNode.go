@@ -152,6 +152,7 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem, wg *sync.WaitGroup) {
 	// Set up the path to read the job from
 	jobPath := filepaths.GetJobDataPath(jobItem.AssociatedScanId, jobItem.JobGroupId, "")
 
+	var outStr, msg string
 	if len(jn.jobContainer) <= 0 {
 		fmt.Println("WARNING: Running job locally, recommended for use for tests only!")
 
@@ -160,6 +161,8 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem, wg *sync.WaitGroup) {
 		if err != nil {
 			jn.log.Errorf("Failed to start job %v (node %v): %v", jobItem.JobGroupId, jobItem.NodeIndex, err)
 		}
+
+		outStr = "No output saved from local job run"
 	} else {
 		// Run it in docker using our job runner container
 		cmd := exec.Command("docker", "run",
@@ -174,7 +177,7 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem, wg *sync.WaitGroup) {
 			jn.jobContainer)
 
 		out, err := cmd.CombinedOutput()
-		outStr := string(out)
+		outStr = string(out)
 		if err != nil {
 			if len(outStr) > 0 {
 				outStr = "\n" + outStr
@@ -187,29 +190,20 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem, wg *sync.WaitGroup) {
 				logEnd = outStr
 			}
 
-			err2 := job.UpdateJobQueueItem(
-				jobItem.JobId,
-				protos.JobQueueItem_FAILED,
-				fmt.Sprintf("Job Failed: %v.\nEnd of log: %v", err, logEnd),
-				jobItem.JobGroupId,
-				jn.instanceId,
-				jn.db, jn.ts)
-			if err2 != nil {
-				jn.log.Errorf("Failed to update job queue item %v to failed status: %v", jobItem.JobId, err2)
-			}
-			jn.log.Errorf("Job run for %v failed: %v%v", jobItem.JobId, err, outStr)
+			msg = fmt.Sprintf("Job %v failed on instance %v: %v.\nEnd of log: %v", jobItem.JobGroupId, jn.instanceId, err, logEnd)
 		}
-
-		jn.log.Infof("Job %v run complete, output:\n-----------------\n%v\n-----------------\n", jobItem.JobId, outStr)
 	}
 
+	jn.log.Infof("Job %v run complete: \"%v\"\nOutput:\n-----------------\n%v\n-----------------", jobItem.JobId, msg, outStr)
+
 	// Once the job is finished, mark it so
-	msg := ""
 	state := protos.JobQueueItem_COMPLETE
 
 	if err != nil {
 		state = protos.JobQueueItem_FAILED
-		msg = fmt.Sprintf("Failed on instance %v: %v", jn.instanceId, err)
+		if len(msg) <= 0 {
+			msg = fmt.Sprintf("Failed on instance %v: %v", jn.instanceId, err)
+		}
 	}
 
 	err = job.UpdateJobQueueItem(
@@ -221,6 +215,6 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem, wg *sync.WaitGroup) {
 		jn.db, jn.ts)
 
 	if err != nil {
-		jn.log.Errorf("%v", err)
+		jn.log.Errorf("Failed to update job queue item %v to failed status: %v", jobItem.JobId, err)
 	}
 }

@@ -10,9 +10,9 @@ import (
 	"github.com/pixlise/core/v4/api/dbCollections"
 	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/job/jobnode"
+	"github.com/pixlise/core/v4/api/notificationSender"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/services/servicesMock"
-	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/idgen"
 	"github.com/pixlise/core/v4/core/logger"
@@ -76,6 +76,8 @@ func initJobManagerTest(logLevel *logger.LogLevel, timestamps []int64) (string, 
 	// Clear stuff pre-test otherwise we get duplicate key errors
 	ctx := context.TODO()
 	svcs.MongoDB.Drop(ctx)
+
+	svcs.Notifier = &notificationSender.MockNotificationSender{}
 
 	return origWD, bucketSimRoot, svcs
 }
@@ -179,9 +181,8 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 		//RoiIDs []string: ,
 		//IncludeDwells: ,
 	}
-	var requestorUserSess *sessionuser.SessionUser
 
-	status, err := jm.SubmitQuantJob(createParams, requestorUserSess)
+	status, err := jm.SubmitQuantJob(createParams, nil, nil)
 	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
 
 	// Run the job node queue processing code
@@ -230,6 +231,11 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/048300551/quant-id123/piquant-logs/stdout000000.log
 	// DEBUG: Upload map000000.csv_log.txt -> s3://job-bucket/JobData/048300551/quant-id123/piquant-logs/piquant000000.log
 	// DEBUG: Upload map000000.csv -> s3://job-bucket/JobData/048300551/quant-id123/output/result000000.csv
+	// INFO: Job quant-id123-node-0 run complete: ""
+	// Output:
+	// -----------------
+	// No output saved from local job run
+	// -----------------
 	// DEBUG: CheckJobQueue found 1 job groups
 	// DEBUG:   CheckJobQueue job group quant-id123 has 1 ran, 1 completed nodes of 1
 	// DEBUG:   CheckJobQueue running job group quant-id123 completion task...
@@ -252,6 +258,8 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	// INFO:   Triggers as I
 	// INFO: Elements found: [FeO-T CaO]
 	// ERROR: Failed to read auto-share info for quantification triggered by PIXLISEImport. Quant won't be shared
+	// ERROR: Failed to read scan 048300551 for sending new quant notification
+	// ==>SysNotifyQuantChanged(quant-id123)
 	// INFO: updateJobStatus: quant-id123 with status COMPLETE, message: Nodes ran: 1
 	// DEBUG:   CheckJobQueue completed job group quant-id123
 	// DEBUG:   CheckJobQueue clearing job queue items for quant-id123
@@ -309,9 +317,8 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 		//RoiIDs []string: ,
 		//IncludeDwells: ,
 	}
-	var requestorUserSess *sessionuser.SessionUser
 
-	status, err := jm.SubmitQuantJob(createParams, requestorUserSess)
+	status, err := jm.SubmitQuantJob(createParams, nil, nil)
 	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
 
 	// Run the job node queue processing code
@@ -361,6 +368,11 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout000000.log
 	// DEBUG: Upload map000000.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant000000.log
 	// DEBUG: Upload map000000.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result000000.csv
+	// INFO: Job quant-id123-node-0 run complete: ""
+	// Output:
+	// -----------------
+	// No output saved from local job run
+	// -----------------
 	// INFO: Instance the-test-instance starting job "quant-id123-node-1"...
 	// WARNING: Running job locally, recommended for use for tests only!
 	// INFO: Running job from s3://job-bucket/JobData/983561/quant-id123 for node 1
@@ -393,6 +405,11 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout000001.log
 	// DEBUG: Upload map000001.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant000001.log
 	// DEBUG: Upload map000001.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result000001.csv
+	// INFO: Job quant-id123-node-1 run complete: ""
+	// Output:
+	// -----------------
+	// No output saved from local job run
+	// -----------------
 	// INFO: Instance the-test-instance starting job "quant-id123-node-2"...
 	// WARNING: Running job locally, recommended for use for tests only!
 	// INFO: Running job from s3://job-bucket/JobData/983561/quant-id123 for node 2
@@ -425,6 +442,11 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout000002.log
 	// DEBUG: Upload map000002.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant000002.log
 	// DEBUG: Upload map000002.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result000002.csv
+	// INFO: Job quant-id123-node-2 run complete: ""
+	// Output:
+	// -----------------
+	// No output saved from local job run
+	// -----------------
 	// INFO: Instance the-test-instance starting job "quant-id123-node-3"...
 	// WARNING: Running job locally, recommended for use for tests only!
 	// INFO: Running job from s3://job-bucket/JobData/983561/quant-id123 for node 3
@@ -457,6 +479,11 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout000003.log
 	// DEBUG: Upload map000003.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant000003.log
 	// DEBUG: Upload map000003.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result000003.csv
+	// INFO: Job quant-id123-node-3 run complete: ""
+	// Output:
+	// -----------------
+	// No output saved from local job run
+	// -----------------
 	// DEBUG: CheckJobQueue found 1 job groups
 	// DEBUG:   CheckJobQueue job group quant-id123 has 4 ran, 4 completed nodes of 4
 	// DEBUG:   CheckJobQueue running job group quant-id123 completion task...
@@ -474,6 +501,8 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// INFO:   eV/ch as F
 	// INFO: Elements found: [CaO TiO2]
 	// ERROR: Failed to read auto-share info for quantification triggered by PIXLISEImport. Quant won't be shared
+	// ERROR: Failed to read scan 983561 for sending new quant notification
+	// ==>SysNotifyQuantChanged(quant-id123)
 	// INFO: updateJobStatus: quant-id123 with status COMPLETE, message: Nodes ran: 4
 	// DEBUG:   CheckJobQueue completed job group quant-id123
 	// DEBUG:   CheckJobQueue clearing job queue items for quant-id123
@@ -531,18 +560,18 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 		//RoiIDs []string: ,
 		//IncludeDwells: ,
 	}
-	var requestorUserSess *sessionuser.SessionUser
 
-	status, err := jm.SubmitQuantJob(createParams, requestorUserSess)
+	status, err := jm.SubmitQuantJob(createParams, nil, nil)
 	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
 
 	// Run the job node queue processing code
 	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
 	jn.StartJobs([]string{"quant-id123-node-0", "id2"})
 
-	//jm.RunCheckJobQueueForTest()
-
 	printResults(svcs)
+
+	// time.Sleep(3 * time.Second)
+	// jm.RunCheckJobQueueForTest()
 
 	// Output:
 	// jm Create: <nil>
@@ -583,6 +612,11 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout000000.log
 	// DEBUG: Upload map000000.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant000000.log
 	// DEBUG: Upload map000000.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result000000.csv
+	// INFO: Job quant-id123-node-0 run complete: ""
+	// Output:
+	// -----------------
+	// No output saved from local job run
+	// -----------------
 	// ERROR: Instance the-test-instance failed to find job id2 in queue, skipped
 	// QueryQ: <nil>
 	// Queue items at end: 4

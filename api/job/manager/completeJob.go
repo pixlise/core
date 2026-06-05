@@ -12,6 +12,7 @@ import (
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/scan"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -189,7 +190,14 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 	}
 
 	// Report success
-	//completeJobState(true, completeMsg, quantOutPath, piquantLogList)
+	scan, err := scan.ReadScanItem(jg.AssociatedScanId, svcs.MongoDB)
+	if err != nil {
+		svcs.Log.Errorf("Failed to read scan %v for sending new quant notification", jg.AssociatedScanId)
+	} else {
+		svcs.Notifier.NotifyNewQuant(false, jobId, createParams.Name, "Complete", scan.Title, jg.AssociatedScanId)
+	}
+
+	svcs.Notifier.SysNotifyQuantChanged(jobId)
 	return nil
 }
 
@@ -263,6 +271,30 @@ func completeQuantSingleMapJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 				}
 			}
 		}
+
+		// This came from quantJobUpdater.go
+		notifySession := jm.userSessionLookup[status.RequestorUserId]
+		if status.Status == protos.JobStatus_COMPLETE && notifySession != nil {
+			// We send out the result data, as opposed to a status
+			userOutputFilePath := filepaths.GetUserLastPiquantOutputPath(status.RequestorUserId, i.params.ScanId, i.params.Command, filepaths.QuantLastOutputFileName+".csv")
+			bytes, err := i.fs.ReadObject(i.usersBucket, userOutputFilePath)
+			if err != nil {
+				fmt.Errorf("PIQUANT job ephermal status failed to find output for: %v", status.JobId)
+			}
+
+			wsUpd := protos.WSMessage{
+				Contents: &protos.WSMessage_QuantCreateUpd{
+					QuantCreateUpd: &protos.QuantCreateUpd{
+						// Need to include status info too otherwise receiver doesn't know what fit this is for
+						Status:     status,
+						ResultData: bytes,
+					},
+				},
+			}
+
+			wsHelpers.SendForSession(notifySession, &wsUpd)
+		}
+
 
 		// STOP HERE! Non-map commands are simpler, map commands do a whole bunch more to maintain state files which are picked up
 		// by quant listing generation

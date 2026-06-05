@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	jobconfig "github.com/pixlise/core/v4/api/job/config"
@@ -19,7 +20,7 @@ import (
 )
 
 // Submit function for each kind of job type we support
-func (jm *JobManager) SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser) (*protos.JobStatus, error) {
+func (jm *JobManager) SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
 	prefix := "quant"
 	jobType := protos.JobType_JT_UNKNOWN
 	jobCompletionMethod := ""
@@ -28,6 +29,11 @@ func (jm *JobManager) SubmitQuantJob(createParams *protos.QuantCreateParams, req
 		prefix = "piquant" + createParams.Command
 		jobType = protos.JobType_JT_RUN_FIT
 		jobCompletionMethod = JobComplete_SingleCSV
+
+		// Store session for completion-side use if we're sending notifications
+		if requestorUserSess != nil && requestorSession != nil {
+			jm.userSessionLookup[requestorUserSess.User.Id] = requestorSession
+		}
 	} else {
 		jobType = protos.JobType_JT_RUN_QUANT
 		jobCompletionMethod = JobComplete_CombineCSVs
@@ -60,7 +66,12 @@ func (jm *JobManager) SubmitQuantJob(createParams *protos.QuantCreateParams, req
 		return err
 	}
 */
-func (jm *JobManager) internalSubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser, idPrefix string, jobType protos.JobType, completeMethod string) (*protos.JobStatus, error) {
+func (jm *JobManager) internalSubmitQuantJob(
+	createParams *protos.QuantCreateParams,
+	requestorUserSess *sessionuser.SessionUser,
+	idPrefix string,
+	jobType protos.JobType,
+	completeMethod string) (*protos.JobStatus, error) {
 	err := quantification.IsValidCreateParam(createParams, jm.svcs, requestorUserSess)
 	if err != nil {
 		return nil, errorwithstatus.MakeBadRequestError(err)

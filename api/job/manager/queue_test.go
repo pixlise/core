@@ -3,6 +3,7 @@ package jobmanager
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func Example_jobmanager_QueueStartup() {
@@ -81,7 +83,7 @@ func Example_jobmanager_QueueStartup() {
 		&jobconfig.JobGroupConfig{
 			JobGroupId:       "quant-id998",
 			JobType:          protos.JobType_JT_RUN_QUANT,
-			CompletionMethod: "NonExistantJob",
+			CompletionMethod: "NonExistantMethod",
 			DockerImage:      "job-container",
 			FastStart:        false,
 			NodeCount:        2,
@@ -281,12 +283,72 @@ func Example_jobmanager_QueueStartup() {
 
 	time.Sleep(3 * time.Second)
 
+	// Read DB stuff back, ensuring it's in an expected state
+
+	cur, err := svcs.MongoDB.Collection(dbCollections.JobsName).Find(ctx, bson.M{})
+	fmt.Printf("read jobs: %v\n", err)
+	if cur != nil {
+		jobs := []*jobconfig.JobGroupConfig{}
+		err = cur.All(context.TODO(), &jobs)
+		if err != nil {
+			log.Fatalf("read jobs: %v\n", err)
+		}
+		for _, j := range jobs {
+			fmt.Printf("%v|%v\n", j.JobGroupId, j.JobName)
+		}
+	}
+
+	cur, err = svcs.MongoDB.Collection(dbCollections.JobStatusName).Find(ctx, bson.M{})
+	fmt.Printf("read job statuses: %v\n", err)
+	if cur != nil {
+		statuses := []*protos.JobStatus{}
+		err = cur.All(context.TODO(), &statuses)
+		if err != nil {
+			log.Fatalf("read jobs: %v\n", err)
+		}
+		for _, s := range statuses {
+			fmt.Printf("%v|%v|%v\n", s.JobId, s.Status, s.Message)
+		}
+	}
+
+	cur, err = svcs.MongoDB.Collection(dbCollections.JobQueueName).Find(ctx, bson.M{})
+	fmt.Printf("read job queue: %v\n", err)
+	if cur != nil {
+		q := []*protos.JobQueueItem{}
+		err = cur.All(context.TODO(), &q)
+		if err != nil {
+			log.Fatalf("read jobs: %v\n", err)
+		}
+		for _, item := range q {
+			fmt.Printf("%v|%v|%v\n", item.JobId, item.State, item.Message)
+		}
+	}
+
 	// Output:
 	// create: <nil>, instance: the-test-instance
 	// insert jobs: <nil>
 	// insert job statuses: <nil>
 	// insert queues: <nil>
 	// completeJob func called for: quant-id999
+	// read jobs: <nil>
+	// quant-id123|job1
+	// quant-id456|job2
+	// quant-id789|job3
+	// quant-id998|job3
+	// quant-id999|job4
+	// quant-id007|job5
+	// read job statuses: <nil>
+	// quant-id123|RUNNING|
+	// quant-id456|RUNNING|
+	// quant-id789|ERROR|1 nodes failed
+	// quant-id998|ERROR|Failed to complete job group quant-id998: Job completion failed, method NonExistantMethod unknown
+	// quant-id999|COMPLETE|Nodes ran: 2
+	// quant-id007|ERROR|1 nodes failed
+	// read job queue: <nil>
+	// quant-id123-node-0|UNKNOWN|
+	// quant-id123-node-1|UNKNOWN|
+	// quant-id456-node-0|UNKNOWN|
+	// quant-id456-node-1|COMPLETE|
 }
 
 func completeJobFunc(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, svcs *services.APIServices) error {

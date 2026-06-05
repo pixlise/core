@@ -15,7 +15,7 @@ import (
 func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerContext) (*protos.QuantCreateResp, error) {
 	if strings.Contains(req.Params.Name, "(new)") {
 		// Run a new-style job
-		status, err := hctx.Svcs.JobManager.SubmitQuantJob(req.Params, &hctx.SessUser)
+		status, err := hctx.Svcs.JobManager.SubmitQuantJob(req.Params, &hctx.SessUser, hctx.Session)
 		if err != nil {
 			return nil, err
 		}

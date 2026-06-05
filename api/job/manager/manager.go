@@ -1,6 +1,7 @@
 package jobmanager
 
 import (
+	"github.com/olahol/melody"
 	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/job/jobnode"
 	"github.com/pixlise/core/v4/api/services"
@@ -19,6 +20,7 @@ type JobManager struct {
 	localJobNode         *jobnode.JobNode
 	startNodes           bool
 	startedNodeCount     uint
+	userSessionLookup    map[string]*melody.Session
 }
 
 func CreateJobManager(svcs *services.APIServices, startupQueueCheckDelaySec int, monitorJobQueue bool, useFileCache bool, startNodes bool) (*JobManager, error) {

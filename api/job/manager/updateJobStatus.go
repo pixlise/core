@@ -57,6 +57,13 @@ func (jm *JobManager) updateJobStatus(jobId string, status protos.JobStatus_Stat
 		jm.svcs.Log.Infof("updateJobStatus: %v with status %v, message: %v", jobId, protos.JobStatus_Status_name[int32(status.Number())], message)
 	}
 
+	// Send out notifications so client knows the job state has changed
+	// if status == protos.JobStatus_COMPLETE {
+	// 	if jobStatus.JobType == protos.JobType_JT_RUN_QUANT {
+	// 		jm.svcs.Notifier.SysNotifyQuantChanged(jobId)
+	// 	}
+	// }
+
 	return jobStatus, nil
 }
 
