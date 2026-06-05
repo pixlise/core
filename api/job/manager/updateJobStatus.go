@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/sessionuser"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -58,11 +60,19 @@ func (jm *JobManager) updateJobStatus(jobId string, status protos.JobStatus_Stat
 	}
 
 	// Send out notifications so client knows the job state has changed
-	// if status == protos.JobStatus_COMPLETE {
-	// 	if jobStatus.JobType == protos.JobType_JT_RUN_QUANT {
-	// 		jm.svcs.Notifier.SysNotifyQuantChanged(jobId)
-	// 	}
-	// }
+	if len(existingStatus.RequestorUserId) > 0 && existingStatus.RequestorUserId != sessionuser.PIXLISESystemUserId {
+		if sess, ok := jm.userSessionLookup[existingStatus.RequestorUserId]; ok && sess != nil {
+			wsUpd := protos.WSMessage{
+				Contents: &protos.WSMessage_QuantCreateUpd{
+					QuantCreateUpd: &protos.QuantCreateUpd{
+						Status: jobStatus,
+					},
+				},
+			}
+
+			wsHelpers.SendForSession(sess, &wsUpd)
+		}
+	}
 
 	return jobStatus, nil
 }

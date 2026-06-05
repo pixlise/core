@@ -11,7 +11,7 @@ import (
 var JobComplete_CombineCSVs = "combine_csvs"
 var JobComplete_SingleCSV = "single_csvs"
 
-type JobManagerCompletionFunction func(*jobconfig.JobGroupConfig, *protos.JobStatus, *services.APIServices) error
+type JobManagerCompletionFunction func(*jobconfig.JobGroupConfig, *protos.JobStatus, *melody.Session, *services.APIServices) error
 
 type JobManager struct {
 	svcs                 *services.APIServices

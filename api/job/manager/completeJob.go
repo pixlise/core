@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	jobconfig "github.com/pixlise/core/v4/api/job/config"
@@ -18,7 +19,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, svcs *services.APIServices) error {
+func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, session *melody.Session, svcs *services.APIServices) error {
 	if len(jg.AssociatedScanId) <= 0 {
 		return fmt.Errorf("Failed to complete multi-node quant job %v: No associated scan ID found!", jg.JobGroupId)
 	}
@@ -190,6 +191,8 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 	}
 
 	// Report success
+	// NOTE: QuantCreateUpd would've already been sent by updateJobStatus()
+	// Here we only care about sending out the user notification (email/UI top bar)
 	scan, err := scan.ReadScanItem(jg.AssociatedScanId, svcs.MongoDB)
 	if err != nil {
 		svcs.Log.Errorf("Failed to read scan %v for sending new quant notification", jg.AssociatedScanId)
@@ -197,11 +200,12 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 		svcs.Notifier.NotifyNewQuant(false, jobId, createParams.Name, "Complete", scan.Title, jg.AssociatedScanId)
 	}
 
+	// Also send out the generic notification for quants changing (causing reloading of things on UI)
 	svcs.Notifier.SysNotifyQuantChanged(jobId)
 	return nil
 }
 
-func completeQuantSingleMapJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, svcs *services.APIServices) error {
+func completeQuantSingleMapJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, session *melody.Session, svcs *services.APIServices) error {
 	/*
 		// NOTE: Missing status writes - we only write those for map commands! saveQuantJobStatus quits if it's not a map anyway...
 

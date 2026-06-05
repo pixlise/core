@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/services"
@@ -329,7 +330,7 @@ func Example_jobmanager_QueueStartup() {
 	// insert jobs: <nil>
 	// insert job statuses: <nil>
 	// insert queues: <nil>
-	// completeJob func called for: quant-id999
+	// completeJob func called for: quant-id999, state: GATHERING_RESULTS, session exists: false
 	// read jobs: <nil>
 	// quant-id123|job1
 	// quant-id456|job2
@@ -351,7 +352,7 @@ func Example_jobmanager_QueueStartup() {
 	// quant-id456-node-1|COMPLETE|
 }
 
-func completeJobFunc(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, svcs *services.APIServices) error {
-	fmt.Printf("completeJob func called for: %v\n", jg.JobGroupId)
+func completeJobFunc(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, sess *melody.Session, svcs *services.APIServices) error {
+	fmt.Printf("completeJob func called for: %v, state: %v, session exists: %v\n", jg.JobGroupId, jstatus.Status, sess != nil)
 	return nil
 }

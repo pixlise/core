@@ -29,18 +29,13 @@ func (jm *JobManager) SubmitQuantJob(createParams *protos.QuantCreateParams, req
 		prefix = "piquant" + createParams.Command
 		jobType = protos.JobType_JT_RUN_FIT
 		jobCompletionMethod = JobComplete_SingleCSV
-
-		// Store session for completion-side use if we're sending notifications
-		if requestorUserSess != nil && requestorSession != nil {
-			jm.userSessionLookup[requestorUserSess.User.Id] = requestorSession
-		}
 	} else {
 		jobType = protos.JobType_JT_RUN_QUANT
 		jobCompletionMethod = JobComplete_CombineCSVs
 	}
 
 	// Call the internal one, log the resulting errors if any
-	status, err := jm.internalSubmitQuantJob(createParams, requestorUserSess, prefix, jobType, jobCompletionMethod)
+	status, err := jm.internalSubmitQuantJob(createParams, requestorUserSess, requestorSession, prefix, jobType, jobCompletionMethod)
 	if err != nil {
 		jm.svcs.Log.Errorf("SubmitQuantJob error: %v", err)
 	}
@@ -69,6 +64,7 @@ func (jm *JobManager) SubmitQuantJob(createParams *protos.QuantCreateParams, req
 func (jm *JobManager) internalSubmitQuantJob(
 	createParams *protos.QuantCreateParams,
 	requestorUserSess *sessionuser.SessionUser,
+	requestorSession *melody.Session,
 	idPrefix string,
 	jobType protos.JobType,
 	completeMethod string) (*protos.JobStatus, error) {
@@ -251,7 +247,7 @@ func (jm *JobManager) internalSubmitQuantJob(
 		RequestorUserId:  requestorUserId,
 	}
 
-	return jm.internalSubmitJob(jg)
+	return jm.internalSubmitJob(jg, requestorSession)
 }
 
 /*
@@ -394,7 +390,7 @@ job
 		return jm.internalSubmitJob(jg)
 	}
 */
-func (jm *JobManager) internalSubmitJob(jg *jobconfig.JobGroupConfig) (*protos.JobStatus, error) {
+func (jm *JobManager) internalSubmitJob(jg *jobconfig.JobGroupConfig, requestorSession *melody.Session) (*protos.JobStatus, error) {
 	if len(jg.JobGroupId) <= 0 {
 		return nil, errors.New("SubmitJob: JobGroupId not specified")
 	}
@@ -418,6 +414,11 @@ func (jm *JobManager) internalSubmitJob(jg *jobconfig.JobGroupConfig) (*protos.J
 
 	if len(jg.NodeConfig.Command) <= 0 {
 		return nil, errors.New("SubmitJob: Command not specified")
+	}
+
+	// Store session for completion-side use if we're sending notifications
+	if len(jg.RequestorUserId) > 0 && jg.RequestorUserId != sessionuser.PIXLISESystemUserId && requestorSession != nil {
+		jm.userSessionLookup[jg.RequestorUserId] = requestorSession
 	}
 
 	// Write job as JSON to S3 jobs bucket

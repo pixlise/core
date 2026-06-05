@@ -292,6 +292,6 @@ func (jm *JobManager) onJobGroupCompletion(jobGroupId string, jobStatus *protos.
 		return fmt.Errorf("Job completion failed, method %v unknown", jg.CompletionMethod)
 	}
 
-	// Run the method
-	return completionMethod(jg, jobStatus, jm.svcs)
+	// Run the method - get the session if we can find it
+	return completionMethod(jg, jobStatus, jm.userSessionLookup[jg.RequestorUserId], jm.svcs)
 }
