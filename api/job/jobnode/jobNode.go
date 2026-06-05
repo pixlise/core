@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
@@ -68,6 +69,7 @@ func (jn *JobNode) StartJobs(jobIds []string) {
 	}
 
 	// Find each job we were told to run
+	var wg sync.WaitGroup
 	for _, jobs := range jobGroups {
 		for _, jobItem := range jobs {
 			if _, ok := jobIdMap[jobItem.JobId]; ok == true {
@@ -77,10 +79,12 @@ func (jn *JobNode) StartJobs(jobIds []string) {
 				// Run this job
 				// NOTE: if we're in "local" mode for testing, we run the job synchronously so we get
 				// consistant output
+				wg.Add(1)
+
 				if len(jn.jobContainer) <= 0 {
-					jn.startJob(jobItem)
+					jn.startJob(jobItem, &wg)
 				} else {
-					go jn.startJob(jobItem)
+					go jn.startJob(jobItem, &wg)
 				}
 			}
 		}
@@ -91,6 +95,11 @@ func (jn *JobNode) StartJobs(jobIds []string) {
 		if waiting {
 			jn.log.Errorf("Instance %v failed to find job %v in queue, skipped", jn.instanceId, id)
 		}
+	}
+
+	// If we need to, wait for it
+	if len(jn.jobContainer) <= 0 {
+		wg.Wait()
 	}
 }
 
@@ -118,7 +127,9 @@ func (jn *JobNode) GetActiveJobCount() (uint, error) {
 	return uint(instances), nil
 }
 
-func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) {
+func (jn *JobNode) startJob(jobItem *protos.JobQueueItem, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	jn.log.Infof("Instance %v starting job \"%v\"...", jn.instanceId, jobItem.JobId)
 
 	// Set queue item to running so it doesn't get picked up again
