@@ -11,14 +11,17 @@ func Example_jobmanager_getJobsPerNode() {
 		fmt.Printf("%v/node: %v\n", c, getJobsPerNode(jobIds, uint(c)))
 	}
 
+	jobIds = []string{"id1", "id2", "id3", "id4", "id5", "id6", "id7", "id8", "id9", "id10", "id11", "id12", "id13"}
+	fmt.Printf("13job %v/node: %v\n", 4, getJobsPerNode(jobIds, uint(4)))
+
 	// Output:
 	// 0/node: [[id1] [id2] [id3] [id4] [id5] [id6] [id7]]
 	// 1/node: [[id1] [id2] [id3] [id4] [id5] [id6] [id7]]
 	// 2/node: [[id1 id2] [id3 id4] [id5 id6] [id7]]
-	// 3/node: [[id1 id2 id3] [id4 id5 id6]]
+	// 3/node: [[id1 id2 id3] [id4 id5 id6] [id7]]
 	// 4/node: [[id1 id2 id3 id4] [id5 id6 id7]]
-	// 5/node: [[id1 id2 id3 id4 id5]]
-	// 6/node: [[id1 id2 id3 id4 id5 id6]]
+	// 5/node: [[id1 id2 id3 id4 id5] [id6 id7]]
+	// 6/node: [[id1 id2 id3 id4 id5 id6] [id7]]
 	// 7/node: [[id1 id2 id3 id4 id5 id6 id7]]
 	// 8/node: [[id1 id2 id3 id4 id5 id6 id7]]
 	// 9/node: [[id1 id2 id3 id4 id5 id6 id7]]
@@ -32,6 +35,7 @@ func Example_jobmanager_getJobsPerNode() {
 	// 17/node: [[id1 id2 id3 id4 id5 id6 id7]]
 	// 18/node: [[id1 id2 id3 id4 id5 id6 id7]]
 	// 19/node: [[id1 id2 id3 id4 id5 id6 id7]]
+	// 13job 4/node: [[id1 id2 id3 id4] [id5 id6 id7 id8] [id9 id10 id11 id12] [id13]]
 }
 
 /*

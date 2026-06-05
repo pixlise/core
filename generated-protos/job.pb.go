@@ -144,24 +144,27 @@ type JobQueueItem_State int32
 
 const (
 	JobQueueItem_UNKNOWN  JobQueueItem_State = 0 // https://protobuf.dev/programming-guides/dos-donts/ says specify an unknown as 0
-	JobQueueItem_RUNNING  JobQueueItem_State = 1
-	JobQueueItem_COMPLETE JobQueueItem_State = 2
-	JobQueueItem_FAILED   JobQueueItem_State = 3
+	JobQueueItem_ASSIGNED JobQueueItem_State = 1
+	JobQueueItem_RUNNING  JobQueueItem_State = 2
+	JobQueueItem_COMPLETE JobQueueItem_State = 3
+	JobQueueItem_FAILED   JobQueueItem_State = 4
 )
 
 // Enum value maps for JobQueueItem_State.
 var (
 	JobQueueItem_State_name = map[int32]string{
 		0: "UNKNOWN",
-		1: "RUNNING",
-		2: "COMPLETE",
-		3: "FAILED",
+		1: "ASSIGNED",
+		2: "RUNNING",
+		3: "COMPLETE",
+		4: "FAILED",
 	}
 	JobQueueItem_State_value = map[string]int32{
 		"UNKNOWN":  0,
-		"RUNNING":  1,
-		"COMPLETE": 2,
-		"FAILED":   3,
+		"ASSIGNED": 1,
+		"RUNNING":  2,
+		"COMPLETE": 3,
+		"FAILED":   4,
 	}
 )
 
@@ -569,7 +572,7 @@ const file_job_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05jobId\x18\x02 \x01(\tR\x05jobId\x12,\n" +
 	"\x11handlerInstanceId\x18\x03 \x01(\tR\x11handlerInstanceId\x12*\n" +
-	"\x10timeStampUnixSec\x18\x04 \x01(\rR\x10timeStampUnixSec\"\xac\x03\n" +
+	"\x10timeStampUnixSec\x18\x04 \x01(\rR\x10timeStampUnixSec\"\xba\x03\n" +
 	"\fJobQueueItem\x12\x14\n" +
 	"\x05jobId\x18\x01 \x01(\tR\x05jobId\x12\x1e\n" +
 	"\n" +
@@ -583,13 +586,14 @@ const file_job_proto_rawDesc = "" +
 	"\amessage\x18\x06 \x01(\tR\amessage\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\t \x01(\tR\n" +
-	"instanceId\";\n" +
+	"instanceId\"I\n" +
 	"\x05State\x12\v\n" +
-	"\aUNKNOWN\x10\x00\x12\v\n" +
-	"\aRUNNING\x10\x01\x12\f\n" +
-	"\bCOMPLETE\x10\x02\x12\n" +
+	"\aUNKNOWN\x10\x00\x12\f\n" +
+	"\bASSIGNED\x10\x01\x12\v\n" +
+	"\aRUNNING\x10\x02\x12\f\n" +
+	"\bCOMPLETE\x10\x03\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x03*z\n" +
+	"\x06FAILED\x10\x04*z\n" +
 	"\aJobType\x12\x0e\n" +
 	"\n" +
 	"JT_UNKNOWN\x10\x00\x12\x12\n" +

@@ -1,6 +1,7 @@
 package jobmanager
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -10,11 +11,14 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/aws/aws-secretsmanager-caching-go/secretcache"
+	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/job/jobnode"
+	protos "github.com/pixlise/core/v4/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // Called to start a job node
-func (jm *JobManager) startEC2JobNode(jobIds []string, waitTillStarted bool) error {
+func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret string, awsRegion string, waitTillStarted bool) error {
 	if len(jobIds) <= 0 || len(jobIds) > int(jm.svcs.Config.CoresPerNode) {
 		return fmt.Errorf("Invalid job count when starting EC2 job nodes: %v", len(jobIds))
 	}
@@ -38,12 +42,6 @@ func (jm *JobManager) startEC2JobNode(jobIds []string, waitTillStarted bool) err
 
 	if jm.startedNodeCount > jm.svcs.Config.MaxQuantNodes || jm.startedNodeCount > 10 {
 		return fmt.Errorf("Not starting job node, hard testing limit has been reached")
-	}
-
-	// Read the credentials from secrets manager
-	awsKey, awsSecret, awsRegion, err := readSecretsManager(jm.svcs.SecretsManager, jm.svcs.Config.JobAWSSecret)
-	if err != nil {
-		return fmt.Errorf("JobNode AWS secret read failed: %v", err)
 	}
 
 	jobNodeInstanceName := fmt.Sprintf("job-node-%v", jm.svcs.Config.EnvironmentName)
@@ -129,7 +127,7 @@ shutdown -h now
 		instanceStrs = append(instanceStrs, *inst.InstanceId)
 	}
 
-	jm.svcs.Log.Infof("  Started %v instance(s) [%v]", len(instances), strings.Join(instanceStrs, ","))
+	jm.svcs.Log.Infof("   Started %v instance(s) [%v]", len(instances), strings.Join(instanceStrs, ","))
 	jm.startedNodeCount = jm.startedNodeCount + 1
 
 	if waitTillStarted {
@@ -223,6 +221,10 @@ func getJobsPerNode(jobIds []string, jobsPerNode uint) [][]string {
 		nodesNeeded = 1 // we need at least ONE! If it has many cores it might run our entire job
 	}
 
+	if (len(jobIds) - int(jobsPerNode*nodesNeeded)) > 0 {
+		nodesNeeded = nodesNeeded + 1
+	}
+
 	for c := uint(0); c < nodesNeeded; c++ {
 		jobs := []string{}
 
@@ -253,6 +255,13 @@ func (jm *JobManager) startJobNodes(jobIds []string) error {
 
 	if len(jm.svcs.Config.JobAWSSecret) > 0 {
 		jm.svcs.Log.Debugf("  Querying running node count...")
+
+		// Read the credentials from secrets manager
+		awsKey, awsSecret, awsRegion, err := readSecretsManager(jm.svcs.SecretsManager, jm.svcs.Config.JobAWSSecret)
+		if err != nil {
+			return fmt.Errorf("JobNode AWS secret read failed: %v", err)
+		}
+
 		instanceIds, err := jm.getRunningNodes()
 		if err != nil {
 			return err
@@ -265,13 +274,31 @@ func (jm *JobManager) startJobNodes(jobIds []string) error {
 			return fmt.Errorf("Too many job nodes active (%v), no more will be started", len(instanceIds))
 		}
 
+		// Change their state, we're assigning them...
+		nowUnixSec := jm.svcs.TimeStamper.GetTimeNowSec()
+		ctx := context.TODO()
+
+		filter := bson.M{"_id": bson.M{"$in": jobIds}}
+		dbResult, err := jm.svcs.MongoDB.Collection(dbCollections.JobQueueName).UpdateMany(ctx, filter, bson.D{{Key: "$set", Value: bson.M{
+			"state":                       protos.JobQueueItem_ASSIGNED,
+			"lastupdatedtimestampunixsec": nowUnixSec,
+		}}})
+
+		if err != nil {
+			return fmt.Errorf("Failed to set jobs to assigned state: %v", err)
+		}
+
+		if dbResult.ModifiedCount != int64(len(jobIds)) {
+			jm.svcs.Log.Infof("  WARNING: startJobNodes expected modified count of %v, got %v", len(jobIds), dbResult.ModifiedCount)
+		}
+
 		// Work out how many job nodes are needed.
 		jobsForNodes := getJobsPerNode(jobIds, jm.svcs.Config.CoresPerNode)
 
 		// Start each node
 		for _, jobs := range jobsForNodes {
 			jm.svcs.Log.Debugf("  Starting EC2 job node for jobs: %v...", strings.Join(jobs, ","))
-			err = jm.startEC2JobNode(jobs, true)
+			err = jm.startEC2JobNode(jobs, awsKey, awsSecret, awsRegion, true)
 			if err != nil {
 				return err
 			}
