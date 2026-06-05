@@ -36,6 +36,10 @@ func (jm *JobManager) startEC2JobNode(jobIds []string, waitTillStarted bool) err
 		return fmt.Errorf("JobNode AWS secret not set")
 	}
 
+	if jm.startedNodeCount > jm.svcs.Config.MaxQuantNodes || jm.startedNodeCount > 10 {
+		return fmt.Errorf("Not starting job node, hard testing limit has been reached")
+	}
+
 	// Read the credentials from secrets manager
 	awsKey, awsSecret, awsRegion, err := readSecretsManager(jm.svcs.SecretsManager, jm.svcs.Config.JobAWSSecret)
 	if err != nil {
@@ -129,6 +133,7 @@ echo "PIXLISE job node running"
 	}
 
 	jm.svcs.Log.Infof("Started %v instances [%v]", len(instances), strings.Join(instanceStrs, ","))
+	jm.startedNodeCount = jm.startedNodeCount + 1
 
 	if waitTillStarted {
 		input := &ec2.DescribeInstancesInput{InstanceIds: instances}
@@ -191,8 +196,6 @@ func (jm *JobManager) getRunningNodes() ([]string, error) {
 			Values: []*string{aws.String("job-node")},
 		},
 	}
-
-	// TODO: check names too!
 
 	request := &ec2.DescribeInstancesInput{Filters: filters}
 	result, err := jm.svcs.EC2.DescribeInstances(request)

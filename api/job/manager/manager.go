@@ -18,6 +18,7 @@ type JobManager struct {
 	useFileCache         bool
 	localJobNode         *jobnode.JobNode
 	startNodes           bool
+	startedNodeCount     uint
 }
 
 func CreateJobManager(svcs *services.APIServices, startupQueueCheckDelaySec int, monitorJobQueue bool, useFileCache bool, startNodes bool) (*JobManager, error) {
