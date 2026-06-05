@@ -31,8 +31,9 @@ func CreateJobManager(svcs *services.APIServices, startupQueueCheckDelaySec int,
 			JobComplete_CombineCSVs: completeQuantMultiNodeJob,
 			JobComplete_SingleCSV:   completeQuantSingleMapJob,
 		},
-		useFileCache: useFileCache,
-		startNodes:   startNodes,
+		useFileCache:      useFileCache,
+		startNodes:        startNodes,
+		userSessionLookup: map[string]*melody.Session{},
 	}
 
 	if startupQueueCheckDelaySec > 0 {
