@@ -129,7 +129,7 @@ shutdown -h now
 		instanceStrs = append(instanceStrs, *inst.InstanceId)
 	}
 
-	jm.svcs.Log.Infof("Started %v instances [%v]", len(instances), strings.Join(instanceStrs, ","))
+	jm.svcs.Log.Infof("  Started %v instance(s) [%v]", len(instances), strings.Join(instanceStrs, ","))
 	jm.startedNodeCount = jm.startedNodeCount + 1
 
 	if waitTillStarted {

@@ -98,7 +98,7 @@ func (jn *JobNode) StartJobs(jobIds []string) {
 	}
 
 	// If we need to, wait for it
-	if len(jn.jobContainer) <= 0 {
+	if len(jn.jobContainer) > 0 {
 		wg.Wait()
 	}
 }
