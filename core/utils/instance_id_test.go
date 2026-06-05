@@ -6,11 +6,13 @@ import (
 )
 
 func Example_utils_GetInstanceId() {
-	i, e := GetInstanceId()
-	fmt.Println(len(i) > 0)
-	fmt.Println(strings.HasPrefix(e.Error(), "Failed to fetch instance ID from IMDS: operation error ec2imds: GetMetadata, "))
+	i, b, e := GetInstanceId()
+	fmt.Printf("id not empty: %v\n", len(i) > 0)
+	fmt.Printf("isEC2: %v\n", b)
+	fmt.Printf("expected error: %v\n", strings.HasPrefix(e.Error(), "Failed to fetch instance ID from IMDS: operation error ec2imds: GetMetadata, "))
 
 	// Output:
-	// true
-	// true
+	// id not empty: true
+	// isEC2: false
+	// expected error: true
 }

@@ -117,6 +117,8 @@ func (jn *JobNode) GetActiveJobCount() (uint, error) {
 }
 
 func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
+	jn.log.Infof("Instance %v starting job \"%v\"...", jn.instanceId, jobItem.JobId)
+
 	// Set queue item to running so it doesn't get picked up again
 	err := job.UpdateJobQueueItem(
 		jobItem.JobId,

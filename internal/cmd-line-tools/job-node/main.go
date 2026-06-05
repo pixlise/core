@@ -21,10 +21,12 @@ import (
 func main() {
 	fmt.Printf("Job Node version \"%v\"...\n", services.ApiVersion)
 
-	instanceIdObtained, err := utils.GetInstanceId()
+	instanceIdObtained, isEC2, err := utils.GetInstanceId()
 	if err != nil {
 		fmt.Printf("Error retrieving EC2 instance id: %v\n", err)
 	} // else still OK to continue, GetInstanceId should've generated a random string
+
+	defer shutdown(instanceIdObtained, isEC2)
 
 	// Read args
 	var bucket, jobContainer, instanceId, mongoSecret, envName, jobs string
@@ -88,6 +90,8 @@ func main() {
 	}
 
 	l := logger.StdOutLogger{}
+	l.SetLogLevel(logger.LogDebug)
+
 	ts := timestamper.UnixTimeNowStamper{}
 	fs := fileaccess.MakeS3Access(s3svc)
 
@@ -117,6 +121,15 @@ func main() {
 	}
 
 	log.Fatalf("Forced exit due to: %v", endReason)
+}
+
+func shutdown(instanceId string, isEC2 bool) {
+	if !isEC2 {
+		return // we can't shut down
+	}
+
+	// We got this instance ID from EC2, so we can shut down this machine at this point
+	fmt.Printf("Instance %v should be shut down now...", instanceId)
 }
 
 func waitForJobCompletion(maxRunTimeSec int64, jobNode *jobnode.JobNode, ts timestamper.ITimeStamper, l logger.ILogger) (string, bool) {

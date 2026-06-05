@@ -59,7 +59,7 @@ func main() {
 
 	// Invent an instance ID if we don't already have one set (eg the instance id of the EC2 we're running on!)
 	fmt.Printf("PIXLISE API version \"%v\" starting...\n", services.ApiVersion)
-	instanceId, err := utils.GetInstanceId()
+	instanceId, _, err := utils.GetInstanceId()
 	if err != nil {
 		fmt.Printf("Error retrieving EC2 instance id: %v\n", err)
 	}

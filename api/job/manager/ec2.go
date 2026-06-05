@@ -52,9 +52,6 @@ func (jm *JobManager) startEC2JobNode(jobIds []string, waitTillStarted bool) err
 set -e
 echo "Starting PIXLISE job node, limited to %v sec runtime"
 
-# Auto-shutdown instance in requested time
-(sleep %v && shutdown -h now) &
-
 export AWS_ACCESS_KEY_ID="%v"
 export AWS_SECRET_ACCESS_KEY="%v"
 export AWS_REGION="%v"
@@ -81,9 +78,9 @@ chmod +x ./pixlise-job-node
 echo "Running job node..."
 ./pixlise-job-node -bucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxRunTimeSec "%v" -jobs "%v"
 
-echo "PIXLISE job node running"
+echo "PIXLISE job node shutting down"
+shutdown -h now
 `,
-		jm.svcs.Config.JobMaxNodeRunTimeSec,
 		jm.svcs.Config.JobMaxNodeRunTimeSec,
 		awsKey, awsSecret,
 		awsRegion, awsRegion,
