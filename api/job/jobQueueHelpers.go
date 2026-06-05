@@ -54,7 +54,7 @@ func ReadJobQueue(db *mongo.Database) (map[string][]*protos.JobQueueItem, error)
 
 // Listens to the job queue collection. If the collection is dropped, it returns true signifying it can be retried
 // but if it ends for any other reason, it will return false
-func ListenToJobQueue(allowedOps []string, db *mongo.Database, log logger.ILogger, runCheck func(*protos.JobQueueItem)) bool {
+func ListenToJobQueue(allowedOps []string, db *mongo.Database, ts timestamper.ITimeStamper, log logger.ILogger, rateLimitSec uint, runCheck func(*protos.JobQueueItem)) bool {
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.JobQueueName)
 
@@ -66,7 +66,16 @@ func ListenToJobQueue(allowedOps []string, db *mongo.Database, log logger.ILogge
 
 	log.Infof("Listening for queued jobs...")
 	lastOpWasInvalidate := false
+	lastTimeSec := uint(0)
+
 	for stream.Next(ctx) {
+		now := uint(ts.GetTimeNowSec())
+
+		if now-lastTimeSec <= rateLimitSec {
+			log.Debugf("Rate limiting DB job queue change notification")
+			continue
+		}
+
 		// Work out if we're interested at all
 		operation, _ /*key*/, doc, err := ReadChangeStreamItem[*protos.JobQueueItem](stream)
 
@@ -82,6 +91,7 @@ func ListenToJobQueue(allowedOps []string, db *mongo.Database, log logger.ILogge
 			// 		 Instead, we just treat this as a hint to look at the job queue. We take actions based on
 			//       what we find in the queue
 			runCheck(doc)
+			lastTimeSec = now
 		}
 
 		lastOpWasInvalidate = operation == "invalidate"

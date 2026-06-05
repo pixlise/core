@@ -51,7 +51,7 @@ func HandleOnce(jobId string, instanceId string, handleCallback func(string), db
 		return err
 	}
 
-	if result.UpsertedCount == 0 && result.ModifiedCount == 0 {
+	if (result.UpsertedCount != 1 || result.UpsertedID == nil) && result.MatchedCount != 1 {
 		logger.Errorf("HandleOnce: Write to DB had unexpected result: %+v", result)
 	}
 
