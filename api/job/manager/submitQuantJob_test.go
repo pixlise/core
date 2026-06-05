@@ -231,7 +231,7 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	// DEBUG: Upload map000000.csv_log.txt -> s3://job-bucket/JobData/048300551/quant-id123/piquant-logs/piquant000000.log
 	// DEBUG: Upload map000000.csv -> s3://job-bucket/JobData/048300551/quant-id123/output/result000000.csv
 	// DEBUG: CheckJobQueue found 1 job groups
-	// DEBUG:   CheckJobQueue job group quant-id123 has 1 ran, 1 completed nodes
+	// DEBUG:   CheckJobQueue job group quant-id123 has 1 ran, 1 completed nodes of 1
 	// DEBUG:   CheckJobQueue running job group quant-id123 completion task...
 	// INFO: updateJobStatus: quant-id123 with status GATHERING_RESULTS, message: Combining CSVs from 1 nodes...
 	// INFO: Data Types Saved:
@@ -458,7 +458,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// DEBUG: Upload map000003.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant000003.log
 	// DEBUG: Upload map000003.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result000003.csv
 	// DEBUG: CheckJobQueue found 1 job groups
-	// DEBUG:   CheckJobQueue job group quant-id123 has 4 ran, 4 completed nodes
+	// DEBUG:   CheckJobQueue job group quant-id123 has 4 ran, 4 completed nodes of 4
 	// DEBUG:   CheckJobQueue running job group quant-id123 completion task...
 	// INFO: updateJobStatus: quant-id123 with status GATHERING_RESULTS, message: Combining CSVs from 4 nodes...
 	// INFO: Data Types Saved:

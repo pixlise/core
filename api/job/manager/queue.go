@@ -116,18 +116,22 @@ func (jm *JobManager) checkJobQueue() error {
 	nowUnixSec := jm.svcs.TimeStamper.GetTimeNowSec()
 	for _, jobs := range groupsAndJobs {
 		for _, jobItem := range jobs {
-			if jobItem.State == protos.JobQueueItem_RUNNING {
+			if jobItem.State == protos.JobQueueItem_ASSIGNED || jobItem.State == protos.JobQueueItem_RUNNING {
 				// If the instance is no longer with us, or if a long time has passed, we drop the job
 				secSinceUpdate := nowUnixSec - jobItem.LastUpdatedTimeStampUnixSec
 
-				isNodeAround := utils.ItemInSlice(jobItem.InstanceId, runningInstanceIds)
-				if !isNodeAround || secSinceUpdate > int64(jm.svcs.Config.JobMaxNodeRunTimeSec) {
+				isNodeGone := jobItem.State == protos.JobQueueItem_RUNNING && !utils.ItemInSlice(jobItem.InstanceId, runningInstanceIds)
+				if isNodeGone || secSinceUpdate > int64(jm.svcs.Config.JobMaxNodeRunTimeSec) {
 					// Mark this job node as failed
-					jobItem.State = protos.JobQueueItem_FAILED
 					jobItem.Message = "Node did not complete job."
-					if isNodeAround {
+					if jobItem.State == protos.JobQueueItem_ASSIGNED {
+						jobItem.Message = "Node did not start job."
+					}
+					if isNodeGone {
 						jobItem.Message = fmt.Sprintf("Node timed out after %v seconds.", secSinceUpdate)
 					}
+
+					jobItem.State = protos.JobQueueItem_FAILED
 
 					jm.svcs.Log.Debugf("  CheckJobQueue detected timed out/incomplete job: %v", jobItem.JobId)
 
@@ -164,11 +168,12 @@ func (jm *JobManager) checkJobQueue() error {
 			}
 		}
 
-		jm.svcs.Log.Debugf("  CheckJobQueue job group %v has %v ran, %v completed nodes", jobGroupId, ranCount, completed)
+		jm.svcs.Log.Debugf("  CheckJobQueue job group %v has %v ran, %v completed nodes of %v", jobGroupId, ranCount, completed, len(jobs))
 
 		// If they've all been completed, do the completion task (if there is one)
+		var existingStatus *protos.JobStatus
 		if completed >= len(jobs) {
-			existingStatus, err := jm.readJobStatus(jobGroupId)
+			existingStatus, err = jm.readJobStatus(jobGroupId)
 			if err != nil {
 				jm.svcs.Log.Errorf("Failed to read existing job group status for: %v. %v", jobGroupId, err)
 			} else {
@@ -180,10 +185,8 @@ func (jm *JobManager) checkJobQueue() error {
 
 					err = jm.onJobGroupCompletion(jobGroupId, updatedStatus)
 					if err != nil {
-						jobErr := fmt.Errorf("Failed to complete job group %v: %v", jobGroupId, err)
-
 						// Set the job status to gathering results
-						jm.updateJobStatus(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("%v", jobErr), "", existingStatus)
+						jm.updateJobStatus(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("Failed to complete job group %v: %v", jobGroupId, err), "", existingStatus)
 					} else {
 						// Set the job status to gathering results
 						jm.updateJobStatus(jobGroupId, protos.JobStatus_COMPLETE, fmt.Sprintf("Nodes ran: %v", len(jobs)), "", existingStatus)
@@ -204,6 +207,12 @@ func (jm *JobManager) checkJobQueue() error {
 				jm.svcs.Log.Errorf("Failed to delete completed jobs for group: %v. %v", jobGroupId, err)
 			} else if delResult.DeletedCount <= 0 {
 				jm.svcs.Log.Errorf("Unexpected delete count %v after deleting completed jobs for group: %v", delResult.DeletedCount, jobGroupId)
+			}
+
+			// If they're not all completed, we just mark the job as failed
+			if completed < ranCount {
+				jm.updateJobStatus(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("%v nodes failed", ranCount-completed), "", existingStatus)
+				jm.svcs.Log.Infof("  Marking job %v as ERROR due to nodes not all completing", jobGroupId)
 			}
 		}
 	}

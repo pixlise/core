@@ -25,6 +25,7 @@ func Example_jobmanager_QueueStartup() {
 	defer os.Chdir(origWD)
 
 	svcs.Config.NodeCountOverride = 4
+	svcs.Config.JobMaxNodeRunTimeSec = 1800
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogError)
 
@@ -103,6 +104,19 @@ func Example_jobmanager_QueueStartup() {
 			ElementList:      []string{},
 			RequestorUserId:  "abc123",
 		},
+		&jobconfig.JobGroupConfig{
+			JobGroupId:       "quant-id007",
+			JobType:          protos.JobType_JT_RUN_QUANT,
+			CompletionMethod: "completeJob",
+			DockerImage:      "job-container",
+			FastStart:        false,
+			NodeCount:        2,
+			NodeConfig:       jobconfig.JobConfig{},
+			AssociatedScanId: "",
+			JobName:          "job5",
+			ElementList:      []string{},
+			RequestorUserId:  "abc123",
+		},
 	)
 
 	jobStatuses := []interface{}{}
@@ -135,6 +149,12 @@ func Example_jobmanager_QueueStartup() {
 			JobId:           "quant-id999",
 			JobType:         protos.JobType_JT_RUN_QUANT,
 			Status:          protos.JobStatus_RUNNING,
+			RequestorUserId: "abc123",
+		},
+		&protos.JobStatus{
+			JobId:           "quant-id007",
+			JobType:         protos.JobType_JT_RUN_QUANT,
+			Status:          protos.JobStatus_STARTING,
 			RequestorUserId: "abc123",
 		},
 	)
@@ -235,6 +255,15 @@ func Example_jobmanager_QueueStartup() {
 			CreatedTimeStampUnixSec:     1668142581,
 			LastUpdatedTimeStampUnixSec: 1668142581,
 			State:                       protos.JobQueueItem_COMPLETE,
+		},
+		&protos.JobQueueItem{
+			JobId:                       "quant-id007-node-1",
+			JobGroupId:                  "quant-id007",
+			AssociatedScanId:            "scan3",
+			NodeIndex:                   1,
+			CreatedTimeStampUnixSec:     1668112585,
+			LastUpdatedTimeStampUnixSec: 1668112586,
+			State:                       protos.JobQueueItem_ASSIGNED,
 		},
 	)
 	//go jm.listenToJobQueue()
