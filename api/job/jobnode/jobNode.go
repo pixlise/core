@@ -75,10 +75,12 @@ func (jn *JobNode) StartJobs(jobIds []string) {
 				jobIdMap[jobItem.JobId] = false
 
 				// Run this job
-				err = jn.startJob(jobItem)
-
-				if err != nil {
-					jn.log.Errorf("Instance %v failed to start job %v. Error: %v", jn.instanceId, jobItem.JobId, err)
+				// NOTE: if we're in "local" mode for testing, we run the job synchronously so we get
+				// consistant output
+				if len(jn.jobContainer) <= 0 {
+					jn.startJob(jobItem)
+				} else {
+					go jn.startJob(jobItem)
 				}
 			}
 		}
@@ -116,7 +118,7 @@ func (jn *JobNode) GetActiveJobCount() (uint, error) {
 	return uint(instances), nil
 }
 
-func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
+func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) {
 	jn.log.Infof("Instance %v starting job \"%v\"...", jn.instanceId, jobItem.JobId)
 
 	// Set queue item to running so it doesn't get picked up again
@@ -130,7 +132,7 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 
 	if err != nil {
 		jn.log.Errorf("%v", err)
-		return err
+		return
 	}
 
 	// Start counting up!
@@ -184,7 +186,7 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 			if err2 != nil {
 				jn.log.Errorf("Failed to update job queue item %v to failed status: %v", jobItem.JobId, err2)
 			}
-			return fmt.Errorf("Job run failed: %v%v", err, outStr)
+			jn.log.Errorf("Job run for %v failed: %v%v", jobItem.JobId, err, outStr)
 		}
 
 		jn.log.Infof("Job %v run complete, output:\n-----------------\n%v\n-----------------\n", jobItem.JobId, outStr)
@@ -209,8 +211,5 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem) error {
 
 	if err != nil {
 		jn.log.Errorf("%v", err)
-		return err
 	}
-
-	return nil
 }
