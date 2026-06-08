@@ -275,7 +275,7 @@ func (jm *JobManager) checkJobTimeout(jobItem *protos.JobQueueItem, runningInsta
 
 	jobItem.State = protos.JobQueueItem_FAILED
 
-	jm.svcs.Log.Debugf("  CheckJobQueue detected timed out/incomplete job: %v", jobItem.JobId)
+	jm.svcs.Log.Debugf("  CheckJobQueue detected timed out/incomplete job: %v. Message: %v", jobItem.JobId, jobItem.Message)
 
 	// Write it out
 	err := job.UpdateJobQueueItem(jobItem.JobId, jobItem.State, jobItem.Message, jobItem.JobGroupId, "", jm.svcs.MongoDB, jm.svcs.TimeStamper)
