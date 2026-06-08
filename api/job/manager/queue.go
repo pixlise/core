@@ -3,6 +3,7 @@ package jobmanager
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -258,6 +259,8 @@ func (jm *JobManager) checkJobTimeout(jobItem *protos.JobQueueItem, runningInsta
 	// If the instance is no longer with us, or if a long time has passed, we drop the job
 	secSinceUpdate := nowUnixSec - jobItem.LastUpdatedTimeStampUnixSec
 
+	jm.svcs.Log.Debugf("  CheckJobQueue job %v timeout check: elapsed %v sec, state: %v, instance: %v, instanceList: %v", jobItem.JobId, secSinceUpdate, jobItem.State, jobItem.InstanceId, strings.Join(runningInstanceIds, ","))
+
 	isNodeGone := jobItem.State == protos.JobQueueItem_RUNNING && !utils.ItemInSlice(jobItem.InstanceId, runningInstanceIds)
 	if !isNodeGone && secSinceUpdate < int64(jm.svcs.Config.JobMaxNodeRunTimeSec) {
 		// Job is not yet dead/timed out
@@ -268,8 +271,7 @@ func (jm *JobManager) checkJobTimeout(jobItem *protos.JobQueueItem, runningInsta
 	jobItem.Message = "Node did not complete job."
 	if jobItem.State == protos.JobQueueItem_ASSIGNED {
 		jobItem.Message = "Node did not start job."
-	}
-	if isNodeGone {
+	} else if !isNodeGone {
 		jobItem.Message = fmt.Sprintf("Node timed out after %v seconds.", secSinceUpdate)
 	}
 
