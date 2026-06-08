@@ -43,6 +43,7 @@ import (
 
 // JobParamsFileName - File name of job params file
 const JobParamsFileName = "params.json"
+const JobRequestFileName = "request.json"
 
 // OutputCSVName - File name of piquant output CSV file, may have indexes inserted in the name in case of multiple files (map command)
 // forming something along the lines of result000001.csv
@@ -75,7 +76,7 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, s
 		jobId = jobStatus.JobId
 	}
 
-	if err != nil || len(jobId) < 0 {
+	if err != nil || len(jobId) <= 0 {
 		returnErr := fmt.Errorf("Failed to add job watcher for quant Job ID: %v. Error was: %v", jobId, err)
 		svcs.Log.Errorf("%v", returnErr)
 		return nil, returnErr

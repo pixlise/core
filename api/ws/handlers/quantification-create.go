@@ -13,6 +13,20 @@ import (
 )
 
 func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerContext) (*protos.QuantCreateResp, error) {
+	if strings.Contains(req.Params.Name, "(new)") {
+		// Run a new-style job
+		status, err := hctx.Svcs.JobManager.SubmitQuantJob(req.Params, &hctx.SessUser, hctx.Session)
+		if err != nil {
+			return nil, err
+		}
+
+		return &protos.QuantCreateResp{Status: status}, nil
+	}
+
+	return legacyHandleQuantCreateReq(req, hctx)
+}
+
+func legacyHandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerContext) (*protos.QuantCreateResp, error) {
 	err := quantification.IsValidCreateParam(req.Params, hctx.Svcs, &hctx.SessUser)
 	if err != nil {
 		return nil, errorwithstatus.MakeBadRequestError(err)
@@ -21,7 +35,7 @@ func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerCont
 	// At this point, we're assuming that the detector config is a valid config name / version. We need this to be the path of the config in S3
 	// so here we convert it and ensure it's valid
 	detectorConfigBits := strings.Split(req.Params.DetectorConfig, "/")
-	if len(detectorConfigBits) != 2 || len(detectorConfigBits[0]) < 0 || len(detectorConfigBits[1]) < 0 {
+	if len(detectorConfigBits) != 2 || len(detectorConfigBits[0]) <= 0 || len(detectorConfigBits[1]) <= 0 {
 		return nil, errorwithstatus.MakeBadRequestError(errors.New("DetectorConfig not in expected format"))
 	}
 

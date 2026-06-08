@@ -57,8 +57,13 @@ func main() {
 
 	// Deprecated now: rand.Seed(time.Now().UnixNano())
 
-	// Invent an instance ID
-	instanceId := utils.RandStringBytesMaskImpr(16)
+	// Invent an instance ID if we don't already have one set (eg the instance id of the EC2 we're running on!)
+	fmt.Printf("PIXLISE API version \"%v\" starting...\n", services.ApiVersion)
+	instanceId, _, err := utils.GetInstanceId()
+	if err != nil {
+		fmt.Printf("Error retrieving EC2 instance id: %v\n", err)
+	}
+	fmt.Printf("InstanceId for this API run: \"%v\"\n", instanceId)
 
 	// Turn off date+time prefixing of log msgs, we have timestamps captured in other ways
 	log.SetFlags(0)
@@ -321,7 +326,7 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 	}
 
 	// Create job manager and point it back here
-	svcs.JobManager, err = jobmanager.Create(svcs, 10, true, true)
+	svcs.JobManager, err = jobmanager.CreateJobManager(svcs, 10, true, true, true)
 	if err != nil {
 		log.Fatalf("Failed to init job manager. Error: %v", err)
 	}

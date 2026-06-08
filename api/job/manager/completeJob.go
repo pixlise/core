@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	jobconfig "github.com/pixlise/core/v4/api/job/config"
@@ -12,12 +13,17 @@ import (
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/scan"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, svcs *services.APIServices) error {
+func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, session *melody.Session, svcs *services.APIServices) error {
+	if len(jg.AssociatedScanId) <= 0 {
+		return fmt.Errorf("Failed to complete multi-node quant job %v: No associated scan ID found!", jg.JobGroupId)
+	}
+
 	jobId := jg.JobGroupId
 
 	// Generate the output path for all generated data files & logs
@@ -117,12 +123,31 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 		svcs.Log.Errorf("Failed to upload quant CSV file to s3 at \"s3://%v / %v\": %v", svcs.Config.UsersBucket, csvFilePath, err)
 	}
 
+	quantJobReqS3Path := filepaths.GetJobDataPath(jg.AssociatedScanId, jobId, quantification.JobRequestFileName)
+
+	createParams := &protos.QuantCreateParams{}
+	err = svcs.FS.ReadJSON(svcs.Config.PiquantJobsBucket, quantJobReqS3Path, createParams, false)
+	if err != nil {
+		return fmt.Errorf("Failed to read quant creation parameters file \"s3://%v/%v\": %v", svcs.Config.PiquantJobsBucket, quantJobReqS3Path, err)
+	}
+
 	completeMsg := fmt.Sprintf("Nodes ran: %v", jg.NodeCount)
 	now := svcs.TimeStamper.GetTimeNowSec()
 	summary := &protos.QuantificationSummary{
 		Id:     jobId,
 		ScanId: jg.AssociatedScanId,
-		//Params:   quantStartSettings,
+		Params: &protos.QuantStartingParameters{
+			UserParams: createParams,
+			PmcCount:   uint32(len(createParams.Pmcs)),
+			//ScanFilePath: ,
+			DataBucket:        svcs.Config.DatasetsBucket,
+			PiquantJobsBucket: svcs.Config.PiquantJobsBucket,
+			CoresPerNode:      uint32(svcs.Config.CoresPerNode),
+			StartUnixTimeSec:  jstatus.StartUnixTimeSec,
+			RequestorUserId:   jstatus.RequestorUserId,
+			// PIQUANTVersion: ,
+			// Comments: ,
+		},
 		Elements: elements,
 		Status: &protos.JobStatus{
 			JobId:            jobId,
@@ -166,11 +191,21 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 	}
 
 	// Report success
-	//completeJobState(true, completeMsg, quantOutPath, piquantLogList)
+	// NOTE: QuantCreateUpd would've already been sent by updateJobStatus()
+	// Here we only care about sending out the user notification (email/UI top bar)
+	scan, err := scan.ReadScanItem(jg.AssociatedScanId, svcs.MongoDB)
+	if err != nil {
+		svcs.Log.Errorf("Failed to read scan %v for sending new quant notification", jg.AssociatedScanId)
+	} else {
+		svcs.Notifier.NotifyNewQuant(false, jobId, createParams.Name, "Complete", scan.Title, jg.AssociatedScanId)
+	}
+
+	// Also send out the generic notification for quants changing (causing reloading of things on UI)
+	svcs.Notifier.SysNotifyQuantChanged(jobId)
 	return nil
 }
 
-func completeQuantSingleMapJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, svcs *services.APIServices) error {
+func completeQuantSingleMapJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, session *melody.Session, svcs *services.APIServices) error {
 	/*
 		// NOTE: Missing status writes - we only write those for map commands! saveQuantJobStatus quits if it's not a map anyway...
 
@@ -240,6 +275,30 @@ func completeQuantSingleMapJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 				}
 			}
 		}
+
+		// This came from quantJobUpdater.go
+		notifySession := jm.userSessionLookup[status.RequestorUserId]
+		if status.Status == protos.JobStatus_COMPLETE && notifySession != nil {
+			// We send out the result data, as opposed to a status
+			userOutputFilePath := filepaths.GetUserLastPiquantOutputPath(status.RequestorUserId, i.params.ScanId, i.params.Command, filepaths.QuantLastOutputFileName+".csv")
+			bytes, err := i.fs.ReadObject(i.usersBucket, userOutputFilePath)
+			if err != nil {
+				fmt.Errorf("PIQUANT job ephermal status failed to find output for: %v", status.JobId)
+			}
+
+			wsUpd := protos.WSMessage{
+				Contents: &protos.WSMessage_QuantCreateUpd{
+					QuantCreateUpd: &protos.QuantCreateUpd{
+						// Need to include status info too otherwise receiver doesn't know what fit this is for
+						Status:     status,
+						ResultData: bytes,
+					},
+				},
+			}
+
+			wsHelpers.SendForSession(notifySession, &wsUpd)
+		}
+
 
 		// STOP HERE! Non-map commands are simpler, map commands do a whole bunch more to maintain state files which are picked up
 		// by quant listing generation

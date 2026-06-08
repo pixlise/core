@@ -2,62 +2,57 @@ package jobmanager
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/sessionuser"
+	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (jm *JobManager) updateJobStatus(jobId string, status protos.JobStatus_Status, message string, logId string, existingStatus *protos.JobStatus) (*protos.JobStatus, error) {
+// Updates job status in DB and sends out notification to listening clients
+func (jm *JobManager) updateJobStatus(jobId string, status protos.JobStatus_Status, message string, updateClient bool) error {
 	ctx := context.TODO()
 	coll := jm.svcs.MongoDB.Collection(dbCollections.JobStatusName)
 
-	filter := bson.D{{Key: "_id", Value: jobId}}
-	opt := options.Replace()
-
-	jobStatus := &protos.JobStatus{
-		JobId:                 jobId,
-		Status:                status,
-		Message:               message,
-		LogId:                 logId,
-		LastUpdateUnixTimeSec: uint32(jm.svcs.TimeStamper.GetTimeNowSec()),
-	}
-
-	var err error
-	if existingStatus == nil {
-		// Only read it if it wasn't passed in
-		existingStatus, err = jm.readJobStatus(jobId)
-	}
+	updResult, err := coll.UpdateByID(ctx, jobId, bson.D{{Key: "$set", Value: bson.M{
+		"status":                status,
+		"message":               message,
+		"lastupdateunixtimesec": uint32(jm.svcs.TimeStamper.GetTimeNowSec()),
+	}}})
 
 	if err != nil {
-		jm.svcs.Log.Errorf("Failed to read existing job status when writing updateJobStatus %v: %v", jobId, err)
-	} else {
-		jobStatus.StartUnixTimeSec = existingStatus.StartUnixTimeSec
-		jobStatus.JobType = existingStatus.JobType
-		jobStatus.JobItemId = existingStatus.JobItemId
-		jobStatus.RequestorUserId = existingStatus.RequestorUserId
-		jobStatus.Name = existingStatus.Name
-		jobStatus.Elements = existingStatus.Elements
-
-		if len(logId) <= 0 {
-			jobStatus.LogId = existingStatus.LogId
-		}
+		return fmt.Errorf("Failed to update existing job status %v to: %v. Error: %v", jobId, status, err)
 	}
 
-	replaceResult, err := coll.ReplaceOne(ctx, filter, jobStatus, opt)
-	if err != nil {
-		jm.svcs.Log.Errorf("updateJobStatus %v: %v", jobId, err)
-		return jobStatus, err
-	}
-
-	if replaceResult.MatchedCount != 1 && replaceResult.UpsertedCount != 1 {
-		jm.svcs.Log.Errorf("updateJobStatus result had unexpected counts %+v id: %v", replaceResult, jobId)
+	if updResult.MatchedCount != 1 && updResult.UpsertedCount != 1 {
+		jm.svcs.Log.Errorf("updateJobStatus result had unexpected counts %+v id: %v", updResult, jobId)
 	} else {
 		jm.svcs.Log.Infof("updateJobStatus: %v with status %v, message: %v", jobId, protos.JobStatus_Status_name[int32(status.Number())], message)
 	}
 
-	return jobStatus, nil
+	// Send out notifications so client knows the job state has changed
+	if updateClient {
+		dbStatus, err := jm.readJobStatus(jobId)
+		if err != nil {
+			jm.svcs.Log.Errorf("updateJobStatus failed to read job status for %v while sending to client. Error: %v", jobId, err)
+		} else if len(dbStatus.RequestorUserId) > 0 && dbStatus.RequestorUserId != sessionuser.PIXLISESystemUserId {
+			if sess, ok := jm.userSessionLookup[dbStatus.RequestorUserId]; ok && sess != nil {
+				wsUpd := protos.WSMessage{
+					Contents: &protos.WSMessage_QuantCreateUpd{
+						QuantCreateUpd: &protos.QuantCreateUpd{
+							Status: dbStatus,
+						},
+					},
+				}
+
+				wsHelpers.SendForSession(sess, &wsUpd)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (jm *JobManager) readJobStatus(jobId string) (*protos.JobStatus, error) {
