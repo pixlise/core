@@ -112,12 +112,17 @@ func UpdateJobQueueItem(jobId string, state protos.JobQueueItem_State, message s
 	nowUnixSec := ts.GetTimeNowSec()
 	ctx := context.TODO()
 
-	dbResult, err := db.Collection(dbCollections.JobQueueName).UpdateByID(ctx, jobId, bson.D{{Key: "$set", Value: bson.M{
+	v := bson.M{
 		"state":                       state,
 		"message":                     message,
 		"lastupdatedtimestampunixsec": nowUnixSec,
-		"instanceid":                  instanceId,
-	}}})
+	}
+
+	if len(instanceId) > 0 {
+		v["instanceid"] = instanceId
+	}
+
+	dbResult, err := db.Collection(dbCollections.JobQueueName).UpdateByID(ctx, jobId, bson.D{{Key: "$set", Value: v}})
 
 	if err != nil {
 		return err
