@@ -12,8 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 func ReadJobQueue(db *mongo.Database) (map[string][]*protos.JobQueueItem, error) {
@@ -114,81 +112,18 @@ func UpdateJobQueueItem(jobId string, state protos.JobQueueItem_State, message s
 	nowUnixSec := ts.GetTimeNowSec()
 	ctx := context.TODO()
 
-	// Determine what we're setting the job group to
-	jobGroupState := protos.JobStatus_UNKNOWN
-	switch state {
-	case protos.JobQueueItem_RUNNING:
-		jobGroupState = protos.JobStatus_RUNNING
-		// case protos.JobQueueItem_FAILED:
-		// 	jobGroupState = protos.JobStatus_ERROR
-	}
+	dbResult, err := db.Collection(dbCollections.JobQueueName).UpdateByID(ctx, jobId, bson.D{{Key: "$set", Value: bson.M{
+		"state":                       state,
+		"message":                     message,
+		"lastupdatedtimestampunixsec": nowUnixSec,
+	}}})
 
-	// If we're just updating the job queue item, do it here without a transaction
-	if jobGroupState == protos.JobStatus_UNKNOWN {
-		dbResult, err := db.Collection(dbCollections.JobQueueName).UpdateByID(ctx, jobId, bson.D{{Key: "$set", Value: bson.M{
-			"state":                       state,
-			"message":                     message,
-			"lastupdatedtimestampunixsec": nowUnixSec,
-		}}})
-
-		if err != nil {
-			return err
-		}
-
-		if dbResult.ModifiedCount != 1 {
-			return fmt.Errorf("UpdateJobQueueItem: Expected modified count of 1, got %v", dbResult.ModifiedCount)
-		}
-		return nil
-	}
-
-	// Set both states in one transaction
-	wc := writeconcern.New(writeconcern.WMajority())
-	rc := readconcern.Snapshot()
-	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
-
-	sess, err := db.Client().StartSession()
 	if err != nil {
 		return err
 	}
-	defer sess.EndSession(ctx)
 
-	// Write the 2 items in a single transaction
-	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		upd := bson.M{
-			"state":                       state,
-			"message":                     message,
-			"lastupdatedtimestampunixsec": nowUnixSec,
-		}
-
-		if len(instanceId) > 0 {
-			upd["instanceid"] = instanceId
-		}
-
-		dbResult, err := db.Collection(dbCollections.JobQueueName).UpdateByID(ctx, jobId, bson.D{{Key: "$set", Value: upd}})
-
-		if err != nil {
-			return nil, err
-		}
-
-		if dbResult.ModifiedCount != 1 {
-			return nil, fmt.Errorf("UpdateJobQueueItem: Expected JobQueue modified count of 1, got %v", dbResult.ModifiedCount)
-		}
-
-		dbResult, err = db.Collection(dbCollections.JobStatusName).UpdateByID(ctx, jobGroupId, bson.D{{Key: "$set", Value: bson.M{
-			"status": jobGroupState,
-		}}})
-
-		if err != nil {
-			return nil, err
-		}
-
-		// Don't worry about this, we may set it to running multiple times, so it may not be modified...
-		// if dbResult.ModifiedCount != 1 {
-		// 	return nil, fmt.Errorf("UpdateJobQueueItem: Expected JobState modified count of 1, got %v", dbResult.ModifiedCount)
-		// }
-		return nil, nil
+	if dbResult.ModifiedCount != 1 {
+		return fmt.Errorf("UpdateJobQueueItem: Expected modified count of 1, got %v", dbResult.ModifiedCount)
 	}
-
-	_, err = sess.WithTransaction(ctx, callback, txnOpts)
-	return err
+	return nil
 }

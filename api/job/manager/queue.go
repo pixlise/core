@@ -12,7 +12,10 @@ import (
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 // Submit function for each kind of job type we support
@@ -36,18 +39,38 @@ func (jm *JobManager) QueueJob(jg *jobconfig.JobGroupConfig) error {
 	}
 
 	ctx := context.TODO()
-	coll := jm.svcs.MongoDB.Collection(dbCollections.JobQueueName)
 
-	result, err := coll.InsertMany(ctx, qItems)
+	// Set both states in one transaction
+	wc := writeconcern.New(writeconcern.WMajority())
+	rc := readconcern.Snapshot()
+	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
+
+	sess, err := jm.svcs.MongoDB.Client().StartSession()
 	if err != nil {
 		return err
 	}
+	defer sess.EndSession(ctx)
 
-	if len(result.InsertedIDs) != int(jg.NodeCount) {
-		jm.svcs.Log.Errorf("Unexpected result count %v after inserting %v job queue items for job group: %v", len(result.InsertedIDs), int(jg.NodeCount), jg.JobGroupId)
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		// Insert job queue items
+		coll := jm.svcs.MongoDB.Collection(dbCollections.JobQueueName)
+
+		result, err := coll.InsertMany(ctx, qItems)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(result.InsertedIDs) != int(jg.NodeCount) {
+			jm.svcs.Log.Errorf("Unexpected result count %v after inserting %v job queue items for job group: %v", len(result.InsertedIDs), int(jg.NodeCount), jg.JobGroupId)
+		}
+
+		// Update job state
+		err = jm.updateJobStatus(jg.JobGroupId, protos.JobStatus_PREPARING_NODES, fmt.Sprintf("Preparing %v nodes...", len(qItems)), true)
+		return nil, err
 	}
 
-	return nil
+	_, err = sess.WithTransaction(ctx, callback, txnOpts)
+	return err
 }
 
 // Internal function to check if there are any outstanding jobs on startup
@@ -123,34 +146,58 @@ func (jm *JobManager) checkJobQueue() error {
 		}
 	}
 
-	// Remove any that have all completed
+	existingJobStates := map[string]*protos.JobStatus{}
+	for jobGroupId := range groupsAndJobs {
+		s, err := jm.readJobStatus(jobGroupId)
+		if err != nil {
+			jm.svcs.Log.Errorf("CheckJobQueue job group %v not found!", jobGroupId)
+		} else {
+			existingJobStates[jobGroupId] = s
+		}
+	}
+
+	// Main queue processing:
+	// - Remove any that have all completed
+	// - Mark job group as running if a child node is running
+	// - Get a list of ALL jobs in queue that are not yet running
 	notStartedIds := []string{}
 	for jobGroupId, jobs := range groupsAndJobs {
-		ranCount, completedCount, idsNotStarted := jm.countJobNodeStates(jobs)
+		assignedCount, runningCount, completedCount, failedCount, idsNotStarted := jm.countJobNodeStates(jobs)
+		ranCount := failedCount + completedCount
+
 		notStartedIds = append(notStartedIds, idsNotStarted...)
+
+		existingJobStatus := existingJobStates[jobGroupId]
 
 		jm.svcs.Log.Debugf("  CheckJobQueue job group %v has %v ran, %v completed nodes of %v", jobGroupId, ranCount, completedCount, len(jobs))
 
-		// If they've all been completed, do the completion task (if there is one)
-		var existingStatus *protos.JobStatus
-		if completedCount >= len(jobs) {
-			// We only try to complete a job if we have a status for it!
-			existingStatus, err = jm.readJobStatus(jobGroupId)
-			if err != nil {
-				jm.svcs.Log.Errorf("Failed to read existing job group status for: %v. %v", jobGroupId, err)
-			} else {
-				jm.completeJob(jobGroupId, len(jobs), existingStatus)
+		// If the job group has any jobs in the queue marked running, mark the job group as running too
+		if runningCount > 0 {
+			runningStatus := fmt.Sprintf("Running on %v nodes with %v waiting, %v assigned, %v complete, %v failed", runningCount, len(idsNotStarted), assignedCount, completedCount, failedCount)
+			if existingJobStatus != nil && existingJobStatus.Message != runningStatus {
+				jm.updateJobStatusWithInMemory(jobGroupId, protos.JobStatus_RUNNING, runningStatus, existingJobStatus, true, "CheckJobQueue RunningCheck")
 			}
-		}
+		} else {
+			// None are in a running state...
 
-		// If they've all been run, delete it
-		if ranCount >= len(jobs) {
-			jm.clearJob(jobGroupId, groupsAndJobs, existingStatus)
+			// If they've all been completed, do the completion task (if there is one)
+			if completedCount >= len(jobs) && failedCount == 0 {
+				// We only try to complete a job if we have a status for it!
+				if existingJobStatus != nil {
+					jm.completeJob(jobGroupId, len(jobs), existingJobStatus)
+				}
+			} // NOT else!! The following code needs to be able to run in complete AND failed scenarios!
 
-			// If they're not all completed, we just mark the job as failed
-			if completedCount < ranCount {
-				jm.updateJobStatus(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("%v nodes failed", ranCount-completedCount), "", existingStatus)
-				jm.svcs.Log.Infof("  Marking job %v as ERROR due to nodes not all completing", jobGroupId)
+			// If they've all been run, delete it from the queue
+			if completedCount+failedCount >= len(jobs) {
+				jm.clearJob(jobGroupId, groupsAndJobs)
+
+				// If they're not all completed, we just mark the job as failed
+				if failedCount > 0 {
+					if err = jm.updateJobStatusWithInMemory(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("%v nodes failed", failedCount), existingJobStatus, true, "CheckJobQueue FailCheck"); err == nil {
+						jm.svcs.Log.Infof("  Marking job %v as ERROR due to nodes not all completing", jobGroupId)
+					}
+				}
 			}
 		}
 	}
@@ -164,25 +211,42 @@ func (jm *JobManager) checkJobQueue() error {
 	return nil
 }
 
-func (jm *JobManager) countJobNodeStates(jobs []*protos.JobQueueItem) (int, int, []string) {
-	ranCount := 0
+// Counts how many of each state we find for the queued jobs:
+// ASSIGNED state jobs
+// RUNNING state jobs
+// COMPLETE state jobs
+// FAILED state jobs
+// NotStartedIds: JobIds of jobs that are in the UNKNOWN state
+func (jm *JobManager) countJobNodeStates(jobs []*protos.JobQueueItem) (int, int, int, int, []string) {
+	assigned := 0
+	running := 0
 	completed := 0
+	failed := 0
 	notStartedIds := []string{}
+
 	for _, job := range jobs {
+		if job.State == protos.JobQueueItem_ASSIGNED {
+			assigned = assigned + 1
+		}
+
+		if job.State == protos.JobQueueItem_RUNNING {
+			running = running + 1
+		}
+
 		if job.State == protos.JobQueueItem_COMPLETE {
 			completed = completed + 1
+		}
+
+		if job.State == protos.JobQueueItem_FAILED {
+			failed = failed + 1
 		}
 
 		if job.State == protos.JobQueueItem_UNKNOWN {
 			notStartedIds = append(notStartedIds, job.JobId)
 		}
-
-		if job.State == protos.JobQueueItem_COMPLETE || job.State == protos.JobQueueItem_FAILED {
-			ranCount = ranCount + 1
-		}
 	}
 
-	return ranCount, completed, notStartedIds
+	return assigned, running, completed, failed, notStartedIds
 }
 
 func (jm *JobManager) checkJobTimeout(jobItem *protos.JobQueueItem, runningInstanceIds []string, nowUnixSec int64) error {
@@ -232,21 +296,33 @@ func (jm *JobManager) completeJob(jobGroupId string, nodeCount int, existingStat
 
 	jm.svcs.Log.Debugf("  CheckJobQueue running job group %v completion task...", jobGroupId)
 	// Set the job status to gathering results
-	updatedStatus, _ := jm.updateJobStatus(jobGroupId, protos.JobStatus_GATHERING_RESULTS, fmt.Sprintf("Combining CSVs from %v nodes...", nodeCount), "", existingStatus)
+	jm.updateJobStatusWithInMemory(jobGroupId, protos.JobStatus_GATHERING_RESULTS, fmt.Sprintf("Combining CSVs from %v nodes...", nodeCount), existingStatus, true, "CheckJobQueue completeJob")
 
-	err := jm.onJobGroupCompletion(jobGroupId, updatedStatus)
+	err := jm.onJobGroupCompletion(jobGroupId, existingStatus)
 	if err != nil {
 		// Set the job status to gathering results
-		jm.updateJobStatus(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("Failed to complete job group %v: %v", jobGroupId, err), "", existingStatus)
+		jm.updateJobStatusWithInMemory(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("Failed to complete job group %v: %v", jobGroupId, err), existingStatus, true, "CheckJobQueue completeJob-failed")
 	} else {
 		// Set the job status to gathering results
-		jm.updateJobStatus(jobGroupId, protos.JobStatus_COMPLETE, fmt.Sprintf("Nodes ran: %v", nodeCount), "", existingStatus)
-		jm.svcs.Log.Debugf("  CheckJobQueue completed job group %v", jobGroupId)
+		if err = jm.updateJobStatusWithInMemory(jobGroupId, protos.JobStatus_COMPLETE, fmt.Sprintf("Nodes ran: %v", nodeCount), existingStatus, true, "CheckJobQueue completeJob-success"); err == nil {
+			jm.svcs.Log.Debugf("  CheckJobQueue completed job group %v", jobGroupId)
+		}
 	}
 }
 
+func (jm *JobManager) updateJobStatusWithInMemory(jobId string, status protos.JobStatus_Status, message string, inMemoryStatus *protos.JobStatus, updateClient bool, action string) error {
+	err := jm.updateJobStatus(jobId, status, message, updateClient)
+	if err != nil {
+		jm.svcs.Log.Errorf("  %v error: %v", err)
+	} else {
+		inMemoryStatus.Status = status
+		inMemoryStatus.Message = message
+	}
+	return err
+}
+
 // Clears a job from the job queue (in-memory and DB)
-func (jm *JobManager) clearJob(jobGroupId string, groupsAndJobs map[string][]*protos.JobQueueItem, existingStatus *protos.JobStatus) {
+func (jm *JobManager) clearJob(jobGroupId string, groupsAndJobs map[string][]*protos.JobQueueItem) {
 	jm.svcs.Log.Debugf("  CheckJobQueue clearing job queue items for %v", jobGroupId)
 
 	// Clear in-memory

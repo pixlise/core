@@ -158,6 +158,7 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 		1668142584, // queue read time stamp
 		1668142585, // queue read time stamp
 		1668142586, // queue read time stamp
+		1668142587, // queue read time stamp
 	})
 	defer os.Chdir(origWD)
 
@@ -198,6 +199,7 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	// DEBUG: Downloading file: s3://datasets-bucket/Scans/048300551/dataset.bin
 	// DEBUG: spectraPerNode: 2, PMCs per node: 2 for 2 spectra, nodes: 1
 	// INFO: WARNING: SubmitJob - DockerImage not specified, this will result in local job runners, recommended only for testing
+	// INFO: updateJobStatus: quant-id123 with status PREPARING_NODES, message: Preparing 1 nodes...
 	// SubmitQuantJob: STARTING, <nil>
 	// INFO: Instance the-test-instance starting job "quant-id123-node-0"...
 	// WARNING: Running job locally, recommended for use for tests only!
@@ -294,6 +296,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 		1668142590, // queue time stamp
 		1668142591, // queue time stamp
 		1668142592, // queue time stamp
+		1668142593, // queue time stamp
 	})
 	defer os.Chdir(origWD)
 
@@ -335,6 +338,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// INFO: Using node count override: 4
 	// DEBUG: spectraPerNode: 2, PMCs per node: 2 for 7 spectra, nodes: 4
 	// INFO: WARNING: SubmitJob - DockerImage not specified, this will result in local job runners, recommended only for testing
+	// INFO: updateJobStatus: quant-id123 with status PREPARING_NODES, message: Preparing 4 nodes...
 	// SubmitQuantJob: STARTING, <nil>
 	// INFO: Instance the-test-instance starting job "quant-id123-node-0"...
 	// WARNING: Running job locally, recommended for use for tests only!
@@ -579,6 +583,7 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	// INFO: Using node count override: 4
 	// DEBUG: spectraPerNode: 2, PMCs per node: 2 for 7 spectra, nodes: 4
 	// INFO: WARNING: SubmitJob - DockerImage not specified, this will result in local job runners, recommended only for testing
+	// INFO: updateJobStatus: quant-id123 with status PREPARING_NODES, message: Preparing 4 nodes...
 	// SubmitQuantJob: STARTING, <nil>
 	// INFO: Instance the-test-instance starting job "quant-id123-node-0"...
 	// WARNING: Running job locally, recommended for use for tests only!
@@ -625,7 +630,7 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	// Job[0] id: quant-id123
 	// Query status: <nil>
 	// Job status at end: 1
-	// JobStatus[0] id: quant-id123, status: RUNNING, msg: ""
+	// JobStatus[0] id: quant-id123, status: PREPARING_NODES, msg: "Preparing 4 nodes..."
 	// Quant: <nil>
 	// Quants at end: 0
 }
