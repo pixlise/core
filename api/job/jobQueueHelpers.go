@@ -116,6 +116,7 @@ func UpdateJobQueueItem(jobId string, state protos.JobQueueItem_State, message s
 		"state":                       state,
 		"message":                     message,
 		"lastupdatedtimestampunixsec": nowUnixSec,
+		"instanceid":                  instanceId,
 	}}})
 
 	if err != nil {
