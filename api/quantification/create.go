@@ -97,7 +97,7 @@ func CreateJob(createParams *protos.QuantCreateParams, requestorUserId string, s
 		ScanFilePath:      scanFilePath,
 		DataBucket:        svcs.Config.DatasetsBucket,
 		PiquantJobsBucket: svcs.Config.PiquantJobsBucket,
-		CoresPerNode:      uint32(svcs.Config.CoresPerNode),
+		CoresPerNode:      uint32(svcs.Config.Jobs.CoresPerNode),
 		StartUnixTimeSec:  uint32(svcs.TimeStamper.GetTimeNowSec()),
 		RequestorUserId:   requestorUserId,
 		PIQUANTVersion:    piquantVersion.Version,

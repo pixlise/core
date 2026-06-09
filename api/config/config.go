@@ -29,6 +29,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 )
 
@@ -39,51 +40,40 @@ import (
 type APIConfig struct {
 	AdminEmails []string
 
+	// Auth0 settings
 	Auth0Domain             string
 	Auth0ManagementClientID string
 	Auth0ManagementSecret   string
 	Auth0ClientSecret       string
-	Auth0NewUserRoleID      string
 	Auth0Namespace          string
 
-	ConfigBucket string
+	// New user creation
+	Auth0NewUserRoleID string
+	DefaultUserGroupId string // The GroupId of the group a new user is added to by default as a member
 
-	CoresPerNode uint
+	// Buckets
+	ConfigBucket       string
+	PiquantJobsBucket  string // PIQUANT job scratch drive
+	DatasetsBucket     string
+	UsersBucket        string
+	ManualUploadBucket string
+	DataBackupBucket   string
 
 	DataSourceSNSTopic string
-	CoregSqsQueueUrl   string
-
-	DatasetsBucket string
 
 	EnvironmentName string
 
-	HotQuantNamespace string // Used for faster PIQUANT runs, eg executing a spectral fit
-
-	KubernetesLocation string // "internal" vs "external"
-
-	LogLevel           logger.LogLevel // Can be changed at runtime, but if API restarts, it goes back to configured value
-	ManualUploadBucket string
+	// Logging/monitoring of PIXLISE
+	LogLevel       logger.LogLevel // Can be changed at runtime, but if API restarts, it goes back to configured value
+	SentryEndpoint string
 
 	// Mongo Connection
 	MongoSecret string
+	MongoDebug  bool
 
-	JobRunnerDockerImage string // Docker image to run expressions, python code and PIQUANT on the back end
-	PiquantJobsBucket    string // PIQUANT job scratch drive
-
-	QuantExecutor  string
-	QuantNamespace string // Used for running large multi-node quants
-
-	SentryEndpoint string
-
-	UsersBucket string
-
+	// Zenodo config
 	ZenodoURI         string
 	ZenodoAccessToken string
-
-	// Vars not set by environment
-	NodeCountOverride uint
-	MaxQuantNodes     uint
-	KubeConfig        string // Env sets this via command line parameter
 
 	// Web Socket config
 	WSWriteWaitMs       uint
@@ -103,29 +93,43 @@ type APIConfig struct {
 	// How often we run memoisation GC
 	MemoisationGCIntervalSec uint
 
-	ImportJobMaxTimeSec uint32
-
-	// The GroupId of the group a new user is added to by default as a member
-	DefaultUserGroupId string
-
-	// PIXLISE backup & restore settings
-	DataBackupBucket string
-	BackupEnabled    bool
-	RestoreEnabled   bool
-
-	ImpersonateEnabled bool
-
-	MongoDebug                bool
+	// Admin-only features: backup & restore settings, and allowing impersonate user menu option
+	BackupEnabled             bool
+	RestoreEnabled            bool
 	RestoreExcludeCollections []string
+	ImpersonateEnabled        bool
 
 	// Settings that control what kind of job processing EC2 instances we create
-	JobAMI               string
-	JobInstanceType      string
-	JobKeyName           string
-	JobSecurityGroup     string
-	JobMaxNodeRunTimeSec uint32
-	JobAWSSecret         string
-	JobNodeS3Path        string
+	Jobs JobConfig
+
+	// Deprecated configs, these should all disappear when we remove the old job code
+	ImportJobMaxTimeSec uint32
+	KubeConfig          string // Env sets this via command line parameter
+	QuantExecutor       string
+	QuantNamespace      string // Used for running large multi-node quants
+	HotQuantNamespace   string // Used for faster PIQUANT runs, eg executing a spectral fit
+	KubernetesLocation  string // "internal" vs "external"
+}
+
+// JobConfig contains all configs required to be able to run jobs by the back-end. This can involve starting quants or other jobs
+// locally in Docker, or starting up a JobNode (an EC2 instance with a pixlise-job-node executable running) to execute the job
+type JobConfig struct {
+	// Configuring AWS EC2 instance type for job node
+	CoresPerNode  uint
+	InstanceType  string
+	AMI           string
+	KeyName       string
+	SecurityGroup string
+
+	// How many nodes to run, and limits for how long they run
+	MaxNodeRunTimeSec uint32
+	NodeCountOverride uint // Forces PMC list generation to create this many nodes. Mainly usable for testing.
+	MaxQuantNodes     uint // Limiting how many nodes we run simultaneously
+
+	// Jobs run in docker, these configure what container and settings they use
+	AWSSecret         string
+	NodeS3Path        string
+	RunnerDockerImage string // Docker image to run expressions, python code and PIQUANT on the back end
 }
 
 func homeDir() string {
@@ -186,6 +190,8 @@ func buildConfig(configJson []byte) (APIConfig, error) {
 }
 
 // Init config, loads config params
+var argNodeCountOverride int
+
 func Init() (APIConfig, error) {
 	// Firstly, read command line arguments
 	nodeCountOverride := flag.Int("nodeCountOverride", 0, "Overrides node count for quantification, for testing only")
@@ -197,6 +203,10 @@ func Init() (APIConfig, error) {
 	}
 	configFilePath := flag.String("customConfigPath", "", "Path to the json file holding a set of custom config for the Pixlise API")
 	flag.Parse()
+
+	if nodeCountOverride != nil {
+		argNodeCountOverride = *nodeCountOverride
+	}
 
 	// Now that we have that, construct the Config from the possible sources
 	var cfg APIConfig
@@ -214,8 +224,34 @@ func Init() (APIConfig, error) {
 		return cfg, err
 	}
 
-	if nodeCountOverride != nil && *nodeCountOverride > 0 {
-		cfg.NodeCountOverride = uint(*nodeCountOverride)
+	// If our job structure is empty, we attempt to read a job config from the config
+	// bucket
+	if len(cfg.Jobs.RunnerDockerImage) <= 0 {
+		cfg.Jobs = JobConfig{}
+	}
+
+	cfg.KubeConfig = *kubeconfig
+
+	applyConfigLimits(&cfg)
+
+	return cfg, nil
+}
+
+func applyConfigLimits(cfg *APIConfig) {
+	if cfg.Jobs.CoresPerNode <= 0 {
+		cfg.Jobs.CoresPerNode = 6 // Core count can't be 0!
+	}
+
+	if cfg.Jobs.MaxQuantNodes <= 0 {
+		cfg.Jobs.MaxQuantNodes = 120
+	}
+
+	if cfg.Jobs.MaxNodeRunTimeSec <= 0 {
+		cfg.Jobs.MaxNodeRunTimeSec = 30 * 60
+	}
+
+	if argNodeCountOverride > 0 {
+		cfg.Jobs.NodeCountOverride = uint(argNodeCountOverride)
 	}
 
 	if cfg.ImportJobMaxTimeSec <= 0 {
@@ -229,8 +265,13 @@ func Init() (APIConfig, error) {
 	if cfg.MemoisationGCIntervalSec <= 0 {
 		cfg.MemoisationGCIntervalSec = 3600
 	}
+}
 
-	cfg.KubeConfig = *kubeconfig
+func ReadJobConfig(cfg *APIConfig, fs fileaccess.S3Access) error {
+	if err := fs.ReadJSON(cfg.ConfigBucket, "job-config.json", &cfg.Jobs, false); err != nil {
+		return err
+	}
 
-	return cfg, nil
+	applyConfigLimits(cfg)
+	return nil
 }

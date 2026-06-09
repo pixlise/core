@@ -176,13 +176,13 @@ func (jm *JobManager) internalSubmitQuantJob(
 	// 	return err
 	// }
 
-	csvTitleRow := fmt.Sprintf("PIQUANT version: %v DetectorConfig: %v", jm.svcs.Config.JobRunnerDockerImage /*piquantVersion.Version*/, createParams.DetectorConfig)
+	csvTitleRow := fmt.Sprintf("PIQUANT version: %v DetectorConfig: %v", jm.svcs.Config.Jobs.RunnerDockerImage /*piquantVersion.Version*/, createParams.DetectorConfig)
 
 	userArgs := "-Fe,1"
 	if len(createParams.Parameters) > 0 {
 		userArgs = createParams.Parameters
 	}
-	extraArgs := strings.Split(fmt.Sprintf("%v -t,%v", userArgs, jm.svcs.Config.CoresPerNode), " ")
+	extraArgs := strings.Split(fmt.Sprintf("%v -t,%v", userArgs, jm.svcs.Config.Jobs.CoresPerNode), " ")
 	/*
 		Command,
 		config_file,
@@ -205,7 +205,7 @@ func (jm *JobManager) internalSubmitQuantJob(
 		JobGroupId:       jobId,
 		JobType:          jobType,
 		CompletionMethod: completeMethod,
-		DockerImage:      jm.svcs.Config.JobRunnerDockerImage,
+		DockerImage:      jm.svcs.Config.Jobs.RunnerDockerImage,
 		NodeCount:        uint(len(pmcFiles)),
 		NodeConfig: jobconfig.JobConfig{
 			JobId: jobId + "-node",

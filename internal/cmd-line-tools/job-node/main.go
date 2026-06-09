@@ -23,7 +23,7 @@ func main() {
 
 	instanceIdObtained, isEC2, err := utils.GetInstanceId()
 	if err != nil {
-		fmt.Printf("Error retrieving EC2 instance id: %v\n", err)
+		fmt.Printf("Assuming not running in EC2 due to failure retrieve EC2 instance id: %v\n", err)
 	} // else still OK to continue, GetInstanceId should've generated a random string
 
 	defer shutdown(instanceIdObtained, isEC2)

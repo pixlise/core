@@ -142,7 +142,7 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 			//ScanFilePath: ,
 			DataBucket:        svcs.Config.DatasetsBucket,
 			PiquantJobsBucket: svcs.Config.PiquantJobsBucket,
-			CoresPerNode:      uint32(svcs.Config.CoresPerNode),
+			CoresPerNode:      uint32(svcs.Config.Jobs.CoresPerNode),
 			StartUnixTimeSec:  jstatus.StartUnixTimeSec,
 			RequestorUserId:   jstatus.RequestorUserId,
 			// PIQUANTVersion: ,

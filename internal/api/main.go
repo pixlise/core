@@ -61,7 +61,7 @@ func main() {
 	fmt.Printf("PIXLISE API version \"%v\" starting...\n", services.ApiVersion)
 	instanceId, _, err := utils.GetInstanceId()
 	if err != nil {
-		fmt.Printf("Error retrieving EC2 instance id: %v\n", err)
+		fmt.Printf("Assuming not running in EC2 due to failure to retrieve EC2 instance id: %v\n", err)
 	}
 	fmt.Printf("InstanceId for this API run: \"%v\"\n", instanceId)
 
@@ -220,19 +220,6 @@ func loadConfig() config.APIConfig {
 	cfgJSON, err := json.MarshalIndent(cfg, "", utils.PrettyPrintIndentForJSON)
 	if err != nil {
 		log.Fatalf("Error trying to display config\n")
-	}
-
-	// Core count can't be 0!
-	if cfg.CoresPerNode <= 0 {
-		cfg.CoresPerNode = 6 // Reasonable, our laptops have 6...
-	}
-
-	if cfg.MaxQuantNodes <= 0 {
-		cfg.MaxQuantNodes = 120
-	}
-
-	if cfg.JobMaxNodeRunTimeSec <= 0 {
-		cfg.JobMaxNodeRunTimeSec = 30 * 60
 	}
 
 	cfgStr := string(cfgJSON)

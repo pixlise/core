@@ -265,7 +265,7 @@ func (jm *JobManager) checkJobTimeout(jobItem *protos.JobQueueItem, runningInsta
 	}
 
 	isNodeGone := jobItem.State == protos.JobQueueItem_RUNNING && !utils.ItemInSlice(jobItem.InstanceId, runningInstanceIds)
-	if !isNodeGone && secSinceUpdate < int64(jm.svcs.Config.JobMaxNodeRunTimeSec) {
+	if !isNodeGone && secSinceUpdate < int64(jm.svcs.Config.Jobs.MaxNodeRunTimeSec) {
 		// Job is not yet dead/timed out
 		return nil
 	}

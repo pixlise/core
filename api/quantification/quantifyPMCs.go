@@ -33,10 +33,10 @@ func makePMCListFilesForQuantPMCs(
 		spectraCount *= 2
 	}
 
-	nodeCount := quantRunner.EstimateNodeCount(spectraCount, uint(len(userParams.Elements)), uint(userParams.RunTimeSec), svcs.Config.CoresPerNode, cfg.MaxQuantNodes)
+	nodeCount := quantRunner.EstimateNodeCount(spectraCount, uint(len(userParams.Elements)), uint(userParams.RunTimeSec), svcs.Config.Jobs.CoresPerNode, cfg.Jobs.MaxQuantNodes)
 
-	if cfg.NodeCountOverride > 0 {
-		nodeCount = cfg.NodeCountOverride
+	if cfg.Jobs.NodeCountOverride > 0 {
+		nodeCount = cfg.Jobs.NodeCountOverride
 		svcs.Log.Infof("Using node count override: %v", nodeCount)
 	}
 

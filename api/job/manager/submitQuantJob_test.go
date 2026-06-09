@@ -63,7 +63,7 @@ func initJobManagerTest(logLevel *logger.LogLevel, timestamps []int64) (string, 
 	svcs.MongoDB = wstestlib.GetDBWithEnvironment("jobtest")
 	//svcs.Config.JobRunnerDockerImage = "ghcr.io/pixlise/job-runner:latest"
 	svcs.Config.QuantExecutor = "local:" + bucketSimRoot //jobexecutor.MakeLocalExecutor(bucketSimRoot)
-	svcs.Config.CoresPerNode = 4
+	svcs.Config.Jobs.CoresPerNode = 4
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{QueuedTimeStamps: timestamps}
 
 	// Make sure the PIQUANT executable is one dir up
@@ -162,7 +162,6 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	})
 	defer os.Chdir(origWD)
 
-	//svcs.Config.NodeCountOverride = 4
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
@@ -300,7 +299,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	})
 	defer os.Chdir(origWD)
 
-	svcs.Config.NodeCountOverride = 4
+	svcs.Config.Jobs.NodeCountOverride = 4
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
@@ -544,7 +543,7 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	})
 	defer os.Chdir(origWD)
 
-	svcs.Config.NodeCountOverride = 4
+	svcs.Config.Jobs.NodeCountOverride = 4
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
