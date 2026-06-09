@@ -48,6 +48,7 @@ func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret 
 
 	startupScript := fmt.Sprintf(`#!/bin/bash
 set -e
+shutdown -h +%v
 echo "Starting PIXLISE job node, limited to %v sec runtime"
 
 export AWS_ACCESS_KEY_ID="%v"
@@ -74,7 +75,7 @@ aws s3 cp "%v" "."
 chmod +x ./pixlise-job-node
 
 echo "Downloading global-bumdle.pem..."
-wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
+#wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
 
 echo "Running job node..."
 ./pixlise-job-node -bucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxRunTimeSec "%v" -jobs "%v"
@@ -82,6 +83,7 @@ echo "Running job node..."
 echo "PIXLISE job node shutting down"
 shutdown -h now
 `,
+		jm.svcs.Config.Jobs.MaxNodeRunTimeSec/60,
 		jm.svcs.Config.Jobs.MaxNodeRunTimeSec,
 		awsKey, awsSecret,
 		awsRegion, awsRegion,
