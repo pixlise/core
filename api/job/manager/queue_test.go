@@ -27,8 +27,8 @@ func Example_jobmanager_QueueStartup() {
 	origWD, _, svcs := initJobManagerTest(nil, timestamps)
 	defer os.Chdir(origWD)
 
-	svcs.Config.NodeCountOverride = 4
-	svcs.Config.JobMaxNodeRunTimeSec = 1800
+	svcs.Config.Jobs.NodeCountOverride = 4
+	svcs.Config.Jobs.MaxNodeRunTimeSec = 1800
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogError)
 

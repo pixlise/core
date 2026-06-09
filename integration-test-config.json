@@ -1,12 +1,14 @@
 {
-    "MaxQuantNodes": 20,
-    "AWSBucketRegion": "us-east-1",
-    "AWSCloudwatchRegion": "us-east-1",
-    "LogLevel": 1,
-    "CoresPerNode": 4,
-    "PiquantDockerImage": "registry.gitlab.com/pixlise/piquant/runner:3.2.17",
-    "QuantNamespace": "unittest",
+
+    "Jobs": {
+        "MaxQuantNodes": 20,
+        "CoresPerNode": 4
+    },
+
     "QuantExecutor": "docker",
+    "QuantNamespace": "unittest",
+
+    "LogLevel": 1,
     "SentryEndpoint": "",
 
     "DatasetsBucket": "integration-test-data-pixlise",
@@ -15,7 +17,6 @@
     "PiquantJobsBucket": "integration-test-jobs-pixlise",
     "ManualUploadBucket": "integration-test-upload-pixlise",
 
-    "BuildsBucket": "",
     "DataSourceSNSTopic": "",
 
 	"WSWriteWaitMs": 10000,

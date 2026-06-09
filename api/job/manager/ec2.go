@@ -19,7 +19,7 @@ import (
 
 // Called to start a job node
 func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret string, awsRegion string) ([]*string, error) {
-	if len(jobIds) <= 0 || len(jobIds) > int(jm.svcs.Config.CoresPerNode) {
+	if len(jobIds) <= 0 || len(jobIds) > int(jm.svcs.Config.Jobs.CoresPerNode) {
 		return []*string{}, fmt.Errorf("Invalid job count when starting EC2 job nodes: %v", len(jobIds))
 	}
 
@@ -32,15 +32,15 @@ func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret 
 
 	jobIdListStr := strings.Join(jobIds, ",")
 
-	if jm.svcs.Config.JobMaxNodeRunTimeSec < 60 {
-		return []*string{}, fmt.Errorf("Cannot start job node that runs for only %vsec", jm.svcs.Config.JobMaxNodeRunTimeSec)
+	if jm.svcs.Config.Jobs.MaxNodeRunTimeSec < 60 {
+		return []*string{}, fmt.Errorf("Cannot start job node that runs for only %vsec", jm.svcs.Config.Jobs.MaxNodeRunTimeSec)
 	}
 
-	if len(jm.svcs.Config.JobAWSSecret) <= 0 {
+	if len(jm.svcs.Config.Jobs.AWSSecret) <= 0 {
 		return []*string{}, fmt.Errorf("JobNode AWS secret not set")
 	}
 
-	if jm.startedNodeCount > jm.svcs.Config.MaxQuantNodes || jm.startedNodeCount > 10 {
+	if jm.startedNodeCount > jm.svcs.Config.Jobs.MaxQuantNodes || jm.startedNodeCount > 10 {
 		return []*string{}, fmt.Errorf("Not starting job node, hard testing limit has been reached")
 	}
 
@@ -79,22 +79,22 @@ echo "Running job node..."
 echo "PIXLISE job node shutting down"
 shutdown -h now
 `,
-		jm.svcs.Config.JobMaxNodeRunTimeSec,
+		jm.svcs.Config.Jobs.MaxNodeRunTimeSec,
 		awsKey, awsSecret,
 		awsRegion, awsRegion,
-		jm.svcs.Config.JobNodeS3Path,
+		jm.svcs.Config.Jobs.NodeS3Path,
 		jm.svcs.Config.PiquantJobsBucket,
-		jm.svcs.Config.JobRunnerDockerImage,
+		jm.svcs.Config.Jobs.RunnerDockerImage,
 		jm.svcs.Config.MongoSecret,
 		jm.svcs.Config.EnvironmentName,
-		jm.svcs.Config.JobMaxNodeRunTimeSec-5,
+		jm.svcs.Config.Jobs.MaxNodeRunTimeSec-5,
 		jobIdListStr,
 	)
 
 	input := &ec2.RunInstancesInput{
 		// placement (AZ - not setting it here?!)
-		ImageId:      aws.String(jm.svcs.Config.JobAMI),
-		InstanceType: aws.String(jm.svcs.Config.JobInstanceType),
+		ImageId:      aws.String(jm.svcs.Config.Jobs.AMI),
+		InstanceType: aws.String(jm.svcs.Config.Jobs.InstanceType),
 		TagSpecifications: []*ec2.TagSpecification{
 			{
 				ResourceType: aws.String("instance"),
@@ -107,8 +107,8 @@ shutdown -h now
 				},
 			},
 		},
-		KeyName:          aws.String(jm.svcs.Config.JobKeyName),
-		SecurityGroupIds: []*string{aws.String(jm.svcs.Config.JobSecurityGroup)},
+		KeyName:          aws.String(jm.svcs.Config.Jobs.KeyName),
+		SecurityGroupIds: []*string{aws.String(jm.svcs.Config.Jobs.SecurityGroup)},
 		MaxCount:         aws.Int64(int64(1)),
 		MinCount:         aws.Int64(int64(1)),
 		UserData:         aws.String(base64.StdEncoding.EncodeToString([]byte(startupScript))),
@@ -164,7 +164,7 @@ func readSecretsManager(secretsManager *secretsmanager.SecretsManager, secretNam
 
 func (jm *JobManager) getRunningNodes() ([]string, error) {
 	// For testing/local mode, if we have already started that one thread, say there's just us as the node
-	if len(jm.svcs.Config.JobAWSSecret) <= 0 {
+	if len(jm.svcs.Config.Jobs.AWSSecret) <= 0 {
 		if jm.localJobNode == nil {
 			return []string{}, nil
 		}
@@ -248,11 +248,11 @@ func (jm *JobManager) startJobNodes(jobIds []string) error {
 		return fmt.Errorf("startJobNodes: No job ids specified")
 	}
 
-	if len(jm.svcs.Config.JobAWSSecret) > 0 {
+	if len(jm.svcs.Config.Jobs.AWSSecret) > 0 {
 		jm.svcs.Log.Debugf("  Querying running node count...")
 
 		// Read the credentials from secrets manager
-		awsKey, awsSecret, awsRegion, err := readSecretsManager(jm.svcs.SecretsManager, jm.svcs.Config.JobAWSSecret)
+		awsKey, awsSecret, awsRegion, err := readSecretsManager(jm.svcs.SecretsManager, jm.svcs.Config.Jobs.AWSSecret)
 		if err != nil {
 			return fmt.Errorf("JobNode AWS secret read failed: %v", err)
 		}
@@ -265,7 +265,7 @@ func (jm *JobManager) startJobNodes(jobIds []string) error {
 		jm.svcs.Log.Debugf("  Instance IDs retrieved: %v", strings.Join(instanceIds, ","))
 
 		// If this seems like way too many jobs, stop here, so we don't infinitely start up EC2s
-		if len(instanceIds) > int(jm.svcs.Config.MaxQuantNodes)*4 {
+		if len(instanceIds) > int(jm.svcs.Config.Jobs.MaxQuantNodes)*4 {
 			return fmt.Errorf("Too many job nodes active (%v), no more will be started", len(instanceIds))
 		}
 
@@ -288,7 +288,7 @@ func (jm *JobManager) startJobNodes(jobIds []string) error {
 		}
 
 		// Work out how many job nodes are needed.
-		jobsForNodes := getJobsPerNode(jobIds, jm.svcs.Config.CoresPerNode)
+		jobsForNodes := getJobsPerNode(jobIds, jm.svcs.Config.Jobs.CoresPerNode)
 
 		// Start each node
 		allStartedIds := []*string{}
@@ -325,7 +325,7 @@ func (jm *JobManager) startJobNodes(jobIds []string) error {
 	jm.svcs.Log.Infof("  startJobNodes starting local job node")
 	jm.localJobNode = jobnode.CreateJobNode(
 		"local-job",
-		jm.svcs.Config.JobRunnerDockerImage,
+		jm.svcs.Config.Jobs.RunnerDockerImage,
 		jm.svcs.Config.PiquantJobsBucket,
 		jm.svcs.InstanceId,
 		jm.svcs.FS,
