@@ -77,6 +77,14 @@ func main() {
 		err = config.ReadJobConfig(&cfg, svcs.FS)
 		if err != nil {
 			fmt.Printf("WARNING: Failed to read job config: %v\n", err)
+		} else {
+			cfgJSON, err := json.MarshalIndent(cfg.Jobs, "", utils.PrettyPrintIndentForJSON)
+			if err != nil {
+				log.Fatalf("Error trying to display config\n")
+			}
+
+			cfgStr := string(cfgJSON)
+			fmt.Printf("Job config read: %v\n", cfgStr)
 		}
 	}
 
