@@ -126,6 +126,7 @@ func main() {
 	} else if testType == "local" || testType == "ci" {
 		// Connect to DB and drop the unit test database
 		db := wstestlib.GetDBWithEnvironment(envName)
+		fmt.Printf("Integration test DB name: %v\n", db.Name())
 		err = db.Drop(context.TODO())
 		if err != nil {
 			log.Fatal(err)
