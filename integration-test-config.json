@@ -1,23 +1,14 @@
 {
-
-    "Jobs": {
-        "MaxQuantNodes": 20,
-        "CoresPerNode": 4
-    },
-
-    "QuantExecutor": "docker",
-    "QuantNamespace": "unittest",
-
-    "LogLevel": 1,
-    "SentryEndpoint": "",
-
-    "DatasetsBucket": "integration-test-data-pixlise",
-    "UsersBucket": "integration-test-users-pixlise",
     "ConfigBucket": "integration-test-config-pixlise",
     "PiquantJobsBucket": "integration-test-jobs-pixlise",
+    "DatasetsBucket": "integration-test-data-pixlise",
+    "UsersBucket": "integration-test-users-pixlise",
     "ManualUploadBucket": "integration-test-upload-pixlise",
 
     "DataSourceSNSTopic": "",
+
+    "LogLevel": 1,
+    "SentryEndpoint": "",
 
 	"WSWriteWaitMs": 10000,
 	"WSPongWaitMs": 60000,
@@ -26,6 +17,15 @@
 	"WSMessageBufferSize": 256,
     
 	"ZenodoURI": "https://sandbox.zenodo.org",
+
+    "Jobs": {
+        "LegacyJobs": true,
+        "MaxQuantNodes": 20,
+        "CoresPerNode": 4
+    },
+
+    "QuantExecutor": "docker",
+    "QuantNamespace": "unittest",
 
     "EnvironmentName": "unittest"
 }
