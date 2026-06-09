@@ -73,6 +73,9 @@ cd /job-node
 aws s3 cp "%v" "."
 chmod +x ./pixlise-job-node
 
+echo "Downloading global-bumdle.pem..."
+wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
+
 echo "Running job node..."
 ./pixlise-job-node -bucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxRunTimeSec "%v" -jobs "%v"
 
