@@ -269,7 +269,7 @@ func applyConfigLimits(cfg *APIConfig) {
 	}
 }
 
-func ReadJobConfig(cfg *APIConfig, fs fileaccess.S3Access) error {
+func ReadJobConfig(cfg *APIConfig, fs fileaccess.FileAccess) error {
 	if err := fs.ReadJSON(cfg.ConfigBucket, "job-config.json", &cfg.Jobs, false); err != nil {
 		return err
 	}
