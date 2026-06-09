@@ -69,24 +69,7 @@ func main() {
 	log.SetFlags(0)
 
 	cfg := loadConfig()
-	svcs := initServices(cfg, instanceId)
-
-	// If we have no job config yet, read it as a separate file
-	if len(cfg.Jobs.RunnerDockerImage) <= 0 {
-		fmt.Println("Reading job config from separate file...")
-		err = config.ReadJobConfig(&cfg, svcs.FS)
-		if err != nil {
-			fmt.Printf("WARNING: Failed to read job config: %v\n", err)
-		} else {
-			cfgJSON, err := json.MarshalIndent(cfg.Jobs, "", utils.PrettyPrintIndentForJSON)
-			if err != nil {
-				log.Fatalf("Error trying to display config\n")
-			}
-
-			cfgStr := string(cfgJSON)
-			fmt.Printf("Job config read: %v\n", cfgStr)
-		}
-	}
+	svcs := initServices(&cfg, instanceId)
 
 	////////////////////////////////////////////////////
 	// Set up WebSocket server
@@ -245,7 +228,7 @@ func loadConfig() config.APIConfig {
 	return cfg
 }
 
-func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServices {
+func initServices(cfg *config.APIConfig, apiInstanceId string) *services.APIServices {
 	// Get a session for the bucket region
 	sess, err := awsutil.GetSession()
 	if err != nil {
@@ -258,6 +241,26 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 	}
 
 	fs := fileaccess.MakeS3Access(s3svc)
+
+	// TODO: Remove this once we switch to new environments and have full control over our configs again
+	//       This is only here so we can run easily on old environments without editing their configs!
+
+	// If we have no job config yet, read it as a separate file
+	if len(cfg.Jobs.RunnerDockerImage) <= 0 {
+		fmt.Println("Reading job config from separate file...")
+		err = config.ReadJobConfig(cfg, fs)
+		if err != nil {
+			fmt.Printf("WARNING: Failed to read job config: %v\n", err)
+		} else {
+			cfgJSON, err := json.MarshalIndent(cfg.Jobs, "", utils.PrettyPrintIndentForJSON)
+			if err != nil {
+				log.Fatalf("Error trying to display config\n")
+			}
+
+			cfgStr := string(cfgJSON)
+			fmt.Printf("Job config read: %v\n", cfgStr)
+		}
+	}
 
 	// Init logger - this used to be local=stdout, cloud env=cloudwatch, but we now write all logs to stdout
 	iLog := &logger.StdErrLogger{}
@@ -312,7 +315,7 @@ func initServices(cfg config.APIConfig, apiInstanceId string) *services.APIServi
 
 	// Set up services
 	svcs := &services.APIServices{
-		Config:           cfg,
+		Config:           *cfg,
 		Log:              iLog,
 		S3:               s3svc,
 		SNS:              awsutil.RealSNS{SNS: snsSvc},
