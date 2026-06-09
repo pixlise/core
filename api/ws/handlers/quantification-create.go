@@ -13,17 +13,19 @@ import (
 )
 
 func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerContext) (*protos.QuantCreateResp, error) {
-	if strings.Contains(req.Params.Name, "(new)") {
-		// Run a new-style job
-		status, err := hctx.Svcs.JobManager.SubmitQuantJob(req.Params, &hctx.SessUser, hctx.Session)
-		if err != nil {
-			return nil, err
-		}
-
-		return &protos.QuantCreateResp{Status: status}, nil
+	// If we have legacy jobs enabled, and the job name doesn't start with (new) we run it as a legacy quant job. Otherwise
+	// we run all jobs the "new" way
+	if hctx.Svcs.Config.Jobs.LegacyJobs && !strings.HasPrefix(req.Params.Name, "(new)") {
+		return legacyHandleQuantCreateReq(req, hctx)
 	}
 
-	return legacyHandleQuantCreateReq(req, hctx)
+	// Run a new-style job
+	status, err := hctx.Svcs.JobManager.SubmitQuantJob(req.Params, &hctx.SessUser, hctx.Session)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.QuantCreateResp{Status: status}, nil
 }
 
 func legacyHandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerContext) (*protos.QuantCreateResp, error) {

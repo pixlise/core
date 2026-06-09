@@ -1,6 +1,7 @@
 {
 
     "Jobs": {
+        "LegacyJobs": true,
         "MaxQuantNodes": 20,
         "CoresPerNode": 4
     },

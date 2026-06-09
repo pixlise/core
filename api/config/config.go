@@ -114,6 +114,8 @@ type APIConfig struct {
 // JobConfig contains all configs required to be able to run jobs by the back-end. This can involve starting quants or other jobs
 // locally in Docker, or starting up a JobNode (an EC2 instance with a pixlise-job-node executable running) to execute the job
 type JobConfig struct {
+	LegacyJobs bool
+
 	// Configuring AWS EC2 instance type for job node
 	CoresPerNode  uint
 	InstanceType  string
