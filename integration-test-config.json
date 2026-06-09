@@ -1,5 +1,4 @@
 {
-    "EnvironmentName": "unittest",
 
     "Jobs": {
         "MaxQuantNodes": 20,
@@ -26,5 +25,7 @@
 	"WSMaxMessageSize": 40000,
 	"WSMessageBufferSize": 256,
     
-	"ZenodoURI": "https://sandbox.zenodo.org"
+	"ZenodoURI": "https://sandbox.zenodo.org",
+
+    "EnvironmentName": "unittest"
 }
