@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/v4/api/config"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/sessionuser"
@@ -20,7 +19,6 @@ func makePMCListFilesForQuantROI(
 	userParams *protos.QuantCreateParams,
 	requestorSession *sessionuser.SessionUser,
 	combinedSpectra bool,
-	cfg config.APIConfig,
 	jobDataPath string,
 	nodePMCFileName string,
 	dataset *protos.Experiment,

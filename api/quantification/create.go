@@ -155,7 +155,6 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 
 	r.updateJobState(protos.JobStatus_PREPARING_NODES, fmt.Sprintf("Cores/Node: %v", r.quantStartSettings.CoresPerNode))
 
-	datasetFileName := path.Base(r.quantStartSettings.ScanFilePath)
 	datasetPathOnly := path.Dir(r.quantStartSettings.ScanFilePath)
 
 	// Gather required params (these are static, same data passed to each node)
@@ -184,7 +183,7 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 		svcs.Log.Debugf("Piquant parameters: %v\n", string(piquantParamsStr))
 	}
 
-	pmcFiles, spectraPerNode, rois, combined, quantByROI, err := PreparePMCLists(userParams, r.sessUser, datasetFileName, jobDataPath, svcs, true)
+	pmcFiles, spectraPerNode, rois, combined, quantByROI, err := PreparePMCLists(userParams, r.sessUser, "node.pmcs", jobDataPath, svcs, true)
 
 	if err != nil {
 		r.completeJobState(false, fmt.Sprintf("Error: %v", err), "", []string{})
@@ -426,7 +425,7 @@ func PreparePMCLists(userParams *protos.QuantCreateParams, sessUser *sessionuser
 
 	if quantByROI {
 		pmcFile := ""
-		pmcFile, spectraPerNode, rois, err = makePMCListFilesForQuantROI(svcs, userParams, sessUser, combined, svcs.Config, jobDataPath, nodePMCFileName, dataset)
+		pmcFile, spectraPerNode, rois, err = makePMCListFilesForQuantROI(svcs, userParams, sessUser, combined, jobDataPath, nodePMCFileName, dataset)
 		pmcFiles = []string{pmcFile}
 	} else {
 		pmcFiles, spectraPerNode, err = makePMCListFilesForQuantPMCs(svcs, userParams, combined, jobDataPath, nodePMCFileName, dataset)
