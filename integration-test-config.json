@@ -1,4 +1,22 @@
 {
+    "ConfigBucket": "integration-test-config-pixlise",
+    "PiquantJobsBucket": "integration-test-jobs-pixlise",
+    "DatasetsBucket": "integration-test-data-pixlise",
+    "UsersBucket": "integration-test-users-pixlise",
+    "ManualUploadBucket": "integration-test-upload-pixlise",
+
+    "DataSourceSNSTopic": "",
+
+    "LogLevel": 1,
+    "SentryEndpoint": "",
+
+	"WSWriteWaitMs": 10000,
+	"WSPongWaitMs": 60000,
+	"WSPingPeriodMs": 54000,
+	"WSMaxMessageSize": 40000,
+	"WSMessageBufferSize": 256,
+    
+	"ZenodoURI": "https://sandbox.zenodo.org",
 
     "Jobs": {
         "LegacyJobs": true,
@@ -8,25 +26,6 @@
 
     "QuantExecutor": "docker",
     "QuantNamespace": "unittest",
-
-    "LogLevel": 1,
-    "SentryEndpoint": "",
-
-    "DatasetsBucket": "integration-test-data-pixlise",
-    "UsersBucket": "integration-test-users-pixlise",
-    "ConfigBucket": "integration-test-config-pixlise",
-    "PiquantJobsBucket": "integration-test-jobs-pixlise",
-    "ManualUploadBucket": "integration-test-upload-pixlise",
-
-    "DataSourceSNSTopic": "",
-
-	"WSWriteWaitMs": 10000,
-	"WSPongWaitMs": 60000,
-	"WSPingPeriodMs": 54000,
-	"WSMaxMessageSize": 40000,
-	"WSMessageBufferSize": 256,
-    
-	"ZenodoURI": "https://sandbox.zenodo.org",
 
     "EnvironmentName": "unittest"
 }
