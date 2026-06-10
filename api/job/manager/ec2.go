@@ -40,10 +40,6 @@ func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret 
 		return []*string{}, fmt.Errorf("JobNode AWS secret not set")
 	}
 
-	if jm.startedNodeCount > jm.svcs.Config.Jobs.MaxQuantNodes || jm.startedNodeCount > 10 {
-		return []*string{}, fmt.Errorf("Not starting job node, hard testing limit has been reached")
-	}
-
 	jobNodeInstanceName := fmt.Sprintf("job-node-%v", jm.svcs.Config.EnvironmentName)
 
 	startupScript := fmt.Sprintf(`#!/bin/bash
