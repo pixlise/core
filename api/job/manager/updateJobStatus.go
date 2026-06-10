@@ -29,7 +29,11 @@ func (jm *JobManager) updateJobStatus(jobId string, status protos.JobStatus_Stat
 	if updResult.MatchedCount != 1 && updResult.UpsertedCount != 1 {
 		jm.svcs.Log.Errorf("updateJobStatus result had unexpected counts %+v id: %v", updResult, jobId)
 	} else {
-		jm.svcs.Log.Infof("updateJobStatus: %v with status %v, message: %v", jobId, protos.JobStatus_Status_name[int32(status.Number())], message)
+		// If we're in local mode (for testing), we don't show the PREPARING_NODES log because this breaks tests due to
+		// its asynchronous nature, the order where it get logged is non-deterministic
+		if !jm.isLocalTestMode() || status != protos.JobStatus_PREPARING_NODES {
+			jm.svcs.Log.Infof("updateJobStatus: %v with status %v, message: %v", jobId, protos.JobStatus_Status_name[int32(status.Number())], message)
+		}
 	}
 
 	// Send out notifications so client knows the job state has changed

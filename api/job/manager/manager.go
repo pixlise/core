@@ -53,3 +53,11 @@ func CreateJobManager(svcs *services.APIServices, startupQueueCheckDelaySec int,
 func (jm *JobManager) RegisterCompletionMethod(name string, f JobManagerCompletionFunction) {
 	jm.jobCompletionMethods[name] = f
 }
+
+// If we don't have an AWS secret set, we can only run stuff locally because we don't have credentials
+// to pass to a job node we're creating. This is useful for running tests! So wherever we need to do
+//
+//	anything "special" for tests we can use this function to check the condition
+func (jm *JobManager) isLocalTestMode() bool {
+	return len(jm.svcs.Config.Jobs.AWSSecret) <= 0
+}
