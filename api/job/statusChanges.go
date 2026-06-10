@@ -22,10 +22,10 @@ func UpdateJob(jobId string, status protos.JobStatus_Status, message string, log
 	opt := options.Replace()
 
 	jobStatus := &protos.JobStatus{
-		JobId:                 jobId,
-		Status:                status,
-		Message:               message,
-		LogId:                 logId,
+		JobId:   jobId,
+		Status:  status,
+		Message: message,
+		//LogId:                 logId,
 		LastUpdateUnixTimeSec: uint32(ts.GetTimeNowSec()),
 	}
 
@@ -74,10 +74,10 @@ func CompleteJob(jobId string, success bool, message string, outputFilePath stri
 	opt := options.Replace()
 
 	jobStatus := &protos.JobStatus{
-		JobId:                 jobId,
-		Status:                status,
-		Message:               message,
-		LogId:                 "",
+		JobId:   jobId,
+		Status:  status,
+		Message: message,
+		//LogId:                 "",
 		StartUnixTimeSec:      0,
 		LastUpdateUnixTimeSec: now,
 		EndUnixTimeSec:        now,
@@ -89,7 +89,7 @@ func CompleteJob(jobId string, success bool, message string, outputFilePath stri
 	if err != nil {
 		logger.Errorf("Failed to read existing job status when writing CompleteJob %v: %v", jobId, err)
 	} else {
-		jobStatus.LogId = existingStatus.LogId
+		//jobStatus.LogId = existingStatus.LogId
 		jobStatus.StartUnixTimeSec = existingStatus.StartUnixTimeSec
 		jobStatus.JobType = existingStatus.JobType
 		jobStatus.JobItemId = existingStatus.JobItemId

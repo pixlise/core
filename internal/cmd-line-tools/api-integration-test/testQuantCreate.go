@@ -191,7 +191,6 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 	finalMsg := fmt.Sprintf(`{"quantCreateUpd":{
 		"status": {
 			"jobId": "${IDCHK=quantCreate%v}",
-			"logId": "${IDCHK=quantCreate%v}",
 			"jobItemId": "${IDCHK=quantCreate%v}",
 			"jobType": "JT_RUN_QUANT",
 			"requestorUserId": "${USERID}",
@@ -201,7 +200,7 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 			"lastUpdateUnixTimeSec": "${SECAGO=%v}",
 			"endUnixTimeSec": "${SECAGO=%v}",
 			"name": "%v",
-			"elements": [%v]`, idx+1, idx+1, idx+1, expectedFinalState, maxAgeSec, maxAgeSec, maxAgeSec, quantName, elemListStr)
+			"elements": [%v]`, idx+1, idx+1, expectedFinalState, maxAgeSec, maxAgeSec, maxAgeSec, quantName, elemListStr)
 	if expectedFinalState != "ERROR" {
 		finalMsg += `,
 			"outputFilePath": "${IGNORE}",
@@ -215,7 +214,6 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 		fmt.Sprintf(`{"quantCreateUpd":{
 			"status": {
 				"jobId": "${IDCHK=quantCreate%v}",
-				"logId": "${IDCHK=quantCreate%v}",
 				"jobItemId": "${IDCHK=quantCreate%v}",
 				"jobType": "JT_RUN_QUANT",
 				"requestorUserId": "${USERID}",
@@ -226,11 +224,10 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 				"name": "%v",
 				"elements": [%v]
 			}
-		}}`, idx+1, idx+1, idx+1, maxAgeSec, maxAgeSec, quantName, elemListStr),
+		}}`, idx+1, idx+1, maxAgeSec, maxAgeSec, quantName, elemListStr),
 		fmt.Sprintf(`{"quantCreateUpd":{
 			"status": {
 				"jobId": "${IDCHK=quantCreate%v}",
-				"logId": "${IDCHK=quantCreate%v}",
 				"jobItemId": "${IDCHK=quantCreate%v}",
 				"jobType": "JT_RUN_QUANT",
 				"requestorUserId": "${USERID}",
@@ -241,11 +238,10 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 				"name": "%v",
 				"elements": [%v]
 			}
-		}}`, idx+1, idx+1, idx+1, maxAgeSec, maxAgeSec, quantName, elemListStr),
+		}}`, idx+1, idx+1, maxAgeSec, maxAgeSec, quantName, elemListStr),
 		fmt.Sprintf(`{"quantCreateUpd":{
 			"status": {
 				"jobId": "${IDCHK=quantCreate%v}",
-				"logId": "${IDCHK=quantCreate%v}",
 				"jobItemId": "${IDCHK=quantCreate%v}",
 				"jobType": "JT_RUN_QUANT",
 				"requestorUserId": "${USERID}",
@@ -256,7 +252,7 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 				"name": "%v",
 				"elements": [%v]
 			}
-		}}`, idx+1, idx+1, idx+1, maxAgeSec, maxAgeSec, quantName, elemListStr),
+		}}`, idx+1, idx+1, maxAgeSec, maxAgeSec, quantName, elemListStr),
 	}
 
 	/*if expectedFinalState != "ERROR" {

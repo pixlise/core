@@ -447,7 +447,9 @@ func (jm *JobManager) internalSubmitJob(jg *jobconfig.JobGroupConfig, requestorS
 	}
 
 	job := &protos.JobStatus{
-		JobId:            jg.JobGroupId,
+		JobId: jg.JobGroupId,
+		// For backwards compatibility with old quants... so tests pass. Hopefully not needed in future!
+		//LogId:            jg.JobGroupId,
 		Status:           protos.JobStatus_STARTING,
 		StartUnixTimeSec: now,
 		OtherLogFiles:    []string{},
