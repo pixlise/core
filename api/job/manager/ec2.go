@@ -17,6 +17,29 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// Speed comparison: Quantifying Tanda tula sol 1777 on prod with all 1377 PMCs, elements Al,Si,Ca,Fe ran on 15 nodes, 93 spectra/node:
+// started 11:51:47
+// kubernetes nodes running at 11:51:53
+// nodes success at 11:53:58
+// job finished 11:54:03
+// Job reported elapsed time 2min 16sec
+
+// New: Takes about 1min 30sec to even start the nodes
+//      Nodes starting up have to install docker, then each container downloads stuff
+
+// t3.medium, 2cores/node makes 32 jobs, runs on 16 nodes
+// t3.medium, 4cores/node makes 16 jobs, runs on 4 nodes
+//??????????????? t3.medium, 8cores/node makes 16 jobs, runs on 4 nodes
+
+// New jobs t3.medium, 8 cores/node: elapsed time 1821 sec = 30:21 (!!!!) (failed to combine at end quant-9830m8cpx6zcbo86 missing node 0 output)
+// New jobs t3.medium, 4 cores/node: elapsed time 11:04 4 nodes, second run 10:52
+// New jobs t3.medium, 2 cores/node: elapsed time 4:03 16 nodes, second run 4:09 (failed to combine at end quant-27eynb9dfhca6oe2), 3rd run worked 4:05, 4th run worked 4:12
+// New jobs t3a.medium, 2 cores/node: elapsed time 5:20 16 nodes
+// New jobs t3.large, 2 cores/node: elapsed time 5:24 sec (failed to combine at end quant-mv1pzuf3359wrtd4 missing node 10 output) 16 nodes
+// New jobs t3.xlarge, 4 cores/node: elapsed time 9:39 (failed to combine at end quant-wtmqejxiulf2x1x1 missing node 15 output) 4 nodes <------- should be faster, each docker was using 50% CPU???
+// New jobs t3.2xlarge, 4 cores/node: elapsed time 11:46 top showing 200%/container ?? (failed to combine at end quant-5ikkcvd8hes5yrzq missing node 8 output)
+// New jobs t3.2xlarge, 8 cores/node: elapsed time 13:31 top showing 100%/container (failed to combine at end quant-y52kwmyey35n0cu2 missing node 1 output)
+
 // Called to start a job node
 func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret string, awsRegion string) ([]*string, error) {
 	if len(jobIds) <= 0 || len(jobIds) > int(jm.svcs.Config.Jobs.CoresPerNode) {
@@ -38,10 +61,6 @@ func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret 
 
 	if len(jm.svcs.Config.Jobs.AWSSecret) <= 0 {
 		return []*string{}, fmt.Errorf("JobNode AWS secret not set")
-	}
-
-	if jm.startedNodeCount > jm.svcs.Config.Jobs.MaxQuantNodes || jm.startedNodeCount > 10 {
-		return []*string{}, fmt.Errorf("Not starting job node, hard testing limit has been reached")
 	}
 
 	jobNodeInstanceName := fmt.Sprintf("job-node-%v", jm.svcs.Config.EnvironmentName)
@@ -80,8 +99,8 @@ wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global
 echo "Running job node..."
 ./pixlise-job-node -bucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxRunTimeSec "%v" -jobs "%v"
 
-echo "PIXLISE job node shutting down"
-shutdown -h now
+echo "PIXLISE job node shutting down in 1 minute..."
+shutdown -h +1
 `,
 		jm.svcs.Config.Jobs.MaxNodeRunTimeSec/60,
 		jm.svcs.Config.Jobs.MaxNodeRunTimeSec,
@@ -172,7 +191,7 @@ func readSecretsManager(secretsManager *secretsmanager.SecretsManager, secretNam
 
 func (jm *JobManager) getRunningNodes() ([]string, error) {
 	// For testing/local mode, if we have already started that one thread, say there's just us as the node
-	if len(jm.svcs.Config.Jobs.AWSSecret) <= 0 {
+	if jm.isLocalTestMode() {
 		if jm.localJobNode == nil {
 			return []string{}, nil
 		}
@@ -256,92 +275,92 @@ func (jm *JobManager) startJobNodes(jobIds []string) error {
 		return fmt.Errorf("startJobNodes: No job ids specified")
 	}
 
-	if len(jm.svcs.Config.Jobs.AWSSecret) > 0 {
-		jm.svcs.Log.Debugf("  Querying running node count...")
+	if jm.isLocalTestMode() {
+		// No JobAWSSecret configured, so we just run in local mode. If we have not
+		// yet started a job node thread, start one now
+		jm.svcs.Log.Debugf("  startJobNodes running in local mode, ensuring one job node thread is running...")
 
-		// Read the credentials from secrets manager
-		awsKey, awsSecret, awsRegion, err := readSecretsManager(jm.svcs.SecretsManager, jm.svcs.Config.Jobs.AWSSecret)
-		if err != nil {
-			return fmt.Errorf("JobNode AWS secret read failed: %v", err)
+		if jm.localJobNode != nil {
+			jm.svcs.Log.Infof("  startJobNodes skipped, already running a local one")
+			return nil
 		}
 
-		instanceIds, err := jm.getRunningNodes()
+		// Start a local one
+		jm.svcs.Log.Infof("  startJobNodes starting local job node")
+		jm.localJobNode = jobnode.CreateJobNode(
+			"local-job",
+			jm.svcs.Config.Jobs.RunnerDockerImage,
+			jm.svcs.Config.PiquantJobsBucket,
+			jm.svcs.InstanceId,
+			jm.svcs.FS,
+			jm.svcs.MongoDB,
+			jm.svcs.Log,
+			jm.svcs.TimeStamper)
+
+		jm.localJobNode.StartJobs(jobIds)
+
+		return nil
+	}
+
+	jm.svcs.Log.Debugf("  Querying running node count...")
+
+	// Read the credentials from secrets manager
+	awsKey, awsSecret, awsRegion, err := readSecretsManager(jm.svcs.SecretsManager, jm.svcs.Config.Jobs.AWSSecret)
+	if err != nil {
+		return fmt.Errorf("JobNode AWS secret read failed: %v", err)
+	}
+
+	instanceIds, err := jm.getRunningNodes()
+	if err != nil {
+		return err
+	}
+
+	jm.svcs.Log.Debugf("  Instance IDs retrieved: %v", strings.Join(instanceIds, ","))
+
+	// If this seems like way too many jobs, stop here, so we don't infinitely start up EC2s
+	if len(instanceIds) > int(jm.svcs.Config.Jobs.MaxQuantNodes)*4 {
+		return fmt.Errorf("Too many job nodes active (%v), no more will be started", len(instanceIds))
+	}
+
+	// Change their state, we're assigning them...
+	nowUnixSec := jm.svcs.TimeStamper.GetTimeNowSec()
+	ctx := context.TODO()
+
+	filter := bson.M{"_id": bson.M{"$in": jobIds}}
+	dbResult, err := jm.svcs.MongoDB.Collection(dbCollections.JobQueueName).UpdateMany(ctx, filter, bson.D{{Key: "$set", Value: bson.M{
+		"state":                       protos.JobQueueItem_ASSIGNED,
+		"lastupdatedtimestampunixsec": nowUnixSec,
+	}}})
+
+	if err != nil {
+		return fmt.Errorf("Failed to set jobs to assigned state: %v", err)
+	}
+
+	if dbResult.ModifiedCount != int64(len(jobIds)) {
+		jm.svcs.Log.Infof("  WARNING: startJobNodes expected modified count of %v, got %v", len(jobIds), dbResult.ModifiedCount)
+	}
+
+	// Work out how many job nodes are needed.
+	jobsForNodes := getJobsPerNode(jobIds, jm.svcs.Config.Jobs.CoresPerNode)
+
+	// Start each node
+	allStartedIds := []*string{}
+	for _, jobs := range jobsForNodes {
+		jm.svcs.Log.Debugf("  Starting EC2 job node for jobs: %v...", strings.Join(jobs, ","))
+		startedIds, err := jm.startEC2JobNode(jobs, awsKey, awsSecret, awsRegion)
 		if err != nil {
 			return err
 		}
 
-		jm.svcs.Log.Debugf("  Instance IDs retrieved: %v", strings.Join(instanceIds, ","))
-
-		// If this seems like way too many jobs, stop here, so we don't infinitely start up EC2s
-		if len(instanceIds) > int(jm.svcs.Config.Jobs.MaxQuantNodes)*4 {
-			return fmt.Errorf("Too many job nodes active (%v), no more will be started", len(instanceIds))
-		}
-
-		// Change their state, we're assigning them...
-		nowUnixSec := jm.svcs.TimeStamper.GetTimeNowSec()
-		ctx := context.TODO()
-
-		filter := bson.M{"_id": bson.M{"$in": jobIds}}
-		dbResult, err := jm.svcs.MongoDB.Collection(dbCollections.JobQueueName).UpdateMany(ctx, filter, bson.D{{Key: "$set", Value: bson.M{
-			"state":                       protos.JobQueueItem_ASSIGNED,
-			"lastupdatedtimestampunixsec": nowUnixSec,
-		}}})
-
-		if err != nil {
-			return fmt.Errorf("Failed to set jobs to assigned state: %v", err)
-		}
-
-		if dbResult.ModifiedCount != int64(len(jobIds)) {
-			jm.svcs.Log.Infof("  WARNING: startJobNodes expected modified count of %v, got %v", len(jobIds), dbResult.ModifiedCount)
-		}
-
-		// Work out how many job nodes are needed.
-		jobsForNodes := getJobsPerNode(jobIds, jm.svcs.Config.Jobs.CoresPerNode)
-
-		// Start each node
-		allStartedIds := []*string{}
-		for _, jobs := range jobsForNodes {
-			jm.svcs.Log.Debugf("  Starting EC2 job node for jobs: %v...", strings.Join(jobs, ","))
-			startedIds, err := jm.startEC2JobNode(jobs, awsKey, awsSecret, awsRegion)
-			if err != nil {
-				return err
-			}
-
-			allStartedIds = append(allStartedIds, startedIds...)
-		}
-
-		input := &ec2.DescribeInstancesInput{InstanceIds: allStartedIds}
-		err = jm.svcs.EC2.WaitUntilInstanceRunning(input)
-		if err != nil {
-			jm.svcs.Log.Infof("  WARNING: Failed to wait for instances to start running: %v", err)
-		}
-
-		jm.svcs.Log.Debugf("  %v nodes started.", len(jobsForNodes))
-		return nil
+		allStartedIds = append(allStartedIds, startedIds...)
 	}
 
-	// No JobAWSSecret configured, so we just run in local mode. If we have not
-	// yet started a job node thread, start one now
-	jm.svcs.Log.Debugf("  startJobNodes running in local mode, ensuring one job node thread is running...")
-
-	if jm.localJobNode != nil {
-		jm.svcs.Log.Infof("  startJobNodes skipped, already running a local one")
-		return nil
+	input := &ec2.DescribeInstancesInput{InstanceIds: allStartedIds}
+	err = jm.svcs.EC2.WaitUntilInstanceRunning(input)
+	if err != nil {
+		jm.svcs.Log.Infof("  WARNING: Failed to wait for instances to start running: %v", err)
 	}
 
-	// Start a local one
-	jm.svcs.Log.Infof("  startJobNodes starting local job node")
-	jm.localJobNode = jobnode.CreateJobNode(
-		"local-job",
-		jm.svcs.Config.Jobs.RunnerDockerImage,
-		jm.svcs.Config.PiquantJobsBucket,
-		jm.svcs.InstanceId,
-		jm.svcs.FS,
-		jm.svcs.MongoDB,
-		jm.svcs.Log,
-		jm.svcs.TimeStamper)
-
-	jm.localJobNode.StartJobs(jobIds)
-
+	jm.svcs.Log.Debugf("  %v nodes started.", len(jobsForNodes))
 	return nil
 }

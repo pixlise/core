@@ -198,7 +198,6 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	// DEBUG: Downloading file: s3://datasets-bucket/Scans/048300551/dataset.bin
 	// DEBUG: spectraPerNode: 2, PMCs per node: 2 for 2 spectra, nodes: 1
 	// INFO: WARNING: SubmitJob - DockerImage not specified, this will result in local job runners, recommended only for testing
-	// INFO: updateJobStatus: quant-id123 with status PREPARING_NODES, message: Preparing 1 nodes...
 	// SubmitQuantJob: STARTING, <nil>
 	// INFO: Instance the-test-instance starting job "quant-id123-node-0"...
 	// WARNING: Running job locally, recommended for use for tests only!
@@ -337,7 +336,6 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// INFO: Using node count override: 4
 	// DEBUG: spectraPerNode: 2, PMCs per node: 2 for 7 spectra, nodes: 4
 	// INFO: WARNING: SubmitJob - DockerImage not specified, this will result in local job runners, recommended only for testing
-	// INFO: updateJobStatus: quant-id123 with status PREPARING_NODES, message: Preparing 4 nodes...
 	// SubmitQuantJob: STARTING, <nil>
 	// INFO: Instance the-test-instance starting job "quant-id123-node-0"...
 	// WARNING: Running job locally, recommended for use for tests only!
@@ -582,7 +580,6 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	// INFO: Using node count override: 4
 	// DEBUG: spectraPerNode: 2, PMCs per node: 2 for 7 spectra, nodes: 4
 	// INFO: WARNING: SubmitJob - DockerImage not specified, this will result in local job runners, recommended only for testing
-	// INFO: updateJobStatus: quant-id123 with status PREPARING_NODES, message: Preparing 4 nodes...
 	// SubmitQuantJob: STARTING, <nil>
 	// INFO: Instance the-test-instance starting job "quant-id123-node-0"...
 	// WARNING: Running job locally, recommended for use for tests only!
