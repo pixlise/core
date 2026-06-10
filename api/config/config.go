@@ -122,6 +122,7 @@ type JobConfig struct {
 	AMI           string
 	KeyName       string
 	SecurityGroup string
+	SubnetId      string
 
 	// How many nodes to run, and limits for how long they run
 	MaxNodeRunTimeSec uint32

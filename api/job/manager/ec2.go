@@ -118,6 +118,9 @@ shutdown -h now
 		MinCount:         aws.Int64(int64(1)),
 		UserData:         aws.String(base64.StdEncoding.EncodeToString([]byte(startupScript))),
 	}
+	if len(jm.svcs.Config.Jobs.SubnetId) > 0 {
+		input.SetSubnetId(jm.svcs.Config.Jobs.SubnetId)
+	}
 
 	res, err := jm.svcs.EC2.RunInstances(input)
 	if err != nil {
