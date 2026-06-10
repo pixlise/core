@@ -85,6 +85,12 @@ func Example_estimateNodeCount() {
 	// Ensure the max cores have an effect
 	fmt.Println(EstimateNodeCount(1769*2, 4, 59, 8, 6))
 
+	fmt.Println(EstimateNodeCount(1377, 5, 60, 1, 80))
+	fmt.Println(EstimateNodeCount(1377, 5, 60, 2, 50))
+	fmt.Println(EstimateNodeCount(1377, 5, 60, 4, 50))
+	fmt.Println(EstimateNodeCount(1377, 5, 60, 8, 50))
+	fmt.Println(EstimateNodeCount(1377, 5, 60, 16, 50))
+
 	// It's a bit unfortunate we ran all but 1 tests on the same number of cores, but
 	// the above data varies the spectra count, element count and expected runtime
 
@@ -106,6 +112,11 @@ func Example_estimateNodeCount() {
 	// 19
 	// 17
 	// 6
+	// 61
+	// 31
+	// 15
+	// 8
+	// 4
 }
 
 func Example_filesPerNode() {
