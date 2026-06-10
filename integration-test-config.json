@@ -19,9 +19,10 @@
 	"ZenodoURI": "https://sandbox.zenodo.org",
 
     "Jobs": {
-        "LegacyJobs": true,
+        "LegacyJobs": false,
         "MaxQuantNodes": 20,
-        "CoresPerNode": 4
+        "CoresPerNode": 4,
+        "NodeS3Path": "s3://pixlise-prod-config/JobNode/pixlise-job-node"
     },
 
     "QuantExecutor": "docker",
