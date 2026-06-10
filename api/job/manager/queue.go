@@ -65,7 +65,7 @@ func (jm *JobManager) QueueJob(jg *jobconfig.JobGroupConfig) error {
 		}
 
 		// Update job state
-		err = jm.updateJobStatus(jg.JobGroupId, protos.JobStatus_PREPARING_NODES, fmt.Sprintf("Preparing %v nodes...", len(qItems)), true)
+		go /*err =*/ jm.updateJobStatus(jg.JobGroupId, protos.JobStatus_PREPARING_NODES, fmt.Sprintf("Preparing %v nodes...", len(qItems)), true)
 		return nil, err
 	}
 
