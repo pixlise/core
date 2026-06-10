@@ -17,6 +17,29 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// Speed comparison: Quantifying Tanda tula sol 1777 on prod with all 1377 PMCs, elements Al,Si,Ca,Fe ran on 15 nodes, 93 spectra/node:
+// started 11:51:47
+// kubernetes nodes running at 11:51:53
+// nodes success at 11:53:58
+// job finished 11:54:03
+// Job reported elapsed time 2min 16sec
+
+// New: Takes about 1min 30sec to even start the nodes
+//      Nodes starting up have to install docker, then each container downloads stuff
+
+// t3.medium, 2cores/node makes 32 jobs, runs on 16 nodes
+// t3.medium, 4cores/node makes 16 jobs, runs on 4 nodes
+//??????????????? t3.medium, 8cores/node makes 16 jobs, runs on 4 nodes
+
+// New jobs t3.medium, 8 cores/node: elapsed time 1821 sec = 30:21 (!!!!) (failed to combine at end quant-9830m8cpx6zcbo86 missing node 0 output)
+// New jobs t3.medium, 4 cores/node: elapsed time 11:04 4 nodes, second run 10:52
+// New jobs t3.medium, 2 cores/node: elapsed time 4:03 16 nodes, second run 4:09 (failed to combine at end quant-27eynb9dfhca6oe2), 3rd run worked 4:05, 4th run worked 4:12
+// New jobs t3a.medium, 2 cores/node: elapsed time 5:20 16 nodes
+// New jobs t3.large, 2 cores/node: elapsed time 5:24 sec (failed to combine at end quant-mv1pzuf3359wrtd4 missing node 10 output) 16 nodes
+// New jobs t3.xlarge, 4 cores/node: elapsed time 9:39 (failed to combine at end quant-wtmqejxiulf2x1x1 missing node 15 output) 4 nodes <------- should be faster, each docker was using 50% CPU???
+// New jobs t3.2xlarge, 4 cores/node: elapsed time 11:46 top showing 200%/container ?? (failed to combine at end quant-5ikkcvd8hes5yrzq missing node 8 output)
+// New jobs t3.2xlarge, 8 cores/node: elapsed time 13:31 top showing 100%/container (failed to combine at end quant-y52kwmyey35n0cu2 missing node 1 output)
+
 // Called to start a job node
 func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret string, awsRegion string) ([]*string, error) {
 	if len(jobIds) <= 0 || len(jobIds) > int(jm.svcs.Config.Jobs.CoresPerNode) {
@@ -76,8 +99,8 @@ wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global
 echo "Running job node..."
 ./pixlise-job-node -bucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxRunTimeSec "%v" -jobs "%v"
 
-echo "PIXLISE job node shutting down"
-shutdown -h now
+echo "PIXLISE job node shutting down in 1 minute..."
+shutdown -h +1
 `,
 		jm.svcs.Config.Jobs.MaxNodeRunTimeSec/60,
 		jm.svcs.Config.Jobs.MaxNodeRunTimeSec,
