@@ -217,6 +217,13 @@ func makeRelativePaths(fullPaths []string, root string) ([]string, error) {
 // Requires source bucket, source root with srcRelativePaths which are relative to source root. This way the relative paths
 // can be compared to dest paths, and only the ones not already in dest root are copied.
 func syncFiles(srcBucket string, srcRoot string, srcRelativePaths []string, destBucket string, destRoot string, fs fileaccess.FileAccess, jobLog logger.ILogger) error {
+	printLimit := 5
+	if len(srcRelativePaths) < printLimit {
+		printLimit = len(srcRelativePaths)
+	}
+
+	jobLog.Infof(" Sync backup s3://%v/%v to s3://%v/%v starting (first %v src paths: %v)...", srcBucket, srcRoot, destBucket, destRoot, printLimit, strings.Join(srcRelativePaths[0:printLimit], ","))
+
 	// Get a listing from the destination
 	// NOTE: the returned paths contain destRoot at the start!
 	destFullFiles, err := fs.ListObjects(destBucket, destRoot)
