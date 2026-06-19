@@ -160,6 +160,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 
 	envReadPath := envS3Path
 
+	var err error
 	/*
 		// Check if we're restoring old style backups (at root of bucket) or if we've got a directory in S3. Use the directory
 		// otherwise the bucket.
