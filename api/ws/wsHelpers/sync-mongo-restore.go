@@ -95,7 +95,10 @@ func DownloadArchive(envS3Path string, svcs *services.APIServices) (string, erro
 			svcs.Log.Errorf(" Failed to get free disk bytes: %v", err)
 		}
 
-		svcs.Log.Infof(" Downloading: %v... (%v bytes free)", dbFile, freeBytes)
+		// Remove remote root dir
+		dbFilePathLocal := strings.TrimPrefix(dbFile, dataBackupS3Path+"/")
+
+		svcs.Log.Infof(" Downloading: %v -> %v... (%v bytes free)", dbFile, "./backup/"+dbFilePathLocal, freeBytes)
 
 		dbStream, err := svcs.FS.ReadObjectStream(svcs.Config.DataBackupBucket, dbFile)
 		if err != nil {
@@ -103,8 +106,6 @@ func DownloadArchive(envS3Path string, svcs *services.APIServices) (string, erro
 		}
 
 		// Save locally
-		// Remove remote root dir
-		dbFilePathLocal := strings.TrimPrefix(dbFile, dataBackupS3Path+"/")
 		err = localFS.WriteObjectStream("./backup", dbFilePathLocal, dbStream)
 
 		if err != nil {
@@ -120,6 +121,6 @@ func DownloadArchive(envS3Path string, svcs *services.APIServices) (string, erro
 		}
 	}
 
-	svcs.Log.Infof("PIXLISE DB Dump files downloaded")
+	svcs.Log.Infof("PIXLISE DB Dump files downloaded, db name: %v", dbName)
 	return dbName, nil
 }
