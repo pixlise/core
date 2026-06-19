@@ -160,18 +160,21 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 
 	envReadPath := envS3Path
 
-	// Check if we're restoring old style backups (at root of bucket) or if we've got a directory in S3. Use the directory
-	// otherwise the bucket.
-	exists, err := svcs.FS.ObjectExists(svcs.Config.DataBackupBucket, envS3Path)
-	// If it doesn't exist, use the root
-	if err != nil {
-		svcs.Log.Errorf("Failed to check backup bucket path \"%v\" exists: %v", envS3Path, err)
-		return
-	}
+	/*
+		// Check if we're restoring old style backups (at root of bucket) or if we've got a directory in S3. Use the directory
+		// otherwise the bucket.
+		exists, err := svcs.FS.ObjectExists(svcs.Config.DataBackupBucket, envS3Path)
+		// If it doesn't exist, use the root
+		if err != nil {
+			svcs.Log.Errorf("Failed to check backup bucket path \"%v\" exists: %v", envS3Path, err)
+			return
+		}
 
-	if !exists {
-		envReadPath = ""
-	}
+		if !exists {
+			envReadPath = ""
+		}*/
+
+	svcs.Log.Infof("RunRestore from \"s3://%v/%v\"...", svcs.Config.DataBackupBucket, envS3Path)
 
 	wg.Add(1)
 	go func() {
