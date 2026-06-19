@@ -96,9 +96,9 @@ func DownloadArchive(envS3Path string, svcs *services.APIServices) (string, erro
 		}
 
 		// Remove remote root dir
-		dbFilePathLocal := strings.TrimPrefix(dbFile, dataBackupS3Path+"/")
+		dbFilePathLocal := strings.TrimPrefix(dbFile, envS3Path+"/")
 
-		svcs.Log.Infof(" Downloading: %v -> %v... (%v bytes free)", dbFile, "./backup/"+dbFilePathLocal, freeBytes)
+		svcs.Log.Infof(" Downloading: %v -> %v... (%v MB free)", dbFile, "./backup/"+dbFilePathLocal, freeBytes/1048576)
 
 		dbStream, err := svcs.FS.ReadObjectStream(svcs.Config.DataBackupBucket, dbFile)
 		if err != nil {
