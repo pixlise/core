@@ -136,20 +136,21 @@ func SyncQuants(destS3Path string, svcs *services.APIServices) error {
 
 func RestoreScans(envS3Path string, svcs *services.APIServices) error {
 	// List source files
-	scanFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, filepaths.DatasetScansRoot)
+	srcScanPath := path.Join(envS3Path, filepaths.DatasetScansRoot)
+	scanFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, srcScanPath)
 	if err != nil {
 		return err
 	}
 
 	// Make scans relative!
-	relativeScanFiles, err := makeRelativePaths(scanFiles, filepaths.DatasetScansRoot)
+	relativeScanFiles, err := makeRelativePaths(scanFiles, srcScanPath)
 	if err != nil {
 		return err
 	}
 
 	return syncFiles(
 		svcs.Config.DataBackupBucket,
-		path.Join(envS3Path, filepaths.DatasetScansRoot),
+		srcScanPath,
 		relativeScanFiles,
 		svcs.Config.DatasetsBucket,
 		filepaths.DatasetScansRoot,
@@ -159,19 +160,20 @@ func RestoreScans(envS3Path string, svcs *services.APIServices) error {
 
 func RestoreQuants(envS3Path string, svcs *services.APIServices) error {
 	// List source files
-	quantFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, filepaths.RootQuantificationPath)
+	srcQuantPath := path.Join(envS3Path, filepaths.RootQuantificationPath)
+	quantFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, srcQuantPath)
 	if err != nil {
 		return err
 	}
 
-	relativeQuantFiles, err := makeRelativePaths(quantFiles, filepaths.RootQuantificationPath)
+	relativeQuantFiles, err := makeRelativePaths(quantFiles, srcQuantPath)
 	if err != nil {
 		return err
 	}
 
 	return syncFiles(
 		svcs.Config.DataBackupBucket,
-		path.Join(envS3Path, filepaths.RootQuantificationPath),
+		srcQuantPath,
 		relativeQuantFiles,
 		svcs.Config.UsersBucket,
 		filepaths.RootQuantificationPath,
@@ -181,19 +183,20 @@ func RestoreQuants(envS3Path string, svcs *services.APIServices) error {
 
 func RestoreImages(envS3Path string, svcs *services.APIServices) error {
 	// List source files
-	imageFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, filepaths.DatasetImagesRoot)
+	srcImgPath := path.Join(envS3Path, filepaths.DatasetImagesRoot)
+	imageFiles, err := svcs.FS.ListObjects(svcs.Config.DataBackupBucket, srcImgPath)
 	if err != nil {
 		return err
 	}
 
-	relativeImageFiles, err := makeRelativePaths(imageFiles, filepaths.DatasetImagesRoot)
+	relativeImageFiles, err := makeRelativePaths(imageFiles, srcImgPath)
 	if err != nil {
 		return err
 	}
 
 	return syncFiles(
 		svcs.Config.DataBackupBucket,
-		path.Join(envS3Path, filepaths.DatasetImagesRoot),
+		srcImgPath,
 		relativeImageFiles,
 		svcs.Config.DatasetsBucket,
 		filepaths.DatasetImagesRoot,
@@ -222,7 +225,7 @@ func syncFiles(srcBucket string, srcRoot string, srcRelativePaths []string, dest
 		printLimit = len(srcRelativePaths)
 	}
 
-	jobLog.Infof(" Sync backup s3://%v/%v to s3://%v/%v starting (first %v src paths: %v)...", srcBucket, srcRoot, destBucket, destRoot, printLimit, strings.Join(srcRelativePaths[0:printLimit], ","))
+	jobLog.Infof(" Sync s3://%v/%v to s3://%v/%v starting (first %v src paths: %v)...", srcBucket, srcRoot, destBucket, destRoot, printLimit, strings.Join(srcRelativePaths[0:printLimit], ","))
 
 	// Get a listing from the destination
 	// NOTE: the returned paths contain destRoot at the start!
