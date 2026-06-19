@@ -8,7 +8,7 @@ __debug_bin.exe
 #generated-protos/
 api/ws/wsMessage.go
 
-db-restore/
+db-restore*/
 mongo-db-local-*/
 mongo-db-pixlise-*/
 
