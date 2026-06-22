@@ -102,9 +102,29 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to read images: %v", err)
 	}
+	imageBeams, err := readImageBeamLocations(scanId, srcDB)
+	if err != nil {
+		log.Fatalf("Failed to read image beam locations: %v", err)
+	}
+	image3DPoints, err := readImage3DPoints(scanId, srcDB)
+	if err != nil {
+		log.Fatalf("Failed to read image 3D points: %v", err)
+	}
+	imagePyramids, err := readImagePyramids(scanId, srcDB)
+	if err != nil {
+		log.Fatalf("Failed to read image pyramids: %v", err)
+	}
 	quants, err := readQuants(scanId, srcDB)
 	if err != nil {
 		log.Fatalf("Failed to read images: %v", err)
+	}
+	diffractionStatuses, err := readDiffractionStatuses(scanId, srcDB)
+	if err != nil {
+		log.Fatalf("Failed to read diffraction statuses: %v", err)
+	}
+	diffractionManualPeaks, err := readDiffractionManualPeaks(scanId, srcDB)
+	if err != nil {
+		log.Fatalf("Failed to read diffraction manual peaks: %v", err)
 	}
 
 	fmt.Println("Reading source files...")
@@ -144,10 +164,35 @@ func main() {
 		fmt.Printf(" %v: %v\n", c+1, f)
 	}
 
+	fmt.Printf("Image Beam Locations:\n")
+	for c, l := range imageBeams {
+		fmt.Printf(" %v: %v:\n", c+1, l.ImageName)
+		for i, ls := range l.LocationPerScan {
+			fmt.Printf("  %v: version: %v, instrument: %v, locations: %v", i+1, ls.BeamVersion, ls.Instrument, len(ls.Locations))
+		}
+	}
+
+	fmt.Printf("Image 3D Points:\n")
+	for c, p := range image3DPoints {
+		fmt.Printf(" %v: %v\n", c+1, len(p.Points))
+	}
+
+	fmt.Printf("Image Pyramids:\n")
+	for c, p := range imagePyramids {
+		fmt.Printf(" %v: pyramid layers: %v\n", c+1, len(p.Pyramid.Pyramid))
+	}
+
 	fmt.Printf("Quant Files:\n")
 	for c, f := range quantFiles {
 		fmt.Printf(" %v: %v\n", c+1, f)
 	}
+
+	fmt.Printf("Diffraction Detected Peak Statuses:\n")
+	for c, d := range diffractionStatuses {
+		fmt.Printf(" %v: %v has %v statuses\n", c+1, d.Id, len(d.Statuses))
+	}
+
+	fmt.Printf("Diffraction Manual Peaks: %v\n", len(diffractionManualPeaks))
 
 	// Verify nothing is missing
 	warn := false
@@ -246,6 +291,23 @@ func main() {
 		log.Fatalf("Failed to write detector config %v: %v", detectorConfig.Id, err)
 	}
 
+	// Diffraction peaks
+	for _, ds := range diffractionStatuses {
+		_, err = destDB.Collection(dbCollections.DiffractionDetectedPeakStatusesName).UpdateOne(ctx, bson.D{{Key: "_id", Value: ds.Id}}, bson.D{{Key: "$set", Value: ds}}, options.Update().SetUpsert(true))
+		if err != nil {
+			log.Fatalf("Failed to write diffraction peak statuses %v: %v", ds.Id, err)
+		}
+	}
+
+	if len(diffractionManualPeaks) > 0 {
+		for _, dm := range diffractionManualPeaks {
+			_, err = destDB.Collection(dbCollections.DiffractionManualPeaksName).UpdateOne(ctx, bson.D{{Key: "_id", Value: dm.Id}}, bson.D{{Key: "$set", Value: dm}}, options.Update().SetUpsert(true))
+			if err != nil {
+				log.Fatalf("Failed to write diffraction peak manual entries %v: %v", dm.Id, err)
+			}
+		}
+	}
+
 	// Copy scan files
 	fmt.Println("Scan files...")
 	for _, scanFile := range scanFiles {
@@ -285,6 +347,30 @@ func main() {
 		}
 	}
 
+	fmt.Println("Image Beam Locations...")
+	for _, imgItem := range imageBeams {
+		_, err = destDB.Collection(dbCollections.ImageBeamLocationsName).UpdateOne(ctx, bson.D{{Key: "_id", Value: imgItem.ImageName}}, bson.D{{Key: "$set", Value: imgItem}}, options.Update().SetUpsert(true))
+		if err != nil {
+			log.Fatalf("Failed to write image beam locations %v: %v", imgItem.ImageName, err)
+		}
+	}
+
+	fmt.Println("Image 3D Points...")
+	for _, imgItem := range image3DPoints {
+		_, err = destDB.Collection(dbCollections.Image3DPointsName).UpdateOne(ctx, bson.D{{Key: "_id", Value: imgItem.ImageName}}, bson.D{{Key: "$set", Value: imgItem}}, options.Update().SetUpsert(true))
+		if err != nil {
+			log.Fatalf("Failed to write image 3D points %v: %v", imgItem.ImageName, err)
+		}
+	}
+
+	fmt.Println("Image Pyramids...")
+	for _, imgItem := range imagePyramids {
+		_, err = destDB.Collection(dbCollections.ImagePyramidsName).UpdateOne(ctx, bson.D{{Key: "_id", Value: imgItem.Id}}, bson.D{{Key: "$set", Value: imgItem}}, options.Update().SetUpsert(true))
+		if err != nil {
+			log.Fatalf("Failed to write image pyramid %v: %v", imgItem.Id, err)
+		}
+	}
+
 	fmt.Println("Images Files...")
 	for _, imgFile := range imageFiles {
 		fmt.Printf("  %v file copy...\n", imgFile)
@@ -294,9 +380,6 @@ func main() {
 	}
 
 	// Other things to copy:
-	// - ScanDefaultImages
-	// - Tags (so our tag ids arent dangling references)
-	// DetectorConfigs
 	// Workspaces involving the scan?? That ends up needing expressions, expression groups, rois, etc
 }
 
@@ -332,57 +415,47 @@ func readScanDefaultImage(scanId string, db *mongo.Database) (*protos.ScanImageD
 }
 
 func readTags(tagIds []string, db *mongo.Database) ([]*protos.TagDB, error) {
-	ctx := context.TODO()
-	coll := db.Collection(dbCollections.TagsName)
-
-	filter := bson.M{"_id": bson.M{"$in": tagIds}}
-	cursor, err := coll.Find(ctx, filter)
-	if err != nil {
-		return nil, err
-	}
-
-	tags := []*protos.TagDB{}
-	err = cursor.All(context.TODO(), &tags)
-	if err != nil {
-		return nil, err
-	}
-
-	return tags, nil
+	return readMany[protos.TagDB](dbCollections.TagsName, bson.M{"_id": bson.M{"$in": tagIds}}, db)
 }
 
 func readImages(scanId string, db *mongo.Database) ([]*protos.ScanImage, error) {
-	ctx := context.TODO()
-	coll := db.Collection(dbCollections.ImagesName)
+	return readMany[protos.ScanImage](dbCollections.ImagesName, bson.M{"_id": bson.D{{Key: "$regex", Value: fmt.Sprintf("%v/.*", scanId)}}}, db)
+}
 
-	//filter := bson.M{"originscanid": scanId}
-	//filter := bson.M{"_id": bson.M{"$in": []string{scanId}}}
-	filter := bson.D{{Key: "_id", Value: bson.D{{Key: "$regex", Value: fmt.Sprintf("%v/.*", scanId)}}}}
-	cursor, err := coll.Find(ctx, filter)
+func readImageBeamLocations(scanId string, db *mongo.Database) ([]*protos.ImageLocations, error) {
+	return readMany[protos.ImageLocations](dbCollections.ImageBeamLocationsName, bson.M{"_id": bson.D{{Key: "$regex", Value: fmt.Sprintf("%v/.*", scanId)}}}, db)
+}
 
-	if err != nil {
-		return nil, err
-	}
+func readImage3DPoints(scanId string, db *mongo.Database) ([]*protos.Image3DPoints, error) {
+	return readMany[protos.Image3DPoints](dbCollections.Image3DPointsName, bson.M{"_id": bson.D{{Key: "$regex", Value: fmt.Sprintf("%v/.*", scanId)}}}, db)
+}
 
-	scanImages := []*protos.ScanImage{}
-	err = cursor.All(context.TODO(), &scanImages)
-	if err != nil {
-		return nil, err
-	}
-
-	return scanImages, nil
+func readImagePyramids(scanId string, db *mongo.Database) ([]*protos.ImagePyramidDBEntry, error) {
+	return readMany[protos.ImagePyramidDBEntry](dbCollections.ImagePyramidsName, bson.M{"_id": bson.D{{Key: "$regex", Value: fmt.Sprintf("%v/.*", scanId)}}}, db)
 }
 
 func readQuants(scanId string, db *mongo.Database) ([]*protos.QuantificationSummary, error) {
-	ctx := context.TODO()
-	coll := db.Collection(dbCollections.QuantificationsName)
+	return readMany[protos.QuantificationSummary](dbCollections.QuantificationsName, bson.M{"scanid": scanId, "params.requestoruserid": sessionuser.PIXLISESystemUserId}, db)
+}
 
-	filter := bson.M{"scanid": scanId, "params.requestoruserid": sessionuser.PIXLISESystemUserId}
+func readDiffractionStatuses(scanId string, db *mongo.Database) ([]*protos.DetectedDiffractionPeakStatuses, error) {
+	return readMany[protos.DetectedDiffractionPeakStatuses](dbCollections.DiffractionDetectedPeakStatusesName, bson.M{"scanid": scanId}, db)
+}
+
+func readDiffractionManualPeaks(scanId string, db *mongo.Database) ([]*protos.ManualDiffractionPeak, error) {
+	return readMany[protos.ManualDiffractionPeak](dbCollections.DiffractionManualPeaksName, bson.M{"scanid": scanId}, db)
+}
+
+func readMany[T any](collectionName string, filter bson.M, db *mongo.Database) ([]*T, error) {
+	ctx := context.TODO()
+	coll := db.Collection(collectionName)
+
 	cursor, err := coll.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
 
-	items := []*protos.QuantificationSummary{}
+	items := []*T{}
 	err = cursor.All(ctx, &items)
 	return items, err
 }
