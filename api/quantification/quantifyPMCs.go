@@ -8,34 +8,35 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pixlise/core/v4/api/config"
+	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/quantification/quantRunner"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
+// Creates PMC list files for each job node and uploads them straight to S3 destination bucket.
+// NOTE: Returns pmcFiles, spectraPerNode, error (or nil if no error)
 func makePMCListFilesForQuantPMCs(
 	svcs *services.APIServices,
+	userParams *protos.QuantCreateParams,
 	combinedSpectra bool,
-	cfg config.APIConfig,
-	datasetFileName string,
 	jobDataPath string,
-	quantStartSettings *protos.QuantStartingParameters,
-	dataset *protos.Experiment) ([]string, int32, error) {
+	nodePMCFileName string,
+	dataset *protos.Experiment) ([]string, uint, error) {
 	pmcFiles := []string{}
-	userParams := quantStartSettings.UserParams
+	cfg := svcs.Config
 
 	// Work out how many quants we're running, therefore how many nodes we need to generate in a reasonable time frame
-	spectraCount := int32(len(userParams.Pmcs))
+	spectraCount := uint(len(userParams.Pmcs))
 	if !combinedSpectra {
 		spectraCount *= 2
 	}
 
-	nodeCount := quantRunner.EstimateNodeCount(spectraCount, int32(len(userParams.Elements)), int32(userParams.RunTimeSec), int32(quantStartSettings.CoresPerNode), cfg.MaxQuantNodes)
+	nodeCount := quantRunner.EstimateNodeCount(spectraCount, uint(len(userParams.Elements)), uint(userParams.RunTimeSec), cfg.Jobs.MaxQuantNodes)
 
-	if cfg.NodeCountOverride > 0 {
-		nodeCount = cfg.NodeCountOverride
+	if cfg.Jobs.NodeCountOverride > 0 {
+		nodeCount = cfg.Jobs.NodeCountOverride
 		svcs.Log.Infof("Using node count override: %v", nodeCount)
 	}
 
@@ -64,13 +65,13 @@ func makePMCListFilesForQuantPMCs(
 
 	for i, pmcList := range pmcLists {
 		// Serialise the data for the list
-		contents, err := makeIndividualPMCListFileContents(pmcList, datasetFileName, combinedSpectra, userParams.IncludeDwells, pmcHasDwellLookup)
+		contents, err := makeIndividualPMCListFileContents(pmcList, combinedSpectra, userParams.IncludeDwells, pmcHasDwellLookup)
 
 		if err != nil {
 			return pmcFiles, 0, fmt.Errorf("Error when preparing node PMC list: %v. Error: %v", i, err)
 		}
 
-		pmcListName, err := savePMCList(svcs, quantStartSettings.PiquantJobsBucket, contents, i, jobDataPath)
+		pmcListName, err := savePMCList(svcs, svcs.Config.PiquantJobsBucket, contents, nodePMCFileName, uint(i), jobDataPath)
 		if err != nil {
 			return []string{}, 0, err
 		}
@@ -81,10 +82,10 @@ func makePMCListFilesForQuantPMCs(
 	return pmcFiles, spectraPerNode, nil
 }
 
-func makeIndividualPMCListFileContents(PMCs []int32, DatasetFileName string, combinedDetectors bool, includeDwells bool, pmcHasDwellLookup map[int32]bool) (string, error) {
+func makeIndividualPMCListFileContents(PMCs []int32, combinedDetectors bool, includeDwells bool, pmcHasDwellLookup map[int32]bool) (string, error) {
 	// Serialise the data for the list
 	var sb strings.Builder
-	sb.WriteString(DatasetFileName + "\n")
+	sb.WriteString(filepaths.DatasetFileName + "\n")
 
 	if combinedDetectors {
 		// We're outputting rows of the form:
@@ -140,10 +141,20 @@ func makeQuantJobPMCLists(PMCs []int32, pmcsPerNode int) [][]int32 {
 	return result
 }
 
-func combineQuantOutputs(fs fileaccess.FileAccess, jobsBucket string, jobPath string, header string, pmcFilesUsed []string) (string, error) {
-	// Try to load each PMC file, if any fail, fail due to 1 node either not finishing/crashing/etc
+// The old way - pre general purpose jobs code, we only got the PMC file names, and we had to build the paths ourselves
+func CombineQuantOutputs(fs fileaccess.FileAccess, jobsBucket string, jobPath string, header string, pmcFilesUsed []string) (string, error) {
 	jobOutputPath := path.Join(jobPath, "output")
+	resultFilePaths := []string{}
 
+	for _, v := range pmcFilesUsed {
+		// Make the assumed output path
+		piquantOutputPath := path.Join(jobOutputPath, v+"_result.csv")
+		resultFilePaths = append(resultFilePaths, piquantOutputPath)
+	}
+	return CombineQuantOutputsForResultFilePaths(fs, jobsBucket, header, resultFilePaths)
+}
+
+func CombineQuantOutputsForResultFilePaths(fs fileaccess.FileAccess, jobsBucket string, header string, resultFilePaths []string) (string, error) {
 	var sb strings.Builder
 
 	// Write header:
@@ -152,10 +163,7 @@ func combineQuantOutputs(fs fileaccess.FileAccess, jobsBucket string, jobPath st
 	pmcLineLookup := map[int][]string{}
 	pmcs := []int{}
 
-	for c, v := range pmcFilesUsed {
-		// Make the assumed output path
-		piquantOutputPath := path.Join(jobOutputPath, v+"_result.csv")
-
+	for c, piquantOutputPath := range resultFilePaths {
 		data, err := fs.ReadObject(jobsBucket, piquantOutputPath)
 		if err != nil {
 			return "", errors.New("Failed to combine map segment: " + piquantOutputPath)

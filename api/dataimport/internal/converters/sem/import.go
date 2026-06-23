@@ -10,7 +10,7 @@ import (
 
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 	dataimportModel "github.com/pixlise/core/v4/api/dataimport/models"
-	"github.com/pixlise/core/v4/api/specialUserIds"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -185,7 +185,7 @@ func (im ImageMaps) Import(importPath string, pseudoIntensityRangesPath string, 
 		PseudoRanges:         pseudoIntensityRanges,
 		PerPMCData:           map[int32]*dataConvertModels.PMCData{},
 		MatchedAlignedImages: matchedAlignedImages,
-		CreatorUserId:        specialUserIds.PIXLISESystemUserId, // TODO: set a real creator
+		CreatorUserId:        sessionuser.PIXLISESystemUserId, // TODO: set a real creator
 	}
 
 	if len(contextImgsPerPMC) != 1 {

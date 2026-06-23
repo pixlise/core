@@ -22,14 +22,27 @@ import (
 func HandleOnce(jobId string, instanceId string, handleCallback func(string), db *mongo.Database, ts timestamper.ITimeStamper, logger logger.ILogger) error {
 	logger.Infof("HandleOnce: called for instance %v to handle job %v", instanceId, jobId)
 
-	// Upsert to DB
 	ctx := context.TODO()
 	coll := db.Collection(dbCollections.JobHandlersName)
+	nowUnixSec := ts.GetTimeNowSec()
 
+	// Start with a quick cleanup, if done regularly, this can't take long! We clean up any items that are older 24 hours
+	filter := bson.M{"timeStampUnixSec": bson.M{"$lt": nowUnixSec - 24*3600}}
+
+	delResult, err := coll.DeleteMany(ctx, filter, options.Delete())
+	if err != nil {
+		logger.Errorf("Failed to delete old handle-once sync items: %v\n", err)
+	} else {
+		if delResult.DeletedCount > 0 {
+			logger.Infof("Deleted %v ehandle-once sync items", delResult.DeletedCount)
+		}
+	}
+
+	// Upsert to DB
 	handler := &protos.JobHandlerDBItem{
 		JobId:             jobId,
 		HandlerInstanceId: instanceId,
-		TimeStampUnixSec:  uint32(ts.GetTimeNowSec()),
+		TimeStampUnixSec:  uint32(nowUnixSec),
 	}
 
 	opt := options.Update().SetUpsert(true)
@@ -38,13 +51,14 @@ func HandleOnce(jobId string, instanceId string, handleCallback func(string), db
 		return err
 	}
 
-	if result.UpsertedCount == 0 && result.ModifiedCount == 0 {
+	if (result.UpsertedCount != 1 || result.UpsertedID == nil) && result.MatchedCount != 1 {
 		logger.Errorf("HandleOnce: Write to DB had unexpected result: %+v", result)
 	}
 
 	// Now we wait a little bit and read it back. If the instance ID matches ours, we handle it!
 	time.AfterFunc(2*time.Second, func() {
-		readResult := coll.FindOne(ctx, bson.M{"_id": jobId}, options.FindOne())
+		filter := bson.M{"_id": jobId}
+		readResult := coll.FindOne(ctx, filter, options.FindOne())
 		if readResult.Err() != nil {
 			logger.Errorf("HandleOnce: Failed to read back JobHandlerDBItem: %v", readResult.Err())
 		} else {
@@ -62,5 +76,6 @@ func HandleOnce(jobId string, instanceId string, handleCallback func(string), db
 			}
 		}
 	})
+
 	return nil
 }

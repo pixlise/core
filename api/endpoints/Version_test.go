@@ -25,6 +25,7 @@ import (
 
 	"github.com/gorilla/mux"
 	apiRouter "github.com/pixlise/core/v4/api/router"
+	"github.com/pixlise/core/v4/api/services/servicesMock"
 	"github.com/pixlise/core/v4/core/awsutil"
 )
 
@@ -32,7 +33,7 @@ func Example_version() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	svcs := MakeMockSvcs(&mockS3, nil, nil)
+	svcs := servicesMock.MakeMockSvcs(&mockS3, nil, nil)
 
 	apiRouter := apiRouter.NewAPIRouter(&svcs, mux.NewRouter())
 

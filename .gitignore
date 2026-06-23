@@ -8,7 +8,7 @@ __debug_bin.exe
 #generated-protos/
 api/ws/wsMessage.go
 
-db-restore/
+db-restore*/
 mongo-db-local-*/
 mongo-db-pixlise-*/
 
@@ -22,10 +22,9 @@ python/pixlisemsgs/
 # temp files that get generated for tests
 diffraction-detector/test-files/dataset-diffraction.bin
 core/fileaccess/test-output/
-api/job/runner/data
-api/job/runner/data.txt
-api/job/runner/inputfile.csv
-api/job/runner/second.csv
+core/fileaccess/test-bucket-root/
+api/job/manager/test-workdir/
+api/job/jobrunner/test-workdir/
 
 # macOS #
 .DS_Store

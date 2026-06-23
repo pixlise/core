@@ -17,7 +17,7 @@ mkdir -p ./generated-protos
 # fi
 
 # NOTE: Make sure protoc-gen-go is in path so protoc works
-# Since Go 1.17, thi should get it ready:
+# Since Go 1.17, this should get it ready:
 # go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 protoc --go_out=./generated-protos/ ./data-formats/file-formats/experiment.proto
 #protoc --go_out=./generated-protos/ ./data-formats/file-formats/quantification.proto

@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/pixlise/core/v4/api/quantification/quantRunner"
 	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/core/utils"
 )
 
-func savePMCList(svcs *services.APIServices, jobBucket string, contents string, nodeNumber int, jobDataPath string) (string, error) {
-	pmcListName := quantRunner.MakePMCFileName(nodeNumber)
+func savePMCList(svcs *services.APIServices, jobBucket string, contents string, nodePMCFileName string, nodeNumber uint, jobDataPath string) (string, error) {
+	pmcListName := utils.ApplyIndexToFileName(nodePMCFileName, nodeNumber, true)
 	savePath := path.Join(jobDataPath, pmcListName)
 
 	err := svcs.FS.WriteObject(jobBucket, savePath, []byte(contents))

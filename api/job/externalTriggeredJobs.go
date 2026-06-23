@@ -31,27 +31,18 @@ func ListenForExternalTriggeredJobs(prefix string, callback func(*protos.JobStat
 	for stream.Next(ctx) {
 		// A status has changed! Check if it's ours and process it
 		// otherwise check if we've timed out
-		type ChangeStreamId struct {
-			Id string `bson:"_id"`
-		}
-		type ChangeStreamItem struct {
-			OperationType string            `bson:"operationType"`
-			DocumentKey   ChangeStreamId    `bson:"documentKey"`
-			FullDocument  *protos.JobStatus `bson:"fullDocument"`
-		}
+		_ /*operation*/, key, doc, err := ReadChangeStreamItem[*protos.JobStatus](stream)
 
-		item := ChangeStreamItem{}
-		err = stream.Decode(&item)
 		if err != nil {
 			logger.Errorf("Failed to decode change stream for job status while watching for job statuses prefixed by: %v", prefix)
 			continue
 		}
 
 		// Check if we're interested
-		if item.FullDocument != nil && strings.HasPrefix(item.DocumentKey.Id, prefix) {
+		if doc != nil && strings.HasPrefix(key, prefix) {
 			// Notify our listener that this event happened
-			logger.Infof("Detected externally triggered scan import: %v", item.DocumentKey.Id)
-			callback(item.FullDocument)
+			logger.Infof("Detected externally triggered scan import: %v", key)
+			callback(doc)
 		}
 	}
 }

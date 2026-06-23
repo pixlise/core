@@ -13,7 +13,7 @@ import (
 )
 
 func HandleQuantListReq(req *protos.QuantListReq, hctx wsHelpers.HandlerContext) (*protos.QuantListResp, error) {
-	items, idToOwner, err := quantification.ListUserQuants(req.SearchParams, hctx)
+	items, idToOwner, err := quantification.ListUserQuants(req.SearchParams, hctx.Svcs, hctx.SessUser)
 	if err != nil {
 		return nil, err
 	}

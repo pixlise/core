@@ -26,7 +26,7 @@ var activeJobLock = sync.Mutex{}
 func AddJob(
 	idPrefix string,
 	requestorUserId string,
-	jobType protos.JobStatus_JobType,
+	jobType protos.JobType,
 	jobItemId string,
 	jobName string,
 	elementList []string, // optional, only set if it's a quant!
@@ -86,6 +86,27 @@ func AddJob(
 	return job, nil
 }
 
+// Returns operation, key, the object (typed as provided type), error
+func ReadChangeStreamItem[T any](stream *mongo.ChangeStream) (string, string, T, error) {
+	type ChangeStreamId struct {
+		Id string `bson:"_id"`
+	}
+
+	type ChangeStreamItem struct {
+		OperationType string         `bson:"operationType"`
+		DocumentKey   ChangeStreamId `bson:"documentKey"`
+		FullDocument  T              `bson:"fullDocument"`
+	}
+
+	item := ChangeStreamItem{}
+	err := stream.Decode(&item)
+	if err != nil {
+		return "", "", item.FullDocument, err
+	}
+
+	return item.OperationType, item.DocumentKey.Id, item.FullDocument, nil
+}
+
 func watchJob(jobId string, watchUntilUnixSec uint32, db *mongo.Database, logger logger.ILogger, ts timestamper.ITimeStamper, sendUpdate func(*protos.JobStatus)) {
 	logger.Infof(">> Start watching job: %v...", jobId)
 
@@ -104,29 +125,20 @@ func watchJob(jobId string, watchUntilUnixSec uint32, db *mongo.Database, logger
 	for stream.Next(ctx) {
 		// A status has changed! Check if it's ours and process it
 		// otherwise check if we've timed out
-		type ChangeStreamId struct {
-			Id string `bson:"_id"`
-		}
-		type ChangeStreamItem struct {
-			OperationType string            `bson:"operationType"`
-			DocumentKey   ChangeStreamId    `bson:"documentKey"`
-			FullDocument  *protos.JobStatus `bson:"fullDocument"`
-		}
+		_ /*operation*/, key, doc, err := ReadChangeStreamItem[*protos.JobStatus](stream)
 
-		item := ChangeStreamItem{}
-		err = stream.Decode(&item)
 		if err != nil {
 			logger.Errorf("Failed to decode change stream for job status while watching for job: %v", jobId)
 			continue
 		}
 
 		// Check if we're interested
-		if item.FullDocument != nil && item.DocumentKey.Id == jobId {
+		if doc != nil && key == jobId {
 			// Send an update
-			sendUpdate(item.FullDocument)
+			sendUpdate(doc)
 
 			// If job has completed, stop here
-			if item.FullDocument.Status == protos.JobStatus_COMPLETE || item.FullDocument.Status == protos.JobStatus_ERROR {
+			if doc.Status == protos.JobStatus_COMPLETE || doc.Status == protos.JobStatus_ERROR {
 				break
 			}
 		} else {

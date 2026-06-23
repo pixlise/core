@@ -19,7 +19,7 @@ import (
 func GenerateIJs(imageName string, scanId string, instrument protos.ScanInstrument, svcs *services.APIServices) (*protos.ImageLocations, error) {
 	svcs.Log.Infof("Generating IJ's for image: \"%v\", scan: %v...", imageName, scanId)
 	// Read the dataset file
-	exprPB, err := ReadDatasetFile(scanId, svcs)
+	exprPB, err := ReadDatasetFile(scanId, svcs, true)
 	if err != nil {
 		return nil, err
 	}
