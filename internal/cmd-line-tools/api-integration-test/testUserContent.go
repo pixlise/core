@@ -185,26 +185,26 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 
 		u2.AddSendReqAction(fmt.Sprintf("%v Get created item for user 2", msgName),
 			fmt.Sprintf(`{"%vGetReq": { "id": "${IDLOAD=%vCreated1}"}}`, msgName, msgName),
-			fmt.Sprintf(`{"msgId":%v, "status": "WS_NO_PERMISSION", "errorText": "View access denied for: %v (%v)", "%vGetResp":{}}`, u2ExpectedRespSeqNo, msgContents.objectType, createdId, msgName),
+			fmt.Sprintf(`{"msgId":%v, "status": "WS_NO_PERMISSION", "errorText": "View access denied for: %v (%v)", "%vGetResp":{}}`, u2ExpectedRespSeqNo, msgContents.objectType[3:], createdId, msgName),
 		)
 		u2ExpectedRespSeqNo++
 
 		u2.AddSendReqAction(fmt.Sprintf("%v Get permissions for user 1's created item", msgName),
 			fmt.Sprintf(`{"getOwnershipReq": { "objectId": "${IDLOAD=%vCreated1}", "objectType": "%v"}}`, msgName, msgContents.objectType),
-			fmt.Sprintf(`{"msgId":%v,"status":"WS_NO_PERMISSION","errorText": "View access denied for: %v (%v)","getOwnershipResp":{}}`, u2ExpectedRespSeqNo, msgContents.objectType, createdId),
+			fmt.Sprintf(`{"msgId":%v,"status":"WS_NO_PERMISSION","errorText": "View access denied for: %v (%v)","getOwnershipResp":{}}`, u2ExpectedRespSeqNo, msgContents.objectType[3:], createdId),
 		)
 		u2ExpectedRespSeqNo++
 
 		u2.AddSendReqAction(fmt.Sprintf("%v Share user 1s created item", msgName),
 			fmt.Sprintf(`{"objectEditAccessReq": { "objectId": "${IDLOAD=%vCreated1}", "objectType": "%v", "addViewers": { "userIds": [ "%v" ] }}}`, msgName, msgContents.objectType, u2.GetUserId()),
-			fmt.Sprintf(`{"msgId":%v,"status":"WS_NO_PERMISSION","errorText": "View access denied for: %v (%v)","objectEditAccessResp":{}}`, u2ExpectedRespSeqNo, msgContents.objectType, createdId),
+			fmt.Sprintf(`{"msgId":%v,"status":"WS_NO_PERMISSION","errorText": "View access denied for: %v (%v)","objectEditAccessResp":{}}`, u2ExpectedRespSeqNo, msgContents.objectType[3:], createdId),
 		)
 		u2ExpectedRespSeqNo++
 
 		// Check that even though user2 has no access, they can still describe it
 		u2.AddSendReqAction(fmt.Sprintf("%v Describe Id for user 1's created item", msgName),
 			fmt.Sprintf(`{"getOwnershipDescriptionReq": { "objectId": "${IDLOAD=%vCreated1}", "objectType": "%v"}}`, msgName, msgContents.objectType),
-			fmt.Sprintf(`{"msgId":%v,"status":"WS_OK","getOwnershipDescriptionResp":{"name": "%v"}}`, u2ExpectedRespSeqNo, msgContents.u1CreatedItemName),
+			fmt.Sprintf(`{"msgId":%v,"status":"WS_OK","getOwnershipDescriptionResp":{"name": "%v", "creatorUser": "${IGNORE}"}}`, u2ExpectedRespSeqNo, msgContents.u1CreatedItemName),
 		)
 		u2ExpectedRespSeqNo++
 	}
@@ -516,7 +516,7 @@ func testUserContent(apiHost string, contentMessaging map[string]contentMessagin
 				}
 			}}`, msgName, msgContents.itemName, msgName),
 			fmt.Sprintf(`{"msgId":%v, "status":"WS_NO_PERMISSION", "errorText": "Edit access denied for: %v (%v)", "%vWriteResp":{}}`,
-				u2ExpectedRespSeqNo, msgContents.objectType, createdId, msgName),
+				u2ExpectedRespSeqNo, msgContents.objectType[3:], createdId, msgName),
 		)
 		u2ExpectedRespSeqNo++
 

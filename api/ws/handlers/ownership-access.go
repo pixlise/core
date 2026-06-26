@@ -2,8 +2,6 @@ package wsHandler
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/sessionuser"
@@ -163,75 +161,15 @@ func HandleGetOwnershipDescriptionReq(req *protos.GetOwnershipDescriptionReq, hc
 	// object which has this ID.
 	// NOTE: For this we don't check any permissions!
 
-	if len(req.ObjectId) <= 0 {
-		return nil, errorwithstatus.MakeBadRequestError(errors.New("ObjectId must be specified"))
-	}
-
-	collection := ""
-	nameField := "name"
-
-	switch req.ObjectType {
-	case protos.ObjectType_OT_ROI:
-		collection = dbCollections.RegionsOfInterestName
-	case protos.ObjectType_OT_EXPRESSION:
-		collection = dbCollections.ExpressionsName
-	case protos.ObjectType_OT_EXPRESSION_GROUP:
-		collection = dbCollections.ExpressionGroupsName
-	case protos.ObjectType_OT_QUANTIFICATION:
-		collection = dbCollections.QuantificationsName
-		nameField = "params.userparams.name"
-	case protos.ObjectType_OT_ELEMENT_SET:
-		collection = dbCollections.ElementSetsName
-	case protos.ObjectType_OT_SCAN:
-		collection = dbCollections.ScansName
-		nameField = "title"
-	case protos.ObjectType_OT_SCREEN_CONFIG:
-		collection = dbCollections.ScreenConfigurationName
-	}
-
-	if len(collection) <= 0 {
-		return nil, fmt.Errorf("Failed to find object description for id: \"%v\", of type %v", req.ObjectId, req.ObjectType)
-	}
-
-	filter := bson.M{"_id": req.ObjectId}
-	ctx := context.TODO()
-	result := hctx.Svcs.MongoDB.Collection(collection).FindOne(ctx, filter, options.FindOne().SetProjection(bson.M{nameField: true}))
-
-	if result.Err() != nil {
-		return nil, result.Err()
-	}
-
-	type UParams struct {
-		Name string
-	}
-	type QParams struct {
-		UserParams UParams
-	}
-	type NameOnly struct {
-		Name string
-	}
-
-	type ProjReturn struct {
-		Name   string
-		Title  string
-		Params QParams
-	}
-
-	n := &ProjReturn{}
-	err := result.Decode(n)
+	name, err := wsHelpers.DescribeObject(req.ObjectId, req.ObjectType, hctx.Svcs.MongoDB)
 	if err != nil {
 		return nil, err
 	}
 
-	name := n.Name
-	if req.ObjectType == protos.ObjectType_OT_SCAN {
-		name = n.Title
-	} else if req.ObjectType == protos.ObjectType_OT_QUANTIFICATION {
-		name = n.Params.UserParams.Name
-	}
-
 	// Read the creator and their info if possible
-	result = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).FindOne(ctx, filter, options.FindOne())
+	ctx := context.TODO()
+	filter := bson.M{"_id": req.ObjectId}
+	result := hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).FindOne(ctx, filter, options.FindOne())
 
 	if result.Err() != nil {
 		if result.Err() == mongo.ErrNoDocuments {

@@ -149,7 +149,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		},
 		imageUploadJWT,
 		http.StatusUnauthorized,
-		"View access denied for: OT_SCAN (048300551)",
+		"View access denied for: SCAN (id: 048300551)",
 	)
 
 	// Now allow access to originScanId

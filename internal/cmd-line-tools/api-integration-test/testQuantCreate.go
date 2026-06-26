@@ -291,7 +291,18 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 		// Check that even though user2 has no access, they can still describe it
 		usr.AddSendReqAction(fmt.Sprintf("Describe Quant Id for %v", quantName),
 			fmt.Sprintf(`{"getOwnershipDescriptionReq": { "objectId": "%v", "objectType": "OT_QUANTIFICATION"}}`, quantId),
-			fmt.Sprintf(`{"msgId":3,"status":"WS_OK","getOwnershipDescriptionResp":{"name": "%v"}}`, quantName),
+			fmt.Sprintf(`{
+				"msgId":3,
+				"status":"WS_OK",
+				"getOwnershipDescriptionResp":{
+					"name": "%v",
+					"creatorUser": {
+						"id": "%v",
+						"name": "test1@pixlise.org - WS Integration Test",
+						"email": "test1@pixlise.org"
+					}
+				}
+			}`, quantName, usr.GetUserId()),
 		)
 
 		usr.AddSendReqAction(fmt.Sprintf("Delete quant %v (should work)", quantName),
