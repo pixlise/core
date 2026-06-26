@@ -2,12 +2,18 @@ package wsHandler
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func HandleGetOwnershipReq(req *protos.GetOwnershipReq, hctx wsHelpers.HandlerContext) (*protos.GetOwnershipResp, error) {
@@ -148,5 +154,119 @@ func HandleObjectEditAccessReq(req *protos.ObjectEditAccessReq, hctx wsHelpers.H
 
 	return &protos.ObjectEditAccessResp{
 		Ownership: owner,
+	}, nil
+}
+
+func HandleGetOwnershipDescriptionReq(req *protos.GetOwnershipDescriptionReq, hctx wsHelpers.HandlerContext) (*protos.GetOwnershipDescriptionResp, error) {
+	// Here we allow users to retrieve some description of an ID they have no access to
+	// simply so the UI can show a more useful error message than you can't access an
+	// object which has this ID.
+	// NOTE: For this we don't check any permissions!
+
+	if len(req.ObjectId) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("ObjectId must be specified"))
+	}
+
+	collection := ""
+	nameField := "name"
+
+	switch req.ObjectType {
+	case protos.ObjectType_OT_ROI:
+		collection = dbCollections.RegionsOfInterestName
+	case protos.ObjectType_OT_EXPRESSION:
+		collection = dbCollections.ExpressionsName
+	case protos.ObjectType_OT_EXPRESSION_GROUP:
+		collection = dbCollections.ExpressionGroupsName
+	case protos.ObjectType_OT_QUANTIFICATION:
+		collection = dbCollections.QuantificationsName
+		nameField = "params.userparams.name"
+	case protos.ObjectType_OT_ELEMENT_SET:
+		collection = dbCollections.ElementSetsName
+	case protos.ObjectType_OT_SCAN:
+		collection = dbCollections.ScansName
+		nameField = "title"
+	case protos.ObjectType_OT_SCREEN_CONFIG:
+		collection = dbCollections.ScreenConfigurationName
+	}
+
+	if len(collection) <= 0 {
+		return nil, fmt.Errorf("Failed to find object description for id: \"%v\", of type %v", req.ObjectId, req.ObjectType)
+	}
+
+	filter := bson.M{"_id": req.ObjectId}
+	ctx := context.TODO()
+	result := hctx.Svcs.MongoDB.Collection(collection).FindOne(ctx, filter, options.FindOne().SetProjection(bson.M{nameField: true}))
+
+	if result.Err() != nil {
+		return nil, result.Err()
+	}
+
+	type UParams struct {
+		Name string
+	}
+	type QParams struct {
+		UserParams UParams
+	}
+	type NameOnly struct {
+		Name string
+	}
+
+	type ProjReturn struct {
+		Name   string
+		Title  string
+		Params QParams
+	}
+
+	n := &ProjReturn{}
+	err := result.Decode(n)
+	if err != nil {
+		return nil, err
+	}
+
+	name := n.Name
+	if req.ObjectType == protos.ObjectType_OT_SCAN {
+		name = n.Title
+	} else if req.ObjectType == protos.ObjectType_OT_QUANTIFICATION {
+		name = n.Params.UserParams.Name
+	}
+
+	// Read the creator and their info if possible
+	result = hctx.Svcs.MongoDB.Collection(dbCollections.OwnershipName).FindOne(ctx, filter, options.FindOne())
+
+	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			return nil, errorwithstatus.MakeNotFoundError(req.ObjectId)
+		}
+		return nil, result.Err()
+	}
+
+	ownershipItem := protos.OwnershipItem{}
+	err = result.Decode(&ownershipItem)
+	if err != nil {
+		return nil, err
+	}
+
+	var creatorUser *protos.UserInfo
+	if len(ownershipItem.CreatorUserId) > 0 {
+		// Fill out what we can so far:
+		creatorUser = &protos.UserInfo{
+			Id:   ownershipItem.CreatorUserId,
+			Name: ownershipItem.CreatorUserId,
+		}
+
+		// It's not a system user, so maybe we can query more:
+		if ownershipItem.CreatorUserId != sessionuser.PIXLISESystemUserId {
+			userItem, err := wsHelpers.GetDBUser(ownershipItem.CreatorUserId, hctx.Svcs.MongoDB)
+			if err == nil {
+				creatorUser = userItem.Info
+			} else {
+				hctx.Svcs.Log.Errorf("HandleGetOwnershipDescriptionReq: Failed to query user: \"%v\"", ownershipItem.CreatorUserId)
+			}
+		}
+	}
+
+	return &protos.GetOwnershipDescriptionResp{
+		Name:        name,
+		CreatorUser: creatorUser,
 	}, nil
 }

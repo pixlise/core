@@ -284,7 +284,8 @@ func runLocalTests(apiHost string, isCI bool) {
 						]`,
 				},
 			},
-			objectType: "OT_ELEMENT_SET",
+			objectType:        "OT_ELEMENT_SET",
+			u1CreatedItemName: "User1 ElementSet1",
 		},
 		"regionOfInterest": {
 			itemName: "regionOfInterest",
@@ -335,7 +336,8 @@ func runLocalTests(apiHost string, isCI bool) {
 						"name": "The ROI"`,
 				},
 			},
-			objectType: "OT_ROI",
+			objectType:        "OT_ROI",
+			u1CreatedItemName: "User1 ROI1",
 		},
 		"expressionGroup": {
 			itemName: "group",
@@ -409,7 +411,8 @@ func runLocalTests(apiHost string, isCI bool) {
 						]`,
 				},
 			},
-			objectType: "OT_EXPRESSION_GROUP",
+			objectType:        "OT_EXPRESSION_GROUP",
+			u1CreatedItemName: "User1 ExpressionGroup",
 		},
 		"expression": {
 			itemName: "expression",
@@ -457,7 +460,8 @@ func runLocalTests(apiHost string, isCI bool) {
 					"sourceLanguage": "LUA"`,
 				},
 			},
-			objectType: "OT_EXPRESSION",
+			objectType:        "OT_EXPRESSION",
+			u1CreatedItemName: "User1 Expression",
 		},
 	})
 
