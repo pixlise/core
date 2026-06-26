@@ -305,11 +305,15 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 			}`, quantName, usr.GetUserId()),
 		)
 
+		usr.CloseActionGroup([]string{}, 3000)
+		wstestlib.ExecQueuedActions(&usr)
+
 		usr.AddSendReqAction(fmt.Sprintf("Delete quant %v (should work)", quantName),
 			fmt.Sprintf(`{"quantDeleteReq":{"quantId": "%v" }}`, quantId),
 			`{"msgId":4,"status":"WS_OK", "quantDeleteResp":{}}`,
 		)
 
+		//usr.CloseActionGroup([]string{}, 3000)
 		usr.CloseActionGroup([]string{
 			fmt.Sprintf(`{"notificationUpd": {
 				"notification": { "notificationType": "NT_SYS_DATA_CHANGED", "quantId":"%v"}}}`, quantId),

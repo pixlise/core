@@ -142,7 +142,7 @@ func testMultiQuant(apiHost string) {
 				}
 			]
 		}}`, scanId),
-		fmt.Sprintf(`{"msgId":7,"status":"WS_NO_PERMISSION","errorText":"View access denied for: SCAN (%s)","quantCombineResp":{}}`, scanId),
+		fmt.Sprintf(`{"msgId":7,"status":"WS_NO_PERMISSION","errorText":"View access denied for: SCAN (id: %s)","quantCombineResp":{}}`, scanId),
 	)
 
 	u1.CloseActionGroup([]string{}, 10000)
