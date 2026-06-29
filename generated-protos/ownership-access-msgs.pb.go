@@ -120,6 +120,111 @@ func (x *GetOwnershipResp) GetOwnership() *OwnershipItem {
 }
 
 // requires(NONE)
+type GetOwnershipDescriptionReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ObjectId      string                 `protobuf:"bytes,1,opt,name=objectId,proto3" json:"objectId,omitempty"`
+	ObjectType    ObjectType             `protobuf:"varint,2,opt,name=objectType,proto3,enum=ObjectType" json:"objectType,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetOwnershipDescriptionReq) Reset() {
+	*x = GetOwnershipDescriptionReq{}
+	mi := &file_ownership_access_msgs_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetOwnershipDescriptionReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetOwnershipDescriptionReq) ProtoMessage() {}
+
+func (x *GetOwnershipDescriptionReq) ProtoReflect() protoreflect.Message {
+	mi := &file_ownership_access_msgs_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetOwnershipDescriptionReq.ProtoReflect.Descriptor instead.
+func (*GetOwnershipDescriptionReq) Descriptor() ([]byte, []int) {
+	return file_ownership_access_msgs_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GetOwnershipDescriptionReq) GetObjectId() string {
+	if x != nil {
+		return x.ObjectId
+	}
+	return ""
+}
+
+func (x *GetOwnershipDescriptionReq) GetObjectType() ObjectType {
+	if x != nil {
+		return x.ObjectType
+	}
+	return ObjectType_OT_UNKNOWN
+}
+
+type GetOwnershipDescriptionResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	CreatorUser   *UserInfo              `protobuf:"bytes,2,opt,name=creatorUser,proto3" json:"creatorUser,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetOwnershipDescriptionResp) Reset() {
+	*x = GetOwnershipDescriptionResp{}
+	mi := &file_ownership_access_msgs_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetOwnershipDescriptionResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetOwnershipDescriptionResp) ProtoMessage() {}
+
+func (x *GetOwnershipDescriptionResp) ProtoReflect() protoreflect.Message {
+	mi := &file_ownership_access_msgs_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetOwnershipDescriptionResp.ProtoReflect.Descriptor instead.
+func (*GetOwnershipDescriptionResp) Descriptor() ([]byte, []int) {
+	return file_ownership_access_msgs_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GetOwnershipDescriptionResp) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *GetOwnershipDescriptionResp) GetCreatorUser() *UserInfo {
+	if x != nil {
+		return x.CreatorUser
+	}
+	return nil
+}
+
+// requires(NONE)
 type ObjectEditAccessReq struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	ObjectId string                 `protobuf:"bytes,1,opt,name=objectId,proto3" json:"objectId,omitempty"`
@@ -135,7 +240,7 @@ type ObjectEditAccessReq struct {
 
 func (x *ObjectEditAccessReq) Reset() {
 	*x = ObjectEditAccessReq{}
-	mi := &file_ownership_access_msgs_proto_msgTypes[2]
+	mi := &file_ownership_access_msgs_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -147,7 +252,7 @@ func (x *ObjectEditAccessReq) String() string {
 func (*ObjectEditAccessReq) ProtoMessage() {}
 
 func (x *ObjectEditAccessReq) ProtoReflect() protoreflect.Message {
-	mi := &file_ownership_access_msgs_proto_msgTypes[2]
+	mi := &file_ownership_access_msgs_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -160,7 +265,7 @@ func (x *ObjectEditAccessReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObjectEditAccessReq.ProtoReflect.Descriptor instead.
 func (*ObjectEditAccessReq) Descriptor() ([]byte, []int) {
-	return file_ownership_access_msgs_proto_rawDescGZIP(), []int{2}
+	return file_ownership_access_msgs_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ObjectEditAccessReq) GetObjectId() string {
@@ -214,7 +319,7 @@ type ObjectEditAccessResp struct {
 
 func (x *ObjectEditAccessResp) Reset() {
 	*x = ObjectEditAccessResp{}
-	mi := &file_ownership_access_msgs_proto_msgTypes[3]
+	mi := &file_ownership_access_msgs_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -226,7 +331,7 @@ func (x *ObjectEditAccessResp) String() string {
 func (*ObjectEditAccessResp) ProtoMessage() {}
 
 func (x *ObjectEditAccessResp) ProtoReflect() protoreflect.Message {
-	mi := &file_ownership_access_msgs_proto_msgTypes[3]
+	mi := &file_ownership_access_msgs_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -239,7 +344,7 @@ func (x *ObjectEditAccessResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObjectEditAccessResp.ProtoReflect.Descriptor instead.
 func (*ObjectEditAccessResp) Descriptor() ([]byte, []int) {
-	return file_ownership_access_msgs_proto_rawDescGZIP(), []int{3}
+	return file_ownership_access_msgs_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ObjectEditAccessResp) GetOwnership() *OwnershipItem {
@@ -253,14 +358,23 @@ var File_ownership_access_msgs_proto protoreflect.FileDescriptor
 
 const file_ownership_access_msgs_proto_rawDesc = "" +
 	"\n" +
-	"\x1bownership-access-msgs.proto\x1a\x16ownership-access.proto\"Z\n" +
+	"\x1bownership-access-msgs.proto\x1a\x16ownership-access.proto\x1a\n" +
+	"user.proto\"Z\n" +
 	"\x0fGetOwnershipReq\x12\x1a\n" +
 	"\bobjectId\x18\x01 \x01(\tR\bobjectId\x12+\n" +
 	"\n" +
 	"objectType\x18\x02 \x01(\x0e2\v.ObjectTypeR\n" +
 	"objectType\"@\n" +
 	"\x10GetOwnershipResp\x12,\n" +
-	"\townership\x18\x01 \x01(\v2\x0e.OwnershipItemR\townership\"\xaa\x02\n" +
+	"\townership\x18\x01 \x01(\v2\x0e.OwnershipItemR\townership\"e\n" +
+	"\x1aGetOwnershipDescriptionReq\x12\x1a\n" +
+	"\bobjectId\x18\x01 \x01(\tR\bobjectId\x12+\n" +
+	"\n" +
+	"objectType\x18\x02 \x01(\x0e2\v.ObjectTypeR\n" +
+	"objectType\"^\n" +
+	"\x1bGetOwnershipDescriptionResp\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12+\n" +
+	"\vcreatorUser\x18\x02 \x01(\v2\t.UserInfoR\vcreatorUser\"\xaa\x02\n" +
 	"\x13ObjectEditAccessReq\x12\x1a\n" +
 	"\bobjectId\x18\x01 \x01(\tR\bobjectId\x12+\n" +
 	"\n" +
@@ -290,30 +404,35 @@ func file_ownership_access_msgs_proto_rawDescGZIP() []byte {
 	return file_ownership_access_msgs_proto_rawDescData
 }
 
-var file_ownership_access_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_ownership_access_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_ownership_access_msgs_proto_goTypes = []any{
-	(*GetOwnershipReq)(nil),      // 0: GetOwnershipReq
-	(*GetOwnershipResp)(nil),     // 1: GetOwnershipResp
-	(*ObjectEditAccessReq)(nil),  // 2: ObjectEditAccessReq
-	(*ObjectEditAccessResp)(nil), // 3: ObjectEditAccessResp
-	(ObjectType)(0),              // 4: ObjectType
-	(*OwnershipItem)(nil),        // 5: OwnershipItem
-	(*UserGroupList)(nil),        // 6: UserGroupList
+	(*GetOwnershipReq)(nil),             // 0: GetOwnershipReq
+	(*GetOwnershipResp)(nil),            // 1: GetOwnershipResp
+	(*GetOwnershipDescriptionReq)(nil),  // 2: GetOwnershipDescriptionReq
+	(*GetOwnershipDescriptionResp)(nil), // 3: GetOwnershipDescriptionResp
+	(*ObjectEditAccessReq)(nil),         // 4: ObjectEditAccessReq
+	(*ObjectEditAccessResp)(nil),        // 5: ObjectEditAccessResp
+	(ObjectType)(0),                     // 6: ObjectType
+	(*OwnershipItem)(nil),               // 7: OwnershipItem
+	(*UserInfo)(nil),                    // 8: UserInfo
+	(*UserGroupList)(nil),               // 9: UserGroupList
 }
 var file_ownership_access_msgs_proto_depIdxs = []int32{
-	4, // 0: GetOwnershipReq.objectType:type_name -> ObjectType
-	5, // 1: GetOwnershipResp.ownership:type_name -> OwnershipItem
-	4, // 2: ObjectEditAccessReq.objectType:type_name -> ObjectType
-	6, // 3: ObjectEditAccessReq.addViewers:type_name -> UserGroupList
-	6, // 4: ObjectEditAccessReq.deleteViewers:type_name -> UserGroupList
-	6, // 5: ObjectEditAccessReq.addEditors:type_name -> UserGroupList
-	6, // 6: ObjectEditAccessReq.deleteEditors:type_name -> UserGroupList
-	5, // 7: ObjectEditAccessResp.ownership:type_name -> OwnershipItem
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	6,  // 0: GetOwnershipReq.objectType:type_name -> ObjectType
+	7,  // 1: GetOwnershipResp.ownership:type_name -> OwnershipItem
+	6,  // 2: GetOwnershipDescriptionReq.objectType:type_name -> ObjectType
+	8,  // 3: GetOwnershipDescriptionResp.creatorUser:type_name -> UserInfo
+	6,  // 4: ObjectEditAccessReq.objectType:type_name -> ObjectType
+	9,  // 5: ObjectEditAccessReq.addViewers:type_name -> UserGroupList
+	9,  // 6: ObjectEditAccessReq.deleteViewers:type_name -> UserGroupList
+	9,  // 7: ObjectEditAccessReq.addEditors:type_name -> UserGroupList
+	9,  // 8: ObjectEditAccessReq.deleteEditors:type_name -> UserGroupList
+	7,  // 9: ObjectEditAccessResp.ownership:type_name -> OwnershipItem
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_ownership_access_msgs_proto_init() }
@@ -322,13 +441,14 @@ func file_ownership_access_msgs_proto_init() {
 		return
 	}
 	file_ownership_access_proto_init()
+	file_user_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ownership_access_msgs_proto_rawDesc), len(file_ownership_access_msgs_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
