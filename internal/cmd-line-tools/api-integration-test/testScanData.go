@@ -57,7 +57,7 @@ const scanWaitTime = 60 * 1000 // why was this set to 10min initially? * 10
 
 var scan_Naltsos = &protos.ScanItem{
 	Id:    "048300551",
-	Title: "",
+	Title: "Naltsos",
 	DataTypes: []*protos.ScanItem_ScanTypeCount{
 		{
 			DataType: protos.ScanDataType_SD_XRF,
