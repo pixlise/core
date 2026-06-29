@@ -2,6 +2,7 @@ package wsHelpers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -103,7 +104,91 @@ func CheckObjectAccessForUser(requireEdit bool, objectId string, objectType prot
 	}
 
 	// Access denied
-	return nil, errorwithstatus.MakeUnauthorisedError(fmt.Errorf("%v access denied for: %v (%v)", accessType, objectType.String(), objectId))
+	name, err := DescribeObject(objectId, objectType, db)
+	if err != nil {
+		name = "" // just in case
+		// NOTE: at this point we don't log errors, we just show it as an id/type anyway
+	}
+
+	var resultErr error
+	if len(name) <= 0 {
+		resultErr = fmt.Errorf("%v access denied for: %v (id: %v)", accessType, objectType.String()[3:], objectId)
+	} else {
+		resultErr = fmt.Errorf("%v access denied for: %v named \"%v\" (id: %v)", accessType, objectType.String()[3:], name, objectId)
+	}
+
+	return nil, errorwithstatus.MakeUnauthorisedError(resultErr)
+}
+
+func DescribeObject(objectId string, objType protos.ObjectType, db *mongo.Database) (string, error) {
+	if len(objectId) <= 0 {
+		return "", errorwithstatus.MakeBadRequestError(errors.New("ObjectId must be specified"))
+	}
+
+	collection := ""
+	nameField := "name"
+
+	switch objType {
+	case protos.ObjectType_OT_ROI:
+		collection = dbCollections.RegionsOfInterestName
+	case protos.ObjectType_OT_EXPRESSION:
+		collection = dbCollections.ExpressionsName
+	case protos.ObjectType_OT_EXPRESSION_GROUP:
+		collection = dbCollections.ExpressionGroupsName
+	case protos.ObjectType_OT_QUANTIFICATION:
+		collection = dbCollections.QuantificationsName
+		nameField = "params.userparams.name"
+	case protos.ObjectType_OT_ELEMENT_SET:
+		collection = dbCollections.ElementSetsName
+	case protos.ObjectType_OT_SCAN:
+		collection = dbCollections.ScansName
+		nameField = "title"
+	case protos.ObjectType_OT_SCREEN_CONFIG:
+		collection = dbCollections.ScreenConfigurationName
+	}
+
+	if len(collection) <= 0 {
+		return "", fmt.Errorf("Failed to find object description for id: \"%v\", of type %v", objectId, objType)
+	}
+
+	filter := bson.M{"_id": objectId}
+	ctx := context.TODO()
+	result := db.Collection(collection).FindOne(ctx, filter, options.FindOne().SetProjection(bson.M{nameField: true}))
+
+	if result.Err() != nil {
+		return "", result.Err()
+	}
+
+	type UParams struct {
+		Name string
+	}
+	type QParams struct {
+		UserParams UParams
+	}
+	type NameOnly struct {
+		Name string
+	}
+
+	type ProjReturn struct {
+		Name   string
+		Title  string
+		Params QParams
+	}
+
+	n := &ProjReturn{}
+	err := result.Decode(n)
+	if err != nil {
+		return "", err
+	}
+
+	name := n.Name
+	if objType == protos.ObjectType_OT_SCAN {
+		name = n.Title
+	} else if objType == protos.ObjectType_OT_QUANTIFICATION {
+		name = n.Params.UserParams.Name
+	}
+
+	return name, nil
 }
 
 // Gets all object IDs which the user has access to - if requireEdit is true, it checks for edit access

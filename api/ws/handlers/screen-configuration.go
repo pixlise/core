@@ -115,7 +115,7 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 
 			updatedConfig := bson.D{}
 
-			if screenConfig.Layouts != nil && len(screenConfig.Layouts) > 0 {
+			if len(screenConfig.Layouts) > 0 {
 				updatedConfig = append(updatedConfig, bson.E{Key: "layouts", Value: screenConfig.Layouts})
 				configuration.Layouts = screenConfig.Layouts
 
@@ -158,7 +158,7 @@ func writeScreenConfiguration(screenConfig *protos.ScreenConfiguration, hctx wsH
 			}})
 		} else {
 			// In order for a screen config to be valid, we must at least have one layout
-			if screenConfig.Layouts == nil || len(screenConfig.Layouts) <= 0 {
+			if len(screenConfig.Layouts) <= 0 {
 				return nil, errors.New("screen configuration must have at least one layout")
 			}
 
@@ -334,7 +334,7 @@ func HandleScreenConfigurationWriteReq(req *protos.ScreenConfigurationWriteReq, 
 		return nil, errors.New("screen configuration must be specified")
 	}
 
-	if req.ScreenConfiguration.Layouts == nil || len(req.ScreenConfiguration.Layouts) == 0 {
+	if len(req.ScreenConfiguration.Layouts) == 0 {
 		return nil, errors.New("screen configuration must have at least one layout")
 	}
 
