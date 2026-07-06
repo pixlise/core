@@ -18,6 +18,7 @@
 package apiRouter
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -41,6 +42,7 @@ type ApiHandlerStreamParams struct {
 	UserInfo   jwtparser.JWTUserInfo
 	PathParams map[string]string
 	Headers    http.Header
+	Context    context.Context
 }
 type ApiStreamHandlerFunc func(ApiHandlerStreamParams) (*s3.GetObjectOutput, string, error)
 type ApiCacheControlledStreamHandlerFunc func(ApiHandlerStreamParams) (*s3.GetObjectOutput, string, string, string, int, error)
@@ -89,7 +91,7 @@ func (h ApiCacheControlledStreamFromS3Handler) ServeHTTP(w http.ResponseWriter, 
 			var etag string
 			var status int
 			var lastmodified string
-			result, name, etag, lastmodified, status, err = h.Stream(ApiHandlerStreamParams{h.APIServices, userInfo, pathParams, r.Header})
+			result, name, etag, lastmodified, status, err = h.Stream(ApiHandlerStreamParams{h.APIServices, userInfo, pathParams, r.Header, r.Context()})
 			if err != nil {
 				if h.FS.IsNotFoundError(err) {
 					err = errorwithstatus.MakeNotFoundError(name)
@@ -167,7 +169,7 @@ func (h ApiStreamFromS3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			// Get the S3 object and file name we're streaming
 			var result *s3.GetObjectOutput
 			var name string
-			result, name, err = h.Stream(ApiHandlerStreamParams{h.APIServices, userInfo, pathParams, r.Header})
+			result, name, err = h.Stream(ApiHandlerStreamParams{h.APIServices, userInfo, pathParams, r.Header, r.Context()})
 			if err != nil {
 				if h.FS.IsNotFoundError(err) {
 					err = errorwithstatus.MakeNotFoundError(name)
