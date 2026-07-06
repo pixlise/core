@@ -80,12 +80,14 @@ func addFileNameSuffix(name string, suffix string) string {
 }
 
 func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, string, string, string, int, error) {
+	ctx := params.Context
+
 	// Path elements
 	scanID := params.PathParams[ScanIdentifier]
 	requestedFileName := path.Join(scanID, params.PathParams[FileNameIdentifier])
 
 	// User might be impersonating someone, check this
-	userId, err := checkImpersonation(params.Svcs, params.UserInfo.UserID)
+	userId, err := checkImpersonation(ctx, params.Svcs, params.UserInfo.UserID)
 	if err != nil {
 		return nil, "", "", "", 0, fmt.Errorf("Failed to determine user id impersonation status: %v", err)
 	}
@@ -100,7 +102,6 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 	}
 
 	// Now read the DB record for the image, so we can determine what scans it's associated with
-	ctx := context.TODO()
 	coll := params.Svcs.MongoDB.Collection(dbCollections.ImagesName)
 
 	filter := wsHelpers.GetDBImageFilter(requestedFileName)
@@ -115,7 +116,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 	}
 
 	scanImages := []*protos.ScanImage{}
-	err = cursor.All(context.TODO(), &scanImages)
+	err = cursor.All(ctx, &scanImages)
 	if err != nil {
 		return nil, "", "", "", 0, err
 	}
@@ -171,7 +172,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 		tilex := tileFieldValues["tilex"]
 		tiley := tileFieldValues["tiley"]
 
-		suffix, err := getTilePathSuffix(params.Svcs.MongoDB, dbImage, layer, tilex, tiley)
+		suffix, err := getTilePathSuffix(ctx, params.Svcs.MongoDB, dbImage, layer, tilex, tiley)
 		if err != nil {
 			return nil, "", "", "", 0, fmt.Errorf("Invalid tile requested: %v", err)
 		}
@@ -251,7 +252,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 
 			// Original file exists, generate this modified copy and cache it back in S3 for the rest of this
 			// function to find!
-			err = generateImageVersion(imageGenFrom, genS3Path, minWidthPx, showLocations, s3Path, params.Svcs)
+			err = generateImageVersion(ctx, imageGenFrom, genS3Path, minWidthPx, showLocations, s3Path, params.Svcs)
 		}
 
 		if err != nil {
@@ -321,8 +322,7 @@ func addPyramidPathIfNeeded(imagePath string, image *protos.ScanImage) string {
 	return imagePath
 }
 
-func getTilePathSuffix(db *mongo.Database, pyramidImage *protos.ScanImage, layer, tileX, tileY int) (string, error) {
-	ctx := context.TODO()
+func getTilePathSuffix(ctx context.Context, db *mongo.Database, pyramidImage *protos.ScanImage, layer, tileX, tileY int) (string, error) {
 	coll := db.Collection(dbCollections.ImagePyramidsName)
 
 	filter := bson.M{"_id": pyramidImage.PyramidId}
@@ -358,7 +358,7 @@ func getTilePathSuffix(db *mongo.Database, pyramidImage *protos.ScanImage, layer
 
 const imageSizeStepPx = 200
 
-func generateImageVersion(imageName string, s3Path string, minWidthPx int, showLocations bool, finalFilePath string, svcs *services.APIServices) error {
+func generateImageVersion(ctx context.Context, imageName string, s3Path string, minWidthPx int, showLocations bool, finalFilePath string, svcs *services.APIServices) error {
 	if minWidthPx <= 0 {
 		return fmt.Errorf("generateImageVersion minWidthPx too small: %v", minWidthPx)
 	}
@@ -375,7 +375,6 @@ func generateImageVersion(imageName string, s3Path string, minWidthPx int, showL
 	// Apply the mods
 	if showLocations {
 		// Read locations from DB for this image
-		ctx := context.TODO()
 		coll := svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
 
 		filter := bson.M{"_id": dataImportHelpers.GetImageNameSansVersion(imageName)}
@@ -424,12 +423,14 @@ type FilePartRecvItem struct {
 var filePartsRecvd map[string]FilePartRecvItem = map[string]FilePartRecvItem{}
 
 func PutImage(params apiRouter.ApiHandlerGenericParams) error {
+	ctx := params.Request.Context()
+
 	if !params.UserInfo.Permissions["EDIT_SCAN"] {
 		return errorwithstatus.MakeBadRequestError(errors.New("PutImage not allowed"))
 	}
 
 	// User might be impersonating someone, check this
-	userId, err := checkImpersonation(params.Svcs, params.UserInfo.UserID)
+	userId, err := checkImpersonation(ctx, params.Svcs, params.UserInfo.UserID)
 	if err != nil {
 		return fmt.Errorf("Failed to determine user id impersonation status: %v", err)
 	}
@@ -481,7 +482,7 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 
 	// Read the scan to confirm it's valid, and also so we have the instrument to save for beams (if needed)
 	coll := params.Svcs.MongoDB.Collection(dbCollections.ScansName)
-	scanResult := coll.FindOne(context.TODO(), bson.M{"_id": req.OriginScanId}, options.FindOne())
+	scanResult := coll.FindOne(ctx, bson.M{"_id": req.OriginScanId}, options.FindOne())
 	if scanResult.Err() != nil {
 		return errorwithstatus.MakeNotFoundError(req.OriginScanId)
 	}
@@ -501,7 +502,7 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 		savePath := path.Join(req.OriginScanId, req.Name)
 
 		coll := params.Svcs.MongoDB.Collection(dbCollections.ImagesName)
-		imgResult := coll.FindOne(context.TODO(), bson.M{"_id": savePath}, options.FindOne())
+		imgResult := coll.FindOne(ctx, bson.M{"_id": savePath}, options.FindOne())
 		if imgResult.Err() == nil {
 			return errorwithstatus.MakeStatusError(409, fmt.Errorf("%v already exists", savePath))
 		} // else we could check for errors here but if we have a DB connectivity issue the last ScanItem check would've found it
@@ -627,19 +628,19 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 
 		params.Svcs.Log.Infof("Importing image %v (%vx%v) as pyramid with tile size: %v, levels: %v. Pyramid ID generated: %v", req.Name, scanImage.Width, scanImage.Height, pyramidLevels.TileSize, len(pyramidLevels.Pyramid), scanImage.PyramidId)
 
-		err = savePyramidEntry(params.Svcs.MongoDB, scanImage.PyramidId, pyramidLevels, params.Svcs.Log)
+		err = savePyramidEntry(ctx, params.Svcs.MongoDB, scanImage.PyramidId, pyramidLevels, params.Svcs.Log)
 		if err != nil {
 			return err
 		}
 	}
 
-	generateCoords, isDuplicate, err := saveScanImage(params.Svcs.MongoDB, scan, scanImage)
+	generateCoords, isDuplicate, err := saveScanImage(ctx, params.Svcs.MongoDB, scan, scanImage)
 	if err != nil {
 		// If this isn't an "already exists" error, we delete what we've saved already. We don't want
 		// to delete otherwise though, or we'd wipe out the one that already existed!
 		// TODO: Probably should do this with transactions
 		if !isDuplicate {
-			undoScanImagePUT(params.Svcs.MongoDB, req.Name, scanImage.ImagePath, scanImage.PyramidId, localFilePath, req.ImageByteSize, params.Svcs.Log)
+			undoScanImagePUT(ctx, params.Svcs.MongoDB, req.Name, scanImage.ImagePath, scanImage.PyramidId, localFilePath, req.ImageByteSize, params.Svcs.Log)
 		}
 		return err
 	}
@@ -655,7 +656,7 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 	}
 
 	if err != nil {
-		undoScanImagePUT(params.Svcs.MongoDB, req.Name, scanImage.ImagePath, scanImage.PyramidId, localFilePath, req.ImageByteSize, params.Svcs.Log)
+		undoScanImagePUT(ctx, params.Svcs.MongoDB, req.Name, scanImage.ImagePath, scanImage.PyramidId, localFilePath, req.ImageByteSize, params.Svcs.Log)
 		return err
 	}
 
@@ -688,7 +689,7 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 	return nil
 }
 
-func savePyramidEntry(db *mongo.Database, pyramidId string, pyramidInfo *protos.ImagePyramid, l logger.ILogger) error {
+func savePyramidEntry(ctx context.Context, db *mongo.Database, pyramidId string, pyramidInfo *protos.ImagePyramid, l logger.ILogger) error {
 	entry := &protos.ImagePyramidDBEntry{
 		Id:      pyramidId,
 		Pyramid: pyramidInfo,
@@ -696,7 +697,7 @@ func savePyramidEntry(db *mongo.Database, pyramidId string, pyramidInfo *protos.
 
 	coll := db.Collection(dbCollections.ImagePyramidsName)
 	opt := options.InsertOne()
-	result, err := coll.InsertOne(context.TODO(), entry, opt)
+	result, err := coll.InsertOne(ctx, entry, opt)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
 			// Don't overwrite, so we're OK with this
@@ -715,8 +716,7 @@ func savePyramidEntry(db *mongo.Database, pyramidId string, pyramidInfo *protos.
 }
 
 // Returns generate flag, is duplicate flag, and error
-func saveScanImage(db *mongo.Database, scan *protos.ScanItem, scanImage *protos.ScanImage) (bool, bool, error) {
-	ctx := context.TODO()
+func saveScanImage(ctx context.Context, db *mongo.Database, scan *protos.ScanItem, scanImage *protos.ScanImage) (bool, bool, error) {
 	coll := db.Collection(dbCollections.ImagesName)
 
 	// If this is the first image added to a dataset that has no images (and hence no beam location ij's), generate ij's here so the image can be
@@ -773,9 +773,8 @@ func saveScanImage(db *mongo.Database, scan *protos.ScanItem, scanImage *protos.
 
 // Call to abort an image upload operation - if anything happens here we delete all the things that the
 // image upload may have affected/saved/created
-func undoScanImagePUT(db *mongo.Database, reqName string, scanImageId string, pyramidId string, localFilePath string, imageByteSize uint64, l logger.ILogger) {
+func undoScanImagePUT(ctx context.Context, db *mongo.Database, reqName string, scanImageId string, pyramidId string, localFilePath string, imageByteSize uint64, l logger.ILogger) {
 	// DB Image
-	ctx := context.TODO()
 	coll := db.Collection(dbCollections.ImagesName)
 	filter := bson.D{{Key: "_id", Value: scanImageId}}
 	delOpt := options.Delete()
@@ -1010,13 +1009,12 @@ func verifyChunksReceived(fileName string, expectedSize uint64) (string, error) 
 	return imgPath, nil
 }
 
-func checkImpersonation(svcs *services.APIServices, userId string) (string, error) {
+func checkImpersonation(ctx context.Context, svcs *services.APIServices, userId string) (string, error) {
 	if !svcs.Config.ImpersonateEnabled {
 		return userId, nil
 	}
 
 	coll := svcs.MongoDB.Collection(dbCollections.UserImpersonatorsName)
-	ctx := context.TODO()
 	impersonateResult := coll.FindOne(ctx, bson.M{"_id": userId}, options.FindOne())
 	if impersonateResult.Err() != nil {
 		if impersonateResult.Err() != mongo.ErrNoDocuments {

@@ -108,8 +108,32 @@ func HandleMemoiseDeleteByRegexReq(req *protos.MemoiseDeleteByRegexReq, hctx wsH
 		return nil, err
 	}
 
+	// We're having some issues with this in DocumentDB with a large collection so lets print out some stats for debugging at least
+	/*
+		statResult := hctx.Svcs.MongoDB.RunCommand(context.Background(), bson.M{"collStats": dbCollections.MemoisedItemsName})
+
+		var document bson.M
+		err := statResult.Decode(&document)
+
+		if err != nil {
+			hctx.Svcs.Log.Errorf("MemoiseDeleteByRegexReq failed to get stats: %v", err)
+		} else {
+			hctx.Svcs.Log.Infof("Collection size: %v\n, document["size"]
+			fmt.Printf("Collection size: %v Bytes\n", document["size"])
+			fmt.Printf("Average object size: %v Bytes\n", document["avgObjSize"])
+			fmt.Printf("Storage size: %v Bytes\n", document["storageSize"])
+			fmt.Printf("Total index size: %v Bytes\n", document["totalIndexSize"])
+		}
+	*/
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.MemoisedItemsName)
+
+	count, err := coll.EstimatedDocumentCount(ctx)
+	if err != nil {
+		hctx.Svcs.Log.Errorf("MemoiseDeleteByRegexReq failed to get stats: %v", err)
+	} else {
+		hctx.Svcs.Log.Infof("MemoiseDeleteByRegexReq estimated size: %v", count)
+	}
 
 	result, err := coll.DeleteMany(ctx, bson.D{{Key: "_id", Value: bson.D{{Key: "$regex", Value: req.Pattern}}}})
 	if err != nil {
