@@ -92,6 +92,8 @@ func HandleMemoiseDeleteReq(req *protos.MemoiseDeleteReq, hctx wsHelpers.Handler
 
 	if result.DeletedCount != 1 {
 		hctx.Svcs.Log.Errorf("MemoiseDeleteReq for: %v got unexpected DB write result: %+v", req.Key, result)
+	} else {
+		hctx.Svcs.Log.Infof("HandleMemoiseDeleteReq deleted %v", req.Key)
 	}
 
 	return &protos.MemoiseDeleteResp{
@@ -114,6 +116,8 @@ func HandleMemoiseDeleteByRegexReq(req *protos.MemoiseDeleteByRegexReq, hctx wsH
 
 	if result.DeletedCount < 1 {
 		hctx.Svcs.Log.Errorf("MemoiseDeleteByRegexReq for: %v got unexpected DB write result: %+v", req.Pattern, result)
+	} else {
+		hctx.Svcs.Log.Infof("MemoiseDeleteByRegexReq deleted %v items for: %v", result.DeletedCount, req.Pattern)
 	}
 
 	return &protos.MemoiseDeleteByRegexResp{

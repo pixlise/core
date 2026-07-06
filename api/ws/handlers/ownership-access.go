@@ -129,10 +129,6 @@ func HandleObjectEditAccessReq(req *protos.ObjectEditAccessReq, hctx wsHelpers.H
 		return nil, err
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
 	if result.MatchedCount != 1 {
 		hctx.Svcs.Log.Errorf("Ownership UpdateByID result had unexpected counts %+v id: %v, type: %v", result, req.ObjectId, req.ObjectType.String())
 	}
