@@ -2,11 +2,14 @@ package wsHandler
 
 import (
 	"context"
+	"regexp"
+	"strings"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 /* Went unused - became HTTP msgs, leaving this temporarily
@@ -128,14 +131,42 @@ func HandleMemoiseDeleteByRegexReq(req *protos.MemoiseDeleteByRegexReq, hctx wsH
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.MemoisedItemsName)
 
-	count, err := coll.EstimatedDocumentCount(ctx)
+	count, err := coll.CountDocuments(ctx, bson.D{})
 	if err != nil {
 		hctx.Svcs.Log.Errorf("MemoiseDeleteByRegexReq failed to get stats: %v", err)
 	} else {
 		hctx.Svcs.Log.Infof("MemoiseDeleteByRegexReq estimated size: %v", count)
 	}
 
-	result, err := coll.DeleteMany(ctx, bson.D{{Key: "_id", Value: bson.D{{Key: "$regex", Value: req.Pattern}}}})
+	// Read all IDs, and we'll do our own regex matching on them because somehow document DB never returns!
+	idCursor, err := coll.Find(ctx, bson.D{}, options.Find().SetProjection(bson.M{"_id": true}))
+	if err != nil {
+		hctx.Svcs.Log.Errorf("MemoiseDeleteByRegexReq failed to get stats: %v", err)
+	} else {
+		hctx.Svcs.Log.Infof("MemoiseDeleteByRegexReq estimated size: %v", count)
+	}
+
+	allIds := []*IdOnly{}
+	err = idCursor.All(ctx, &allIds)
+	if err != nil {
+		hctx.Svcs.Log.Errorf("MemoiseDeleteByRegexReq failed to read all ids: %v", err)
+	} else {
+		hctx.Svcs.Log.Infof("MemoiseDeleteByRegexReq found %v ids", len(allIds))
+	}
+
+	// Regex match them to the request, delete all that are required
+	deleteIds := []string{}
+	for _, id := range allIds {
+		match, err := regexp.MatchString(req.Pattern, id.Id)
+		if err == nil && match {
+			deleteIds = append(deleteIds, id.Id)
+		}
+	}
+
+	hctx.Svcs.Log.Infof("MemoiseDeleteByRegexReq ids to delete: %v", strings.Join(deleteIds, ","))
+
+	//result, err := coll.DeleteMany(ctx, bson.D{{Key: "_id", Value: bson.D{{Key: "$regex", Value: req.Pattern}}}})
+	result, err := coll.DeleteMany(ctx, bson.M{"_id": bson.M{"$in": deleteIds}})
 	if err != nil {
 		return nil, err
 	}
