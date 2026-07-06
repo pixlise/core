@@ -2,11 +2,14 @@ package wsHandler
 
 import (
 	"context"
+	"regexp"
+	"strings"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 /* Went unused - became HTTP msgs, leaving this temporarily
@@ -78,6 +81,7 @@ func HandleMemoiseWriteReq(req *protos.MemoiseWriteReq, hctx wsHelpers.HandlerCo
 }*/
 
 func HandleMemoiseDeleteReq(req *protos.MemoiseDeleteReq, hctx wsHelpers.HandlerContext) (*protos.MemoiseDeleteResp, error) {
+	hctx.Svcs.Log.Infof("MemoiseDeleteReq received for: \"%v\"", req.Key)
 	if err := wsHelpers.CheckStringField(&req.Key, "Key", 1, 1024); err != nil {
 		return nil, err
 	}
@@ -92,6 +96,8 @@ func HandleMemoiseDeleteReq(req *protos.MemoiseDeleteReq, hctx wsHelpers.Handler
 
 	if result.DeletedCount != 1 {
 		hctx.Svcs.Log.Errorf("MemoiseDeleteReq for: %v got unexpected DB write result: %+v", req.Key, result)
+	} else {
+		hctx.Svcs.Log.Infof("HandleMemoiseDeleteReq deleted %v", req.Key)
 	}
 
 	return &protos.MemoiseDeleteResp{
@@ -100,20 +106,75 @@ func HandleMemoiseDeleteReq(req *protos.MemoiseDeleteReq, hctx wsHelpers.Handler
 }
 
 func HandleMemoiseDeleteByRegexReq(req *protos.MemoiseDeleteByRegexReq, hctx wsHelpers.HandlerContext) (*protos.MemoiseDeleteByRegexResp, error) {
+	hctx.Svcs.Log.Infof("MemoiseDeleteByRegexReq received for: \"%v\"", req.Pattern)
 	if err := wsHelpers.CheckStringField(&req.Pattern, "Pattern", 1, 1024); err != nil {
 		return nil, err
 	}
 
+	// We're having some issues with this in DocumentDB with a large collection so lets print out some stats for debugging at least
+	/*
+		statResult := hctx.Svcs.MongoDB.RunCommand(context.Background(), bson.M{"collStats": dbCollections.MemoisedItemsName})
+
+		var document bson.M
+		err := statResult.Decode(&document)
+
+		if err != nil {
+			hctx.Svcs.Log.Errorf("MemoiseDeleteByRegexReq failed to get stats: %v", err)
+		} else {
+			hctx.Svcs.Log.Infof("Collection size: %v\n, document["size"]
+			fmt.Printf("Collection size: %v Bytes\n", document["size"])
+			fmt.Printf("Average object size: %v Bytes\n", document["avgObjSize"])
+			fmt.Printf("Storage size: %v Bytes\n", document["storageSize"])
+			fmt.Printf("Total index size: %v Bytes\n", document["totalIndexSize"])
+		}
+	*/
 	ctx := context.TODO()
 	coll := hctx.Svcs.MongoDB.Collection(dbCollections.MemoisedItemsName)
 
-	result, err := coll.DeleteMany(ctx, bson.D{{Key: "_id", Value: bson.D{{Key: "$regex", Value: req.Pattern}}}})
+	count, err := coll.CountDocuments(ctx, bson.D{})
+	if err != nil {
+		hctx.Svcs.Log.Errorf("MemoiseDeleteByRegexReq failed to get stats: %v", err)
+	} else {
+		hctx.Svcs.Log.Infof("MemoiseDeleteByRegexReq estimated size: %v", count)
+	}
+
+	// Read all IDs, and we'll do our own regex matching on them because somehow document DB never returns!
+	idCursor, err := coll.Find(ctx, bson.D{}, options.Find().SetProjection(bson.M{"_id": true}))
+	if err != nil {
+		hctx.Svcs.Log.Errorf("MemoiseDeleteByRegexReq failed to get stats: %v", err)
+	} else {
+		hctx.Svcs.Log.Infof("MemoiseDeleteByRegexReq estimated size: %v", count)
+	}
+
+	allIds := []*IdOnly{}
+	err = idCursor.All(ctx, &allIds)
+	if err != nil {
+		hctx.Svcs.Log.Errorf("MemoiseDeleteByRegexReq failed to read all ids: %v", err)
+	} else {
+		hctx.Svcs.Log.Infof("MemoiseDeleteByRegexReq found %v ids", len(allIds))
+	}
+
+	// Regex match them to the request, delete all that are required
+	deleteIds := []string{}
+	for _, id := range allIds {
+		match, err := regexp.MatchString(req.Pattern, id.Id)
+		if err == nil && match {
+			deleteIds = append(deleteIds, id.Id)
+		}
+	}
+
+	hctx.Svcs.Log.Infof("MemoiseDeleteByRegexReq ids to delete: %v", strings.Join(deleteIds, ","))
+
+	//result, err := coll.DeleteMany(ctx, bson.D{{Key: "_id", Value: bson.D{{Key: "$regex", Value: req.Pattern}}}})
+	result, err := coll.DeleteMany(ctx, bson.M{"_id": bson.M{"$in": deleteIds}})
 	if err != nil {
 		return nil, err
 	}
 
 	if result.DeletedCount < 1 {
 		hctx.Svcs.Log.Errorf("MemoiseDeleteByRegexReq for: %v got unexpected DB write result: %+v", req.Pattern, result)
+	} else {
+		hctx.Svcs.Log.Infof("HandleMemoiseDeleteByRegexReq deleted %v items for: %v", result.DeletedCount, req.Pattern)
 	}
 
 	return &protos.MemoiseDeleteByRegexResp{
