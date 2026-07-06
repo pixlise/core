@@ -78,7 +78,7 @@ func HandleMemoiseWriteReq(req *protos.MemoiseWriteReq, hctx wsHelpers.HandlerCo
 }*/
 
 func HandleMemoiseDeleteReq(req *protos.MemoiseDeleteReq, hctx wsHelpers.HandlerContext) (*protos.MemoiseDeleteResp, error) {
-	hctx.Svcs.Log.Infof("MemoiseDeleteReq received for: %v", req.Key)
+	hctx.Svcs.Log.Infof("MemoiseDeleteReq received for: \"%v\"", req.Key)
 	if err := wsHelpers.CheckStringField(&req.Key, "Key", 1, 1024); err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func HandleMemoiseDeleteReq(req *protos.MemoiseDeleteReq, hctx wsHelpers.Handler
 }
 
 func HandleMemoiseDeleteByRegexReq(req *protos.MemoiseDeleteByRegexReq, hctx wsHelpers.HandlerContext) (*protos.MemoiseDeleteByRegexResp, error) {
-	hctx.Svcs.Log.Infof("MemoiseDeleteByRegexReq received for: %v", req.Pattern)
+	hctx.Svcs.Log.Infof("MemoiseDeleteByRegexReq received for: \"%v\"", req.Pattern)
 	if err := wsHelpers.CheckStringField(&req.Pattern, "Pattern", 1, 1024); err != nil {
 		return nil, err
 	}
