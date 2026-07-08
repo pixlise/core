@@ -66,5 +66,5 @@ func ApplyIndexToFileName(name string, index uint, applyIndex bool) string {
 	if pos >= 0 {
 		ext = name[pos:]
 	}
-	return fmt.Sprintf("%v%05d%v", name[0:len(name)-len(ext)], index, ext)
+	return fmt.Sprintf("%v%05d%v", name[0:len(name)-len(ext)], index+1, ext)
 }
