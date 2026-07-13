@@ -35,6 +35,7 @@ func (e *expressionRunner) defineRuntime(L *lua.LState, contextId int) {
 	L.SetGlobal("writeCache", L.NewFunction(writeCache))
 	L.SetGlobal("readCache", L.NewFunction(readCache))
 	L.SetGlobal("readMap", L.NewFunction(readMap))
+	L.SetGlobal("atomicMass", L.NewFunction(atomicMass))
 }
 
 func getContext(L *lua.LState) *expressionRunner {
@@ -636,4 +637,17 @@ func readMap(L *lua.LState) int { // args(k)
 
 	//k := L.ToString(1)
 	return reportLuaRuntimeError(L, fmt.Errorf("readMap not implemented yet"))
+}
+
+func atomicMass(L *lua.LState) int { // args(k)
+	e := getContext(L)
+	if e == nil {
+		return 0
+	}
+
+	symbol := L.ToString(1)
+
+	mass := PTable.GetMolecularMass(symbol)
+	L.Push(lua.LNumber(mass))
+	return 1
 }

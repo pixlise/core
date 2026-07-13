@@ -92,6 +92,8 @@ func makeExpressionRunner(expressionId string, scanId string, quantId string, sv
 		writeLuaSource:          true,
 	}
 
+	runner.debugUseLocalSourceFile = true
+
 	if PTable == nil {
 		PTable = periodictable.MakePeriodicTable(svcs.Log)
 	}
@@ -138,6 +140,7 @@ local userId = "%v"
 
 	// Replace table.unpack with unpack because gopher-lua is 5.1, table.unpack came in 5.2 but they're the same thing apparently
 	allSource = strings.ReplaceAll(allSource, "table.unpack(", "unpack(")
+	allSource = strings.ReplaceAll(allSource, "getmetatable(obj) == Estimate", "#obj > 0")
 
 	if e.debugUseLocalSourceFile {
 		// For debugging purposes we can read the file instead of just write it!
@@ -210,6 +213,19 @@ func (e *expressionRunner) runSource(source string, contextId int) error {
 	if err := L.DoString(source); err != nil {
 		return err
 	}
+
+	// Get the result if there is one
+	resultTable := L.ToTable(-1)
+
+	fmt.Printf("result: %v\n", resultTable)
+
+	pmcs := resultTable.RawGet(lua.LNumber(1)).(*lua.LTable)
+	values := resultTable.RawGet(lua.LNumber(2)).(*lua.LTable)
+	fmt.Printf("get1: %v\n", pmcs)
+	fmt.Printf("get1[0]: %v\n", pmcs.RawGet(lua.LNumber(1)))
+
+	fmt.Printf("get2: %v\n", values)
+	fmt.Printf("get2[0]: %v\n", values.RawGet(lua.LNumber(1)))
 
 	return nil
 }
