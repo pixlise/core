@@ -40,6 +40,11 @@ import (
 // New jobs t3.2xlarge, 4 cores/node: elapsed time 11:46 top showing 200%/container ?? (failed to combine at end quant-5ikkcvd8hes5yrzq missing node 8 output)
 // New jobs t3.2xlarge, 8 cores/node: elapsed time 13:31 top showing 100%/container (failed to combine at end quant-y52kwmyey35n0cu2 missing node 1 output)
 
+// After EstimateNodeCountChange:
+// t3.medium 2/node 4 elements as 50 jobs/25 nodes: 221 sec
+// t3.xlarge 4/node 4 elements as 50 jobs/13 nodes: 250 sec
+// t3.2xlarge 8/node 4 elements as 50 jobs/7 nodes: 270 sec
+
 // Called to start a job node
 func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret string, awsRegion string) ([]*string, error) {
 	if len(jobIds) <= 0 || len(jobIds) > int(jm.svcs.Config.Jobs.CoresPerNode) {
