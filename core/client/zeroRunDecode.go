@@ -1,7 +1,7 @@
 package client
 
-func zeroRunDecode(data []uint32) []uint32 {
-	result := []uint32{}
+func ZeroRunDecode[T uint32 | int32](data []T) []T {
+	result := []T{}
 
 	for c := 0; c < len(data); c++ {
 		v := data[c]
@@ -13,7 +13,7 @@ func zeroRunDecode(data []uint32) []uint32 {
 			// 0's in our result
 			count := data[c+1]
 
-			for i := uint32(0); i < count; i++ {
+			for i := T(0); i < count; i++ {
 				result = append(result, 0)
 			}
 

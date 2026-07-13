@@ -10,8 +10,6 @@ import (
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func HandleDiffractionPeakManualListReq(req *protos.DiffractionPeakManualListReq, hctx wsHelpers.HandlerContext) (*protos.DiffractionPeakManualListResp, error) {
@@ -20,35 +18,15 @@ func HandleDiffractionPeakManualListReq(req *protos.DiffractionPeakManualListReq
 	}
 
 	// TODO: Check if user has access to this scan id?
-
-	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.DiffractionManualPeaksName)
-
-	filter := bson.M{"scanid": req.ScanId}
-	opts := options.Find()
-	cursor, err := coll.Find(ctx, filter, opts)
+	resultMap, err := wsHelpers.GetDiffractionPeakManualList(req.ScanId, hctx.Svcs)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			// Silent error, just return empty
+		if resultMap != nil {
 			return &protos.DiffractionPeakManualListResp{
-				Peaks: map[string]*protos.ManualDiffractionPeak{},
+				Peaks: resultMap,
 			}, nil
 		}
 
 		return nil, err
-	}
-
-	result := []*protos.ManualDiffractionPeak{}
-	err = cursor.All(ctx, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	resultMap := map[string]*protos.ManualDiffractionPeak{}
-	for _, item := range result {
-		resultMap[item.Id] = item
-		item.Id = ""     // Clear it, no point doubling up info, the map key contains the id already
-		item.ScanId = "" // Also no point keeping this around, it was part of the request params
 	}
 
 	return &protos.DiffractionPeakManualListResp{

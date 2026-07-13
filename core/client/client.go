@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -211,7 +210,7 @@ func (c *APIClient) ensureScanSpectra(scanId string) error {
 	// Decode (decompress) all spectra we receive
 	for _, spectra := range resp.SpectraPerLocation {
 		for _, spectrum := range spectra.Spectra {
-			spectrum.Counts = zeroRunDecode(spectrum.Counts)
+			spectrum.Counts = ZeroRunDecode(spectrum.Counts)
 		}
 	}
 
@@ -1026,82 +1025,7 @@ func (c *APIClient) GetDiffractionPeaks(scanId string, energyCalibrationSource p
 		return nil, fmt.Errorf("Failed to get energy calibration for scan: %v, source: %v", scanId, energyCalibrationSource)
 	}
 
-	// Some constants, along with others in this code!
-	roughnessItemThreshold := float32(0.16)
-	diffractionPeakHalfWidth := float32(15) * 0.5
-	eVCalibrationDetector := "A"
-
-	allPeaks := []*protos.ClientDiffractionPeak{}
-
-	roughnessItems := []*protos.ClientRoughnessItem{}
-	roughnessPMCs := map[int]bool{}
-
-	for _, item := range detectedPeaks.PeaksPerLocation {
-		pmc, err := strconv.Atoi(item.Id)
-		if err != nil {
-			fmt.Printf("Warning: Diffraction data contained invalid location id: %v", item.Id)
-			continue
-		}
-
-		for _, peak := range item.Peaks {
-			if peak.EffectSize <= 6 {
-				continue
-			}
-			statusId := fmt.Sprintf("%v-%v", pmc, peak.PeakChannel)
-
-			if peak.GlobalDifference > roughnessItemThreshold {
-				// It's roughness, can repeat so ensure we only save once
-				if _, ok := roughnessPMCs[pmc]; !ok {
-					status := "intensity-mismatch"
-					if s, ok := peakStatuses.PeakStatuses.Statuses[statusId]; ok {
-						status = s.Status
-					}
-
-					roughnessItems = append(roughnessItems, &protos.ClientRoughnessItem{
-						Id:               int32(pmc),
-						GlobalDifference: peak.GlobalDifference,
-						Deleted:          status != "intensity-mismatch",
-					})
-					roughnessPMCs[pmc] = true
-				}
-			} else if peak.PeakHeight > 0.64 {
-				startChannel := float32(peak.PeakChannel) - diffractionPeakHalfWidth
-				endChannel := float32(peak.PeakChannel) + diffractionPeakHalfWidth
-
-				channels := []float32{float32(peak.PeakChannel), startChannel, endChannel}
-				keVs := []float64{}
-				for det, cal := range spectrumEnergyCalibration.DetectorCalibrations {
-					if det == eVCalibrationDetector {
-						keVs = channelTokeV(channels, cal)
-					}
-				}
-
-				if len(keVs) == 3 {
-					status := "diffraction-peak"
-					if s, ok := peakStatuses.PeakStatuses.Statuses[statusId]; ok {
-						status = s.Status
-					}
-
-					allPeaks = append(allPeaks, &protos.ClientDiffractionPeak{
-						Id: int32(pmc),
-						Peak: &protos.DetectedDiffractionPerLocation_DetectedDiffractionPeak{
-							PeakChannel:       peak.PeakChannel,
-							EffectSize:        peak.EffectSize,
-							BaselineVariation: peak.BaselineVariation,
-							GlobalDifference:  peak.GlobalDifference,
-							DifferenceSigma:   peak.DifferenceSigma,
-							PeakHeight:        peak.PeakHeight,
-							Detector:          peak.Detector,
-						},
-						EnergykeV:      float32(keVs[0]),
-						StartEnergykeV: float32(keVs[1]),
-						EndEnergykeV:   float32(keVs[2]),
-						Status:         status,
-					})
-				}
-			}
-		}
-	}
+	allPeaks, roughnessItems := ReadDiffractionData(detectedPeaks.PeaksPerLocation, peakStatuses.PeakStatuses, spectrumEnergyCalibration)
 
 	result := &protos.ClientDiffractionData{Peaks: allPeaks, Roughnesses: roughnessItems}
 

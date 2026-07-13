@@ -7,7 +7,7 @@ type MinMax struct {
 	Max *float64
 }
 
-func (m *MinMax) expand(v float64) {
+func (m *MinMax) Expand(v float64) {
 	m.expandMin(v)
 	m.expandMax(v)
 }
@@ -28,7 +28,7 @@ func (m *MinMax) expandMax(v float64) bool {
 	return false
 }
 
-func (m *MinMax) getRange() float64 {
+func (m *MinMax) GetRange() float64 {
 	if m.Max == nil || m.Min == nil {
 		return 0
 	}
