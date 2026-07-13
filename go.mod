@@ -34,6 +34,7 @@ require (
 
 require (
 	github.com/PuerkitoBio/rehttp v1.1.0 // indirect
+	github.com/Shopify/go-lua v0.0.0-20250718183320-1e37f32ad7d0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.41.10 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.21 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.20 // indirect
@@ -86,6 +87,7 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
+	github.com/yuin/gopher-lua v1.1.2 // indirect
 	golang.org/x/crypto v0.25.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
