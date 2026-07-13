@@ -6,45 +6,47 @@ import (
 	"strconv"
 	"strings"
 
+	lua "github.com/Shopify/go-lua"
 	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/scan"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
-	lua "github.com/yuin/gopher-lua"
 )
 
 // We need a way for Go functions called from lua to find the state they're calling into so we know what
 // quant/scan etc to load
 var contextIdLuaVarName = "execContextId"
 
-func (e *expressionRunner) defineRuntime(L *lua.LState, contextId int) {
-	L.SetGlobal(contextIdLuaVarName, lua.LNumber(contextId))
+func (e *expressionRunner) defineRuntime(L *lua.State, contextId int) {
+	L.PushInteger(contextId)
+	L.SetGlobal(contextIdLuaVarName)
 
-	L.SetGlobal("element", L.NewFunction(element))
-	L.SetGlobal("elementSum", L.NewFunction(elementSum))
-	L.SetGlobal("data", L.NewFunction(data))
-	L.SetGlobal("spectrum", L.NewFunction(spectrum))
-	L.SetGlobal("spectrumDiff", L.NewFunction(spectrumDiff))
-	L.SetGlobal("pseudo", L.NewFunction(pseudo))
-	L.SetGlobal("housekeeping", L.NewFunction(housekeeping))
-	L.SetGlobal("diffractionPeaks", L.NewFunction(diffractionPeaks))
-	L.SetGlobal("roughness", L.NewFunction(roughness))
-	L.SetGlobal("position", L.NewFunction(position))
-	L.SetGlobal("makeMap", L.NewFunction(makeMap))
-	L.SetGlobal("exists", L.NewFunction(exists))
-	L.SetGlobal("writeCache", L.NewFunction(writeCache))
-	L.SetGlobal("readCache", L.NewFunction(readCache))
-	L.SetGlobal("readMap", L.NewFunction(readMap))
+	L.Register("element", element)
+	L.Register("elementSum", elementSum)
+	L.Register("data", data)
+	L.Register("spectrum", spectrum)
+	L.Register("spectrumDiff", spectrumDiff)
+	L.Register("pseudo", pseudo)
+	L.Register("housekeeping", housekeeping)
+	L.Register("diffractionPeaks", diffractionPeaks)
+	L.Register("roughness", roughness)
+	L.Register("position", position)
+	L.Register("makeMap", makeMap)
+	L.Register("exists", exists)
+	L.Register("writeCache", writeCache)
+	L.Register("readCache", readCache)
+	L.Register("readMap", readMap)
 }
 
-func getContext(L *lua.LState) *expressionRunner {
+func getContext(L *lua.State) *expressionRunner {
 	// Get the context global
-	ctxId := L.GetGlobal(contextIdLuaVarName)
-	if ctxId == nil {
+	L.Global(contextIdLuaVarName)
+	ctxId, ok := L.ToInteger(-1)
+	if !ok {
 		return nil
 	}
 
-	return getExpressionContext(int(ctxId.(lua.LNumber)))
+	return getExpressionContext(ctxId)
 }
 
 func convertToMmol(formula string, values PMCDataValues) PMCDataValues {
@@ -96,20 +98,30 @@ func convertToMmol(formula string, values PMCDataValues) PMCDataValues {
 	return makePMCDataValuesWithMinMax(result, valRange, false)
 }
 
-func reportLuaRuntimeError(L *lua.LState, err error) int {
-	L.RaiseError("PIXLISE-Lua Runtime error: %v", err)
+func reportLuaRuntimeError(L *lua.State, err error) int {
+	L.PushFString("PIXLISE-Lua Runtime error: %v", err)
+	L.Error()
 	return 0
 }
 
-func element(L *lua.LState) int { // args(symbol, column, detector)
+func element(L *lua.State) int { // args(symbol, column, detector)
 	e := getContext(L)
 	if e == nil {
 		return 0
 	}
 
-	symbol := L.ToString(1)
-	column := L.ToString(2)
-	detector := L.ToString(3)
+	symbol, ok := L.ToString(1)
+	if !ok {
+		reportLuaRuntimeError(L, fmt.Errorf("Expected symbol string"))
+	}
+	column, ok := L.ToString(2)
+	if !ok {
+		reportLuaRuntimeError(L, fmt.Errorf("Expected column string"))
+	}
+	detector, ok := L.ToString(3)
+	if !ok {
+		reportLuaRuntimeError(L, fmt.Errorf("Expected detector string"))
+	}
 
 	asMmol := false
 	if column == "%-as-mmol" {
@@ -133,12 +145,11 @@ func element(L *lua.LState) int { // args(symbol, column, detector)
 		result = convertToMmol(symbol, result)
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	pushAsLuaTable(result, L)
 	return 1
 }
 
-func elementSum(L *lua.LState) int { // args(column, detector)
+func elementSum(L *lua.State) int { // args(column, detector)
 	e := getContext(L)
 	if e == nil {
 		return 0
@@ -149,14 +160,14 @@ func elementSum(L *lua.LState) int { // args(column, detector)
 	return reportLuaRuntimeError(L, fmt.Errorf("elementSum not implemented yet"))
 }
 
-func data(L *lua.LState) int { // args(column, detector)
+func data(L *lua.State) int { // args(column, detector)
 	e := getContext(L)
 	if e == nil {
 		return 0
 	}
 
-	column := L.ToString(1)
-	detector := L.ToString(2)
+	column, _ := L.ToString(1)
+	detector, _ := L.ToString(2)
 
 	if err := e.ensureFetchedScan(); err != nil {
 		return reportLuaRuntimeError(L, err)
@@ -175,20 +186,19 @@ func data(L *lua.LState) int { // args(column, detector)
 		return reportLuaRuntimeError(L, err)
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	pushAsLuaTable(result, L)
 	return 1
 }
 
-func spectrum(L *lua.LState) int { // args(startChannel, endChannel, detector)
+func spectrum(L *lua.State) int { // args(startChannel, endChannel, detector)
 	e := getContext(L)
 	if e == nil {
 		return 0
 	}
 
-	startChannel := L.ToInt(1)
-	endChannel := L.ToInt(2)
-	detector := L.ToString(3)
+	startChannel, _ := L.ToInteger(1)
+	endChannel, _ := L.ToInteger(2)
+	detector, _ := L.ToString(3)
 
 	if err := e.ensureFetchedScan(); err != nil {
 		return reportLuaRuntimeError(L, err)
@@ -243,24 +253,23 @@ func spectrum(L *lua.LState) int { // args(startChannel, endChannel, detector)
 		return reportLuaRuntimeError(L, fmt.Errorf("spectrum: Failed to find scan %v spectrum %v range between %v and %v", e.scanId, detector, startChannel, endChannel))
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	pushAsLuaTable(result, L)
 	return 1
 }
 
-func spectrumDiff(L *lua.LState) int { // args(startChannel, endChannel, op)
+func spectrumDiff(L *lua.State) int { // args(startChannel, endChannel, op)
 	e := getContext(L)
 	if e == nil {
 		return 0
 	}
 
-	// startChannel := L.ToInt(1)
-	// endChannel := L.ToInt(2)
+	// startChannel := L.ToInteger(1)
+	// endChannel := L.ToInteger(2)
 	// op := L.ToString(3)
 	return reportLuaRuntimeError(L, fmt.Errorf("spectrumDiff not implemented yet"))
 }
 
-func pseudo(L *lua.LState) int { // args(elem)
+func pseudo(L *lua.State) int { // args(elem)
 	e := getContext(L)
 	if e == nil {
 		return 0
@@ -270,13 +279,13 @@ func pseudo(L *lua.LState) int { // args(elem)
 	return reportLuaRuntimeError(L, fmt.Errorf("pseudo not implemented yet"))
 }
 
-func housekeeping(L *lua.LState) int { // args(column)
+func housekeeping(L *lua.State) int { // args(column)
 	e := getContext(L)
 	if e == nil {
 		return 0
 	}
 
-	column := L.ToString(1)
+	column, _ := L.ToString(1)
 
 	if err := e.ensureFetchedScan(); err != nil {
 		return reportLuaRuntimeError(L, err)
@@ -327,8 +336,7 @@ func housekeeping(L *lua.LState) int { // args(column)
 		result.AddValue(MakePMCDataValue(pmc, value, false, ""))
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	pushAsLuaTable(result, L)
 	return 1
 }
 
@@ -383,14 +391,14 @@ func getScanDetectorMetaValues(metaIdxs []int /*dataType protos.Experiment_MetaD
 		return foundSpectraType
 	}
 */
-func diffractionPeaks(L *lua.LState) int { // args(eVstart, eVend)
+func diffractionPeaks(L *lua.State) int { // args(eVstart, eVend)
 	e := getContext(L)
 	if e == nil {
 		return 0
 	}
 
-	startChannel := L.ToInt(1)
-	endChannel := L.ToInt(2)
+	startChannel, _ := L.ToInteger(1)
+	endChannel, _ := L.ToInteger(2)
 
 	if err := e.ensureFetchedScan(); err != nil {
 		return reportLuaRuntimeError(L, err)
@@ -476,12 +484,11 @@ func diffractionPeaks(L *lua.LState) int { // args(eVstart, eVend)
 		result.AddValue(MakePMCDataValue(int(pmc), float64(sum), false, ""))
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	pushAsLuaTable(result, L)
 	return 1
 }
 
-func roughness(L *lua.LState) int { // args()
+func roughness(L *lua.State) int { // args()
 	e := getContext(L)
 	if e == nil {
 		return 0
@@ -512,12 +519,11 @@ func roughness(L *lua.LState) int { // args()
 		}
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	pushAsLuaTable(result, L)
 	return 1
 }
 
-func position(L *lua.LState) int { // args(axis)
+func position(L *lua.State) int { // args(axis)
 	e := getContext(L)
 	if e == nil {
 		return 0
@@ -527,7 +533,7 @@ func position(L *lua.LState) int { // args(axis)
 	return reportLuaRuntimeError(L, fmt.Errorf("position not implemented yet"))
 }
 
-func makeMap(L *lua.LState) int { // args(value)
+func makeMap(L *lua.State) int { // args(value)
 	e := getContext(L)
 	if e == nil {
 		return 0
@@ -538,7 +544,7 @@ func makeMap(L *lua.LState) int { // args(value)
 		return reportLuaRuntimeError(L, err)
 	}
 
-	value := L.ToNumber(1)
+	value, _ := L.ToNumber(1)
 
 	result := PMCDataValues{}
 	result.IsBinary = true // pre-set for detection in addValue
@@ -548,19 +554,18 @@ func makeMap(L *lua.LState) int { // args(value)
 		}
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	pushAsLuaTable(result, L)
 	return 1
 }
 
-func exists(L *lua.LState) int { // args(dataType, column)
+func exists(L *lua.State) int { // args(dataType, column)
 	e := getContext(L)
 	if e == nil {
 		return 0
 	}
 
-	dataType := L.ToString(1)
-	column := L.ToString(2)
+	dataType, _ := L.ToString(1)
+	column, _ := L.ToString(2)
 
 	// Check if the data is available
 	if dataType == "element" || dataType == "detector" || dataType == "data" {
@@ -570,10 +575,10 @@ func exists(L *lua.LState) int { // args(dataType, column)
 		}
 
 		if dataType == "element" {
-			L.Push(lua.LBool(utils.ItemInSlice(column, utils.GetMapKeys(e.elementColumns))))
+			L.PushBoolean(utils.ItemInSlice(column, utils.GetMapKeys(e.elementColumns)))
 			return 1
 		} else if dataType == "detector" {
-			var found lua.LBool
+			var found bool
 			for _, locSet := range e.quantData.LocationSet {
 				if column == locSet.Detector {
 					found = true
@@ -581,10 +586,10 @@ func exists(L *lua.LState) int { // args(dataType, column)
 				}
 			}
 
-			L.Push(found)
+			L.PushBoolean(found)
 			return 1
 		} else { // "data"
-			L.Push(lua.LBool(utils.ItemInSlice(column, e.quantData.Labels)))
+			L.PushBoolean(utils.ItemInSlice(column, e.quantData.Labels))
 			return 1
 		}
 	} else if dataType == "housekeeping" || dataType == "pseudo" {
@@ -596,15 +601,15 @@ func exists(L *lua.LState) int { // args(dataType, column)
 		if dataType == "housekeeping" {
 			idx := slices.Index(e.scan.MetaLabels, column)
 			if idx < 0 {
-				L.Push(lua.LBool(false))
+				L.PushBoolean(false)
 				return 1
 			}
 
 			// Verify it's a type usable in the expression language
-			L.Push(lua.LBool(e.scan.MetaTypes[idx] == protos.Experiment_MT_FLOAT || e.scan.MetaTypes[idx] == protos.Experiment_MT_INT))
+			L.PushBoolean(e.scan.MetaTypes[idx] == protos.Experiment_MT_FLOAT || e.scan.MetaTypes[idx] == protos.Experiment_MT_INT)
 			return 1
 		} else {
-			var found lua.LBool
+			var found bool
 			for _, item := range e.scan.PseudoIntensityRanges {
 				if item.Name == column {
 					found = true
@@ -612,7 +617,7 @@ func exists(L *lua.LState) int { // args(dataType, column)
 				}
 			}
 
-			L.Push(found)
+			L.PushBoolean(found)
 			return 1
 		}
 	}
@@ -620,15 +625,15 @@ func exists(L *lua.LState) int { // args(dataType, column)
 	return reportLuaRuntimeError(L, fmt.Errorf("Unknown data type %v for exists()", dataType))
 }
 
-func writeCache(L *lua.LState) int { // args(k, v)
+func writeCache(L *lua.State) int { // args(k, v)
 	return 0 // No-Op
 }
 
-func readCache(L *lua.LState) int { // args(k, w)
+func readCache(L *lua.State) int { // args(k, w)
 	return 0 // No-Op
 }
 
-func readMap(L *lua.LState) int { // args(k)
+func readMap(L *lua.State) int { // args(k)
 	e := getContext(L)
 	if e == nil {
 		return 0

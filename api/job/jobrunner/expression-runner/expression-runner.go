@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	lua "github.com/Shopify/go-lua"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/piquant"
 	"github.com/pixlise/core/v4/api/services"
@@ -14,7 +15,6 @@ import (
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/periodictable"
 	protos "github.com/pixlise/core/v4/generated-protos"
-	lua "github.com/yuin/gopher-lua"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -35,11 +35,26 @@ import (
 
 func RunExpression(expressionId string, scanId string, quantId string, svcs *services.APIServices) error {
 	r, err := makeExpressionRunner(expressionId, scanId, quantId, svcs)
+	//r.debugUseLocalSourceFile = true
 	if err != nil {
 		return err
 	}
 
 	return r.Run()
+}
+
+func errorWithStack(L *lua.State, err error) error {
+	for c := -5; c < 6; c++ {
+		f, ok := lua.Stack(L, c)
+		fmt.Printf("%v: %v|%v\n", c, ok, f)
+	}
+	lua.Traceback(L, L, fmt.Sprintf("%v", err), 1)
+	s, ok := L.ToString(-1)
+	if !ok {
+		return fmt.Errorf("Failed to get error stack trace for %v", err)
+	}
+
+	return fmt.Errorf("%v", s)
 }
 
 func keVToChannel(energy float32, calibration *protos.ClientSpectrumEnergyCalibration) int {
@@ -136,8 +151,14 @@ local userId = "%v"
 		"PIXL_FM",
 		sessionuser.PIXLISESystemUserId) + allSource
 
+	// For gopher-lua:
 	// Replace table.unpack with unpack because gopher-lua is 5.1, table.unpack came in 5.2 but they're the same thing apparently
-	allSource = strings.ReplaceAll(allSource, "table.unpack(", "unpack(")
+	//allSource = strings.ReplaceAll(allSource, "table.unpack(", "unpack(")
+
+	// For shopify go-lua:
+	// Replace the label verification function with something that doesn't use regex, as the go-lua library string.go line 37
+	// has the comment TODO implement pattern matching
+	allSource = strings.ReplaceAll(allSource, `string.find(x, "^%w[%w_]*$")`, "string.len(x) > 0")
 
 	if e.debugUseLocalSourceFile {
 		// For debugging purposes we can read the file instead of just write it!
@@ -200,15 +221,26 @@ func (e *expressionRunner) fetchSourceCode() (string, error) {
 	return allSource, nil
 }
 
-func (e *expressionRunner) runSource(source string, contextId int) error {
+func (e *expressionRunner) runSource(source string, contextId int) (err error) {
 	L := lua.NewState()
-	defer L.Close()
+	//defer L.Close()
+
+	lua.OpenLibraries(L)
 
 	e.defineRuntime(L, contextId)
 
-	//L.NewFunction()
-	if err := L.DoString(source); err != nil {
-		return err
+	defer func() {
+		if r := recover(); r != nil {
+			if e, ok := r.(error); ok {
+				err = errorWithStack(L, e)
+			} else {
+				panic(r)
+			}
+		}
+	}()
+
+	if err := lua.DoString(L, source); err != nil {
+		return errorWithStack(L, err)
 	}
 
 	return nil
