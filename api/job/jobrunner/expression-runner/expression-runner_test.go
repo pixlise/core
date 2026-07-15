@@ -114,14 +114,16 @@ func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string)
 		log.Fatal(err)
 	}
 
-	m, err := RunExpression(exprId, scanId, quantId, &svcs)
+	m, err := RunExpression(exprId, scanId, quantId, &svcs, true)
 	sz := 0
 	if m != nil {
 		sz = len(m.Values)
 	}
-	fmt.Printf("RunExpession error: %v, got map size %v\n", err, sz)
+	fmt.Printf("RunExpession error: %v\n", err)
 
 	if err == nil {
+		fmt.Printf("Got map size %v\n", sz)
+
 		// Compare with the CSV we got from PIXLISE
 		err = compareMapWithCSV(m, fmt.Sprintf("./test-files/PIXLISE_output_%v.csv", scanId))
 		if err != nil {

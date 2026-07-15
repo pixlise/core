@@ -34,11 +34,15 @@ import (
 // Lua vm directly in Go and that way Lua requesting data is a function call in Go and we can use our existing retrieval
 // mechanisms
 
-func RunExpression(expressionId string, scanId string, quantId string, svcs *services.APIServices) (*PMCDataValues, error) {
+func RunExpression(expressionId string, scanId string, quantId string, svcs *services.APIServices, debug bool) (*PMCDataValues, error) {
 	r, err := makeExpressionRunner(expressionId, scanId, quantId, svcs)
 	if err != nil {
 		return nil, err
 	}
+
+	// If we're debugging:
+	r.writeLuaSource = true
+	//r.debugUseLocalSourceFile = true
 
 	return r.Run()
 }
@@ -90,10 +94,7 @@ func makeExpressionRunner(expressionId string, scanId string, quantId string, sv
 		allPeaks:                []*protos.ClientDiffractionPeak{},
 		roughnessItems:          []*protos.ClientRoughnessItem{},
 		manualPeaks:             map[string]*protos.ManualDiffractionPeak{},
-		writeLuaSource:          true,
 	}
-
-	runner.debugUseLocalSourceFile = true
 
 	if PTable == nil {
 		PTable = periodictable.MakePeriodicTable(svcs.Log)
@@ -145,7 +146,10 @@ local userId = "%v"
 
 	if e.debugUseLocalSourceFile {
 		// For debugging purposes we can read the file instead of just write it!
-		b, _ := os.ReadFile("all-source.txt")
+		b, err := os.ReadFile("all-source.txt")
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read all-source.txt: %v", err)
+		}
 		allSource = string(b)
 	} else {
 		// write out the source code we run in lua
