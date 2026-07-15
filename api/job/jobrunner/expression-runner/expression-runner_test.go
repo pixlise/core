@@ -42,7 +42,8 @@ func Example_expressionrunner_RunExpression_Expression_Naltsos() {
 	runExpressionTest(scanId, quantId, exprId, modIds, modVers)
 
 	// Output:
-	// RunExpession error: <nil>, got map size 121
+	// RunExpession error: <nil>
+	// Got map size 121
 	// Returned map matches expected output from PIXLISE
 }
 
@@ -57,7 +58,8 @@ func Example_expressionrunner_RunExpression_Expression_CastleGeyser() {
 	runExpressionTest(scanId, quantId, exprId, modIds, modVers)
 
 	// Output:
-	// RunExpession error: <nil>, got map size 3333
+	// RunExpession error: <nil>
+	// Got map size 3333
 	// Returned map matches expected output from PIXLISE
 }
 

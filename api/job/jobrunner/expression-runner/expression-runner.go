@@ -142,7 +142,9 @@ local userId = "%v"
 
 	// Replace table.unpack with unpack because gopher-lua is 5.1, table.unpack came in 5.2 but they're the same thing apparently
 	allSource = strings.ReplaceAll(allSource, "table.unpack(", "unpack(")
-	allSource = strings.ReplaceAll(allSource, "getmetatable(obj) == Estimate", "#obj > 0")
+	allSource = strings.ReplaceAll(allSource, "getmetatable(obj) == Estimate", "obj.typeIsEstimate and obj.typeIsEstimate == true")
+	// Due to the above, we need to specify this
+	allSource = strings.ReplaceAll(allSource, "local estimate = {}", "local estimate = {typeIsEstimate = true}")
 
 	if e.debugUseLocalSourceFile {
 		// For debugging purposes we can read the file instead of just write it!
