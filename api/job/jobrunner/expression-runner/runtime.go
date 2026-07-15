@@ -90,7 +90,7 @@ func convertToMmol(formula string, values PMCDataValues) PMCDataValues {
 			valToSave = values.Values[c].Value * conversion
 		}
 
-		result = append(result, MakePMCDataValue(values.Values[c].PMC, valToSave, values.Values[c].IsUndefined, ""))
+		result = append(result, makePMCDataValue(values.Values[c].PMC, valToSave, values.Values[c].IsUndefined, ""))
 		valRange.Expand(valToSave)
 	}
 
@@ -233,7 +233,7 @@ func spectrum(L *lua.LState) int { // args(startChannel, endChannel, detector)
 						sum += spectrum[ch]
 					}
 
-					result.AddValue(MakePMCDataValue(pmc, float64(sum), false, ""))
+					result.AddValue(makePMCDataValue(pmc, float64(sum), false, ""))
 					foundRange = true
 				}
 			}
@@ -325,7 +325,7 @@ func housekeeping(L *lua.LState) int { // args(column)
 			value = float64(loc.Meta[metaIdx].Ivalue)
 		}
 
-		result.AddValue(MakePMCDataValue(pmc, value, false, ""))
+		result.AddValue(makePMCDataValue(pmc, value, false, ""))
 	}
 
 	t := makeLuaTable(result, L)
@@ -474,7 +474,7 @@ func diffractionPeaks(L *lua.LState) int { // args(eVstart, eVend)
 	result.IsBinary = true // pre-set for detection in addValue
 
 	for pmc, sum := range pmcDiffractionCount {
-		result.AddValue(MakePMCDataValue(int(pmc), float64(sum), false, ""))
+		result.AddValue(makePMCDataValue(int(pmc), float64(sum), false, ""))
 	}
 
 	t := makeLuaTable(result, L)
@@ -500,7 +500,7 @@ func roughness(L *lua.LState) int { // args()
 	result.IsBinary = true // pre-set for detection in addValue
 
 	for _, item := range e.roughnessItems {
-		result.AddValue(MakePMCDataValue(int(item.Id), float64(item.GlobalDifference), false, ""))
+		result.AddValue(makePMCDataValue(int(item.Id), float64(item.GlobalDifference), false, ""))
 	}
 
 	// Also run through user-defined roughness items
@@ -508,7 +508,7 @@ func roughness(L *lua.LState) int { // args()
 		for _, peak := range e.manualPeaks {
 			// ONLY negative means it's a user-entered roughness item!
 			if peak.EnergykeV < 0 {
-				result.AddValue(MakePMCDataValue(int(peak.Pmc), float64(client.RoughnessItemThreshold), false, ""))
+				result.AddValue(makePMCDataValue(int(peak.Pmc), float64(client.RoughnessItemThreshold), false, ""))
 			}
 		}
 	}
@@ -545,7 +545,7 @@ func makeMap(L *lua.LState) int { // args(value)
 	result.IsBinary = true // pre-set for detection in addValue
 	if len(e.quantData.LocationSet) > 0 {
 		for _, locItem := range e.quantData.LocationSet[0].Location {
-			result.AddValue(MakePMCDataValue(int(locItem.Pmc), float64(value), false, ""))
+			result.AddValue(makePMCDataValue(int(locItem.Pmc), float64(value), false, ""))
 		}
 	}
 

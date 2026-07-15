@@ -32,7 +32,7 @@ type PMCDataValue struct {
 	Label       string
 }
 
-func MakePMCDataValue(pmc int, value float64, isUndefined bool, label string) PMCDataValue {
+func makePMCDataValue(pmc int, value float64, isUndefined bool, label string) PMCDataValue {
 	if isUndefined && value != 0 {
 		fmt.Printf("PMC: %v is undefined, but value is: %v", pmc, value)
 		value = 0
@@ -89,13 +89,6 @@ func (p *PMCDataValues) SetValues(values []PMCDataValue) {
 	}
 }
 
-/*
-	func MakePMCDataValuesWithValues(values []PMCDataValue) PMCDataValues {
-		result := PMCDataValues{}
-		result.SetValues(values)
-		return result
-	}
-*/
 func makePMCDataValuesWithMinMax(values []PMCDataValue, valRange scan.MinMax, isBinary bool) PMCDataValues {
 	result := PMCDataValues{
 		ValueRange: valRange,

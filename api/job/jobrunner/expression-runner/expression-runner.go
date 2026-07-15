@@ -13,6 +13,7 @@ import (
 	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/periodictable"
+	"github.com/pixlise/core/v4/core/scan"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	lua "github.com/yuin/gopher-lua"
 	"go.mongodb.org/mongo-driver/bson"
@@ -33,10 +34,10 @@ import (
 // Lua vm directly in Go and that way Lua requesting data is a function call in Go and we can use our existing retrieval
 // mechanisms
 
-func RunExpression(expressionId string, scanId string, quantId string, svcs *services.APIServices) error {
+func RunExpression(expressionId string, scanId string, quantId string, svcs *services.APIServices) (*PMCDataValues, error) {
 	r, err := makeExpressionRunner(expressionId, scanId, quantId, svcs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	return r.Run()
@@ -100,7 +101,7 @@ func makeExpressionRunner(expressionId string, scanId string, quantId string, sv
 	return runner, nil
 }
 
-func (e *expressionRunner) Run() error {
+func (e *expressionRunner) Run() (*PMCDataValues, error) {
 	contextId := addExpressionContext(e)
 	defer clearExpressionContext(contextId)
 
@@ -108,16 +109,16 @@ func (e *expressionRunner) Run() error {
 	scan := &protos.ScanItem{}
 	err := readOne(dbCollections.ScansName, bson.M{"_id": e.scanId}, scan, e.svcs.MongoDB)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if len(scan.InstrumentConfig) <= 0 {
-		return fmt.Errorf("Scan %v has no instrument config", e.scanId)
+		return nil, fmt.Errorf("Scan %v has no instrument config", e.scanId)
 	}
 
 	detectorConfig, _ /*versions*/, err := piquant.ReadConfig(scan.InstrumentConfig, e.svcs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Retrieve the expression source and all of its modules first
@@ -150,7 +151,7 @@ local userId = "%v"
 		// write out the source code we run in lua
 		if e.writeLuaSource {
 			if err = os.WriteFile("all-source.txt", []byte(allSource), 0777); err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
@@ -203,7 +204,7 @@ func (e *expressionRunner) fetchSourceCode() (string, error) {
 	return allSource, nil
 }
 
-func (e *expressionRunner) runSource(source string, contextId int) error {
+func (e *expressionRunner) runSource(source string, contextId int) (*PMCDataValues, error) {
 	L := lua.NewState()
 	defer L.Close()
 
@@ -211,23 +212,50 @@ func (e *expressionRunner) runSource(source string, contextId int) error {
 
 	//L.NewFunction()
 	if err := L.DoString(source); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Get the result if there is one
 	resultTable := L.ToTable(-1)
 
-	fmt.Printf("result: %v\n", resultTable)
+	if resultTable == nil {
+		return nil, fmt.Errorf("Expression %v did not return map data", e.expressionId)
+	}
+
+	if resultTable.Len() != 2 {
+		return nil, fmt.Errorf("Expression %v did not return map data in expected format", e.expressionId)
+	}
 
 	pmcs := resultTable.RawGet(lua.LNumber(1)).(*lua.LTable)
 	values := resultTable.RawGet(lua.LNumber(2)).(*lua.LTable)
-	fmt.Printf("get1: %v\n", pmcs)
-	fmt.Printf("get1[0]: %v\n", pmcs.RawGet(lua.LNumber(1)))
 
-	fmt.Printf("get2: %v\n", values)
-	fmt.Printf("get2[0]: %v\n", values.RawGet(lua.LNumber(1)))
+	if pmcs == nil {
+		return nil, fmt.Errorf("Expression %v did not return map data PMC list as expected", e.expressionId)
+	}
 
-	return nil
+	if values == nil {
+		return nil, fmt.Errorf("Expression %v did not return map data values list as expected", e.expressionId)
+	}
+
+	if pmcs.Len() != values.Len() {
+		return nil, fmt.Errorf("Expression %v did not return map data with equal number of pmcs and values", e.expressionId)
+	}
+
+	// Now we can loop through and retrieve the values
+	resultValues := []PMCDataValue{}
+	valueRange := scan.MinMax{}
+
+	for c := 0; c < pmcs.Len(); c++ {
+		pmc := int(lua.LVAsNumber(pmcs.RawGet(lua.LNumber(c + 1))))
+		value := float64(lua.LVAsNumber(values.RawGet(lua.LNumber(c + 1))))
+
+		resultValues = append(resultValues, makePMCDataValue(pmc, value, false, ""))
+
+		valueRange.Expand(value)
+	}
+
+	result := makePMCDataValuesWithMinMax(resultValues, valueRange, false)
+	return &result, nil
 }
 
 func snipReturnModuleLine(src string) string {

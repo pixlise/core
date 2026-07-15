@@ -2,10 +2,13 @@ package expressionrunner
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"os"
+	"strconv"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/services/servicesMock"
@@ -28,18 +31,44 @@ import (
 	// <nil>
 }*/
 
-func Example_expressionrunner_RunExpression_Expression() {
+func Example_expressionrunner_RunExpression_Expression_Naltsos() {
 	exprId := "u59sahioy18frfl9"
 	scanId := "048300551"
 	quantId := "quant-ggy6zxhn23p7rlv9"
 
+	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
+	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
+
+	runExpressionTest(scanId, quantId, exprId, modIds, modVers)
+
+	// Output:
+	// RunExpession error: <nil>, got map size 121
+	// Returned map matches expected output from PIXLISE
+}
+
+func Example_expressionrunner_RunExpression_Expression_CastleGeyser() {
+	exprId := "u59sahioy18frfl9"
+	scanId := "393871873"
+	quantId := "quant-pvkostn8a2u6j7cj"
+
+	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
+	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
+
+	runExpressionTest(scanId, quantId, exprId, modIds, modVers)
+
+	// Output:
+	// RunExpession error: <nil>, got map size 3333
+	// Returned map matches expected output from PIXLISE
+}
+
+func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string) {
 	idGen := idgen.MockIDGenerator{
 		IDs: []string{"id123"},
 	}
 	logLev := logger.LogDebug
 	svcs := servicesMock.MakeMockSvcsWithFS("./test-files/", &idGen, &logLev)
 	ts := []int64{}
-	for c := 0; c < 100; c++ {
+	for c := 0; c < 25; c++ {
 		ts = append(ts, int64(1783596971+c))
 	}
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{QueuedTimeStamps: ts}
@@ -67,9 +96,6 @@ func Example_expressionrunner_RunExpression_Expression() {
 		log.Fatal(err)
 	}
 
-	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
-	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
-
 	for c, modId := range modIds {
 		err = seedDB(modId, fmt.Sprintf("./test-files/module/%v.json", modId), dbCollections.ModulesName, &protos.DataModuleDB{}, svcs.MongoDB)
 		if err != nil {
@@ -88,12 +114,54 @@ func Example_expressionrunner_RunExpression_Expression() {
 		log.Fatal(err)
 	}
 
-	err = RunExpression(exprId, scanId, quantId, &svcs)
-	fmt.Printf("%v\n", err)
+	m, err := RunExpression(exprId, scanId, quantId, &svcs)
+	fmt.Printf("RunExpession error: %v, got map size %v\n", err, len(m.Values))
 
-	// Output:
-	// hello
-	// <nil>
+	// Compare with the CSV we got from PIXLISE
+	err = compareMapWithCSV(m, fmt.Sprintf("./test-files/PIXLISE_output_%v.csv", scanId))
+	if err != nil {
+		fmt.Printf("Failed to match output to expected: %v", err)
+	} else {
+		fmt.Printf("Returned map matches expected output from PIXLISE")
+	}
+}
+
+func compareMapWithCSV(m *PMCDataValues, csvPath string) error {
+	csvFile, err := os.Open(csvPath)
+	if err != nil {
+		return fmt.Errorf("ReadExpectedCSV: %v\n", err)
+	}
+
+	r := csv.NewReader(csvFile)
+	eM, err := r.ReadAll()
+	if err != nil {
+		return fmt.Errorf("ReadExpectedCSV2: %v\n", err)
+	}
+
+	for c, line := range eM {
+		if len(line) != 2 {
+			return fmt.Errorf("CSV line %v has wrong number of fields", c)
+		}
+
+		pmc, err := strconv.Atoi(line[0])
+		if err != nil {
+			return fmt.Errorf("CSV line %v has bad pmc: %v", c, line[0])
+		}
+		value, err := strconv.ParseFloat(line[1], 64)
+		if err != nil {
+			return fmt.Errorf("CSV line %v has bad value: %v", c, line[1])
+		}
+
+		if m.Values[c].PMC != pmc {
+			return fmt.Errorf("Expression output item %v PMC mismatch, expected %v, got %v", c, line[0], m.Values[c].PMC)
+		}
+
+		if math.Abs(m.Values[c].Value-value) > 0.000001 {
+			return fmt.Errorf("Expression output item %v value mismatch, expected %v, got %v", c, line[1], m.Values[c].Value)
+		}
+	}
+
+	return nil
 }
 
 func seedDB[T any](id string, jsonPath string, collName string, item *T, db *mongo.Database) error {

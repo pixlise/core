@@ -9,7 +9,7 @@ import (
 
 // Bit wonky but packaged this way because it's easy to run it from the IDE
 
-func Example_convert() {
+func _Example_convert() {
 	r, err := os.ReadFile("rawPeriodicTable.ts")
 	if err != nil {
 		panic(err)

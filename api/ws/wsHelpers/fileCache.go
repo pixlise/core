@@ -177,7 +177,7 @@ func checkCache(id string, fileTypeName string, svcs *services.APIServices) []by
 
 		if item.timestampUnixSec > now-MaxFileCacheAgeSec {
 			// Read the file from local cache
-			fmt.Printf("Reading local file: %v\n", item.localPath)
+			svcs.Log.Debugf("Reading local file: %v\n", item.localPath)
 			fileBytes, err = lfs.ReadObject("", item.localPath)
 			if err != nil {
 				// Failed to read locally, delete this cache item
@@ -187,7 +187,7 @@ func checkCache(id string, fileTypeName string, svcs *services.APIServices) []by
 			}
 		} else {
 			// Print that it timed out
-			fmt.Printf("Detected timed-out locally cached file: %v. Deleting...\n", item.localPath)
+			svcs.Log.Debugf("Detected timed-out locally cached file: %v. Deleting...\n", item.localPath)
 			err = os.Remove(item.localPath)
 			if err != nil {
 				svcs.Log.Errorf("Failed to delete timed-out locally cached file: %v. Error: %v", item.localPath, err)
