@@ -115,14 +115,20 @@ func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string)
 	}
 
 	m, err := RunExpression(exprId, scanId, quantId, &svcs)
-	fmt.Printf("RunExpession error: %v, got map size %v\n", err, len(m.Values))
+	sz := 0
+	if m != nil {
+		sz = len(m.Values)
+	}
+	fmt.Printf("RunExpession error: %v, got map size %v\n", err, sz)
 
-	// Compare with the CSV we got from PIXLISE
-	err = compareMapWithCSV(m, fmt.Sprintf("./test-files/PIXLISE_output_%v.csv", scanId))
-	if err != nil {
-		fmt.Printf("Failed to match output to expected: %v", err)
-	} else {
-		fmt.Printf("Returned map matches expected output from PIXLISE")
+	if err == nil {
+		// Compare with the CSV we got from PIXLISE
+		err = compareMapWithCSV(m, fmt.Sprintf("./test-files/PIXLISE_output_%v.csv", scanId))
+		if err != nil {
+			fmt.Printf("Failed to match output to expected: %v", err)
+		} else {
+			fmt.Printf("Returned map matches expected output from PIXLISE")
+		}
 	}
 }
 
