@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/piquant"
@@ -34,17 +35,58 @@ import (
 // Lua vm directly in Go and that way Lua requesting data is a function call in Go and we can use our existing retrieval
 // mechanisms
 
-func RunExpression(expressionId string, scanId string, quantId string, svcs *services.APIServices, debug bool) (*PMCDataValues, error) {
+// Comparison of speed:
+// Browser:
+// Expression: Al2O3 (mmol/g) [u59sahioy18frfl9] - Total JS function time: 2,095.7ms, LUA expression "Al2O3 (mmol/g)" took: 17,001.1ms
+//
+// Go API:
+// Expression: Al2O3 (mmol/g) [u59sahioy18frfl9] - 88,000ms at QUT, ~115,000ms at home??? 111,000ms with makeMap caching on Lua side
+
+// Returns:
+// - map result as PMCDataValues structure
+// - total runtime in ms
+// - total time spent in runtime (Go implemented Lua functions)
+// - error, if any
+func RunExpression(expressionId string, scanId string, quantId string, svcs *services.APIServices, saveCode bool, debug bool) (*PMCDataValues, uint64, uint64, error) {
+	ch := make(chan exprResult)
+
+	go runExpressionInternal(ch, expressionId, scanId, quantId, svcs, saveCode, debug)
+	result := <-ch
+
+	return result.values, result.totalRuntimeMs, result.totalGoFunctionRuntimeMs, result.err
+}
+
+type exprResult struct {
+	values                   *PMCDataValues
+	totalRuntimeMs           uint64
+	totalGoFunctionRuntimeMs uint64
+	err                      error
+}
+
+func runExpressionInternal(ch chan exprResult, expressionId string, scanId string, quantId string, svcs *services.APIServices, saveCode bool, debug bool) {
 	r, err := makeExpressionRunner(expressionId, scanId, quantId, svcs)
 	if err != nil {
-		return nil, err
+		ch <- exprResult{}
+		return
 	}
 
-	// If we're debugging:
-	r.writeLuaSource = true
-	//r.debugUseLocalSourceFile = true
+	if debug {
+		// If we're debugging:
+		r.debugUseLocalSourceFile = true
+		r.writeLuaSource = false // don't overwrite!
+	} else {
+		r.writeLuaSource = saveCode
+	}
 
-	return r.Run()
+	mapResult, err := r.Run()
+	result := exprResult{
+		values:                   mapResult,
+		totalRuntimeMs:           r.totalRuntimeMs,
+		totalGoFunctionRuntimeMs: r.totalGoFunctionRuntimeNs / 1000000,
+		err:                      err,
+	}
+
+	ch <- result
 }
 
 func keVToChannel(energy float32, calibration *protos.ClientSpectrumEnergyCalibration) int {
@@ -69,6 +111,19 @@ type expressionRunner struct {
 	// Scan stuff
 	scan *protos.Experiment
 
+	detectorIdMetaIdx int
+	readTypeMetaIdx   int
+
+	// Here we only consider locations that have 1 or more normal spectra defined!
+	// Map of PMC -> "location index"
+	pmcToLocationIndex map[int]uint32
+	// Map of location index -> PMC
+	locationIndexToPMC []int
+
+	// Map of Detector ID -> array by "location index" array of counts
+	spectra        map[string][][]int32
+	spectrumCounts int
+
 	// Diffraction stuff
 	diffractionFile *protos.Diffraction
 	allPeaks        []*protos.ClientDiffractionPeak
@@ -77,6 +132,9 @@ type expressionRunner struct {
 
 	debugUseLocalSourceFile bool
 	writeLuaSource          bool
+
+	totalGoFunctionRuntimeNs uint64
+	totalRuntimeMs           uint64
 }
 
 // For now this is the only thing in our code that requires the periodic table
@@ -125,20 +183,47 @@ func (e *expressionRunner) Run() (*PMCDataValues, error) {
 	// Retrieve the expression source and all of its modules first
 	allSource, err := e.fetchSourceCode()
 
+	if err != nil {
+		return nil, err
+	}
+
 	// Add constants as required to Lua
+	makeMapSuffix := "Raw"
+	makeMapLuaCache := `local lastMap = {}
+local function makeMap(value)
+	-- If we have one saved, just set the value in the same kind of map
+	if #lastMap > 0 then
+		local values = {}
+		for k, v in ipairs(lastMap[2]) do
+			if v == nil then
+				values[k] = nil
+			else
+				values[k] = value
+			end
+		end
+		return { lastMap[1], values }
+	end
+
+	local m = makeMapRaw(value)
+-- Cache it
+lastMap = m
+	return m
+end
+`
 	allSource = fmt.Sprintf(`local elevAngle = %v
 local quantId = "%v"
 local scanId = "%v"
 local maxSpectrumChannel = %v
 local instrument = "%v"
 local userId = "%v"
-`,
-		detectorConfig.ElevAngle,
+%v
+`, detectorConfig.ElevAngle,
 		e.quantId,
 		e.scanId,
 		4096,
 		"PIXL_FM",
-		sessionuser.PIXLISESystemUserId) + allSource
+		sessionuser.PIXLISESystemUserId,
+		makeMapLuaCache) + allSource
 
 	// Replace table.unpack with unpack because gopher-lua is 5.1, table.unpack came in 5.2 but they're the same thing apparently
 	allSource = strings.ReplaceAll(allSource, "table.unpack(", "unpack(")
@@ -162,62 +247,35 @@ local userId = "%v"
 		}
 	}
 
-	return e.runSource(allSource, contextId)
+	return e.runSource(allSource, contextId, makeMapSuffix)
 }
 
-func (e *expressionRunner) Log() logger.ILogger {
-	return e.svcs.Log
+func (e *expressionRunner) doString(source string, L *lua.LState) error {
+	// We start timing from here... Any calls into our functions will be monitored and tallied so we can report
+	// properly how much time was spent in Go vs in Lua VM
+	e.totalGoFunctionRuntimeNs = 0
+	startTimeMs := time.Now()
+
+	defer func() {
+		endTimeMs := time.Since(startTimeMs)
+		e.totalRuntimeMs = uint64(endTimeMs.Milliseconds())
+	}()
+
+	if err := L.DoString(source); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (e *expressionRunner) fetchSourceCode() (string, error) {
-	// Read expression
-	expr := &protos.DataExpression{}
-	err := readOne(dbCollections.ExpressionsName, bson.M{"_id": e.expressionId}, expr, e.svcs.MongoDB)
-	if err != nil {
-		return "", err
-	}
-
-	if expr.SourceLanguage != "LUA" {
-		return "", fmt.Errorf("Error: Expression %v is not Lua", e.expressionId)
-	}
-
-	allSource := ""
-
-	// Read built-in modules
-	builtInModules := []string{"./built-in-modules/Map.lua", "./built-in-modules/DebugHelp.lua"}
-	for _, modPath := range builtInModules {
-		modSrcFile, err := os.ReadFile(modPath)
-		if err != nil {
-			return "", err
-		}
-
-		modSrc := snipReturnModuleLine(string(modSrcFile))
-		allSource = allSource + "\n" + modSrc + "\n"
-	}
-
-	// Read modules
-	for _, modRef := range expr.ModuleReferences {
-		_, modVer, err := readModule(modRef.ModuleId, modRef.Version, e.svcs)
-		if err != nil {
-			return "", err
-		}
-
-		modSrc := snipReturnModuleLine(modVer.SourceCode)
-		allSource = allSource + "\n" + modSrc + "\n"
-	}
-
-	allSource = allSource + expr.SourceCode
-	return allSource, nil
-}
-
-func (e *expressionRunner) runSource(source string, contextId int) (*PMCDataValues, error) {
+func (e *expressionRunner) runSource(source string, contextId int, makeMapSuffix string) (*PMCDataValues, error) {
 	L := lua.NewState()
 	defer L.Close()
 
-	e.defineRuntime(L, contextId)
+	e.defineRuntime(L, contextId, makeMapSuffix)
 
-	//L.NewFunction()
-	if err := L.DoString(source); err != nil {
+	err := e.doString(source, L)
+	if err != nil {
 		return nil, err
 	}
 
@@ -225,7 +283,7 @@ func (e *expressionRunner) runSource(source string, contextId int) (*PMCDataValu
 	resultTable := L.ToTable(-1)
 
 	if resultTable == nil {
-		return nil, fmt.Errorf("Expression %v did not return map data", e.expressionId)
+		return nil, fmt.Errorf("Expression %v did not return map data. Stack top: \"%v\"", e.expressionId, L.ToString(-1))
 	}
 
 	if resultTable.Len() != 2 {
@@ -262,6 +320,52 @@ func (e *expressionRunner) runSource(source string, contextId int) (*PMCDataValu
 
 	result := makePMCDataValuesWithMinMax(resultValues, valueRange, false)
 	return &result, nil
+}
+
+func (e *expressionRunner) Log() logger.ILogger {
+	return e.svcs.Log
+}
+
+func (e *expressionRunner) fetchSourceCode() (string, error) {
+	// Read expression
+	expr := &protos.DataExpression{}
+	err := readOne(dbCollections.ExpressionsName, bson.M{"_id": e.expressionId}, expr, e.svcs.MongoDB)
+	if err != nil {
+		return "", err
+	}
+
+	if expr.SourceLanguage != "LUA" {
+		return "", fmt.Errorf("Error: Expression %v is not Lua", e.expressionId)
+	}
+
+	allSource := ""
+
+	// Read built-in modules
+	// builtInModules := []string{"./built-in-modules/Map.lua", "./built-in-modules/DebugHelp.lua"}
+	// for _, modPath := range builtInModules {
+	// 	modSrcFile, err := os.ReadFile(modPath)
+	// 	if err != nil {
+	// 		return "", err
+	// 	}
+	builtInModules := []string{debugModule, mapModule}
+	for _, modSrcFile := range builtInModules {
+		modSrc := snipReturnModuleLine(string(modSrcFile))
+		allSource = allSource + "\n" + modSrc + "\n"
+	}
+
+	// Read modules
+	for _, modRef := range expr.ModuleReferences {
+		_, modVer, err := readModule(modRef.ModuleId, modRef.Version, e.svcs)
+		if err != nil {
+			return "", err
+		}
+
+		modSrc := snipReturnModuleLine(modVer.SourceCode)
+		allSource = allSource + "\n" + modSrc + "\n"
+	}
+
+	allSource = allSource + expr.SourceCode
+	return allSource, nil
 }
 
 func snipReturnModuleLine(src string) string {

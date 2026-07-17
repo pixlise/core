@@ -2,10 +2,8 @@ package expressionrunner
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/pixlise/core/v4/core/scan"
-	lua "github.com/yuin/gopher-lua"
 )
 
 type PMCDataValue struct {
@@ -95,28 +93,5 @@ func makePMCDataValuesWithMinMax(values []PMCDataValue, valRange scan.MinMax, is
 		Values:     values,
 		IsBinary:   isBinary,
 	}
-	return result
-}
-
-func makeLuaTable(data PMCDataValues, L *lua.LState) lua.LTable {
-	pmcs := &lua.LTable{}
-	values := &lua.LTable{}
-	for _, item := range data.Values {
-		pmcs.Append(lua.LNumber(item.PMC))
-
-		// NOTE: Lua doesn't support nil values in tables. https://www.lua.org/manual/5.3/manual.html#2.1
-		// so here we specify an undefined value as a NaN so it doesn't break. May need to consider just
-		// excluding those PMCs completely, however then the maps wont be the same size in Lua land...
-		v := item.Value
-		if item.IsUndefined {
-			v = math.NaN()
-		}
-		values.Append(lua.LNumber(v))
-	}
-
-	result := lua.LTable{}
-	result.Append(pmcs)
-	result.Append(values)
-
 	return result
 }

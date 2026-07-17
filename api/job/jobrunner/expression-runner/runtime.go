@@ -1,23 +1,30 @@
 package expressionrunner
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/scan"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	lua "github.com/yuin/gopher-lua"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // We need a way for Go functions called from lua to find the state they're calling into so we know what
 // quant/scan etc to load
 var contextIdLuaVarName = "execContextId"
 
-func (e *expressionRunner) defineRuntime(L *lua.LState, contextId int) {
+func (e *expressionRunner) defineRuntime(L *lua.LState, contextId int, makeMapSuffix string) {
 	L.SetGlobal(contextIdLuaVarName, lua.LNumber(contextId))
 
 	L.SetGlobal("element", L.NewFunction(element))
@@ -30,7 +37,7 @@ func (e *expressionRunner) defineRuntime(L *lua.LState, contextId int) {
 	L.SetGlobal("diffractionPeaks", L.NewFunction(diffractionPeaks))
 	L.SetGlobal("roughness", L.NewFunction(roughness))
 	L.SetGlobal("position", L.NewFunction(position))
-	L.SetGlobal("makeMap", L.NewFunction(makeMap))
+	L.SetGlobal("makeMap"+makeMapSuffix, L.NewFunction(makeMap))
 	L.SetGlobal("exists", L.NewFunction(exists))
 	L.SetGlobal("writeCache", L.NewFunction(writeCache))
 	L.SetGlobal("readCache", L.NewFunction(readCache))
@@ -102,8 +109,33 @@ func reportLuaRuntimeError(L *lua.LState, err error) int {
 	return 0
 }
 
+func funcStart(L *lua.LState) (*expressionRunner, time.Time) {
+	return getContext(L), time.Now()
+}
+
+func (e *expressionRunner) funcPrintArgs(funcName string, args ...interface{}) {
+	f := ""
+	for c := range args {
+		if c > 0 {
+			f = f + ","
+		}
+		f = f + "%v"
+	}
+	//f = fmt.Sprintf(f, args)
+	e.Log().Debugf("    Lua runtime:   "+funcName+"("+f+")", args...)
+}
+
+func (e *expressionRunner) funcEnd(startTime time.Time) {
+	runtime := time.Since(startTime)
+
+	e.Log().Debugf("                -> %vms", runtime.Milliseconds())
+
+	e.totalGoFunctionRuntimeNs += uint64(runtime.Nanoseconds())
+}
+
 func element(L *lua.LState) int { // args(symbol, column, detector)
-	e := getContext(L)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
 	if e == nil {
 		return 0
 	}
@@ -111,6 +143,8 @@ func element(L *lua.LState) int { // args(symbol, column, detector)
 	symbol := L.ToString(1)
 	column := L.ToString(2)
 	detector := L.ToString(3)
+
+	e.funcPrintArgs("element", symbol, column, detector)
 
 	asMmol := false
 	if column == "%-as-mmol" {
@@ -134,30 +168,36 @@ func element(L *lua.LState) int { // args(symbol, column, detector)
 		result = convertToMmol(symbol, result)
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	L.Push(makeLuaTable(result))
 	return 1
 }
 
 func elementSum(L *lua.LState) int { // args(column, detector)
-	e := getContext(L)
-	if e == nil {
-		return 0
-	}
-
-	// column := L.ToString(1)
-	// detector := L.ToString(2)
-	return reportLuaRuntimeError(L, fmt.Errorf("elementSum not implemented yet"))
-}
-
-func data(L *lua.LState) int { // args(column, detector)
-	e := getContext(L)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
 	if e == nil {
 		return 0
 	}
 
 	column := L.ToString(1)
 	detector := L.ToString(2)
+
+	e.funcPrintArgs("elementSum[NOOP]", column, detector)
+
+	return reportLuaRuntimeError(L, fmt.Errorf("elementSum not implemented yet"))
+}
+
+func data(L *lua.LState) int { // args(column, detector)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
+	if e == nil {
+		return 0
+	}
+
+	column := L.ToString(1)
+	detector := L.ToString(2)
+
+	e.funcPrintArgs("data", column, detector)
 
 	if err := e.ensureFetchedScan(); err != nil {
 		return reportLuaRuntimeError(L, err)
@@ -176,13 +216,13 @@ func data(L *lua.LState) int { // args(column, detector)
 		return reportLuaRuntimeError(L, err)
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	L.Push(makeLuaTable(result))
 	return 1
 }
 
 func spectrum(L *lua.LState) int { // args(startChannel, endChannel, detector)
-	e := getContext(L)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
 	if e == nil {
 		return 0
 	}
@@ -191,93 +231,101 @@ func spectrum(L *lua.LState) int { // args(startChannel, endChannel, detector)
 	endChannel := L.ToInt(2)
 	detector := L.ToString(3)
 
-	if err := e.ensureFetchedScan(); err != nil {
+	e.funcPrintArgs("spectrum", startChannel, endChannel, detector)
+
+	if err := e.ensureFetchedScanNormalSpectra(); err != nil {
 		return reportLuaRuntimeError(L, err)
 	}
 
-	// Get indexes and data types for our meta fields used to identify the spectrum
-	detectorIdIdx, readtypeIdx, err := e.getDetectorReadTypeMetaIdxs()
-	if err != nil {
-		return reportLuaRuntimeError(L, err)
+	// Sanity checks
+	pmcCount := len(e.pmcToLocationIndex)
+	if pmcCount != len(e.locationIndexToPMC) {
+		return reportLuaRuntimeError(L, fmt.Errorf("PMC lookup size is invalid: %v vs expected: %v", pmcCount, len(e.locationIndexToPMC)))
 	}
 
+	// Check detectors have the same lookup size
+	for d, s := range e.spectra {
+		if pmcCount != len(s) {
+			return reportLuaRuntimeError(L, fmt.Errorf("Spectra detector %v lookup size is invalid: %v vs expected: %v", d, len(s), pmcCount))
+		}
+	}
+
+	detectorSpectra, ok := e.spectra[detector]
+	if !ok {
+		return reportLuaRuntimeError(L, fmt.Errorf("Failed to find spectra for detector %v", detector))
+	}
+
+	// Run through all spectra for this detector and add up items within channel range
 	result := PMCDataValues{}
 	foundRange := false
 
-	metaIdxs := []int{detectorIdIdx, readtypeIdx}
-	for _, loc := range e.scan.Locations {
-		pmc, err := strconv.Atoi(loc.Id)
-		if err != nil {
-			return reportLuaRuntimeError(L, fmt.Errorf("Failed to read PMC: \"%v\" for scan: %v", loc.Id, e.scanId))
+	channelEndToReadTo := endChannel
+	if channelEndToReadTo > e.spectrumCounts {
+		channelEndToReadTo = e.spectrumCounts
+	}
+
+	for c, pmc := range e.locationIndexToPMC {
+		// Now grab the values in the channel
+		spectrum := detectorSpectra[c]
+
+		// Loop through & add it
+		sum := int32(0)
+		for ch := startChannel; ch < channelEndToReadTo; ch++ {
+			sum += spectrum[ch]
 		}
 
-		for _, det := range loc.Detectors {
-			metaValues := getScanDetectorMetaValues(metaIdxs, det)
-
-			// Check if we have values
-			if m, ok := metaValues[detectorIdIdx]; ok && m.Svalue == detector {
-				// We're interested in this detector! Do we care about this spectrum type?
-				if m2, ok := metaValues[readtypeIdx]; ok && m2.Svalue == "Normal" {
-					// Include this spectrum
-					spectrum := client.ZeroRunDecode(det.Spectrum)
-
-					// Now grab the values in the channel
-					channelEndToReadTo := endChannel
-					if channelEndToReadTo > len(spectrum) {
-						channelEndToReadTo = len(spectrum)
-					}
-
-					// Loop through & add it
-					sum := int32(0)
-					for ch := startChannel; ch < channelEndToReadTo; ch++ {
-						sum += spectrum[ch]
-					}
-
-					result.AddValue(makePMCDataValue(pmc, float64(sum), false, ""))
-					foundRange = true
-				}
-			}
-		}
+		result.AddValue(makePMCDataValue(pmc, float64(sum), false, ""))
+		foundRange = true
 	}
 
 	if !foundRange {
 		return reportLuaRuntimeError(L, fmt.Errorf("spectrum: Failed to find scan %v spectrum %v range between %v and %v", e.scanId, detector, startChannel, endChannel))
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	L.Push(makeLuaTable(result))
 	return 1
 }
 
 func spectrumDiff(L *lua.LState) int { // args(startChannel, endChannel, op)
-	e := getContext(L)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
 	if e == nil {
 		return 0
 	}
 
-	// startChannel := L.ToInt(1)
-	// endChannel := L.ToInt(2)
-	// op := L.ToString(3)
+	startChannel := L.ToInt(1)
+	endChannel := L.ToInt(2)
+	op := L.ToString(3)
+
+	e.funcPrintArgs("spectrumDiff[NOOP]", startChannel, endChannel, op)
+
 	return reportLuaRuntimeError(L, fmt.Errorf("spectrumDiff not implemented yet"))
 }
 
 func pseudo(L *lua.LState) int { // args(elem)
-	e := getContext(L)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
 	if e == nil {
 		return 0
 	}
 
-	// elem := L.ToString(1)
+	elem := L.ToString(1)
+
+	e.funcPrintArgs("pseudo[NOOP]", elem)
+
 	return reportLuaRuntimeError(L, fmt.Errorf("pseudo not implemented yet"))
 }
 
 func housekeeping(L *lua.LState) int { // args(column)
-	e := getContext(L)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
 	if e == nil {
 		return 0
 	}
 
 	column := L.ToString(1)
+
+	e.funcPrintArgs("housekeeping", column)
 
 	if err := e.ensureFetchedScan(); err != nil {
 		return reportLuaRuntimeError(L, err)
@@ -328,8 +376,7 @@ func housekeeping(L *lua.LState) int { // args(column)
 		result.AddValue(makePMCDataValue(pmc, value, false, ""))
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	L.Push(makeLuaTable(result))
 	return 1
 }
 
@@ -385,13 +432,16 @@ func getScanDetectorMetaValues(metaIdxs []int /*dataType protos.Experiment_MetaD
 	}
 */
 func diffractionPeaks(L *lua.LState) int { // args(eVstart, eVend)
-	e := getContext(L)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
 	if e == nil {
 		return 0
 	}
 
 	startChannel := L.ToInt(1)
 	endChannel := L.ToInt(2)
+
+	e.funcPrintArgs("diffractionPeaks", startChannel, endChannel)
 
 	if err := e.ensureFetchedScan(); err != nil {
 		return reportLuaRuntimeError(L, err)
@@ -477,16 +527,18 @@ func diffractionPeaks(L *lua.LState) int { // args(eVstart, eVend)
 		result.AddValue(makePMCDataValue(int(pmc), float64(sum), false, ""))
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	L.Push(makeLuaTable(result))
 	return 1
 }
 
 func roughness(L *lua.LState) int { // args()
-	e := getContext(L)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
 	if e == nil {
 		return 0
 	}
+
+	e.funcPrintArgs("roughness")
 
 	if err := e.ensureFetchedScan(); err != nil {
 		return reportLuaRuntimeError(L, err)
@@ -513,23 +565,27 @@ func roughness(L *lua.LState) int { // args()
 		}
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	L.Push(makeLuaTable(result))
 	return 1
 }
 
 func position(L *lua.LState) int { // args(axis)
-	e := getContext(L)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
 	if e == nil {
 		return 0
 	}
 
-	// axis := L.ToString(1)
+	axis := L.ToString(1)
+
+	e.funcPrintArgs("position[NOOP]", axis)
+
 	return reportLuaRuntimeError(L, fmt.Errorf("position not implemented yet"))
 }
 
 func makeMap(L *lua.LState) int { // args(value)
-	e := getContext(L)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
 	if e == nil {
 		return 0
 	}
@@ -541,6 +597,8 @@ func makeMap(L *lua.LState) int { // args(value)
 
 	value := L.ToNumber(1)
 
+	e.funcPrintArgs("makeMap", value)
+
 	result := PMCDataValues{}
 	result.IsBinary = true // pre-set for detection in addValue
 	if len(e.quantData.LocationSet) > 0 {
@@ -549,19 +607,21 @@ func makeMap(L *lua.LState) int { // args(value)
 		}
 	}
 
-	t := makeLuaTable(result, L)
-	L.Push(&t)
+	L.Push(makeLuaTable(result))
 	return 1
 }
 
 func exists(L *lua.LState) int { // args(dataType, column)
-	e := getContext(L)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
 	if e == nil {
 		return 0
 	}
 
 	dataType := L.ToString(1)
 	column := L.ToString(2)
+
+	e.funcPrintArgs("exists", dataType, column)
 
 	// Check if the data is available
 	if dataType == "element" || dataType == "detector" || dataType == "data" {
@@ -621,31 +681,189 @@ func exists(L *lua.LState) int { // args(dataType, column)
 	return reportLuaRuntimeError(L, fmt.Errorf("Unknown data type %v for exists()", dataType))
 }
 
+var memoPrefix = "exprcachev1_"
+
 func writeCache(L *lua.LState) int { // args(k, v)
-	return 0 // No-Op
-}
-
-func readCache(L *lua.LState) int { // args(k, w)
-	return 0 // No-Op
-}
-
-func readMap(L *lua.LState) int { // args(k)
-	e := getContext(L)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
 	if e == nil {
 		return 0
 	}
 
-	//k := L.ToString(1)
+	k := L.ToString(1)
+
+	e.funcPrintArgs("writeCache", k)
+
+	// Assume what's provided is a table
+	v := L.ToTable(2)
+
+	if v != nil {
+		// Read the table recursively and turn it into JSON
+		readMap, readArray := readLuaTable(L, v)
+
+		var b []byte
+		var err error
+
+		if len(readArray) > 0 {
+			b, err = json.Marshal(readArray)
+		} else {
+			b, err = json.Marshal(readMap)
+		}
+		/*
+			if len(readArray) > 0 {
+				// b, err = json.Marshal(readArray)
+				b, err = json.MarshalIndent(readArray, "", utils.PrettyPrintIndentForJSON)
+			} else {
+				// b, err = json.Marshal(readMap)
+				b, err = json.MarshalIndent(readMap, "", utils.PrettyPrintIndentForJSON)
+			}
+
+			if err != nil {
+				return reportLuaRuntimeError(L, fmt.Errorf("writeCache failed to save json string for %v: %v", k, err))
+			}
+
+			// We've got it as JSON, save it to DB as cache item
+			// FOR TESTING: Compare to existing
+			result := e.svcs.MongoDB.Collection(dbCollections.MemoisedItemsName).FindOne(context.TODO(), bson.M{"_id": memoPrefix + k}, options.FindOne())
+
+			if result.Err() != nil {
+				if result.Err() == mongo.ErrNoDocuments {
+					// not found in cache
+					return 0
+				}
+
+				// Some other error
+				return reportLuaRuntimeError(L, fmt.Errorf("writeCache error for %v: %v", k, result.Err()))
+			}
+
+			// We read it
+			item := &protos.MemoisedItem{}
+
+			if err := result.Decode(item); err != nil {
+				return reportLuaRuntimeError(L, fmt.Errorf("writeCache decode error for %v: %v", k, err))
+			}
+
+			// Take existing and pretty print it so we can compare
+			existing := map[string]interface{}{}
+			err = json.Unmarshal(item.Data, &existing)
+			if err != nil {
+				return reportLuaRuntimeError(L, fmt.Errorf("writeCache failed to read cached data for %v: %v", k, err))
+			}
+
+			existingPretty, err := json.MarshalIndent(existing, "", utils.PrettyPrintIndentForJSON)
+			if err != nil {
+				return reportLuaRuntimeError(L, fmt.Errorf("writeCache failed to compare existing for %v: %v", k, err))
+			}
+
+			if string(b) != string(existingPretty) {
+				// Testing these files shows they are almost matches, just floating point rounding errors about 10 past the .
+				// and index is different in each section, so likely it's compatible
+				os.WriteFile("newCache_"+k+".txt", b, 0777)
+				os.WriteFile("expected_"+k+".txt", existingPretty, 0777)
+			} else {
+				fmt.Printf("Matches existing cache")
+			}
+		*/
+
+		// Save this to DB
+		timestamp := uint32(e.svcs.TimeStamper.GetTimeNowSec())
+		item := &protos.MemoisedItem{
+			Key:                 memoPrefix + k,
+			ExprId:              e.expressionId,
+			QuantId:             e.quantId,
+			ScanId:              e.scanId,
+			MemoTimeUnixSec:     timestamp,
+			LastReadTimeUnixSec: timestamp,
+			Data:                b,
+			DataSize:            uint32(len(b)),
+			//NoGC: false,
+		}
+
+		ctx := context.TODO()
+		coll := e.svcs.MongoDB.Collection(dbCollections.MemoisedItemsName)
+		opt := options.Update().SetUpsert(true)
+
+		result, err := coll.UpdateByID(ctx, item.Key, bson.D{{Key: "$set", Value: item}}, opt)
+		if err != nil {
+			// Some other error
+			return reportLuaRuntimeError(L, fmt.Errorf("writeCache error for %v: %v", k, err))
+		}
+
+		if result.UpsertedCount == 0 && (result.MatchedCount != result.ModifiedCount) {
+			e.svcs.Log.Errorf("writeCache for: %v got unexpected DB write result: %+v", item.Key, result)
+		}
+	}
+
+	return 0 // No-Op
+}
+
+func readCache(L *lua.LState) int { // args(k, w)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
+	if e == nil {
+		return 0
+	}
+
+	k := L.ToString(1)
+	w := L.ToBool(2)
+	e.funcPrintArgs("readCache", k, w)
+
+	result := e.svcs.MongoDB.Collection(dbCollections.MemoisedItemsName).FindOne(context.TODO(), bson.M{"_id": memoPrefix + k}, options.FindOne())
+
+	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			// not found in cache
+			return 0
+		}
+
+		// Some other error
+		return reportLuaRuntimeError(L, fmt.Errorf("readCache error for %v: %v", k, result.Err()))
+	}
+
+	// We read it
+	item := &protos.MemoisedItem{}
+
+	if err := result.Decode(item); err != nil {
+		return reportLuaRuntimeError(L, fmt.Errorf("readCache decode error for %v: %v", k, result.Err()))
+	}
+
+	// Read the data field & decode it into a (nested) Lua table that we can upload
+	temp := make(map[string]interface{})
+	if err := json.Unmarshal(item.Data, &temp); err != nil {
+		return reportLuaRuntimeError(L, fmt.Errorf("readCache decode error data of for %v: %v", k, err))
+	}
+
+	ltable := makeLuaTableGeneric(L, temp)
+	L.Push(ltable)
+	return 1
+	// lastread = ltable
+	// return 0
+}
+
+func readMap(L *lua.LState) int { // args(k)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
+	if e == nil {
+		return 0
+	}
+
+	k := L.ToString(1)
+
+	e.funcPrintArgs("readMap[NOOP]", k)
+
 	return reportLuaRuntimeError(L, fmt.Errorf("readMap not implemented yet"))
 }
 
 func atomicMass(L *lua.LState) int { // args(k)
-	e := getContext(L)
+	e, trc := funcStart(L)
+	defer e.funcEnd(trc)
 	if e == nil {
 		return 0
 	}
 
 	symbol := L.ToString(1)
+
+	e.funcPrintArgs("atomicMass", symbol)
 
 	mass := PTable.GetMolecularMass(symbol)
 	L.Push(lua.LNumber(mass))

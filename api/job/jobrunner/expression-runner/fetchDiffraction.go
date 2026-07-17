@@ -26,14 +26,14 @@ func (e *expressionRunner) fetchDiffraction() error {
 		return err
 	}
 
-	diffRawData, err := wsHelpers.ReadDiffractionFile(e.scanId, e.svcs)
+	e.diffractionFile, err = wsHelpers.ReadDiffractionFile(e.scanId, e.svcs)
 	if err != nil {
 		return err
 	}
 
 	// Simulate getting the stuff via the 3 API calls the client uses(/used)
 	requestedIndexes := []int32{}
-	detectedPeaks, err := wsHelpers.GetDetectedDiffractionPeaks(requestedIndexes, dataset, diffRawData)
+	detectedPeaks, err := wsHelpers.GetDetectedDiffractionPeaks(requestedIndexes, dataset, e.diffractionFile)
 	if err != nil {
 		return err
 	}
