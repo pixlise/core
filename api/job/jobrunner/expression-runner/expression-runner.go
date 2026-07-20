@@ -40,7 +40,12 @@ import (
 // Expression: Al2O3 (mmol/g) [u59sahioy18frfl9] - Total JS function time: 2,095.7ms, LUA expression "Al2O3 (mmol/g)" took: 17,001.1ms
 //
 // Go API:
-// Expression: Al2O3 (mmol/g) [u59sahioy18frfl9] - 88,000ms at QUT, ~115,000ms at home??? 111,000ms with makeMap caching on Lua side
+// Expression: Al2O3 (mmol/g) [u59sahioy18frfl9]:
+//
+// Running as tests (execute, not debug) and including implementing memoisation:
+// Nothing saved, fresh recalc: 188750ms (4145ms in Go runtime)
+// One saved (non quant) item:  20355ms (1599ms in Go runtime)
+// Two saved items:             1000ms
 
 // Returns:
 // - map result as PMCDataValues structure

@@ -9,8 +9,8 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/services/servicesMock"
@@ -34,7 +34,7 @@ import (
 	// <nil>
 }*/
 
-func Example_expressionrunner_RunExpression_Expression_Naltsos() {
+func Example_expressionrunner_RunExpression_Al2O3_Naltsos_NoMemo() {
 	exprId := "u59sahioy18frfl9"
 	scanId := "048300551"
 	quantId := "quant-ggy6zxhn23p7rlv9"
@@ -42,7 +42,7 @@ func Example_expressionrunner_RunExpression_Expression_Naltsos() {
 	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
 	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
 
-	runExpressionTest(scanId, quantId, exprId, modIds, modVers, false)
+	runExpressionTest(scanId, quantId, exprId, modIds, modVers, "")
 
 	// Output:
 	// RunExpession error: <nil>
@@ -50,7 +50,7 @@ func Example_expressionrunner_RunExpression_Expression_Naltsos() {
 	// Returned map matches expected output from PIXLISE
 }
 
-func Example_expressionrunner_RunExpression_Expression_Naltsos_UseMemoisation() {
+func Example_expressionrunner_RunExpression_Al2O3_Naltsos_MemoNonQuant() {
 	exprId := "u59sahioy18frfl9"
 	scanId := "048300551"
 	quantId := "quant-ggy6zxhn23p7rlv9"
@@ -58,7 +58,7 @@ func Example_expressionrunner_RunExpression_Expression_Naltsos_UseMemoisation() 
 	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
 	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
 
-	runExpressionTest(scanId, quantId, exprId, modIds, modVers, true)
+	runExpressionTest(scanId, quantId, exprId, modIds, modVers, fmt.Sprintf(".*_geometry_%v.*", scanId))
 
 	// Output:
 	// RunExpession error: <nil>
@@ -66,7 +66,39 @@ func Example_expressionrunner_RunExpression_Expression_Naltsos_UseMemoisation() 
 	// Returned map matches expected output from PIXLISE
 }
 
-func Example_expressionrunner_RunExpression_Expression_CastleGeyser() {
+func Example_expressionrunner_RunExpression_Al2O3_Naltsos_MemoOnlyQuant() {
+	exprId := "u59sahioy18frfl9"
+	scanId := "048300551"
+	quantId := "quant-ggy6zxhn23p7rlv9"
+
+	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
+	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
+
+	runExpressionTest(scanId, quantId, exprId, modIds, modVers, fmt.Sprintf(".*_%v_quant-.*", scanId))
+
+	// Output:
+	// RunExpession error: <nil>
+	// Got map size 121
+	// Returned map matches expected output from PIXLISE
+}
+
+func Example_expressionrunner_RunExpression_Al2O3_Naltsos_MemoAll() {
+	exprId := "u59sahioy18frfl9"
+	scanId := "048300551"
+	quantId := "quant-ggy6zxhn23p7rlv9"
+
+	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
+	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
+
+	runExpressionTest(scanId, quantId, exprId, modIds, modVers, fmt.Sprintf(".*%v.*", scanId))
+
+	// Output:
+	// RunExpession error: <nil>
+	// Got map size 121
+	// Returned map matches expected output from PIXLISE
+}
+
+func Example_expressionrunner_RunExpression_Al2O3_CastleGeyser_NoMemo() {
 	exprId := "u59sahioy18frfl9"
 	scanId := "393871873"
 	quantId := "quant-pvkostn8a2u6j7cj"
@@ -74,7 +106,7 @@ func Example_expressionrunner_RunExpression_Expression_CastleGeyser() {
 	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
 	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
 
-	runExpressionTest(scanId, quantId, exprId, modIds, modVers, false)
+	runExpressionTest(scanId, quantId, exprId, modIds, modVers, "")
 
 	// Output:
 	// RunExpession error: <nil>
@@ -82,7 +114,7 @@ func Example_expressionrunner_RunExpression_Expression_CastleGeyser() {
 	// Returned map matches expected output from PIXLISE
 }
 
-func Example_expressionrunner_RunExpression_Expression_CastleGeyser_UseMemoisation() {
+func Example_expressionrunner_RunExpression_Al2O3_CastleGeyser_MemoNonQuant() {
 	exprId := "u59sahioy18frfl9"
 	scanId := "393871873"
 	quantId := "quant-pvkostn8a2u6j7cj"
@@ -90,7 +122,7 @@ func Example_expressionrunner_RunExpression_Expression_CastleGeyser_UseMemoisati
 	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
 	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
 
-	runExpressionTest(scanId, quantId, exprId, modIds, modVers, true)
+	runExpressionTest(scanId, quantId, exprId, modIds, modVers, fmt.Sprintf(".*_geometry_%v.*", scanId))
 
 	// Output:
 	// RunExpession error: <nil>
@@ -98,7 +130,72 @@ func Example_expressionrunner_RunExpression_Expression_CastleGeyser_UseMemoisati
 	// Returned map matches expected output from PIXLISE
 }
 
-func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string, seedMemo bool) {
+func Example_expressionrunner_RunExpression_Al2O3_CastleGeyser_MemoOnlyQuant() {
+	exprId := "u59sahioy18frfl9"
+	scanId := "393871873"
+	quantId := "quant-pvkostn8a2u6j7cj"
+
+	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
+	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
+
+	runExpressionTest(scanId, quantId, exprId, modIds, modVers, fmt.Sprintf(".*_%v_quant-.*", scanId))
+
+	// Output:
+	// RunExpession error: <nil>
+	// Got map size 3333
+	// Returned map matches expected output from PIXLISE
+}
+
+func Example_expressionrunner_RunExpression_Al2O3_CastleGeyser_MemoAll() {
+	exprId := "u59sahioy18frfl9"
+	scanId := "393871873"
+	quantId := "quant-pvkostn8a2u6j7cj"
+
+	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
+	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
+
+	runExpressionTest(scanId, quantId, exprId, modIds, modVers, fmt.Sprintf(".*%v.*", scanId))
+
+	// Output:
+	// RunExpession error: <nil>
+	// Got map size 3333
+	// Returned map matches expected output from PIXLISE
+}
+
+func Example_expressionrunner_RunExpression_DiffractionB_CastleGeyser_NoMemo() {
+	exprId := "750idrpn2ql3j4fu"
+	scanId := "393871873"
+	quantId := "quant-pvkostn8a2u6j7cj"
+
+	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
+	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
+
+	runExpressionTest(scanId, quantId, exprId, modIds, modVers, "")
+
+	// Output:
+	// RunExpession error: <nil>
+	// Got map size 3333
+	// Returned map matches expected output from PIXLISE
+}
+
+// NOTE: This expression doesn't use quant data!
+func Example_expressionrunner_RunExpression_DiffractionB_CastleGeyser_MemoAll() {
+	exprId := "750idrpn2ql3j4fu"
+	scanId := "393871873"
+	quantId := "quant-pvkostn8a2u6j7cj"
+
+	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
+	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
+
+	runExpressionTest(scanId, quantId, exprId, modIds, modVers, fmt.Sprintf(".*_geometry_%v.*", scanId))
+
+	// Output:
+	// RunExpession error: <nil>
+	// Got map size 3333
+	// Returned map matches expected output from PIXLISE
+}
+
+func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string, seedMemoInclude string) {
 	idGen := idgen.MockIDGenerator{
 		IDs: []string{"id123"},
 	}
@@ -151,7 +248,9 @@ func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string,
 		log.Fatal(err)
 	}
 
-	if seedMemo {
+	// If the memo include string is empty, we don't want to seed ANY memoised JSON in DB, otherwise only include if
+	// it matches the regex provided
+	if len(seedMemoInclude) > 0 {
 		fs := fileaccess.FSAccess{}
 		memPath := "./test-files/memoisation"
 		files, err := fs.ListObjects(memPath, "")
@@ -160,7 +259,7 @@ func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string,
 		}
 
 		for _, f := range files {
-			if strings.Contains(f, scanId) {
+			if match, err := regexp.MatchString(seedMemoInclude, f); err == nil && match {
 				// Read this into our memoisation table
 				err = seedDB(f[0:len(f)-5] /*.json*/, filepath.Join(memPath, f), dbCollections.MemoisedItemsName, &protos.MemoisedItem{}, svcs.MongoDB)
 				if err != nil {
@@ -181,7 +280,7 @@ func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string,
 		fmt.Printf("Got map size %v\n", sz)
 
 		// Compare with the CSV we got from PIXLISE
-		err = compareMapWithCSV(m, fmt.Sprintf("./test-files/PIXLISE_output_%v.csv", scanId))
+		err = compareMapWithCSV(m, fmt.Sprintf("./test-files/PIXLISE_output_%v_%v.csv", scanId, exprId))
 		if err != nil {
 			fmt.Printf("Failed to match output to expected: %v", err)
 		} else {
