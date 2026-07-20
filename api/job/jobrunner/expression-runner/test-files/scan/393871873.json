@@ -1,0 +1,42 @@
+{
+  "_id": "393871873",
+  "title": "Castle Geyser",
+  "description": "[3D Model](https://sketchfab.com/3d-models/m2020-watson-castle-geyser-sol-1080-f4063182d3ea49e2a2b60b950dc6aef8)",
+  "datatypes": [
+    {
+      "datatype": 2,
+      "count": 6666
+    },
+    {
+      "datatype": 1,
+      "count": 10
+    }
+  ],
+  "instrument": 1,
+  "instrumentconfig": "PIXL",
+  "timestampunixsec": 1731037390,
+  "meta": {
+    "DriveId": "1618",
+    "Target": "",
+    "Site": "",
+    "Sol": "1082",
+    "RTT": "393871873",
+    "SCLK": "763006610",
+    "TargetId": "?",
+    "SiteId": "50"
+  },
+  "contentcounts": {
+    "NormalSpectra": 6666,
+    "DwellSpectra": 180,
+    "BulkSpectra": 2,
+    "MaxSpectra": 2,
+    "PseudoIntensities": 3333
+  },
+  "creatoruserid": "PIXLISEImport",
+  "tags": [
+    "145yxtmp3e8rqyka",
+    "apltqaxx316fqitk"
+  ],
+  "previousimporttimesunixsec": [1710457094, 1731023875],
+  "completetimestampunixsec": 1731023875
+}

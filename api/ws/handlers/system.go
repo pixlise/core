@@ -19,13 +19,13 @@ import (
 func HandleBackupDBReq(req *protos.BackupDBReq, hctx wsHelpers.HandlerContext) (*protos.BackupDBResp, error) {
 	if len(hctx.Svcs.Config.DataBackupBucket) <= 0 {
 		err := "PIXLISE Backup bucket not configured"
-		hctx.Svcs.Log.Errorf(err)
+		hctx.Svcs.Log.Errorf("%v", err)
 		return nil, errors.New(err)
 	}
 
 	if !hctx.Svcs.Config.BackupEnabled {
 		err := "PIXLISE Backup not enabled"
-		hctx.Svcs.Log.Errorf(err)
+		hctx.Svcs.Log.Errorf("%v", err)
 		return nil, errors.New(err)
 	}
 
@@ -124,13 +124,13 @@ func HandleRestoreDBReq(req *protos.RestoreDBReq, hctx wsHelpers.HandlerContext)
 	// Only allow restore if enabled and we're NOT prod
 	if !hctx.Svcs.Config.RestoreEnabled {
 		err := "PIXLISE Restore not enabled"
-		hctx.Svcs.Log.Errorf(err)
+		hctx.Svcs.Log.Errorf("%v", err)
 		return nil, errors.New(err)
 	}
 
 	if strings.Contains(strings.ToLower(hctx.Svcs.Config.EnvironmentName), "prodv4") {
 		err := "PIXLISE Restore not allowed on environment: " + hctx.Svcs.Config.EnvironmentName
-		hctx.Svcs.Log.Errorf(err)
+		hctx.Svcs.Log.Errorf("%v", err)
 		return nil, errors.New(err)
 	}
 

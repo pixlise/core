@@ -61,9 +61,9 @@ func logHandlerErrors(err error, log logger.ILogger, w http.ResponseWriter, r *h
 		// Memoisation spams this a lot, we can switch this to debug level for those
 		err := fmt.Sprintf("Request: %v (%v), Result: status=%v, error=%v", r.URL, r.Method, e.Status(), e)
 		if strings.HasPrefix(r.URL.String(), "/memoise?key=") && r.Method == "GET" {
-			log.Debugf(err)
+			log.Debugf("%v", err)
 		} else {
-			log.Errorf(err)
+			log.Errorf("%v", err)
 		}
 		http.Error(w, e.Error(), e.Status())
 	default:

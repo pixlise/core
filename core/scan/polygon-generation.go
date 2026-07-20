@@ -762,9 +762,9 @@ func (g *gen) initLocationCachingForBeams(
 			}
 
 			// Expand the x,y,z bbox:
-			locPointXMinMax.expand(float64(beamXYZ.X))
-			locPointYMinMax.expand(float64(beamXYZ.Y))
-			locPointZMinMax.expand(float64(beamXYZ.Z))
+			locPointXMinMax.Expand(float64(beamXYZ.X))
+			locPointYMinMax.Expand(float64(beamXYZ.Y))
+			locPointZMinMax.Expand(float64(beamXYZ.Z))
 
 			if beamIJs != nil && imageIJ != nil {
 				// And the i,j bbox
@@ -815,9 +815,9 @@ func (g *gen) initLocationCachingForBeams(
 `, g.locationPointBBox.X, g.locationPointBBox.Y, g.locationPointBBox.W, g.locationPointBBox.H)
 
 	// store sizing
-	g.locationPointXSize = locPointXMinMax.getRange()
-	g.locationPointYSize = locPointYMinMax.getRange()
-	g.locationPointZSize = locPointZMinMax.getRange()
+	g.locationPointXSize = locPointXMinMax.GetRange()
+	g.locationPointYSize = locPointYMinMax.GetRange()
+	g.locationPointZSize = locPointZMinMax.GetRange()
 
 	g.locationPointZMax = *locPointZMinMax.Max
 

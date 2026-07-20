@@ -39,6 +39,9 @@ type MockTimeNowStamper struct {
 
 // GetTimeNowSec - Returns unix time now in seconds
 func (ts *MockTimeNowStamper) GetTimeNowSec() int64 {
+	if len(ts.QueuedTimeStamps) <= 0 {
+		panic("You're out of MockTimeNowStamps!")
+	}
 	val := ts.QueuedTimeStamps[0]
 	ts.QueuedTimeStamps = ts.QueuedTimeStamps[1:]
 	return val

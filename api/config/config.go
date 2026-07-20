@@ -90,6 +90,10 @@ type APIConfig struct {
 	// If it hasn't been accessed in this many seconds, consider it stale & delete it!
 	MaxUnretrievedMemoisationAgeSec uint
 
+	// How old is too old for a memoised item - if we read it and neither of its timestamps are less than this many
+	// seconds old, we don't use it
+	MemoiseCacheTimeOutSec uint
+
 	// How often we run memoisation GC
 	MemoisationGCIntervalSec uint
 
@@ -267,6 +271,10 @@ func applyConfigLimits(cfg *APIConfig) {
 
 	if cfg.MemoisationGCIntervalSec <= 0 {
 		cfg.MemoisationGCIntervalSec = 3600
+	}
+
+	if cfg.MemoiseCacheTimeOutSec <= 0 {
+		cfg.MemoiseCacheTimeOutSec = 86400
 	}
 }
 
