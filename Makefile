@@ -13,7 +13,14 @@ lint: ## Lint the files
 	#golint -set_exit_status ${PKG_LIST}
 	golint ${PKG_LIST}
 
-unittest: ## Run unittests
+unittest-short: ## Run unittests
+	mkdir -p _out
+	go install github.com/favadi/protoc-go-inject-tag@latest
+	go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
+	protoc-go-inject-tag -remove_tag_comment -input="./generated-protos/*.pb.go"
+	go test -short ./...
+
+unittest-full: ## Run unittests
 	mkdir -p _out
 	go install github.com/favadi/protoc-go-inject-tag@latest
 	go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/

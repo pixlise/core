@@ -79,9 +79,19 @@ jobs:
           mongodb-version: 8
           mongodb-replica-set: testu
           mongodb-port: 27017
-      - name: Unit Test
-        #run: docker pull ghcr.io/pixlise/job-runner:latest && make unittest
-        run: make unittest
+      - name: Unit Test (short)
+        if: github.ref != 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          make unittest-short
+        env:
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Unit Test (FULL)
+        if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+        run: |
+          make unittest-full
         env:
           AWS_DEFAULT_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
