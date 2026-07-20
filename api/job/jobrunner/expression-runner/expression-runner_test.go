@@ -74,6 +74,7 @@ Returned map matches expected output from PIXLISE`
 func Test_expressionrunner_RunExpression_LongTests(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping long expression tests in short mode")
+		return
 	}
 
 	exprIds := []string{"u59sahioy18frfl9", "750idrpn2ql3j4fu"}
