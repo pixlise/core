@@ -84,20 +84,27 @@ func Test_expressionrunner_RunExpression_LongTests(t *testing.T) {
 	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
 	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
 
-	testType := map[string]string{
-		"NoMemo":        "",
-		"MemoNonQuant":  fmt.Sprintf(".*_geometry_%v.*", scanId),
-		"MemoOnlyQuant": fmt.Sprintf(".*_%v_quant-.*", scanId),
-		"MemoAll":       fmt.Sprintf(".*%v.*", scanId),
+	testType := []map[string]string{
+		{
+			"NoMemo":        "",
+			"MemoNonQuant":  fmt.Sprintf(".*_geometry_%v.*", scanId),
+			"MemoOnlyQuant": fmt.Sprintf(".*_%v_quant-.*", scanId),
+			"MemoAll":       fmt.Sprintf(".*%v.*", scanId),
+		},
+		// NOTE: This expression doesn't use quant data!
+		{
+			"NoMemo":  "",
+			"MemoAll": fmt.Sprintf(".*%v.*", scanId),
+		},
 	}
 
 	expectedResult := `RunExpession error: <nil>
-Got map size 121
+Got map size 3333
 Returned map matches expected output from PIXLISE
 `
 
-	for _, exprId := range exprIds {
-		for name, memoinclude := range testType {
+	for c, exprId := range exprIds {
+		for name, memoinclude := range testType[c] {
 			t.Logf("RunExpression testing scan: %v, expression: %v (%v)", scanId, exprId, name)
 			result := runExpressionTest(scanId, quantId, exprId, modIds, modVers, memoinclude)
 			//t.Log(result)
