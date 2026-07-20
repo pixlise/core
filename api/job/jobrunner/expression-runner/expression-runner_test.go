@@ -99,9 +99,10 @@ func Test_expressionrunner_RunExpression_LongTests(t *testing.T) {
 	}
 
 	expectedResult := `RunExpession error: <nil>
+
 Got map size 3333
-Returned map matches expected output from PIXLISE
-`
+
+Returned map matches expected output from PIXLISE`
 
 	for c, exprId := range exprIds {
 		for name, memoinclude := range testType[c] {
@@ -114,23 +115,6 @@ Returned map matches expected output from PIXLISE
 			}
 		}
 	}
-}
-
-// NOTE: This expression doesn't use quant data!
-func Example_expressionrunner_RunExpression_DiffractionB_CastleGeyser_MemoAll() {
-	exprId := "750idrpn2ql3j4fu"
-	scanId := "393871873"
-	quantId := "quant-pvkostn8a2u6j7cj"
-
-	modIds := []string{"idc2d7xifmbpqk8o", "ng46r8vwzr3z28ui", "f6hrn69g5tuyiq3m", "yg7o9dkue0orim26"}
-	modVers := []string{"v1.3.0", "v0.8.0", "v0.33.0", "v3.5.5"}
-
-	runExpressionTest(scanId, quantId, exprId, modIds, modVers, fmt.Sprintf(".*_geometry_%v.*", scanId))
-
-	// Output:
-	// RunExpession error: <nil>
-	// Got map size 3333
-	// Returned map matches expected output from PIXLISE
 }
 
 func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string, seedMemoInclude string) string {
