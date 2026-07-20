@@ -52,7 +52,7 @@ func HandleExpressionCalculateReq(req *protos.ExpressionCalculateReq, hctx wsHel
 		if err == mongo.ErrNoDocuments {
 			// Don't just quit here, we can return an individual error for this one item
 			// We don't have this computed, so calculate it!
-			hctx.Svcs.Log.Debugf("Running Expression: %v...", reqItem.ExpressionId)
+			hctx.Svcs.Log.Infof("ExpressionCalculateReq - Running Expression: %v for scan: %v, quant: %v...", reqItem.ExpressionId, reqItem.ScanId, reqItem.QuantId)
 
 			var m *expressionrunner.PMCDataValues
 			var goMs, totalMs uint64
