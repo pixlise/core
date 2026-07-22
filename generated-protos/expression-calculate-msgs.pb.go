@@ -22,27 +22,27 @@ const (
 )
 
 // requires(NONE)
-type ExpressionCalculateReq struct {
+type ExpressionOutputReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Requests      []*DataSourceParams    `protobuf:"bytes,1,rep,name=requests,proto3" json:"requests,omitempty"`
+	Request       *DataSourceParams      `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ExpressionCalculateReq) Reset() {
-	*x = ExpressionCalculateReq{}
+func (x *ExpressionOutputReq) Reset() {
+	*x = ExpressionOutputReq{}
 	mi := &file_expression_calculate_msgs_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ExpressionCalculateReq) String() string {
+func (x *ExpressionOutputReq) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ExpressionCalculateReq) ProtoMessage() {}
+func (*ExpressionOutputReq) ProtoMessage() {}
 
-func (x *ExpressionCalculateReq) ProtoReflect() protoreflect.Message {
+func (x *ExpressionOutputReq) ProtoReflect() protoreflect.Message {
 	mi := &file_expression_calculate_msgs_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -54,39 +54,45 @@ func (x *ExpressionCalculateReq) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ExpressionCalculateReq.ProtoReflect.Descriptor instead.
-func (*ExpressionCalculateReq) Descriptor() ([]byte, []int) {
+// Deprecated: Use ExpressionOutputReq.ProtoReflect.Descriptor instead.
+func (*ExpressionOutputReq) Descriptor() ([]byte, []int) {
 	return file_expression_calculate_msgs_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ExpressionCalculateReq) GetRequests() []*DataSourceParams {
+func (x *ExpressionOutputReq) GetRequest() *DataSourceParams {
 	if x != nil {
-		return x.Requests
+		return x.Request
 	}
 	return nil
 }
 
-type ExpressionCalculateResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Result        *RegionDataResults     `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
+type ExpressionOutputResp struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// We don't return the result here, that's a HTTP request to memoisation! We return
+	// the key that the data is available with - and a flag indicating if it's available
+	// already, because we may have had to trigger the expression to be calculated and that
+	// will take time. If available==false, the client should listen for completed jobs
+	// for the key. When the job is complete it can then query it from memoisation
+	Key           string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Available     bool   `protobuf:"varint,2,opt,name=available,proto3" json:"available,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ExpressionCalculateResp) Reset() {
-	*x = ExpressionCalculateResp{}
+func (x *ExpressionOutputResp) Reset() {
+	*x = ExpressionOutputResp{}
 	mi := &file_expression_calculate_msgs_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ExpressionCalculateResp) String() string {
+func (x *ExpressionOutputResp) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ExpressionCalculateResp) ProtoMessage() {}
+func (*ExpressionOutputResp) ProtoMessage() {}
 
-func (x *ExpressionCalculateResp) ProtoReflect() protoreflect.Message {
+func (x *ExpressionOutputResp) ProtoReflect() protoreflect.Message {
 	mi := &file_expression_calculate_msgs_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -98,27 +104,35 @@ func (x *ExpressionCalculateResp) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ExpressionCalculateResp.ProtoReflect.Descriptor instead.
-func (*ExpressionCalculateResp) Descriptor() ([]byte, []int) {
+// Deprecated: Use ExpressionOutputResp.ProtoReflect.Descriptor instead.
+func (*ExpressionOutputResp) Descriptor() ([]byte, []int) {
 	return file_expression_calculate_msgs_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ExpressionCalculateResp) GetResult() *RegionDataResults {
+func (x *ExpressionOutputResp) GetKey() string {
 	if x != nil {
-		return x.Result
+		return x.Key
 	}
-	return nil
+	return ""
+}
+
+func (x *ExpressionOutputResp) GetAvailable() bool {
+	if x != nil {
+		return x.Available
+	}
+	return false
 }
 
 var File_expression_calculate_msgs_proto protoreflect.FileDescriptor
 
 const file_expression_calculate_msgs_proto_rawDesc = "" +
 	"\n" +
-	"\x1fexpression-calculate-msgs.proto\x1a\x1aexpression-calculate.proto\"G\n" +
-	"\x16ExpressionCalculateReq\x12-\n" +
-	"\brequests\x18\x01 \x03(\v2\x11.DataSourceParamsR\brequests\"E\n" +
-	"\x17ExpressionCalculateResp\x12*\n" +
-	"\x06result\x18\x01 \x01(\v2\x12.RegionDataResultsR\x06resultB\n" +
+	"\x1fexpression-calculate-msgs.proto\x1a\x1aexpression-calculate.proto\"B\n" +
+	"\x13ExpressionOutputReq\x12+\n" +
+	"\arequest\x18\x01 \x01(\v2\x11.DataSourceParamsR\arequest\"F\n" +
+	"\x14ExpressionOutputResp\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x1c\n" +
+	"\tavailable\x18\x02 \x01(\bR\tavailableB\n" +
 	"Z\b.;protosb\x06proto3"
 
 var (
@@ -135,19 +149,17 @@ func file_expression_calculate_msgs_proto_rawDescGZIP() []byte {
 
 var file_expression_calculate_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_expression_calculate_msgs_proto_goTypes = []any{
-	(*ExpressionCalculateReq)(nil),  // 0: ExpressionCalculateReq
-	(*ExpressionCalculateResp)(nil), // 1: ExpressionCalculateResp
-	(*DataSourceParams)(nil),        // 2: DataSourceParams
-	(*RegionDataResults)(nil),       // 3: RegionDataResults
+	(*ExpressionOutputReq)(nil),  // 0: ExpressionOutputReq
+	(*ExpressionOutputResp)(nil), // 1: ExpressionOutputResp
+	(*DataSourceParams)(nil),     // 2: DataSourceParams
 }
 var file_expression_calculate_msgs_proto_depIdxs = []int32{
-	2, // 0: ExpressionCalculateReq.requests:type_name -> DataSourceParams
-	3, // 1: ExpressionCalculateResp.result:type_name -> RegionDataResults
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	2, // 0: ExpressionOutputReq.request:type_name -> DataSourceParams
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_expression_calculate_msgs_proto_init() }

@@ -22,7 +22,7 @@ func (e *expressionRunner) ensureFetchedScan() error {
 func (e *expressionRunner) fetchScan() error {
 	// Gather all the stuff we need
 	var err error
-	e.scan, err = wsHelpers.ReadDatasetFile(e.scanId, e.svcs, true)
+	e.scan, err = wsHelpers.ReadDatasetFile(e.scanId, e.minimalSvcs, true)
 	return err
 }
 

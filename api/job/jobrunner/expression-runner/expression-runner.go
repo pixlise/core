@@ -1,25 +1,22 @@
 package expressionrunner
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"os"
-	"strings"
 	"time"
 
-	"github.com/pixlise/core/v4/api/dbCollections"
-	"github.com/pixlise/core/v4/api/piquant"
+	"github.com/pixlise/core/v4/api/config"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/sessionuser"
+	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/periodictable"
 	"github.com/pixlise/core/v4/core/scan"
+	"github.com/pixlise/core/v4/core/timestamper"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	lua "github.com/yuin/gopher-lua"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Runs expressions written in the Lua programming language
@@ -52,10 +49,27 @@ import (
 // - total runtime in ms
 // - total time spent in runtime (Go implemented Lua functions)
 // - error, if any
-func RunExpression(expressionId string, scanId string, quantId string, svcs *services.APIServices, saveCode bool, debug bool) (*PMCDataValues, uint64, uint64, error) {
+func RunExpression(expressionId string, scanId string, quantId string,
+	log logger.ILogger, db *mongo.Database, ts timestamper.ITimeStamper, remoteFS fileaccess.FileAccess,
+	configBucket string, usersBucket string, datasetsBucket string,
+	saveCode bool, debug bool) (*PMCDataValues, uint64, uint64, error) {
 	ch := make(chan exprResult)
 
-	go runExpressionInternal(ch, expressionId, scanId, quantId, svcs, saveCode, debug)
+	// Create a temporary fake svcs, because the config reading code requires a bunch of things from it
+	// but at this point we may not have an actual svcs - we may be running on a job node!
+	minimalSvcs := services.APIServices{
+		MongoDB: db,
+		FS:      remoteFS,
+		Config: config.APIConfig{
+			ConfigBucket:   configBucket,
+			UsersBucket:    usersBucket,
+			DatasetsBucket: datasetsBucket,
+		},
+		Log:         log,
+		TimeStamper: ts,
+	}
+
+	go runExpressionInternal(ch, expressionId, scanId, quantId, &minimalSvcs, saveCode, debug)
 	result := <-ch
 
 	return result.values, result.totalRuntimeMs, result.totalGoFunctionRuntimeMs, result.err
@@ -68,8 +82,11 @@ type exprResult struct {
 	err                      error
 }
 
-func runExpressionInternal(ch chan exprResult, expressionId string, scanId string, quantId string, svcs *services.APIServices, saveCode bool, debug bool) {
-	r, err := makeExpressionRunner(expressionId, scanId, quantId, svcs)
+func runExpressionInternal(ch chan exprResult,
+	expressionId string, scanId string, quantId string,
+	minimalSvcs *services.APIServices,
+	saveCode bool, debug bool) {
+	r, err := makeExpressionRunner(expressionId, scanId, quantId, minimalSvcs)
 	if err != nil {
 		ch <- exprResult{}
 		return
@@ -83,7 +100,19 @@ func runExpressionInternal(ch chan exprResult, expressionId string, scanId strin
 		r.writeLuaSource = saveCode
 	}
 
-	mapResult, err := r.Run()
+	// Fetch scan item so we can get the config
+
+	luaSrc, _, err := FetchSourceCode(expressionId, scanId, quantId, sessionuser.PIXLISESystemUserId, minimalSvcs)
+	if err != nil {
+		result := exprResult{
+			err: err,
+		}
+
+		ch <- result
+		return
+	}
+
+	mapResult, err := r.Run(luaSrc)
 	result := exprResult{
 		values:                   mapResult,
 		totalRuntimeMs:           r.totalRuntimeMs,
@@ -103,7 +132,7 @@ type expressionRunner struct {
 	expressionId, scanId, quantId string
 
 	// Tools
-	svcs *services.APIServices
+	minimalSvcs *services.APIServices
 
 	// Loaded quant stuff
 	quantData               *protos.Quantification
@@ -146,12 +175,12 @@ type expressionRunner struct {
 // If this changes, this probably needs to be put into services.APIServices
 var PTable *periodictable.PeriodicTableDB
 
-func makeExpressionRunner(expressionId string, scanId string, quantId string, svcs *services.APIServices) (*expressionRunner, error) {
+func makeExpressionRunner(expressionId string, scanId string, quantId string, minimalSvcs *services.APIServices) (*expressionRunner, error) {
 	runner := &expressionRunner{
 		expressionId:            expressionId,
 		scanId:                  scanId,
 		quantId:                 quantId,
-		svcs:                    svcs,
+		minimalSvcs:             minimalSvcs,
 		pureElementColumnLookup: map[string]string{},
 		elementColumns:          map[string][]string{},
 		allPeaks:                []*protos.ClientDiffractionPeak{},
@@ -160,81 +189,14 @@ func makeExpressionRunner(expressionId string, scanId string, quantId string, sv
 	}
 
 	if PTable == nil {
-		PTable = periodictable.MakePeriodicTable(svcs.Log)
+		PTable = periodictable.MakePeriodicTable(minimalSvcs.Log)
 	}
 	return runner, nil
 }
 
-func (e *expressionRunner) Run() (*PMCDataValues, error) {
+func (e *expressionRunner) Run(luaSourceCode string) (*PMCDataValues, error) {
 	contextId := addExpressionContext(e)
 	defer clearExpressionContext(contextId)
-
-	// Get the scan and the detector config
-	scan := &protos.ScanItem{}
-	err := readOne(dbCollections.ScansName, bson.M{"_id": e.scanId}, scan, e.svcs.MongoDB)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(scan.InstrumentConfig) <= 0 {
-		return nil, fmt.Errorf("Scan %v has no instrument config", e.scanId)
-	}
-
-	detectorConfig, _ /*versions*/, err := piquant.ReadConfig(scan.InstrumentConfig, e.svcs)
-	if err != nil {
-		return nil, err
-	}
-
-	// Retrieve the expression source and all of its modules first
-	allSource, err := e.fetchSourceCode()
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Add constants as required to Lua
-	makeMapSuffix := "Raw"
-	makeMapLuaCache := `local lastMap = {}
-local function makeMap(value)
-	-- If we have one saved, just set the value in the same kind of map
-	if #lastMap > 0 then
-		local values = {}
-		for k, v in ipairs(lastMap[2]) do
-			if v == nil then
-				values[k] = nil
-			else
-				values[k] = value
-			end
-		end
-		return { lastMap[1], values }
-	end
-
-	local m = makeMapRaw(value)
--- Cache it
-lastMap = m
-	return m
-end
-`
-	allSource = fmt.Sprintf(`local elevAngle = %v
-local quantId = "%v"
-local scanId = "%v"
-local maxSpectrumChannel = %v
-local instrument = "%v"
-local userId = "%v"
-%v
-`, detectorConfig.ElevAngle,
-		e.quantId,
-		e.scanId,
-		4096,
-		"PIXL_FM",
-		sessionuser.PIXLISESystemUserId,
-		makeMapLuaCache) + allSource
-
-	// Replace table.unpack with unpack because gopher-lua is 5.1, table.unpack came in 5.2 but they're the same thing apparently
-	allSource = strings.ReplaceAll(allSource, "table.unpack(", "unpack(")
-	allSource = strings.ReplaceAll(allSource, "getmetatable(obj) == Estimate", "obj.typeIsEstimate and obj.typeIsEstimate == true")
-	// Due to the above, we need to specify this
-	allSource = strings.ReplaceAll(allSource, "local estimate = {}", "local estimate = {typeIsEstimate = true}")
 
 	if e.debugUseLocalSourceFile {
 		// For debugging purposes we can read the file instead of just write it!
@@ -242,17 +204,18 @@ local userId = "%v"
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read all-source.txt: %v", err)
 		}
-		allSource = string(b)
+		luaSourceCode = string(b)
 	} else {
 		// write out the source code we run in lua
 		if e.writeLuaSource {
-			if err = os.WriteFile("all-source.txt", []byte(allSource), 0777); err != nil {
+			if err := os.WriteFile("all-source.txt", []byte(luaSourceCode), 0777); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	return e.runSource(allSource, contextId, makeMapSuffix)
+	makeMapSuffix := "Raw"
+	return e.runSource(luaSourceCode, contextId, makeMapSuffix)
 }
 
 func (e *expressionRunner) doString(source string, L *lua.LState) error {
@@ -328,86 +291,5 @@ func (e *expressionRunner) runSource(source string, contextId int, makeMapSuffix
 }
 
 func (e *expressionRunner) Log() logger.ILogger {
-	return e.svcs.Log
-}
-
-func (e *expressionRunner) fetchSourceCode() (string, error) {
-	// Read expression
-	expr := &protos.DataExpression{}
-	err := readOne(dbCollections.ExpressionsName, bson.M{"_id": e.expressionId}, expr, e.svcs.MongoDB)
-	if err != nil {
-		return "", err
-	}
-
-	if expr.SourceLanguage != "LUA" {
-		return "", fmt.Errorf("Error: Expression %v is not Lua", e.expressionId)
-	}
-
-	allSource := ""
-
-	// Read built-in modules
-	// builtInModules := []string{"./built-in-modules/Map.lua", "./built-in-modules/DebugHelp.lua"}
-	// for _, modPath := range builtInModules {
-	// 	modSrcFile, err := os.ReadFile(modPath)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	builtInModules := []string{debugModule, mapModule}
-	for _, modSrcFile := range builtInModules {
-		modSrc := snipReturnModuleLine(string(modSrcFile))
-		allSource = allSource + "\n" + modSrc + "\n"
-	}
-
-	// Read modules
-	for _, modRef := range expr.ModuleReferences {
-		_, modVer, err := readModule(modRef.ModuleId, modRef.Version, e.svcs)
-		if err != nil {
-			return "", err
-		}
-
-		modSrc := snipReturnModuleLine(modVer.SourceCode)
-		allSource = allSource + "\n" + modSrc + "\n"
-	}
-
-	allSource = allSource + expr.SourceCode
-	return allSource, nil
-}
-
-func snipReturnModuleLine(src string) string {
-	pos := strings.LastIndex(src, "return ")
-	if pos > -1 {
-		return src[0:pos]
-	}
-	return src
-}
-
-func readOne[T any](collectionName string, filter bson.M, intoItem *T, db *mongo.Database) error {
-	ctx := context.TODO()
-	coll := db.Collection(collectionName)
-
-	dbResult := coll.FindOne(ctx, filter, options.FindOne())
-	if dbResult.Err() != nil {
-		return dbResult.Err()
-	}
-
-	return dbResult.Decode(intoItem)
-}
-
-func readModule(moduleId string, version *protos.SemanticVersion, svcs *services.APIServices) (*protos.DataModuleDB, *protos.DataModuleVersionDB, error) {
-	mod := &protos.DataModuleDB{}
-	err := readOne(dbCollections.ModulesName, bson.M{"_id": moduleId}, mod, svcs.MongoDB)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	modVer := &protos.DataModuleVersionDB{}
-	filter := bson.M{"_id": fmt.Sprintf("%v-v%v.%v.%v", moduleId, version.Major, version.Minor, version.Patch)}
-	err = readOne(dbCollections.ModuleVersionsName, filter, modVer, svcs.MongoDB)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return mod, modVer, nil
+	return e.minimalSvcs.Log
 }

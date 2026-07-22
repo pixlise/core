@@ -16,10 +16,10 @@ import (
 func Example_jobrunner_RunJob_BadConfigs() {
 	fs := fileaccess.MakeFSAccessS3Simulator("./test-bucket-root")
 
-	fmt.Printf("%v\n", RunJob("", "", 10, fs))
-	fmt.Printf("%v\n", RunJob("bucket", "", 10, fs))
-	fmt.Printf("%v\n", RunJob("bucket", "path/to/job", 1000000, fs))
-	fmt.Printf("%v\n", RunJob("bucket", "path/to/job", 10, fs))
+	fmt.Printf("%v\n", RunJob("", "", 10, fs, nil))
+	fmt.Printf("%v\n", RunJob("bucket", "", 10, fs, nil))
+	fmt.Printf("%v\n", RunJob("bucket", "path/to/job", 1000000, fs, nil))
+	fmt.Printf("%v\n", RunJob("bucket", "path/to/job", 10, fs, nil))
 
 	// Output:
 	// RunJob: bucket not set
@@ -84,7 +84,7 @@ func Example_jobrunner_RunJob_NoCommand() {
 		JobGroupId: "Job001",
 	}, "./test-bucket-root/job-bucket/path/to/job001/params.json")
 
-	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs, nil))
 
 	// Output:
 	// INFO: Running job from s3://job-bucket/path/to/job001 for node 4
@@ -105,7 +105,7 @@ func Example_jobrunner_RunJob_BadInputLocalPath() {
 		},
 	}, "./test-bucket-root/job-bucket/path/to/job001/params.json")
 
-	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs, nil))
 
 	// Output:
 	// INFO: Running job from s3://job-bucket/path/to/job001 for node 4
@@ -129,7 +129,7 @@ func Example_jobrunner_RunJob_BadInputRemotePath() {
 		},
 	}, "./test-bucket-root/job-bucket/path/to/job001/params.json")
 
-	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs, nil))
 
 	// Output:
 	// INFO: Running job from s3://job-bucket/path/to/job001 for node 4
@@ -156,7 +156,7 @@ func Example_jobrunner_RunJob_BadCommand() {
 		},
 	}, "./test-bucket-root/job-bucket/path/to/job001/params.json")
 
-	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs, nil))
 
 	// Output:
 	// INFO: Running job from s3://job-bucket/path/to/job001 for node 4
@@ -185,7 +185,7 @@ func Example_jobrunner_RunJob_UploadNotThere() {
 		},
 	}, "./test-bucket-root/job-bucket/path/to/job001/params.json")
 
-	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs, nil))
 
 	// Output:
 	// INFO: Running job from s3://job-bucket/path/to/job001 for node 4
@@ -225,7 +225,7 @@ func Example_jobrunner_RunJob_DownloadUploadOK() {
 	fmt.Printf("Write S3 input2.csv: %v\n", fs.WriteObject("test-piquant", "Example_jobrunner_RunJob_DownloadUploadOK/input2.csv", []byte("hello2")))
 	fmt.Printf("Write local data.txt: %v\n", os.WriteFile("data.txt", []byte("hello"), dirperm))
 
-	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs, nil))
 
 	// Output:
 	// Write S3 input.csv: <nil>
@@ -280,7 +280,7 @@ func Example_jobrunner_RunJob_SeedAndDownloadOK() {
 	err := fileaccess.CopyToBucket(fs, filepath.Join(origWD, "test-files"), "test-piquant", "Example_jobrunner_RunJob_SeedAndDownloadOK", false, l)
 	fmt.Printf("CopyToBucket: %v\n", err)
 
-	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs))
+	fmt.Printf("Job: %v\n", RunJob("job-bucket", "path/to/job001", 4, fs, nil))
 
 	// Output:
 	// CopyToBucket: <nil>

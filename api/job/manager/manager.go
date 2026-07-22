@@ -10,6 +10,7 @@ import (
 
 var JobComplete_CombineCSVs = "combine_csvs"
 var JobComplete_SingleCSV = "single_csvs"
+var JobComplete_LuaExpression = "lua_expression"
 
 type JobManagerCompletionFunction func(*jobconfig.JobGroupConfig, *protos.JobStatus, *melody.Session, *services.APIServices) error
 
@@ -28,8 +29,9 @@ func CreateJobManager(svcs *services.APIServices, startupQueueCheckDelaySec int,
 	jm := &JobManager{
 		svcs: svcs,
 		jobCompletionMethods: map[string]JobManagerCompletionFunction{
-			JobComplete_CombineCSVs: completeQuantMultiNodeJob,
-			JobComplete_SingleCSV:   completeQuantSingleMapJob,
+			JobComplete_CombineCSVs:   completeQuantMultiNodeJob,
+			JobComplete_SingleCSV:     completeQuantSingleMapJob,
+			JobComplete_LuaExpression: completeExpressionJob,
 		},
 		useFileCache:      useFileCache,
 		startNodes:        startNodes,

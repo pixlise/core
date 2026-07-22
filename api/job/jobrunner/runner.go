@@ -21,10 +21,15 @@ var EnvNodeIndexName = "NODE_INDEX"
 // Downloads files required for job to run and sets up libraries. Requires JOB_CONFIG environment variable
 // to be set to a JobConfig structure
 // Parameters:
-// - jobBucket - The S3 bucket to read job config from
-// - jobPath - Path to the job in S3
-// - localBucketPath - use this to set a local path to simulate bucket access from, useful for unit tests
-func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileaccess.FileAccess) error {
+// - jobBucket: The S3 bucket to read job config from
+// - jobPath:   Path to the job in S3
+// - nodeIndex: Which node number are we on? Used to generate config for that node
+// - runFunc:   nil or a function to call when running the actual job
+func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileaccess.FileAccess, runFunc CommandRunner) error {
+	if runFunc == nil {
+		runFunc = runCommand
+	}
+
 	if len(jobBucket) <= 0 {
 		return fmt.Errorf("RunJob: bucket not set")
 	}
@@ -84,11 +89,10 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 
 		// Modify the command!
 		commandToRun = filepath.Join(pythonPath, cfg.Command)
-	}
-	if strings.Contains(cfg.Command, "lua") {
+	} /*else if strings.Contains(cfg.Command, "lua") {
 		jobLog.Infof("Installing required lua libraries...")
 		err = installLuaLibs()
-	}
+	}*/
 
 	if err != nil {
 		return err
@@ -104,7 +108,8 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 	// This way we can just test the file download and upload capabilities separately
 	startUnixSec := time.Now().Unix()
 
-	cmdStdOut, err := runCommand(commandToRun, cfg.Args)
+	// Execute the runner function - it may start a new process, it may run locally, whatever...
+	cmdStdOut, err := runFunc(commandToRun, cfg.Args)
 	if err != nil {
 		outErr := fmt.Errorf("Job %v failed: %v", cfg.JobId, err)
 		jobLog.Errorf("%v", outErr)

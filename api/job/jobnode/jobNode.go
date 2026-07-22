@@ -11,6 +11,7 @@ import (
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/api/job/jobrunner"
+	expressionrunner "github.com/pixlise/core/v4/api/job/jobrunner/expression-runner"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/timestamper"
@@ -36,22 +37,43 @@ type JobNode struct {
 	ts                  timestamper.ITimeStamper
 	jobContainer        string // If empty string we run jobs in this process, mainly for testing. Otherwise run jobs in Docker
 	jobBucket           string
+	configBucket        string
+	usersBucket         string
+	datasetsBucket      string
 	fs                  fileaccess.FileAccess
 
 	jobStartedCount uint
 	//lastJobStartUnixSec uint
 }
 
+var LuaExpressionCommand = "lua-expression"
+
 func CreateJobNode(
 	jobRunnerNamePrefix string,
 	jobContainer string,
 	jobBucket string,
+	configBucket string,
+	usersBucket string,
+	datasetsBucket string,
 	instanceId string,
 	fs fileaccess.FileAccess,
 	db *mongo.Database,
 	log logger.ILogger,
 	ts timestamper.ITimeStamper) *JobNode {
-	return &JobNode{jobRunnerNamePrefix, db, instanceId, log, ts, jobContainer, jobBucket, fs, 0}
+	return &JobNode{
+		jobRunnerNamePrefix: jobRunnerNamePrefix,
+		db:                  db,
+		instanceId:          instanceId,
+		log:                 log,
+		ts:                  ts,
+		jobContainer:        jobContainer,
+		jobBucket:           jobBucket,
+		configBucket:        configBucket,
+		usersBucket:         usersBucket,
+		datasetsBucket:      datasetsBucket,
+		fs:                  fs,
+		jobStartedCount:     0,
+	}
 }
 
 func (jn *JobNode) StartJobs(jobIds []string) {
@@ -153,11 +175,21 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem, wg *sync.WaitGroup) {
 	jobPath := filepaths.GetJobDataPath(jobItem.AssociatedScanId, jobItem.JobGroupId, "")
 
 	var outStr, msg string
+	local := false
+	var jobFunc jobrunner.CommandRunner
+
 	if len(jn.jobContainer) <= 0 {
 		fmt.Println("WARNING: Running job locally, recommended for use for tests only!")
+		local = true
+	} else if jobItem.JobType == protos.JobType_JT_RUN_EXPRESSION {
+		fmt.Println("Running lua expression job locally!")
+		local = true
+		jobFunc = jn.runLocalLuaExpression
+	}
 
+	if local {
 		// Mainly for tests, so we avoid docker and can run/debug all our code in one process
-		err = jobrunner.RunJob(jn.jobBucket, jobPath, uint(jobItem.NodeIndex), jn.fs)
+		err = jobrunner.RunJob(jn.jobBucket, jobPath, uint(jobItem.NodeIndex), jn.fs, jobFunc)
 		if err != nil {
 			jn.log.Errorf("Failed to start job %v (node %v): %v", jobItem.JobGroupId, jobItem.NodeIndex, err)
 		}
@@ -217,4 +249,56 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem, wg *sync.WaitGroup) {
 	if err != nil {
 		jn.log.Errorf("Failed to update job queue item %v to failed status: %v", jobItem.JobId, err)
 	}
+}
+
+var ExpressionJobOutputFileName = "output.csv"
+
+func (jn *JobNode) runLocalLuaExpression(command string, args []string) (string, error) {
+	if command != LuaExpressionCommand {
+		return "", fmt.Errorf("Expected job command: %v, got %v", LuaExpressionCommand, command)
+	}
+
+	// Read args, expect key=value pairs
+	argLookup, err := utils.ReadKeyValueList([]string{"scanId", "quantId", "expressionId", "memoKey"}, args)
+	if err != nil {
+		return "", fmt.Errorf("Lua expression failed to run - %v", err)
+	}
+
+	// Run the expression locally because we have all the DB and whatever access required
+	outputMap, _, _, err := expressionrunner.RunExpression(argLookup["expressionId"], argLookup["scanId"], argLookup["quantId"],
+		jn.log, jn.db, jn.ts, jn.fs,
+		jn.configBucket, jn.usersBucket, jn.datasetsBucket, true, false)
+
+	if err != nil {
+		return "", err
+	}
+
+	if len(outputMap.Values) <= 0 {
+		return "", fmt.Errorf("Lua expression %v returned empty result", argLookup["expressionId"])
+	}
+
+	// Save the expression result map as a CSV to local path where it'll get picked up
+	// and written out by the job runner that called us
+	var sb strings.Builder
+	_, err = sb.WriteString("\"PMC\",\"value\"\n")
+	if err != nil {
+		return "", fmt.Errorf("Failed to write result CSV header for lua expression %v: %v", argLookup["expressionId"], err)
+	}
+	for c, v := range outputMap.Values {
+		val := "null"
+		if !v.IsUndefined {
+			val = fmt.Sprintf("%v", v.Value)
+		}
+
+		_, err = sb.WriteString(fmt.Sprintf("%v,%v\n", v.PMC, val))
+		if err != nil {
+			return "", fmt.Errorf("Failed to write line %v for lua expression %v: %v", c, argLookup["expressionId"], err)
+		}
+	}
+
+	// Stop here, CSV should be picked up by job runner & put in S3, from there PIXLISE will run the completion
+	// routine which should read that and memoise it granting access for the client
+	err = os.WriteFile(ExpressionJobOutputFileName, []byte(sb.String()), 0777)
+
+	return "", err
 }

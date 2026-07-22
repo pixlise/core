@@ -766,7 +766,7 @@ func writeCache(L *lua.LState) int { // args(k, v)
 		*/
 
 		// Save this to DB
-		timestamp := uint32(e.svcs.TimeStamper.GetTimeNowSec())
+		timestamp := uint32(e.minimalSvcs.TimeStamper.GetTimeNowSec())
 		item := &protos.MemoisedItem{
 			Key:                 memoPrefix + k,
 			ExprId:              e.expressionId,
@@ -780,7 +780,7 @@ func writeCache(L *lua.LState) int { // args(k, v)
 		}
 
 		ctx := context.TODO()
-		coll := e.svcs.MongoDB.Collection(dbCollections.MemoisedItemsName)
+		coll := e.minimalSvcs.MongoDB.Collection(dbCollections.MemoisedItemsName)
 		opt := options.Update().SetUpsert(true)
 
 		result, err := coll.UpdateByID(ctx, item.Key, bson.D{{Key: "$set", Value: item}}, opt)
@@ -790,7 +790,7 @@ func writeCache(L *lua.LState) int { // args(k, v)
 		}
 
 		if result.UpsertedCount == 0 && (result.MatchedCount != result.ModifiedCount) {
-			e.svcs.Log.Errorf("writeCache for: %v got unexpected DB write result: %+v", item.Key, result)
+			e.minimalSvcs.Log.Errorf("writeCache for: %v got unexpected DB write result: %+v", item.Key, result)
 		}
 	}
 
@@ -808,7 +808,7 @@ func readCache(L *lua.LState) int { // args(k, w)
 	w := L.ToBool(2)
 	e.funcPrintArgs("readCache", k, w)
 
-	result := e.svcs.MongoDB.Collection(dbCollections.MemoisedItemsName).FindOne(context.TODO(), bson.M{"_id": memoPrefix + k}, options.FindOne())
+	result := e.minimalSvcs.MongoDB.Collection(dbCollections.MemoisedItemsName).FindOne(context.TODO(), bson.M{"_id": memoPrefix + k}, options.FindOne())
 
 	if result.Err() != nil {
 		if result.Err() == mongo.ErrNoDocuments {

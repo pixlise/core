@@ -186,7 +186,9 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
 
 	// Run the job node queue processing code
-	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
+	jn := jobnode.CreateJobNode("pixlise-job", "",
+		servicesMock.JobBucketForUnitTest, servicesMock.ConfigBucketForUnitTest, servicesMock.UsersBucketForUnitTest, servicesMock.DatasetsBucketForUnitTest,
+		svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
 	jn.StartJobs([]string{"quant-id123-node-0"})
 
 	jm.RunCheckJobQueueForTest()
@@ -323,7 +325,9 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
 
 	// Run the job node queue processing code
-	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
+	jn := jobnode.CreateJobNode("pixlise-job", "",
+		servicesMock.JobBucketForUnitTest, servicesMock.ConfigBucketForUnitTest, servicesMock.UsersBucketForUnitTest, servicesMock.DatasetsBucketForUnitTest,
+		svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
 	jn.StartJobs([]string{"quant-id123-node-0", "quant-id123-node-1", "quant-id123-node-2", "quant-id123-node-3"})
 
 	jm.RunCheckJobQueueForTest()
@@ -566,7 +570,9 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
 
 	// Run the job node queue processing code
-	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
+	jn := jobnode.CreateJobNode("pixlise-job", "",
+		servicesMock.JobBucketForUnitTest, servicesMock.ConfigBucketForUnitTest, servicesMock.UsersBucketForUnitTest, servicesMock.DatasetsBucketForUnitTest,
+		svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
 	jn.StartJobs([]string{"quant-id123-node-0", "id2"})
 
 	printResults(svcs)

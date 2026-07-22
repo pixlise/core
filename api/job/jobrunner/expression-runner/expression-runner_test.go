@@ -191,7 +191,9 @@ func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string,
 		}
 	}
 
-	m, _, _, err := RunExpression(exprId, scanId, quantId, &svcs, true, false)
+	m, _, _, err := RunExpression(exprId, scanId, quantId,
+		svcs.Log, svcs.MongoDB, svcs.TimeStamper, svcs.FS,
+		svcs.Config.ConfigBucket, svcs.Config.UsersBucket, svcs.Config.DatasetsBucket, true, false)
 	sz := 0
 	if m != nil {
 		sz = len(m.Values)
@@ -208,7 +210,7 @@ func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string,
 		if err != nil {
 			result = append(result, fmt.Sprintf("Failed to match output to expected: %v", err))
 		} else {
-			result = append(result, fmt.Sprintf("Returned map matches expected output from PIXLISE"))
+			result = append(result, "Returned map matches expected output from PIXLISE")
 		}
 	}
 
