@@ -29,7 +29,7 @@ import (
 )
 
 func ReadPseudoIntensityRangesFile(path string, jobLog logger.ILogger) ([]dataConvertModels.PseudoIntensityRange, error) {
-	data, err := dataImportHelpers.ReadCSV(path, 0, ',', jobLog)
+	data, err := dataImportHelpers.ReadCSV(path, 0, ',')
 	if err != nil {
 		return nil, err
 	}

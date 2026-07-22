@@ -28,7 +28,7 @@ import (
 )
 
 func ReadHousekeepingFile(path string, headerRowCount int, jobLog logger.ILogger) (dataConvertModels.HousekeepingData, error) {
-	rows, err := dataImportHelpers.ReadCSV(path, headerRowCount, ',', jobLog)
+	rows, err := dataImportHelpers.ReadCSV(path, headerRowCount, ',')
 	if err != nil {
 		return dataConvertModels.HousekeepingData{}, err
 	}
