@@ -1,7 +1,6 @@
 package expressionrunner
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -11,7 +10,6 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func FetchSourceCode(expressionId string, scanId string, quantId string, userId string, minimalSvcs *services.APIServices) (string, *protos.DataExpression, error) {
@@ -117,6 +115,7 @@ local userId = "%v"
 	// Due to the above, we need to specify this
 	source = strings.ReplaceAll(source, "local estimate = {}", "local estimate = {typeIsEstimate = true}")
 
+	source = strings.ReplaceAll(source, "\r\n", "\n")
 	return source
 }
 
@@ -126,18 +125,6 @@ func snipReturnModuleLine(src string) string {
 		return src[0:pos]
 	}
 	return src
-}
-
-func ReadOne[T any](collectionName string, filter bson.M, intoItem *T, db *mongo.Database) error {
-	ctx := context.TODO()
-	coll := db.Collection(collectionName)
-
-	dbResult := coll.FindOne(ctx, filter, options.FindOne())
-	if dbResult.Err() != nil {
-		return dbResult.Err()
-	}
-
-	return dbResult.Decode(intoItem)
 }
 
 func readModule(moduleId string, version *protos.SemanticVersion, db *mongo.Database) (*protos.DataModuleDB, *protos.DataModuleVersionDB, error) {

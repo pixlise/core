@@ -11,7 +11,8 @@ import (
 func (e *expressionRunner) ensureFetchedScan() error {
 	if e.scan == nil {
 		if err := e.fetchScan(); err != nil || e.scan == nil {
-			e.Log().Errorf("Expression runner could not fetch scan: %v", err)
+			err = fmt.Errorf("Expression runner could not fetch scan: %v", err)
+			e.Log().Errorf("%v", err)
 			return err
 		}
 	}

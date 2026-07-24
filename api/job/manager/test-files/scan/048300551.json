@@ -1,0 +1,42 @@
+{
+  "_id": "048300551",
+  "title": "Naltsos",
+  "description": "[3D Model (sol 124 workspace)](https://sketchfab.com/3d-models/m2020-zcam-workspace-sol-124-0094f8bae96b4863ae38f099bd00ea6a)",
+  "datatypes": [
+    {
+      "datatype": 1,
+      "count": 4
+    },
+    {
+      "datatype": 2,
+      "count": 242
+    }
+  ],
+  "instrument": 1,
+  "instrumentconfig": "PIXL",
+  "timestampunixsec": 1731028125,
+  "meta": {
+    "RTT": "048300551",
+    "SCLK": "678031418",
+    "TargetId": "?",
+    "SiteId": "4",
+    "DriveId": "1712",
+    "Target": "",
+    "Site": "",
+    "Sol": "0125"
+  },
+  "contentcounts": {
+    "NormalSpectra": 242,
+    "DwellSpectra": 0,
+    "BulkSpectra": 2,
+    "MaxSpectra": 2,
+    "PseudoIntensities": 121
+  },
+  "creatoruserid": "PIXLISEImport",
+  "tags": [
+    "vr27f3np98ynwyiy",
+    "opjseun6d57n6fpb"
+  ],
+  "completetimestampunixsec": 1731014574,
+  "previousimporttimesunixsec": [1707463603, 1731014574, 1731018868]
+}

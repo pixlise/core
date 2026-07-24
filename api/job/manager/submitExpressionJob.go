@@ -44,7 +44,8 @@ func (jm *JobManager) internalSubmitExpressionJob(scanId, quantId, expressionId,
 	requiredFiles := []jobconfig.JobFilePath{}
 
 	sourceFileName := "source.lua"
-	err = jm.svcs.FS.WriteObject(jm.svcs.Config.PiquantJobsBucket, sourceFileName, []byte(source))
+	remoteSourcePath := filepaths.GetJobDataPath(scanId, jobId, sourceFileName)
+	err = jm.svcs.FS.WriteObject(jm.svcs.Config.PiquantJobsBucket, remoteSourcePath, []byte(source))
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +53,7 @@ func (jm *JobManager) internalSubmitExpressionJob(scanId, quantId, expressionId,
 	requiredFiles = append(requiredFiles, jobconfig.JobFilePath{
 		LocalPath:    sourceFileName,
 		RemoteBucket: jm.svcs.Config.PiquantJobsBucket,
-		RemotePath:   filepaths.GetJobDataPath(scanId, jobId, sourceFileName),
+		RemotePath:   remoteSourcePath,
 	})
 
 	// Read and validate scan
@@ -88,6 +89,7 @@ func (jm *JobManager) internalSubmitExpressionJob(scanId, quantId, expressionId,
 		DockerImage:      jm.svcs.Config.Jobs.RunnerDockerImage,
 		NodeCount:        1,
 		NodeConfig: jobconfig.JobConfig{
+			JobId:         jobId + "-node",
 			RequiredFiles: requiredFiles,
 			Command:       jobnode.LuaExpressionCommand, //"lua5.3",
 			Args:          []string{"scanId=" + scanId, "quantId=" + quantId, "expressionId=" + expressionId, "memoKey=" + memoCacheKey},

@@ -21,7 +21,8 @@ var EnergyCalibrationDetector = "A"
 func (e *expressionRunner) ensureFetchedQuant() error {
 	if e.quantData == nil {
 		if err := e.fetchQuant(); err != nil || e.quantData == nil {
-			e.Log().Errorf("Expression runner could not fetch quant: %v", err)
+			err = fmt.Errorf("Expression runner could not fetch quant: %v", err)
+			e.Log().Errorf("%v", err)
 			return err
 		}
 	}

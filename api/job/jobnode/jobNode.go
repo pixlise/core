@@ -178,13 +178,13 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem, wg *sync.WaitGroup) {
 	local := false
 	var jobFunc jobrunner.CommandRunner
 
-	if len(jn.jobContainer) <= 0 {
-		fmt.Println("WARNING: Running job locally, recommended for use for tests only!")
-		local = true
-	} else if jobItem.JobType == protos.JobType_JT_RUN_EXPRESSION {
+	if jobItem.JobType == protos.JobType_JT_RUN_EXPRESSION {
 		fmt.Println("Running lua expression job locally!")
 		local = true
 		jobFunc = jn.runLocalLuaExpression
+	} else if len(jn.jobContainer) <= 0 {
+		fmt.Println("WARNING: Running job locally, recommended for use for tests only!")
+		local = true
 	}
 
 	if local {

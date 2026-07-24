@@ -96,12 +96,13 @@ func runExpressionInternal(ch chan exprResult,
 		// If we're debugging:
 		r.debugUseLocalSourceFile = true
 		r.writeLuaSource = false // don't overwrite!
+
+		r.traceRuntimeCalls = true
 	} else {
 		r.writeLuaSource = saveCode
 	}
 
 	// Fetch scan item so we can get the config
-
 	luaSrc, _, err := FetchSourceCode(expressionId, scanId, quantId, sessionuser.PIXLISESystemUserId, minimalSvcs)
 	if err != nil {
 		result := exprResult{
@@ -166,6 +167,7 @@ type expressionRunner struct {
 
 	debugUseLocalSourceFile bool
 	writeLuaSource          bool
+	traceRuntimeCalls       bool
 
 	totalGoFunctionRuntimeNs uint64
 	totalRuntimeMs           uint64

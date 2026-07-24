@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/olahol/melody"
 	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -22,6 +21,7 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"google.golang.org/protobuf/proto"
 )
 
 func completeExpressionJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, session *melody.Session, svcs *services.APIServices) error {

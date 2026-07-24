@@ -1,6 +1,8 @@
 package expressionrunner
 
 import (
+	"fmt"
+
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/client"
 )
@@ -11,7 +13,8 @@ var DiffractionStatusNotAnomaly = "not-anomaly"
 func (e *expressionRunner) ensureFetchedDiffraction() error {
 	if e.diffractionFile == nil {
 		if err := e.fetchDiffraction(); err != nil || e.diffractionFile == nil {
-			e.Log().Errorf("Expression runner could not fetch diffraction: %v", err)
+			err = fmt.Errorf("Expression runner could not fetch diffraction: %v", err)
+			e.Log().Errorf("%v", err)
 			return err
 		}
 	}

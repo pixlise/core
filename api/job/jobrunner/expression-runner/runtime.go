@@ -122,13 +122,17 @@ func (e *expressionRunner) funcPrintArgs(funcName string, args ...interface{}) {
 		f = f + "%v"
 	}
 	//f = fmt.Sprintf(f, args)
-	e.Log().Debugf("    Lua runtime:   "+funcName+"("+f+")", args...)
+	if e.traceRuntimeCalls {
+		e.Log().Debugf("    Lua runtime:   "+funcName+"("+f+")", args...)
+	}
 }
 
 func (e *expressionRunner) funcEnd(startTime time.Time) {
 	runtime := time.Since(startTime)
 
-	e.Log().Debugf("                -> %vms", runtime.Milliseconds())
+	if e.traceRuntimeCalls {
+		e.Log().Debugf("                -> %vms", runtime.Milliseconds())
+	}
 
 	e.totalGoFunctionRuntimeNs += uint64(runtime.Nanoseconds())
 }
