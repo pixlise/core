@@ -1,10 +1,12 @@
 package jobmanager
 
 import (
+	"encoding/base64"
 	"fmt"
 	"path"
 
 	"github.com/olahol/melody"
+	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/job/jobnode"
@@ -12,6 +14,7 @@ import (
 	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/scan"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func (jm *JobManager) SubmitExpressionJob(scanId, quantId, expressionId, roiId, memoCacheKey string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
@@ -31,7 +34,23 @@ func (jm *JobManager) internalSubmitExpressionJob(scanId, quantId, expressionId,
 	}
 
 	// Generate a job ID
-	jobId := fmt.Sprintf("expr-lua-%v", jm.svcs.IDGen.GenObjectID())
+	// For this, because expressions are then saved as memosation items, we don't generate a random id - we generate an id with the
+	// mem cache key appended. This way we can also check if there is an existing job for this same purpose and not re-run it if
+	// for example multiple users request the same job or if a user is hopping between tabs in PIXLISE.
+
+	b64MemCacheKey := base64.StdEncoding.EncodeToString([]byte(memoCacheKey))
+	jobId := fmt.Sprintf("expr-lua-%v", b64MemCacheKey)
+
+	// First task - check for duplicates
+	existingJobItem := &protos.JobStatus{}
+	filter := bson.M{"_id": jobId}
+	err := expressionrunner.ReadOne(dbCollections.JobStatusName, filter, existingJobItem, jm.svcs.MongoDB)
+
+	if err == nil && len(existingJobItem.JobId) > 0 && existingJobItem.Status < protos.JobStatus_COMPLETE {
+		// Stop here, there is an existing job already under way for this!
+		jm.svcs.Log.Infof("Found existing expression job for %v with state %v. Skipping starting a new/duplicate one.", jobId, existingJobItem.Status)
+		return existingJobItem, nil
+	}
 
 	jobS3Path := filepaths.GetJobDataPath(scanId, jobId, "")
 
