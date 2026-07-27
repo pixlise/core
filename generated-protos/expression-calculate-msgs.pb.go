@@ -69,12 +69,12 @@ func (x *ExpressionOutputReq) GetRequest() *DataSourceParams {
 type ExpressionOutputResp struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// We don't return the result here, that's a HTTP request to memoisation! We return
-	// the key that the data is available with - and a flag indicating if it's available
-	// already, because we may have had to trigger the expression to be calculated and that
-	// will take time. If available==false, the client should listen for completed jobs
-	// for the key. When the job is complete it can then query it from memoisation
+	// the key that the data is available with - and a job id if the data is not read yet,
+	// because we may have had to trigger the expression to be calculated and that
+	// will take time. If jobId is not blank, the client should listen for completed jobs
+	// for that jobId. When the job is complete it can then query it from memoisation
 	Key           string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Available     bool   `protobuf:"varint,2,opt,name=available,proto3" json:"available,omitempty"`
+	JobId         string `protobuf:"bytes,3,opt,name=jobId,proto3" json:"jobId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -116,11 +116,11 @@ func (x *ExpressionOutputResp) GetKey() string {
 	return ""
 }
 
-func (x *ExpressionOutputResp) GetAvailable() bool {
+func (x *ExpressionOutputResp) GetJobId() string {
 	if x != nil {
-		return x.Available
+		return x.JobId
 	}
-	return false
+	return ""
 }
 
 var File_expression_calculate_msgs_proto protoreflect.FileDescriptor
@@ -129,10 +129,10 @@ const file_expression_calculate_msgs_proto_rawDesc = "" +
 	"\n" +
 	"\x1fexpression-calculate-msgs.proto\x1a\x1aexpression-calculate.proto\"B\n" +
 	"\x13ExpressionOutputReq\x12+\n" +
-	"\arequest\x18\x01 \x01(\v2\x11.DataSourceParamsR\arequest\"F\n" +
+	"\arequest\x18\x01 \x01(\v2\x11.DataSourceParamsR\arequest\">\n" +
 	"\x14ExpressionOutputResp\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x1c\n" +
-	"\tavailable\x18\x02 \x01(\bR\tavailableB\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05jobId\x18\x03 \x01(\tR\x05jobIdB\n" +
 	"Z\b.;protosb\x06proto3"
 
 var (

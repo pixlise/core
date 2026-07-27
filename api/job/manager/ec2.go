@@ -285,28 +285,26 @@ func (jm *JobManager) startJobNodes(jobIds []string) error {
 		// yet started a job node thread, start one now
 		jm.svcs.Log.Debugf("  startJobNodes running in local mode, ensuring one job node thread is running...")
 
-		if jm.localJobNode != nil {
+		if jm.localJobNode == nil {
+			// Start a local one
+			jm.svcs.Log.Infof("  startJobNodes starting local job node")
+			jm.localJobNode = jobnode.CreateJobNode(
+				"local-job",
+				jm.svcs.Config.Jobs.RunnerDockerImage,
+				jm.svcs.Config.PiquantJobsBucket,
+				jm.svcs.Config.ConfigBucket,
+				jm.svcs.Config.UsersBucket,
+				jm.svcs.Config.DatasetsBucket,
+				jm.svcs.InstanceId,
+				jm.svcs.FS,
+				jm.svcs.MongoDB,
+				jm.svcs.Log,
+				jm.svcs.TimeStamper)
+		} else {
 			jm.svcs.Log.Infof("  startJobNodes skipped, already running a local one")
-			return nil
 		}
 
-		// Start a local one
-		jm.svcs.Log.Infof("  startJobNodes starting local job node")
-		jm.localJobNode = jobnode.CreateJobNode(
-			"local-job",
-			jm.svcs.Config.Jobs.RunnerDockerImage,
-			jm.svcs.Config.PiquantJobsBucket,
-			jm.svcs.Config.ConfigBucket,
-			jm.svcs.Config.UsersBucket,
-			jm.svcs.Config.DatasetsBucket,
-			jm.svcs.InstanceId,
-			jm.svcs.FS,
-			jm.svcs.MongoDB,
-			jm.svcs.Log,
-			jm.svcs.TimeStamper)
-
 		jm.localJobNode.StartJobs(jobIds)
-
 		return nil
 	}
 

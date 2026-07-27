@@ -43,10 +43,24 @@ func (jm *JobManager) updateJobStatus(jobId string, status protos.JobStatus_Stat
 			jm.svcs.Log.Errorf("updateJobStatus failed to read job status for %v while sending to client. Error: %v", jobId, err)
 		} else if len(dbStatus.RequestorUserId) > 0 && dbStatus.RequestorUserId != sessionuser.PIXLISESystemUserId {
 			if sess, ok := jm.userSessionLookup[dbStatus.RequestorUserId]; ok && sess != nil {
+				// Special case for now - if it's a quant, send a quant create upd!
+				if dbStatus.JobType == protos.JobType_JT_RUN_QUANT {
+					wsUpd := protos.WSMessage{
+						Contents: &protos.WSMessage_QuantCreateUpd{
+							QuantCreateUpd: &protos.QuantCreateUpd{
+								Status: dbStatus,
+							},
+						},
+					}
+
+					wsHelpers.SendForSession(sess, &wsUpd)
+				}
+
+				// Notify client of job status change
 				wsUpd := protos.WSMessage{
-					Contents: &protos.WSMessage_QuantCreateUpd{
-						QuantCreateUpd: &protos.QuantCreateUpd{
-							Status: dbStatus,
+					Contents: &protos.WSMessage_JobListUpd{
+						JobListUpd: &protos.JobListUpd{
+							Job: dbStatus,
 						},
 					},
 				}

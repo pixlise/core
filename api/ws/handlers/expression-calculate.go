@@ -46,7 +46,7 @@ func HandleExpressionOutputReq(req *protos.ExpressionOutputReq, hctx wsHelpers.H
 	}
 
 	// We're pessimistic - assume data is not available yet...
-	isAvailable := false
+	jobIdToWaitFor := ""
 
 	// Check if we have anything saved in memoisation for this key
 	filter := bson.M{"_id": cacheKey}
@@ -71,14 +71,12 @@ func HandleExpressionOutputReq(req *protos.ExpressionOutputReq, hctx wsHelpers.H
 
 		// Return the key that the client will have to listen for to know when to
 		// retrieve the data calculated
-		isAvailable = false
-	} else {
-		isAvailable = true
+		jobIdToWaitFor = state.JobId
 	}
 
 	return &protos.ExpressionOutputResp{
-		Key:       cacheKey,
-		Available: isAvailable,
+		Key:   cacheKey,
+		JobId: jobIdToWaitFor,
 	}, nil
 }
 

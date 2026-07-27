@@ -15,6 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// TODO: Move this to some more general utils area
 func SeedDB[T any](id string, jsonPath string, collName string, item *T, db *mongo.Database) error {
 	f, err := os.ReadFile(jsonPath)
 	if err != nil {
