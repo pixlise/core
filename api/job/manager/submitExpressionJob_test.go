@@ -490,13 +490,9 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK_AllowSecondRunToOverwri
 	// INFO: Running job...
 	// DEBUG: exec.Command starting "lua-expression", args: [scanId=048300551,quantId=quant-ggy6zxhn23p7rlv9,expressionId=u59sahioy18frfl9,memoKey=memo123]
 	// DEBUG: Downloading file: s3://users-bucket/Quantifications/048300551/PIXLISEImport/quant-ggy6zxhn23p7rlv9.bin
-	// DEBUG: Total locally cached files: 1, 117113 bytes, removed 0
 	// DEBUG: Downloading file: s3://datasets-bucket/Scans/048300551/dataset.bin
-	// DEBUG: Total locally cached files: 2, 960590 bytes, removed 0
-	// DEBUG: Reading local file: /tmp/scan-048300551-dataset.bin
-	//
+	// DEBUG: Downloading file: s3://datasets-bucket/Scans/048300551/dataset.bin
 	// DEBUG: Downloading file: s3://datasets-bucket/Scans/048300551/diffraction-db.bin
-	// DEBUG: Total locally cached files: 3, 983221 bytes, removed 0
 	// INFO: Job expr-lua-bWVtbzEyMw-node-0 runtime was < 10 sec
 	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/048300551/expr-lua-bWVtbzEyMw/output/stdout.log
 	// DEBUG: Upload output.csv -> s3://job-bucket/JobData/048300551/expr-lua-bWVtbzEyMw/output/output.csv
@@ -535,8 +531,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK_AllowSecondRunToOverwri
 	// INFO: Checking for required libraries...
 	// INFO: Running job...
 	// DEBUG: exec.Command starting "lua-expression", args: [scanId=048300551,quantId=quant-ggy6zxhn23p7rlv9,expressionId=u59sahioy18frfl9,memoKey=memo123]
-	// DEBUG: Reading local file: /tmp/quant-quant-ggy6zxhn23p7rlv9-quant.bin
-	//
+	// DEBUG: Downloading file: s3://users-bucket/Quantifications/048300551/PIXLISEImport/quant-ggy6zxhn23p7rlv9.bin
 	// INFO: Job expr-lua-bWVtbzEyMw-node-0 runtime was < 10 sec
 	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/048300551/expr-lua-bWVtbzEyMw/output/stdout.log
 	// DEBUG: Upload output.csv -> s3://job-bucket/JobData/048300551/expr-lua-bWVtbzEyMw/output/output.csv
