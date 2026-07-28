@@ -102,7 +102,7 @@ echo "Downloading global-bumdle.pem..."
 wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
 
 echo "Running job node..."
-./pixlise-job-node -bucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxRunTimeSec "%v" -jobs "%v"
+./pixlise-job-node -jobBucket "%v" -usersBucket "%v" -configBucket "%v" -datasetsBucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxRunTimeSec "%v" -jobs "%v"
 
 echo "PIXLISE job node shutting down in 1 minute..."
 shutdown -h +1
@@ -113,6 +113,9 @@ shutdown -h +1
 		awsRegion, awsRegion,
 		jm.svcs.Config.Jobs.NodeS3Path,
 		jm.svcs.Config.PiquantJobsBucket,
+		jm.svcs.Config.UsersBucket,
+		jm.svcs.Config.ConfigBucket,
+		jm.svcs.Config.DatasetsBucket,
 		jm.svcs.Config.Jobs.RunnerDockerImage,
 		jm.svcs.Config.MongoSecret,
 		jm.svcs.Config.EnvironmentName,
