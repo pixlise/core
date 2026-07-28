@@ -12,6 +12,7 @@ import (
 	"github.com/pixlise/core/v4/api/quantification"
 	"github.com/pixlise/core/v4/api/sessionuser"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -165,6 +166,28 @@ func (jm *JobManager) internalSubmitJob(jg *jobconfig.JobGroupConfig, requestorS
 
 	// Queue up each individual job so it can run on a node. Job queue will eventually be empty and the job completes
 	return job, jm.QueueJob(jg)
+}
+
+func (jm *JobManager) clearExistingJob(jobId string) error {
+	// Clearing out db entries that would prevent a new job running
+	ctx := context.TODO()
+	coll := jm.svcs.MongoDB.Collection(dbCollections.JobsName)
+	result, err := coll.DeleteOne(ctx, bson.M{"_id": jobId})
+	if err != nil {
+		return err
+	}
+
+	jm.svcs.Log.Infof("Cleared %v entry in %v: %+v", jobId, coll.Name(), result)
+
+	coll = jm.svcs.MongoDB.Collection(dbCollections.JobStatusName)
+	_, err = coll.DeleteOne(ctx, bson.M{"_id": jobId})
+	if err != nil {
+		return err
+	}
+
+	jm.svcs.Log.Infof("Cleared %v entry in %v: %+v", jobId, coll.Name(), result)
+
+	return nil
 }
 
 /*

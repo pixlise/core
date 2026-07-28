@@ -14,6 +14,7 @@ import (
 	expressionrunner "github.com/pixlise/core/v4/api/job/jobrunner/expression-runner"
 	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/scan"
+	"github.com/pixlise/core/v4/core/timestamper"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -36,6 +37,36 @@ func makeLuaExpressionId(memCacheKey string) string {
 	return fmt.Sprintf("expr-lua-%v", b64MemCacheKey)
 }
 
+// Pass in the existing job item if there is one, timestamp generator and a max age for completed
+// ones - any older, and we allow rerunning the job to overwrite it
+// Returns bool can run, and bool needs-clearing-old one
+func canRunExpressionJob(existingJobItem *protos.JobStatus, ts timestamper.ITimeStamper, completeMaxAgeSec int64) (bool, bool) {
+	// If no job id, consider it invalid, let it run!
+	if existingJobItem == nil || len(existingJobItem.JobId) <= 0 {
+		return true, false
+	}
+
+	// Check if the existing one is incomplete
+	if existingJobItem.Status < protos.JobStatus_COMPLETE {
+		return false, false // don't start another if this is still running!
+	}
+
+	// If there was an error, allow rerunning
+	if existingJobItem.Status == protos.JobStatus_ERROR {
+		return true, true
+	}
+
+	// Existing one is marked complete, but see if it's old - in this case we can allow it to re-run
+	// because perhaps there's an issue with it, we don't want to be stuck forever!
+	unixNow := ts.GetTimeNowSec()
+	age := unixNow - int64(existingJobItem.LastUpdateUnixTimeSec)
+	canRun := age > completeMaxAgeSec
+	if canRun {
+		return canRun, true
+	}
+	return canRun, false
+}
+
 func (jm *JobManager) internalSubmitExpressionJob(scanId, quantId, expressionId, roiId, memoCacheKey string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
 	// If we don't have a user, use the built-in PIXLISE user
 	requestorUserId := sessionuser.PIXLISESystemUserId
@@ -54,10 +85,21 @@ func (jm *JobManager) internalSubmitExpressionJob(scanId, quantId, expressionId,
 	filter := bson.M{"_id": jobId}
 	err := expressionrunner.ReadOne(dbCollections.JobStatusName, filter, existingJobItem, jm.svcs.MongoDB)
 
-	if err == nil && len(existingJobItem.JobId) > 0 && existingJobItem.Status != protos.JobStatus_COMPLETE {
-		// Stop here, there is an existing job already under way for this!
-		jm.svcs.Log.Infof("Found existing expression job for %v with state %v. Skipping starting a new/duplicate one.", jobId, existingJobItem.Status)
-		return existingJobItem, nil
+	if err == nil {
+		canRun, needToClearOld := canRunExpressionJob(existingJobItem, jm.svcs.TimeStamper, jm.svcs.Config.ExpressionRerunIntervalSec)
+
+		if !canRun {
+			// Stop here, there is an existing job already under way for this!
+			jm.svcs.Log.Infof("Found existing expression job for %v with state %v. Skipping starting a new/duplicate one.", jobId, existingJobItem.Status)
+			return existingJobItem, nil
+		} else if needToClearOld {
+			// Clear existing job out, we're deciding to allow running another one. This basically only happens
+			// if the job is in error or complete states
+			err = jm.clearExistingJob(jobId)
+			if err != nil {
+				jm.svcs.Log.Infof("Failed to clear existing expression job for %v. New job run will likely fail", jobId)
+			}
+		}
 	}
 
 	jobS3Path := filepaths.GetJobDataPath(scanId, jobId, "")

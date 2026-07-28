@@ -64,6 +64,7 @@ func initJobManagerTest(logLevel *logger.LogLevel, timestamps []int64) (string, 
 	//svcs.Config.JobRunnerDockerImage = "ghcr.io/pixlise/job-runner:latest"
 	svcs.Config.QuantExecutor = "local:" + bucketSimRoot //jobexecutor.MakeLocalExecutor(bucketSimRoot)
 	svcs.Config.Jobs.CoresPerNode = 4
+	svcs.Config.ExpressionRerunIntervalSec = 600
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{QueuedTimeStamps: timestamps}
 
 	// Make sure the PIQUANT executable is one dir up
