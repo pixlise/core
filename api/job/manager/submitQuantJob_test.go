@@ -82,7 +82,7 @@ func initJobManagerTest(logLevel *logger.LogLevel, timestamps []int64) (string, 
 	return origWD, bucketSimRoot, svcs
 }
 
-func printResults(includeQuants bool, svcs services.APIServices) {
+func printResults(includeQuants bool, svcs *services.APIServices) {
 	// At this point, check that the expected stuff has indeed happened
 	ctx := context.TODO()
 	cursor, err := svcs.MongoDB.Collection(dbCollections.JobQueueName).Find(ctx, bson.M{}, options.Find())
@@ -195,7 +195,7 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 
 	jm.RunCheckJobQueueForTest()
 
-	printResults(true, svcs)
+	printResults(true, &svcs)
 
 	// Output:
 	// jm Create: <nil>
@@ -334,7 +334,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 
 	jm.RunCheckJobQueueForTest()
 
-	printResults(true, svcs)
+	printResults(true, &svcs)
 
 	// Output:
 	// jm Create: <nil>
@@ -577,7 +577,7 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 		svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
 	jn.StartJobs([]string{"quant-id123-node-0", "id2"})
 
-	printResults(true, svcs)
+	printResults(true, &svcs)
 
 	// time.Sleep(3 * time.Second)
 	// jm.RunCheckJobQueueForTest()

@@ -54,7 +54,7 @@ func (jm *JobManager) internalSubmitExpressionJob(scanId, quantId, expressionId,
 	filter := bson.M{"_id": jobId}
 	err := expressionrunner.ReadOne(dbCollections.JobStatusName, filter, existingJobItem, jm.svcs.MongoDB)
 
-	if err == nil && len(existingJobItem.JobId) > 0 && existingJobItem.Status < protos.JobStatus_COMPLETE {
+	if err == nil && len(existingJobItem.JobId) > 0 && existingJobItem.Status != protos.JobStatus_COMPLETE {
 		// Stop here, there is an existing job already under way for this!
 		jm.svcs.Log.Infof("Found existing expression job for %v with state %v. Skipping starting a new/duplicate one.", jobId, existingJobItem.Status)
 		return existingJobItem, nil
