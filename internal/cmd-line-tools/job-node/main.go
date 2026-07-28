@@ -29,10 +29,13 @@ func main() {
 	defer shutdown(instanceIdObtained, isEC2)
 
 	// Read args
-	var bucket, jobContainer, instanceId, mongoSecret, envName, jobs string
+	var jobBucket, usersBucket, configBucket, datasetsBucket, jobContainer, instanceId, mongoSecret, envName, jobs string
 	var maxRunTimeSec int64
 
-	flag.StringVar(&bucket, "bucket", "", "Bucket to read job data from")
+	flag.StringVar(&jobBucket, "jobBucket", "", "Bucket to read job data from")
+	flag.StringVar(&usersBucket, "usersBucket", "", "Bucket to read user data from")
+	flag.StringVar(&configBucket, "configBucket", "", "Bucket to read config from")
+	flag.StringVar(&datasetsBucket, "datasetsBucket", "", "Bucket to read datasets from")
 	flag.StringVar(&jobContainer, "jobContainer", "", "The docker container to run jobs with")
 	flag.StringVar(&instanceId, "instanceId", instanceIdObtained, "Instance ID (defaults to EC2 instance id or random string) - a unique number that identifies this node")
 	flag.StringVar(&mongoSecret, "mongoSecret", "", "Name of mongo login secret")
@@ -43,8 +46,17 @@ func main() {
 	flag.Parse()
 
 	// Some of this stuff can't be left empty
-	if len(bucket) <= 0 {
-		log.Fatalln("bucket can not be empty")
+	if len(jobBucket) <= 0 {
+		log.Fatalln("jobBucket can not be empty")
+	}
+	if len(usersBucket) <= 0 {
+		log.Fatalln("usersBucket can not be empty")
+	}
+	if len(configBucket) <= 0 {
+		log.Fatalln("configBucket can not be empty")
+	}
+	if len(datasetsBucket) <= 0 {
+		log.Fatalln("datasetsBucket can not be empty")
 	}
 	if len(envName) <= 0 {
 		log.Fatalln("envName can not be empty")
@@ -106,7 +118,7 @@ func main() {
 	l.Infof("Running node until all jobs complete or up to %v seconds...", maxRunTimeSec)
 
 	// Create job node
-	jobNode := jobnode.CreateJobNode("job-"+envName, jobContainer, bucket, instanceId, fs, db, &l, &ts)
+	jobNode := jobnode.CreateJobNode("job-"+envName, jobContainer, jobBucket, configBucket, usersBucket, datasetsBucket, instanceId, fs, db, &l, &ts)
 
 	// Check if there are any jobs waiting to be picked up
 	jobNode.StartJobs(jobIds)

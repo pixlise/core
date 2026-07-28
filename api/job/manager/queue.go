@@ -35,6 +35,7 @@ func (jm *JobManager) QueueJob(jg *jobconfig.JobGroupConfig) error {
 			CreatedTimeStampUnixSec:     nowUnixSec,
 			LastUpdatedTimeStampUnixSec: nowUnixSec,
 			State:                       protos.JobQueueItem_UNKNOWN,
+			JobType:                     jg.JobType,
 		})
 	}
 

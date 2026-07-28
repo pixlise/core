@@ -30,12 +30,9 @@ var fileCache = map[string]fileCacheItem{}
 var MaxFileCacheAgeSec = int64(60 * 5)
 var MaxFileCacheSizeBytes = uint64(200 * 1024 * 1024)
 
-func ReadDatasetFile(scanId string, svcs *services.APIServices, useFileCache bool) (*protos.Experiment, error) {
+func ReadDatasetFile(scanId string, svcs *services.APIServices) (*protos.Experiment, error) {
 	cacheId := "scan-" + scanId
-	var fileBytes []byte
-	if useFileCache {
-		fileBytes = checkCache(cacheId, "scan", svcs)
-	}
+	fileBytes := checkCache(cacheId, "scan", svcs)
 
 	// If we don't have data by now, download it and add to our cache
 	var err error
@@ -53,10 +50,8 @@ func ReadDatasetFile(scanId string, svcs *services.APIServices, useFileCache boo
 			return nil, err
 		}
 
-		if useFileCache {
-			// Write locally
-			addToCache(cacheId, "-dataset.bin", fmt.Sprintf("s3://%v/%v", svcs.Config.DatasetsBucket, s3Path), fileBytes, svcs)
-		}
+		// Write locally
+		addToCache(cacheId, "-dataset.bin", fmt.Sprintf("s3://%v/%v", svcs.Config.DatasetsBucket, s3Path), fileBytes, svcs)
 	}
 
 	// Now decode the data & return it
@@ -167,6 +162,10 @@ func ClearCacheForScanId(scanId string, ts timestamper.ITimeStamper, l logger.IL
 
 func checkCache(id string, fileTypeName string, svcs *services.APIServices) []byte {
 	var fileBytes []byte
+	if svcs.Config.FileCacheDisabled {
+		return fileBytes
+	}
+
 	var err error
 	lfs := fileaccess.FSAccess{}
 
@@ -200,6 +199,10 @@ func checkCache(id string, fileTypeName string, svcs *services.APIServices) []by
 }
 
 func addToCache(id string, fileSuffix string, srcPath string, fileBytes []byte, svcs *services.APIServices) {
+	if svcs.Config.FileCacheDisabled {
+		return
+	}
+
 	cacheRoot := os.TempDir()
 	cachePath := filepath.Join(cacheRoot, id+fileSuffix)
 	lfs := fileaccess.FSAccess{}

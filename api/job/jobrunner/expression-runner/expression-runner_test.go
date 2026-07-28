@@ -3,7 +3,6 @@ package expressionrunner
 import (
 	"context"
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -22,9 +21,6 @@ import (
 	"github.com/pixlise/core/v4/core/timestamper"
 	"github.com/pixlise/core/v4/core/wstestlib"
 	protos "github.com/pixlise/core/v4/generated-protos"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 /*func Example_expressionrunner_RunExpression_Simple() {
@@ -60,7 +56,7 @@ Got map size 121
 Returned map matches expected output from PIXLISE`
 
 	for name, memoinclude := range testType {
-		t.Logf("RunExpression testing scan: %v, expression: %v (%v)", scanId, exprId, name)
+		t.Logf("runExpressionTest(short) scan: %v, expression: %v (%v)", scanId, exprId, name)
 		result := runExpressionTest(scanId, quantId, exprId, modIds, modVers, memoinclude)
 		//t.Log(result)
 
@@ -106,7 +102,7 @@ Returned map matches expected output from PIXLISE`
 
 	for c, exprId := range exprIds {
 		for name, memoinclude := range testType[c] {
-			t.Logf("RunExpression testing scan: %v, expression: %v (%v)", scanId, exprId, name)
+			t.Logf("runExpressionTest(long) scan: %v, expression: %v (%v)", scanId, exprId, name)
 			result := runExpressionTest(scanId, quantId, exprId, modIds, modVers, memoinclude)
 			//t.Log(result)
 
@@ -136,39 +132,7 @@ func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string,
 		log.Fatal(err)
 	}
 
-	// Seed DB with scan info
-	err = seedDB(scanId, fmt.Sprintf("./test-files/scan/%v.json", scanId), dbCollections.ScansName, &protos.ScanItem{}, svcs.MongoDB)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = seedDB("PIXL", "./test-files/scan/PIXL.json", dbCollections.DetectorConfigsName, &protos.DetectorConfig{}, svcs.MongoDB)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Seed DB with expression stuff
-	err = seedDB(exprId, fmt.Sprintf("./test-files/expr/%v.json", exprId), dbCollections.ExpressionsName, &protos.DataExpression{}, svcs.MongoDB)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for c, modId := range modIds {
-		err = seedDB(modId, fmt.Sprintf("./test-files/module/%v.json", modId), dbCollections.ModulesName, &protos.DataModuleDB{}, svcs.MongoDB)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		err = seedDB(modId+"-"+modVers[c], fmt.Sprintf("./test-files/modVer/%v-%v.json", modId, modVers[c]), dbCollections.ModuleVersionsName, &protos.DataModuleVersionDB{}, svcs.MongoDB)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	// Seed quant
-	err = seedDB(quantId, fmt.Sprintf("./test-files/quant/%v.json", quantId), dbCollections.QuantificationsName, &protos.QuantificationSummary{}, svcs.MongoDB)
-	if err != nil {
-		log.Fatal(err)
-	}
+	SeedDBForExpressionTest("../../test-files-db-seed", scanId, quantId, exprId, modIds, modVers, svcs.MongoDB)
 
 	// If the memo include string is empty, we don't want to seed ANY memoised JSON in DB, otherwise only include if
 	// it matches the regex provided
@@ -183,7 +147,7 @@ func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string,
 		for _, f := range files {
 			if match, err := regexp.MatchString(seedMemoInclude, f); err == nil && match {
 				// Read this into our memoisation table
-				err = seedDB(f[0:len(f)-5] /*.json*/, filepath.Join(memPath, f), dbCollections.MemoisedItemsName, &protos.MemoisedItem{}, svcs.MongoDB)
+				err = SeedDB(f[0:len(f)-5] /*.json*/, filepath.Join(memPath, f), dbCollections.MemoisedItemsName, &protos.MemoisedItem{}, svcs.MongoDB)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -191,7 +155,9 @@ func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string,
 		}
 	}
 
-	m, _, _, err := RunExpression(exprId, scanId, quantId, &svcs, true, false)
+	m, _, _, err := RunExpression(exprId, scanId, quantId,
+		svcs.Log, svcs.MongoDB, svcs.TimeStamper, svcs.FS,
+		svcs.Config.ConfigBucket, svcs.Config.UsersBucket, svcs.Config.DatasetsBucket, true, false, true)
 	sz := 0
 	if m != nil {
 		sz = len(m.Values)
@@ -208,7 +174,7 @@ func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string,
 		if err != nil {
 			result = append(result, fmt.Sprintf("Failed to match output to expected: %v", err))
 		} else {
-			result = append(result, fmt.Sprintf("Returned map matches expected output from PIXLISE"))
+			result = append(result, "Returned map matches expected output from PIXLISE")
 		}
 	}
 
@@ -248,23 +214,6 @@ func compareMapWithCSV(m *PMCDataValues, csvPath string) error {
 		if math.Abs(m.Values[c].Value-value) > 0.000001 {
 			return fmt.Errorf("Expression output item %v value mismatch, expected %v, got %v", c, line[1], m.Values[c].Value)
 		}
-	}
-
-	return nil
-}
-
-func seedDB[T any](id string, jsonPath string, collName string, item *T, db *mongo.Database) error {
-	f, err := os.ReadFile(jsonPath)
-	if err != nil {
-		return err
-	}
-
-	json.Unmarshal([]byte(f), item)
-
-	ctx := context.TODO()
-	_, err = db.Collection(collName).UpdateByID(ctx, id, bson.D{{Key: "$set", Value: item}}, options.Update().SetUpsert(true))
-	if err != nil {
-		log.Fatal(err)
 	}
 
 	return nil

@@ -58,7 +58,7 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices, onlyIfNot
 		svcs.Log.Infof("AutoQuant detected no existing auto-quants. Starting...")
 	}
 
-	exprPB, err := wsHelpers.ReadDatasetFile(scanId, svcs, true)
+	exprPB, err := wsHelpers.ReadDatasetFile(scanId, svcs)
 	if err != nil {
 		svcs.Log.Errorf("AutoQuant failed to read scan %v to determine PMC list: %v", scanId, err)
 		return

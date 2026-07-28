@@ -10,28 +10,28 @@ import (
 
 var JobComplete_CombineCSVs = "combine_csvs"
 var JobComplete_SingleCSV = "single_csvs"
+var JobComplete_LuaExpression = "lua_expression"
 
 type JobManagerCompletionFunction func(*jobconfig.JobGroupConfig, *protos.JobStatus, *melody.Session, *services.APIServices) error
 
 type JobManager struct {
 	svcs                 *services.APIServices
 	jobCompletionMethods map[string]JobManagerCompletionFunction
-	useFileCache         bool
 	localJobNode         *jobnode.JobNode
 	startNodes           bool
 	startedNodeCount     uint
 	userSessionLookup    map[string]*melody.Session
 }
 
-func CreateJobManager(svcs *services.APIServices, startupQueueCheckDelaySec int, monitorJobQueue bool, useFileCache bool, startNodes bool) (*JobManager, error) {
+func CreateJobManager(svcs *services.APIServices, startupQueueCheckDelaySec int, monitorJobQueue bool, startNodes bool) (*JobManager, error) {
 	// Make a job manager
 	jm := &JobManager{
 		svcs: svcs,
 		jobCompletionMethods: map[string]JobManagerCompletionFunction{
-			JobComplete_CombineCSVs: completeQuantMultiNodeJob,
-			JobComplete_SingleCSV:   completeQuantSingleMapJob,
+			JobComplete_CombineCSVs:   completeQuantMultiNodeJob,
+			JobComplete_SingleCSV:     completeQuantSingleMapJob,
+			JobComplete_LuaExpression: completeExpressionJob,
 		},
-		useFileCache:      useFileCache,
 		startNodes:        startNodes,
 		userSessionLookup: map[string]*melody.Session{},
 	}

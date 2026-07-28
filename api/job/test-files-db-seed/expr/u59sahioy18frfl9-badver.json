@@ -1,0 +1,60 @@
+{
+	"_id": "u59sahioy18frfl9",
+	"name": "Al2O3 (mmol/g)",
+	"sourcecode": "local corrections = GeoAndDiffCorrection:new()\r\nquantifyUsing(corrections)\r\n\r\nlocal x = Estimate:new({quant=\"Al2O3\"})\r\n\r\nreturn x:plot()",
+	"sourcelanguage": "LUA",
+	"comments": "",
+	"tags": [
+		"6w7wf20k6g81u145",
+		"g4t61qi0dq1ycuin",
+		"q3oze81i5b8g58fp"
+	],
+	"modulereferences": [
+		{
+		"moduleid": "idc2d7xifmbpqk8o",
+		"version": {
+			"major": 1,
+			"minor": 3,
+			"patch": 0
+		}
+		},
+		{
+		"moduleid": "ng46r8vwzr3z28ui",
+		"version": {
+			"major": 99,
+			"minor": 8,
+			"patch": 0
+		}
+		},
+		{
+		"moduleid": "f6hrn69g5tuyiq3m",
+		"version": {
+			"major": 0,
+			"minor": 33,
+			"patch": 0
+		}
+		},
+		{
+		"moduleid": "yg7o9dkue0orim26",
+		"version": {
+			"major": 3,
+			"minor": 5,
+			"patch": 5
+		}
+		}
+	],
+	"recentexecstats": {
+		"datarequired": [
+		"expr-data-livetime(A)",
+		"expr-data-livetime(B)",
+		"spectrum",
+		"expr-elem-Al2O3-%-as-mmol(A)",
+		"expr-elem-Al2O3-err(A)",
+		"expr-elem-Al2O3-%-as-mmol(B)",
+		"expr-elem-Al2O3-err(B)"
+		],
+		"runtimeMsPer1000Pts": 39587.84765625,
+		"timestampunixsec": 1781537011
+	},
+	"modifiedunixsec": 1772131363
+}

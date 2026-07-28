@@ -57,6 +57,7 @@ var GitHash string
 
 type JobManagerInterface interface {
 	SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
+	SubmitExpressionJob(scanId, quantId, expressionId, roiId, memoCacheKey string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
 	// ListJobs() ([]jobmanager.JobGroupConfig, error)
 	// GetJob(JobId string) (jobmanager.JobGroupConfig, error)
 }

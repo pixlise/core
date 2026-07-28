@@ -113,6 +113,9 @@ type APIConfig struct {
 	QuantNamespace      string // Used for running large multi-node quants
 	HotQuantNamespace   string // Used for faster PIQUANT runs, eg executing a spectral fit
 	KubernetesLocation  string // "internal" vs "external"
+
+	ExpressionRerunIntervalSec int64
+	FileCacheDisabled          bool // Only enable for tests so we get consistant/reproducable output!
 }
 
 // JobConfig contains all configs required to be able to run jobs by the back-end. This can involve starting quants or other jobs
@@ -275,6 +278,10 @@ func applyConfigLimits(cfg *APIConfig) {
 
 	if cfg.MemoiseCacheTimeOutSec <= 0 {
 		cfg.MemoiseCacheTimeOutSec = 86400
+	}
+
+	if cfg.ExpressionRerunIntervalSec <= 0 {
+		cfg.ExpressionRerunIntervalSec = 600
 	}
 }
 

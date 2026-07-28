@@ -18,9 +18,11 @@
 package quantification
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 
+	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"google.golang.org/protobuf/proto"
@@ -69,14 +71,14 @@ func Example_getElements() {
 }
 
 func Example_makeColumnTypeList() {
-	data := csvData{[]string{"a", "b", "c", "d", "e"}, [][]string{[]string{"1.11111", "2", "3.1415962", "5", "6"}}}
+	data := [][]string{[]string{"a", "b", "c", "d", "e"}, []string{"1.11111", "2", "3.1415962", "5", "6"}}
 	result, err := makeColumnTypeList(data, map[int]bool{2: true, 3: true})
 	fmt.Printf("%v|%v\n", result, err)
 	result, err = makeColumnTypeList(data, map[int]bool{})
 	fmt.Printf("%v|%v\n", result, err)
 
 	// Bad type
-	data = csvData{[]string{"a", "b", "c", "d", "e"}, [][]string{[]string{"1.11111", "Wanaka", "3.1415962", "5"}}}
+	data = [][]string{[]string{"a", "b", "c", "d", "e"}, []string{"1.11111", "Wanaka", "3.1415962", "5"}}
 	result, err = makeColumnTypeList(data, map[int]bool{2: true, 3: true})
 	fmt.Printf("%v|%v\n", result, err)
 
@@ -98,12 +100,10 @@ func Example_makeQuantedLocation() {
 }
 
 func Example_convertQuantificationData() {
-	data := csvData{
+	data := [][]string{
 		[]string{"PMC", "Ca_%", "Ca_int", "SCLK", "Ti_%", "filename", "RTT"},
-		[][]string{
-			[]string{"23", "1.5", "5", "11111", "4", "fileA.msa", "44"},
-			[]string{"70", "3.4", "32", "12345", "4.21", "fileB.msa", "45"},
-		},
+		[]string{"23", "1.5", "5", "11111", "4", "fileA.msa", "44"},
+		[]string{"70", "3.4", "32", "12345", "4.21", "fileB.msa", "45"},
 	}
 
 	result, err := convertQuantificationData(data, []string{"PMC", "RTT", "SCLK", "filename"})
@@ -120,9 +120,17 @@ col 1,"col, 2",  col_3
 "value one",123, 456
 value two,444,555
 `
-	d, err := readCSV(csv, 2)
-	fmt.Printf("%v|%v", d, err)
-	// Output: {[col 1 col, 2 col_3] [[value one 123 456] [value two 444 555]]}|<nil>
+
+	// d, err := readCSV(csv, 2)
+	// fmt.Printf("%v|%v\n", d, err)
+	// Originally this test was expecting:
+	// {[col 1 col, 2 col_3] [[value one 123 456] [value two 444 555]]}|<nil>
+
+	d2, err := dataImportHelpers.ReadCSVData(bytes.NewReader([]byte(csv)), 2, ',')
+	fmt.Printf("%v|%v\n", d2, err)
+
+	// Output:
+	// [[col 1 col, 2 col_3] [value one 123 456] [value two 444 555]]|<nil>
 }
 
 func readDatasetFile(path string) (*protos.Experiment, error) {
@@ -141,17 +149,17 @@ func readDatasetFile(path string) (*protos.Experiment, error) {
 
 func Example_matchPMCsWithDataset() {
 	l := &logger.StdErrLogger{}
-	data := csvData{[]string{"X", "Y", "Z", "filename", "Ca_%"}, [][]string{[]string{"1", "0.40", "0", "Roastt_Laguna_Salinas_28kV_230uA_03_03_2020_111.msa", "4.5"}}}
+	data := [][]string{[]string{"X", "Y", "Z", "filename", "Ca_%"}, []string{"1", "0.40", "0", "Roastt_Laguna_Salinas_28kV_230uA_03_03_2020_111.msa", "4.5"}}
 
 	exp, err := readDatasetFile("./testdata/LagunaSalinasdataset.bin")
 	fmt.Printf("Test file read: %v\n", err)
-	fmt.Printf("%v, header[%v]=%v, data[%v]=%v\n", matchPMCsWithDataset(&data, exp, true, l), len(data.header)-1, data.header[5], len(data.data[0])-1, data.data[0][5])
+	fmt.Printf("%v, header[%v]=%v, data[%v]=%v\n", matchPMCsWithDataset(data, exp, true, l), len(data[0])-1, data[0][5], len(data[1])-1, data[1][5])
 
-	data = csvData{[]string{"X", "Y", "Z", "filename", "Ca_%"}, [][]string{[]string{"1", "930.40", "0", "Roastt_Laguna_Salinas_28kV_230uA_03_03_2020_111.msa", "4.5"}}}
-	fmt.Println(matchPMCsWithDataset(&data, exp, true, l))
+	data = [][]string{[]string{"X", "Y", "Z", "filename", "Ca_%"}, []string{"1", "930.40", "0", "Roastt_Laguna_Salinas_28kV_230uA_03_03_2020_111.msa", "4.5"}}
+	fmt.Println(matchPMCsWithDataset(data, exp, true, l))
 
-	data = csvData{[]string{"X", "Y", "Z", "filename", "Ca_%"}, [][]string{[]string{"1", "0.40", "0", "Roastt_Laguna_Salinas_28kV_230uA_03_03_2020_116.msa", "4.5"}}}
-	fmt.Printf("%v, header[%v]=%v, data[%v]=%v\n", matchPMCsWithDataset(&data, exp, false, l), len(data.header)-1, data.header[5], len(data.data[0])-1, data.data[0][5])
+	data = [][]string{[]string{"X", "Y", "Z", "filename", "Ca_%"}, []string{"1", "0.40", "0", "Roastt_Laguna_Salinas_28kV_230uA_03_03_2020_116.msa", "4.5"}}
+	fmt.Printf("%v, header[%v]=%v, data[%v]=%v\n", matchPMCsWithDataset(data, exp, false, l), len(data[0])-1, data[0][5], len(data[1])-1, data[1][5])
 
 	// Output:
 	// Test file read: <nil>

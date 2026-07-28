@@ -201,7 +201,7 @@ func beginDatasetFileReq(scanId string, hctx wsHelpers.HandlerContext) (*protos.
 	}
 
 	// We've come this far, we have access to the scan, so read it
-	exprPB, err := wsHelpers.ReadDatasetFile(scanId, hctx.Svcs, true)
+	exprPB, err := wsHelpers.ReadDatasetFile(scanId, hctx.Svcs)
 	if err != nil {
 		return nil, err
 	}

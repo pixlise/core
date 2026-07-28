@@ -30,6 +30,9 @@ const (
 	JobType_JT_IMPORT_IMAGE  JobType = 3
 	JobType_JT_RUN_QUANT     JobType = 4
 	JobType_JT_RUN_FIT       JobType = 5
+	// TODO:
+	// Future types:
+	JobType_JT_RUN_EXPRESSION JobType = 6
 )
 
 // Enum value maps for JobType.
@@ -41,14 +44,16 @@ var (
 		3: "JT_IMPORT_IMAGE",
 		4: "JT_RUN_QUANT",
 		5: "JT_RUN_FIT",
+		6: "JT_RUN_EXPRESSION",
 	}
 	JobType_value = map[string]int32{
-		"JT_UNKNOWN":       0,
-		"JT_IMPORT_SCAN":   1,
-		"JT_REIMPORT_SCAN": 2,
-		"JT_IMPORT_IMAGE":  3,
-		"JT_RUN_QUANT":     4,
-		"JT_RUN_FIT":       5,
+		"JT_UNKNOWN":        0,
+		"JT_IMPORT_SCAN":    1,
+		"JT_REIMPORT_SCAN":  2,
+		"JT_IMPORT_IMAGE":   3,
+		"JT_RUN_QUANT":      4,
+		"JT_RUN_FIT":        5,
+		"JT_RUN_EXPRESSION": 6,
 	}
 )
 
@@ -442,6 +447,7 @@ type JobQueueItem struct {
 	State                       JobQueueItem_State `protobuf:"varint,5,opt,name=state,proto3,enum=JobQueueItem_State" json:"state,omitempty"`
 	Message                     string             `protobuf:"bytes,6,opt,name=message,proto3" json:"message,omitempty"`
 	InstanceId                  string             `protobuf:"bytes,9,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	JobType                     JobType            `protobuf:"varint,10,opt,name=jobType,proto3,enum=JobType" json:"jobType,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -539,6 +545,13 @@ func (x *JobQueueItem) GetInstanceId() string {
 	return ""
 }
 
+func (x *JobQueueItem) GetJobType() JobType {
+	if x != nil {
+		return x.JobType
+	}
+	return JobType_JT_UNKNOWN
+}
+
 var File_job_proto protoreflect.FileDescriptor
 
 const file_job_proto_rawDesc = "" +
@@ -572,7 +585,7 @@ const file_job_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05jobId\x18\x02 \x01(\tR\x05jobId\x12,\n" +
 	"\x11handlerInstanceId\x18\x03 \x01(\tR\x11handlerInstanceId\x12*\n" +
-	"\x10timeStampUnixSec\x18\x04 \x01(\rR\x10timeStampUnixSec\"\xba\x03\n" +
+	"\x10timeStampUnixSec\x18\x04 \x01(\rR\x10timeStampUnixSec\"\xde\x03\n" +
 	"\fJobQueueItem\x12\x14\n" +
 	"\x05jobId\x18\x01 \x01(\tR\x05jobId\x12\x1e\n" +
 	"\n" +
@@ -586,14 +599,16 @@ const file_job_proto_rawDesc = "" +
 	"\amessage\x18\x06 \x01(\tR\amessage\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\t \x01(\tR\n" +
-	"instanceId\"I\n" +
+	"instanceId\x12\"\n" +
+	"\ajobType\x18\n" +
+	" \x01(\x0e2\b.JobTypeR\ajobType\"I\n" +
 	"\x05State\x12\v\n" +
 	"\aUNKNOWN\x10\x00\x12\f\n" +
 	"\bASSIGNED\x10\x01\x12\v\n" +
 	"\aRUNNING\x10\x02\x12\f\n" +
 	"\bCOMPLETE\x10\x03\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x04*z\n" +
+	"\x06FAILED\x10\x04*\x91\x01\n" +
 	"\aJobType\x12\x0e\n" +
 	"\n" +
 	"JT_UNKNOWN\x10\x00\x12\x12\n" +
@@ -602,7 +617,8 @@ const file_job_proto_rawDesc = "" +
 	"\x0fJT_IMPORT_IMAGE\x10\x03\x12\x10\n" +
 	"\fJT_RUN_QUANT\x10\x04\x12\x0e\n" +
 	"\n" +
-	"JT_RUN_FIT\x10\x05B\n" +
+	"JT_RUN_FIT\x10\x05\x12\x15\n" +
+	"\x11JT_RUN_EXPRESSION\x10\x06B\n" +
 	"Z\b.;protosb\x06proto3"
 
 var (
@@ -631,11 +647,12 @@ var file_job_proto_depIdxs = []int32{
 	1, // 0: JobStatus.status:type_name -> JobStatus.Status
 	0, // 1: JobStatus.jobType:type_name -> JobType
 	2, // 2: JobQueueItem.state:type_name -> JobQueueItem.State
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0, // 3: JobQueueItem.jobType:type_name -> JobType
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_job_proto_init() }

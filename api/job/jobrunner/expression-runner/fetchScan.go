@@ -11,7 +11,8 @@ import (
 func (e *expressionRunner) ensureFetchedScan() error {
 	if e.scan == nil {
 		if err := e.fetchScan(); err != nil || e.scan == nil {
-			e.Log().Errorf("Expression runner could not fetch scan: %v", err)
+			err = fmt.Errorf("Expression runner could not fetch scan: %v", err)
+			e.Log().Errorf("%v", err)
 			return err
 		}
 	}
@@ -22,7 +23,7 @@ func (e *expressionRunner) ensureFetchedScan() error {
 func (e *expressionRunner) fetchScan() error {
 	// Gather all the stuff we need
 	var err error
-	e.scan, err = wsHelpers.ReadDatasetFile(e.scanId, e.svcs, true)
+	e.scan, err = wsHelpers.ReadDatasetFile(e.scanId, e.minimalSvcs)
 	return err
 }
 

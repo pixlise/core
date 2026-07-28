@@ -143,8 +143,6 @@ type WSMessage struct {
 	//	*WSMessage_ElementSetWriteResp
 	//	*WSMessage_ExportFilesReq
 	//	*WSMessage_ExportFilesResp
-	//	*WSMessage_ExpressionCalculateReq
-	//	*WSMessage_ExpressionCalculateResp
 	//	*WSMessage_ExpressionDeleteReq
 	//	*WSMessage_ExpressionDeleteResp
 	//	*WSMessage_ExpressionDisplaySettingsGetReq
@@ -163,6 +161,8 @@ type WSMessage struct {
 	//	*WSMessage_ExpressionGroupWriteResp
 	//	*WSMessage_ExpressionListReq
 	//	*WSMessage_ExpressionListResp
+	//	*WSMessage_ExpressionOutputReq
+	//	*WSMessage_ExpressionOutputResp
 	//	*WSMessage_ExpressionWriteExecStatReq
 	//	*WSMessage_ExpressionWriteExecStatResp
 	//	*WSMessage_ExpressionWriteReq
@@ -866,24 +866,6 @@ func (x *WSMessage) GetExportFilesResp() *ExportFilesResp {
 	return nil
 }
 
-func (x *WSMessage) GetExpressionCalculateReq() *ExpressionCalculateReq {
-	if x != nil {
-		if x, ok := x.Contents.(*WSMessage_ExpressionCalculateReq); ok {
-			return x.ExpressionCalculateReq
-		}
-	}
-	return nil
-}
-
-func (x *WSMessage) GetExpressionCalculateResp() *ExpressionCalculateResp {
-	if x != nil {
-		if x, ok := x.Contents.(*WSMessage_ExpressionCalculateResp); ok {
-			return x.ExpressionCalculateResp
-		}
-	}
-	return nil
-}
-
 func (x *WSMessage) GetExpressionDeleteReq() *ExpressionDeleteReq {
 	if x != nil {
 		if x, ok := x.Contents.(*WSMessage_ExpressionDeleteReq); ok {
@@ -1041,6 +1023,24 @@ func (x *WSMessage) GetExpressionListResp() *ExpressionListResp {
 	if x != nil {
 		if x, ok := x.Contents.(*WSMessage_ExpressionListResp); ok {
 			return x.ExpressionListResp
+		}
+	}
+	return nil
+}
+
+func (x *WSMessage) GetExpressionOutputReq() *ExpressionOutputReq {
+	if x != nil {
+		if x, ok := x.Contents.(*WSMessage_ExpressionOutputReq); ok {
+			return x.ExpressionOutputReq
+		}
+	}
+	return nil
+}
+
+func (x *WSMessage) GetExpressionOutputResp() *ExpressionOutputResp {
+	if x != nil {
+		if x, ok := x.Contents.(*WSMessage_ExpressionOutputResp); ok {
+			return x.ExpressionOutputResp
 		}
 	}
 	return nil
@@ -3653,14 +3653,6 @@ type WSMessage_ExportFilesResp struct {
 	ExportFilesResp *ExportFilesResp `protobuf:"bytes,39,opt,name=exportFilesResp,proto3,oneof"`
 }
 
-type WSMessage_ExpressionCalculateReq struct {
-	ExpressionCalculateReq *ExpressionCalculateReq `protobuf:"bytes,362,opt,name=expressionCalculateReq,proto3,oneof"`
-}
-
-type WSMessage_ExpressionCalculateResp struct {
-	ExpressionCalculateResp *ExpressionCalculateResp `protobuf:"bytes,363,opt,name=expressionCalculateResp,proto3,oneof"`
-}
-
 type WSMessage_ExpressionDeleteReq struct {
 	ExpressionDeleteReq *ExpressionDeleteReq `protobuf:"bytes,40,opt,name=expressionDeleteReq,proto3,oneof"`
 }
@@ -3731,6 +3723,14 @@ type WSMessage_ExpressionListReq struct {
 
 type WSMessage_ExpressionListResp struct {
 	ExpressionListResp *ExpressionListResp `protobuf:"bytes,49,opt,name=expressionListResp,proto3,oneof"`
+}
+
+type WSMessage_ExpressionOutputReq struct {
+	ExpressionOutputReq *ExpressionOutputReq `protobuf:"bytes,366,opt,name=expressionOutputReq,proto3,oneof"`
+}
+
+type WSMessage_ExpressionOutputResp struct {
+	ExpressionOutputResp *ExpressionOutputResp `protobuf:"bytes,367,opt,name=expressionOutputResp,proto3,oneof"`
 }
 
 type WSMessage_ExpressionWriteExecStatReq struct {
@@ -4899,10 +4899,6 @@ func (*WSMessage_ExportFilesReq) isWSMessage_Contents() {}
 
 func (*WSMessage_ExportFilesResp) isWSMessage_Contents() {}
 
-func (*WSMessage_ExpressionCalculateReq) isWSMessage_Contents() {}
-
-func (*WSMessage_ExpressionCalculateResp) isWSMessage_Contents() {}
-
 func (*WSMessage_ExpressionDeleteReq) isWSMessage_Contents() {}
 
 func (*WSMessage_ExpressionDeleteResp) isWSMessage_Contents() {}
@@ -4938,6 +4934,10 @@ func (*WSMessage_ExpressionGroupWriteResp) isWSMessage_Contents() {}
 func (*WSMessage_ExpressionListReq) isWSMessage_Contents() {}
 
 func (*WSMessage_ExpressionListResp) isWSMessage_Contents() {}
+
+func (*WSMessage_ExpressionOutputReq) isWSMessage_Contents() {}
+
+func (*WSMessage_ExpressionOutputResp) isWSMessage_Contents() {}
 
 func (*WSMessage_ExpressionWriteExecStatReq) isWSMessage_Contents() {}
 
@@ -5485,7 +5485,7 @@ var File_websocket_proto protoreflect.FileDescriptor
 
 const file_websocket_proto_rawDesc = "" +
 	"\n" +
-	"\x0fwebsocket.proto\x1a\x1adetector-config-msgs.proto\x1a$diffraction-detected-peak-msgs.proto\x1a\x1ddiffraction-manual-msgs.proto\x1a\x1ddiffraction-status-msgs.proto\x1a\x16element-set-msgs.proto\x1a\x11export-msgs.proto\x1a\x1bexpression-group-msgs.proto\x1a\x15expression-msgs.proto\x1a\x1fexpression-calculate-msgs.proto\x1a\x1fimage-3d-model-point-msgs.proto\x1a\x1eimage-beam-location-msgs.proto\x1a\x10image-msgs.proto\x1a\x16image-coreg-msgs.proto\x1a\x18image-pyramid-msgs.proto\x1a\x0ejob-msgs.proto\x1a\x0elog-msgs.proto\x1a\x16memoisation-msgs.proto\x1a\x11module-msgs.proto\x1a\x1bownership-access-msgs.proto\x1a\x12piquant-msgs.proto\x1a\x1dpseudo-intensities-msgs.proto\x1a\x1bquantification-create.proto\x1a$quantification-management-msgs.proto\x1a\x1fquantification-multi-msgs.proto\x1a#quantification-retrieval-msgs.proto\x1a quantification-upload-msgs.proto\x1a\x0eroi-msgs.proto\x1a\x1dscan-beam-location-msgs.proto\x1a\x1escan-entry-metadata-msgs.proto\x1a\x15scan-entry-msgs.proto\x1a\x1dscan-entry-polygon-msgs.proto\x1a\x0fscan-msgs.proto\x1a\x1aselection-pixel-msgs.proto\x1a\x1aselection-entry-msgs.proto\x1a\x13spectrum-msgs.proto\x1a\x17notification-msgs.proto\x1a\x0etag-msgs.proto\x1a\x0ftest-msgs.proto\x1a user-group-management-msgs.proto\x1a\x1cuser-group-admins-msgs.proto\x1a\x1duser-group-joining-msgs.proto\x1a user-group-membership-msgs.proto\x1a\x1fuser-group-retrieval-msgs.proto\x1a\x1auser-management-msgs.proto\x1a\x0fuser-msgs.proto\x1a$user-notification-setting-msgs.proto\x1a\x0edoi-msgs.proto\x1a\x1fscreen-configuration-msgs.proto\x1a\x16widget-data-msgs.proto\x1a\fsystem.proto\x1a\x15references-msgs.proto\"\x8c\xce\x01\n" +
+	"\x0fwebsocket.proto\x1a\x1adetector-config-msgs.proto\x1a$diffraction-detected-peak-msgs.proto\x1a\x1ddiffraction-manual-msgs.proto\x1a\x1ddiffraction-status-msgs.proto\x1a\x16element-set-msgs.proto\x1a\x11export-msgs.proto\x1a\x1bexpression-group-msgs.proto\x1a\x15expression-msgs.proto\x1a\x1fexpression-calculate-msgs.proto\x1a\x1fimage-3d-model-point-msgs.proto\x1a\x1eimage-beam-location-msgs.proto\x1a\x10image-msgs.proto\x1a\x16image-coreg-msgs.proto\x1a\x18image-pyramid-msgs.proto\x1a\x0ejob-msgs.proto\x1a\x0elog-msgs.proto\x1a\x16memoisation-msgs.proto\x1a\x11module-msgs.proto\x1a\x1bownership-access-msgs.proto\x1a\x12piquant-msgs.proto\x1a\x1dpseudo-intensities-msgs.proto\x1a\x1bquantification-create.proto\x1a$quantification-management-msgs.proto\x1a\x1fquantification-multi-msgs.proto\x1a#quantification-retrieval-msgs.proto\x1a quantification-upload-msgs.proto\x1a\x0eroi-msgs.proto\x1a\x1dscan-beam-location-msgs.proto\x1a\x1escan-entry-metadata-msgs.proto\x1a\x15scan-entry-msgs.proto\x1a\x1dscan-entry-polygon-msgs.proto\x1a\x0fscan-msgs.proto\x1a\x1aselection-pixel-msgs.proto\x1a\x1aselection-entry-msgs.proto\x1a\x13spectrum-msgs.proto\x1a\x17notification-msgs.proto\x1a\x0etag-msgs.proto\x1a\x0ftest-msgs.proto\x1a user-group-management-msgs.proto\x1a\x1cuser-group-admins-msgs.proto\x1a\x1duser-group-joining-msgs.proto\x1a user-group-membership-msgs.proto\x1a\x1fuser-group-retrieval-msgs.proto\x1a\x1auser-management-msgs.proto\x1a\x0fuser-msgs.proto\x1a$user-notification-setting-msgs.proto\x1a\x0edoi-msgs.proto\x1a\x1fscreen-configuration-msgs.proto\x1a\x16widget-data-msgs.proto\x1a\fsystem.proto\x1a\x15references-msgs.proto\"\xfa\xcd\x01\n" +
 	"\tWSMessage\x12\x14\n" +
 	"\x05msgId\x18\x01 \x01(\rR\x05msgId\x12'\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x0f.ResponseStatusR\x06status\x12\x1c\n" +
@@ -5531,9 +5531,7 @@ const file_websocket_proto_rawDesc = "" +
 	"\x12elementSetWriteReq\x18$ \x01(\v2\x13.ElementSetWriteReqH\x00R\x12elementSetWriteReq\x12H\n" +
 	"\x13elementSetWriteResp\x18% \x01(\v2\x14.ElementSetWriteRespH\x00R\x13elementSetWriteResp\x129\n" +
 	"\x0eexportFilesReq\x18& \x01(\v2\x0f.ExportFilesReqH\x00R\x0eexportFilesReq\x12<\n" +
-	"\x0fexportFilesResp\x18' \x01(\v2\x10.ExportFilesRespH\x00R\x0fexportFilesResp\x12R\n" +
-	"\x16expressionCalculateReq\x18\xea\x02 \x01(\v2\x17.ExpressionCalculateReqH\x00R\x16expressionCalculateReq\x12U\n" +
-	"\x17expressionCalculateResp\x18\xeb\x02 \x01(\v2\x18.ExpressionCalculateRespH\x00R\x17expressionCalculateResp\x12H\n" +
+	"\x0fexportFilesResp\x18' \x01(\v2\x10.ExportFilesRespH\x00R\x0fexportFilesResp\x12H\n" +
 	"\x13expressionDeleteReq\x18( \x01(\v2\x14.ExpressionDeleteReqH\x00R\x13expressionDeleteReq\x12K\n" +
 	"\x14expressionDeleteResp\x18) \x01(\v2\x15.ExpressionDeleteRespH\x00R\x14expressionDeleteResp\x12m\n" +
 	"\x1fexpressionDisplaySettingsGetReq\x18\xa0\x02 \x01(\v2 .ExpressionDisplaySettingsGetReqH\x00R\x1fexpressionDisplaySettingsGetReq\x12p\n" +
@@ -5551,7 +5549,9 @@ const file_websocket_proto_rawDesc = "" +
 	"\x17expressionGroupWriteReq\x18. \x01(\v2\x18.ExpressionGroupWriteReqH\x00R\x17expressionGroupWriteReq\x12W\n" +
 	"\x18expressionGroupWriteResp\x18/ \x01(\v2\x19.ExpressionGroupWriteRespH\x00R\x18expressionGroupWriteResp\x12B\n" +
 	"\x11expressionListReq\x180 \x01(\v2\x12.ExpressionListReqH\x00R\x11expressionListReq\x12E\n" +
-	"\x12expressionListResp\x181 \x01(\v2\x13.ExpressionListRespH\x00R\x12expressionListResp\x12]\n" +
+	"\x12expressionListResp\x181 \x01(\v2\x13.ExpressionListRespH\x00R\x12expressionListResp\x12I\n" +
+	"\x13expressionOutputReq\x18\xee\x02 \x01(\v2\x14.ExpressionOutputReqH\x00R\x13expressionOutputReq\x12L\n" +
+	"\x14expressionOutputResp\x18\xef\x02 \x01(\v2\x15.ExpressionOutputRespH\x00R\x14expressionOutputResp\x12]\n" +
 	"\x1aexpressionWriteExecStatReq\x184 \x01(\v2\x1b.ExpressionWriteExecStatReqH\x00R\x1aexpressionWriteExecStatReq\x12`\n" +
 	"\x1bexpressionWriteExecStatResp\x185 \x01(\v2\x1c.ExpressionWriteExecStatRespH\x00R\x1bexpressionWriteExecStatResp\x12E\n" +
 	"\x12expressionWriteReq\x186 \x01(\v2\x13.ExpressionWriteReqH\x00R\x12expressionWriteReq\x12H\n" +
@@ -5906,26 +5906,26 @@ var file_websocket_proto_goTypes = []any{
 	(*ElementSetWriteResp)(nil),                      // 40: ElementSetWriteResp
 	(*ExportFilesReq)(nil),                           // 41: ExportFilesReq
 	(*ExportFilesResp)(nil),                          // 42: ExportFilesResp
-	(*ExpressionCalculateReq)(nil),                   // 43: ExpressionCalculateReq
-	(*ExpressionCalculateResp)(nil),                  // 44: ExpressionCalculateResp
-	(*ExpressionDeleteReq)(nil),                      // 45: ExpressionDeleteReq
-	(*ExpressionDeleteResp)(nil),                     // 46: ExpressionDeleteResp
-	(*ExpressionDisplaySettingsGetReq)(nil),          // 47: ExpressionDisplaySettingsGetReq
-	(*ExpressionDisplaySettingsGetResp)(nil),         // 48: ExpressionDisplaySettingsGetResp
-	(*ExpressionDisplaySettingsWriteReq)(nil),        // 49: ExpressionDisplaySettingsWriteReq
-	(*ExpressionDisplaySettingsWriteResp)(nil),       // 50: ExpressionDisplaySettingsWriteResp
-	(*ExpressionGetReq)(nil),                         // 51: ExpressionGetReq
-	(*ExpressionGetResp)(nil),                        // 52: ExpressionGetResp
-	(*ExpressionGroupDeleteReq)(nil),                 // 53: ExpressionGroupDeleteReq
-	(*ExpressionGroupDeleteResp)(nil),                // 54: ExpressionGroupDeleteResp
-	(*ExpressionGroupGetReq)(nil),                    // 55: ExpressionGroupGetReq
-	(*ExpressionGroupGetResp)(nil),                   // 56: ExpressionGroupGetResp
-	(*ExpressionGroupListReq)(nil),                   // 57: ExpressionGroupListReq
-	(*ExpressionGroupListResp)(nil),                  // 58: ExpressionGroupListResp
-	(*ExpressionGroupWriteReq)(nil),                  // 59: ExpressionGroupWriteReq
-	(*ExpressionGroupWriteResp)(nil),                 // 60: ExpressionGroupWriteResp
-	(*ExpressionListReq)(nil),                        // 61: ExpressionListReq
-	(*ExpressionListResp)(nil),                       // 62: ExpressionListResp
+	(*ExpressionDeleteReq)(nil),                      // 43: ExpressionDeleteReq
+	(*ExpressionDeleteResp)(nil),                     // 44: ExpressionDeleteResp
+	(*ExpressionDisplaySettingsGetReq)(nil),          // 45: ExpressionDisplaySettingsGetReq
+	(*ExpressionDisplaySettingsGetResp)(nil),         // 46: ExpressionDisplaySettingsGetResp
+	(*ExpressionDisplaySettingsWriteReq)(nil),        // 47: ExpressionDisplaySettingsWriteReq
+	(*ExpressionDisplaySettingsWriteResp)(nil),       // 48: ExpressionDisplaySettingsWriteResp
+	(*ExpressionGetReq)(nil),                         // 49: ExpressionGetReq
+	(*ExpressionGetResp)(nil),                        // 50: ExpressionGetResp
+	(*ExpressionGroupDeleteReq)(nil),                 // 51: ExpressionGroupDeleteReq
+	(*ExpressionGroupDeleteResp)(nil),                // 52: ExpressionGroupDeleteResp
+	(*ExpressionGroupGetReq)(nil),                    // 53: ExpressionGroupGetReq
+	(*ExpressionGroupGetResp)(nil),                   // 54: ExpressionGroupGetResp
+	(*ExpressionGroupListReq)(nil),                   // 55: ExpressionGroupListReq
+	(*ExpressionGroupListResp)(nil),                  // 56: ExpressionGroupListResp
+	(*ExpressionGroupWriteReq)(nil),                  // 57: ExpressionGroupWriteReq
+	(*ExpressionGroupWriteResp)(nil),                 // 58: ExpressionGroupWriteResp
+	(*ExpressionListReq)(nil),                        // 59: ExpressionListReq
+	(*ExpressionListResp)(nil),                       // 60: ExpressionListResp
+	(*ExpressionOutputReq)(nil),                      // 61: ExpressionOutputReq
+	(*ExpressionOutputResp)(nil),                     // 62: ExpressionOutputResp
 	(*ExpressionWriteExecStatReq)(nil),               // 63: ExpressionWriteExecStatReq
 	(*ExpressionWriteExecStatResp)(nil),              // 64: ExpressionWriteExecStatResp
 	(*ExpressionWriteReq)(nil),                       // 65: ExpressionWriteReq
@@ -6241,26 +6241,26 @@ var file_websocket_proto_depIdxs = []int32{
 	40,  // 39: WSMessage.elementSetWriteResp:type_name -> ElementSetWriteResp
 	41,  // 40: WSMessage.exportFilesReq:type_name -> ExportFilesReq
 	42,  // 41: WSMessage.exportFilesResp:type_name -> ExportFilesResp
-	43,  // 42: WSMessage.expressionCalculateReq:type_name -> ExpressionCalculateReq
-	44,  // 43: WSMessage.expressionCalculateResp:type_name -> ExpressionCalculateResp
-	45,  // 44: WSMessage.expressionDeleteReq:type_name -> ExpressionDeleteReq
-	46,  // 45: WSMessage.expressionDeleteResp:type_name -> ExpressionDeleteResp
-	47,  // 46: WSMessage.expressionDisplaySettingsGetReq:type_name -> ExpressionDisplaySettingsGetReq
-	48,  // 47: WSMessage.expressionDisplaySettingsGetResp:type_name -> ExpressionDisplaySettingsGetResp
-	49,  // 48: WSMessage.expressionDisplaySettingsWriteReq:type_name -> ExpressionDisplaySettingsWriteReq
-	50,  // 49: WSMessage.expressionDisplaySettingsWriteResp:type_name -> ExpressionDisplaySettingsWriteResp
-	51,  // 50: WSMessage.expressionGetReq:type_name -> ExpressionGetReq
-	52,  // 51: WSMessage.expressionGetResp:type_name -> ExpressionGetResp
-	53,  // 52: WSMessage.expressionGroupDeleteReq:type_name -> ExpressionGroupDeleteReq
-	54,  // 53: WSMessage.expressionGroupDeleteResp:type_name -> ExpressionGroupDeleteResp
-	55,  // 54: WSMessage.expressionGroupGetReq:type_name -> ExpressionGroupGetReq
-	56,  // 55: WSMessage.expressionGroupGetResp:type_name -> ExpressionGroupGetResp
-	57,  // 56: WSMessage.expressionGroupListReq:type_name -> ExpressionGroupListReq
-	58,  // 57: WSMessage.expressionGroupListResp:type_name -> ExpressionGroupListResp
-	59,  // 58: WSMessage.expressionGroupWriteReq:type_name -> ExpressionGroupWriteReq
-	60,  // 59: WSMessage.expressionGroupWriteResp:type_name -> ExpressionGroupWriteResp
-	61,  // 60: WSMessage.expressionListReq:type_name -> ExpressionListReq
-	62,  // 61: WSMessage.expressionListResp:type_name -> ExpressionListResp
+	43,  // 42: WSMessage.expressionDeleteReq:type_name -> ExpressionDeleteReq
+	44,  // 43: WSMessage.expressionDeleteResp:type_name -> ExpressionDeleteResp
+	45,  // 44: WSMessage.expressionDisplaySettingsGetReq:type_name -> ExpressionDisplaySettingsGetReq
+	46,  // 45: WSMessage.expressionDisplaySettingsGetResp:type_name -> ExpressionDisplaySettingsGetResp
+	47,  // 46: WSMessage.expressionDisplaySettingsWriteReq:type_name -> ExpressionDisplaySettingsWriteReq
+	48,  // 47: WSMessage.expressionDisplaySettingsWriteResp:type_name -> ExpressionDisplaySettingsWriteResp
+	49,  // 48: WSMessage.expressionGetReq:type_name -> ExpressionGetReq
+	50,  // 49: WSMessage.expressionGetResp:type_name -> ExpressionGetResp
+	51,  // 50: WSMessage.expressionGroupDeleteReq:type_name -> ExpressionGroupDeleteReq
+	52,  // 51: WSMessage.expressionGroupDeleteResp:type_name -> ExpressionGroupDeleteResp
+	53,  // 52: WSMessage.expressionGroupGetReq:type_name -> ExpressionGroupGetReq
+	54,  // 53: WSMessage.expressionGroupGetResp:type_name -> ExpressionGroupGetResp
+	55,  // 54: WSMessage.expressionGroupListReq:type_name -> ExpressionGroupListReq
+	56,  // 55: WSMessage.expressionGroupListResp:type_name -> ExpressionGroupListResp
+	57,  // 56: WSMessage.expressionGroupWriteReq:type_name -> ExpressionGroupWriteReq
+	58,  // 57: WSMessage.expressionGroupWriteResp:type_name -> ExpressionGroupWriteResp
+	59,  // 58: WSMessage.expressionListReq:type_name -> ExpressionListReq
+	60,  // 59: WSMessage.expressionListResp:type_name -> ExpressionListResp
+	61,  // 60: WSMessage.expressionOutputReq:type_name -> ExpressionOutputReq
+	62,  // 61: WSMessage.expressionOutputResp:type_name -> ExpressionOutputResp
 	63,  // 62: WSMessage.expressionWriteExecStatReq:type_name -> ExpressionWriteExecStatReq
 	64,  // 63: WSMessage.expressionWriteExecStatResp:type_name -> ExpressionWriteExecStatResp
 	65,  // 64: WSMessage.expressionWriteReq:type_name -> ExpressionWriteReq
@@ -6637,8 +6637,6 @@ func file_websocket_proto_init() {
 		(*WSMessage_ElementSetWriteResp)(nil),
 		(*WSMessage_ExportFilesReq)(nil),
 		(*WSMessage_ExportFilesResp)(nil),
-		(*WSMessage_ExpressionCalculateReq)(nil),
-		(*WSMessage_ExpressionCalculateResp)(nil),
 		(*WSMessage_ExpressionDeleteReq)(nil),
 		(*WSMessage_ExpressionDeleteResp)(nil),
 		(*WSMessage_ExpressionDisplaySettingsGetReq)(nil),
@@ -6657,6 +6655,8 @@ func file_websocket_proto_init() {
 		(*WSMessage_ExpressionGroupWriteResp)(nil),
 		(*WSMessage_ExpressionListReq)(nil),
 		(*WSMessage_ExpressionListResp)(nil),
+		(*WSMessage_ExpressionOutputReq)(nil),
+		(*WSMessage_ExpressionOutputResp)(nil),
 		(*WSMessage_ExpressionWriteExecStatReq)(nil),
 		(*WSMessage_ExpressionWriteExecStatResp)(nil),
 		(*WSMessage_ExpressionWriteReq)(nil),

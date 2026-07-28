@@ -44,6 +44,10 @@ func ReadBeamLocationsFile(beamPath string, expectMultipleIJ bool, mainImagePMC 
 
 	lineNo := 0
 	for scanner.Scan() {
+		if scanner.Err() != nil {
+			return nil, []int32{}, scanner.Err()
+		}
+
 		line := scanner.Text()
 		lineNo++
 
@@ -60,7 +64,7 @@ func ReadBeamLocationsFile(beamPath string, expectMultipleIJ bool, mainImagePMC 
 	if lineNo > 0 {
 		lineNo--
 	}
-	rows, err := ReadCSV(beamPath, lineNo, ',', jobLog)
+	rows, err := ReadCSV(beamPath, lineNo, ',')
 	if err != nil {
 		return nil, []int32{}, err
 	}

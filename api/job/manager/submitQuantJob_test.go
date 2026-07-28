@@ -64,6 +64,8 @@ func initJobManagerTest(logLevel *logger.LogLevel, timestamps []int64) (string, 
 	//svcs.Config.JobRunnerDockerImage = "ghcr.io/pixlise/job-runner:latest"
 	svcs.Config.QuantExecutor = "local:" + bucketSimRoot //jobexecutor.MakeLocalExecutor(bucketSimRoot)
 	svcs.Config.Jobs.CoresPerNode = 4
+	svcs.Config.ExpressionRerunIntervalSec = 600
+	svcs.Config.FileCacheDisabled = true
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{QueuedTimeStamps: timestamps}
 
 	// Make sure the PIQUANT executable is one dir up
@@ -82,7 +84,7 @@ func initJobManagerTest(logLevel *logger.LogLevel, timestamps []int64) (string, 
 	return origWD, bucketSimRoot, svcs
 }
 
-func printResults(svcs services.APIServices) {
+func printResults(includeQuants bool, svcs *services.APIServices) {
 	// At this point, check that the expected stuff has indeed happened
 	ctx := context.TODO()
 	cursor, err := svcs.MongoDB.Collection(dbCollections.JobQueueName).Find(ctx, bson.M{}, options.Find())
@@ -130,19 +132,21 @@ func printResults(svcs services.APIServices) {
 		}
 	}
 
-	cursor, err = svcs.MongoDB.Collection(dbCollections.QuantificationsName).Find(ctx, bson.M{}, options.Find())
-	fmt.Printf("Quant: %v\n", err)
+	if includeQuants {
+		cursor, err = svcs.MongoDB.Collection(dbCollections.QuantificationsName).Find(ctx, bson.M{}, options.Find())
+		fmt.Printf("Quant: %v\n", err)
 
-	if err == nil {
-		// There queue should be empty
-		quantItems := []*protos.QuantificationSummary{}
-		err = cursor.All(context.TODO(), &quantItems)
-		if err != nil {
-			fmt.Printf("Quant read: %v\n", err)
-		}
-		fmt.Printf("Quants at end: %v\n", len(quantItems))
-		if len(quantItems) > 0 {
-			fmt.Printf("Quant[0] id: %v, status: %v, msg: \"%v\"\n", quantItems[0].Id, quantItems[0].Status.Status, quantItems[0].Status.Message)
+		if err == nil {
+			// There queue should be empty
+			quantItems := []*protos.QuantificationSummary{}
+			err = cursor.All(context.TODO(), &quantItems)
+			if err != nil {
+				fmt.Printf("Quant read: %v\n", err)
+			}
+			fmt.Printf("Quants at end: %v\n", len(quantItems))
+			if len(quantItems) > 0 {
+				fmt.Printf("Quant[0] id: %v, status: %v, msg: \"%v\"\n", quantItems[0].Id, quantItems[0].Status.Status, quantItems[0].Status.Message)
+			}
 		}
 	}
 }
@@ -165,7 +169,7 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := CreateJobManager(&svcs, 0, false, false, true)
+	jm, err := CreateJobManager(&svcs, 0, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	createParams := &protos.QuantCreateParams{
@@ -186,12 +190,14 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
 
 	// Run the job node queue processing code
-	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
+	jn := jobnode.CreateJobNode("pixlise-job", "",
+		servicesMock.JobBucketForUnitTest, servicesMock.ConfigBucketForUnitTest, servicesMock.UsersBucketForUnitTest, servicesMock.DatasetsBucketForUnitTest,
+		svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
 	jn.StartJobs([]string{"quant-id123-node-0"})
 
 	jm.RunCheckJobQueueForTest()
 
-	printResults(svcs)
+	printResults(true, &svcs)
 
 	// Output:
 	// jm Create: <nil>
@@ -302,7 +308,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := CreateJobManager(&svcs, 0, false, false, true)
+	jm, err := CreateJobManager(&svcs, 0, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	createParams := &protos.QuantCreateParams{
@@ -323,12 +329,14 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
 
 	// Run the job node queue processing code
-	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
+	jn := jobnode.CreateJobNode("pixlise-job", "",
+		servicesMock.JobBucketForUnitTest, servicesMock.ConfigBucketForUnitTest, servicesMock.UsersBucketForUnitTest, servicesMock.DatasetsBucketForUnitTest,
+		svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
 	jn.StartJobs([]string{"quant-id123-node-0", "quant-id123-node-1", "quant-id123-node-2", "quant-id123-node-3"})
 
 	jm.RunCheckJobQueueForTest()
 
-	printResults(svcs)
+	printResults(true, &svcs)
 
 	// Output:
 	// jm Create: <nil>
@@ -545,7 +553,7 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := CreateJobManager(&svcs, 0, false, false, true)
+	jm, err := CreateJobManager(&svcs, 0, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	createParams := &protos.QuantCreateParams{
@@ -566,10 +574,12 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	fmt.Printf("SubmitQuantJob: %v, %v\n", status.Status, err)
 
 	// Run the job node queue processing code
-	jn := jobnode.CreateJobNode("pixlise-job", "", servicesMock.JobBucketForUnitTest, svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
+	jn := jobnode.CreateJobNode("pixlise-job", "",
+		servicesMock.JobBucketForUnitTest, servicesMock.ConfigBucketForUnitTest, servicesMock.UsersBucketForUnitTest, servicesMock.DatasetsBucketForUnitTest,
+		svcs.InstanceId, svcs.FS, svcs.MongoDB, svcs.Log, svcs.TimeStamper)
 	jn.StartJobs([]string{"quant-id123-node-0", "id2"})
 
-	printResults(svcs)
+	printResults(true, &svcs)
 
 	// time.Sleep(3 * time.Second)
 	// jm.RunCheckJobQueueForTest()

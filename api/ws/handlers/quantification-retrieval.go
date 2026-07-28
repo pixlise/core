@@ -174,7 +174,7 @@ func HandleQuantRawDataGetReq(req *protos.QuantRawDataGetReq, hctx wsHelpers.Han
 	// Read the CSV file from S3
 
 	csvPath := path.Join(dbItem.Status.OutputFilePath, req.QuantId+".csv")
-	csvData, err := hctx.Svcs.FS.ReadObject(hctx.Svcs.Config.UsersBucket, csvPath)
+	csvBytes, err := hctx.Svcs.FS.ReadObject(hctx.Svcs.Config.UsersBucket, csvPath)
 	if err != nil {
 		if hctx.Svcs.FS.IsNotFoundError(err) {
 			return nil, errorwithstatus.MakeNotFoundError(req.QuantId + ".csv")
@@ -183,6 +183,6 @@ func HandleQuantRawDataGetReq(req *protos.QuantRawDataGetReq, hctx wsHelpers.Han
 	}
 
 	return &protos.QuantRawDataGetResp{
-		Data: string(csvData),
+		Data: string(csvBytes),
 	}, nil
 }

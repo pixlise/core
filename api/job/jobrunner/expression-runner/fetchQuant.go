@@ -21,7 +21,8 @@ var EnergyCalibrationDetector = "A"
 func (e *expressionRunner) ensureFetchedQuant() error {
 	if e.quantData == nil {
 		if err := e.fetchQuant(); err != nil || e.quantData == nil {
-			e.Log().Errorf("Expression runner could not fetch quant: %v", err)
+			err = fmt.Errorf("Expression runner could not fetch quant: %v", err)
+			e.Log().Errorf("%v", err)
 			return err
 		}
 	}
@@ -32,7 +33,7 @@ func (e *expressionRunner) ensureFetchedQuant() error {
 func (e *expressionRunner) fetchQuant() error {
 	// Read quant from DB
 	ctx := context.TODO()
-	coll := e.svcs.MongoDB.Collection(dbCollections.QuantificationsName)
+	coll := e.minimalSvcs.MongoDB.Collection(dbCollections.QuantificationsName)
 
 	filter := bson.M{"_id": e.quantId}
 	opts := options.FindOne().SetProjection(bson.M{"status.outputfilepath": true, "_id": true})
@@ -48,7 +49,7 @@ func (e *expressionRunner) fetchQuant() error {
 	}
 
 	quantPath := path.Join(quantSummary.Status.OutputFilePath, e.quantId+".bin")
-	quantData, err := wsHelpers.ReadQuantificationFile(e.quantId, quantPath, e.svcs)
+	quantData, err := wsHelpers.ReadQuantificationFile(e.quantId, quantPath, e.minimalSvcs)
 	if err != nil {
 		return err
 	}
