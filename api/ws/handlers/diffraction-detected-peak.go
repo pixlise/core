@@ -20,7 +20,7 @@ func HandleDetectedDiffractionPeaksReq(req *protos.DetectedDiffractionPeaksReq, 
 	}
 
 	// Cache the file locally, like we do with datasets (aka Scans)
-	diffRawData, err := wsHelpers.ReadDiffractionFile(req.ScanId, hctx.Svcs, true)
+	diffRawData, err := wsHelpers.ReadDiffractionFile(req.ScanId, hctx.Svcs)
 	if err != nil {
 		return nil, err
 	}
