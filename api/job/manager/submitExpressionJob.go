@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -26,6 +27,15 @@ func (jm *JobManager) SubmitExpressionJob(scanId, quantId, expressionId, roiId, 
 	return status, err
 }
 
+func makeLuaExpressionId(memCacheKey string) string {
+	b64MemCacheKey := base64.StdEncoding.EncodeToString([]byte(memCacheKey))
+
+	b64MemCacheKey = strings.TrimSuffix(b64MemCacheKey, "=")
+	b64MemCacheKey = strings.TrimSuffix(b64MemCacheKey, "=")
+
+	return fmt.Sprintf("expr-lua-%v", b64MemCacheKey)
+}
+
 func (jm *JobManager) internalSubmitExpressionJob(scanId, quantId, expressionId, roiId, memoCacheKey string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
 	// If we don't have a user, use the built-in PIXLISE user
 	requestorUserId := sessionuser.PIXLISESystemUserId
@@ -37,9 +47,7 @@ func (jm *JobManager) internalSubmitExpressionJob(scanId, quantId, expressionId,
 	// For this, because expressions are then saved as memosation items, we don't generate a random id - we generate an id with the
 	// mem cache key appended. This way we can also check if there is an existing job for this same purpose and not re-run it if
 	// for example multiple users request the same job or if a user is hopping between tabs in PIXLISE.
-
-	b64MemCacheKey := base64.StdEncoding.EncodeToString([]byte(memoCacheKey))
-	jobId := fmt.Sprintf("expr-lua-%v", b64MemCacheKey)
+	jobId := makeLuaExpressionId(memoCacheKey)
 
 	// First task - check for duplicates
 	existingJobItem := &protos.JobStatus{}
