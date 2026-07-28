@@ -264,10 +264,14 @@ func (jn *JobNode) runLocalLuaExpression(command string, args []string) (string,
 		return "", fmt.Errorf("Lua expression failed to run - %v", err)
 	}
 
+	// NOTE: We disable file caching in local/testing mode on the assumption that
+	// we don't want to break the test output!
+	fileCacheDisabled := len(jn.jobContainer) <= 0
+
 	// Run the expression locally because we have all the DB and whatever access required
 	outputMap, _, _, err := expressionrunner.RunExpression(argLookup["expressionId"], argLookup["scanId"], argLookup["quantId"],
 		jn.log, jn.db, jn.ts, jn.fs,
-		jn.configBucket, jn.usersBucket, jn.datasetsBucket, true, false)
+		jn.configBucket, jn.usersBucket, jn.datasetsBucket, true, false, fileCacheDisabled)
 
 	if err != nil {
 		return "", err

@@ -17,14 +17,13 @@ type JobManagerCompletionFunction func(*jobconfig.JobGroupConfig, *protos.JobSta
 type JobManager struct {
 	svcs                 *services.APIServices
 	jobCompletionMethods map[string]JobManagerCompletionFunction
-	useFileCache         bool
 	localJobNode         *jobnode.JobNode
 	startNodes           bool
 	startedNodeCount     uint
 	userSessionLookup    map[string]*melody.Session
 }
 
-func CreateJobManager(svcs *services.APIServices, startupQueueCheckDelaySec int, monitorJobQueue bool, useFileCache bool, startNodes bool) (*JobManager, error) {
+func CreateJobManager(svcs *services.APIServices, startupQueueCheckDelaySec int, monitorJobQueue bool, startNodes bool) (*JobManager, error) {
 	// Make a job manager
 	jm := &JobManager{
 		svcs: svcs,
@@ -33,7 +32,6 @@ func CreateJobManager(svcs *services.APIServices, startupQueueCheckDelaySec int,
 			JobComplete_SingleCSV:     completeQuantSingleMapJob,
 			JobComplete_LuaExpression: completeExpressionJob,
 		},
-		useFileCache:      useFileCache,
 		startNodes:        startNodes,
 		userSessionLookup: map[string]*melody.Session{},
 	}

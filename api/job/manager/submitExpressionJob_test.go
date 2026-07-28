@@ -105,7 +105,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_NoExpr() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := CreateJobManager(&svcs, 0, false, false, true)
+	jm, err := CreateJobManager(&svcs, 0, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	jm.SubmitExpressionJob("048300551", "quant-ggy6zxhn23p7rlv9", "non-existant-expr", "", "", nil, nil)
@@ -587,7 +587,7 @@ func setupForTest(exprId, scanId, quantId string, modIds, modVers []string) (*Jo
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug) // LogInfo)
 
-	jm, err := CreateJobManager(&svcs, 0, false, false, true)
+	jm, err := CreateJobManager(&svcs, 0, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 	ctx := context.TODO()
 	svcs.MongoDB.Drop(ctx)

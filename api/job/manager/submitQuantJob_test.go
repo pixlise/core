@@ -65,6 +65,7 @@ func initJobManagerTest(logLevel *logger.LogLevel, timestamps []int64) (string, 
 	svcs.Config.QuantExecutor = "local:" + bucketSimRoot //jobexecutor.MakeLocalExecutor(bucketSimRoot)
 	svcs.Config.Jobs.CoresPerNode = 4
 	svcs.Config.ExpressionRerunIntervalSec = 600
+	svcs.Config.FileCacheDisabled = true
 	svcs.TimeStamper = &timestamper.MockTimeNowStamper{QueuedTimeStamps: timestamps}
 
 	// Make sure the PIQUANT executable is one dir up
@@ -168,7 +169,7 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := CreateJobManager(&svcs, 0, false, false, true)
+	jm, err := CreateJobManager(&svcs, 0, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	createParams := &protos.QuantCreateParams{
@@ -307,7 +308,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := CreateJobManager(&svcs, 0, false, false, true)
+	jm, err := CreateJobManager(&svcs, 0, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	createParams := &protos.QuantCreateParams{
@@ -552,7 +553,7 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := CreateJobManager(&svcs, 0, false, false, true)
+	jm, err := CreateJobManager(&svcs, 0, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	createParams := &protos.QuantCreateParams{

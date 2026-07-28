@@ -115,6 +115,7 @@ type APIConfig struct {
 	KubernetesLocation  string // "internal" vs "external"
 
 	ExpressionRerunIntervalSec int64
+	FileCacheDisabled          bool // Only enable for tests so we get consistant/reproducable output!
 }
 
 // JobConfig contains all configs required to be able to run jobs by the back-end. This can involve starting quants or other jobs

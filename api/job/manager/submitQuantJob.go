@@ -129,7 +129,7 @@ func (jm *JobManager) internalSubmitQuantJob(
 	// PMC list(s)
 	nodePMCFileName := "node.pmcs"
 	pmcFiles, _ /*spectraPerNode*/, rois, combined, quantByROI, err := quantification.PreparePMCLists(
-		createParams, requestorUserSess, nodePMCFileName, jobS3Path, jm.svcs, jm.useFileCache)
+		createParams, requestorUserSess, nodePMCFileName, jobS3Path, jm.svcs)
 
 	if err != nil {
 		return nil, err

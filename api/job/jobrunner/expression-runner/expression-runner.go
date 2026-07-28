@@ -52,7 +52,7 @@ import (
 func RunExpression(expressionId string, scanId string, quantId string,
 	log logger.ILogger, db *mongo.Database, ts timestamper.ITimeStamper, remoteFS fileaccess.FileAccess,
 	configBucket string, usersBucket string, datasetsBucket string,
-	saveCode bool, debug bool) (*PMCDataValues, uint64, uint64, error) {
+	saveCode bool, debug bool, fileCacheDisabled bool) (*PMCDataValues, uint64, uint64, error) {
 	ch := make(chan exprResult)
 
 	// Create a temporary fake svcs, because the config reading code requires a bunch of things from it
@@ -61,9 +61,10 @@ func RunExpression(expressionId string, scanId string, quantId string,
 		MongoDB: db,
 		FS:      remoteFS,
 		Config: config.APIConfig{
-			ConfigBucket:   configBucket,
-			UsersBucket:    usersBucket,
-			DatasetsBucket: datasetsBucket,
+			ConfigBucket:      configBucket,
+			UsersBucket:       usersBucket,
+			DatasetsBucket:    datasetsBucket,
+			FileCacheDisabled: fileCacheDisabled,
 		},
 		Log:         log,
 		TimeStamper: ts,

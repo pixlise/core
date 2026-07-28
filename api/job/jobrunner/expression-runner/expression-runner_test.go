@@ -56,7 +56,7 @@ Got map size 121
 Returned map matches expected output from PIXLISE`
 
 	for name, memoinclude := range testType {
-		t.Logf("RunExpression testing scan: %v, expression: %v (%v)", scanId, exprId, name)
+		t.Logf("runExpressionTest(short) scan: %v, expression: %v (%v)", scanId, exprId, name)
 		result := runExpressionTest(scanId, quantId, exprId, modIds, modVers, memoinclude)
 		//t.Log(result)
 
@@ -102,7 +102,7 @@ Returned map matches expected output from PIXLISE`
 
 	for c, exprId := range exprIds {
 		for name, memoinclude := range testType[c] {
-			t.Logf("RunExpression testing scan: %v, expression: %v (%v)", scanId, exprId, name)
+			t.Logf("runExpressionTest(long) scan: %v, expression: %v (%v)", scanId, exprId, name)
 			result := runExpressionTest(scanId, quantId, exprId, modIds, modVers, memoinclude)
 			//t.Log(result)
 
@@ -157,7 +157,7 @@ func runExpressionTest(scanId, quantId, exprId string, modIds, modVers []string,
 
 	m, _, _, err := RunExpression(exprId, scanId, quantId,
 		svcs.Log, svcs.MongoDB, svcs.TimeStamper, svcs.FS,
-		svcs.Config.ConfigBucket, svcs.Config.UsersBucket, svcs.Config.DatasetsBucket, true, false)
+		svcs.Config.ConfigBucket, svcs.Config.UsersBucket, svcs.Config.DatasetsBucket, true, false, true)
 	sz := 0
 	if m != nil {
 		sz = len(m.Values)

@@ -183,7 +183,7 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 		svcs.Log.Debugf("Piquant parameters: %v\n", string(piquantParamsStr))
 	}
 
-	pmcFiles, spectraPerNode, rois, combined, quantByROI, err := PreparePMCLists(userParams, r.sessUser, "node.pmcs", jobDataPath, svcs, true)
+	pmcFiles, spectraPerNode, rois, combined, quantByROI, err := PreparePMCLists(userParams, r.sessUser, "node.pmcs", jobDataPath, svcs)
 
 	if err != nil {
 		r.completeJobState(false, fmt.Sprintf("Error: %v", err), "", []string{})
@@ -405,7 +405,7 @@ func (r *quantNodeRunner) triggerPiquantNodes() {
 	r.completeJobState(true, completeMsg, quantOutPath, piquantLogList)
 }
 
-func PreparePMCLists(userParams *protos.QuantCreateParams, sessUser *sessionuser.SessionUser, nodePMCFileName string, jobDataPath string, svcs *services.APIServices, useFileCache bool) (
+func PreparePMCLists(userParams *protos.QuantCreateParams, sessUser *sessionuser.SessionUser, nodePMCFileName string, jobDataPath string, svcs *services.APIServices) (
 	[]string, uint, []ROIItemWithPMCs, bool, bool, error) {
 	// Generate the lists, and then save each, and start the quantification
 	// NOTE: empty == combined, just to honor the previous mode of operation before quantMode field was added
@@ -418,7 +418,7 @@ func PreparePMCLists(userParams *protos.QuantCreateParams, sessUser *sessionuser
 	rois := []ROIItemWithPMCs{}
 
 	// Download the dataset itself because we'll need it to generate our .pmcs files for each node to run
-	dataset, err := wsHelpers.ReadDatasetFile(userParams.ScanId, svcs, useFileCache)
+	dataset, err := wsHelpers.ReadDatasetFile(userParams.ScanId, svcs)
 	if err != nil {
 		return pmcFiles, spectraPerNode, rois, combined, quantByROI, err
 	}

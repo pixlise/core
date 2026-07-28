@@ -24,7 +24,7 @@ func (e *expressionRunner) ensureFetchedDiffraction() error {
 
 func (e *expressionRunner) fetchDiffraction() error {
 	// Gather all the stuff we need
-	dataset, err := wsHelpers.ReadDatasetFile(e.scanId, e.minimalSvcs, true)
+	dataset, err := wsHelpers.ReadDatasetFile(e.scanId, e.minimalSvcs)
 	if err != nil {
 		return err
 	}
