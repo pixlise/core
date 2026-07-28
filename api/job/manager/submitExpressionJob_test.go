@@ -485,8 +485,6 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK_AllowSecondRunToOverwri
 	// jm Create: <nil>
 	// INFO: WARNING: SubmitJob - DockerImage not specified, this will result in local job runners, recommended only for testing
 	// SubmitExpressionJob: STARTING, <nil>
-	// INFO: Found existing expression job for expr-lua-bWVtbzEyMw with state STARTING. Skipping starting a new/duplicate one.
-	// SubmitExpressionJob2: STARTING, <nil>
 	// INFO: Instance the-test-instance starting job "expr-lua-bWVtbzEyMw-node-0"...
 	// Running lua expression job locally!
 	// INFO: Running job from s3://job-bucket/JobData/048300551/expr-lua-bWVtbzEyMw for node 0
@@ -507,6 +505,46 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK_AllowSecondRunToOverwri
 	//
 	// DEBUG: Downloading file: s3://datasets-bucket/Scans/048300551/diffraction-db.bin
 	// DEBUG: Total locally cached files: 3, 983221 bytes, removed 0
+	// INFO: Job expr-lua-bWVtbzEyMw-node-0 runtime was < 10 sec
+	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/048300551/expr-lua-bWVtbzEyMw/output/stdout.log
+	// DEBUG: Upload output.csv -> s3://job-bucket/JobData/048300551/expr-lua-bWVtbzEyMw/output/output.csv
+	// INFO: Job expr-lua-bWVtbzEyMw-node-0 run complete: ""
+	// Output:
+	// -----------------
+	// No output saved from local job run
+	// -----------------
+	// DEBUG: CheckJobQueue found 1 job groups
+	// DEBUG:   CheckJobQueue job group expr-lua-bWVtbzEyMw has 1 ran, 1 completed nodes of 1
+	// DEBUG:   CheckJobQueue running job group expr-lua-bWVtbzEyMw completion task...
+	// INFO: updateJobStatus: expr-lua-bWVtbzEyMw with status GATHERING_RESULTS, message: Combining CSVs from 1 nodes...
+	// INFO: updateJobStatus: expr-lua-bWVtbzEyMw with status COMPLETE, message: Nodes ran: 1
+	// DEBUG:   CheckJobQueue completed job group expr-lua-bWVtbzEyMw
+	// DEBUG:   CheckJobQueue clearing job queue items for expr-lua-bWVtbzEyMw
+	// DEBUG:   CheckJobQueue found 0 not-started jobs
+	// Read memoised exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9 errors: <nil>
+	// Read memoised exprcachev1_GeoAndDiff_3_5_3_geometry_048300551 errors: <nil>
+	// Read memoised memo123 errors: <nil>
+	// Decode memoised memo123 errors: <nil>
+	// Reading expected-expr-output.txt error: <nil>
+	// Expected csv format ok: true
+	// INFO: Cleared expr-lua-bWVtbzEyMw entry in jobs: &{DeletedCount:1}
+	// INFO: Cleared expr-lua-bWVtbzEyMw entry in jobStatuses: &{DeletedCount:1}
+	// INFO: WARNING: SubmitJob - DockerImage not specified, this will result in local job runners, recommended only for testing
+	// SubmitExpressionJob2: STARTING, <nil>
+	// INFO: Instance the-test-instance starting job "expr-lua-bWVtbzEyMw-node-0"...
+	// Running lua expression job locally!
+	// INFO: Running job from s3://job-bucket/JobData/048300551/expr-lua-bWVtbzEyMw for node 0
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"expr-lua-bWVtbzEyMw-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-bWVtbzEyMw/source.lua", LocalPath:"source.lua", ApplyNodeIndex:0}}, Command:"lua-expression", Args:[]string{"scanId=048300551", "quantId=quant-ggy6zxhn23p7rlv9", "expressionId=u59sahioy18frfl9", "memoKey=memo123"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-bWVtbzEyMw/output/stdout.log", LocalPath:"stdout", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-bWVtbzEyMw/output/output.csv", LocalPath:"output.csv", ApplyNodeIndex:0}}}
+	// INFO: Downloading files...
+	// DEBUG: Download "s3://job-bucket/JobData/048300551/expr-lua-bWVtbzEyMw/source.lua" -> "source.lua":
+	// DEBUG:  Local path is <CWD>/source.lua
+	// DEBUG:  Downloaded 109708 bytes
+	// DEBUG:  Wrote file: <CWD>/source.lua
+	// INFO: Checking for required libraries...
+	// INFO: Running job...
+	// DEBUG: exec.Command starting "lua-expression", args: [scanId=048300551,quantId=quant-ggy6zxhn23p7rlv9,expressionId=u59sahioy18frfl9,memoKey=memo123]
+	// DEBUG: Reading local file: /tmp/quant-quant-ggy6zxhn23p7rlv9-quant.bin
+	//
 	// INFO: Job expr-lua-bWVtbzEyMw-node-0 runtime was < 10 sec
 	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/048300551/expr-lua-bWVtbzEyMw/output/stdout.log
 	// DEBUG: Upload output.csv -> s3://job-bucket/JobData/048300551/expr-lua-bWVtbzEyMw/output/output.csv
