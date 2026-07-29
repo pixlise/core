@@ -59,6 +59,10 @@ func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret 
 	}
 
 	jobIdListStr := strings.Join(jobIds, ",")
+	// Trim in case it's too long and AWS rejects our EC2 start
+	if len(jobIdListStr) > 255 {
+		jobIdListStr = jobIdListStr[0:255]
+	}
 
 	if jm.svcs.Config.Jobs.MaxNodeRunTimeSec < 60 {
 		return []*string{}, fmt.Errorf("Cannot start job node that runs for only %vsec", jm.svcs.Config.Jobs.MaxNodeRunTimeSec)

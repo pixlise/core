@@ -1,6 +1,7 @@
 package jobmanager
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"path"
@@ -29,12 +30,16 @@ func (jm *JobManager) SubmitExpressionJob(scanId, quantId, expressionId, roiId, 
 }
 
 func makeLuaExpressionId(memCacheKey string) string {
-	b64MemCacheKey := base64.StdEncoding.EncodeToString([]byte(memCacheKey))
+	h := sha256.New()
+	h.Write([]byte(memCacheKey))
+	hashedKey := h.Sum(nil)
 
-	b64MemCacheKey = strings.TrimSuffix(b64MemCacheKey, "=")
-	b64MemCacheKey = strings.TrimSuffix(b64MemCacheKey, "=")
+	encodedMemKey := base64.StdEncoding.EncodeToString(hashedKey)
 
-	return fmt.Sprintf("expr-lua-%v", b64MemCacheKey)
+	encodedMemKey = strings.TrimSuffix(encodedMemKey, "=")
+	encodedMemKey = strings.TrimSuffix(encodedMemKey, "=")
+
+	return fmt.Sprintf("expr-lua-%v", encodedMemKey)
 }
 
 // Pass in the existing job item if there is one, timestamp generator and a max age for completed
