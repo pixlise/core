@@ -16,6 +16,14 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// TODO: Modify this to work purely from the file system - instead of storing the cache map locally in memory
+//       we could store all cached files in a known location on disk, if we need other info we could store a
+//       file along side each cached file. This way if the API restarts, we could have the cache restored
+//       straight away. Also, this way the job node starting up could pre-cache files and let lua job
+//       executions pick them up from the cache directory!
+// This would save downloads and time potentially, because currently if 3 lua jobs are run, the job node
+// downloads the files 3 times!
+
 // This uses a cache as it may be reading the same thing many times in bursts.
 // Cache is updated upon user info change though
 type fileCacheItem struct {

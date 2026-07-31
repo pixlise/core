@@ -108,6 +108,8 @@ wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global
 echo "Running job node..."
 ./pixlise-job-node -jobBucket "%v" -usersBucket "%v" -configBucket "%v" -datasetsBucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxRunTimeSec "%v" -jobs "%v"
 
+# TODO: save init log to bucket, eg like this - aws s3 cp /var/log/cloud-init-output.log s3://.../Nodes/
+
 echo "PIXLISE job node shutting down in 1 minute..."
 shutdown -h +1
 `,
