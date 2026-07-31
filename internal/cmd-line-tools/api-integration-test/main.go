@@ -171,6 +171,9 @@ func runEnvTests(apiHost string) {
 func runLocalTests(apiHost string, isCI bool) {
 	jwt := testImageGet_PreWS(apiHost) // Must be run before any web sockets log in
 
+	testJobs(apiHost)
+	testJobSchedule(apiHost)
+
 	testImage3DPoint(apiHost)
 
 	// Should run anywhere, but easy to do here
@@ -181,7 +184,6 @@ func runLocalTests(apiHost string, isCI bool) {
 	//return
 
 	// *** NOT RUNNING THIS LOCALLY, NO LAMBDA IS STARTED *** testScanImport(apiHost)
-	//testJobs(apiHost)
 	u1Id, u2Id := testNotification(apiHost)
 	testImageUpload(apiHost, u1Id, u2Id)
 	testImageMultipartUpload(apiHost)

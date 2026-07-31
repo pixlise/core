@@ -200,6 +200,55 @@ func (JobQueueItem_State) EnumDescriptor() ([]byte, []int) {
 	return file_job_proto_rawDescGZIP(), []int{2, 0}
 }
 
+type ScheduledJob_ScheduleType int32
+
+const (
+	ScheduledJob_UNKNOWN      ScheduledJob_ScheduleType = 0 // https://protobuf.dev/programming-guides/dos-donts/ says specify an unknown as 0
+	ScheduledJob_AFTER_IMPORT ScheduledJob_ScheduleType = 1
+	ScheduledJob_TIME_BASED   ScheduledJob_ScheduleType = 2
+)
+
+// Enum value maps for ScheduledJob_ScheduleType.
+var (
+	ScheduledJob_ScheduleType_name = map[int32]string{
+		0: "UNKNOWN",
+		1: "AFTER_IMPORT",
+		2: "TIME_BASED",
+	}
+	ScheduledJob_ScheduleType_value = map[string]int32{
+		"UNKNOWN":      0,
+		"AFTER_IMPORT": 1,
+		"TIME_BASED":   2,
+	}
+)
+
+func (x ScheduledJob_ScheduleType) Enum() *ScheduledJob_ScheduleType {
+	p := new(ScheduledJob_ScheduleType)
+	*p = x
+	return p
+}
+
+func (x ScheduledJob_ScheduleType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ScheduledJob_ScheduleType) Descriptor() protoreflect.EnumDescriptor {
+	return file_job_proto_enumTypes[3].Descriptor()
+}
+
+func (ScheduledJob_ScheduleType) Type() protoreflect.EnumType {
+	return &file_job_proto_enumTypes[3]
+}
+
+func (x ScheduledJob_ScheduleType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ScheduledJob_ScheduleType.Descriptor instead.
+func (ScheduledJob_ScheduleType) EnumDescriptor() ([]byte, []int) {
+	return file_job_proto_rawDescGZIP(), []int{3, 0}
+}
+
 type JobStatus struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
 	JobId   string                 `protobuf:"bytes,1,opt,name=jobId,proto3" json:"jobId,omitempty" bson:"_id,omitempty"`  
@@ -552,6 +601,101 @@ func (x *JobQueueItem) GetJobType() JobType {
 	return JobType_JT_UNKNOWN
 }
 
+type ScheduledJob struct {
+	state        protoimpl.MessageState    `protogen:"open.v1"`
+	Id           string                    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" bson:"_id,omitempty"`  
+	ScheduleType ScheduledJob_ScheduleType `protobuf:"varint,2,opt,name=scheduleType,proto3,enum=ScheduledJob_ScheduleType" json:"scheduleType,omitempty"`
+	// Ignored for AFTER_IMPORT type schedules
+	ScheduledFirstTimeUnixSec int64 `protobuf:"varint,3,opt,name=scheduledFirstTimeUnixSec,proto3" json:"scheduledFirstTimeUnixSec,omitempty"`
+	IntervalSec               int64 `protobuf:"varint,7,opt,name=intervalSec,proto3" json:"intervalSec,omitempty"`
+	// Defines the order of jobs running after import
+	JobOrder int64 `protobuf:"varint,4,opt,name=jobOrder,proto3" json:"jobOrder,omitempty"`
+	// What to run?
+	JobType       JobType           `protobuf:"varint,5,opt,name=jobType,proto3,enum=JobType" json:"jobType,omitempty"`
+	JobParameters map[string]string `protobuf:"bytes,6,rep,name=jobParameters,proto3" json:"jobParameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ScheduledJob) Reset() {
+	*x = ScheduledJob{}
+	mi := &file_job_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ScheduledJob) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScheduledJob) ProtoMessage() {}
+
+func (x *ScheduledJob) ProtoReflect() protoreflect.Message {
+	mi := &file_job_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScheduledJob.ProtoReflect.Descriptor instead.
+func (*ScheduledJob) Descriptor() ([]byte, []int) {
+	return file_job_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ScheduledJob) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ScheduledJob) GetScheduleType() ScheduledJob_ScheduleType {
+	if x != nil {
+		return x.ScheduleType
+	}
+	return ScheduledJob_UNKNOWN
+}
+
+func (x *ScheduledJob) GetScheduledFirstTimeUnixSec() int64 {
+	if x != nil {
+		return x.ScheduledFirstTimeUnixSec
+	}
+	return 0
+}
+
+func (x *ScheduledJob) GetIntervalSec() int64 {
+	if x != nil {
+		return x.IntervalSec
+	}
+	return 0
+}
+
+func (x *ScheduledJob) GetJobOrder() int64 {
+	if x != nil {
+		return x.JobOrder
+	}
+	return 0
+}
+
+func (x *ScheduledJob) GetJobType() JobType {
+	if x != nil {
+		return x.JobType
+	}
+	return JobType_JT_UNKNOWN
+}
+
+func (x *ScheduledJob) GetJobParameters() map[string]string {
+	if x != nil {
+		return x.JobParameters
+	}
+	return nil
+}
+
 var File_job_proto protoreflect.FileDescriptor
 
 const file_job_proto_rawDesc = "" +
@@ -608,7 +752,23 @@ const file_job_proto_rawDesc = "" +
 	"\aRUNNING\x10\x02\x12\f\n" +
 	"\bCOMPLETE\x10\x03\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x04*\x91\x01\n" +
+	"\x06FAILED\x10\x04\"\xc7\x03\n" +
+	"\fScheduledJob\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12>\n" +
+	"\fscheduleType\x18\x02 \x01(\x0e2\x1a.ScheduledJob.ScheduleTypeR\fscheduleType\x12<\n" +
+	"\x19scheduledFirstTimeUnixSec\x18\x03 \x01(\x03R\x19scheduledFirstTimeUnixSec\x12 \n" +
+	"\vintervalSec\x18\a \x01(\x03R\vintervalSec\x12\x1a\n" +
+	"\bjobOrder\x18\x04 \x01(\x03R\bjobOrder\x12\"\n" +
+	"\ajobType\x18\x05 \x01(\x0e2\b.JobTypeR\ajobType\x12F\n" +
+	"\rjobParameters\x18\x06 \x03(\v2 .ScheduledJob.JobParametersEntryR\rjobParameters\x1a@\n" +
+	"\x12JobParametersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"=\n" +
+	"\fScheduleType\x12\v\n" +
+	"\aUNKNOWN\x10\x00\x12\x10\n" +
+	"\fAFTER_IMPORT\x10\x01\x12\x0e\n" +
+	"\n" +
+	"TIME_BASED\x10\x02*\x91\x01\n" +
 	"\aJobType\x12\x0e\n" +
 	"\n" +
 	"JT_UNKNOWN\x10\x00\x12\x12\n" +
@@ -633,26 +793,32 @@ func file_job_proto_rawDescGZIP() []byte {
 	return file_job_proto_rawDescData
 }
 
-var file_job_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_job_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_job_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_job_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_job_proto_goTypes = []any{
-	(JobType)(0),             // 0: JobType
-	(JobStatus_Status)(0),    // 1: JobStatus.Status
-	(JobQueueItem_State)(0),  // 2: JobQueueItem.State
-	(*JobStatus)(nil),        // 3: JobStatus
-	(*JobHandlerDBItem)(nil), // 4: JobHandlerDBItem
-	(*JobQueueItem)(nil),     // 5: JobQueueItem
+	(JobType)(0),                   // 0: JobType
+	(JobStatus_Status)(0),          // 1: JobStatus.Status
+	(JobQueueItem_State)(0),        // 2: JobQueueItem.State
+	(ScheduledJob_ScheduleType)(0), // 3: ScheduledJob.ScheduleType
+	(*JobStatus)(nil),              // 4: JobStatus
+	(*JobHandlerDBItem)(nil),       // 5: JobHandlerDBItem
+	(*JobQueueItem)(nil),           // 6: JobQueueItem
+	(*ScheduledJob)(nil),           // 7: ScheduledJob
+	nil,                            // 8: ScheduledJob.JobParametersEntry
 }
 var file_job_proto_depIdxs = []int32{
 	1, // 0: JobStatus.status:type_name -> JobStatus.Status
 	0, // 1: JobStatus.jobType:type_name -> JobType
 	2, // 2: JobQueueItem.state:type_name -> JobQueueItem.State
 	0, // 3: JobQueueItem.jobType:type_name -> JobType
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3, // 4: ScheduledJob.scheduleType:type_name -> ScheduledJob.ScheduleType
+	0, // 5: ScheduledJob.jobType:type_name -> JobType
+	8, // 6: ScheduledJob.jobParameters:type_name -> ScheduledJob.JobParametersEntry
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_job_proto_init() }
@@ -665,8 +831,8 @@ func file_job_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_job_proto_rawDesc), len(file_job_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   3,
+			NumEnums:      4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
