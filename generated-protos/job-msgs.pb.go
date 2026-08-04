@@ -26,6 +26,7 @@ type JobListReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SkipJobs      uint32                 `protobuf:"varint,1,opt,name=skipJobs,proto3" json:"skipJobs,omitempty"`
 	JobCount      uint32                 `protobuf:"varint,2,opt,name=jobCount,proto3" json:"jobCount,omitempty"`
+	JobTypes      []JobType              `protobuf:"varint,3,rep,packed,name=jobTypes,proto3,enum=JobType" json:"jobTypes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -72,6 +73,13 @@ func (x *JobListReq) GetJobCount() uint32 {
 		return x.JobCount
 	}
 	return 0
+}
+
+func (x *JobListReq) GetJobTypes() []JobType {
+	if x != nil {
+		return x.JobTypes
+	}
+	return nil
 }
 
 type JobListResp struct {
@@ -434,11 +442,12 @@ var File_job_msgs_proto protoreflect.FileDescriptor
 
 const file_job_msgs_proto_rawDesc = "" +
 	"\n" +
-	"\x0ejob-msgs.proto\x1a\tjob.proto\"D\n" +
+	"\x0ejob-msgs.proto\x1a\tjob.proto\"j\n" +
 	"\n" +
 	"JobListReq\x12\x1a\n" +
 	"\bskipJobs\x18\x01 \x01(\rR\bskipJobs\x12\x1a\n" +
-	"\bjobCount\x18\x02 \x01(\rR\bjobCount\"\x7f\n" +
+	"\bjobCount\x18\x02 \x01(\rR\bjobCount\x12$\n" +
+	"\bjobTypes\x18\x03 \x03(\x0e2\b.JobTypeR\bjobTypes\"\x7f\n" +
 	"\vJobListResp\x12\x1e\n" +
 	"\x04jobs\x18\x01 \x03(\v2\n" +
 	".JobStatusR\x04jobs\x12$\n" +
@@ -486,21 +495,23 @@ var file_job_msgs_proto_goTypes = []any{
 	(*SetScheduledJobResp)(nil),    // 6: SetScheduledJobResp
 	(*DeleteScheduledJobReq)(nil),  // 7: DeleteScheduledJobReq
 	(*DeleteScheduledJobResp)(nil), // 8: DeleteScheduledJobResp
-	(*JobStatus)(nil),              // 9: JobStatus
-	(*ScheduledJob)(nil),           // 10: ScheduledJob
+	(JobType)(0),                   // 9: JobType
+	(*JobStatus)(nil),              // 10: JobStatus
+	(*ScheduledJob)(nil),           // 11: ScheduledJob
 }
 var file_job_msgs_proto_depIdxs = []int32{
-	9,  // 0: JobListResp.jobs:type_name -> JobStatus
-	9,  // 1: JobListResp.activeJobs:type_name -> JobStatus
-	9,  // 2: JobListUpd.job:type_name -> JobStatus
-	10, // 3: ScheduledJobListResp.jobs:type_name -> ScheduledJob
-	10, // 4: SetScheduledJobReq.job:type_name -> ScheduledJob
-	10, // 5: SetScheduledJobResp.job:type_name -> ScheduledJob
-	6,  // [6:6] is the sub-list for method output_type
-	6,  // [6:6] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	9,  // 0: JobListReq.jobTypes:type_name -> JobType
+	10, // 1: JobListResp.jobs:type_name -> JobStatus
+	10, // 2: JobListResp.activeJobs:type_name -> JobStatus
+	10, // 3: JobListUpd.job:type_name -> JobStatus
+	11, // 4: ScheduledJobListResp.jobs:type_name -> ScheduledJob
+	11, // 5: SetScheduledJobReq.job:type_name -> ScheduledJob
+	11, // 6: SetScheduledJobResp.job:type_name -> ScheduledJob
+	7,  // [7:7] is the sub-list for method output_type
+	7,  // [7:7] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_job_msgs_proto_init() }

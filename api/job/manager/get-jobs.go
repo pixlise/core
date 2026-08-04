@@ -10,8 +10,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (jm *JobManager) ListJobs(isAdmin bool, requestorUserId string, skip, limit int64) ([]*protos.JobStatus, []*protos.JobStatus, uint32, error) {
+func (jm *JobManager) ListJobs(isAdmin bool, requestorUserId string, skip, limit int64, jobTypes []protos.JobType) ([]*protos.JobStatus, []*protos.JobStatus, uint32, error) {
 	filter := bson.M{}
+
+	if len(jobTypes) > 0 {
+		filter["jobtype"] = bson.M{"$in": jobTypes}
+	}
 
 	ctx := context.TODO()
 	coll := jm.svcs.MongoDB.Collection(dbCollections.JobStatusName)
@@ -45,6 +49,11 @@ func (jm *JobManager) ListJobs(isAdmin bool, requestorUserId string, skip, limit
 	jobs := []*protos.JobStatus{}
 	activeJobs := []*protos.JobStatus{}
 
+	totalDocs, err := coll.CountDocuments(ctx, filter)
+	if err != nil {
+		jm.svcs.Log.Errorf("Failed to estimate document count in %v: %v", dbCollections.JobStatusName, err)
+	}
+
 	//nowUnixSec := hctx.Svcs.TimeStamper.GetTimeNowSec()
 
 	for _, j := range itemsToSend {
@@ -55,7 +64,7 @@ func (jm *JobManager) ListJobs(isAdmin bool, requestorUserId string, skip, limit
 		}
 	}
 
-	return jobs, activeJobs, uint32(len(itemsToSend)), nil
+	return jobs, activeJobs, uint32(totalDocs), nil
 }
 
 func (jm *JobManager) GetJob(JobId string) (jobconfig.JobGroupConfig, error) {

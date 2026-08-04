@@ -604,10 +604,13 @@ func (x *JobQueueItem) GetJobType() JobType {
 type ScheduledJob struct {
 	state        protoimpl.MessageState    `protogen:"open.v1"`
 	Id           string                    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty" bson:"_id,omitempty"`  
+	Name         string                    `protobuf:"bytes,8,opt,name=name,proto3" json:"name,omitempty"`
+	Description  string                    `protobuf:"bytes,9,opt,name=description,proto3" json:"description,omitempty"`
+	Instrument   ScanInstrument            `protobuf:"varint,10,opt,name=instrument,proto3,enum=ScanInstrument" json:"instrument,omitempty"`
 	ScheduleType ScheduledJob_ScheduleType `protobuf:"varint,2,opt,name=scheduleType,proto3,enum=ScheduledJob_ScheduleType" json:"scheduleType,omitempty"`
 	// Ignored for AFTER_IMPORT type schedules
-	ScheduledFirstTimeUnixSec int64 `protobuf:"varint,3,opt,name=scheduledFirstTimeUnixSec,proto3" json:"scheduledFirstTimeUnixSec,omitempty"`
-	IntervalSec               int64 `protobuf:"varint,7,opt,name=intervalSec,proto3" json:"intervalSec,omitempty"`
+	// int64 scheduledFirstTimeUnixSec = 3;
+	IntervalSec int64 `protobuf:"varint,7,opt,name=intervalSec,proto3" json:"intervalSec,omitempty"`
 	// Defines the order of jobs running after import
 	JobOrder int64 `protobuf:"varint,4,opt,name=jobOrder,proto3" json:"jobOrder,omitempty"`
 	// What to run?
@@ -654,18 +657,32 @@ func (x *ScheduledJob) GetId() string {
 	return ""
 }
 
+func (x *ScheduledJob) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ScheduledJob) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *ScheduledJob) GetInstrument() ScanInstrument {
+	if x != nil {
+		return x.Instrument
+	}
+	return ScanInstrument_UNKNOWN_INSTRUMENT
+}
+
 func (x *ScheduledJob) GetScheduleType() ScheduledJob_ScheduleType {
 	if x != nil {
 		return x.ScheduleType
 	}
 	return ScheduledJob_UNKNOWN
-}
-
-func (x *ScheduledJob) GetScheduledFirstTimeUnixSec() int64 {
-	if x != nil {
-		return x.ScheduledFirstTimeUnixSec
-	}
-	return 0
 }
 
 func (x *ScheduledJob) GetIntervalSec() int64 {
@@ -700,7 +717,8 @@ var File_job_proto protoreflect.FileDescriptor
 
 const file_job_proto_rawDesc = "" +
 	"\n" +
-	"\tjob.proto\"\xe7\x04\n" +
+	"\tjob.proto\x1a\n" +
+	"scan.proto\"\xe7\x04\n" +
 	"\tJobStatus\x12\x14\n" +
 	"\x05jobId\x18\x01 \x01(\tR\x05jobId\x12)\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x11.JobStatus.StatusR\x06status\x12\x18\n" +
@@ -752,11 +770,16 @@ const file_job_proto_rawDesc = "" +
 	"\aRUNNING\x10\x02\x12\f\n" +
 	"\bCOMPLETE\x10\x03\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x04\"\xc7\x03\n" +
+	"\x06FAILED\x10\x04\"\xf0\x03\n" +
 	"\fScheduledJob\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12>\n" +
-	"\fscheduleType\x18\x02 \x01(\x0e2\x1a.ScheduledJob.ScheduleTypeR\fscheduleType\x12<\n" +
-	"\x19scheduledFirstTimeUnixSec\x18\x03 \x01(\x03R\x19scheduledFirstTimeUnixSec\x12 \n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\b \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\t \x01(\tR\vdescription\x12/\n" +
+	"\n" +
+	"instrument\x18\n" +
+	" \x01(\x0e2\x0f.ScanInstrumentR\n" +
+	"instrument\x12>\n" +
+	"\fscheduleType\x18\x02 \x01(\x0e2\x1a.ScheduledJob.ScheduleTypeR\fscheduleType\x12 \n" +
 	"\vintervalSec\x18\a \x01(\x03R\vintervalSec\x12\x1a\n" +
 	"\bjobOrder\x18\x04 \x01(\x03R\bjobOrder\x12\"\n" +
 	"\ajobType\x18\x05 \x01(\x0e2\b.JobTypeR\ajobType\x12F\n" +
@@ -805,20 +828,22 @@ var file_job_proto_goTypes = []any{
 	(*JobQueueItem)(nil),           // 6: JobQueueItem
 	(*ScheduledJob)(nil),           // 7: ScheduledJob
 	nil,                            // 8: ScheduledJob.JobParametersEntry
+	(ScanInstrument)(0),            // 9: ScanInstrument
 }
 var file_job_proto_depIdxs = []int32{
 	1, // 0: JobStatus.status:type_name -> JobStatus.Status
 	0, // 1: JobStatus.jobType:type_name -> JobType
 	2, // 2: JobQueueItem.state:type_name -> JobQueueItem.State
 	0, // 3: JobQueueItem.jobType:type_name -> JobType
-	3, // 4: ScheduledJob.scheduleType:type_name -> ScheduledJob.ScheduleType
-	0, // 5: ScheduledJob.jobType:type_name -> JobType
-	8, // 6: ScheduledJob.jobParameters:type_name -> ScheduledJob.JobParametersEntry
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	9, // 4: ScheduledJob.instrument:type_name -> ScanInstrument
+	3, // 5: ScheduledJob.scheduleType:type_name -> ScheduledJob.ScheduleType
+	0, // 6: ScheduledJob.jobType:type_name -> JobType
+	8, // 7: ScheduledJob.jobParameters:type_name -> ScheduledJob.JobParametersEntry
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_job_proto_init() }
@@ -826,6 +851,7 @@ func file_job_proto_init() {
 	if File_job_proto != nil {
 		return
 	}
+	file_scan_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

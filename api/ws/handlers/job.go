@@ -1,6 +1,8 @@
 package wsHandler
 
 import (
+	"errors"
+
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
@@ -19,7 +21,7 @@ func HandleJobListReq(req *protos.JobListReq, hctx wsHelpers.HandlerContext) (*p
 		skip = int64(req.SkipJobs)
 	}
 
-	jobs, activeJobs, totalJobs, err := hctx.Svcs.JobManager.ListJobs(isAdmin, hctx.SessUser.User.Id, limit, skip)
+	jobs, activeJobs, totalJobs, err := hctx.Svcs.JobManager.ListJobs(isAdmin, hctx.SessUser.User.Id, skip, limit, req.JobTypes)
 	if err != nil {
 		return nil, err
 	}
@@ -52,6 +54,10 @@ func HandleScheduledJobListReq(req *protos.ScheduledJobListReq, hctx wsHelpers.H
 }
 
 func HandleSetScheduledJobReq(req *protos.SetScheduledJobReq, hctx wsHelpers.HandlerContext) (*protos.SetScheduledJobResp, error) {
+	if req.Job == nil {
+		return nil, errors.New("Job must be set in SetScheduledJobReq")
+	}
+
 	job, err := hctx.Svcs.JobManager.SetScheduledJob(req.Job)
 	if err != nil {
 		return nil, err

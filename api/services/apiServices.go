@@ -59,7 +59,7 @@ type JobManagerInterface interface {
 	SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
 	SubmitExpressionJob(scanId, quantId, expressionId, roiId, memoCacheKey string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
 
-	ListJobs(isAdmin bool, requestorUserId string, skip, limit int64) ([]*protos.JobStatus, []*protos.JobStatus, uint32, error)
+	ListJobs(isAdmin bool, requestorUserId string, skip, limit int64, jobTypes []protos.JobType) ([]*protos.JobStatus, []*protos.JobStatus, uint32, error)
 	// Thought this would do: ListJobs() ([]jobmanager.JobGroupConfig, error)
 
 	// GetJob(JobId string) (jobmanager.JobGroupConfig, error)

@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -31,21 +33,72 @@ func (jm *JobManager) ListScheduledJobs() ([]*protos.ScheduledJob, error) {
 var SCAN_ID_AUTO_IMPORTED = "imported"
 var QUANT_BY_NAME_PREFIX = "name:"
 var QUANT_BY_ID_PREFIX = "id:"
+var ELEMS_BY_SET = "set:"
+var ELEMS_BY_LIST = "list:"
 
 func validateJob(job *protos.ScheduledJob) error {
+	validJobTypeParams := map[protos.JobType]map[string][]string{
+		protos.JobType_JT_RUN_EXPRESSION: {
+			"scanId":       {},
+			"expressionId": {},
+			"quant":        {QUANT_BY_NAME_PREFIX, QUANT_BY_ID_PREFIX},
+		},
+		protos.JobType_JT_RUN_QUANT: {
+			"scanId":     {},
+			"elements":   {ELEMS_BY_SET, ELEMS_BY_LIST},
+			"quantName":  {},
+			"configName": {},
+			"combined":   {},
+		},
+	}
+
+	acceptableJobs := utils.GetMapKeys(validJobTypeParams)
+
+	if !utils.ItemInSlice(job.JobType, acceptableJobs) {
+		js := []string{}
+		for _, j := range acceptableJobs {
+			js = append(js, j.String())
+		}
+		return fmt.Errorf("JobType must be one of: %v", strings.Join(js, ","))
+	}
+
 	if len(job.JobParameters) <= 0 {
 		return errors.New("JobParameters must be set")
 	}
 
-	checkParamsSet := []string{"scanId", "expressionId", "quant"}
-	for _, check := range checkParamsSet {
-		if len(job.JobParameters[check]) <= 0 {
+	paramsAndPrefixes := validJobTypeParams[job.JobType]
+	requiredParams := utils.GetMapKeys(paramsAndPrefixes)
+
+	for _, check := range requiredParams {
+		paramGiven := job.JobParameters[check]
+		if len(paramGiven) <= 0 {
 			return fmt.Errorf("JobParameters[%v] must be set", check)
+		}
+
+		// If this param has prefixes, make sure theyre provided
+		prefixes := paramsAndPrefixes[check]
+		if len(prefixes) > 0 {
+			prefixOK := false
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(paramGiven, prefix) {
+					// We have the prefix, just make sure the rest is non-empty
+					if len(paramGiven) <= len(prefix) {
+						return fmt.Errorf("JobParameters[%v] missing value after prefix: %v", check, prefix)
+					}
+
+					prefixOK = true
+					break
+				}
+			}
+
+			if !prefixOK {
+				return fmt.Errorf("JobParameters[%v] must have one of the following prefixes: %v", check, strings.Join(prefixes, ","))
+			}
 		}
 	}
 
 	if job.ScheduleType == protos.ScheduledJob_AFTER_IMPORT {
-		if job.ScheduledFirstTimeUnixSec > 0 || job.IntervalSec > 0 {
+		if /*job.ScheduledFirstTimeUnixSec > 0 ||*/ job.IntervalSec > 0 {
 			return errors.New("AFTER_IMPORT jobs must not have time fields set")
 		}
 
@@ -57,10 +110,25 @@ func validateJob(job *protos.ScheduledJob) error {
 		if job.JobOrder != 0 {
 			return errors.New("TIME_BASED jobs must not have order set")
 		}
+
+		// Set the first time to something reasonable
+		// if job.ScheduledFirstTimeUnixSec < 1561982400 {
+		// 	return errors.New("Job run first time must be contemporary")
+		// }
+
+		// Interval can't be too low!
+		if job.IntervalSec < 900 {
+			return errors.New("Job run interval must be at least 15 minutes (900 seconds)")
+		}
 	} else if job.ScheduleType != protos.ScheduledJob_AFTER_IMPORT && job.ScheduleType != protos.ScheduledJob_TIME_BASED {
 		return errors.New("ScheduleType must be AFTER_IMPORT or TIME_BASED")
 	}
+	/*
+		if job.Instrument == protos.ScanInstrument_UNKNOWN_INSTRUMENT {
+				return errors.New("Scan instrument must be set")
 
+		}
+	*/
 	return nil
 }
 
@@ -69,10 +137,6 @@ func (jm *JobManager) SetScheduledJob(job *protos.ScheduledJob) (*protos.Schedul
 	coll := jm.svcs.MongoDB.Collection(dbCollections.JobScheduleName)
 
 	// Check it's valid
-	if job.JobType != protos.JobType_JT_RUN_EXPRESSION { //&& job.JobType != protos.JobType_JT_RUN_PYTHON &&
-		return nil, errors.New("JobType must be JT_RUN_EXPRESSION")
-	}
-
 	if err := validateJob(job); err != nil {
 		return nil, err
 	}
