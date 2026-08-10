@@ -221,7 +221,7 @@ PMC, CaO_%, CaO_int, RTT
 	fmt.Println(combinedCSV)
 
 	// Output:
-	// Failed to combine map segment: JobData/abc123/output/node002.pmcs_result.csv
+	// Failed to combine map segment "s3://job-bucket/JobData/abc123/output/node002.pmcs_result.csv": NoSuchKey: Returning error from GetObject
 }
 
 func Example_combineQuantOutputs_BadPMC() {

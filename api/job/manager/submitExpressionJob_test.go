@@ -82,7 +82,7 @@ func Example_jobmanager_canRunExpressionJob() {
 
 func Example_jobmanager_SubmitExpressionJob_048300551_NoExpr() {
 	logLev := logger.LogInfo
-	origWD, _, svcs := initJobManagerTest(&logLev, []int64{
+	origWD, _, m, svcs := initJobManagerTest(&logLev, []int64{
 		1668142579, // dataset local file cache time stamp
 		1668142580, // start time stamp
 		1668142581, // queue time stamp
@@ -105,7 +105,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_NoExpr() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := CreateJobManager(&svcs, nil, 0, false, true)
+	jm, err := CreateJobManager(&svcs, m, 0, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	jm.SubmitExpressionJob("048300551", "quant-ggy6zxhn23p7rlv9", "non-existant-expr", "", "", nil, nil)
@@ -568,13 +568,13 @@ func setupForTest(exprId, scanId, quantId string, modIds, modVers []string) (*Jo
 	for c := 0; c < 20; c++ {
 		ts = append(ts, int64(1668142579+c))
 	}
-	origWD, _, svcs := initJobManagerTest(&logLev, ts)
+	origWD, _, m, svcs := initJobManagerTest(&logLev, ts)
 
 	svcs.Config.Jobs.NodeCountOverride = 4
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug) // LogInfo)
 
-	jm, err := CreateJobManager(&svcs, nil, 0, false, true)
+	jm, err := CreateJobManager(&svcs, m, 0, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 	ctx := context.TODO()
 	svcs.MongoDB.Drop(ctx)

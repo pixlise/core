@@ -72,7 +72,11 @@ func (jm *JobManager) updateJobStatus(jobId string, status protos.JobStatus_Stat
 
 			bytes, err := proto.Marshal(&jobUpd)
 			if err == nil {
-				jm.melody.BroadcastBinary(bytes)
+				if jm.melody == nil {
+					jm.svcs.Log.Errorf("Failed to broadcast job list update for %v - melody is nil", dbStatus.JobId)
+				} else {
+					jm.melody.BroadcastBinary(bytes)
+				}
 			}
 		}
 	}

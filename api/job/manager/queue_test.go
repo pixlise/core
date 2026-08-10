@@ -24,7 +24,7 @@ func Example_jobmanager_QueueStartup() {
 		timestamps = append(timestamps, int64(1668142582)+c)
 	}
 
-	origWD, _, svcs := initJobManagerTest(nil, timestamps)
+	origWD, _, m, svcs := initJobManagerTest(nil, timestamps)
 	defer os.Chdir(origWD)
 
 	svcs.Config.Jobs.NodeCountOverride = 4
@@ -32,7 +32,7 @@ func Example_jobmanager_QueueStartup() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogError)
 
-	jm, err := CreateJobManager(&svcs, nil, 0, false, false)
+	jm, err := CreateJobManager(&svcs, m, 0, false, false)
 	fmt.Printf("create: %v, instance: %v\n", err, jm.svcs.InstanceId)
 
 	jm.RegisterCompletionMethod("completeJob", completeJobFunc)

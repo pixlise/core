@@ -7,10 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/job/jobnode"
-	"github.com/pixlise/core/v4/api/notificationSender"
+	"github.com/pixlise/core/v4/api/notificationSender/notificationSenderMock"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/services/servicesMock"
 	"github.com/pixlise/core/v4/core/fileaccess"
@@ -24,7 +25,7 @@ import (
 )
 
 // Returns the original working dir, which any caller must defer os.Chdir to otherwise subsequent tests will fail!
-func initJobManagerTest(logLevel *logger.LogLevel, timestamps []int64) (string, string, services.APIServices) {
+func initJobManagerTest(logLevel *logger.LogLevel, timestamps []int64) (string, string, *melody.Melody, services.APIServices) {
 	idGen := idgen.MockIDGenerator{
 		IDs: []string{"id123"},
 	}
@@ -79,9 +80,9 @@ func initJobManagerTest(logLevel *logger.LogLevel, timestamps []int64) (string, 
 	ctx := context.TODO()
 	svcs.MongoDB.Drop(ctx)
 
-	svcs.Notifier = &notificationSender.MockNotificationSender{}
+	svcs.Notifier = &notificationSenderMock.MockNotificationSender{}
 
-	return origWD, bucketSimRoot, svcs
+	return origWD, bucketSimRoot, melody.New(), svcs
 }
 
 func printResults(includeQuants bool, svcs *services.APIServices) {
@@ -153,7 +154,7 @@ func printResults(includeQuants bool, svcs *services.APIServices) {
 
 func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	logLev := logger.LogInfo
-	origWD, _, svcs := initJobManagerTest(&logLev, []int64{
+	origWD, _, m, svcs := initJobManagerTest(&logLev, []int64{
 		1668142579, // dataset local file cache time stamp
 		1668142580, // start time stamp
 		1668142581, // queue time stamp
@@ -169,7 +170,7 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := CreateJobManager(&svcs, nil, 0, false, true)
+	jm, err := CreateJobManager(&svcs, m, 0, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	createParams := &protos.QuantCreateParams{
@@ -285,7 +286,7 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 
 func Example_jobmanager_SubmitQuantJob_983561() {
 	logLev := logger.LogInfo
-	origWD, _, svcs := initJobManagerTest(&logLev, []int64{
+	origWD, _, m, svcs := initJobManagerTest(&logLev, []int64{
 		1668142579, // dataset local file cache time stamp
 		1668142580, // start time stamp
 		1668142581, // queue time stamp
@@ -308,7 +309,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := CreateJobManager(&svcs, nil, 0, false, true)
+	jm, err := CreateJobManager(&svcs, m, 0, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	createParams := &protos.QuantCreateParams{
@@ -531,7 +532,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 
 func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	logLev := logger.LogInfo
-	origWD, _, svcs := initJobManagerTest(&logLev, []int64{
+	origWD, _, m, svcs := initJobManagerTest(&logLev, []int64{
 		1668142579, // dataset local file cache time stamp
 		1668142580, // start time stamp
 		1668142581, // queue time stamp
@@ -553,7 +554,7 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	svcs.Log = &logger.StdOutLogger{}
 	svcs.Log.SetLogLevel(logger.LogDebug)
 
-	jm, err := CreateJobManager(&svcs, nil, 0, false, true)
+	jm, err := CreateJobManager(&svcs, m, 0, false, true)
 	fmt.Printf("jm Create: %v\n", err)
 
 	createParams := &protos.QuantCreateParams{
