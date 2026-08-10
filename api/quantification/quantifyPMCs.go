@@ -1,7 +1,6 @@
 package quantification
 
 import (
-	"errors"
 	"fmt"
 	"path"
 	"sort"
@@ -166,7 +165,7 @@ func CombineQuantOutputsForResultFilePaths(fs fileaccess.FileAccess, jobsBucket 
 	for c, piquantOutputPath := range resultFilePaths {
 		data, err := fs.ReadObject(jobsBucket, piquantOutputPath)
 		if err != nil {
-			return "", errors.New("Failed to combine map segment: " + piquantOutputPath)
+			return "", fmt.Errorf("Failed to combine map segment \"s3://%v/%v\": %v", jobsBucket, piquantOutputPath, err)
 		}
 
 		// Read all rows in. We want to sort these by PMC, so store the rows in map by PMC

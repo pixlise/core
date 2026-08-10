@@ -16,6 +16,7 @@ type JobManagerCompletionFunction func(*jobconfig.JobGroupConfig, *protos.JobSta
 
 type JobManager struct {
 	svcs                 *services.APIServices
+	melody               *melody.Melody
 	jobCompletionMethods map[string]JobManagerCompletionFunction
 	localJobNode         *jobnode.JobNode
 	startNodes           bool
@@ -23,10 +24,11 @@ type JobManager struct {
 	userSessionLookup    map[string]*melody.Session
 }
 
-func CreateJobManager(svcs *services.APIServices, startupQueueCheckDelaySec int, monitorJobQueue bool, startNodes bool) (*JobManager, error) {
+func CreateJobManager(svcs *services.APIServices, m *melody.Melody, startupQueueCheckDelaySec int, monitorJobQueue bool, startNodes bool) (*JobManager, error) {
 	// Make a job manager
 	jm := &JobManager{
-		svcs: svcs,
+		svcs:   svcs,
+		melody: m,
 		jobCompletionMethods: map[string]JobManagerCompletionFunction{
 			JobComplete_CombineCSVs:   completeQuantMultiNodeJob,
 			JobComplete_SingleCSV:     completeQuantSingleMapJob,

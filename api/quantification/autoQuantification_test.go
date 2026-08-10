@@ -77,13 +77,13 @@ func Example_getExistingAutoQuants() {
 func Example_readQuantifiablePMCs() {
 	expr, err := readDatasetFile("./testdata/LagunaSalinasdataset.bin")
 	fmt.Printf("Read Laguna: %v\n", err)
-	pmcs, err := readQuantifiablePMCs(expr, "123", &logger.StdOutLoggerForTest{})
+	pmcs, err := ReadQuantifiablePMCs(expr, "123", &logger.StdOutLoggerForTest{})
 	fmt.Printf("PMCRead: %v\n", err)
 	fmt.Printf("PMCs: %v\n", pmcs)
 
 	expr, err = readDatasetFile("./testdata/Naltsosdataset.bin")
 	fmt.Printf("Read Naltsos: %v\n", err)
-	pmcs, err = readQuantifiablePMCs(expr, "123", &logger.StdOutLoggerForTest{})
+	pmcs, err = ReadQuantifiablePMCs(expr, "123", &logger.StdOutLoggerForTest{})
 	fmt.Printf("PMCRead: %v\n", err)
 	fmt.Printf("PMCs: %v\n", pmcs)
 

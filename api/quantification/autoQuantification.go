@@ -64,7 +64,7 @@ func RunAutoQuantifications(scanId string, svcs *services.APIServices, onlyIfNot
 		return
 	}
 
-	pmcs, err := readQuantifiablePMCs(exprPB, scanId, svcs.Log)
+	pmcs, err := ReadQuantifiablePMCs(exprPB, scanId, svcs.Log)
 	if err != nil {
 		svcs.Log.Errorf("%v", scanId, err)
 		return
@@ -128,7 +128,7 @@ func getExistingAutoQuants(scanId string, allNames []string, mongoDB *mongo.Data
 	return existingNames, nil
 }
 
-func readQuantifiablePMCs(exprPB *protos.Experiment, scanId string, logger logger.ILogger) ([]int32, error) {
+func ReadQuantifiablePMCs(exprPB *protos.Experiment, scanId string, logger logger.ILogger) ([]int32, error) {
 	pmcs := []int32{}
 
 	for _, loc := range exprPB.Locations {

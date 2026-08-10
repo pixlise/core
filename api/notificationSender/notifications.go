@@ -25,7 +25,7 @@ import (
 //	pixlise-ui\client\src\app\modules\settings\models\notification.model.ts
 var NOTIF_TOPIC_SCAN_NEW = "New Dataset Available"
 var NOTIF_TOPIC_SCAN_UPDATED = "Dataset Updated"
-var NOTIF_TOPIC_QUANT_COMPLETE = "Qunatification Complete"
+var NOTIF_TOPIC_QUANT_COMPLETE = "Quantification Complete"
 var NOTIF_TOPIC_IMAGE_NEW = "New Image For Dataset"
 var NOTIF_TOPIC_OBJECT_SHARED = "Object Shared"
 

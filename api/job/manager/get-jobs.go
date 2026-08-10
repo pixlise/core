@@ -54,13 +54,25 @@ func (jm *JobManager) ListJobs(isAdmin bool, requestorUserId string, skip, limit
 		jm.svcs.Log.Errorf("Failed to estimate document count in %v: %v", dbCollections.JobStatusName, err)
 	}
 
-	//nowUnixSec := hctx.Svcs.TimeStamper.GetTimeNowSec()
+	nowUnixSec := jm.svcs.TimeStamper.GetTimeNowSec()
 
 	for _, j := range itemsToSend {
-		if j.Status == protos.JobStatus_COMPLETE || j.Status == protos.JobStatus_ERROR /*|| nowUnixSec-int64(j.LastUpdateUnixTimeSec) > 3600*/ {
+		if j.Status == protos.JobStatus_COMPLETE || j.Status == protos.JobStatus_ERROR {
 			jobs = append(jobs, j)
 		} else {
-			activeJobs = append(activeJobs, j)
+			// It's still active, check if it can be considered timed-out
+			if nowUnixSec-int64(j.LastUpdateUnixTimeSec) > 3600 {
+				// It's too old, mark it as error and set the text to timed out
+				msg := "Job timed out"
+				status := protos.JobStatus_ERROR
+				jm.updateJobStatus(j.JobId, status, msg, false /* prevent race conditions?*/)
+				// Add to the inactive list
+				j.Message = msg
+				j.Status = status
+				jobs = append(jobs, j)
+			} else {
+				activeJobs = append(activeJobs, j)
+			}
 		}
 	}
 

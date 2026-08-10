@@ -30,6 +30,22 @@ func (jm *JobManager) ListScheduledJobs() ([]*protos.ScheduledJob, error) {
 	return result, nil
 }
 
+func (jm *JobManager) GetScheduledJob(scheduledJobId string) (*protos.ScheduledJob, error) {
+	ctx := context.TODO()
+	coll := jm.svcs.MongoDB.Collection(dbCollections.JobScheduleName)
+	result := coll.FindOne(ctx, bson.M{"_id": scheduledJobId})
+	if result.Err() != nil {
+		return nil, fmt.Errorf("Failed to get scheduled job %v: %v", scheduledJobId, result.Err())
+	}
+
+	schedJob := &protos.ScheduledJob{}
+	if err := result.Decode(schedJob); err != nil {
+		return nil, fmt.Errorf("Failed to decode scheduled job %v: %v", scheduledJobId, err)
+	}
+
+	return schedJob, nil
+}
+
 var SCAN_ID_AUTO_IMPORTED = "imported"
 var QUANT_BY_NAME_PREFIX = "name:"
 var QUANT_BY_ID_PREFIX = "id:"
@@ -48,7 +64,7 @@ func validateJob(job *protos.ScheduledJob) error {
 			"elements":   {ELEMS_BY_SET, ELEMS_BY_LIST},
 			"quantName":  {},
 			"configName": {},
-			"combined":   {},
+			"quantMode":  {},
 		},
 	}
 
@@ -93,6 +109,13 @@ func validateJob(job *protos.ScheduledJob) error {
 
 			if !prefixOK {
 				return fmt.Errorf("JobParameters[%v] must have one of the following prefixes: %v", check, strings.Join(prefixes, ","))
+			}
+		}
+
+		if check == "quantMode" {
+			validModes := []string{"Combined", "AB"}
+			if !utils.ItemInSlice(paramGiven, validModes) {
+				return fmt.Errorf("JobParameters[%v] invalid value: %v, expected one of: %v", check, paramGiven, strings.Join(validModes, ","))
 			}
 		}
 	}
