@@ -28,7 +28,7 @@ import (
 	"github.com/pixlise/core/v4/api/dataimport/internal/dataConvertModels"
 	"github.com/pixlise/core/v4/api/dataimport/internal/importerutils"
 	dataimportModel "github.com/pixlise/core/v4/api/dataimport/models"
-	"github.com/pixlise/core/v4/api/specialUserIds"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -215,9 +215,9 @@ func (m MSATestData) Import(importPath string, pseudoIntensityRangesPath string,
 
 	creator := params.CreatorUserId
 	if len(creator) <= 0 {
-		creator = specialUserIds.JPLImport
+		creator = sessionuser.JPLImport
 		if instr == protos.ScanInstrument_SBU_BREADBOARD {
-			creator = specialUserIds.SBUImport
+			creator = sessionuser.SBUImport
 		}
 	}
 

@@ -4,19 +4,21 @@ import (
 	"context"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func ListUserQuants(searchParams *protos.SearchParams, hctx wsHelpers.HandlerContext) ([]*protos.QuantificationSummary, map[string]*protos.OwnershipItem, error) {
-	filter, idToOwner, err := wsHelpers.MakeFilter(searchParams, false, protos.ObjectType_OT_QUANTIFICATION, hctx)
+func ListUserQuants(searchParams *protos.SearchParams, svcs *services.APIServices, sessUser sessionuser.SessionUser) ([]*protos.QuantificationSummary, map[string]*protos.OwnershipItem, error) {
+	filter, idToOwner, err := wsHelpers.MakeFilterForUser(searchParams, false, protos.ObjectType_OT_QUANTIFICATION, svcs, sessUser)
 	if err != nil {
 		return nil, idToOwner, err
 	}
 
 	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.QuantificationsName)
+	coll := svcs.MongoDB.Collection(dbCollections.QuantificationsName)
 
 	opts := options.Find()
 

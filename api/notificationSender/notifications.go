@@ -148,7 +148,7 @@ func (n *NotificationSender) sendNotification(sourceId string, topicId string, n
 
 	// Send emails, but only from ONE instance of our API!
 	if len(emailNotificationUsers) > 0 {
-		singleinstance.HandleOnce(sourceId, n.instanceId, func(sourceId string) {
+		err := singleinstance.HandleOnce(sourceId, n.instanceId, func(sourceId string) {
 			// ID is not relevant here...
 			notifMsg.Notification.Id = ""
 
@@ -160,6 +160,10 @@ func (n *NotificationSender) sendNotification(sourceId string, topicId string, n
 				n.sendEmail(notifMsg.Notification, emailUserId)
 			}
 		}, n.db, n.timestamper, n.log)
+
+		if err != nil {
+			n.log.Errorf("Failed to HandleOnce email notification, id %v, instance %v. Error: %v", sourceId, n.instanceId, err)
+		}
 	}
 }
 

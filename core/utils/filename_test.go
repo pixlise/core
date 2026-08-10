@@ -31,3 +31,24 @@ func Example_makeSaveableFileName() {
 	// I bet  100 this is cheese
 	// 10% Ca Fe   Coffee matrix
 }
+
+func Example_utils_ApplyIndexToFileName() {
+	fmt.Println(ApplyIndexToFileName("node.txt", 0, true))
+	fmt.Println(ApplyIndexToFileName("node.txt", 1, true))
+	fmt.Println(ApplyIndexToFileName("node.txt", 2, true))
+	fmt.Println(ApplyIndexToFileName("node.txt", 3, false))
+	fmt.Println(ApplyIndexToFileName("node.txt", 304023, true))
+	fmt.Println(ApplyIndexToFileName("node.txt", 6304023, true))
+	fmt.Println(ApplyIndexToFileName("file.name.img", 33, true))
+	fmt.Println(ApplyIndexToFileName("extensionless", 3, true))
+
+	// Output:
+	// node000000.txt
+	// node000001.txt
+	// node000002.txt
+	// node.txt
+	// node304023.txt
+	// node6304023.txt
+	// file000033.name.img
+	// extensionless000003
+}

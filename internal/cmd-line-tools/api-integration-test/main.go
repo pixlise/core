@@ -126,6 +126,7 @@ func main() {
 	} else if testType == "local" || testType == "ci" {
 		// Connect to DB and drop the unit test database
 		db := wstestlib.GetDBWithEnvironment(envName)
+		fmt.Printf("Integration test DB name: %v\n", db.Name())
 		err = db.Drop(context.TODO())
 		if err != nil {
 			log.Fatal(err)
@@ -283,7 +284,9 @@ func runLocalTests(apiHost string, isCI bool) {
 						]`,
 				},
 			},
-			objectType: "OT_ELEMENT_SET",
+			objectType:              "OT_ELEMENT_SET",
+			u1CreatedItemName:       "User1 ElementSet1",
+			u1CreatedItemEditedName: "User1 ElementSet1-Edited",
 		},
 		"regionOfInterest": {
 			itemName: "regionOfInterest",
@@ -334,7 +337,9 @@ func runLocalTests(apiHost string, isCI bool) {
 						"name": "The ROI"`,
 				},
 			},
-			objectType: "OT_ROI",
+			objectType:              "OT_ROI",
+			u1CreatedItemName:       "User1 ROI1",
+			u1CreatedItemEditedName: "The ROI",
 		},
 		"expressionGroup": {
 			itemName: "group",
@@ -408,7 +413,9 @@ func runLocalTests(apiHost string, isCI bool) {
 						]`,
 				},
 			},
-			objectType: "OT_EXPRESSION_GROUP",
+			objectType:              "OT_EXPRESSION_GROUP",
+			u1CreatedItemName:       "User1 ExpressionGroup",
+			u1CreatedItemEditedName: "User1 ExpressionGroup",
 		},
 		"expression": {
 			itemName: "expression",
@@ -456,7 +463,9 @@ func runLocalTests(apiHost string, isCI bool) {
 					"sourceLanguage": "LUA"`,
 				},
 			},
-			objectType: "OT_EXPRESSION",
+			objectType:              "OT_EXPRESSION",
+			u1CreatedItemName:       "User1 Expression",
+			u1CreatedItemEditedName: "User1 Expression",
 		},
 	})
 

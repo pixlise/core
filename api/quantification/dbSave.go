@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-func writeQuantAndOwnershipToDB(summary *protos.QuantificationSummary, owner *protos.OwnershipItem, db *mongo.Database) error {
+func WriteQuantAndOwnershipToDB(summary *protos.QuantificationSummary, owner *protos.OwnershipItem, db *mongo.Database) error {
 	ctx := context.TODO()
 
 	wc := writeconcern.New(writeconcern.WMajority())

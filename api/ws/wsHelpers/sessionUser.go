@@ -6,6 +6,7 @@ import (
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/jwtparser"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/utils"
@@ -15,22 +16,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type SessionUser struct {
-	SessionId              string
-	User                   *protos.UserInfo
-	Permissions            map[string]bool
-	MemberOfGroupIds       []string
-	ViewerOfGroupIds       []string
-	NotificationSubscribed bool
-}
-
-func GetSessionUser(s *melody.Session) (SessionUser, error) {
-	var connectingUser SessionUser
+func GetSessionUser(s *melody.Session) (sessionuser.SessionUser, error) {
+	var connectingUser sessionuser.SessionUser
 
 	if _connectingUser, ok := s.Get("user"); !ok {
 		return connectingUser, errors.New("User not found on session")
 	} else {
-		connectingUser, ok = _connectingUser.(SessionUser)
+		connectingUser, ok = _connectingUser.(sessionuser.SessionUser)
 		if !ok {
 			return connectingUser, errors.New("User details corrupt on session")
 		}
@@ -45,7 +37,7 @@ var cachedUserGroupViewership = map[string][]string{}
 // JWT user has the user ID and permissions that we get from Auth0. The rest is handled
 // within PIXLISE, so lets read our DB to see if this user exists and get their
 // user name, email, icon, etc
-func MakeSessionUser(sessionId string, userId string, permissions map[string]bool, db *mongo.Database) (*SessionUser, error) {
+func MakeSessionUser(sessionId string, userId string, permissions map[string]bool, db *mongo.Database) (*sessionuser.SessionUser, error) {
 	// Ensure we have the full user ID, as our system was previously cutting the prefix
 	// off of Auth0 user ids
 	fixedUserId := utils.FixUserId(userId)
@@ -61,7 +53,7 @@ func MakeSessionUser(sessionId string, userId string, permissions map[string]boo
 // If we have a successful login and the user is not in our DB, we write a default record
 // for them, so if they change their details we have a spot to save it already
 // NOTE: Non-session users can also be created via CreateNonSessionDBUser in userDBCache.go
-func CreateDBUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.Database, defaultGroupIdToJoin string, log logger.ILogger) (*SessionUser, error) {
+func CreateDBUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.Database, defaultGroupIdToJoin string, log logger.ILogger) (*sessionuser.SessionUser, error) {
 	userId := utils.FixUserId(jwtUser.UserID)
 
 	userDBItem := &protos.UserDBItem{
@@ -97,7 +89,7 @@ func CreateDBUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.Dat
 	return makeSessionUser(userId, sessionId, jwtUser.Permissions, userDBItem, db)
 }
 
-func makeSessionUser(userId string, sessionId string, permissions map[string]bool, userDBItem *protos.UserDBItem, db *mongo.Database) (*SessionUser, error) {
+func makeSessionUser(userId string, sessionId string, permissions map[string]bool, userDBItem *protos.UserDBItem, db *mongo.Database) (*sessionuser.SessionUser, error) {
 	ourGroups := map[string]bool{} // Map of group IDs we are members of - true for members, false for viewers
 
 	// Now we read all the groups and find which ones we are members of
@@ -175,7 +167,7 @@ func makeSessionUser(userId string, sessionId string, permissions map[string]boo
 	cachedUserGroupMembership[userId] = memberOfGroups
 	cachedUserGroupViewership[userId] = viewerOfGroups
 
-	return &SessionUser{
+	return &sessionuser.SessionUser{
 		SessionId:        sessionId,
 		User:             userDBItem.Info,
 		Permissions:      permissions,

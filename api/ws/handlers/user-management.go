@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -441,7 +442,18 @@ func HandleReviewerMagicLinkCreateReq(req *protos.ReviewerMagicLinkCreateReq, hc
 		log.Fatalf("failed to generate password: %+v", err)
 	}
 
-	userName := fmt.Sprintf("Reviewer (%s)", workspace.Name)
+	workspaceName := workspace.Name
+	if len(workspaceName) <= 0 {
+		workspaceName = "Unnamed workspace" //+ workspace.Id
+		if len(workspace.ScanConfigurations) > 0 {
+			ids := []string{}
+			for _, cfg := range workspace.ScanConfigurations {
+				ids = append(ids, cfg.Id)
+			}
+			workspaceName += " for scans: " + strings.Join(ids, ",")
+		}
+	}
+	userName := fmt.Sprintf("Reviewer (%s)", workspaceName)
 	user := management.User{
 		Connection: auth0.String("Username-Password-Authentication"),
 		Email:      auth0.String(email),

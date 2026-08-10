@@ -7,12 +7,13 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/v4/api/services/servicesMock"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-var testROIs = []roiItemWithPMCs{
+var testROIs = []ROIItemWithPMCs{
 	{
 		PMCs: []int{7, 15, 388},
 		ROIItem: &protos.ROIItem{
@@ -52,30 +53,30 @@ var testROIs = []roiItemWithPMCs{
 }
 
 func Example_makeROIPMCListFileContents_Combined() {
-	fmt.Println(makeROIPMCListFileContents(testROIs, "5x11dataset.bin", true, false, map[int32]bool{}))
+	fmt.Println(makeROIPMCListFileContents(testROIs, true, false, map[int32]bool{}))
 
 	// Output:
-	// 5x11dataset.bin
+	// dataset.bin
 	// roi1-id:7|Normal|A,7|Normal|B,15|Normal|A,15|Normal|B,388|Normal|A,388|Normal|B
 	// roi2-id:7|Normal|A,7|Normal|B,450|Normal|A,450|Normal|B
 	//  <nil>
 }
 
 func Example_makeROIPMCListFileContents_Combined_Dwells() {
-	fmt.Println(makeROIPMCListFileContents(testROIs, "5x11dataset.bin", true, true, map[int32]bool{15: true}))
+	fmt.Println(makeROIPMCListFileContents(testROIs, true, true, map[int32]bool{15: true}))
 
 	// Output:
-	// 5x11dataset.bin
+	// dataset.bin
 	// roi1-id:7|Normal|A,7|Normal|B,15|Normal|A,15|Normal|B,15|Dwell|A,15|Dwell|B,388|Normal|A,388|Normal|B
 	// roi2-id:7|Normal|A,7|Normal|B,450|Normal|A,450|Normal|B
 	//  <nil>
 }
 
 func Example_makeROIPMCListFileContents_AB() {
-	fmt.Println(makeROIPMCListFileContents(testROIs, "5x11dataset.bin", false, false, map[int32]bool{}))
+	fmt.Println(makeROIPMCListFileContents(testROIs, false, false, map[int32]bool{}))
 
 	// Output:
-	// 5x11dataset.bin
+	// dataset.bin
 	// roi1-id:7|Normal|A,15|Normal|A,388|Normal|A
 	// roi1-id:7|Normal|B,15|Normal|B,388|Normal|B
 	// roi2-id:7|Normal|A,450|Normal|A
@@ -84,10 +85,10 @@ func Example_makeROIPMCListFileContents_AB() {
 }
 
 func Example_makeROIPMCListFileContents_AB_Dwells() {
-	fmt.Println(makeROIPMCListFileContents(testROIs, "5x11dataset.bin", false, true, map[int32]bool{15: true}))
+	fmt.Println(makeROIPMCListFileContents(testROIs, false, true, map[int32]bool{15: true}))
 
 	// Output:
-	// 5x11dataset.bin
+	// dataset.bin
 	// roi1-id:7|Normal|A,15|Normal|A,15|Dwell|A,388|Normal|A
 	// roi1-id:7|Normal|B,15|Normal|B,15|Dwell|B,388|Normal|B
 	// roi2-id:7|Normal|A,450|Normal|A
@@ -99,13 +100,11 @@ func Example_processQuantROIsToPMCs_Combined_OK() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	const jobsBucket = "jobs-bucket"
-
 	// Some of our files are empty, not there, have content
 	// and they're meant to end up combined into one response...
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(jobsBucket), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
+			Bucket: aws.String(servicesMock.JobBucketForUnitTest), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -119,7 +118,7 @@ PMC, CaO_%, filename, CaO_int, RTT
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, jobsBucket, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)
@@ -139,13 +138,11 @@ func Example_processQuantROIsToPMCs_SeparateAB_OK() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	const jobsBucket = "jobs-bucket"
-
 	// Some of our files are empty, not there, have content
 	// and they're meant to end up combined into one response...
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(jobsBucket), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
+			Bucket: aws.String(servicesMock.JobBucketForUnitTest), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -161,7 +158,7 @@ PMC, CaO_%, CaO_int, filename, RTT
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, jobsBucket, "JobData/abc123", "The custom header", "node001.pmcs", false, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", false, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)
@@ -186,13 +183,11 @@ func Example_processQuantROIsToPMCs_SeparateAB_InvalidFileName() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	const jobsBucket = "jobs-bucket"
-
 	// Some of our files are empty, not there, have content
 	// and they're meant to end up combined into one response...
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(jobsBucket), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
+			Bucket: aws.String(servicesMock.JobBucketForUnitTest), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -208,7 +203,7 @@ PMC, CaO_%, CaO_int, filename, RTT
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, jobsBucket, "JobData/abc123", "The custom header", "node001.pmcs", false, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", false, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)
@@ -221,13 +216,11 @@ func Example_processQuantROIsToPMCs_Combined_NoFileNameCol() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	const jobsBucket = "jobs-bucket"
-
 	// Some of our files are empty, not there, have content
 	// and they're meant to end up combined into one response...
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(jobsBucket), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
+			Bucket: aws.String(servicesMock.JobBucketForUnitTest), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -241,7 +234,7 @@ PMC, CaO_%, CaO_int, RTT
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, jobsBucket, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)
@@ -254,13 +247,11 @@ func Example_processQuantROIsToPMCs_Combined_DownloadError() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	const jobsBucket = "jobs-bucket"
-
 	// Some of our files are empty, not there, have content
 	// and they're meant to end up combined into one response...
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(jobsBucket), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
+			Bucket: aws.String(servicesMock.JobBucketForUnitTest), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -268,7 +259,7 @@ func Example_processQuantROIsToPMCs_Combined_DownloadError() {
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, jobsBucket, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)
@@ -281,13 +272,11 @@ func Example_processQuantROIsToPMCs_Combined_CSVRowCountROICountMismatch() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	const jobsBucket = "jobs-bucket"
-
 	// Some of our files are empty, not there, have content
 	// and they're meant to end up combined into one response...
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(jobsBucket), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
+			Bucket: aws.String(servicesMock.JobBucketForUnitTest), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -302,7 +291,7 @@ PMC, CaO_%, CaO_int, RTT, filename
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, jobsBucket, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)
@@ -315,13 +304,11 @@ func Example_processQuantROIsToPMCs_Combined_InvalidPMC() {
 	var mockS3 awsutil.MockS3Client
 	defer mockS3.FinishTest()
 
-	const jobsBucket = "jobs-bucket"
-
 	// Some of our files are empty, not there, have content
 	// and they're meant to end up combined into one response...
 	mockS3.ExpGetObjectInput = []s3.GetObjectInput{
 		{
-			Bucket: aws.String(jobsBucket), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
+			Bucket: aws.String(servicesMock.JobBucketForUnitTest), Key: aws.String("JobData/abc123/output/node001.pmcs_result.csv"),
 		},
 	}
 	mockS3.QueuedGetObjectOutput = []*s3.GetObjectOutput{
@@ -335,7 +322,7 @@ Qwerty, 6.1, 405, Normal_A_roi1-id, 7800
 	}
 
 	fs := fileaccess.MakeS3Access(&mockS3)
-	outputCSV, err := processQuantROIsToPMCs(fs, jobsBucket, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
+	outputCSV, err := ProcessQuantROIsToPMCs(fs, servicesMock.JobBucketForUnitTest, "JobData/abc123", "The custom header", "node001.pmcs", true, testROIs)
 
 	fmt.Printf("%v\n", err)
 	fmt.Println(outputCSV)

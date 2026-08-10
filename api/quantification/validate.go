@@ -6,13 +6,14 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/indexcompression"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 // Validates the create parameters. Side-effect of modifying PmcsEncoded to just be an array of decoded PMCs
-func IsValidCreateParam(createParams *protos.QuantCreateParams, hctx wsHelpers.HandlerContext) error {
+func IsValidCreateParam(createParams *protos.QuantCreateParams, svcs *services.APIServices, sessUser *sessionuser.SessionUser) error {
 	if createParams.RoiIDs == nil {
 		// Make it an empty list if its nil...
 		createParams.RoiIDs = []string{}
@@ -30,7 +31,7 @@ func IsValidCreateParam(createParams *protos.QuantCreateParams, hctx wsHelpers.H
 		}
 
 		// Validate things, eg no quants named the same already, parameters filled out as expected, etc...
-		if checkQuantificationNameExists(createParams.Name, createParams.ScanId, hctx) {
+		if sessUser != nil && checkQuantificationNameExists(createParams.Name, createParams.ScanId, svcs, *sessUser) {
 			return fmt.Errorf("Name already used: %v", createParams.Name)
 		}
 	} else if createParams.Command == "quant" {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pixlise/core/v4/api/services/servicesMock"
 	"github.com/pixlise/core/v4/core/awsutil"
 	"github.com/pixlise/core/v4/core/idgen"
 	"github.com/pixlise/core/v4/core/jwtparser"
@@ -32,7 +33,7 @@ func runMiddlewareLoggingTest(t *testing.T, logLevel *logger.LogLevel) {
 
 	mockS3.ExpPutObjectInput = []s3.PutObjectInput{
 		{
-			Bucket: aws.String(UsersBucketForUnitTest), Key: aws.String("Activity/2022-11-11/id-123.json"), Body: bytes.NewReader([]byte(`{
+			Bucket: aws.String(servicesMock.UsersBucketForUnitTest), Key: aws.String("Activity/2022-11-11/id-123.json"), Body: bytes.NewReader([]byte(`{
 "Instance": "",
 "Time": "2022-11-11T04:56:19Z",
 "Component": "/foo",
@@ -55,7 +56,7 @@ func runMiddlewareLoggingTest(t *testing.T, logLevel *logger.LogLevel) {
 		IDs: []string{"id-123"},
 	}
 
-	s := MakeMockSvcs(&mockS3, &idGen, logLevel)
+	s := servicesMock.MakeMockSvcs(&mockS3, &idGen, logLevel)
 	s.TimeStamper = &timestamper.MockTimeNowStamper{
 		QueuedTimeStamps: []int64{1668142579},
 	}

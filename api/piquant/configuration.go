@@ -47,8 +47,11 @@ func GetPIQUANTConfig(svcs *services.APIServices, configName string, version str
 
 	s3Path := filepaths.GetDetectorConfigPath(configName, version, filepaths.PiquantConfigFileName)
 	err := svcs.FS.ReadJSON(svcs.Config.ConfigBucket, s3Path, &cfg, false)
-	if err != nil && svcs.FS.IsNotFoundError(err) {
-		return nil, errorwithstatus.MakeNotFoundError(configName)
+	if err != nil {
+		if svcs.FS.IsNotFoundError(err) {
+			return nil, errorwithstatus.MakeNotFoundError(configName)
+		}
+		return nil, err
 	}
 
 	// Return the result, converted to the "resulting" struct

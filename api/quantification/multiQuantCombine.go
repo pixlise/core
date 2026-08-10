@@ -53,7 +53,7 @@ func MultiQuantCombinedCSV(
 		[]string{},
 	}
 
-	if checkQuantificationNameExists(name, scanId, hctx) {
+	if checkQuantificationNameExists(name, scanId, hctx.Svcs, hctx.SessUser) {
 		return result, errorwithstatus.MakeBadRequestError(fmt.Errorf("Name already used: %v", name))
 	}
 

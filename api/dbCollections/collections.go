@@ -4,6 +4,7 @@ package dbCollections
 
 // NOTE DON'T FORGET TO UPDATE GetAllCollections() BELOW!!!
 
+const ConnectTempTokensName = "connectTempTokens"
 const DetectorConfigsName = "detectorConfigs"
 const DiffractionDetectedPeakStatusesName = "diffractionDetectedPeakStatuses"
 const DiffractionManualPeaksName = "diffractionManualPeaks"
@@ -11,10 +12,14 @@ const DOIName = "doi"
 const ElementSetsName = "elementSets"
 const ExpressionGroupsName = "expressionGroups"
 const ExpressionsName = "expressions"
+const Image3DPointsName = "image3DPoints"
 const ImageBeamLocationsName = "imageBeamLocations"
 const ImagePyramidsName = "imagePyramids"
-const Image3DPointsName = "image3DPoints"
 const ImagesName = "images"
+const JobHandlersName = "jobHandlers"
+const JobsName = "jobs"
+const JobStatusName = "jobStatuses"
+const JobQueueName = "jobQueue"
 const MemoisedItemsName = "memoisedItems"
 const MistROIsName = "mistROIs"
 const ModulesName = "modules"
@@ -32,18 +37,14 @@ const ScansName = "scans"
 const ScreenConfigurationName = "screenConfigurations"
 const SelectionName = "selection"
 const TagsName = "tags"
+const UserExpressionDisplaySettings = "userExpressionDisplaySettings"
 const UserGroupJoinRequestsName = "userGroupJoinRequests"
 const UserGroupsName = "userGroups"
-const UserROIDisplaySettings = "userROIDisplaySettings"
-const UserExpressionDisplaySettings = "userExpressionDisplaySettings"
-const UsersName = "users"
 const UserImpersonatorsName = "userImpersonators"
+const UserROIDisplaySettings = "userROIDisplaySettings"
+const UsersName = "users"
 const ViewStatesName = "viewStates"
 const WidgetDataName = "widgetData"
-const ConnectTempTokensName = "connectTempTokens"
-const JobsName = "jobs"
-const JobStatusName = "jobStatuses"
-const JobHandlersName = "jobHandlers"
 
 func GetAllCollections() []string {
 	return []string{
@@ -87,5 +88,6 @@ func GetAllCollections() []string {
 		WidgetDataName,
 		ConnectTempTokensName,
 		JobsName,
+		JobQueueName,
 	}
 }

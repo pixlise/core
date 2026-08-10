@@ -17,26 +17,38 @@
 
 package quantRunner
 
-func EstimateNodeCount(spectraCount int32, elementCount int32, desiredRunTimeSec int32, coresPerNode int32, maxNodes int32) int32 {
-	// Nodes = Spectra*(Elements+3) / 3*(RuntimeDesired * Cores)
-	// See unit test for why...
+func EstimateNodeCount(spectraCount uint, elementCount uint, desiredRunTimeSec uint, maxNodes uint) uint {
+	// Real world testing:
+	// 23 elements, 1377 spectra ran as 50 jobs, 25 nodes in 600sec => total processing is 30,000sec => 1 spectrum takes 21.8
+	// 4 elements, 1377 spectra ran as 32 jobs, 16 nodes in 250sec => total processing is 8,000sec => 1 spectrum takes 5.8
+	// 1 elements, 1377 spectra ran as 20 jobs, 10 nodes in 234sec => total processing is 4,680sec => 1 spectrum takes 3.4
 
-	// Add 0.5 to round up, can't have it fractional
-	nodeCount := int32((float32(spectraCount*(elementCount+3)) / float32(3*desiredRunTimeSec*coresPerNode)) + 0.5)
+	// So the element contribution is:
+	// 1 element    3.4sec
+	// 4 elements   5.8sec
+	// 23 elements 21.8sec
+	// A fitting curve is T=0.015E^2 + 0.6E + 2.9
+	// where T is sec per spectra, E is number of elements
+	// So calculating how much time per spectrum:
+	secPerSpectrum := 0.015*float64(elementCount)*float64(elementCount) + 0.6*float64(elementCount) + 2.9
 
-	// Clamp it to reasonable values
-	if nodeCount < 1 {
+	// Within the desired runtime, how many ways do we need to farm this out?
+	estRuntimeSec := float64(spectraCount) * secPerSpectrum
+
+	nodeCount := uint(estRuntimeSec / float64(desiredRunTimeSec))
+
+	// Make sure it's within limits
+	if nodeCount <= 0 {
 		nodeCount = 1
-	}
-	// Don't go way overboard either
-	if nodeCount > maxNodes {
+	} else if nodeCount > maxNodes {
 		nodeCount = maxNodes
 	}
-	return nodeCount
+
+	return uint(nodeCount)
 }
 
-func FilesPerNode(spectraCount int32, nodeCount int32) int32 {
+func FilesPerNode(spectraCount uint, nodeCount uint) uint {
 	// NOTE: this may result in some extra if the spectra don't divide exactly per node. Even for a single
 	// node it'll generate+1, but that's ok, this is a limit, when generating PMC files, this will be ok
-	return int32((float32(spectraCount)/float32(nodeCount))+0.5) + 1 // TODO: the +1 might be redundant here??
+	return uint((float32(spectraCount) / float32(nodeCount)) + 0.5) //+ 1 // TODO: the +1 might be redundant here??
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/services"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -151,9 +153,18 @@ func MakeFilter(
 	requireEdit bool,
 	objectType protos.ObjectType,
 	hctx HandlerContext) (bson.M, map[string]*protos.OwnershipItem, error) {
+	return MakeFilterForUser(searchParams, requireEdit, objectType, hctx.Svcs, hctx.SessUser)
+}
+
+func MakeFilterForUser(
+	searchParams *protos.SearchParams,
+	requireEdit bool,
+	objectType protos.ObjectType,
+	svcs *services.APIServices,
+	sessUser sessionuser.SessionUser) (bson.M, map[string]*protos.OwnershipItem, error) {
 
 	// Firstly, get the list of ids that are accessible to this user, based on ownership
-	idToOwner, err := ListAccessibleIDs(false, objectType, hctx.Svcs, hctx.SessUser)
+	idToOwner, err := ListAccessibleIDs(false, objectType, svcs, sessUser)
 	if err != nil {
 		return nil, idToOwner, err
 	}
