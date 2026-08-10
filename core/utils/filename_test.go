@@ -43,12 +43,12 @@ func Example_utils_ApplyIndexToFileName() {
 	fmt.Println(ApplyIndexToFileName("extensionless", 3, true))
 
 	// Output:
-	// node000000.txt
-	// node000001.txt
-	// node000002.txt
+	// node00001.txt
+	// node00002.txt
+	// node00003.txt
 	// node.txt
-	// node304023.txt
-	// node6304023.txt
-	// file000033.name.img
-	// extensionless000003
+	// node304024.txt
+	// node6304024.txt
+	// file00034.name.img
+	// extensionless00004
 }
