@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/services"
@@ -389,7 +390,20 @@ func FindUserIdsFor(objectId string, mongoDB *mongo.Database) ([]string, error) 
 		return []string{}, err
 	}
 
-	return append(userIds, usersForGroups...), nil
+	// Make one list
+	userIds = append(userIds, usersForGroups...)
+
+	// Make them unique
+	uniqueUserIds := map[string]bool{}
+	for _, id := range userIds {
+		uniqueUserIds[id] = true
+	}
+
+	// Unique list now
+	userIds = utils.GetMapKeys(uniqueUserIds)
+	sort.Strings(userIds)
+
+	return userIds, nil
 }
 
 func GetUserIdsForGroup(groupIds []string, mongoDB *mongo.Database) ([]string, error) {
