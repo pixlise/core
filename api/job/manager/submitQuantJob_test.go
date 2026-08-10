@@ -202,7 +202,7 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	// INFO: Instance the-test-instance starting job "quant-id123-node-0"...
 	// WARNING: Running job locally, recommended for use for tests only!
 	// INFO: Running job from s3://job-bucket/JobData/048300551/quant-id123 for node 0
-	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"quant-id123-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"datasets-bucket", RemotePath:"Scans/048300551/dataset.bin", LocalPath:"dataset.bin", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/quant-id123/request.json", LocalPath:"request.json", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v7/Config_PIXL_FM_SurfaceOps_Rev2_Sept2021.msa", LocalPath:"Config_PIXL_FM_SurfaceOps_Rev2_Sept2021.msa", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v7/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv", LocalPath:"Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/quant-id123/node000000.pmcs", LocalPath:"node000000.pmcs", ApplyNodeIndex:3}}, Command:"./Piquant", Args:[]string{"map", "Config_PIXL_FM_SurfaceOps_Rev2_Sept2021.msa", "Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv", "node000000.pmcs", "Fe,Ca", "map000000.csv", "-Fe,1", "-t,4"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/quant-id123/piquant-logs/stdout000000.log", LocalPath:"stdout", ApplyNodeIndex:2}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/quant-id123/piquant-logs/piquant000000.log", LocalPath:"map000000.csv_log.txt", ApplyNodeIndex:3}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/quant-id123/output/result000000.csv", LocalPath:"map000000.csv", ApplyNodeIndex:3}}}
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"quant-id123-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"datasets-bucket", RemotePath:"Scans/048300551/dataset.bin", LocalPath:"dataset.bin", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/quant-id123/request.json", LocalPath:"request.json", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v7/Config_PIXL_FM_SurfaceOps_Rev2_Sept2021.msa", LocalPath:"Config_PIXL_FM_SurfaceOps_Rev2_Sept2021.msa", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v7/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv", LocalPath:"Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/quant-id123/node00001.pmcs", LocalPath:"node00001.pmcs", ApplyNodeIndex:3}}, Command:"./Piquant", Args:[]string{"map", "Config_PIXL_FM_SurfaceOps_Rev2_Sept2021.msa", "Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv", "node00001.pmcs", "Fe,Ca", "map00001.csv", "-Fe,1", "-t,4"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/quant-id123/piquant-logs/stdout00001.log", LocalPath:"stdout", ApplyNodeIndex:2}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/quant-id123/piquant-logs/piquant00001.log", LocalPath:"map00001.csv_log.txt", ApplyNodeIndex:3}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/quant-id123/output/result00001.csv", LocalPath:"map00001.csv", ApplyNodeIndex:3}}}
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://datasets-bucket/Scans/048300551/dataset.bin" -> "dataset.bin":
 	// DEBUG:  Local path is <CWD>/dataset.bin
@@ -220,17 +220,17 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	// DEBUG:  Local path is <CWD>/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
 	// DEBUG:  Downloaded 7588 bytes
 	// DEBUG:  Wrote file: <CWD>/Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv
-	// DEBUG: Download "s3://job-bucket/JobData/048300551/quant-id123/node000000.pmcs" -> "node000000.pmcs":
-	// DEBUG:  Local path is <CWD>/node000000.pmcs
+	// DEBUG: Download "s3://job-bucket/JobData/048300551/quant-id123/node00001.pmcs" -> "node00001.pmcs":
+	// DEBUG:  Local path is <CWD>/node00001.pmcs
 	// DEBUG:  Downloaded 64 bytes
-	// DEBUG:  Wrote file: <CWD>/node000000.pmcs
+	// DEBUG:  Wrote file: <CWD>/node00001.pmcs
 	// INFO: Checking for required libraries...
 	// INFO: Running job...
-	// DEBUG: exec.Command starting "./Piquant", args: [map,Config_PIXL_FM_SurfaceOps_Rev2_Sept2021.msa,Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv,node000000.pmcs,Fe,Ca,map000000.csv,-Fe,1,-t,4]
+	// DEBUG: exec.Command starting "./Piquant", args: [map,Config_PIXL_FM_SurfaceOps_Rev2_Sept2021.msa,Calibration_PIXL_FM_SurfaceOps_5minECFs_Rev1_Jul2021.csv,node00001.pmcs,Fe,Ca,map00001.csv,-Fe,1,-t,4]
 	// INFO: Job quant-id123-node-0 runtime was < 10 sec
-	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/048300551/quant-id123/piquant-logs/stdout000000.log
-	// DEBUG: Upload map000000.csv_log.txt -> s3://job-bucket/JobData/048300551/quant-id123/piquant-logs/piquant000000.log
-	// DEBUG: Upload map000000.csv -> s3://job-bucket/JobData/048300551/quant-id123/output/result000000.csv
+	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/048300551/quant-id123/piquant-logs/stdout00001.log
+	// DEBUG: Upload map00001.csv_log.txt -> s3://job-bucket/JobData/048300551/quant-id123/piquant-logs/piquant00001.log
+	// DEBUG: Upload map00001.csv -> s3://job-bucket/JobData/048300551/quant-id123/output/result00001.csv
 	// INFO: Job quant-id123-node-0 run complete: ""
 	// Output:
 	// -----------------
@@ -340,7 +340,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// INFO: Instance the-test-instance starting job "quant-id123-node-0"...
 	// WARNING: Running job locally, recommended for use for tests only!
 	// INFO: Running job from s3://job-bucket/JobData/983561/quant-id123 for node 0
-	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"quant-id123-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"datasets-bucket", RemotePath:"Scans/983561/dataset.bin", LocalPath:"dataset.bin", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/request.json", LocalPath:"request.json", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", LocalPath:"Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", LocalPath:"Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/node000000.pmcs", LocalPath:"node000000.pmcs", ApplyNodeIndex:3}}, Command:"./Piquant", Args:[]string{"map", "Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", "Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", "node000000.pmcs", "Ca,Ti", "map000000.csv", "-q,pPIETXCFsr", "-b,0,12,60,910,2800,16", "-Fe,1", "-t,4"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/stdout000000.log", LocalPath:"stdout", ApplyNodeIndex:2}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/piquant000000.log", LocalPath:"map000000.csv_log.txt", ApplyNodeIndex:3}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/output/result000000.csv", LocalPath:"map000000.csv", ApplyNodeIndex:3}}}
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"quant-id123-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"datasets-bucket", RemotePath:"Scans/983561/dataset.bin", LocalPath:"dataset.bin", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/request.json", LocalPath:"request.json", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", LocalPath:"Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", LocalPath:"Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/node00001.pmcs", LocalPath:"node00001.pmcs", ApplyNodeIndex:3}}, Command:"./Piquant", Args:[]string{"map", "Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", "Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", "node00001.pmcs", "Ca,Ti", "map00001.csv", "-q,pPIETXCFsr", "-b,0,12,60,910,2800,16", "-Fe,1", "-t,4"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/stdout00001.log", LocalPath:"stdout", ApplyNodeIndex:2}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/piquant00001.log", LocalPath:"map00001.csv_log.txt", ApplyNodeIndex:3}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/output/result00001.csv", LocalPath:"map00001.csv", ApplyNodeIndex:3}}}
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://datasets-bucket/Scans/983561/dataset.bin" -> "dataset.bin":
 	// DEBUG:  Local path is <CWD>/dataset.bin
@@ -358,17 +358,17 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// DEBUG:  Local path is <CWD>/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv
 	// DEBUG:  Downloaded 7585 bytes
 	// DEBUG:  Wrote file: <CWD>/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv
-	// DEBUG: Download "s3://job-bucket/JobData/983561/quant-id123/node000000.pmcs" -> "node000000.pmcs":
-	// DEBUG:  Local path is <CWD>/node000000.pmcs
+	// DEBUG: Download "s3://job-bucket/JobData/983561/quant-id123/node00001.pmcs" -> "node00001.pmcs":
+	// DEBUG:  Local path is <CWD>/node00001.pmcs
 	// DEBUG:  Downloaded 60 bytes
-	// DEBUG:  Wrote file: <CWD>/node000000.pmcs
+	// DEBUG:  Wrote file: <CWD>/node00001.pmcs
 	// INFO: Checking for required libraries...
 	// INFO: Running job...
-	// DEBUG: exec.Command starting "./Piquant", args: [map,Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa,Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv,node000000.pmcs,Ca,Ti,map000000.csv,-q,pPIETXCFsr,-b,0,12,60,910,2800,16,-Fe,1,-t,4]
+	// DEBUG: exec.Command starting "./Piquant", args: [map,Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa,Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv,node00001.pmcs,Ca,Ti,map00001.csv,-q,pPIETXCFsr,-b,0,12,60,910,2800,16,-Fe,1,-t,4]
 	// INFO: Job quant-id123-node-0 runtime was < 10 sec
-	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout000000.log
-	// DEBUG: Upload map000000.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant000000.log
-	// DEBUG: Upload map000000.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result000000.csv
+	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout00001.log
+	// DEBUG: Upload map00001.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant00001.log
+	// DEBUG: Upload map00001.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result00001.csv
 	// INFO: Job quant-id123-node-0 run complete: ""
 	// Output:
 	// -----------------
@@ -377,7 +377,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// INFO: Instance the-test-instance starting job "quant-id123-node-1"...
 	// WARNING: Running job locally, recommended for use for tests only!
 	// INFO: Running job from s3://job-bucket/JobData/983561/quant-id123 for node 1
-	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"quant-id123-node-1", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"datasets-bucket", RemotePath:"Scans/983561/dataset.bin", LocalPath:"dataset.bin", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/request.json", LocalPath:"request.json", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", LocalPath:"Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", LocalPath:"Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/node000001.pmcs", LocalPath:"node000001.pmcs", ApplyNodeIndex:3}}, Command:"./Piquant", Args:[]string{"map", "Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", "Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", "node000001.pmcs", "Ca,Ti", "map000001.csv", "-q,pPIETXCFsr", "-b,0,12,60,910,2800,16", "-Fe,1", "-t,4"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/stdout000001.log", LocalPath:"stdout", ApplyNodeIndex:2}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/piquant000001.log", LocalPath:"map000001.csv_log.txt", ApplyNodeIndex:3}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/output/result000001.csv", LocalPath:"map000001.csv", ApplyNodeIndex:3}}}
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"quant-id123-node-1", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"datasets-bucket", RemotePath:"Scans/983561/dataset.bin", LocalPath:"dataset.bin", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/request.json", LocalPath:"request.json", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", LocalPath:"Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", LocalPath:"Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/node00002.pmcs", LocalPath:"node00002.pmcs", ApplyNodeIndex:3}}, Command:"./Piquant", Args:[]string{"map", "Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", "Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", "node00002.pmcs", "Ca,Ti", "map00002.csv", "-q,pPIETXCFsr", "-b,0,12,60,910,2800,16", "-Fe,1", "-t,4"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/stdout00002.log", LocalPath:"stdout", ApplyNodeIndex:2}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/piquant00002.log", LocalPath:"map00002.csv_log.txt", ApplyNodeIndex:3}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/output/result00002.csv", LocalPath:"map00002.csv", ApplyNodeIndex:3}}}
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://datasets-bucket/Scans/983561/dataset.bin" -> "dataset.bin":
 	// DEBUG:  Local path is <CWD>/dataset.bin
@@ -395,17 +395,17 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// DEBUG:  Local path is <CWD>/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv
 	// DEBUG:  Downloaded 7585 bytes
 	// DEBUG:  Wrote file: <CWD>/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv
-	// DEBUG: Download "s3://job-bucket/JobData/983561/quant-id123/node000001.pmcs" -> "node000001.pmcs":
-	// DEBUG:  Local path is <CWD>/node000001.pmcs
+	// DEBUG: Download "s3://job-bucket/JobData/983561/quant-id123/node00002.pmcs" -> "node00002.pmcs":
+	// DEBUG:  Local path is <CWD>/node00002.pmcs
 	// DEBUG:  Downloaded 60 bytes
-	// DEBUG:  Wrote file: <CWD>/node000001.pmcs
+	// DEBUG:  Wrote file: <CWD>/node00002.pmcs
 	// INFO: Checking for required libraries...
 	// INFO: Running job...
-	// DEBUG: exec.Command starting "./Piquant", args: [map,Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa,Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv,node000001.pmcs,Ca,Ti,map000001.csv,-q,pPIETXCFsr,-b,0,12,60,910,2800,16,-Fe,1,-t,4]
+	// DEBUG: exec.Command starting "./Piquant", args: [map,Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa,Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv,node00002.pmcs,Ca,Ti,map00002.csv,-q,pPIETXCFsr,-b,0,12,60,910,2800,16,-Fe,1,-t,4]
 	// INFO: Job quant-id123-node-1 runtime was < 10 sec
-	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout000001.log
-	// DEBUG: Upload map000001.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant000001.log
-	// DEBUG: Upload map000001.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result000001.csv
+	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout00002.log
+	// DEBUG: Upload map00002.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant00002.log
+	// DEBUG: Upload map00002.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result00002.csv
 	// INFO: Job quant-id123-node-1 run complete: ""
 	// Output:
 	// -----------------
@@ -414,7 +414,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// INFO: Instance the-test-instance starting job "quant-id123-node-2"...
 	// WARNING: Running job locally, recommended for use for tests only!
 	// INFO: Running job from s3://job-bucket/JobData/983561/quant-id123 for node 2
-	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"quant-id123-node-2", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"datasets-bucket", RemotePath:"Scans/983561/dataset.bin", LocalPath:"dataset.bin", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/request.json", LocalPath:"request.json", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", LocalPath:"Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", LocalPath:"Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/node000002.pmcs", LocalPath:"node000002.pmcs", ApplyNodeIndex:3}}, Command:"./Piquant", Args:[]string{"map", "Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", "Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", "node000002.pmcs", "Ca,Ti", "map000002.csv", "-q,pPIETXCFsr", "-b,0,12,60,910,2800,16", "-Fe,1", "-t,4"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/stdout000002.log", LocalPath:"stdout", ApplyNodeIndex:2}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/piquant000002.log", LocalPath:"map000002.csv_log.txt", ApplyNodeIndex:3}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/output/result000002.csv", LocalPath:"map000002.csv", ApplyNodeIndex:3}}}
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"quant-id123-node-2", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"datasets-bucket", RemotePath:"Scans/983561/dataset.bin", LocalPath:"dataset.bin", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/request.json", LocalPath:"request.json", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", LocalPath:"Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", LocalPath:"Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/node00003.pmcs", LocalPath:"node00003.pmcs", ApplyNodeIndex:3}}, Command:"./Piquant", Args:[]string{"map", "Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", "Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", "node00003.pmcs", "Ca,Ti", "map00003.csv", "-q,pPIETXCFsr", "-b,0,12,60,910,2800,16", "-Fe,1", "-t,4"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/stdout00003.log", LocalPath:"stdout", ApplyNodeIndex:2}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/piquant00003.log", LocalPath:"map00003.csv_log.txt", ApplyNodeIndex:3}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/output/result00003.csv", LocalPath:"map00003.csv", ApplyNodeIndex:3}}}
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://datasets-bucket/Scans/983561/dataset.bin" -> "dataset.bin":
 	// DEBUG:  Local path is <CWD>/dataset.bin
@@ -432,17 +432,17 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// DEBUG:  Local path is <CWD>/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv
 	// DEBUG:  Downloaded 7585 bytes
 	// DEBUG:  Wrote file: <CWD>/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv
-	// DEBUG: Download "s3://job-bucket/JobData/983561/quant-id123/node000002.pmcs" -> "node000002.pmcs":
-	// DEBUG:  Local path is <CWD>/node000002.pmcs
+	// DEBUG: Download "s3://job-bucket/JobData/983561/quant-id123/node00003.pmcs" -> "node00003.pmcs":
+	// DEBUG:  Local path is <CWD>/node00003.pmcs
 	// DEBUG:  Downloaded 60 bytes
-	// DEBUG:  Wrote file: <CWD>/node000002.pmcs
+	// DEBUG:  Wrote file: <CWD>/node00003.pmcs
 	// INFO: Checking for required libraries...
 	// INFO: Running job...
-	// DEBUG: exec.Command starting "./Piquant", args: [map,Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa,Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv,node000002.pmcs,Ca,Ti,map000002.csv,-q,pPIETXCFsr,-b,0,12,60,910,2800,16,-Fe,1,-t,4]
+	// DEBUG: exec.Command starting "./Piquant", args: [map,Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa,Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv,node00003.pmcs,Ca,Ti,map00003.csv,-q,pPIETXCFsr,-b,0,12,60,910,2800,16,-Fe,1,-t,4]
 	// INFO: Job quant-id123-node-2 runtime was < 10 sec
-	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout000002.log
-	// DEBUG: Upload map000002.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant000002.log
-	// DEBUG: Upload map000002.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result000002.csv
+	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout00003.log
+	// DEBUG: Upload map00003.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant00003.log
+	// DEBUG: Upload map00003.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result00003.csv
 	// INFO: Job quant-id123-node-2 run complete: ""
 	// Output:
 	// -----------------
@@ -451,7 +451,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// INFO: Instance the-test-instance starting job "quant-id123-node-3"...
 	// WARNING: Running job locally, recommended for use for tests only!
 	// INFO: Running job from s3://job-bucket/JobData/983561/quant-id123 for node 3
-	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"quant-id123-node-3", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"datasets-bucket", RemotePath:"Scans/983561/dataset.bin", LocalPath:"dataset.bin", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/request.json", LocalPath:"request.json", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", LocalPath:"Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", LocalPath:"Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/node000003.pmcs", LocalPath:"node000003.pmcs", ApplyNodeIndex:3}}, Command:"./Piquant", Args:[]string{"map", "Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", "Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", "node000003.pmcs", "Ca,Ti", "map000003.csv", "-q,pPIETXCFsr", "-b,0,12,60,910,2800,16", "-Fe,1", "-t,4"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/stdout000003.log", LocalPath:"stdout", ApplyNodeIndex:2}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/piquant000003.log", LocalPath:"map000003.csv_log.txt", ApplyNodeIndex:3}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/output/result000003.csv", LocalPath:"map000003.csv", ApplyNodeIndex:3}}}
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"quant-id123-node-3", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"datasets-bucket", RemotePath:"Scans/983561/dataset.bin", LocalPath:"dataset.bin", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/request.json", LocalPath:"request.json", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", LocalPath:"Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", LocalPath:"Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/node00004.pmcs", LocalPath:"node00004.pmcs", ApplyNodeIndex:3}}, Command:"./Piquant", Args:[]string{"map", "Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", "Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", "node00004.pmcs", "Ca,Ti", "map00004.csv", "-q,pPIETXCFsr", "-b,0,12,60,910,2800,16", "-Fe,1", "-t,4"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/stdout00004.log", LocalPath:"stdout", ApplyNodeIndex:2}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/piquant00004.log", LocalPath:"map00004.csv_log.txt", ApplyNodeIndex:3}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/output/result00004.csv", LocalPath:"map00004.csv", ApplyNodeIndex:3}}}
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://datasets-bucket/Scans/983561/dataset.bin" -> "dataset.bin":
 	// DEBUG:  Local path is <CWD>/dataset.bin
@@ -469,17 +469,17 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	// DEBUG:  Local path is <CWD>/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv
 	// DEBUG:  Downloaded 7585 bytes
 	// DEBUG:  Wrote file: <CWD>/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv
-	// DEBUG: Download "s3://job-bucket/JobData/983561/quant-id123/node000003.pmcs" -> "node000003.pmcs":
-	// DEBUG:  Local path is <CWD>/node000003.pmcs
+	// DEBUG: Download "s3://job-bucket/JobData/983561/quant-id123/node00004.pmcs" -> "node00004.pmcs":
+	// DEBUG:  Local path is <CWD>/node00004.pmcs
 	// DEBUG:  Downloaded 36 bytes
-	// DEBUG:  Wrote file: <CWD>/node000003.pmcs
+	// DEBUG:  Wrote file: <CWD>/node00004.pmcs
 	// INFO: Checking for required libraries...
 	// INFO: Running job...
-	// DEBUG: exec.Command starting "./Piquant", args: [map,Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa,Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv,node000003.pmcs,Ca,Ti,map000003.csv,-q,pPIETXCFsr,-b,0,12,60,910,2800,16,-Fe,1,-t,4]
+	// DEBUG: exec.Command starting "./Piquant", args: [map,Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa,Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv,node00004.pmcs,Ca,Ti,map00004.csv,-q,pPIETXCFsr,-b,0,12,60,910,2800,16,-Fe,1,-t,4]
 	// INFO: Job quant-id123-node-3 runtime was < 10 sec
-	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout000003.log
-	// DEBUG: Upload map000003.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant000003.log
-	// DEBUG: Upload map000003.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result000003.csv
+	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout00004.log
+	// DEBUG: Upload map00004.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant00004.log
+	// DEBUG: Upload map00004.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result00004.csv
 	// INFO: Job quant-id123-node-3 run complete: ""
 	// Output:
 	// -----------------
@@ -584,7 +584,7 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	// INFO: Instance the-test-instance starting job "quant-id123-node-0"...
 	// WARNING: Running job locally, recommended for use for tests only!
 	// INFO: Running job from s3://job-bucket/JobData/983561/quant-id123 for node 0
-	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"quant-id123-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"datasets-bucket", RemotePath:"Scans/983561/dataset.bin", LocalPath:"dataset.bin", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/request.json", LocalPath:"request.json", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", LocalPath:"Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", LocalPath:"Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/node000000.pmcs", LocalPath:"node000000.pmcs", ApplyNodeIndex:3}}, Command:"./Piquant", Args:[]string{"map", "Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", "Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", "node000000.pmcs", "Ca,Ti", "map000000.csv", "-q,pPIETXCFsr", "-b,0,12,60,910,2800,16", "-Fe,1", "-t,4"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/stdout000000.log", LocalPath:"stdout", ApplyNodeIndex:2}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/piquant000000.log", LocalPath:"map000000.csv_log.txt", ApplyNodeIndex:3}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/output/result000000.csv", LocalPath:"map000000.csv", ApplyNodeIndex:3}}}
+	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"quant-id123-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"datasets-bucket", RemotePath:"Scans/983561/dataset.bin", LocalPath:"dataset.bin", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/request.json", LocalPath:"request.json", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", LocalPath:"Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"config-bucket", RemotePath:"DetectorConfig/PIXL/PiquantConfigs/v5/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", LocalPath:"Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/node00001.pmcs", LocalPath:"node00001.pmcs", ApplyNodeIndex:3}}, Command:"./Piquant", Args:[]string{"map", "Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa", "Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv", "node00001.pmcs", "Ca,Ti", "map00001.csv", "-q,pPIETXCFsr", "-b,0,12,60,910,2800,16", "-Fe,1", "-t,4"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/stdout00001.log", LocalPath:"stdout", ApplyNodeIndex:2}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/piquant-logs/piquant00001.log", LocalPath:"map00001.csv_log.txt", ApplyNodeIndex:3}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/983561/quant-id123/output/result00001.csv", LocalPath:"map00001.csv", ApplyNodeIndex:3}}}
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://datasets-bucket/Scans/983561/dataset.bin" -> "dataset.bin":
 	// DEBUG:  Local path is <CWD>/dataset.bin
@@ -602,17 +602,17 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	// DEBUG:  Local path is <CWD>/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv
 	// DEBUG:  Downloaded 7585 bytes
 	// DEBUG:  Wrote file: <CWD>/Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv
-	// DEBUG: Download "s3://job-bucket/JobData/983561/quant-id123/node000000.pmcs" -> "node000000.pmcs":
-	// DEBUG:  Local path is <CWD>/node000000.pmcs
+	// DEBUG: Download "s3://job-bucket/JobData/983561/quant-id123/node00001.pmcs" -> "node00001.pmcs":
+	// DEBUG:  Local path is <CWD>/node00001.pmcs
 	// DEBUG:  Downloaded 60 bytes
-	// DEBUG:  Wrote file: <CWD>/node000000.pmcs
+	// DEBUG:  Wrote file: <CWD>/node00001.pmcs
 	// INFO: Checking for required libraries...
 	// INFO: Running job...
-	// DEBUG: exec.Command starting "./Piquant", args: [map,Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa,Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv,node000000.pmcs,Ca,Ti,map000000.csv,-q,pPIETXCFsr,-b,0,12,60,910,2800,16,-Fe,1,-t,4]
+	// DEBUG: exec.Command starting "./Piquant", args: [map,Config_PIXL_FM_SurfaceOps_Optic8_Jun2021.msa,Calibration_PIXL_FM_ShelfBugFixed_5minECFs_Jun2021.csv,node00001.pmcs,Ca,Ti,map00001.csv,-q,pPIETXCFsr,-b,0,12,60,910,2800,16,-Fe,1,-t,4]
 	// INFO: Job quant-id123-node-0 runtime was < 10 sec
-	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout000000.log
-	// DEBUG: Upload map000000.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant000000.log
-	// DEBUG: Upload map000000.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result000000.csv
+	// DEBUG: Uploaded stdout log to: s3://job-bucket/JobData/983561/quant-id123/piquant-logs/stdout00001.log
+	// DEBUG: Upload map00001.csv_log.txt -> s3://job-bucket/JobData/983561/quant-id123/piquant-logs/piquant00001.log
+	// DEBUG: Upload map00001.csv -> s3://job-bucket/JobData/983561/quant-id123/output/result00001.csv
 	// INFO: Job quant-id123-node-0 run complete: ""
 	// Output:
 	// -----------------
