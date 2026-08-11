@@ -112,7 +112,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_NoExpr() {
 
 	// Output:
 	// jm Create: <nil>
-	// ERROR: SubmitExpressionJob error: Failed to read map[_id:non-existant-expr] from collection expressions: mongo: no documents in result
+	// ERROR: SubmitExpressionJob error: "non-existant-expr" not found
 }
 
 // More tests to write:
@@ -137,7 +137,35 @@ func Example_jobmanager_SubmitExpressionJob_048300551_NoQuant() {
 	// INFO: Instance the-test-instance starting job "expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0"...
 	// Running lua expression job locally!
 	// INFO: Running job from s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE for node 0
-	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua", LocalPath:"source.lua", ApplyNodeIndex:0}}, Command:"lua-expression", Args:[]string{"scanId=048300551", "quantId=quant-ggy6zxhn23p7rlv9non-existant", "expressionId=u59sahioy18frfl9", "memoKey=memo123"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/stdout.log", LocalPath:"stdout", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/output.csv", LocalPath:"output.csv", ApplyNodeIndex:0}}}
+	// DEBUG: Job config struct: {
+	//   "jobId": "expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0",
+	//   "requiredFiles": [
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua",
+	//       "localPath": "source.lua"
+	//     }
+	//   ],
+	//   "command": "lua-expression",
+	//   "args": [
+	//     "scanId=048300551",
+	//     "quantId=quant-ggy6zxhn23p7rlv9non-existant",
+	//     "expressionId=u59sahioy18frfl9",
+	//     "memoKey=memo123"
+	//   ],
+	//   "outputFiles": [
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/stdout.log",
+	//       "localPath": "stdout"
+	//     },
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/output.csv",
+	//       "localPath": "output.csv"
+	//     }
+	//   ]
+	// }
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua" -> "source.lua":
 	// DEBUG:  Local path is <CWD>/source.lua
@@ -170,9 +198,9 @@ func Example_jobmanager_SubmitExpressionJob_048300551_NoQuant() {
 	// INFO: updateJobStatus: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status ERROR, message: 1 nodes failed
 	// INFO:   Marking job expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE as ERROR due to nodes not all completing
 	// DEBUG:   CheckJobQueue found 0 not-started jobs
-	// Read memoised exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9 errors: Failed to read map[_id:exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9] from collection memoisedItems: mongo: no documents in result
-	// Read memoised exprcachev1_GeoAndDiff_3_5_3_geometry_048300551 errors: Failed to read map[_id:exprcachev1_GeoAndDiff_3_5_3_geometry_048300551] from collection memoisedItems: mongo: no documents in result
-	// Read memoised memo123 errors: Failed to read map[_id:memo123] from collection memoisedItems: mongo: no documents in result
+	// Read memoised exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9 errors: "exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9" not found
+	// Read memoised exprcachev1_GeoAndDiff_3_5_3_geometry_048300551 errors: "exprcachev1_GeoAndDiff_3_5_3_geometry_048300551" not found
+	// Read memoised memo123 errors: "memo123" not found
 	// Decode memoised memo123 errors: <nil>
 }
 
@@ -187,8 +215,8 @@ func Example_jobmanager_SubmitExpressionJob_048300551_NoScan() {
 
 	// Output:
 	// jm Create: <nil>
-	// ERROR: SubmitExpressionJob error: Failed to read map[_id:048300551non-existant] from collection scans: mongo: no documents in result
-	// SubmitExpressionJob: UNKNOWN, Failed to read map[_id:048300551non-existant] from collection scans: mongo: no documents in result
+	// ERROR: SubmitExpressionJob error: "048300551non-existant" not found
+	// SubmitExpressionJob: UNKNOWN, "048300551non-existant" not found
 }
 
 func Example_jobmanager_SubmitExpressionJob_048300551_NoModVersion() {
@@ -202,8 +230,8 @@ func Example_jobmanager_SubmitExpressionJob_048300551_NoModVersion() {
 
 	// Output:
 	// jm Create: <nil>
-	// ERROR: SubmitExpressionJob error: Failed to read map[_id:ng46r8vwzr3z28ui-v0.8.0] from collection moduleVersions: mongo: no documents in result
-	// SubmitExpressionJob: UNKNOWN, Failed to read map[_id:ng46r8vwzr3z28ui-v0.8.0] from collection moduleVersions: mongo: no documents in result
+	// ERROR: SubmitExpressionJob error: "ng46r8vwzr3z28ui-v0.8.0" not found
+	// SubmitExpressionJob: UNKNOWN, "ng46r8vwzr3z28ui-v0.8.0" not found
 }
 
 func Example_jobmanager_SubmitExpressionJob_048300551_ExprModSyntaxError() {
@@ -222,7 +250,35 @@ func Example_jobmanager_SubmitExpressionJob_048300551_ExprModSyntaxError() {
 	// INFO: Instance the-test-instance starting job "expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0"...
 	// Running lua expression job locally!
 	// INFO: Running job from s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE for node 0
-	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua", LocalPath:"source.lua", ApplyNodeIndex:0}}, Command:"lua-expression", Args:[]string{"scanId=048300551", "quantId=quant-ggy6zxhn23p7rlv9", "expressionId=u59sahioy18frfl9-badver", "memoKey=memo123"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/stdout.log", LocalPath:"stdout", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/output.csv", LocalPath:"output.csv", ApplyNodeIndex:0}}}
+	// DEBUG: Job config struct: {
+	//   "jobId": "expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0",
+	//   "requiredFiles": [
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua",
+	//       "localPath": "source.lua"
+	//     }
+	//   ],
+	//   "command": "lua-expression",
+	//   "args": [
+	//     "scanId=048300551",
+	//     "quantId=quant-ggy6zxhn23p7rlv9",
+	//     "expressionId=u59sahioy18frfl9-badver",
+	//     "memoKey=memo123"
+	//   ],
+	//   "outputFiles": [
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/stdout.log",
+	//       "localPath": "stdout"
+	//     },
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/output.csv",
+	//       "localPath": "output.csv"
+	//     }
+	//   ]
+	// }
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua" -> "source.lua":
 	// DEBUG:  Local path is <CWD>/source.lua
@@ -246,9 +302,9 @@ func Example_jobmanager_SubmitExpressionJob_048300551_ExprModSyntaxError() {
 	// INFO: updateJobStatus: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status ERROR, message: 1 nodes failed
 	// INFO:   Marking job expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE as ERROR due to nodes not all completing
 	// DEBUG:   CheckJobQueue found 0 not-started jobs
-	// Read memoised exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9 errors: Failed to read map[_id:exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9] from collection memoisedItems: mongo: no documents in result
-	// Read memoised exprcachev1_GeoAndDiff_3_5_3_geometry_048300551 errors: Failed to read map[_id:exprcachev1_GeoAndDiff_3_5_3_geometry_048300551] from collection memoisedItems: mongo: no documents in result
-	// Read memoised memo123 errors: Failed to read map[_id:memo123] from collection memoisedItems: mongo: no documents in result
+	// Read memoised exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9 errors: "exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9" not found
+	// Read memoised exprcachev1_GeoAndDiff_3_5_3_geometry_048300551 errors: "exprcachev1_GeoAndDiff_3_5_3_geometry_048300551" not found
+	// Read memoised memo123 errors: "memo123" not found
 	// Decode memoised memo123 errors: <nil>
 }
 
@@ -268,7 +324,35 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK() {
 	// INFO: Instance the-test-instance starting job "expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0"...
 	// Running lua expression job locally!
 	// INFO: Running job from s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE for node 0
-	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua", LocalPath:"source.lua", ApplyNodeIndex:0}}, Command:"lua-expression", Args:[]string{"scanId=048300551", "quantId=quant-ggy6zxhn23p7rlv9", "expressionId=u59sahioy18frfl9", "memoKey=memo123"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/stdout.log", LocalPath:"stdout", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/output.csv", LocalPath:"output.csv", ApplyNodeIndex:0}}}
+	// DEBUG: Job config struct: {
+	//   "jobId": "expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0",
+	//   "requiredFiles": [
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua",
+	//       "localPath": "source.lua"
+	//     }
+	//   ],
+	//   "command": "lua-expression",
+	//   "args": [
+	//     "scanId=048300551",
+	//     "quantId=quant-ggy6zxhn23p7rlv9",
+	//     "expressionId=u59sahioy18frfl9",
+	//     "memoKey=memo123"
+	//   ],
+	//   "outputFiles": [
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/stdout.log",
+	//       "localPath": "stdout"
+	//     },
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/output.csv",
+	//       "localPath": "output.csv"
+	//     }
+	//   ]
+	// }
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua" -> "source.lua":
 	// DEBUG:  Local path is <CWD>/source.lua
@@ -293,8 +377,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK() {
 	// DEBUG:   CheckJobQueue job group expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE has 1 ran, 1 completed nodes of 1
 	// DEBUG:   CheckJobQueue running job group expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE completion task...
 	// INFO: updateJobStatus: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status GATHERING_RESULTS, message: Combining CSVs from 1 nodes...
-	// INFO: updateJobStatus: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status COMPLETE, message: Nodes ran: 1
-	// DEBUG:   CheckJobQueue completed job group expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE
+	// INFO: onJobGroupCompletion: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status COMPLETE, message: Memoised as: memo123
 	// DEBUG:   CheckJobQueue clearing job queue items for expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE
 	// DEBUG:   CheckJobQueue found 0 not-started jobs
 	// QueryQ: <nil>
@@ -304,7 +387,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK() {
 	// Job[0] id: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE
 	// Query status: <nil>
 	// Job status at end: 1
-	// JobStatus[0] id: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE, status: COMPLETE, msg: "Nodes ran: 1"
+	// JobStatus[0] id: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE, status: COMPLETE, msg: "Memoised as: memo123"
 	// Read memoised exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9 errors: <nil>
 	// Read memoised exprcachev1_GeoAndDiff_3_5_3_geometry_048300551 errors: <nil>
 	// Read memoised memo123 errors: <nil>
@@ -367,7 +450,35 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK_NoDuplicateRuns() {
 	// INFO: Instance the-test-instance starting job "expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0"...
 	// Running lua expression job locally!
 	// INFO: Running job from s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE for node 0
-	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua", LocalPath:"source.lua", ApplyNodeIndex:0}}, Command:"lua-expression", Args:[]string{"scanId=048300551", "quantId=quant-ggy6zxhn23p7rlv9", "expressionId=u59sahioy18frfl9", "memoKey=memo123"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/stdout.log", LocalPath:"stdout", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/output.csv", LocalPath:"output.csv", ApplyNodeIndex:0}}}
+	// DEBUG: Job config struct: {
+	//   "jobId": "expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0",
+	//   "requiredFiles": [
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua",
+	//       "localPath": "source.lua"
+	//     }
+	//   ],
+	//   "command": "lua-expression",
+	//   "args": [
+	//     "scanId=048300551",
+	//     "quantId=quant-ggy6zxhn23p7rlv9",
+	//     "expressionId=u59sahioy18frfl9",
+	//     "memoKey=memo123"
+	//   ],
+	//   "outputFiles": [
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/stdout.log",
+	//       "localPath": "stdout"
+	//     },
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/output.csv",
+	//       "localPath": "output.csv"
+	//     }
+	//   ]
+	// }
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua" -> "source.lua":
 	// DEBUG:  Local path is <CWD>/source.lua
@@ -392,8 +503,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK_NoDuplicateRuns() {
 	// DEBUG:   CheckJobQueue job group expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE has 1 ran, 1 completed nodes of 1
 	// DEBUG:   CheckJobQueue running job group expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE completion task...
 	// INFO: updateJobStatus: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status GATHERING_RESULTS, message: Combining CSVs from 1 nodes...
-	// INFO: updateJobStatus: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status COMPLETE, message: Nodes ran: 1
-	// DEBUG:   CheckJobQueue completed job group expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE
+	// INFO: onJobGroupCompletion: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status COMPLETE, message: Memoised as: memo123
 	// DEBUG:   CheckJobQueue clearing job queue items for expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE
 	// DEBUG:   CheckJobQueue found 0 not-started jobs
 	// Read memoised exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9 errors: <nil>
@@ -480,7 +590,35 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK_AllowSecondRunToOverwri
 	// INFO: Instance the-test-instance starting job "expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0"...
 	// Running lua expression job locally!
 	// INFO: Running job from s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE for node 0
-	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua", LocalPath:"source.lua", ApplyNodeIndex:0}}, Command:"lua-expression", Args:[]string{"scanId=048300551", "quantId=quant-ggy6zxhn23p7rlv9", "expressionId=u59sahioy18frfl9", "memoKey=memo123"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/stdout.log", LocalPath:"stdout", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/output.csv", LocalPath:"output.csv", ApplyNodeIndex:0}}}
+	// DEBUG: Job config struct: {
+	//   "jobId": "expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0",
+	//   "requiredFiles": [
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua",
+	//       "localPath": "source.lua"
+	//     }
+	//   ],
+	//   "command": "lua-expression",
+	//   "args": [
+	//     "scanId=048300551",
+	//     "quantId=quant-ggy6zxhn23p7rlv9",
+	//     "expressionId=u59sahioy18frfl9",
+	//     "memoKey=memo123"
+	//   ],
+	//   "outputFiles": [
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/stdout.log",
+	//       "localPath": "stdout"
+	//     },
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/output.csv",
+	//       "localPath": "output.csv"
+	//     }
+	//   ]
+	// }
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua" -> "source.lua":
 	// DEBUG:  Local path is <CWD>/source.lua
@@ -505,8 +643,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK_AllowSecondRunToOverwri
 	// DEBUG:   CheckJobQueue job group expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE has 1 ran, 1 completed nodes of 1
 	// DEBUG:   CheckJobQueue running job group expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE completion task...
 	// INFO: updateJobStatus: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status GATHERING_RESULTS, message: Combining CSVs from 1 nodes...
-	// INFO: updateJobStatus: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status COMPLETE, message: Nodes ran: 1
-	// DEBUG:   CheckJobQueue completed job group expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE
+	// INFO: onJobGroupCompletion: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status COMPLETE, message: Memoised as: memo123
 	// DEBUG:   CheckJobQueue clearing job queue items for expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE
 	// DEBUG:   CheckJobQueue found 0 not-started jobs
 	// Read memoised exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9 errors: <nil>
@@ -522,7 +659,35 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK_AllowSecondRunToOverwri
 	// INFO: Instance the-test-instance starting job "expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0"...
 	// Running lua expression job locally!
 	// INFO: Running job from s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE for node 0
-	// DEBUG: Job config struct: jobconfig.JobConfig{JobId:"expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0", RequiredFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua", LocalPath:"source.lua", ApplyNodeIndex:0}}, Command:"lua-expression", Args:[]string{"scanId=048300551", "quantId=quant-ggy6zxhn23p7rlv9", "expressionId=u59sahioy18frfl9", "memoKey=memo123"}, ArgIndexToApplyNodeIndexes:[]int(nil), OutputFiles:[]jobconfig.JobFilePath{jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/stdout.log", LocalPath:"stdout", ApplyNodeIndex:0}, jobconfig.JobFilePath{RemoteBucket:"job-bucket", RemotePath:"JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/output.csv", LocalPath:"output.csv", ApplyNodeIndex:0}}}
+	// DEBUG: Job config struct: {
+	//   "jobId": "expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0",
+	//   "requiredFiles": [
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua",
+	//       "localPath": "source.lua"
+	//     }
+	//   ],
+	//   "command": "lua-expression",
+	//   "args": [
+	//     "scanId=048300551",
+	//     "quantId=quant-ggy6zxhn23p7rlv9",
+	//     "expressionId=u59sahioy18frfl9",
+	//     "memoKey=memo123"
+	//   ],
+	//   "outputFiles": [
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/stdout.log",
+	//       "localPath": "stdout"
+	//     },
+	//     {
+	//       "remoteBucket": "job-bucket",
+	//       "remotePath": "JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/output/output.csv",
+	//       "localPath": "output.csv"
+	//     }
+	//   ]
+	// }
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua" -> "source.lua":
 	// DEBUG:  Local path is <CWD>/source.lua
@@ -544,8 +709,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK_AllowSecondRunToOverwri
 	// DEBUG:   CheckJobQueue job group expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE has 1 ran, 1 completed nodes of 1
 	// DEBUG:   CheckJobQueue running job group expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE completion task...
 	// INFO: updateJobStatus: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status GATHERING_RESULTS, message: Combining CSVs from 1 nodes...
-	// INFO: updateJobStatus: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status COMPLETE, message: Nodes ran: 1
-	// DEBUG:   CheckJobQueue completed job group expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE
+	// INFO: onJobGroupCompletion: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status COMPLETE, message: Memoised as: memo123
 	// DEBUG:   CheckJobQueue clearing job queue items for expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE
 	// DEBUG:   CheckJobQueue found 0 not-started jobs
 	// Read memoised exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9 errors: <nil>

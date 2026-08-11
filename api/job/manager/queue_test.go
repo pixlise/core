@@ -324,6 +324,10 @@ func Example_jobmanager_QueueStartup() {
 		}
 	}
 
+	// NOTE: below used to list: quant-id999|COMPLETE|Nodes ran: 2
+	// This was when the queue code was writing the complete state. We now write the complete state in the job completion
+	// routine because fields it contains vary based on job type, so GATHERING_RESULTs it is at this point!
+
 	// Output:
 	// create: <nil>, instance: the-test-instance
 	// insert jobs: <nil>
@@ -342,7 +346,7 @@ func Example_jobmanager_QueueStartup() {
 	// quant-id456|RUNNING|
 	// quant-id789|ERROR|1 nodes failed
 	// quant-id998|ERROR|Failed to complete job group quant-id998: Job completion failed, method NonExistantMethod unknown
-	// quant-id999|COMPLETE|Nodes ran: 2
+	// quant-id999|GATHERING_RESULTS|Combining CSVs from 2 nodes...
 	// quant-id007|ERROR|1 nodes failed
 	// read job queue: <nil>
 	// quant-id123-node-0|UNKNOWN|
