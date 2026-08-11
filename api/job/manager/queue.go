@@ -19,13 +19,13 @@ import (
 )
 
 // Submit function for each kind of job type we support
-func (jm *JobManager) QueueJob(jg *jobconfig.JobGroupConfig) error {
+func (jm *JobManager) QueueJob(jg *protos.JobGroupConfig) error {
 	nowUnixSec := jm.svcs.TimeStamper.GetTimeNowSec()
 
 	qItems := []interface{}{}
 
-	for c := uint(0); c < jg.NodeCount; c++ {
-		cfg := jg.NodeConfig.FlattenJobConfig(c)
+	for c := uint32(0); c < jg.NodeCount; c++ {
+		cfg := jobconfig.FlattenJobConfig(jg.NodeConfig, uint(c))
 
 		qItems = append(qItems, &protos.JobQueueItem{
 			JobId:                       cfg.JobId,
@@ -306,14 +306,11 @@ func (jm *JobManager) completeJob(jobGroupId string, nodeCount int, existingStat
 
 	err := jm.onJobGroupCompletion(jobGroupId, existingStatus)
 	if err != nil {
-		// Set the job status to gathering results
+		// Set the job status to error
 		jm.updateJobStatusWithInMemory(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("Failed to complete job group %v: %v", jobGroupId, err), existingStatus, true, "CheckJobQueue completeJob-failed")
-	} else {
-		// Set the job status to gathering results
-		if err = jm.updateJobStatusWithInMemory(jobGroupId, protos.JobStatus_COMPLETE, fmt.Sprintf("Nodes ran: %v", nodeCount), existingStatus, true, "CheckJobQueue completeJob-success"); err == nil {
-			jm.svcs.Log.Debugf("  CheckJobQueue completed job group %v", jobGroupId)
-		}
 	}
+	// else - NOTE: We modified onJobGroupCompletion to write out a completed state if it is indeed complete and update
+	// the in memory status, so nothing more to do here
 }
 
 func (jm *JobManager) updateJobStatusWithInMemory(jobId string, status protos.JobStatus_Status, message string, inMemoryStatus *protos.JobStatus, updateClient bool, action string) error {
@@ -346,7 +343,7 @@ func (jm *JobManager) clearJob(jobGroupId string, groupsAndJobs map[string][]*pr
 	}
 }
 
-func (jm *JobManager) onJobGroupCompletion(jobGroupId string, jobStatus *protos.JobStatus) error {
+func (jm *JobManager) onJobGroupCompletion(jobGroupId string, lastJobStatus *protos.JobStatus) error {
 	// Check if we have to do anything
 	ctx := context.TODO()
 	coll := jm.svcs.MongoDB.Collection(dbCollections.JobsName)
@@ -357,7 +354,7 @@ func (jm *JobManager) onJobGroupCompletion(jobGroupId string, jobStatus *protos.
 		return jobGroup.Err()
 	}
 
-	jg := &jobconfig.JobGroupConfig{}
+	jg := &protos.JobGroupConfig{}
 	if err := jobGroup.Decode(jg); err != nil {
 		return err
 	}
@@ -375,5 +372,33 @@ func (jm *JobManager) onJobGroupCompletion(jobGroupId string, jobStatus *protos.
 	}
 
 	// Run the method - get the session if we can find it
-	return completionMethod(jg, jobStatus, jm.userSessionLookup[jg.RequestorUserId], jm.svcs)
+	completeStatus, err := completionMethod(jg, lastJobStatus, jm.userSessionLookup[jg.RequestorUserId], jm.svcs)
+	if err != nil {
+		return err
+	}
+
+	// Write the complete status out
+	coll = jm.svcs.MongoDB.Collection(dbCollections.JobStatusName)
+
+	replaceResult, err := coll.ReplaceOne(ctx, filter, completeStatus)
+	if err != nil {
+		jm.svcs.Log.Errorf("onJobGroupCompletion %v: %v", jobGroupId, err)
+		return err
+	}
+
+	if replaceResult.MatchedCount != 1 && replaceResult.UpsertedCount != 1 {
+		jm.svcs.Log.Errorf("onJobGroupCompletion result had unexpected counts %+v id: %v", replaceResult, jobGroupId)
+	} else {
+		jm.svcs.Log.Infof("onJobGroupCompletion: %v with status %v, message: %v", jobGroupId, protos.JobStatus_Status_name[int32(completeStatus.Status.Number())], completeStatus.Message)
+	}
+
+	// Ensure the in-memory one is updated too
+	lastJobStatus.Status = completeStatus.Status
+	lastJobStatus.Message = completeStatus.Message
+	lastJobStatus.OutputFilePath = completeStatus.OutputFilePath
+	lastJobStatus.OtherLogFiles = completeStatus.OtherLogFiles
+
+	jm.broadcastJobStatus(lastJobStatus)
+
+	return nil
 }

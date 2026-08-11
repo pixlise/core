@@ -10,7 +10,6 @@ import (
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
-	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/job/jobnode"
 	expressionrunner "github.com/pixlise/core/v4/api/job/jobrunner/expression-runner"
 	"github.com/pixlise/core/v4/api/sessionuser"
@@ -115,7 +114,7 @@ func (jm *JobManager) internalSubmitExpressionJob(scanId, quantId, expressionId,
 	}
 
 	// Upload source file and make list of required files for job to execute
-	requiredFiles := []jobconfig.JobFilePath{}
+	requiredFiles := []*protos.JobFilePath{}
 
 	sourceFileName := "source.lua"
 	remoteSourcePath := filepaths.GetJobDataPath(scanId, jobId, sourceFileName)
@@ -124,7 +123,7 @@ func (jm *JobManager) internalSubmitExpressionJob(scanId, quantId, expressionId,
 		return nil, err
 	}
 
-	requiredFiles = append(requiredFiles, jobconfig.JobFilePath{
+	requiredFiles = append(requiredFiles, &protos.JobFilePath{
 		LocalPath:    sourceFileName,
 		RemoteBucket: jm.svcs.Config.PiquantJobsBucket,
 		RemotePath:   remoteSourcePath,
@@ -156,18 +155,18 @@ func (jm *JobManager) internalSubmitExpressionJob(scanId, quantId, expressionId,
 		}
 	*/
 
-	jg := &jobconfig.JobGroupConfig{
+	jg := &protos.JobGroupConfig{
 		JobGroupId:       jobId,
 		JobType:          protos.JobType_JT_RUN_EXPRESSION,
 		CompletionMethod: JobComplete_LuaExpression,
 		DockerImage:      jm.svcs.Config.Jobs.RunnerDockerImage,
 		NodeCount:        1,
-		NodeConfig: jobconfig.JobConfig{
+		NodeConfig: &protos.JobConfig{
 			JobId:         jobId + "-node",
 			RequiredFiles: requiredFiles,
 			Command:       jobnode.LuaExpressionCommand, //"lua5.3",
 			Args:          []string{"scanId=" + scanId, "quantId=" + quantId, "expressionId=" + expressionId, "memoKey=" + memoCacheKey},
-			OutputFiles: []jobconfig.JobFilePath{
+			OutputFiles: []*protos.JobFilePath{
 				{
 					LocalPath:    "stdout",
 					RemoteBucket: jm.svcs.Config.PiquantJobsBucket,

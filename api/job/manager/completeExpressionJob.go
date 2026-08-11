@@ -12,7 +12,6 @@ import (
 	"github.com/olahol/melody"
 	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/api/dbCollections"
-	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/job/jobnode"
 	expressionrunner "github.com/pixlise/core/v4/api/job/jobrunner/expression-runner"
 	"github.com/pixlise/core/v4/api/services"
@@ -24,7 +23,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func completeExpressionJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, session *melody.Session, svcs *services.APIServices) error {
+func completeExpressionJob(jg *protos.JobGroupConfig, lastJobStatus *protos.JobStatus, session *melody.Session, svcs *services.APIServices) (*protos.JobStatus, error) {
 	// Take output csv, validate it, memoise it
 	outPath := ""
 	outBucket := ""
@@ -39,30 +38,30 @@ func completeExpressionJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStat
 	}
 
 	if len(outPath) <= 0 || len(outBucket) <= 0 {
-		return fmt.Errorf("Failed to find expression output path for job: %v", jg.JobGroupId)
+		return nil, fmt.Errorf("Failed to find expression output path for job: %v", jg.JobGroupId)
 	}
 
 	outCSVData, err := svcs.FS.ReadObject(outBucket, outPath)
 	if err != nil {
-		return fmt.Errorf("Failed to read expression output s3://%v/%v for job: %v", outBucket, outPath, jg.JobGroupId)
+		return nil, fmt.Errorf("Failed to read expression output s3://%v/%v for job: %v", outBucket, outPath, jg.JobGroupId)
 	}
 
 	if len(outCSVData) <= 0 {
-		return fmt.Errorf("Expression output s3://%v/%v was empty job: %v", outBucket, outPath, jg.JobGroupId)
+		return nil, fmt.Errorf("Expression output s3://%v/%v was empty job: %v", outBucket, outPath, jg.JobGroupId)
 	}
 
 	// Read it and memoise it
 	outCSV, err := dataImportHelpers.ReadCSVData(bytes.NewReader([]byte(outCSVData)), 0, ',')
 	if err != nil {
-		return fmt.Errorf("Failed to parse output s3://%v/%v for job: %v", outBucket, outPath, jg.JobGroupId)
+		return nil, fmt.Errorf("Failed to parse output s3://%v/%v for job: %v", outBucket, outPath, jg.JobGroupId)
 	}
 	if len(outCSV) < 2 {
-		return fmt.Errorf("Result CSV is empty s3://%v/%v for job: %v", outBucket, outPath, jg.JobGroupId)
+		return nil, fmt.Errorf("Result CSV is empty s3://%v/%v for job: %v", outBucket, outPath, jg.JobGroupId)
 	}
 
 	// Expect columns
 	if outCSV[0][0] != "PMC" && outCSV[0][0] != "value" {
-		return fmt.Errorf("Unexpected result CSV format for s3://%v/%v for job: %v", outBucket, outPath, jg.JobGroupId)
+		return nil, fmt.Errorf("Unexpected result CSV format for s3://%v/%v for job: %v", outBucket, outPath, jg.JobGroupId)
 	}
 
 	// Notify that job is complete, client should be able to retrieve it via memoisation retrieval
@@ -76,13 +75,13 @@ func completeExpressionJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStat
 	}
 
 	if len(memoKey) <= 0 {
-		return fmt.Errorf("Failed to determine memoisation key for job: %v", jg.JobGroupId)
+		return nil, fmt.Errorf("Failed to determine memoisation key for job: %v", jg.JobGroupId)
 	}
 
 	// Read args, expect key=value pairs
 	argLookup, err := utils.ReadKeyValueList([]string{"scanId", "quantId", "expressionId", "memoKey"}, jg.NodeConfig.Args)
 	if err != nil {
-		return fmt.Errorf("Failed to memoise job %v result: %v", jg.JobGroupId, err)
+		return nil, fmt.Errorf("Failed to memoise job %v result: %v", jg.JobGroupId, err)
 	}
 
 	// Convert to the right format
@@ -92,7 +91,7 @@ func completeExpressionJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStat
 	for c, row := range outCSV[1:] {
 		pmc, err := strconv.Atoi(row[0])
 		if err != nil {
-			return fmt.Errorf("Failed to read PMC from row %v [%v] in s3://%v/%v for job: %v. Error: %v", c+1, row[0], outBucket, outPath, jg.JobGroupId, err)
+			return nil, fmt.Errorf("Failed to read PMC from row %v [%v] in s3://%v/%v for job: %v. Error: %v", c+1, row[0], outBucket, outPath, jg.JobGroupId, err)
 		}
 
 		isUndef := false
@@ -103,7 +102,7 @@ func completeExpressionJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStat
 		} else {
 			value, err = strconv.ParseFloat(row[1], 32)
 			if err != nil {
-				return fmt.Errorf("Failed to read value from row %v [%v] in s3://%v/%v for job: %v. Error: %v", c+1, row[1], outBucket, outPath, jg.JobGroupId, err)
+				return nil, fmt.Errorf("Failed to read value from row %v [%v] in s3://%v/%v for job: %v. Error: %v", c+1, row[1], outBucket, outPath, jg.JobGroupId, err)
 			}
 
 			valueRange.Expand(value)
@@ -126,9 +125,27 @@ func completeExpressionJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStat
 	}
 
 	// Memoise the result
-	_, _, err = memoise(memoKey, argLookup["scanId"], argLookup["quantId"], argLookup["expressionId"], argLookup["roiId"], jstatus.RequestorUserId, m, svcs)
+	_, _, err = memoise(memoKey, argLookup["scanId"], argLookup["quantId"], argLookup["expressionId"], argLookup["roiId"], lastJobStatus.RequestorUserId, m, svcs)
 
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	now := svcs.TimeStamper.GetTimeNowSec()
+	return &protos.JobStatus{
+		JobId:            lastJobStatus.JobId,
+		JobItemId:        lastJobStatus.JobItemId,
+		JobType:          lastJobStatus.JobType,
+		Status:           protos.JobStatus_COMPLETE,
+		Message:          fmt.Sprintf("Memoised as: %v", memoKey),
+		StartUnixTimeSec: lastJobStatus.StartUnixTimeSec,
+		EndUnixTimeSec:   uint32(now),
+		//OutputFilePath:   memoKey,
+		OtherLogFiles:   []string{},
+		Name:            jg.JobName,
+		Elements:        jg.ElementList,
+		RequestorUserId: jg.RequestorUserId,
+	}, err
 }
 
 func memoise(memCacheKey string, scanId, quantId, expressionId, roiId, requestorUserId string, m *protos.MemPMCDataValues, svcs *services.APIServices) (*protos.MemoisedItem, *protos.MemDataQueryResult, error) {

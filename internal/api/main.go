@@ -248,7 +248,7 @@ func initServices(cfg *config.APIConfig, m *melody.Melody, apiInstanceId string)
 	// If we have no job config yet, read it as a separate file
 	if len(cfg.Jobs.RunnerDockerImage) <= 0 {
 		fmt.Println("Reading job config from separate file...")
-		err = config.ReadJobConfig(cfg, fs)
+		err = config.ReadJobRunningConfig(cfg, fs)
 		if err != nil {
 			fmt.Printf("WARNING: Failed to read job config: %v\n", err)
 		} else {

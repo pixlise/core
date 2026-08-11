@@ -33,6 +33,7 @@ func Example_makeSaveableFileName() {
 }
 
 func Example_utils_ApplyIndexToFileName() {
+	fmt.Println(ApplyIndexToFileName("", 0, true))
 	fmt.Println(ApplyIndexToFileName("node.txt", 0, true))
 	fmt.Println(ApplyIndexToFileName("node.txt", 1, true))
 	fmt.Println(ApplyIndexToFileName("node.txt", 2, true))
@@ -43,6 +44,7 @@ func Example_utils_ApplyIndexToFileName() {
 	fmt.Println(ApplyIndexToFileName("extensionless", 3, true))
 
 	// Output:
+	//
 	// node00001.txt
 	// node00002.txt
 	// node00003.txt

@@ -8,7 +8,6 @@ import (
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
-	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/quantification"
 	"github.com/pixlise/core/v4/api/sessionuser"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -72,7 +71,7 @@ import (
 	}
 */
 
-func (jm *JobManager) internalSubmitJob(jg *jobconfig.JobGroupConfig, requestorSession *melody.Session) (*protos.JobStatus, error) {
+func (jm *JobManager) internalSubmitJob(jg *protos.JobGroupConfig, requestorSession *melody.Session) (*protos.JobStatus, error) {
 	if len(jg.JobGroupId) <= 0 {
 		return nil, errors.New("SubmitJob: JobGroupId not specified")
 	}
@@ -111,7 +110,7 @@ func (jm *JobManager) internalSubmitJob(jg *jobconfig.JobGroupConfig, requestorS
 	}
 
 	// Now that we've uploaded the job params, include it in the list of files the job can download
-	jg.NodeConfig.RequiredFiles = append(jg.NodeConfig.RequiredFiles, jobconfig.JobFilePath{
+	jg.NodeConfig.RequiredFiles = append(jg.NodeConfig.RequiredFiles, &protos.JobFilePath{
 		LocalPath:    quantification.JobParamsFileName,
 		RemoteBucket: jm.svcs.Config.PiquantJobsBucket,
 		RemotePath:   jobsPath,

@@ -9,7 +9,6 @@ import (
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
-	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -42,79 +41,79 @@ func Example_jobmanager_QueueStartup() {
 
 	jobs := []interface{}{}
 	jobs = append(jobs,
-		&jobconfig.JobGroupConfig{
+		&protos.JobGroupConfig{
 			JobGroupId:       "quant-id123",
 			JobType:          protos.JobType_JT_RUN_FIT,
 			CompletionMethod: "",
 			DockerImage:      "job-container",
 			FastStart:        false,
 			NodeCount:        2,
-			NodeConfig:       jobconfig.JobConfig{},
+			NodeConfig:       &protos.JobConfig{},
 			AssociatedScanId: "",
 			JobName:          "job1",
 			ElementList:      []string{},
 			RequestorUserId:  "abc123",
 		},
-		&jobconfig.JobGroupConfig{
+		&protos.JobGroupConfig{
 			JobGroupId:       "quant-id456",
 			JobType:          protos.JobType_JT_IMPORT_SCAN,
 			CompletionMethod: "",
 			DockerImage:      "job-container",
 			FastStart:        false,
 			NodeCount:        2,
-			NodeConfig:       jobconfig.JobConfig{},
+			NodeConfig:       &protos.JobConfig{},
 			AssociatedScanId: "1234567890",
 			JobName:          "job2",
 			ElementList:      []string{},
 			RequestorUserId:  "abc123",
 		},
-		&jobconfig.JobGroupConfig{
+		&protos.JobGroupConfig{
 			JobGroupId:       "quant-id789",
 			JobType:          protos.JobType_JT_RUN_QUANT,
 			CompletionMethod: "NonExistantJob",
 			DockerImage:      "job-container",
 			FastStart:        false,
 			NodeCount:        2,
-			NodeConfig:       jobconfig.JobConfig{},
+			NodeConfig:       &protos.JobConfig{},
 			AssociatedScanId: "",
 			JobName:          "job3",
 			ElementList:      []string{},
 			RequestorUserId:  "abc123",
 		},
-		&jobconfig.JobGroupConfig{
+		&protos.JobGroupConfig{
 			JobGroupId:       "quant-id998",
 			JobType:          protos.JobType_JT_RUN_QUANT,
 			CompletionMethod: "NonExistantMethod",
 			DockerImage:      "job-container",
 			FastStart:        false,
 			NodeCount:        2,
-			NodeConfig:       jobconfig.JobConfig{},
+			NodeConfig:       &protos.JobConfig{},
 			AssociatedScanId: "",
 			JobName:          "job3",
 			ElementList:      []string{},
 			RequestorUserId:  "abc123",
 		},
-		&jobconfig.JobGroupConfig{
+		&protos.JobGroupConfig{
 			JobGroupId:       "quant-id999",
 			JobType:          protos.JobType_JT_RUN_QUANT,
 			CompletionMethod: "completeJob",
 			DockerImage:      "job-container",
 			FastStart:        false,
 			NodeCount:        2,
-			NodeConfig:       jobconfig.JobConfig{},
+			NodeConfig:       &protos.JobConfig{},
 			AssociatedScanId: "",
 			JobName:          "job4",
 			ElementList:      []string{},
 			RequestorUserId:  "abc123",
 		},
-		&jobconfig.JobGroupConfig{
+		&protos.JobGroupConfig{
 			JobGroupId:       "quant-id007",
 			JobType:          protos.JobType_JT_RUN_QUANT,
 			CompletionMethod: "completeJob",
 			DockerImage:      "job-container",
 			FastStart:        false,
 			NodeCount:        2,
-			NodeConfig:       jobconfig.JobConfig{},
+			NodeConfig:       &protos.JobConfig{},
 			AssociatedScanId: "",
 			JobName:          "job5",
 			ElementList:      []string{},
@@ -289,7 +288,7 @@ func Example_jobmanager_QueueStartup() {
 	cur, err := svcs.MongoDB.Collection(dbCollections.JobsName).Find(ctx, bson.M{})
 	fmt.Printf("read jobs: %v\n", err)
 	if cur != nil {
-		jobs := []*jobconfig.JobGroupConfig{}
+		jobs := []*protos.JobGroupConfig{}
 		err = cur.All(context.TODO(), &jobs)
 		if err != nil {
 			log.Fatalf("read jobs: %v\n", err)
@@ -352,7 +351,7 @@ func Example_jobmanager_QueueStartup() {
 	// quant-id456-node-1|COMPLETE|
 }
 
-func completeJobFunc(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, sess *melody.Session, svcs *services.APIServices) error {
+func completeJobFunc(jg *protos.JobGroupConfig, jstatus *protos.JobStatus, sess *melody.Session, svcs *services.APIServices) error {
 	fmt.Printf("completeJob func called for: %v, state: %v, session exists: %v\n", jg.JobGroupId, jstatus.Status, sess != nil)
 	return nil
 }

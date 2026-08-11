@@ -40,6 +40,22 @@ func HandleJobListReq(req *protos.JobListReq, hctx wsHelpers.HandlerContext) (*p
 	return result, nil
 }
 
+func HandleJobGetReq(req *protos.JobGetReq, hctx wsHelpers.HandlerContext) (*protos.JobGetResp, error) {
+	// Work out if requestor is an admin or a normal user
+	isAdmin := hctx.SessUser.Permissions["PIXLISE_ADMIN"]
+
+	// Read everything we can about this job
+	status, config, err := hctx.Svcs.JobManager.GetJob(req.JobId, isAdmin, hctx.SessUser.User.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protos.JobGetResp{
+		Status: status,
+		Config: config,
+	}, nil
+}
+
 func HandleDeleteScheduledJobReq(req *protos.DeleteScheduledJobReq, hctx wsHelpers.HandlerContext) (*protos.DeleteScheduledJobResp, error) {
 	err := hctx.Svcs.JobManager.DeleteScheduledJob(req.Id)
 	if err != nil {

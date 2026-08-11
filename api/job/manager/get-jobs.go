@@ -2,9 +2,10 @@ package jobmanager
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
-	jobconfig "github.com/pixlise/core/v4/api/job/config"
+	expressionrunner "github.com/pixlise/core/v4/api/job/jobrunner/expression-runner"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -79,8 +80,26 @@ func (jm *JobManager) ListJobs(isAdmin bool, requestorUserId string, skip, limit
 	return jobs, activeJobs, uint32(totalDocs), nil
 }
 
-func (jm *JobManager) GetJob(JobId string) (jobconfig.JobGroupConfig, error) {
-	return jobconfig.JobGroupConfig{}, nil
+func (jm *JobManager) GetJob(jobId string, isAdmin bool, requestorUserId string) (*protos.JobStatus, *protos.JobGroupConfig, error) {
+	status := &protos.JobStatus{}
+	filter := bson.M{"_id": jobId}
+	err := expressionrunner.ReadOne(dbCollections.JobStatusName, filter, status, jm.svcs.MongoDB)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	config := &protos.JobGroupConfig{}
+	err = expressionrunner.ReadOne(dbCollections.JobsName, filter, config, jm.svcs.MongoDB)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Check if the user has rights to this job...
+	if status.RequestorUserId != requestorUserId && !isAdmin {
+		return nil, nil, fmt.Errorf("User %v has no access to job %v", requestorUserId, jobId)
+	}
+
+	return status, config, nil
 }
 
 /*

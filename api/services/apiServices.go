@@ -60,9 +60,8 @@ type JobManagerInterface interface {
 	SubmitExpressionJob(scanId, quantId, expressionId, roiId, memoCacheKey string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
 
 	ListJobs(isAdmin bool, requestorUserId string, skip, limit int64, jobTypes []protos.JobType) ([]*protos.JobStatus, []*protos.JobStatus, uint32, error)
-	// Thought this would do: ListJobs() ([]jobmanager.JobGroupConfig, error)
 
-	// GetJob(JobId string) (jobmanager.JobGroupConfig, error)
+	GetJob(jobId string, isAdmin bool, requestorUserId string) (*protos.JobStatus, *protos.JobGroupConfig, error)
 
 	DeleteScheduledJob(id string) error
 	ListScheduledJobs() ([]*protos.ScheduledJob, error)

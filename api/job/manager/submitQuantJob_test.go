@@ -9,7 +9,6 @@ import (
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dbCollections"
-	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/job/jobnode"
 	"github.com/pixlise/core/v4/api/notificationSender/notificationSenderMock"
 	"github.com/pixlise/core/v4/api/services"
@@ -106,7 +105,7 @@ func printResults(includeQuants bool, svcs *services.APIServices) {
 
 	if err == nil {
 		// There queue should be empty
-		jobItems := []*jobconfig.JobGroupConfig{}
+		jobItems := []*protos.JobGroupConfig{}
 		err = cursor.All(context.TODO(), &jobItems)
 		if err != nil {
 			fmt.Printf("Query jobs read: %v\n", err)

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -39,7 +40,18 @@ func ReadOne[T any](collectionName string, filter bson.M, intoItem *T, db *mongo
 
 	dbResult := coll.FindOne(ctx, filter, options.FindOne())
 	if dbResult.Err() != nil {
-		return fmt.Errorf("Failed to read %v from collection %v: %v", filter, collectionName, dbResult.Err())
+		printableFilter := ""
+		if id, ok := filter["_id"]; ok {
+			printableFilter = fmt.Sprintf("\"%v\"", id)
+		} else {
+			printableFilter = fmt.Sprintf("%v", filter)
+		}
+
+		if dbResult.Err() == mongo.ErrNoDocuments {
+			return errorwithstatus.MakeNotFoundError(printableFilter)
+		}
+
+		return fmt.Errorf("Failed to read %v from collection %v: %v", printableFilter, collectionName, dbResult.Err())
 	}
 
 	return dbResult.Decode(intoItem)

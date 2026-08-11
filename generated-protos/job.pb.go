@@ -84,6 +84,58 @@ func (JobType) EnumDescriptor() ([]byte, []int) {
 	return file_job_proto_rawDescGZIP(), []int{0}
 }
 
+type NodeIndexMethod int32
+
+const (
+	NodeIndexMethod_NONE   NodeIndexMethod = 0
+	NodeIndexMethod_LOCAL  NodeIndexMethod = 1
+	NodeIndexMethod_REMOTE NodeIndexMethod = 2
+	NodeIndexMethod_BOTH   NodeIndexMethod = 3
+)
+
+// Enum value maps for NodeIndexMethod.
+var (
+	NodeIndexMethod_name = map[int32]string{
+		0: "NONE",
+		1: "LOCAL",
+		2: "REMOTE",
+		3: "BOTH",
+	}
+	NodeIndexMethod_value = map[string]int32{
+		"NONE":   0,
+		"LOCAL":  1,
+		"REMOTE": 2,
+		"BOTH":   3,
+	}
+)
+
+func (x NodeIndexMethod) Enum() *NodeIndexMethod {
+	p := new(NodeIndexMethod)
+	*p = x
+	return p
+}
+
+func (x NodeIndexMethod) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (NodeIndexMethod) Descriptor() protoreflect.EnumDescriptor {
+	return file_job_proto_enumTypes[1].Descriptor()
+}
+
+func (NodeIndexMethod) Type() protoreflect.EnumType {
+	return &file_job_proto_enumTypes[1]
+}
+
+func (x NodeIndexMethod) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use NodeIndexMethod.Descriptor instead.
+func (NodeIndexMethod) EnumDescriptor() ([]byte, []int) {
+	return file_job_proto_rawDescGZIP(), []int{1}
+}
+
 type JobStatus_Status int32
 
 const (
@@ -129,11 +181,11 @@ func (x JobStatus_Status) String() string {
 }
 
 func (JobStatus_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_job_proto_enumTypes[1].Descriptor()
+	return file_job_proto_enumTypes[2].Descriptor()
 }
 
 func (JobStatus_Status) Type() protoreflect.EnumType {
-	return &file_job_proto_enumTypes[1]
+	return &file_job_proto_enumTypes[2]
 }
 
 func (x JobStatus_Status) Number() protoreflect.EnumNumber {
@@ -184,11 +236,11 @@ func (x JobQueueItem_State) String() string {
 }
 
 func (JobQueueItem_State) Descriptor() protoreflect.EnumDescriptor {
-	return file_job_proto_enumTypes[2].Descriptor()
+	return file_job_proto_enumTypes[3].Descriptor()
 }
 
 func (JobQueueItem_State) Type() protoreflect.EnumType {
-	return &file_job_proto_enumTypes[2]
+	return &file_job_proto_enumTypes[3]
 }
 
 func (x JobQueueItem_State) Number() protoreflect.EnumNumber {
@@ -197,7 +249,7 @@ func (x JobQueueItem_State) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use JobQueueItem_State.Descriptor instead.
 func (JobQueueItem_State) EnumDescriptor() ([]byte, []int) {
-	return file_job_proto_rawDescGZIP(), []int{2, 0}
+	return file_job_proto_rawDescGZIP(), []int{6, 0}
 }
 
 type ScheduledJob_ScheduleType int32
@@ -233,11 +285,11 @@ func (x ScheduledJob_ScheduleType) String() string {
 }
 
 func (ScheduledJob_ScheduleType) Descriptor() protoreflect.EnumDescriptor {
-	return file_job_proto_enumTypes[3].Descriptor()
+	return file_job_proto_enumTypes[4].Descriptor()
 }
 
 func (ScheduledJob_ScheduleType) Type() protoreflect.EnumType {
-	return &file_job_proto_enumTypes[3]
+	return &file_job_proto_enumTypes[4]
 }
 
 func (x ScheduledJob_ScheduleType) Number() protoreflect.EnumNumber {
@@ -246,7 +298,7 @@ func (x ScheduledJob_ScheduleType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ScheduledJob_ScheduleType.Descriptor instead.
 func (ScheduledJob_ScheduleType) EnumDescriptor() ([]byte, []int) {
-	return file_job_proto_rawDescGZIP(), []int{3, 0}
+	return file_job_proto_rawDescGZIP(), []int{7, 0}
 }
 
 type JobStatus struct {
@@ -404,6 +456,383 @@ func (x *JobStatus) GetElements() []string {
 	return nil
 }
 
+type JobFilePath struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The remote file info
+	RemoteBucket string `protobuf:"bytes,1,opt,name=remoteBucket,proto3" json:"remoteBucket,omitempty"`
+	RemotePath   string `protobuf:"bytes,2,opt,name=remotePath,proto3" json:"remotePath,omitempty"`
+	// Local copy
+	LocalPath string `protobuf:"bytes,3,opt,name=localPath,proto3" json:"localPath,omitempty"`
+	// Apply node index to this path (or not)
+	// If this is false, we just use the path as is, but if
+	// it's set to true, the local and remote paths have the
+	// node number inserted in between the file name and its
+	// extension. Eg node.pmcs becomes node00001.pmcs
+	ApplyNodeIndex NodeIndexMethod `protobuf:"varint,4,opt,name=applyNodeIndex,proto3,enum=NodeIndexMethod" json:"applyNodeIndex,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *JobFilePath) Reset() {
+	*x = JobFilePath{}
+	mi := &file_job_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JobFilePath) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JobFilePath) ProtoMessage() {}
+
+func (x *JobFilePath) ProtoReflect() protoreflect.Message {
+	mi := &file_job_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JobFilePath.ProtoReflect.Descriptor instead.
+func (*JobFilePath) Descriptor() ([]byte, []int) {
+	return file_job_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *JobFilePath) GetRemoteBucket() string {
+	if x != nil {
+		return x.RemoteBucket
+	}
+	return ""
+}
+
+func (x *JobFilePath) GetRemotePath() string {
+	if x != nil {
+		return x.RemotePath
+	}
+	return ""
+}
+
+func (x *JobFilePath) GetLocalPath() string {
+	if x != nil {
+		return x.LocalPath
+	}
+	return ""
+}
+
+func (x *JobFilePath) GetApplyNodeIndex() NodeIndexMethod {
+	if x != nil {
+		return x.ApplyNodeIndex
+	}
+	return NodeIndexMethod_NONE
+}
+
+type JobConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The job id
+	JobId string `protobuf:"bytes,1,opt,name=jobId,proto3" json:"jobId,omitempty"`
+	// What files are required to be present when running the job?
+	RequiredFiles []*JobFilePath `protobuf:"bytes,2,rep,name=requiredFiles,proto3" json:"requiredFiles,omitempty"`
+	// What command to execute
+	Command string   `protobuf:"bytes,3,opt,name=command,proto3" json:"command,omitempty"`
+	Args    []string `protobuf:"bytes,4,rep,name=args,proto3" json:"args,omitempty"`
+	// What to upload on completion (if file doesn't exist, it can be ignored with a warning)
+	OutputFiles []*JobFilePath `protobuf:"bytes,5,rep,name=outputFiles,proto3" json:"outputFiles,omitempty"`
+	// eg if this contains a 2, it means
+	// we need to apply the node index to
+	// Args[2] before running this job
+	ArgIndexToApplyNodeIndexes []int32 `protobuf:"varint,6,rep,packed,name=argIndexToApplyNodeIndexes,proto3" json:"argIndexToApplyNodeIndexes,omitempty"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
+}
+
+func (x *JobConfig) Reset() {
+	*x = JobConfig{}
+	mi := &file_job_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JobConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JobConfig) ProtoMessage() {}
+
+func (x *JobConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_job_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JobConfig.ProtoReflect.Descriptor instead.
+func (*JobConfig) Descriptor() ([]byte, []int) {
+	return file_job_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *JobConfig) GetJobId() string {
+	if x != nil {
+		return x.JobId
+	}
+	return ""
+}
+
+func (x *JobConfig) GetRequiredFiles() []*JobFilePath {
+	if x != nil {
+		return x.RequiredFiles
+	}
+	return nil
+}
+
+func (x *JobConfig) GetCommand() string {
+	if x != nil {
+		return x.Command
+	}
+	return ""
+}
+
+func (x *JobConfig) GetArgs() []string {
+	if x != nil {
+		return x.Args
+	}
+	return nil
+}
+
+func (x *JobConfig) GetOutputFiles() []*JobFilePath {
+	if x != nil {
+		return x.OutputFiles
+	}
+	return nil
+}
+
+func (x *JobConfig) GetArgIndexToApplyNodeIndexes() []int32 {
+	if x != nil {
+		return x.ArgIndexToApplyNodeIndexes
+	}
+	return nil
+}
+
+type ROIItemWithPMCs struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pmcs          []int32                `protobuf:"varint,1,rep,packed,name=pmcs,proto3" json:"pmcs,omitempty"`
+	RoiItem       *ROIItem               `protobuf:"bytes,2,opt,name=roiItem,proto3" json:"roiItem,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ROIItemWithPMCs) Reset() {
+	*x = ROIItemWithPMCs{}
+	mi := &file_job_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ROIItemWithPMCs) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ROIItemWithPMCs) ProtoMessage() {}
+
+func (x *ROIItemWithPMCs) ProtoReflect() protoreflect.Message {
+	mi := &file_job_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ROIItemWithPMCs.ProtoReflect.Descriptor instead.
+func (*ROIItemWithPMCs) Descriptor() ([]byte, []int) {
+	return file_job_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ROIItemWithPMCs) GetPmcs() []int32 {
+	if x != nil {
+		return x.Pmcs
+	}
+	return nil
+}
+
+func (x *ROIItemWithPMCs) GetRoiItem() *ROIItem {
+	if x != nil {
+		return x.RoiItem
+	}
+	return nil
+}
+
+type JobGroupConfig struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	JobGroupId       string                 `protobuf:"bytes,1,opt,name=jobGroupId,proto3" json:"jobGroupId,omitempty" bson:"_id,omitempty"`              
+	JobType          JobType                `protobuf:"varint,2,opt,name=jobType,proto3,enum=JobType" json:"jobType,omitempty"`     // Job type, mostly for annotation of job state
+	CompletionMethod string                 `protobuf:"bytes,3,opt,name=completionMethod,proto3" json:"completionMethod,omitempty"` // What to do when the job is completed, one of the JobComplete_* names
+	DockerImage      string                 `protobuf:"bytes,4,opt,name=dockerImage,proto3" json:"dockerImage,omitempty"`           // Docker image to run in each node
+	FastStart        bool                   `protobuf:"varint,5,opt,name=fastStart,proto3" json:"fastStart,omitempty"`              // May go unused - but could be a way to run it locally on this machine if we know it's a quick job
+	NodeCount        uint32                 `protobuf:"varint,6,opt,name=nodeCount,proto3" json:"nodeCount,omitempty"`              // Node count, because NodeConfig can be asked to retrieve config of each node, but here we know the total
+	NodeConfig       *JobConfig             `protobuf:"bytes,7,opt,name=nodeConfig,proto3" json:"nodeConfig,omitempty"`
+	// Job meta-data - this contains task specific fields
+	// TODO: Remove this or make it generic somehow! Perhaps move these to a json file that is saved with the job and expect it to be available at the end?
+	// The problem is they are available at job creation, but also needed in the job completion task for certain jobs
+	AssociatedScanId string             `protobuf:"bytes,8,opt,name=associatedScanId,proto3" json:"associatedScanId,omitempty"` // Empty if none, or if it's across scans
+	JobName          string             `protobuf:"bytes,9,opt,name=jobName,proto3" json:"jobName,omitempty"`                   // Optional job name, eg used for quants
+	ElementList      []string           `protobuf:"bytes,10,rep,name=elementList,proto3" json:"elementList,omitempty"`          // Optional element list, eg used for quants
+	RequestorUserId  string             `protobuf:"bytes,11,opt,name=requestorUserId,proto3" json:"requestorUserId,omitempty"`
+	OutputTitle      string             `protobuf:"bytes,12,opt,name=outputTitle,proto3" json:"outputTitle,omitempty"` // Optional, ends up in the title of an output file, eg the first row of a CSV
+	Combined         bool               `protobuf:"varint,13,opt,name=combined,proto3" json:"combined,omitempty"`
+	QuantByROI       bool               `protobuf:"varint,14,opt,name=quantByROI,proto3" json:"quantByROI,omitempty"`
+	ROIs             []*ROIItemWithPMCs `protobuf:"bytes,15,rep,name=ROIs,proto3" json:"ROIs,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *JobGroupConfig) Reset() {
+	*x = JobGroupConfig{}
+	mi := &file_job_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JobGroupConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JobGroupConfig) ProtoMessage() {}
+
+func (x *JobGroupConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_job_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JobGroupConfig.ProtoReflect.Descriptor instead.
+func (*JobGroupConfig) Descriptor() ([]byte, []int) {
+	return file_job_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *JobGroupConfig) GetJobGroupId() string {
+	if x != nil {
+		return x.JobGroupId
+	}
+	return ""
+}
+
+func (x *JobGroupConfig) GetJobType() JobType {
+	if x != nil {
+		return x.JobType
+	}
+	return JobType_JT_UNKNOWN
+}
+
+func (x *JobGroupConfig) GetCompletionMethod() string {
+	if x != nil {
+		return x.CompletionMethod
+	}
+	return ""
+}
+
+func (x *JobGroupConfig) GetDockerImage() string {
+	if x != nil {
+		return x.DockerImage
+	}
+	return ""
+}
+
+func (x *JobGroupConfig) GetFastStart() bool {
+	if x != nil {
+		return x.FastStart
+	}
+	return false
+}
+
+func (x *JobGroupConfig) GetNodeCount() uint32 {
+	if x != nil {
+		return x.NodeCount
+	}
+	return 0
+}
+
+func (x *JobGroupConfig) GetNodeConfig() *JobConfig {
+	if x != nil {
+		return x.NodeConfig
+	}
+	return nil
+}
+
+func (x *JobGroupConfig) GetAssociatedScanId() string {
+	if x != nil {
+		return x.AssociatedScanId
+	}
+	return ""
+}
+
+func (x *JobGroupConfig) GetJobName() string {
+	if x != nil {
+		return x.JobName
+	}
+	return ""
+}
+
+func (x *JobGroupConfig) GetElementList() []string {
+	if x != nil {
+		return x.ElementList
+	}
+	return nil
+}
+
+func (x *JobGroupConfig) GetRequestorUserId() string {
+	if x != nil {
+		return x.RequestorUserId
+	}
+	return ""
+}
+
+func (x *JobGroupConfig) GetOutputTitle() string {
+	if x != nil {
+		return x.OutputTitle
+	}
+	return ""
+}
+
+func (x *JobGroupConfig) GetCombined() bool {
+	if x != nil {
+		return x.Combined
+	}
+	return false
+}
+
+func (x *JobGroupConfig) GetQuantByROI() bool {
+	if x != nil {
+		return x.QuantByROI
+	}
+	return false
+}
+
+func (x *JobGroupConfig) GetROIs() []*ROIItemWithPMCs {
+	if x != nil {
+		return x.ROIs
+	}
+	return nil
+}
+
 // Which API instance wants to handle this job? This is only used
 // when it's an external request and APIs realise that an unknown
 // job got completed. Now one will have to handle things like
@@ -422,7 +851,7 @@ type JobHandlerDBItem struct {
 
 func (x *JobHandlerDBItem) Reset() {
 	*x = JobHandlerDBItem{}
-	mi := &file_job_proto_msgTypes[1]
+	mi := &file_job_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -434,7 +863,7 @@ func (x *JobHandlerDBItem) String() string {
 func (*JobHandlerDBItem) ProtoMessage() {}
 
 func (x *JobHandlerDBItem) ProtoReflect() protoreflect.Message {
-	mi := &file_job_proto_msgTypes[1]
+	mi := &file_job_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -447,7 +876,7 @@ func (x *JobHandlerDBItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JobHandlerDBItem.ProtoReflect.Descriptor instead.
 func (*JobHandlerDBItem) Descriptor() ([]byte, []int) {
-	return file_job_proto_rawDescGZIP(), []int{1}
+	return file_job_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *JobHandlerDBItem) GetId() string {
@@ -503,7 +932,7 @@ type JobQueueItem struct {
 
 func (x *JobQueueItem) Reset() {
 	*x = JobQueueItem{}
-	mi := &file_job_proto_msgTypes[2]
+	mi := &file_job_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -515,7 +944,7 @@ func (x *JobQueueItem) String() string {
 func (*JobQueueItem) ProtoMessage() {}
 
 func (x *JobQueueItem) ProtoReflect() protoreflect.Message {
-	mi := &file_job_proto_msgTypes[2]
+	mi := &file_job_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -528,7 +957,7 @@ func (x *JobQueueItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JobQueueItem.ProtoReflect.Descriptor instead.
 func (*JobQueueItem) Descriptor() ([]byte, []int) {
-	return file_job_proto_rawDescGZIP(), []int{2}
+	return file_job_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *JobQueueItem) GetJobId() string {
@@ -622,7 +1051,7 @@ type ScheduledJob struct {
 
 func (x *ScheduledJob) Reset() {
 	*x = ScheduledJob{}
-	mi := &file_job_proto_msgTypes[3]
+	mi := &file_job_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -634,7 +1063,7 @@ func (x *ScheduledJob) String() string {
 func (*ScheduledJob) ProtoMessage() {}
 
 func (x *ScheduledJob) ProtoReflect() protoreflect.Message {
-	mi := &file_job_proto_msgTypes[3]
+	mi := &file_job_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -647,7 +1076,7 @@ func (x *ScheduledJob) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScheduledJob.ProtoReflect.Descriptor instead.
 func (*ScheduledJob) Descriptor() ([]byte, []int) {
-	return file_job_proto_rawDescGZIP(), []int{3}
+	return file_job_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ScheduledJob) GetId() string {
@@ -718,7 +1147,7 @@ var File_job_proto protoreflect.FileDescriptor
 const file_job_proto_rawDesc = "" +
 	"\n" +
 	"\tjob.proto\x1a\n" +
-	"scan.proto\"\xe7\x04\n" +
+	"scan.proto\x1a\troi.proto\"\xe7\x04\n" +
 	"\tJobStatus\x12\x14\n" +
 	"\x05jobId\x18\x01 \x01(\tR\x05jobId\x12)\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x11.JobStatus.StatusR\x06status\x12\x18\n" +
@@ -742,7 +1171,48 @@ const file_job_proto_rawDesc = "" +
 	"\aRUNNING\x10\x03\x12\x15\n" +
 	"\x11GATHERING_RESULTS\x10\x04\x12\f\n" +
 	"\bCOMPLETE\x10\x05\x12\t\n" +
-	"\x05ERROR\x10\x06\"\x92\x01\n" +
+	"\x05ERROR\x10\x06\"\xa9\x01\n" +
+	"\vJobFilePath\x12\"\n" +
+	"\fremoteBucket\x18\x01 \x01(\tR\fremoteBucket\x12\x1e\n" +
+	"\n" +
+	"remotePath\x18\x02 \x01(\tR\n" +
+	"remotePath\x12\x1c\n" +
+	"\tlocalPath\x18\x03 \x01(\tR\tlocalPath\x128\n" +
+	"\x0eapplyNodeIndex\x18\x04 \x01(\x0e2\x10.NodeIndexMethodR\x0eapplyNodeIndex\"\xf3\x01\n" +
+	"\tJobConfig\x12\x14\n" +
+	"\x05jobId\x18\x01 \x01(\tR\x05jobId\x122\n" +
+	"\rrequiredFiles\x18\x02 \x03(\v2\f.JobFilePathR\rrequiredFiles\x12\x18\n" +
+	"\acommand\x18\x03 \x01(\tR\acommand\x12\x12\n" +
+	"\x04args\x18\x04 \x03(\tR\x04args\x12.\n" +
+	"\voutputFiles\x18\x05 \x03(\v2\f.JobFilePathR\voutputFiles\x12>\n" +
+	"\x1aargIndexToApplyNodeIndexes\x18\x06 \x03(\x05R\x1aargIndexToApplyNodeIndexes\"I\n" +
+	"\x0fROIItemWithPMCs\x12\x12\n" +
+	"\x04pmcs\x18\x01 \x03(\x05R\x04pmcs\x12\"\n" +
+	"\aroiItem\x18\x02 \x01(\v2\b.ROIItemR\aroiItem\"\xa0\x04\n" +
+	"\x0eJobGroupConfig\x12\x1e\n" +
+	"\n" +
+	"jobGroupId\x18\x01 \x01(\tR\n" +
+	"jobGroupId\x12\"\n" +
+	"\ajobType\x18\x02 \x01(\x0e2\b.JobTypeR\ajobType\x12*\n" +
+	"\x10completionMethod\x18\x03 \x01(\tR\x10completionMethod\x12 \n" +
+	"\vdockerImage\x18\x04 \x01(\tR\vdockerImage\x12\x1c\n" +
+	"\tfastStart\x18\x05 \x01(\bR\tfastStart\x12\x1c\n" +
+	"\tnodeCount\x18\x06 \x01(\rR\tnodeCount\x12*\n" +
+	"\n" +
+	"nodeConfig\x18\a \x01(\v2\n" +
+	".JobConfigR\n" +
+	"nodeConfig\x12*\n" +
+	"\x10associatedScanId\x18\b \x01(\tR\x10associatedScanId\x12\x18\n" +
+	"\ajobName\x18\t \x01(\tR\ajobName\x12 \n" +
+	"\velementList\x18\n" +
+	" \x03(\tR\velementList\x12(\n" +
+	"\x0frequestorUserId\x18\v \x01(\tR\x0frequestorUserId\x12 \n" +
+	"\voutputTitle\x18\f \x01(\tR\voutputTitle\x12\x1a\n" +
+	"\bcombined\x18\r \x01(\bR\bcombined\x12\x1e\n" +
+	"\n" +
+	"quantByROI\x18\x0e \x01(\bR\n" +
+	"quantByROI\x12$\n" +
+	"\x04ROIs\x18\x0f \x03(\v2\x10.ROIItemWithPMCsR\x04ROIs\"\x92\x01\n" +
 	"\x10JobHandlerDBItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05jobId\x18\x02 \x01(\tR\x05jobId\x12,\n" +
@@ -801,7 +1271,13 @@ const file_job_proto_rawDesc = "" +
 	"\fJT_RUN_QUANT\x10\x04\x12\x0e\n" +
 	"\n" +
 	"JT_RUN_FIT\x10\x05\x12\x15\n" +
-	"\x11JT_RUN_EXPRESSION\x10\x06B\n" +
+	"\x11JT_RUN_EXPRESSION\x10\x06*<\n" +
+	"\x0fNodeIndexMethod\x12\b\n" +
+	"\x04NONE\x10\x00\x12\t\n" +
+	"\x05LOCAL\x10\x01\x12\n" +
+	"\n" +
+	"\x06REMOTE\x10\x02\x12\b\n" +
+	"\x04BOTH\x10\x03B\n" +
 	"Z\b.;protosb\x06proto3"
 
 var (
@@ -816,34 +1292,47 @@ func file_job_proto_rawDescGZIP() []byte {
 	return file_job_proto_rawDescData
 }
 
-var file_job_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_job_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_job_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_job_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_job_proto_goTypes = []any{
 	(JobType)(0),                   // 0: JobType
-	(JobStatus_Status)(0),          // 1: JobStatus.Status
-	(JobQueueItem_State)(0),        // 2: JobQueueItem.State
-	(ScheduledJob_ScheduleType)(0), // 3: ScheduledJob.ScheduleType
-	(*JobStatus)(nil),              // 4: JobStatus
-	(*JobHandlerDBItem)(nil),       // 5: JobHandlerDBItem
-	(*JobQueueItem)(nil),           // 6: JobQueueItem
-	(*ScheduledJob)(nil),           // 7: ScheduledJob
-	nil,                            // 8: ScheduledJob.JobParametersEntry
-	(ScanInstrument)(0),            // 9: ScanInstrument
+	(NodeIndexMethod)(0),           // 1: NodeIndexMethod
+	(JobStatus_Status)(0),          // 2: JobStatus.Status
+	(JobQueueItem_State)(0),        // 3: JobQueueItem.State
+	(ScheduledJob_ScheduleType)(0), // 4: ScheduledJob.ScheduleType
+	(*JobStatus)(nil),              // 5: JobStatus
+	(*JobFilePath)(nil),            // 6: JobFilePath
+	(*JobConfig)(nil),              // 7: JobConfig
+	(*ROIItemWithPMCs)(nil),        // 8: ROIItemWithPMCs
+	(*JobGroupConfig)(nil),         // 9: JobGroupConfig
+	(*JobHandlerDBItem)(nil),       // 10: JobHandlerDBItem
+	(*JobQueueItem)(nil),           // 11: JobQueueItem
+	(*ScheduledJob)(nil),           // 12: ScheduledJob
+	nil,                            // 13: ScheduledJob.JobParametersEntry
+	(*ROIItem)(nil),                // 14: ROIItem
+	(ScanInstrument)(0),            // 15: ScanInstrument
 }
 var file_job_proto_depIdxs = []int32{
-	1, // 0: JobStatus.status:type_name -> JobStatus.Status
-	0, // 1: JobStatus.jobType:type_name -> JobType
-	2, // 2: JobQueueItem.state:type_name -> JobQueueItem.State
-	0, // 3: JobQueueItem.jobType:type_name -> JobType
-	9, // 4: ScheduledJob.instrument:type_name -> ScanInstrument
-	3, // 5: ScheduledJob.scheduleType:type_name -> ScheduledJob.ScheduleType
-	0, // 6: ScheduledJob.jobType:type_name -> JobType
-	8, // 7: ScheduledJob.jobParameters:type_name -> ScheduledJob.JobParametersEntry
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	2,  // 0: JobStatus.status:type_name -> JobStatus.Status
+	0,  // 1: JobStatus.jobType:type_name -> JobType
+	1,  // 2: JobFilePath.applyNodeIndex:type_name -> NodeIndexMethod
+	6,  // 3: JobConfig.requiredFiles:type_name -> JobFilePath
+	6,  // 4: JobConfig.outputFiles:type_name -> JobFilePath
+	14, // 5: ROIItemWithPMCs.roiItem:type_name -> ROIItem
+	0,  // 6: JobGroupConfig.jobType:type_name -> JobType
+	7,  // 7: JobGroupConfig.nodeConfig:type_name -> JobConfig
+	8,  // 8: JobGroupConfig.ROIs:type_name -> ROIItemWithPMCs
+	3,  // 9: JobQueueItem.state:type_name -> JobQueueItem.State
+	0,  // 10: JobQueueItem.jobType:type_name -> JobType
+	15, // 11: ScheduledJob.instrument:type_name -> ScanInstrument
+	4,  // 12: ScheduledJob.scheduleType:type_name -> ScheduledJob.ScheduleType
+	0,  // 13: ScheduledJob.jobType:type_name -> JobType
+	13, // 14: ScheduledJob.jobParameters:type_name -> ScheduledJob.JobParametersEntry
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_job_proto_init() }
@@ -852,13 +1341,14 @@ func file_job_proto_init() {
 		return
 	}
 	file_scan_proto_init()
+	file_roi_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_job_proto_rawDesc), len(file_job_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   5,
+			NumEnums:      5,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

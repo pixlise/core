@@ -1,10 +1,6 @@
 package jobconfig
 
-import (
-	"github.com/pixlise/core/v4/api/quantification"
-	protos "github.com/pixlise/core/v4/generated-protos"
-)
-
+/*
 type JobGroupConfig struct {
 	JobGroupId       string         `bson:"_id,omitempty"` // Job group ID
 	JobType          protos.JobType // Job type, mostly for annotation of job state
@@ -29,3 +25,4 @@ type JobGroupConfig struct {
 	// NodeOutputCombining - how to combine the outputs, eg PIQUANT map commands
 	// Do we need to write overall job output/logs somewhere?
 }
+*/

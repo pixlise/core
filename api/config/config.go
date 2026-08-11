@@ -104,7 +104,7 @@ type APIConfig struct {
 	ImpersonateEnabled        bool
 
 	// Settings that control what kind of job processing EC2 instances we create
-	Jobs JobConfig
+	Jobs JobRunningConfig
 
 	// Deprecated configs, these should all disappear when we remove the old job code
 	ImportJobMaxTimeSec uint32
@@ -118,9 +118,9 @@ type APIConfig struct {
 	FileCacheDisabled          bool // Only enable for tests so we get consistant/reproducable output!
 }
 
-// JobConfig contains all configs required to be able to run jobs by the back-end. This can involve starting quants or other jobs
+// JobRunningConfig contains all configs required to be able to run jobs by the back-end. This can involve starting quants or other jobs
 // locally in Docker, or starting up a JobNode (an EC2 instance with a pixlise-job-node executable running) to execute the job
-type JobConfig struct {
+type JobRunningConfig struct {
 	LegacyJobs bool
 
 	// Configuring AWS EC2 instance type for job node
@@ -237,7 +237,7 @@ func Init() (APIConfig, error) {
 	// If our job structure is empty, we attempt to read a job config from the config
 	// bucket
 	if len(cfg.Jobs.RunnerDockerImage) <= 0 {
-		cfg.Jobs = JobConfig{}
+		cfg.Jobs = JobRunningConfig{}
 	}
 
 	cfg.KubeConfig = *kubeconfig
@@ -285,7 +285,7 @@ func applyConfigLimits(cfg *APIConfig) {
 	}
 }
 
-func ReadJobConfig(cfg *APIConfig, fs fileaccess.FileAccess) error {
+func ReadJobRunningConfig(cfg *APIConfig, fs fileaccess.FileAccess) error {
 	if err := fs.ReadJSON(cfg.ConfigBucket, "job-config.json", &cfg.Jobs, false); err != nil {
 		return err
 	}

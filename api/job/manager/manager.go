@@ -2,7 +2,6 @@ package jobmanager
 
 import (
 	"github.com/olahol/melody"
-	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/job/jobnode"
 	"github.com/pixlise/core/v4/api/services"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -12,7 +11,7 @@ var JobComplete_CombineCSVs = "combine_csvs"
 var JobComplete_SingleCSV = "single_csvs"
 var JobComplete_LuaExpression = "lua_expression"
 
-type JobManagerCompletionFunction func(*jobconfig.JobGroupConfig, *protos.JobStatus, *melody.Session, *services.APIServices) error
+type JobManagerCompletionFunction func(*protos.JobGroupConfig, *protos.JobStatus, *melody.Session, *services.APIServices) (*protos.JobStatus, error)
 
 type JobManager struct {
 	svcs                 *services.APIServices
