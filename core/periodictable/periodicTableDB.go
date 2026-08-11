@@ -41,6 +41,16 @@ func MakePeriodicTable(l logger.ILogger) *PeriodicTableDB {
 	return &PeriodicTableDB{items, symbolLookup, l}
 }
 
+func (pdb *PeriodicTableDB) GetSymbol(Z int) string {
+	for _, item := range pdb.periodicTable {
+		if item.Z == Z {
+			return item.Symbol
+		}
+	}
+
+	return ""
+}
+
 func (pdb *PeriodicTableDB) getElementBySymbol(formula string) *PeriodicTableItem {
 	idx := pdb.getElementIndex(formula)
 	if idx == -1 {

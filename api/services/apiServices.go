@@ -58,8 +58,18 @@ var GitHash string
 type JobManagerInterface interface {
 	SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
 	SubmitExpressionJob(scanId, quantId, expressionId, roiId, memoCacheKey string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
-	// ListJobs() ([]jobmanager.JobGroupConfig, error)
-	// GetJob(JobId string) (jobmanager.JobGroupConfig, error)
+
+	ListJobs(isAdmin bool, requestorUserId string, skip, limit int64, jobTypes []protos.JobType) ([]*protos.JobStatus, []*protos.JobStatus, uint32, error)
+
+	GetJob(jobId string, isAdmin bool, requestorUserId string) (*protos.JobStatus, *protos.JobGroupConfig, error)
+
+	DeleteScheduledJob(id string) error
+	ListScheduledJobs() ([]*protos.ScheduledJob, error)
+	GetScheduledJob(string) (*protos.ScheduledJob, error)
+	SetScheduledJob(job *protos.ScheduledJob) (*protos.ScheduledJob, error)
+
+	RunScheduledPostImportJobs(scan *protos.ScanItem) error
+	RunScheduledJob(job *protos.ScheduledJob, scan *protos.ScanItem) error
 }
 
 type APIServices struct {

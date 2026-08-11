@@ -19,9 +19,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, session *melody.Session, svcs *services.APIServices) error {
+func completeQuantMultiNodeJob(jg *protos.JobGroupConfig, lastJobStatus *protos.JobStatus, session *melody.Session, svcs *services.APIServices) (*protos.JobStatus, error) {
 	if len(jg.AssociatedScanId) <= 0 {
-		return fmt.Errorf("Failed to complete multi-node quant job %v: No associated scan ID found!", jg.JobGroupId)
+		return nil, fmt.Errorf("Failed to complete multi-node quant job %v: No associated scan ID found!", jg.JobGroupId)
 	}
 
 	jobId := jg.JobGroupId
@@ -67,18 +67,34 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 	}
 
 	if outputFileIdx < 0 {
-		return fmt.Errorf("Failed to determine quantification output file index for %v", quantification.OutputCSVName)
+		return nil, fmt.Errorf("Failed to determine quantification output file index for %v", quantification.OutputCSVName)
 	}
 
 	if jg.QuantByROI {
-		jobCfg := jg.NodeConfig.FlattenJobConfig(0)
+		jobCfg := jobconfig.FlattenJobConfig(jg.NodeConfig, 0)
 		pmcFile := path.Base(jobCfg.OutputFiles[outputFileIdx].RemotePath)
-		outputCSV, err = quantification.ProcessQuantROIsToPMCs(svcs.FS, svcs.Config.PiquantJobsBucket, jobS3Path, jg.OutputTitle, pmcFile, jg.Combined, jg.ROIs)
+
+		// TODO: Remove this pointless struct conversion step here
+		rois := []quantification.ROIItemWithPMCs{}
+		for _, r := range jg.ROIs {
+			i := quantification.ROIItemWithPMCs{
+				PMCs:    []int{},
+				ROIItem: r.RoiItem,
+			}
+
+			for _, p := range r.Pmcs {
+				i.PMCs = append(i.PMCs, int(p))
+			}
+
+			rois = append(rois, i)
+		}
+
+		outputCSV, err = quantification.ProcessQuantROIsToPMCs(svcs.FS, svcs.Config.PiquantJobsBucket, jobS3Path, jg.OutputTitle, pmcFile, jg.Combined, rois)
 		errMsg = "Error when duplicating quant rows for ROI PMCs"
 	} else {
 		pmcFiles := []string{}
-		for c := uint(0); c < jg.NodeCount; c++ {
-			jobCfg := jg.NodeConfig.FlattenJobConfig(c)
+		for c := uint32(0); c < jg.NodeCount; c++ {
+			jobCfg := jobconfig.FlattenJobConfig(jg.NodeConfig, uint(c))
 			pmcFiles = append(pmcFiles, jobCfg.OutputFiles[outputFileIdx].RemotePath)
 		}
 
@@ -87,7 +103,7 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 	}
 	if err != nil {
 		//completeJobState(false, fmt.Sprintf("%v: %v", errMsg, err), "", piquantLogList)
-		return fmt.Errorf("%v: %v", errMsg, err)
+		return nil, fmt.Errorf("%v: %v", errMsg, err)
 	}
 
 	outputCSVBytes = []byte(outputCSV)
@@ -101,7 +117,7 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 	binFileBytes, elements, err := quantification.ConvertQuantificationCSV(svcs.Log, outputCSV, []string{"PMC", "SCLK", "RTT", "filename"}, nil, false, "", false)
 	if err != nil {
 		//completeJobState(false, fmt.Sprintf("Error when converting quant CSV to PIXLISE bin: %v", err), quantOutPath, piquantLogList)
-		return fmt.Errorf("Error when converting quant CSV to PIXLISE bin: %v", err)
+		return nil, fmt.Errorf("Error when converting quant CSV to PIXLISE bin: %v", err)
 	}
 
 	// Figure out file paths
@@ -113,7 +129,7 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 	if err != nil {
 		// msg := fmt.Sprintf("Error when uploading converted PIXLISE bin file to s3 at \"s3://%v / %v\": %v", svcs.Config.UsersBucket, binFilePath, err)
 		// completeJobState(false, msg, quantOutPath, piquantLogList)
-		return fmt.Errorf("Error when uploading converted PIXLISE bin file to s3 at \"s3://%v / %v\": %v", svcs.Config.UsersBucket, binFilePath, err)
+		return nil, fmt.Errorf("Error when uploading converted PIXLISE bin file to s3 at \"s3://%v / %v\": %v", svcs.Config.UsersBucket, binFilePath, err)
 	}
 
 	// Save combined CSV to where we have the bin file too
@@ -128,11 +144,25 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 	createParams := &protos.QuantCreateParams{}
 	err = svcs.FS.ReadJSON(svcs.Config.PiquantJobsBucket, quantJobReqS3Path, createParams, false)
 	if err != nil {
-		return fmt.Errorf("Failed to read quant creation parameters file \"s3://%v/%v\": %v", svcs.Config.PiquantJobsBucket, quantJobReqS3Path, err)
+		return nil, fmt.Errorf("Failed to read quant creation parameters file \"s3://%v/%v\": %v", svcs.Config.PiquantJobsBucket, quantJobReqS3Path, err)
 	}
 
 	completeMsg := fmt.Sprintf("Nodes ran: %v", jg.NodeCount)
 	now := svcs.TimeStamper.GetTimeNowSec()
+	completeStatus := &protos.JobStatus{
+		JobId:            jobId,
+		JobItemId:        jobId,
+		JobType:          lastJobStatus.JobType,
+		Status:           protos.JobStatus_COMPLETE,
+		Message:          completeMsg,
+		StartUnixTimeSec: lastJobStatus.StartUnixTimeSec,
+		EndUnixTimeSec:   uint32(now),
+		OutputFilePath:   quantOutPath,
+		OtherLogFiles:    piquantLogList,
+		Name:             jg.JobName,
+		Elements:         jg.ElementList,
+		RequestorUserId:  jg.RequestorUserId,
+	}
 	summary := &protos.QuantificationSummary{
 		Id:     jobId,
 		ScanId: jg.AssociatedScanId,
@@ -143,25 +173,13 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 			DataBucket:        svcs.Config.DatasetsBucket,
 			PiquantJobsBucket: svcs.Config.PiquantJobsBucket,
 			CoresPerNode:      uint32(svcs.Config.Jobs.CoresPerNode),
-			StartUnixTimeSec:  jstatus.StartUnixTimeSec,
-			RequestorUserId:   jstatus.RequestorUserId,
+			StartUnixTimeSec:  lastJobStatus.StartUnixTimeSec,
+			RequestorUserId:   lastJobStatus.RequestorUserId,
 			// PIQUANTVersion: ,
 			// Comments: ,
 		},
 		Elements: elements,
-		Status: &protos.JobStatus{
-			JobId:            jobId,
-			JobItemId:        jobId,
-			Status:           protos.JobStatus_COMPLETE,
-			Message:          completeMsg,
-			StartUnixTimeSec: jstatus.StartUnixTimeSec,
-			EndUnixTimeSec:   uint32(now),
-			OutputFilePath:   quantOutPath,
-			OtherLogFiles:    piquantLogList,
-			Name:             jg.JobName,
-			Elements:         jg.ElementList,
-			RequestorUserId:  jg.RequestorUserId,
-		},
+		Status:   completeStatus,
 	}
 
 	// If we've got a special import that's done by the internal user, we read the owner entry from DB scan auto share table (ScanAutoShareName)
@@ -187,7 +205,7 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 	err = quantification.WriteQuantAndOwnershipToDB(summary, ownerItem, svcs.MongoDB)
 	if err != nil {
 		//completeJobState(false, fmt.Sprintf("Failed to write quantification and ownership to DB: %v. Id: %v", err, jobId), quantOutPath, piquantLogList)
-		return fmt.Errorf("Failed to write quantification and ownership to DB: %v. Id: %v", err, jobId)
+		return nil, fmt.Errorf("Failed to write quantification and ownership to DB: %v. Id: %v", err, jobId)
 	}
 
 	// Report success
@@ -202,10 +220,10 @@ func completeQuantMultiNodeJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 
 	// Also send out the generic notification for quants changing (causing reloading of things on UI)
 	svcs.Notifier.SysNotifyQuantChanged(jobId)
-	return nil
+	return completeStatus, nil
 }
 
-func completeQuantSingleMapJob(jg *jobconfig.JobGroupConfig, jstatus *protos.JobStatus, session *melody.Session, svcs *services.APIServices) error {
+func completeQuantSingleMapJob(jg *protos.JobGroupConfig, lastJobStatus *protos.JobStatus, session *melody.Session, svcs *services.APIServices) (*protos.JobStatus, error) {
 	/*
 		// NOTE: Missing status writes - we only write those for map commands! saveQuantJobStatus quits if it's not a map anyway...
 
@@ -303,5 +321,5 @@ func completeQuantSingleMapJob(jg *jobconfig.JobGroupConfig, jstatus *protos.Job
 		// STOP HERE! Non-map commands are simpler, map commands do a whole bunch more to maintain state files which are picked up
 		// by quant listing generation
 		r.completeJobState(true, "Wrote Fit output CSV", quantOutPath, piquantLogList)*/
-	return nil
+	return nil, nil
 }

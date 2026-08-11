@@ -1,6 +1,7 @@
 package jobrunner
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -12,6 +13,8 @@ import (
 	"github.com/pixlise/core/v4/api/quantification"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
+	"github.com/pixlise/core/v4/core/utils"
+	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 var EnvBucketName = "JOB_BUCKET"
@@ -46,15 +49,20 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 
 	// Read config from S3 (or our local simulator!)
 	jobParamPath := path.Join(jobPath, quantification.JobParamsFileName)
-	var jobGroupCfg jobconfig.JobGroupConfig
+	var jobGroupCfg = &protos.JobGroupConfig{
+		NodeConfig: &protos.JobConfig{},
+	}
 	err := remoteFS.ReadJSON(jobBucket, jobParamPath, &jobGroupCfg, false)
 	if err != nil {
 		return fmt.Errorf("Failed to read job config s3://%v/%v: %v", jobBucket, jobParamPath, err)
 	}
 
-	cfg := jobGroupCfg.NodeConfig.FlattenJobConfig(nodeIndex)
+	cfg := jobconfig.FlattenJobConfig(jobGroupCfg.NodeConfig, nodeIndex)
 
-	jobLog.Debugf("Job config struct: %#v", cfg)
+	if jobLog.GetLogLevel() == logger.LogDebug {
+		cfgJson, _ := json.MarshalIndent(cfg, "", utils.PrettyPrintIndentForJSON)
+		jobLog.Debugf("Job config struct: %v", string(cfgJson))
+	}
 
 	// Validate
 	if len(cfg.Command) <= 0 {

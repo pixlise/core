@@ -8,7 +8,6 @@ import (
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/filepaths"
-	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/piquant"
 	"github.com/pixlise/core/v4/api/quantification"
 	"github.com/pixlise/core/v4/api/sessionuser"
@@ -84,7 +83,7 @@ func (jm *JobManager) internalSubmitQuantJob(
 	// Dataset file
 	remoteCreateParamsPath := path.Join(jobS3Path, quantification.JobRequestFileName)
 
-	requiredFiles := []jobconfig.JobFilePath{
+	requiredFiles := []*protos.JobFilePath{
 		{
 			LocalPath:    filepaths.DatasetFileName,
 			RemoteBucket: jm.svcs.Config.DatasetsBucket,
@@ -105,21 +104,21 @@ func (jm *JobManager) internalSubmitQuantJob(
 
 	// PIQUANT instrument config files (these are config-dependent)
 	if len(piquantCfg.ConfigFile) > 0 {
-		requiredFiles = append(requiredFiles, jobconfig.JobFilePath{
+		requiredFiles = append(requiredFiles, &protos.JobFilePath{
 			LocalPath:    piquantCfg.ConfigFile,
 			RemoteBucket: jm.svcs.Config.ConfigBucket,
 			RemotePath:   filepaths.GetDetectorConfigPath(detectorConfigBits[0], detectorConfigBits[1], piquantCfg.ConfigFile),
 		})
 	}
 	if len(piquantCfg.CalibrationFile) > 0 {
-		requiredFiles = append(requiredFiles, jobconfig.JobFilePath{
+		requiredFiles = append(requiredFiles, &protos.JobFilePath{
 			LocalPath:    piquantCfg.CalibrationFile,
 			RemoteBucket: jm.svcs.Config.ConfigBucket,
 			RemotePath:   filepaths.GetDetectorConfigPath(detectorConfigBits[0], detectorConfigBits[1], piquantCfg.CalibrationFile),
 		})
 	}
 	if len(piquantCfg.OpticEfficiencyFile) > 0 {
-		requiredFiles = append(requiredFiles, jobconfig.JobFilePath{
+		requiredFiles = append(requiredFiles, &protos.JobFilePath{
 			LocalPath:    piquantCfg.OpticEfficiencyFile,
 			RemoteBucket: jm.svcs.Config.ConfigBucket,
 			RemotePath:   filepaths.GetDetectorConfigPath(detectorConfigBits[0], detectorConfigBits[1], piquantCfg.OpticEfficiencyFile),
@@ -139,11 +138,11 @@ func (jm *JobManager) internalSubmitQuantJob(
 	}
 
 	nodePMCPath := path.Join(jobS3Path, nodePMCFileName)
-	requiredFiles = append(requiredFiles, jobconfig.JobFilePath{
+	requiredFiles = append(requiredFiles, &protos.JobFilePath{
 		LocalPath:      nodePMCFileName,
 		RemoteBucket:   jm.svcs.Config.PiquantJobsBucket,
 		RemotePath:     nodePMCPath,
-		ApplyNodeIndex: jobconfig.NodeIndexMethod_Both,
+		ApplyNodeIndex: protos.NodeIndexMethod_BOTH,
 	})
 
 	elementListStr := strings.Join(createParams.Elements, ",")
@@ -179,39 +178,54 @@ func (jm *JobManager) internalSubmitQuantJob(
 	}
 	allArgs = append(allArgs, extraArgs...)
 
-	jg := &jobconfig.JobGroupConfig{
+	// TODO: Remove this pointless struct conversion step here
+	roisConverted := []*protos.ROIItemWithPMCs{}
+	for _, r := range rois {
+		i := &protos.ROIItemWithPMCs{
+			Pmcs:    []int32{},
+			RoiItem: r.ROIItem,
+		}
+
+		for _, p := range r.PMCs {
+			i.Pmcs = append(i.Pmcs, int32(p))
+		}
+
+		roisConverted = append(roisConverted, i)
+	}
+
+	jg := &protos.JobGroupConfig{
 		JobGroupId:       jobId,
 		JobType:          jobType,
 		CompletionMethod: completeMethod,
 		DockerImage:      jm.svcs.Config.Jobs.RunnerDockerImage,
-		NodeCount:        uint(len(pmcFiles)),
-		NodeConfig: jobconfig.JobConfig{
+		NodeCount:        uint32(len(pmcFiles)),
+		NodeConfig: &protos.JobConfig{
 			JobId: jobId + "-node",
 
 			RequiredFiles: requiredFiles,
 
 			Command:                    "./Piquant",
 			Args:                       allArgs,
-			ArgIndexToApplyNodeIndexes: []int{3, 5},
+			ArgIndexToApplyNodeIndexes: []int32{3, 5},
 
-			OutputFiles: []jobconfig.JobFilePath{
+			OutputFiles: []*protos.JobFilePath{
 				{
 					LocalPath:      "stdout",
 					RemoteBucket:   jm.svcs.Config.PiquantJobsBucket,
 					RemotePath:     path.Join(jobS3Path, "piquant-logs", "stdout.log"),
-					ApplyNodeIndex: jobconfig.NodeIndexMethod_Remote,
+					ApplyNodeIndex: protos.NodeIndexMethod_REMOTE,
 				},
 				{
 					LocalPath:      "map.csv_log.txt",
 					RemoteBucket:   jm.svcs.Config.PiquantJobsBucket,
 					RemotePath:     path.Join(jobS3Path, "piquant-logs", "piquant.log"),
-					ApplyNodeIndex: jobconfig.NodeIndexMethod_Both,
+					ApplyNodeIndex: protos.NodeIndexMethod_BOTH,
 				},
 				{
 					LocalPath:      "map.csv",
 					RemoteBucket:   jm.svcs.Config.PiquantJobsBucket,
 					RemotePath:     path.Join(jobS3Path, "output", quantification.OutputCSVName),
-					ApplyNodeIndex: jobconfig.NodeIndexMethod_Both,
+					ApplyNodeIndex: protos.NodeIndexMethod_BOTH,
 				},
 			},
 		},
@@ -221,7 +235,7 @@ func (jm *JobManager) internalSubmitQuantJob(
 		OutputTitle:      csvTitleRow,
 		Combined:         combined,
 		QuantByROI:       quantByROI,
-		ROIs:             rois,
+		ROIs:             roisConverted,
 		RequestorUserId:  requestorUserId,
 	}
 

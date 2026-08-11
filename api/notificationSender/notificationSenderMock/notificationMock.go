@@ -1,4 +1,4 @@
-package notificationSender
+package notificationSenderMock
 
 import (
 	"fmt"

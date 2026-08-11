@@ -59,6 +59,10 @@ func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret 
 	}
 
 	jobIdListStr := strings.Join(jobIds, ",")
+	// Trim in case it's too long and AWS rejects our EC2 start
+	if len(jobIdListStr) > 255 {
+		jobIdListStr = jobIdListStr[0:255]
+	}
 
 	if jm.svcs.Config.Jobs.MaxNodeRunTimeSec < 60 {
 		return []*string{}, fmt.Errorf("Cannot start job node that runs for only %vsec", jm.svcs.Config.Jobs.MaxNodeRunTimeSec)
@@ -102,7 +106,9 @@ echo "Downloading global-bumdle.pem..."
 wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
 
 echo "Running job node..."
-./pixlise-job-node -bucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxRunTimeSec "%v" -jobs "%v"
+./pixlise-job-node -jobBucket "%v" -usersBucket "%v" -configBucket "%v" -datasetsBucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxRunTimeSec "%v" -jobs "%v"
+
+# TODO: save init log to bucket, eg like this - aws s3 cp /var/log/cloud-init-output.log s3://.../Nodes/
 
 echo "PIXLISE job node shutting down in 1 minute..."
 shutdown -h +1
@@ -113,6 +119,9 @@ shutdown -h +1
 		awsRegion, awsRegion,
 		jm.svcs.Config.Jobs.NodeS3Path,
 		jm.svcs.Config.PiquantJobsBucket,
+		jm.svcs.Config.UsersBucket,
+		jm.svcs.Config.ConfigBucket,
+		jm.svcs.Config.DatasetsBucket,
 		jm.svcs.Config.Jobs.RunnerDockerImage,
 		jm.svcs.Config.MongoSecret,
 		jm.svcs.Config.EnvironmentName,

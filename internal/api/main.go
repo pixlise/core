@@ -25,7 +25,6 @@ import (
 	"github.com/pixlise/core/v4/api/memoisation"
 	"github.com/pixlise/core/v4/api/notificationSender"
 	"github.com/pixlise/core/v4/api/permission"
-	"github.com/pixlise/core/v4/api/quantification"
 	apiRouter "github.com/pixlise/core/v4/api/router"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws"
@@ -69,12 +68,13 @@ func main() {
 	log.SetFlags(0)
 
 	cfg := loadConfig()
-	svcs := initServices(&cfg, instanceId)
 
 	////////////////////////////////////////////////////
 	// Set up WebSocket server
 	// Looks like the default config for melody is to expect a ping at least every 54seconds
 	m := melody.New()
+
+	svcs := initServices(&cfg, m, instanceId)
 
 	// Set web socket configs
 	if cfg.WSWriteWaitMs > 0 {
@@ -228,7 +228,7 @@ func loadConfig() config.APIConfig {
 	return cfg
 }
 
-func initServices(cfg *config.APIConfig, apiInstanceId string) *services.APIServices {
+func initServices(cfg *config.APIConfig, m *melody.Melody, apiInstanceId string) *services.APIServices {
 	// Get a session for the bucket region
 	sess, err := awsutil.GetSession()
 	if err != nil {
@@ -248,7 +248,7 @@ func initServices(cfg *config.APIConfig, apiInstanceId string) *services.APIServ
 	// If we have no job config yet, read it as a separate file
 	if len(cfg.Jobs.RunnerDockerImage) <= 0 {
 		fmt.Println("Reading job config from separate file...")
-		err = config.ReadJobConfig(cfg, fs)
+		err = config.ReadJobRunningConfig(cfg, fs)
 		if err != nil {
 			fmt.Printf("WARNING: Failed to read job config: %v\n", err)
 		} else {
@@ -333,7 +333,7 @@ func initServices(cfg *config.APIConfig, apiInstanceId string) *services.APIServ
 	}
 
 	// Create job manager and point it back here
-	svcs.JobManager, err = jobmanager.CreateJobManager(svcs, 10, true, true)
+	svcs.JobManager, err = jobmanager.CreateJobManager(svcs, m, 10, true, true)
 	if err != nil {
 		log.Fatalf("Failed to init job manager. Error: %v", err)
 	}
@@ -414,13 +414,7 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 			h.svcs.Log.Infof("Scan complete detected, checking if auto-quantification needed...")
 			sourceId := scan.Id + "-quant"
 			err = singleinstance.HandleOnce(sourceId, h.instanceId, func(sourceId string) {
-				// We ask it to only run if it hasn't got auto-quants already
-				quantification.RunAutoQuantifications(scan.Id, h.svcs, true)
-
-				// Run post-import jobs - these are run in docker containers to process the imported data however we need. They read the files
-				// we wrote to S3 and output their own files back to S3
-				runPostImportJobs(scan.Id, h.svcs)
-
+				runPostImportJobs(scan, h.svcs)
 			}, h.svcs.MongoDB, h.svcs.TimeStamper, h.svcs.Log)
 
 			if err != nil {
@@ -435,12 +429,12 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 	}
 }
 
-func runPostImportJobs(scanId string, svcs *services.APIServices) {
-	// _, err := jobexecutor.GetJobExecutor(svcs.Config.QuantExecutor)
-	// if err != nil {
-	// 	svcs.Log.Errorf("Failed to create job starter for running post-import jobs: %v", err)
-	// 	return
-	// }
+func runPostImportJobs(scan *protos.ScanItem, svcs *services.APIServices) {
+	// Legacy: This is how we used to run auto-quants, hard coded into the
+	// quantification namespace
+	// We ask it to only run if it hasn't got auto-quants already
+	//quantification.RunAutoQuantifications(scan.Id, svcs, true)
 
-	//jobStarter.StartJob(dockerImage, jobConfig, svcs.Config, sessionuser.PIXLISESystemUserId, svcs.Log)
+	// Now we have a job manager! Tell it to run jobs
+	svcs.JobManager.RunScheduledPostImportJobs(scan)
 }

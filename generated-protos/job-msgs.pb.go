@@ -24,6 +24,9 @@ const (
 // requires(QUANTIFY)
 type JobListReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	SkipJobs      uint32                 `protobuf:"varint,1,opt,name=skipJobs,proto3" json:"skipJobs,omitempty"`
+	JobCount      uint32                 `protobuf:"varint,2,opt,name=jobCount,proto3" json:"jobCount,omitempty"`
+	JobTypes      []JobType              `protobuf:"varint,3,rep,packed,name=jobTypes,proto3,enum=JobType" json:"jobTypes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -58,9 +61,33 @@ func (*JobListReq) Descriptor() ([]byte, []int) {
 	return file_job_msgs_proto_rawDescGZIP(), []int{0}
 }
 
+func (x *JobListReq) GetSkipJobs() uint32 {
+	if x != nil {
+		return x.SkipJobs
+	}
+	return 0
+}
+
+func (x *JobListReq) GetJobCount() uint32 {
+	if x != nil {
+		return x.JobCount
+	}
+	return 0
+}
+
+func (x *JobListReq) GetJobTypes() []JobType {
+	if x != nil {
+		return x.JobTypes
+	}
+	return nil
+}
+
 type JobListResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Jobs          []*JobStatus           `protobuf:"bytes,1,rep,name=jobs,proto3" json:"jobs,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The jobs requested by index
+	Jobs          []*JobStatus `protobuf:"bytes,1,rep,name=jobs,proto3" json:"jobs,omitempty"`
+	TotalJobCount uint32       `protobuf:"varint,2,opt,name=totalJobCount,proto3" json:"totalJobCount,omitempty"`
+	ActiveJobs    []*JobStatus `protobuf:"bytes,3,rep,name=activeJobs,proto3" json:"activeJobs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -98,6 +125,20 @@ func (*JobListResp) Descriptor() ([]byte, []int) {
 func (x *JobListResp) GetJobs() []*JobStatus {
 	if x != nil {
 		return x.Jobs
+	}
+	return nil
+}
+
+func (x *JobListResp) GetTotalJobCount() uint32 {
+	if x != nil {
+		return x.TotalJobCount
+	}
+	return 0
+}
+
+func (x *JobListResp) GetActiveJobs() []*JobStatus {
+	if x != nil {
+		return x.ActiveJobs
 	}
 	return nil
 }
@@ -146,20 +187,498 @@ func (x *JobListUpd) GetJob() *JobStatus {
 	return nil
 }
 
+// requires(QUANTIFY)
+type JobGetReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	JobId         string                 `protobuf:"bytes,1,opt,name=jobId,proto3" json:"jobId,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *JobGetReq) Reset() {
+	*x = JobGetReq{}
+	mi := &file_job_msgs_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JobGetReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JobGetReq) ProtoMessage() {}
+
+func (x *JobGetReq) ProtoReflect() protoreflect.Message {
+	mi := &file_job_msgs_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JobGetReq.ProtoReflect.Descriptor instead.
+func (*JobGetReq) Descriptor() ([]byte, []int) {
+	return file_job_msgs_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *JobGetReq) GetJobId() string {
+	if x != nil {
+		return x.JobId
+	}
+	return ""
+}
+
+type JobGetResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *JobStatus             `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	Config        *JobGroupConfig        `protobuf:"bytes,2,opt,name=config,proto3" json:"config,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *JobGetResp) Reset() {
+	*x = JobGetResp{}
+	mi := &file_job_msgs_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JobGetResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JobGetResp) ProtoMessage() {}
+
+func (x *JobGetResp) ProtoReflect() protoreflect.Message {
+	mi := &file_job_msgs_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JobGetResp.ProtoReflect.Descriptor instead.
+func (*JobGetResp) Descriptor() ([]byte, []int) {
+	return file_job_msgs_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *JobGetResp) GetStatus() *JobStatus {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *JobGetResp) GetConfig() *JobGroupConfig {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+// requires(QUANTIFY)
+type ScheduledJobListReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ScheduledJobListReq) Reset() {
+	*x = ScheduledJobListReq{}
+	mi := &file_job_msgs_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ScheduledJobListReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScheduledJobListReq) ProtoMessage() {}
+
+func (x *ScheduledJobListReq) ProtoReflect() protoreflect.Message {
+	mi := &file_job_msgs_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScheduledJobListReq.ProtoReflect.Descriptor instead.
+func (*ScheduledJobListReq) Descriptor() ([]byte, []int) {
+	return file_job_msgs_proto_rawDescGZIP(), []int{5}
+}
+
+type ScheduledJobListResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Jobs          []*ScheduledJob        `protobuf:"bytes,1,rep,name=jobs,proto3" json:"jobs,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ScheduledJobListResp) Reset() {
+	*x = ScheduledJobListResp{}
+	mi := &file_job_msgs_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ScheduledJobListResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScheduledJobListResp) ProtoMessage() {}
+
+func (x *ScheduledJobListResp) ProtoReflect() protoreflect.Message {
+	mi := &file_job_msgs_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScheduledJobListResp.ProtoReflect.Descriptor instead.
+func (*ScheduledJobListResp) Descriptor() ([]byte, []int) {
+	return file_job_msgs_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ScheduledJobListResp) GetJobs() []*ScheduledJob {
+	if x != nil {
+		return x.Jobs
+	}
+	return nil
+}
+
+// requires(QUANTIFY)
+type SetScheduledJobReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Job           *ScheduledJob          `protobuf:"bytes,1,opt,name=job,proto3" json:"job,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetScheduledJobReq) Reset() {
+	*x = SetScheduledJobReq{}
+	mi := &file_job_msgs_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetScheduledJobReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetScheduledJobReq) ProtoMessage() {}
+
+func (x *SetScheduledJobReq) ProtoReflect() protoreflect.Message {
+	mi := &file_job_msgs_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetScheduledJobReq.ProtoReflect.Descriptor instead.
+func (*SetScheduledJobReq) Descriptor() ([]byte, []int) {
+	return file_job_msgs_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SetScheduledJobReq) GetJob() *ScheduledJob {
+	if x != nil {
+		return x.Job
+	}
+	return nil
+}
+
+type SetScheduledJobResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Job           *ScheduledJob          `protobuf:"bytes,1,opt,name=job,proto3" json:"job,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetScheduledJobResp) Reset() {
+	*x = SetScheduledJobResp{}
+	mi := &file_job_msgs_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetScheduledJobResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetScheduledJobResp) ProtoMessage() {}
+
+func (x *SetScheduledJobResp) ProtoReflect() protoreflect.Message {
+	mi := &file_job_msgs_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetScheduledJobResp.ProtoReflect.Descriptor instead.
+func (*SetScheduledJobResp) Descriptor() ([]byte, []int) {
+	return file_job_msgs_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SetScheduledJobResp) GetJob() *ScheduledJob {
+	if x != nil {
+		return x.Job
+	}
+	return nil
+}
+
+// requires(QUANTIFY)
+type DeleteScheduledJobReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteScheduledJobReq) Reset() {
+	*x = DeleteScheduledJobReq{}
+	mi := &file_job_msgs_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteScheduledJobReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteScheduledJobReq) ProtoMessage() {}
+
+func (x *DeleteScheduledJobReq) ProtoReflect() protoreflect.Message {
+	mi := &file_job_msgs_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteScheduledJobReq.ProtoReflect.Descriptor instead.
+func (*DeleteScheduledJobReq) Descriptor() ([]byte, []int) {
+	return file_job_msgs_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *DeleteScheduledJobReq) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type DeleteScheduledJobResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteScheduledJobResp) Reset() {
+	*x = DeleteScheduledJobResp{}
+	mi := &file_job_msgs_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteScheduledJobResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteScheduledJobResp) ProtoMessage() {}
+
+func (x *DeleteScheduledJobResp) ProtoReflect() protoreflect.Message {
+	mi := &file_job_msgs_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteScheduledJobResp.ProtoReflect.Descriptor instead.
+func (*DeleteScheduledJobResp) Descriptor() ([]byte, []int) {
+	return file_job_msgs_proto_rawDescGZIP(), []int{10}
+}
+
+// requires(QUANTIFY)
+type TriggerScheduledJobReq struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ScheduledJobId string                 `protobuf:"bytes,1,opt,name=scheduledJobId,proto3" json:"scheduledJobId,omitempty"`
+	JobParameters  map[string]string      `protobuf:"bytes,2,rep,name=jobParameters,proto3" json:"jobParameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *TriggerScheduledJobReq) Reset() {
+	*x = TriggerScheduledJobReq{}
+	mi := &file_job_msgs_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TriggerScheduledJobReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TriggerScheduledJobReq) ProtoMessage() {}
+
+func (x *TriggerScheduledJobReq) ProtoReflect() protoreflect.Message {
+	mi := &file_job_msgs_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TriggerScheduledJobReq.ProtoReflect.Descriptor instead.
+func (*TriggerScheduledJobReq) Descriptor() ([]byte, []int) {
+	return file_job_msgs_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *TriggerScheduledJobReq) GetScheduledJobId() string {
+	if x != nil {
+		return x.ScheduledJobId
+	}
+	return ""
+}
+
+func (x *TriggerScheduledJobReq) GetJobParameters() map[string]string {
+	if x != nil {
+		return x.JobParameters
+	}
+	return nil
+}
+
+type TriggerScheduledJobResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	JobId         string                 `protobuf:"bytes,1,opt,name=jobId,proto3" json:"jobId,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TriggerScheduledJobResp) Reset() {
+	*x = TriggerScheduledJobResp{}
+	mi := &file_job_msgs_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TriggerScheduledJobResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TriggerScheduledJobResp) ProtoMessage() {}
+
+func (x *TriggerScheduledJobResp) ProtoReflect() protoreflect.Message {
+	mi := &file_job_msgs_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TriggerScheduledJobResp.ProtoReflect.Descriptor instead.
+func (*TriggerScheduledJobResp) Descriptor() ([]byte, []int) {
+	return file_job_msgs_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *TriggerScheduledJobResp) GetJobId() string {
+	if x != nil {
+		return x.JobId
+	}
+	return ""
+}
+
 var File_job_msgs_proto protoreflect.FileDescriptor
 
 const file_job_msgs_proto_rawDesc = "" +
 	"\n" +
-	"\x0ejob-msgs.proto\x1a\tjob.proto\"\f\n" +
+	"\x0ejob-msgs.proto\x1a\tjob.proto\"j\n" +
 	"\n" +
-	"JobListReq\"-\n" +
+	"JobListReq\x12\x1a\n" +
+	"\bskipJobs\x18\x01 \x01(\rR\bskipJobs\x12\x1a\n" +
+	"\bjobCount\x18\x02 \x01(\rR\bjobCount\x12$\n" +
+	"\bjobTypes\x18\x03 \x03(\x0e2\b.JobTypeR\bjobTypes\"\x7f\n" +
 	"\vJobListResp\x12\x1e\n" +
 	"\x04jobs\x18\x01 \x03(\v2\n" +
-	".JobStatusR\x04jobs\"*\n" +
+	".JobStatusR\x04jobs\x12$\n" +
+	"\rtotalJobCount\x18\x02 \x01(\rR\rtotalJobCount\x12*\n" +
+	"\n" +
+	"activeJobs\x18\x03 \x03(\v2\n" +
+	".JobStatusR\n" +
+	"activeJobs\"*\n" +
 	"\n" +
 	"JobListUpd\x12\x1c\n" +
 	"\x03job\x18\x01 \x01(\v2\n" +
-	".JobStatusR\x03jobB\n" +
+	".JobStatusR\x03job\"!\n" +
+	"\tJobGetReq\x12\x14\n" +
+	"\x05jobId\x18\x01 \x01(\tR\x05jobId\"Y\n" +
+	"\n" +
+	"JobGetResp\x12\"\n" +
+	"\x06status\x18\x01 \x01(\v2\n" +
+	".JobStatusR\x06status\x12'\n" +
+	"\x06config\x18\x02 \x01(\v2\x0f.JobGroupConfigR\x06config\"\x15\n" +
+	"\x13ScheduledJobListReq\"9\n" +
+	"\x14ScheduledJobListResp\x12!\n" +
+	"\x04jobs\x18\x01 \x03(\v2\r.ScheduledJobR\x04jobs\"5\n" +
+	"\x12SetScheduledJobReq\x12\x1f\n" +
+	"\x03job\x18\x01 \x01(\v2\r.ScheduledJobR\x03job\"6\n" +
+	"\x13SetScheduledJobResp\x12\x1f\n" +
+	"\x03job\x18\x01 \x01(\v2\r.ScheduledJobR\x03job\"'\n" +
+	"\x15DeleteScheduledJobReq\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x18\n" +
+	"\x16DeleteScheduledJobResp\"\xd4\x01\n" +
+	"\x16TriggerScheduledJobReq\x12&\n" +
+	"\x0escheduledJobId\x18\x01 \x01(\tR\x0escheduledJobId\x12P\n" +
+	"\rjobParameters\x18\x02 \x03(\v2*.TriggerScheduledJobReq.JobParametersEntryR\rjobParameters\x1a@\n" +
+	"\x12JobParametersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"/\n" +
+	"\x17TriggerScheduledJobResp\x12\x14\n" +
+	"\x05jobId\x18\x01 \x01(\tR\x05jobIdB\n" +
 	"Z\b.;protosb\x06proto3"
 
 var (
@@ -174,21 +693,43 @@ func file_job_msgs_proto_rawDescGZIP() []byte {
 	return file_job_msgs_proto_rawDescData
 }
 
-var file_job_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_job_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_job_msgs_proto_goTypes = []any{
-	(*JobListReq)(nil),  // 0: JobListReq
-	(*JobListResp)(nil), // 1: JobListResp
-	(*JobListUpd)(nil),  // 2: JobListUpd
-	(*JobStatus)(nil),   // 3: JobStatus
+	(*JobListReq)(nil),              // 0: JobListReq
+	(*JobListResp)(nil),             // 1: JobListResp
+	(*JobListUpd)(nil),              // 2: JobListUpd
+	(*JobGetReq)(nil),               // 3: JobGetReq
+	(*JobGetResp)(nil),              // 4: JobGetResp
+	(*ScheduledJobListReq)(nil),     // 5: ScheduledJobListReq
+	(*ScheduledJobListResp)(nil),    // 6: ScheduledJobListResp
+	(*SetScheduledJobReq)(nil),      // 7: SetScheduledJobReq
+	(*SetScheduledJobResp)(nil),     // 8: SetScheduledJobResp
+	(*DeleteScheduledJobReq)(nil),   // 9: DeleteScheduledJobReq
+	(*DeleteScheduledJobResp)(nil),  // 10: DeleteScheduledJobResp
+	(*TriggerScheduledJobReq)(nil),  // 11: TriggerScheduledJobReq
+	(*TriggerScheduledJobResp)(nil), // 12: TriggerScheduledJobResp
+	nil,                             // 13: TriggerScheduledJobReq.JobParametersEntry
+	(JobType)(0),                    // 14: JobType
+	(*JobStatus)(nil),               // 15: JobStatus
+	(*JobGroupConfig)(nil),          // 16: JobGroupConfig
+	(*ScheduledJob)(nil),            // 17: ScheduledJob
 }
 var file_job_msgs_proto_depIdxs = []int32{
-	3, // 0: JobListResp.jobs:type_name -> JobStatus
-	3, // 1: JobListUpd.job:type_name -> JobStatus
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	14, // 0: JobListReq.jobTypes:type_name -> JobType
+	15, // 1: JobListResp.jobs:type_name -> JobStatus
+	15, // 2: JobListResp.activeJobs:type_name -> JobStatus
+	15, // 3: JobListUpd.job:type_name -> JobStatus
+	15, // 4: JobGetResp.status:type_name -> JobStatus
+	16, // 5: JobGetResp.config:type_name -> JobGroupConfig
+	17, // 6: ScheduledJobListResp.jobs:type_name -> ScheduledJob
+	17, // 7: SetScheduledJobReq.job:type_name -> ScheduledJob
+	17, // 8: SetScheduledJobResp.job:type_name -> ScheduledJob
+	13, // 9: TriggerScheduledJobReq.jobParameters:type_name -> TriggerScheduledJobReq.JobParametersEntry
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_job_msgs_proto_init() }
@@ -203,7 +744,7 @@ func file_job_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_job_msgs_proto_rawDesc), len(file_job_msgs_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

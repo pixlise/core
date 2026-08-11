@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/memoisation"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -39,8 +40,18 @@ func HandleExpressionOutputReq(req *protos.ExpressionOutputReq, hctx wsHelpers.H
 		return nil, err
 	}
 
+	scanItem, _, err := wsHelpers.GetUserObjectById[protos.ScanItem](true, reqItem.ScanId, protos.ObjectType_OT_SCAN, dbCollections.ScansName, hctx)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read scan item for scan \"%v\": %v", reqItem.ScanId, err)
+	}
+
+	exprItem, _, err := wsHelpers.GetUserObjectById[protos.DataExpression](false, reqItem.ExpressionId, protos.ObjectType_OT_EXPRESSION, dbCollections.ExpressionsName, hctx)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read expression for scan \"%v\": %v", reqItem.ExpressionId, err)
+	}
+
 	// Work out what key this data would be stored under
-	cacheKey, err := makeCacheKey(reqItem.ScanId, reqItem.QuantId, reqItem.ExpressionId, reqItem.RoiId, reqItem.Units, hctx)
+	cacheKey, err := memoisation.MakeCacheKey(scanItem, exprItem, reqItem.QuantId, reqItem.RoiId, reqItem.Units)
 	if err != nil {
 		return nil, err
 	}
@@ -78,41 +89,6 @@ func HandleExpressionOutputReq(req *protos.ExpressionOutputReq, hctx wsHelpers.H
 		Key:   cacheKey,
 		JobId: jobIdToWaitFor,
 	}, nil
-}
-
-func makeCacheKey(scanId, quantId, expressionId, roiId string, units protos.DataUnit, hctx wsHelpers.HandlerContext) (string, error) {
-	// Keys are of the form:
-	// {"scanId":"602735105","exprId":"q2ns80oc4452eldt","quantId":"quant-aqpxxfk6i05gcsy3","roiId":"AllPoints-602735105","units":0},Resp:false,exprMod:1772129285,spectra:3298,90,0
-	// So we need scan summary details and the expression last modified time
-	scanItem, _, err := wsHelpers.GetUserObjectById[protos.ScanItem](true, scanId, protos.ObjectType_OT_SCAN, dbCollections.ScansName, hctx)
-	if err != nil {
-		return "", fmt.Errorf("Failed to read scan item for scan \"%v\": %v", scanId, err)
-	}
-
-	exprItem, _, err := wsHelpers.GetUserObjectById[protos.DataExpression](false, expressionId, protos.ObjectType_OT_EXPRESSION, dbCollections.ExpressionsName, hctx)
-	if err != nil {
-		return "", fmt.Errorf("Failed to read expression for scan \"%v\": %v", expressionId, err)
-	}
-
-	normalSpectraCount := scanItem.ContentCounts["NormalSpectra"]
-	dwellSpectraCount := scanItem.ContentCounts["DwellSpectra"]
-
-	spectrumTimeStamp := 0 // Comes from SpectrumResp.timeStampUnixSec, seems to always be 0 for now??
-
-	memCacheKey := fmt.Sprintf(
-		`{"scanId":"%v","exprId":"%v","quantId":"%v","roiId":"%v","units":%v},Resp:false,exprMod:%v,spectra:%v,%v,%v`,
-		scanId,
-		expressionId,
-		quantId,
-		roiId,
-		units.Number(),
-		exprItem.ModifiedUnixSec,
-		normalSpectraCount,
-		dwellSpectraCount,
-		spectrumTimeStamp,
-	)
-
-	return memCacheKey, nil
 }
 
 /*

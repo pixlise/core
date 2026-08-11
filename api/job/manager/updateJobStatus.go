@@ -9,6 +9,7 @@ import (
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"google.golang.org/protobuf/proto"
 )
 
 // Updates job status in DB and sends out notification to listening clients
@@ -41,26 +42,24 @@ func (jm *JobManager) updateJobStatus(jobId string, status protos.JobStatus_Stat
 		dbStatus, err := jm.readJobStatus(jobId)
 		if err != nil {
 			jm.svcs.Log.Errorf("updateJobStatus failed to read job status for %v while sending to client. Error: %v", jobId, err)
-		} else if len(dbStatus.RequestorUserId) > 0 && dbStatus.RequestorUserId != sessionuser.PIXLISESystemUserId {
-			if sess, ok := jm.userSessionLookup[dbStatus.RequestorUserId]; ok && sess != nil {
-				// Special case for now - if it's a quant, send a quant create upd!
-				if dbStatus.JobType == protos.JobType_JT_RUN_QUANT {
-					wsUpd := protos.WSMessage{
-						Contents: &protos.WSMessage_QuantCreateUpd{
-							QuantCreateUpd: &protos.QuantCreateUpd{
-								Status: dbStatus,
-							},
-						},
-					}
+		} else {
+			jm.broadcastJobStatus(dbStatus)
+		}
+	}
 
-					wsHelpers.SendForSession(sess, &wsUpd)
-				}
+	return nil
+}
 
-				// Notify client of job status change
+func (jm *JobManager) broadcastJobStatus(jobStatus *protos.JobStatus) {
+	if len(jobStatus.RequestorUserId) > 0 && jobStatus.RequestorUserId != sessionuser.PIXLISESystemUserId {
+		// We were only sending quant updates to the original job owner. We send job updates as broadcasts to all!
+		if sess, ok := jm.userSessionLookup[jobStatus.RequestorUserId]; ok && sess != nil {
+			// Special case for now - if it's a quant, send a quant create upd!
+			if jobStatus.JobType == protos.JobType_JT_RUN_QUANT {
 				wsUpd := protos.WSMessage{
-					Contents: &protos.WSMessage_JobListUpd{
-						JobListUpd: &protos.JobListUpd{
-							Job: dbStatus,
+					Contents: &protos.WSMessage_QuantCreateUpd{
+						QuantCreateUpd: &protos.QuantCreateUpd{
+							Status: jobStatus,
 						},
 					},
 				}
@@ -70,7 +69,23 @@ func (jm *JobManager) updateJobStatus(jobId string, status protos.JobStatus_Stat
 		}
 	}
 
-	return nil
+	// Notify client of job status change
+	jobUpd := protos.WSMessage{
+		Contents: &protos.WSMessage_JobListUpd{
+			JobListUpd: &protos.JobListUpd{
+				Job: jobStatus,
+			},
+		},
+	}
+
+	bytes, err := proto.Marshal(&jobUpd)
+	if err == nil {
+		if jm.melody == nil {
+			jm.svcs.Log.Errorf("Failed to broadcast job list update for %v - melody is nil", jobStatus.JobId)
+		} else {
+			jm.melody.BroadcastBinary(bytes)
+		}
+	}
 }
 
 func (jm *JobManager) readJobStatus(jobId string) (*protos.JobStatus, error) {
