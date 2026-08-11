@@ -351,7 +351,7 @@ func Example_jobmanager_QueueStartup() {
 	// quant-id456-node-1|COMPLETE|
 }
 
-func completeJobFunc(jg *protos.JobGroupConfig, jstatus *protos.JobStatus, sess *melody.Session, svcs *services.APIServices) error {
+func completeJobFunc(jg *protos.JobGroupConfig, jstatus *protos.JobStatus, sess *melody.Session, svcs *services.APIServices) (*protos.JobStatus, error) {
 	fmt.Printf("completeJob func called for: %v, state: %v, session exists: %v\n", jg.JobGroupId, jstatus.Status, sess != nil)
-	return nil
+	return jstatus, nil
 }
