@@ -10,6 +10,7 @@ import (
 var JobComplete_CombineCSVs = "combine_csvs"
 var JobComplete_SingleCSV = "single_csvs"
 var JobComplete_LuaExpression = "lua_expression"
+var JobComplete_PythonScript = "python_script"
 
 type JobManagerCompletionFunction func(*protos.JobGroupConfig, *protos.JobStatus, *melody.Session, *services.APIServices) (*protos.JobStatus, error)
 
@@ -32,6 +33,7 @@ func CreateJobManager(svcs *services.APIServices, m *melody.Melody, startupQueue
 			JobComplete_CombineCSVs:   completeQuantMultiNodeJob,
 			JobComplete_SingleCSV:     completeQuantSingleMapJob,
 			JobComplete_LuaExpression: completeExpressionJob,
+			JobComplete_PythonScript:  completePythonScript,
 		},
 		startNodes:        startNodes,
 		userSessionLookup: map[string]*melody.Session{},

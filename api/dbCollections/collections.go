@@ -31,6 +31,7 @@ const PiquantVersionName = "piquantVersion"
 const QuantificationsName = "quantifications"
 const QuantificationZStacksName = "quantificationZStacks"
 const ReferencesName = "references"
+const SourceRepositoriesName = "sourceRepositories"
 const RegionsOfInterestName = "regionsOfInterest"
 const ScanAutoShareName = "scanAutoShare"
 const ScanDefaultImagesName = "scanDefaultImages"
@@ -72,6 +73,7 @@ func GetAllCollections() []string {
 		QuantificationsName,
 		QuantificationZStacksName,
 		ReferencesName,
+		SourceRepositoriesName,
 		RegionsOfInterestName,
 		ScanAutoShareName,
 		ScanDefaultImagesName,

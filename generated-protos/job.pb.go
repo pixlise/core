@@ -24,15 +24,14 @@ const (
 type JobType int32
 
 const (
-	JobType_JT_UNKNOWN       JobType = 0 // https://protobuf.dev/programming-guides/dos-donts/ says specify an unknown as 0
-	JobType_JT_IMPORT_SCAN   JobType = 1
-	JobType_JT_REIMPORT_SCAN JobType = 2
-	JobType_JT_IMPORT_IMAGE  JobType = 3
-	JobType_JT_RUN_QUANT     JobType = 4
-	JobType_JT_RUN_FIT       JobType = 5
-	// TODO:
-	// Future types:
-	JobType_JT_RUN_EXPRESSION JobType = 6
+	JobType_JT_UNKNOWN           JobType = 0 // https://protobuf.dev/programming-guides/dos-donts/ says specify an unknown as 0
+	JobType_JT_IMPORT_SCAN       JobType = 1
+	JobType_JT_REIMPORT_SCAN     JobType = 2
+	JobType_JT_IMPORT_IMAGE      JobType = 3
+	JobType_JT_RUN_QUANT         JobType = 4
+	JobType_JT_RUN_FIT           JobType = 5
+	JobType_JT_RUN_EXPRESSION    JobType = 6
+	JobType_JT_RUN_PYTHON_SCRIPT JobType = 7
 )
 
 // Enum value maps for JobType.
@@ -45,15 +44,17 @@ var (
 		4: "JT_RUN_QUANT",
 		5: "JT_RUN_FIT",
 		6: "JT_RUN_EXPRESSION",
+		7: "JT_RUN_PYTHON_SCRIPT",
 	}
 	JobType_value = map[string]int32{
-		"JT_UNKNOWN":        0,
-		"JT_IMPORT_SCAN":    1,
-		"JT_REIMPORT_SCAN":  2,
-		"JT_IMPORT_IMAGE":   3,
-		"JT_RUN_QUANT":      4,
-		"JT_RUN_FIT":        5,
-		"JT_RUN_EXPRESSION": 6,
+		"JT_UNKNOWN":           0,
+		"JT_IMPORT_SCAN":       1,
+		"JT_REIMPORT_SCAN":     2,
+		"JT_IMPORT_IMAGE":      3,
+		"JT_RUN_QUANT":         4,
+		"JT_RUN_FIT":           5,
+		"JT_RUN_EXPRESSION":    6,
+		"JT_RUN_PYTHON_SCRIPT": 7,
 	}
 )
 
@@ -1261,7 +1262,7 @@ const file_job_proto_rawDesc = "" +
 	"\aUNKNOWN\x10\x00\x12\x10\n" +
 	"\fAFTER_IMPORT\x10\x01\x12\x0e\n" +
 	"\n" +
-	"TIME_BASED\x10\x02*\x91\x01\n" +
+	"TIME_BASED\x10\x02*\xab\x01\n" +
 	"\aJobType\x12\x0e\n" +
 	"\n" +
 	"JT_UNKNOWN\x10\x00\x12\x12\n" +
@@ -1271,7 +1272,8 @@ const file_job_proto_rawDesc = "" +
 	"\fJT_RUN_QUANT\x10\x04\x12\x0e\n" +
 	"\n" +
 	"JT_RUN_FIT\x10\x05\x12\x15\n" +
-	"\x11JT_RUN_EXPRESSION\x10\x06*<\n" +
+	"\x11JT_RUN_EXPRESSION\x10\x06\x12\x18\n" +
+	"\x14JT_RUN_PYTHON_SCRIPT\x10\a*<\n" +
 	"\x0fNodeIndexMethod\x12\b\n" +
 	"\x04NONE\x10\x00\x12\t\n" +
 	"\x05LOCAL\x10\x01\x12\n" +

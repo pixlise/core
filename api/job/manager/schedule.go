@@ -66,6 +66,12 @@ func validateJob(job *protos.ScheduledJob) error {
 			"configName": {},
 			"quantMode":  {},
 		},
+		protos.JobType_JT_RUN_PYTHON_SCRIPT: {
+			"scanId":       {},
+			"quant":        {QUANT_BY_NAME_PREFIX, QUANT_BY_ID_PREFIX},
+			"repositoryId": {},
+			"scriptName":   {},
+		},
 	}
 
 	acceptableJobs := utils.GetMapKeys(validJobTypeParams)

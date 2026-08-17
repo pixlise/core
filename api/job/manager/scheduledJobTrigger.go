@@ -206,6 +206,16 @@ func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.Sca
 		jm.svcs.Log.Infof("RunScheduledJob submitting quant job %v...", job.Id)
 		_, err = jm.SubmitQuantJob(createParams, nil, nil)
 		return err
+	} else if job.JobType == protos.JobType_JT_RUN_PYTHON_SCRIPT {
+		// Get parameters
+		params, err := jm.getProcessedJobParams([]string{"repositoryId", "scriptName", "scanId", "quant"}, job, scan.Id)
+		if err != nil {
+			return err
+		}
+
+		jm.svcs.Log.Infof("RunScheduledJob submitting python job %v...", job.Id)
+		_, err = jm.SubmitPythonJob(params["repositoryId"], params["scriptName"], params["scanId"], params["quantId"], nil, nil)
+		return err
 	}
 
 	return fmt.Errorf("RunScheduledJob cannot run job %v of type %v", job.Id, job.JobType)
