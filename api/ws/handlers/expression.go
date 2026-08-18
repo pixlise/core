@@ -3,6 +3,7 @@ package wsHandler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -385,5 +386,41 @@ func HandleExpressionDisplaySettingsWriteReq(req *protos.ExpressionDisplaySettin
 
 	return &protos.ExpressionDisplaySettingsWriteResp{
 		DisplaySettings: req.DisplaySettings,
+	}, nil
+}
+
+func HandleBulkReplaceExpressionModuleReferenceReq(req *protos.BulkReplaceExpressionModuleReferenceReq, hctx wsHelpers.HandlerContext) (*protos.BulkReplaceExpressionModuleReferenceResp, error) {
+	errors := map[string]string{}
+
+	now := hctx.Svcs.TimeStamper.GetTimeNowSec()
+
+	for _, exprId := range req.ExpressionIds {
+		exprItem, _, err := wsHelpers.GetUserObjectById[protos.DataExpression](false, exprId, protos.ObjectType_OT_EXPRESSION, dbCollections.ExpressionsName, hctx)
+		if err != nil {
+			errors[exprId] = fmt.Errorf("Failed to read expression %v: %v", exprId, err).Error()
+		}
+
+		// replace the version
+		found := false
+		for _, ref := range exprItem.ModuleReferences {
+			if ref.ModuleId == req.ModuleId {
+				ref.Version = req.Version
+				exprItem.ModifiedUnixSec = uint32(now)
+				found = true
+				break
+			}
+		}
+
+		if found {
+			_, err := updateExpression(exprItem, hctx)
+
+			if err != nil {
+				errors[exprId] = fmt.Errorf("Failed to update expression %v: %v", exprId, err).Error()
+			}
+		}
+	}
+
+	return &protos.BulkReplaceExpressionModuleReferenceResp{
+		Errors: errors,
 	}, nil
 }
