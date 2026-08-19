@@ -437,10 +437,11 @@ func HandleBulkReplaceExpressionModuleReferenceReq(req *protos.BulkReplaceExpres
 
 			if found {
 				_, err := updateExpression(exprItem, hctx)
-
 				if err != nil {
 					errors[exprId] = fmt.Errorf("Failed to update expression %v: %v", exprId, err).Error()
 				}
+			} else {
+				errors[exprId] = fmt.Errorf("Skipped updating reference for expression %v - it does not reference module %v", exprId, req.ModuleId).Error()
 			}
 		}
 	}
