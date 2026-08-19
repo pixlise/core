@@ -229,6 +229,8 @@ func testExpressionModuleRefBulkChange(apiHost string) {
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 
+	expr3Id := wstestlib.GetIdCreated("ExprModRef3")
+
 	u1.AddSendReqAction("Send bulk edit for no ids",
 		`{"bulkReplaceExpressionModuleReferenceReq":{
 			"moduleId": "${IDLOAD=ExprRefModuleId}",
@@ -298,29 +300,44 @@ func testExpressionModuleRefBulkChange(apiHost string) {
 		}`, moduleId),
 	)
 
-	u1.AddSendReqAction("Send bulk edit, should succeed but return errors for missing expr and expr 3 that doesn't have ref",
+	u1.AddSendReqAction("Send bulk edit, should succeed but return errors for missing expr",
 		`{"bulkReplaceExpressionModuleReferenceReq":{
 			"moduleId": "${IDLOAD=ExprRefModuleId}",
 			"version": {"patch": 2},
 			"expressionIds": [
 				"${IDLOAD=ExprModRef1}",
 				"${IDLOAD=ExprModRef2}",
-				"${IDLOAD=ExprModRef3}",
 				"non-existant-expr-id"
 			]
 		}}`,
 		`{"msgId":10,"status":"WS_OK",
 			"bulkReplaceExpressionModuleReferenceResp": {
 			"errors": {
-			"non-existant-expr-id": "Failed to read expression non-existant-expr-id: non-existant-expr-id not found"
+				"non-existant-expr-id": "Failed to read expression non-existant-expr-id: non-existant-expr-id not found"
 			}
 		}}`,
+	)
+
+	u1.AddSendReqAction("Send bulk edit, should succeed but return error for expr 3 that doesn't have ref",
+		`{"bulkReplaceExpressionModuleReferenceReq":{
+			"moduleId": "${IDLOAD=ExprRefModuleId}",
+			"version": {"patch": 2},
+			"expressionIds": [
+				"${IDLOAD=ExprModRef3}"
+			]
+		}}`,
+		fmt.Sprintf(`{"msgId":11,"status":"WS_OK",
+			"bulkReplaceExpressionModuleReferenceResp": {
+			"errors": {
+				"%v": "Skipped updating reference for expression %v - it does not reference module %v"
+			}
+		}}`, expr3Id, expr3Id, moduleId),
 	)
 
 	// Check each expression now
 	u1.AddSendReqAction("Get expr 1",
 		`{"expressionGetReq":{"id": "${IDLOAD=ExprModRef1}"}}`,
-		`{"msgId":11,"status":"WS_OK","expressionGetResp": {
+		`{"msgId":12,"status":"WS_OK","expressionGetResp": {
 			"expression": {
 				"id":"${IDCHK=ExprModRef1}",
 				"name": "User1 Expression1",
@@ -358,7 +375,7 @@ func testExpressionModuleRefBulkChange(apiHost string) {
 
 	u1.AddSendReqAction("Get expr 2",
 		`{"expressionGetReq":{"id": "${IDLOAD=ExprModRef2}"}}`,
-		`{"msgId":12,"status":"WS_OK","expressionGetResp": {
+		`{"msgId":13,"status":"WS_OK","expressionGetResp": {
 			"expression": {
 				"id":"${IDCHK=ExprModRef2}",
 				"name": "User1 Expression2",
@@ -389,7 +406,7 @@ func testExpressionModuleRefBulkChange(apiHost string) {
 
 	u1.AddSendReqAction("Get expr 3",
 		`{"expressionGetReq":{"id": "${IDLOAD=ExprModRef3}"}}`,
-		`{"msgId":13,"status":"WS_OK","expressionGetResp": {
+		`{"msgId":14,"status":"WS_OK","expressionGetResp": {
 			"expression": {
 				"id":"${IDCHK=ExprModRef3}",
 				"name": "User1 Expression3",
