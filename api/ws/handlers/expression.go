@@ -3,11 +3,13 @@ package wsHandler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
+	"github.com/pixlise/core/v4/core/semanticversion"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -385,5 +387,66 @@ func HandleExpressionDisplaySettingsWriteReq(req *protos.ExpressionDisplaySettin
 
 	return &protos.ExpressionDisplaySettingsWriteResp{
 		DisplaySettings: req.DisplaySettings,
+	}, nil
+}
+
+func HandleBulkReplaceExpressionModuleReferenceReq(req *protos.BulkReplaceExpressionModuleReferenceReq, hctx wsHelpers.HandlerContext) (*protos.BulkReplaceExpressionModuleReferenceResp, error) {
+	if err := wsHelpers.CheckStringField(&req.ModuleId, "ModuleId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckFieldLength(req.ExpressionIds, "ExpressionIds", 1, 2000); err != nil {
+		return nil, err
+	}
+
+	// Check that the module+version specified are valid
+	_ /*module*/, _, err := wsHelpers.GetUserObjectById[protos.DataModuleDB](false, req.ModuleId, protos.ObjectType_OT_DATA_MODULE, dbCollections.ModulesName, hctx)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errorwithstatus.MakeNotFoundError(req.ModuleId)
+		}
+		return nil, err
+	}
+
+	_ /*moduleVersion*/, err = wsHelpers.GetModuleVersion(req.ModuleId, req.Version, hctx.Svcs.MongoDB)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errorwithstatus.MakeNotFoundError(req.ModuleId + ", version: " + semanticversion.SemanticVersionToString(req.Version))
+		}
+		return nil, fmt.Errorf("Failed to get version: %v for module: %v. Error: %v", semanticversion.SemanticVersionToString(req.Version), req.ModuleId, err)
+	}
+
+	errors := map[string]string{}
+
+	now := hctx.Svcs.TimeStamper.GetTimeNowSec()
+
+	for _, exprId := range req.ExpressionIds {
+		exprItem, _, err := wsHelpers.GetUserObjectById[protos.DataExpression](false, exprId, protos.ObjectType_OT_EXPRESSION, dbCollections.ExpressionsName, hctx)
+		if err != nil {
+			errors[exprId] = fmt.Errorf("Failed to read expression %v: %v", exprId, err).Error()
+		} else {
+			// replace the version
+			found := false
+			for _, ref := range exprItem.ModuleReferences {
+				if ref.ModuleId == req.ModuleId {
+					ref.Version = req.Version
+					exprItem.ModifiedUnixSec = uint32(now)
+					found = true
+					break
+				}
+			}
+
+			if found {
+				_, err := updateExpression(exprItem, hctx)
+				if err != nil {
+					errors[exprId] = fmt.Errorf("Failed to update expression %v: %v", exprId, err).Error()
+				}
+			} else {
+				errors[exprId] = fmt.Errorf("Skipped updating reference for expression %v - it does not reference module %v", exprId, req.ModuleId).Error()
+			}
+		}
+	}
+
+	return &protos.BulkReplaceExpressionModuleReferenceResp{
+		Errors: errors,
 	}, nil
 }

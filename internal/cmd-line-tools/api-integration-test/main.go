@@ -469,6 +469,8 @@ func runLocalTests(apiHost string, isCI bool) {
 		},
 	})
 
+	testExpressionModuleRefBulkChange(apiHost)
+
 	testUserSearch(apiHost)
 	testUserDetails(apiHost, u1Id, u2Id)
 	if !isCI {

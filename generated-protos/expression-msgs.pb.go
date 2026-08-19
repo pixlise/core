@@ -646,11 +646,116 @@ func (x *ExpressionDisplaySettingsGetResp) GetDisplaySettings() *ExpressionDispl
 	return nil
 }
 
+// requires(NONE)
+type BulkReplaceExpressionModuleReferenceReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ModuleId      string                 `protobuf:"bytes,1,opt,name=moduleId,proto3" json:"moduleId,omitempty"`
+	Version       *SemanticVersion       `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	ExpressionIds []string               `protobuf:"bytes,3,rep,name=expressionIds,proto3" json:"expressionIds,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BulkReplaceExpressionModuleReferenceReq) Reset() {
+	*x = BulkReplaceExpressionModuleReferenceReq{}
+	mi := &file_expression_msgs_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BulkReplaceExpressionModuleReferenceReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BulkReplaceExpressionModuleReferenceReq) ProtoMessage() {}
+
+func (x *BulkReplaceExpressionModuleReferenceReq) ProtoReflect() protoreflect.Message {
+	mi := &file_expression_msgs_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BulkReplaceExpressionModuleReferenceReq.ProtoReflect.Descriptor instead.
+func (*BulkReplaceExpressionModuleReferenceReq) Descriptor() ([]byte, []int) {
+	return file_expression_msgs_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *BulkReplaceExpressionModuleReferenceReq) GetModuleId() string {
+	if x != nil {
+		return x.ModuleId
+	}
+	return ""
+}
+
+func (x *BulkReplaceExpressionModuleReferenceReq) GetVersion() *SemanticVersion {
+	if x != nil {
+		return x.Version
+	}
+	return nil
+}
+
+func (x *BulkReplaceExpressionModuleReferenceReq) GetExpressionIds() []string {
+	if x != nil {
+		return x.ExpressionIds
+	}
+	return nil
+}
+
+type BulkReplaceExpressionModuleReferenceResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Errors        map[string]string      `protobuf:"bytes,1,rep,name=errors,proto3" json:"errors,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BulkReplaceExpressionModuleReferenceResp) Reset() {
+	*x = BulkReplaceExpressionModuleReferenceResp{}
+	mi := &file_expression_msgs_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BulkReplaceExpressionModuleReferenceResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BulkReplaceExpressionModuleReferenceResp) ProtoMessage() {}
+
+func (x *BulkReplaceExpressionModuleReferenceResp) ProtoReflect() protoreflect.Message {
+	mi := &file_expression_msgs_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BulkReplaceExpressionModuleReferenceResp.ProtoReflect.Descriptor instead.
+func (*BulkReplaceExpressionModuleReferenceResp) Descriptor() ([]byte, []int) {
+	return file_expression_msgs_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *BulkReplaceExpressionModuleReferenceResp) GetErrors() map[string]string {
+	if x != nil {
+		return x.Errors
+	}
+	return nil
+}
+
 var File_expression_msgs_proto protoreflect.FileDescriptor
 
 const file_expression_msgs_proto_rawDesc = "" +
 	"\n" +
-	"\x15expression-msgs.proto\x1a\x11expressions.proto\x1a\x13search-params.proto\"F\n" +
+	"\x15expression-msgs.proto\x1a\x11expressions.proto\x1a\x13search-params.proto\x1a\rversion.proto\"F\n" +
 	"\x11ExpressionListReq\x121\n" +
 	"\fsearchParams\x18\x01 \x01(\v2\r.SearchParamsR\fsearchParams\"\xad\x01\n" +
 	"\x12ExpressionListResp\x12F\n" +
@@ -687,7 +792,16 @@ const file_expression_msgs_proto_rawDesc = "" +
 	"\x1fExpressionDisplaySettingsGetReq\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"h\n" +
 	" ExpressionDisplaySettingsGetResp\x12D\n" +
-	"\x0fdisplaySettings\x18\x01 \x01(\v2\x1a.ExpressionDisplaySettingsR\x0fdisplaySettingsB\n" +
+	"\x0fdisplaySettings\x18\x01 \x01(\v2\x1a.ExpressionDisplaySettingsR\x0fdisplaySettings\"\x97\x01\n" +
+	"'BulkReplaceExpressionModuleReferenceReq\x12\x1a\n" +
+	"\bmoduleId\x18\x01 \x01(\tR\bmoduleId\x12*\n" +
+	"\aversion\x18\x02 \x01(\v2\x10.SemanticVersionR\aversion\x12$\n" +
+	"\rexpressionIds\x18\x03 \x03(\tR\rexpressionIds\"\xb4\x01\n" +
+	"(BulkReplaceExpressionModuleReferenceResp\x12M\n" +
+	"\x06errors\x18\x01 \x03(\v25.BulkReplaceExpressionModuleReferenceResp.ErrorsEntryR\x06errors\x1a9\n" +
+	"\vErrorsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\n" +
 	"Z\b.;protosb\x06proto3"
 
 var (
@@ -702,44 +816,50 @@ func file_expression_msgs_proto_rawDescGZIP() []byte {
 	return file_expression_msgs_proto_rawDescData
 }
 
-var file_expression_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_expression_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_expression_msgs_proto_goTypes = []any{
-	(*ExpressionListReq)(nil),                  // 0: ExpressionListReq
-	(*ExpressionListResp)(nil),                 // 1: ExpressionListResp
-	(*ExpressionGetReq)(nil),                   // 2: ExpressionGetReq
-	(*ExpressionGetResp)(nil),                  // 3: ExpressionGetResp
-	(*ExpressionWriteReq)(nil),                 // 4: ExpressionWriteReq
-	(*ExpressionWriteResp)(nil),                // 5: ExpressionWriteResp
-	(*ExpressionDeleteReq)(nil),                // 6: ExpressionDeleteReq
-	(*ExpressionDeleteResp)(nil),               // 7: ExpressionDeleteResp
-	(*ExpressionWriteExecStatReq)(nil),         // 8: ExpressionWriteExecStatReq
-	(*ExpressionWriteExecStatResp)(nil),        // 9: ExpressionWriteExecStatResp
-	(*ExpressionDisplaySettingsWriteReq)(nil),  // 10: ExpressionDisplaySettingsWriteReq
-	(*ExpressionDisplaySettingsWriteResp)(nil), // 11: ExpressionDisplaySettingsWriteResp
-	(*ExpressionDisplaySettingsGetReq)(nil),    // 12: ExpressionDisplaySettingsGetReq
-	(*ExpressionDisplaySettingsGetResp)(nil),   // 13: ExpressionDisplaySettingsGetResp
-	nil,                                        // 14: ExpressionListResp.ExpressionsEntry
-	(*SearchParams)(nil),                       // 15: SearchParams
-	(*DataExpression)(nil),                     // 16: DataExpression
-	(*DataExpressionExecStats)(nil),            // 17: DataExpressionExecStats
-	(*ExpressionDisplaySettings)(nil),          // 18: ExpressionDisplaySettings
+	(*ExpressionListReq)(nil),                        // 0: ExpressionListReq
+	(*ExpressionListResp)(nil),                       // 1: ExpressionListResp
+	(*ExpressionGetReq)(nil),                         // 2: ExpressionGetReq
+	(*ExpressionGetResp)(nil),                        // 3: ExpressionGetResp
+	(*ExpressionWriteReq)(nil),                       // 4: ExpressionWriteReq
+	(*ExpressionWriteResp)(nil),                      // 5: ExpressionWriteResp
+	(*ExpressionDeleteReq)(nil),                      // 6: ExpressionDeleteReq
+	(*ExpressionDeleteResp)(nil),                     // 7: ExpressionDeleteResp
+	(*ExpressionWriteExecStatReq)(nil),               // 8: ExpressionWriteExecStatReq
+	(*ExpressionWriteExecStatResp)(nil),              // 9: ExpressionWriteExecStatResp
+	(*ExpressionDisplaySettingsWriteReq)(nil),        // 10: ExpressionDisplaySettingsWriteReq
+	(*ExpressionDisplaySettingsWriteResp)(nil),       // 11: ExpressionDisplaySettingsWriteResp
+	(*ExpressionDisplaySettingsGetReq)(nil),          // 12: ExpressionDisplaySettingsGetReq
+	(*ExpressionDisplaySettingsGetResp)(nil),         // 13: ExpressionDisplaySettingsGetResp
+	(*BulkReplaceExpressionModuleReferenceReq)(nil),  // 14: BulkReplaceExpressionModuleReferenceReq
+	(*BulkReplaceExpressionModuleReferenceResp)(nil), // 15: BulkReplaceExpressionModuleReferenceResp
+	nil,                               // 16: ExpressionListResp.ExpressionsEntry
+	nil,                               // 17: BulkReplaceExpressionModuleReferenceResp.ErrorsEntry
+	(*SearchParams)(nil),              // 18: SearchParams
+	(*DataExpression)(nil),            // 19: DataExpression
+	(*DataExpressionExecStats)(nil),   // 20: DataExpressionExecStats
+	(*ExpressionDisplaySettings)(nil), // 21: ExpressionDisplaySettings
+	(*SemanticVersion)(nil),           // 22: SemanticVersion
 }
 var file_expression_msgs_proto_depIdxs = []int32{
-	15, // 0: ExpressionListReq.searchParams:type_name -> SearchParams
-	14, // 1: ExpressionListResp.expressions:type_name -> ExpressionListResp.ExpressionsEntry
-	16, // 2: ExpressionGetResp.expression:type_name -> DataExpression
-	16, // 3: ExpressionWriteReq.expression:type_name -> DataExpression
-	16, // 4: ExpressionWriteResp.expression:type_name -> DataExpression
-	17, // 5: ExpressionWriteExecStatReq.stats:type_name -> DataExpressionExecStats
-	18, // 6: ExpressionDisplaySettingsWriteReq.displaySettings:type_name -> ExpressionDisplaySettings
-	18, // 7: ExpressionDisplaySettingsWriteResp.displaySettings:type_name -> ExpressionDisplaySettings
-	18, // 8: ExpressionDisplaySettingsGetResp.displaySettings:type_name -> ExpressionDisplaySettings
-	16, // 9: ExpressionListResp.ExpressionsEntry.value:type_name -> DataExpression
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	18, // 0: ExpressionListReq.searchParams:type_name -> SearchParams
+	16, // 1: ExpressionListResp.expressions:type_name -> ExpressionListResp.ExpressionsEntry
+	19, // 2: ExpressionGetResp.expression:type_name -> DataExpression
+	19, // 3: ExpressionWriteReq.expression:type_name -> DataExpression
+	19, // 4: ExpressionWriteResp.expression:type_name -> DataExpression
+	20, // 5: ExpressionWriteExecStatReq.stats:type_name -> DataExpressionExecStats
+	21, // 6: ExpressionDisplaySettingsWriteReq.displaySettings:type_name -> ExpressionDisplaySettings
+	21, // 7: ExpressionDisplaySettingsWriteResp.displaySettings:type_name -> ExpressionDisplaySettings
+	21, // 8: ExpressionDisplaySettingsGetResp.displaySettings:type_name -> ExpressionDisplaySettings
+	22, // 9: BulkReplaceExpressionModuleReferenceReq.version:type_name -> SemanticVersion
+	17, // 10: BulkReplaceExpressionModuleReferenceResp.errors:type_name -> BulkReplaceExpressionModuleReferenceResp.ErrorsEntry
+	19, // 11: ExpressionListResp.ExpressionsEntry.value:type_name -> DataExpression
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_expression_msgs_proto_init() }
@@ -749,13 +869,14 @@ func file_expression_msgs_proto_init() {
 	}
 	file_expressions_proto_init()
 	file_search_params_proto_init()
+	file_version_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_expression_msgs_proto_rawDesc), len(file_expression_msgs_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
