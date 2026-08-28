@@ -1,11 +1,14 @@
 package jobmanager
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/job/jobrunner"
 	expressionrunner "github.com/pixlise/core/v4/api/job/jobrunner/expression-runner"
 	"github.com/pixlise/core/v4/api/memoisation"
 	"github.com/pixlise/core/v4/api/quantification"
@@ -13,6 +16,7 @@ import (
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func (jm *JobManager) RunScheduledPostImportJobs(scan *protos.ScanItem) error {
@@ -119,6 +123,9 @@ func (jm *JobManager) getProcessedJobParams(names []string, job *protos.Schedule
 	}
 
 	scanId := result["scanId"]
+	if scanId == SCAN_ID_NONE {
+		scanId = ""
+	}
 	if scanId == SCAN_ID_AUTO_IMPORTED {
 		// Fall back on the one that was specified to this function
 		scanId = importedScanId
@@ -128,13 +135,54 @@ func (jm *JobManager) getProcessedJobParams(names []string, job *protos.Schedule
 
 	// If we've still got to resolve the quant name, do it here
 	if len(resolveQuantName) > 0 {
-		// Look up this quant by name, find an id for it
-		quant := &protos.QuantificationSummary{}
-		err := expressionrunner.ReadOne(dbCollections.QuantificationsName, bson.M{"name": resolveQuantName, "scanId": scanId}, &quant, jm.svcs.MongoDB)
-		if err != nil {
-			return result, fmt.Errorf("Failed to find quantification \"%v\" for scan %v", resolveQuantName, scanId)
+		if len(scanId) <= 0 {
+			return result, errors.New("No scan id specified, cannot search for quant by name")
 		}
 
+		// Look up this quant by name, find an id for it
+		/*filter := bson.M{"$and": []bson.M{
+			bson.M{"params.userparams.name": resolveQuantName},
+			bson.M{"scanId": scanId},
+		}}*/
+		filter := bson.D{
+			{Key: "$and",
+				Value: bson.A{
+					bson.D{{Key: "params.userparams.name", Value: resolveQuantName}},
+					bson.D{{Key: "scanid", Value: scanId}},
+				},
+			},
+		}
+
+		ctx := context.TODO()
+		coll := jm.svcs.MongoDB.Collection(dbCollections.QuantificationsName)
+
+		cursor, err := coll.Find(ctx, filter, options.Find())
+		if err != nil {
+			return result, fmt.Errorf("Failed to find quantification \"%v\" for scan %v: %v", resolveQuantName, scanId, err)
+		}
+
+		quants := []*protos.QuantificationSummary{}
+		err = cursor.All(ctx, &quants)
+		if err != nil {
+			return result, fmt.Errorf("Failed to decode quantification(s) \"%v\" for scan %v: %v", resolveQuantName, scanId, err)
+		}
+
+		// If there is more than one, complain
+		if len(quants) == 0 {
+			return result, fmt.Errorf("No quantifications named \"%v\" found for scan %v", resolveQuantName, scanId)
+		} else if len(quants) > 1 {
+			return result, fmt.Errorf("Found more than one quantification \"%v\" for scan %v", resolveQuantName, scanId)
+		}
+
+		quant := quants[0]
+		/*
+			quant := &protos.QuantificationSummary{}
+			err := expressionrunner.ReadOne(dbCollections.QuantificationsName, filter, &quant, jm.svcs.MongoDB)
+			if err != nil {
+				//return result, fmt.Errorf("Failed to find quantification \"%v\" for scan %v", resolveQuantName, scanId)
+				return result, fmt.Errorf("Failed to find quantification \"%v\" for scan %v: %v", resolveQuantName, scanId, err)
+			}
+		*/
 		// Set the quant id
 		result["quantId"] = quant.Id
 	}
@@ -144,6 +192,10 @@ func (jm *JobManager) getProcessedJobParams(names []string, job *protos.Schedule
 
 func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.ScanItem) error {
 	if job.JobType == protos.JobType_JT_RUN_EXPRESSION {
+		if scan == nil {
+			return errors.New("No scanId specified")
+		}
+
 		// Get parameters
 		params, err := jm.getProcessedJobParams([]string{"scanId", "quant", "expressionId"}, job, scan.Id)
 		if err != nil {
@@ -170,6 +222,10 @@ func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.Sca
 		_, err = jm.SubmitExpressionJob(scanId, params["quantId"], params["expressionId"], roiId, cacheKey, nil, nil)
 		return err
 	} else if job.JobType == protos.JobType_JT_RUN_QUANT {
+		if scan == nil {
+			return errors.New("No scanId specified")
+		}
+
 		// Get parameters
 		params, err := jm.getProcessedJobParams([]string{"scanId", "elements", "quantName", "configName", "quantMode"}, job, scan.Id)
 		if err != nil {
@@ -205,6 +261,22 @@ func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.Sca
 
 		jm.svcs.Log.Infof("RunScheduledJob submitting quant job %v...", job.Id)
 		_, err = jm.SubmitQuantJob(createParams, nil, nil)
+		return err
+	} else if job.JobType == protos.JobType_JT_RUN_PYTHON_SCRIPT {
+		// Get parameters
+		importedScanId := ""
+		if scan != nil {
+			importedScanId = scan.Id
+		}
+
+		expectedParams := []string{"repositoryId", jobrunner.ArgBranchName, jobrunner.ArgExecFileName, "scanId", "quant"}
+		params, err := jm.getProcessedJobParams(expectedParams, job, importedScanId)
+		if err != nil {
+			return err
+		}
+
+		jm.svcs.Log.Infof("RunScheduledJob submitting python job %v...", job.Id)
+		_, err = jm.SubmitPythonJob(params["repositoryId"], params[jobrunner.ArgBranchName], params[jobrunner.ArgExecFileName], params["scanId"], params["quantId"], nil, nil)
 		return err
 	}
 

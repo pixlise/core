@@ -1,32 +1,35 @@
 package jobrunner
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"github.com/pixlise/core/v4/core/logger"
 )
 
-func installPythonLibs(pythonPath string) error {
+func installPythonLibs(pythonPath string, jobLog logger.ILogger) error {
 	f, err := os.Stat("requirements.txt")
 	if err == nil && !f.IsDir() && f.Name() == "requirements.txt" {
 		// Run pip
 		pipPath := filepath.Join(pythonPath, "pip")
-		fmt.Printf("Running %v to install requirements.txt...\n", pipPath)
+
+		jobLog.Infof("Running %v to install requirements.txt...\n", pipPath)
 		out, err := runCommand(pipPath, []string{"install", "-r", "requirements.txt"})
 		if err != nil {
-			fmt.Printf("Failed to install python libraries:\n%v\n", string(out))
+			jobLog.Errorf("Failed to install python libraries:\n%v\n", string(out))
 			return err
 		}
-		fmt.Println("  ...Success")
+		jobLog.Infof(out)
+		jobLog.Infof("  ...Success")
 	} else {
-		fmt.Println("requirements.txt not found")
+		jobLog.Infof("requirements.txt not found")
 	}
 
 	// No requirements.txt found or it worked... no errors!
 	return nil
 }
 
+/*
 func installLuaLibs() error {
 	// If we're dealing with a rockspec file, treat it as such
 	allargs := [][]string{}
@@ -57,3 +60,4 @@ func installLuaLibs() error {
 
 	return nil
 }
+*/

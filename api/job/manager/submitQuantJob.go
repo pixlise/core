@@ -15,7 +15,6 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-// Submit function for each kind of job type we support
 func (jm *JobManager) SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
 	prefix := "quant"
 	jobType := protos.JobType_JT_UNKNOWN

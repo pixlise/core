@@ -47,6 +47,7 @@ type JobNode struct {
 }
 
 var LuaExpressionCommand = "lua-expression"
+var PythonCommand = "python-script"
 
 func CreateJobNode(
 	jobRunnerNamePrefix string,
@@ -182,6 +183,10 @@ func (jn *JobNode) startJob(jobItem *protos.JobQueueItem, wg *sync.WaitGroup) {
 		fmt.Println("Running lua expression job locally!")
 		local = true
 		jobFunc = jn.runLocalLuaExpression
+	} else if jobItem.JobType == protos.JobType_JT_RUN_PYTHON_SCRIPT {
+		fmt.Println("Running python script job locally!")
+		local = true
+		jobFunc = jn.runLocalPythonScript
 	} else if len(jn.jobContainer) <= 0 {
 		fmt.Println("WARNING: Running job locally, recommended for use for tests only!")
 		local = true
@@ -305,4 +310,39 @@ func (jn *JobNode) runLocalLuaExpression(command string, args []string) (string,
 	err = os.WriteFile(ExpressionJobOutputFileName, []byte(sb.String()), 0777)
 
 	return "", err
+}
+
+func (jn *JobNode) runLocalPythonScript(pythonExePath string, args []string) (string, error) {
+	output := ""
+	// if command != PythonCommand {
+	// 	return output, fmt.Errorf("Expected job command: %v, got %v", PythonCommand, command)
+	// }
+
+	// Read args, expect key=value pairs
+	argLookup, err := utils.ReadKeyValueList([]string{"scanId", jobrunner.ArgExecFileName}, args)
+	if err != nil {
+		return output, fmt.Errorf("Python script failed to run - %v", err)
+	}
+
+	// Run the script with python3
+	scriptPath := argLookup[jobrunner.ArgExecFileName]
+	pythonArgs := []string{scriptPath}
+	if argLookup["scanId"] != "none" {
+		pythonArgs = append(pythonArgs, "scanId="+argLookup["scanId"])
+	}
+	if quantId, ok := argLookup["quantId"]; ok && quantId != "none" {
+		pythonArgs = append(pythonArgs, "quantId="+quantId)
+	}
+	cmd := exec.Command(pythonExePath, pythonArgs...)
+
+	// Run the script, if an error happens ensure we chdir and clean up before we return an error
+	err = nil
+	if out, cmdErr := cmd.CombinedOutput(); cmdErr != nil {
+		err = fmt.Errorf("Error while running python script \"%v\": %v", scriptPath, cmdErr)
+		output = string(out)
+	} else {
+		output = string(out)
+	}
+
+	return output, err
 }

@@ -21,12 +21,19 @@ var EnvBucketName = "JOB_BUCKET"
 var EnvPathName = "JOB_PATH"
 var EnvNodeIndexName = "NODE_INDEX"
 
+var ArgRepoUrlName = "repoUrl"
+var ArgRepoUserName = "repoUser"
+var ArgRepoSecretName = "repoSecret"
+var ArgBranchName = "branch"
+var ArgExecFileName = "scriptName"
+
 // Downloads files required for job to run and sets up libraries. Requires JOB_CONFIG environment variable
 // to be set to a JobConfig structure
 // Parameters:
 // - jobBucket: The S3 bucket to read job config from
 // - jobPath:   Path to the job in S3
 // - nodeIndex: Which node number are we on? Used to generate config for that node
+// - repoDetails: If not nil, we expect this to not have any blank fields - it describes how to download a repository so we can run code from it
 // - runFunc:   nil or a function to call when running the actual job
 func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileaccess.FileAccess, runFunc CommandRunner) error {
 	if runFunc == nil {
@@ -69,15 +76,6 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 		return fmt.Errorf("No command specified")
 	}
 
-	// Download required files
-	jobLog.Infof("Downloading files...")
-	for _, reqFile := range cfg.RequiredFiles {
-		err := downloadFile(jobLog, remoteFS, reqFile.RemoteBucket, reqFile.RemotePath, reqFile.LocalPath)
-		if err != nil {
-			return err
-		}
-	}
-
 	pythonPath := ""
 	if strings.Contains(cfg.Command, "python") {
 		jobLog.Infof("Using python virtual env...")
@@ -85,22 +83,83 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 		pythonPath, err = os.Getwd()
 		if err == nil {
 			pythonPath = filepath.Join(pythonPath, "bin")
+
+			if _, err := os.Stat(pythonPath); err != nil {
+				// Bin directory doesn't exist, maybe python isn't there. We may not be running on a job node, maybe it's local to the API
+				// itself, or it's a test, or whatever... Try create a virtual env and save its path here
+				out, err := runCommand("python", []string{"-m", "venv", "./venv"})
+				if err != nil {
+					return fmt.Errorf("Failed to create python venv: %v", err)
+				}
+
+				if len(out) > 0 {
+					jobLog.Infof("Python venv creation output: %v", out)
+				}
+
+				// At this point, assume we have a venv!
+				pythonPath, _ = os.Getwd()
+				pythonPath = filepath.Join(pythonPath, "venv", "bin")
+			}
 		}
 	}
+
+	// If arguments seem to want a repository downloaded, do that
+	var repoLocalPath, scriptPath, origWD string
+	for _, arg := range cfg.Args {
+		if !strings.HasPrefix(arg, ArgRepoUrlName) {
+			continue
+		}
+
+		// OK there's a repo URL defined, so ensure all fields we're interested in exist
+		argLookup, err := utils.ReadKeyValueList([]string{ArgRepoUrlName, ArgRepoUserName, ArgRepoSecretName, ArgBranchName, ArgExecFileName}, cfg.Args)
+		if err != nil {
+			return fmt.Errorf("Not all fields defined for repository download: %v", err)
+		}
+
+		// Download repo contents
+		// To do this, we just pull down the zip archive
+		// Example: https://github.com/pixlise/pixlise-ui/archive/refs/heads/main.zip
+		//          https://github.com/pixlise/pixlise-ui/archive/refs/heads/feature/back-end-expressions.zip
+		// We already know the URL, get the branch name
+		archiveLink := strings.TrimRight(argLookup[ArgRepoUrlName], " /")
+		archiveLink += "/" + path.Join("archive", "refs", "heads", argLookup[ArgBranchName]+".zip")
+
+		repoLocalPath, scriptPath, origWD, err = downloadRepository(archiveLink, argLookup[ArgRepoUserName], argLookup[ArgRepoSecretName], jobGroupCfg.JobGroupId, argLookup[ArgExecFileName], jobLog)
+
+		if err != nil {
+			return fmt.Errorf("Error while downloading repository \"%v\": %v", archiveLink, err)
+		}
+
+		// Set the script path argument to be relative to where we are now
+		for c, arg := range cfg.Args {
+			if strings.HasPrefix(arg, ArgExecFileName) {
+				cfg.Args[c] = fmt.Sprintf("%v=%v", ArgExecFileName, scriptPath)
+				break
+			}
+		}
+		break
+	}
+
+	// Download required files
+	jobLog.Infof("Downloading files...")
+	for _, reqFile := range cfg.RequiredFiles {
+		err = downloadFile(jobLog, remoteFS, reqFile.RemoteBucket, reqFile.RemotePath, reqFile.LocalPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	defer cleanup(origWD, repoLocalPath, cfg, jobLog)
 
 	jobLog.Infof("Checking for required libraries...")
 	commandToRun := cfg.Command
 
 	if strings.Contains(cfg.Command, "python") {
+		//cfg.Args = append(cfg.Args, "jobId="+jobGroupCfg.JobGroupId)
 		jobLog.Infof("Installing required python libraries...")
-		err = installPythonLibs(pythonPath)
-
-		// Modify the command!
-		commandToRun = filepath.Join(pythonPath, cfg.Command)
-	} /*else if strings.Contains(cfg.Command, "lua") {
-		jobLog.Infof("Installing required lua libraries...")
-		err = installLuaLibs()
-	}*/
+		err = installPythonLibs(pythonPath, jobLog)
+		commandToRun = filepath.Join(pythonPath, "python3")
+	}
 
 	if err != nil {
 		return err
@@ -122,7 +181,7 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 		outErr := fmt.Errorf("Job %v failed: %v", cfg.JobId, err)
 		jobLog.Errorf("%v", outErr)
 		if len(cmdStdOut) > 0 {
-			jobLog.Infof("%v", cmdStdOut)
+			jobLog.Infof("StdOut:\n%v", cmdStdOut)
 		}
 
 		return outErr
@@ -167,4 +226,22 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 	}
 
 	return nil
+}
+
+func cleanup(origWD string, repoPath string, cfg *protos.JobConfig, jobLog logger.ILogger) {
+	// Delete any downloaded files
+
+	// Delete the repo path if there is one
+	if len(repoPath) > 0 {
+		if err := os.RemoveAll(repoPath); err != nil {
+			jobLog.Errorf("Error cleaning \"%v\" after job: %v", repoPath, err)
+		}
+	}
+
+	// If we've got to CD back into an original dir, do that
+	if len(origWD) > 0 {
+		if err := os.Chdir(origWD); err != nil {
+			jobLog.Errorf("Error changing back to wd after job: %v", err)
+		}
+	}
 }

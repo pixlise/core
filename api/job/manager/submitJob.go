@@ -15,62 +15,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-/*
-	func (jm *JobManager) SubmitPythonJob(pythonScriptName string) error {
-		// Call the internal one, log the resulting errors if any
-		err := jm.internalSubmitPythonJob(pythonScriptName)
-		if err != nil {
-			jm.svcs.Log.Errorf("SubmitPythonJob error: %v", err)
-		}
-		return err
-	}
-*/
-
-/*
-	func (jm *JobManager) uploadJobFile(localPath string, remoteBucket string, remotePath string) (job.JobFilePath, error) {
-		result := job.JobFilePath{
-			LocalPath:    localPath,
-			RemoteBucket: remoteBucket,
-			RemotePath:   remotePath,
-		}
-
-		jm.svcs.Log.Infof("Upload %v -> s3://%v/%v", localPath, remoteBucket, remotePath)
-		bytes, err := os.ReadFile(localPath)
-		if err != nil {
-			return result, err
-		}
-
-		err = jm.svcs.FS.WriteObject(remoteBucket, remotePath, bytes)
-		return result, err
-	}
-
-/*
-
-	func (jm *JobManager) internalSubmitPythonJob(pythonScriptName string, requestorUserId string) error {
-		jg := &JobGroupConfig{
-			DockerImage: jm.svcs.Config.JobRunnerDockerImage,
-			NodeCount: 1,
-	    	NodeConfig:  job.JobConfig{
-				RequiredFiles: []JobFilePath{
-					{
-						LocalPath: pythonScriptName
-						RemoteBucket: jm.svcs.Config.DatasetsBucket,
-						RemotePath: filepaths.GetJobDataPath(scanId, jg.JobGroupId, pythonScriptName),
-					},
-				},
-				Command: "python",
-				Args:    []string{pythonScriptName},
-			},
-			//AssociatedScanId
-			JobName: pythonScriptName,
-			//ElementList
-			RequestorUserId: requestorUserId,
-		}
-
-		return jm.internalSubmitJob(jg)
-	}
-*/
-
 func (jm *JobManager) internalSubmitJob(jg *protos.JobGroupConfig, requestorSession *melody.Session) (*protos.JobStatus, error) {
 	if len(jg.JobGroupId) <= 0 {
 		return nil, errors.New("SubmitJob: JobGroupId not specified")
@@ -188,31 +132,3 @@ func (jm *JobManager) clearExistingJob(jobId string) error {
 
 	return nil
 }
-
-/*
-func makeJobIdAndType(jg *JobGroupConfig, idg idgen.IDGenerator) (string, protos.JobType) {
-	prefix := "job-"
-	jobType := protos.JobType_JT_UNKNOWN
-
-	cmd := strings.ToLower(jg.NodeConfig.Command)
-	if strings.Contains(cmd, "lua") {
-		prefix = "expr-"
-	} else if strings.Contains(cmd, "python") {
-		prefix = "python-"
-	} else if strings.Contains(cmd, "piquant") {
-		// Creating a new quantification command is actually "map"
-		if jg.NodeConfig.Args[0] == "map" {
-			prefix = "quant-"
-			jobType = protos.JobType_JT_RUN_QUANT
-		} else {
-			// Fit command is actually "quant"
-			if jg.NodeConfig.Args[0] == "quant" {
-				jobType = protos.JobType_JT_RUN_FIT
-			}
-			prefix = "piquant-" + jg.NodeConfig.Args[0] + "-"
-		}
-	}
-
-	return fmt.Sprintf("%v-%v", prefix, idg.GenObjectID()), jobType
-}
-*/
