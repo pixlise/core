@@ -101,23 +101,3 @@ func (jm *JobManager) GetJob(jobId string, isAdmin bool, requestorUserId string)
 
 	return status, config, nil
 }
-
-/*
-func HandleScanListJobsReq(req *protos.ScanListJobsReq, hctx wsHelpers.HandlerContext) (*protos.ScanListJobsResp, error) {
-	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.JobsName)
-	cursor, err := coll.Find(ctx, bson.M{}, options.Find())
-	if err != nil {
-		return nil, err
-	}
-
-	jobs := []*protos.JobGroupConfig{}
-	err = cursor.All(context.TODO(), &jobs)
-	if err != nil {
-		return nil, err
-	}
-
-	return &protos.ScanListJobsResp{
-		Jobs: jobs,
-	}, nil
-}*/

@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
 	"github.com/pixlise/core/v4/api/job/jobrunner"
@@ -18,7 +17,6 @@ import (
 	"github.com/pixlise/core/v4/core/timestamper"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -314,28 +312,37 @@ func (jn *JobNode) runLocalLuaExpression(command string, args []string) (string,
 	return "", err
 }
 
-func (jn *JobNode) runLocalPythonScript(command string, args []string) (string, error) {
-	if command != PythonCommand {
-		return "", fmt.Errorf("Expected job command: %v, got %v", PythonCommand, command)
-	}
+func (jn *JobNode) runLocalPythonScript(pythonExePath string, args []string) (string, error) {
+	output := ""
+	// if command != PythonCommand {
+	// 	return output, fmt.Errorf("Expected job command: %v, got %v", PythonCommand, command)
+	// }
 
 	// Read args, expect key=value pairs
-	argLookup, err := utils.ReadKeyValueList([]string{"scanId", "quantId", "scriptName", "repoId"}, args)
+	argLookup, err := utils.ReadKeyValueList([]string{"scanId", jobrunner.ArgExecFileName}, args)
 	if err != nil {
-		return "", fmt.Errorf("Python script failed to run - %v", err)
+		return output, fmt.Errorf("Python script failed to run - %v", err)
 	}
-
-	// Get repo details
-	repo := &protos.SourceRepository{}
-	if err := expressionrunner.ReadOne(dbCollections.SourceRepositoriesName, bson.M{"_id": argLookup["repoId"]}, repo, jn.db); err != nil {
-		return "", fmt.Errorf("Failed to read repository details for %v", err)
-	}
-
-	// Download repo contents
-
-	// Check that the script we're looking for exists
 
 	// Run the script with python3
+	scriptPath := argLookup[jobrunner.ArgExecFileName]
+	pythonArgs := []string{scriptPath}
+	if argLookup["scanId"] != "none" {
+		pythonArgs = append(pythonArgs, "scanId="+argLookup["scanId"])
+	}
+	if quantId, ok := argLookup["quantId"]; ok && quantId != "none" {
+		pythonArgs = append(pythonArgs, "quantId="+quantId)
+	}
+	cmd := exec.Command(pythonExePath, pythonArgs...)
 
-	return "", nil
+	// Run the script, if an error happens ensure we chdir and clean up before we return an error
+	err = nil
+	if out, cmdErr := cmd.CombinedOutput(); cmdErr != nil {
+		err = fmt.Errorf("Error while running python script \"%v\": %v", scriptPath, cmdErr)
+		output = string(out)
+	} else {
+		output = string(out)
+	}
+
+	return output, err
 }

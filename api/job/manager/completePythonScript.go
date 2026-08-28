@@ -15,7 +15,7 @@ func completePythonScript(jg *protos.JobGroupConfig, lastJobStatus *protos.JobSt
 		JobItemId:        lastJobStatus.JobItemId,
 		JobType:          lastJobStatus.JobType,
 		Status:           protos.JobStatus_COMPLETE,
-		Message:          fmt.Sprintf("Python script %v ran in %vsec", now-int64(lastJobStatus.StartUnixTimeSec)),
+		Message:          fmt.Sprintf("Python script %v ran in %vsec", jg.JobName, now-int64(lastJobStatus.StartUnixTimeSec)),
 		StartUnixTimeSec: lastJobStatus.StartUnixTimeSec,
 		EndUnixTimeSec:   uint32(now),
 		//OutputFilePath:   memoKey,

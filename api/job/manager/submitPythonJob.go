@@ -8,22 +8,23 @@ import (
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job/jobnode"
+	"github.com/pixlise/core/v4/api/job/jobrunner"
 	expressionrunner "github.com/pixlise/core/v4/api/job/jobrunner/expression-runner"
 	"github.com/pixlise/core/v4/api/sessionuser"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func (jm *JobManager) SubmitPythonJob(repoId, scriptName, scanId, quantId string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
+func (jm *JobManager) SubmitPythonJob(repoId, branch, scriptName, scanId, quantId string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
 	// Call the internal one, log the resulting errors if any
-	status, err := jm.internalSubmitPythonJob(repoId, scriptName, scanId, quantId, requestorUserSess, requestorSession)
+	status, err := jm.internalSubmitPythonJob(repoId, branch, scriptName, scanId, quantId, requestorUserSess, requestorSession)
 	if err != nil {
 		jm.svcs.Log.Errorf("SubmitQuantJob error: %v", err)
 	}
 	return status, err
 }
 
-func (jm *JobManager) internalSubmitPythonJob(repoId, scriptName, scanId, quantId string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
+func (jm *JobManager) internalSubmitPythonJob(repoId, branch, scriptName, scanId, quantId string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
 	// Check that the repo exists
 	repo := &protos.SourceRepository{}
 	if err := expressionrunner.ReadOne(dbCollections.SourceRepositoriesName, bson.M{"_id": repoId}, repo, jm.svcs.MongoDB); err != nil {
@@ -42,6 +43,21 @@ func (jm *JobManager) internalSubmitPythonJob(repoId, scriptName, scanId, quantI
 
 	requiredFiles := []*protos.JobFilePath{}
 
+	args := []string{
+		fmt.Sprintf("%v=%v", jobrunner.ArgRepoUrlName, repo.Url),
+		fmt.Sprintf("%v=%v", jobrunner.ArgRepoUserName, repo.User),
+		fmt.Sprintf("%v=%v", jobrunner.ArgRepoSecretName, repo.Secret),
+		fmt.Sprintf("%v=%v", jobrunner.ArgBranchName, branch),
+		fmt.Sprintf("%v=%v", jobrunner.ArgExecFileName, scriptName),
+	}
+
+	if len(quantId) > 0 {
+		args = append(args, "quantId="+quantId)
+	}
+	if len(scanId) > 0 {
+		args = append(args, "scanId="+scanId)
+	}
+
 	jg := &protos.JobGroupConfig{
 		JobGroupId:       jobId,
 		JobType:          protos.JobType_JT_RUN_PYTHON_SCRIPT,
@@ -54,12 +70,7 @@ func (jm *JobManager) internalSubmitPythonJob(repoId, scriptName, scanId, quantI
 			RequiredFiles: requiredFiles,
 
 			Command: jobnode.PythonCommand,
-			Args: []string{
-				"scanId=" + scanId,
-				"quantId=" + quantId,
-				"scriptName=" + scriptName,
-				"repoId=" + repo.Id,
-			},
+			Args:    args,
 
 			OutputFiles: []*protos.JobFilePath{
 				{

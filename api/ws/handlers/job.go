@@ -115,10 +115,17 @@ func HandleTriggerScheduledJobReq(req *protos.TriggerScheduledJobReq, hctx wsHel
 		return nil, fmt.Errorf("Failed to determine actual scan id for job, only got %v", jobmanager.SCAN_ID_AUTO_IMPORTED)
 	}
 
-	scanItem := &protos.ScanItem{}
-	err = expressionrunner.ReadOne(dbCollections.ScansName, bson.M{"_id": scanId}, &scanItem, hctx.Svcs.MongoDB)
-	if err != nil {
-		return nil, fmt.Errorf("Could not read scan %v: %v", scanId, err)
+	var scanItem *protos.ScanItem
+
+	if scanId != jobmanager.SCAN_ID_NONE {
+		err = expressionrunner.ReadOne(dbCollections.ScansName, bson.M{"_id": scanId}, &scanItem, hctx.Svcs.MongoDB)
+		if err != nil {
+			return nil, fmt.Errorf("Could not read scan %v: %v", scanId, err)
+		}
+	}
+
+	if quant, ok := req.JobParameters["quant"]; ok {
+		scheduledJob.JobParameters["quant"] = quant
 	}
 
 	err = hctx.Svcs.JobManager.RunScheduledJob(scheduledJob, scanItem)

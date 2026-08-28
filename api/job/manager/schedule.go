@@ -47,6 +47,7 @@ func (jm *JobManager) GetScheduledJob(scheduledJobId string) (*protos.ScheduledJ
 }
 
 var SCAN_ID_AUTO_IMPORTED = "imported"
+var SCAN_ID_NONE = "none"
 var QUANT_BY_NAME_PREFIX = "name:"
 var QUANT_BY_ID_PREFIX = "id:"
 var ELEMS_BY_SET = "set:"
@@ -113,7 +114,7 @@ func validateJob(job *protos.ScheduledJob) error {
 				}
 			}
 
-			if !prefixOK {
+			if !prefixOK && paramGiven != "none" {
 				return fmt.Errorf("JobParameters[%v] must have one of the following prefixes: %v", check, strings.Join(prefixes, ","))
 			}
 		}
@@ -132,8 +133,12 @@ func validateJob(job *protos.ScheduledJob) error {
 		}
 
 		// Check that scan id is set to use the imported one
-		if job.JobParameters["scanId"] != SCAN_ID_AUTO_IMPORTED {
-			return fmt.Errorf("JobParameters[scanId] expected to be %v, set to %v", SCAN_ID_AUTO_IMPORTED, job.JobParameters["scanId"])
+		acceptableScanIds := []string{SCAN_ID_AUTO_IMPORTED}
+		if job.JobType == protos.JobType_JT_RUN_PYTHON_SCRIPT {
+			acceptableScanIds = append(acceptableScanIds, SCAN_ID_NONE)
+		}
+		if !utils.ItemInSlice(job.JobParameters["scanId"], acceptableScanIds) {
+			return fmt.Errorf("JobParameters[scanId] expected to be one of [%v], set to %v", strings.Join(acceptableScanIds, ","), job.JobParameters["scanId"])
 		}
 	} else if job.ScheduleType == protos.ScheduledJob_TIME_BASED {
 		if job.JobOrder != 0 {

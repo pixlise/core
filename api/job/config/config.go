@@ -7,58 +7,6 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
-/*
-type NodeIndexMethod int
-
-const (
-
-	NodeIndexMethod_None = iota
-	NodeIndexMethod_Local
-	NodeIndexMethod_Remote
-	NodeIndexMethod_Both
-
-)
-
-	type JobFilePath struct {
-		// The remote file info
-		RemoteBucket string
-		RemotePath   string
-
-		// Local copy
-		LocalPath string
-
-		// Apply node index to this path (or not)
-		// If this is false, we just use the path as is, but if
-		// it's set to true, the local and remote paths have the
-		// node number inserted in between the file name and its
-		// extension. Eg node.pmcs becomes node00001.pmcs
-		ApplyNodeIndex NodeIndexMethod
-	}
-
-	type JobConfig struct {
-		// The job id
-		JobId string
-
-		// Logging method - If these are empty, we just log to stdout
-		// LogCloudwatchGroup string
-		// LogCloudwatchStream string
-
-		// What files are required to be present when running the job?
-		RequiredFiles []JobFilePath
-
-		// What command to execute
-		Command string
-		Args    []string
-
-		// eg if this contains a 2, it means
-		// we need to apply the node index to
-		// Args[2] before running this job
-		ArgIndexToApplyNodeIndexes []int
-
-		// What to upload on completion (if file doesn't exist, it can be ignored with a warning)
-		OutputFiles []JobFilePath
-	}
-*/
 func FlattenJobConfig(c *protos.JobConfig, nodeIndex uint) *protos.JobConfig {
 	newCfg := &protos.JobConfig{
 		JobId:         fmt.Sprintf("%v-%v", c.JobId, nodeIndex),
