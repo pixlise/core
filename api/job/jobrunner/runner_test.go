@@ -29,6 +29,13 @@ func Example_jobrunner_RunJob_BadConfigs() {
 	// Failed to read job config s3://bucket/path/to/job/params.json: open ./test-bucket-root/bucket/path/to/job/params.json: no such file or directory
 }
 
+func Example_jobrunner_hideSecretsInArgs() {
+	fmt.Printf("%v\n", hideSecretsInArgs([]string{"one=2", "two=another one", "mySecret=12345678", "Theirsecretvar=none", "Theirsecret=alongsecret99", "blinking=disabled"}))
+
+	// Output:
+	// [one=2 two=another one mySecret=***5678 Theirsecretvar=none Theirsecret=***et99 blinking=disabled]
+}
+
 func initTest() (string, fileaccess.FileAccess) {
 	// Move to a working directory!
 	origWD, err := os.Getwd()

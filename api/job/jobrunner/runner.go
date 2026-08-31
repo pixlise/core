@@ -11,6 +11,7 @@ import (
 
 	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/quantification"
+	"github.com/pixlise/core/v4/core/client"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/utils"
@@ -26,6 +27,7 @@ var ArgRepoUserName = "repoUser"
 var ArgRepoSecretName = "repoSecret"
 var ArgBranchName = "branch"
 var ArgExecFileName = "scriptName"
+var ArgClientAuthConfig = "clientAuthSecret"
 
 // Downloads files required for job to run and sets up libraries. Requires JOB_CONFIG environment variable
 // to be set to a JobConfig structure
@@ -138,6 +140,20 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 				break
 			}
 		}
+
+		// Set the client library authentication environment variable if it's defined
+		argLookup, err = utils.ReadKeyValueList([]string{ArgClientAuthConfig}, cfg.Args)
+		if err != nil {
+			jobLog.Errorf("Argument %v not provided - client auth config not set", ArgClientAuthConfig)
+		} else {
+			auth := argLookup[ArgClientAuthConfig]
+			err = os.Setenv(client.ConfigEnvVar, auth)
+			if err != nil {
+				return fmt.Errorf("Failed to set environment variable \"%v\" to something %v characters long: %v", client.ConfigEnvVar, len(auth), err)
+			} else {
+				jobLog.Infof("Set environment variable \"%v\", %v characters long", client.ConfigEnvVar, len(auth))
+			}
+		}
 		break
 	}
 
@@ -169,7 +185,9 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 	jobLog.Infof("Running job...")
 
 	// Run the actual job
-	jobLog.Debugf("exec.Command starting \"%v\", args: [%v]", commandToRun, strings.Join(cfg.Args, ","))
+	// Don't display secret stuff!
+	dispArgs := hideSecretsInArgs(cfg.Args)
+	jobLog.Debugf("exec.Command starting \"%v\", args: [%v]", commandToRun, strings.Join(dispArgs, ","))
 
 	// We support the concept of a "no-op" command only for testing - because tests can run on different platforms
 	// we want to be able to write tests that don't actually run a command, this area is very OS specific...
@@ -227,6 +245,22 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 	}
 
 	return nil
+}
+
+func hideSecretsInArgs(args []string) []string {
+	dispArgs := []string{}
+	secretTag := "secret="
+	for _, arg := range args {
+		idx := strings.Index(strings.ToLower(arg), secretTag)
+		if idx < 0 {
+			dispArgs = append(dispArgs, arg)
+		} else if idx+len(secretTag) < len(arg) {
+			// It's *secret=<secret>
+			// Print out only the last few chars of the secret!
+			dispArgs = append(dispArgs, arg[0:idx+len(secretTag)]+"***"+arg[len(arg)-4:])
+		}
+	}
+	return dispArgs
 }
 
 func cleanup(origWD string, repoPath string, cfg *protos.JobConfig, jobLog logger.ILogger) {

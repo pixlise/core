@@ -15,16 +15,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func (jm *JobManager) SubmitPythonJob(repoId, branch, scriptName, scanId, quantId string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
+func (jm *JobManager) SubmitPythonJob(repoId, branch, scriptName, scanId, quantId, clientAuth string,
+	requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
 	// Call the internal one, log the resulting errors if any
-	status, err := jm.internalSubmitPythonJob(repoId, branch, scriptName, scanId, quantId, requestorUserSess, requestorSession)
+	status, err := jm.internalSubmitPythonJob(repoId, branch, scriptName, scanId, quantId, clientAuth, requestorUserSess, requestorSession)
 	if err != nil {
 		jm.svcs.Log.Errorf("SubmitQuantJob error: %v", err)
 	}
 	return status, err
 }
 
-func (jm *JobManager) internalSubmitPythonJob(repoId, branch, scriptName, scanId, quantId string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
+func (jm *JobManager) internalSubmitPythonJob(repoId, branch, scriptName, scanId, quantId, clientAuth string,
+	requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
 	// Check that the repo exists
 	repo := &protos.SourceRepository{}
 	if err := expressionrunner.ReadOne(dbCollections.SourceRepositoriesName, bson.M{"_id": repoId}, repo, jm.svcs.MongoDB); err != nil {
@@ -49,6 +51,7 @@ func (jm *JobManager) internalSubmitPythonJob(repoId, branch, scriptName, scanId
 		fmt.Sprintf("%v=%v", jobrunner.ArgRepoSecretName, repo.Secret),
 		fmt.Sprintf("%v=%v", jobrunner.ArgBranchName, branch),
 		fmt.Sprintf("%v=%v", jobrunner.ArgExecFileName, scriptName),
+		fmt.Sprintf("%v=%v", jobrunner.ArgClientAuthConfig, clientAuth),
 	}
 
 	if len(quantId) > 0 {
