@@ -3,6 +3,7 @@ package jobmanager
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -163,7 +164,8 @@ func (jm *JobManager) checkJobQueue() error {
 	// - Get a list of ALL jobs in queue that are not yet running
 	notStartedIds := []string{}
 	for jobGroupId, jobs := range groupsAndJobs {
-		assignedCount, runningCount, completedCount, failedCount, idsNotStarted := jm.countJobNodeStates(jobs)
+		assignedCount, runningCount, completedCount, failedMsgs, idsNotStarted := jm.countJobNodeStates(jobs)
+		failedCount := len(failedMsgs)
 		ranCount := failedCount + completedCount
 
 		notStartedIds = append(notStartedIds, idsNotStarted...)
@@ -195,7 +197,10 @@ func (jm *JobManager) checkJobQueue() error {
 
 				// If they're not all completed, we just mark the job as failed
 				if failedCount > 0 {
-					if err = jm.updateJobStatusWithInMemory(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("%v nodes failed", failedCount), existingJobStatus, true, "CheckJobQueue FailCheck"); err == nil {
+					// Get at least the first failed nodes status message
+					msgs := strings.Join(failedMsgs, "\n- ")
+
+					if err = jm.updateJobStatusWithInMemory(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("%v nodes failed:\n- %v", failedCount, msgs), existingJobStatus, true, "CheckJobQueue FailCheck"); err == nil {
 						jm.svcs.Log.Infof("  Marking job %v as ERROR due to nodes not all completing", jobGroupId)
 					}
 				}
@@ -216,13 +221,13 @@ func (jm *JobManager) checkJobQueue() error {
 // ASSIGNED state jobs
 // RUNNING state jobs
 // COMPLETE state jobs
-// FAILED state jobs
+// FAILED state jobs message fields
 // NotStartedIds: JobIds of jobs that are in the UNKNOWN state
-func (jm *JobManager) countJobNodeStates(jobs []*protos.JobQueueItem) (int, int, int, int, []string) {
+func (jm *JobManager) countJobNodeStates(jobs []*protos.JobQueueItem) (int, int, int, []string, []string) {
 	assigned := 0
 	running := 0
 	completed := 0
-	failed := 0
+	failedMsgs := []string{}
 	notStartedIds := []string{}
 
 	for _, job := range jobs {
@@ -239,7 +244,7 @@ func (jm *JobManager) countJobNodeStates(jobs []*protos.JobQueueItem) (int, int,
 		}
 
 		if job.State == protos.JobQueueItem_FAILED {
-			failed = failed + 1
+			failedMsgs = append(failedMsgs, job.Message)
 		}
 
 		if job.State == protos.JobQueueItem_UNKNOWN {
@@ -247,7 +252,7 @@ func (jm *JobManager) countJobNodeStates(jobs []*protos.JobQueueItem) (int, int,
 		}
 	}
 
-	return assigned, running, completed, failed, notStartedIds
+	return assigned, running, completed, failedMsgs, notStartedIds
 }
 
 func (jm *JobManager) checkJobTimeout(jobItem *protos.JobQueueItem, runningInstanceIds []string, nowUnixSec int64) error {

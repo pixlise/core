@@ -87,9 +87,10 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 			if _, err := os.Stat(pythonPath); err != nil {
 				// Bin directory doesn't exist, maybe python isn't there. We may not be running on a job node, maybe it's local to the API
 				// itself, or it's a test, or whatever... Try create a virtual env and save its path here
-				out, err := runCommand("python", []string{"-m", "venv", "./venv"})
+				out, err := runCommand("python3", []string{"-m", "venv", "./venv"})
 				if err != nil {
-					return fmt.Errorf("Failed to create python venv: %v", err)
+					p := os.Getenv("PATH")
+					return fmt.Errorf("Failed to create python venv: %v. PATH: %v", err, p)
 				}
 
 				if len(out) > 0 {
