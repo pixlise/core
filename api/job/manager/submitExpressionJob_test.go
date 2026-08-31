@@ -305,7 +305,9 @@ func Example_jobmanager_SubmitExpressionJob_048300551_ExprModSyntaxError() {
 	// DEBUG: CheckJobQueue found 1 job groups
 	// DEBUG:   CheckJobQueue job group expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE has 1 ran, 0 completed nodes of 1
 	// DEBUG:   CheckJobQueue clearing job queue items for expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE
-	// INFO: updateJobStatus: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status ERROR, message: 1 nodes failed
+	// INFO: updateJobStatus: expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE with status ERROR, message: 1 nodes failed:
+	// - Failed on instance the-test-instance: Job expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE-node-0 failed: <string> line:977(column:12) near 'error':   parse error
+	//
 	// INFO:   Marking job expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE as ERROR due to nodes not all completing
 	// DEBUG:   CheckJobQueue found 0 not-started jobs
 	// Read memoised exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9 errors: "exprcachev1_GeoAndDiff_3_5_3_Al2O3_048300551_quant-ggy6zxhn23p7rlv9" not found
