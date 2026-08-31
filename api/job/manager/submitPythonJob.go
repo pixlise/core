@@ -15,22 +15,27 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func (jm *JobManager) SubmitPythonJob(repoId, branch, scriptName, scanId, quantId, clientAuth string,
+func (jm *JobManager) SubmitPythonJob(repoId, branch, scriptName, scanId, quantId, clientRepoId string,
 	requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
 	// Call the internal one, log the resulting errors if any
-	status, err := jm.internalSubmitPythonJob(repoId, branch, scriptName, scanId, quantId, clientAuth, requestorUserSess, requestorSession)
+	status, err := jm.internalSubmitPythonJob(repoId, branch, scriptName, scanId, quantId, clientRepoId, requestorUserSess, requestorSession)
 	if err != nil {
 		jm.svcs.Log.Errorf("SubmitQuantJob error: %v", err)
 	}
 	return status, err
 }
 
-func (jm *JobManager) internalSubmitPythonJob(repoId, branch, scriptName, scanId, quantId, clientAuth string,
+func (jm *JobManager) internalSubmitPythonJob(repoId, branch, scriptName, scanId, quantId, clientRepoId string,
 	requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error) {
 	// Check that the repo exists
 	repo := &protos.SourceRepository{}
 	if err := expressionrunner.ReadOne(dbCollections.SourceRepositoriesName, bson.M{"_id": repoId}, repo, jm.svcs.MongoDB); err != nil {
-		return nil, fmt.Errorf("Failed to read repository details for %v", err)
+		return nil, fmt.Errorf("Failed to read repository details for: %v", err)
+	}
+
+	clientAuthRepo := &protos.SourceRepository{}
+	if err := expressionrunner.ReadOne(dbCollections.SourceRepositoriesName, bson.M{"_id": clientRepoId}, clientAuthRepo, jm.svcs.MongoDB); err != nil {
+		return nil, fmt.Errorf("Failed to read PIXLISE client library connectivity details for: %v", err)
 	}
 
 	// If we don't have a user, use the built-in PIXLISE user
@@ -51,7 +56,7 @@ func (jm *JobManager) internalSubmitPythonJob(repoId, branch, scriptName, scanId
 		fmt.Sprintf("%v=%v", jobrunner.ArgRepoSecretName, repo.Secret),
 		fmt.Sprintf("%v=%v", jobrunner.ArgBranchName, branch),
 		fmt.Sprintf("%v=%v", jobrunner.ArgExecFileName, scriptName),
-		fmt.Sprintf("%v=%v", jobrunner.ArgClientAuthConfig, clientAuth),
+		fmt.Sprintf("%v={\"host\": \"%v\", \"user\": \"%v\", \"password\": \"%v\"}", jobrunner.ArgClientAuthConfig, clientAuthRepo.Url, clientAuthRepo.User, clientAuthRepo.Secret),
 	}
 
 	if len(quantId) > 0 {

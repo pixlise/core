@@ -269,14 +269,14 @@ func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.Sca
 			importedScanId = scan.Id
 		}
 
-		expectedParams := []string{"repositoryId", jobrunner.ArgBranchName, jobrunner.ArgExecFileName, "scanId", "quant", jobrunner.ArgClientAuthConfig}
+		expectedParams := []string{"repositoryId", jobrunner.ArgBranchName, jobrunner.ArgExecFileName, "scanId", "quant", "clientAuthId"}
 		params, err := jm.getProcessedJobParams(expectedParams, job, importedScanId)
 		if err != nil {
 			return err
 		}
 
 		jm.svcs.Log.Infof("RunScheduledJob submitting python job %v...", job.Id)
-		_, err = jm.SubmitPythonJob(params["repositoryId"], params[jobrunner.ArgBranchName], params[jobrunner.ArgExecFileName], params["scanId"], params["quantId"], params[jobrunner.ArgClientAuthConfig], nil, nil)
+		_, err = jm.SubmitPythonJob(params["repositoryId"], params[jobrunner.ArgBranchName], params[jobrunner.ArgExecFileName], params["scanId"], params["quantId"], params["clientAuthId"], nil, nil)
 		return err
 	}
 

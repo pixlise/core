@@ -107,11 +107,14 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 	}
 
 	// If arguments seem to want a repository downloaded, do that
+	jobLog.Infof("Scanning arguments...")
 	var repoLocalPath, scriptPath, origWD string
 	for _, arg := range cfg.Args {
 		if !strings.HasPrefix(arg, ArgRepoUrlName) {
 			continue
 		}
+
+		jobLog.Infof("Detected argument \"%v\", downloading repository...", ArgRepoUrlName)
 
 		// OK there's a repo URL defined, so ensure all fields we're interested in exist
 		argLookup, err := utils.ReadKeyValueList([]string{ArgRepoUrlName, ArgRepoUserName, ArgRepoSecretName, ArgBranchName, ArgExecFileName}, cfg.Args)
@@ -142,6 +145,8 @@ func RunJob(jobBucket string, jobPath string, nodeIndex uint, remoteFS fileacces
 		}
 
 		// Set the client library authentication environment variable if it's defined
+		jobLog.Infof("Checking for argument %v...", ArgClientAuthConfig)
+
 		argLookup, err = utils.ReadKeyValueList([]string{ArgClientAuthConfig}, cfg.Args)
 		if err != nil {
 			jobLog.Errorf("Argument %v not provided - client auth config not set", ArgClientAuthConfig)

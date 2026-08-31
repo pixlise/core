@@ -58,7 +58,7 @@ var GitHash string
 type JobManagerInterface interface {
 	SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
 	SubmitExpressionJob(scanId, quantId, expressionId, roiId, memoCacheKey string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
-	SubmitPythonJob(repoId, branch, scriptName, scanId, quantId, clientAuth string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
+	SubmitPythonJob(repoId, branch, scriptName, scanId, quantId, clientRepoId string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
 
 	ListJobs(isAdmin bool, requestorUserId string, skip, limit int64, jobTypes []protos.JobType) ([]*protos.JobStatus, []*protos.JobStatus, uint32, error)
 
