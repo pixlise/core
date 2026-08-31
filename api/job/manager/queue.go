@@ -199,8 +199,11 @@ func (jm *JobManager) checkJobQueue() error {
 				if failedCount > 0 {
 					// Get at least the first failed nodes status message
 					msgs := strings.Join(failedMsgs, "\n- ")
+					if len(msgs) > 0 {
+						msgs = ":\n- " + msgs
+					}
 
-					if err = jm.updateJobStatusWithInMemory(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("%v nodes failed:\n- %v", failedCount, msgs), existingJobStatus, true, "CheckJobQueue FailCheck"); err == nil {
+					if err = jm.updateJobStatusWithInMemory(jobGroupId, protos.JobStatus_ERROR, fmt.Sprintf("%v nodes failed%v", failedCount, msgs), existingJobStatus, true, "CheckJobQueue FailCheck"); err == nil {
 						jm.svcs.Log.Infof("  Marking job %v as ERROR due to nodes not all completing", jobGroupId)
 					}
 				}

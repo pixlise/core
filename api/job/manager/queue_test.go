@@ -347,7 +347,8 @@ func Example_jobmanager_QueueStartup() {
 	// quant-id789|ERROR|1 nodes failed
 	// quant-id998|ERROR|Failed to complete job group quant-id998: Job completion failed, method NonExistantMethod unknown
 	// quant-id999|GATHERING_RESULTS|Combining CSVs from 2 nodes...
-	// quant-id007|ERROR|1 nodes failed
+	// quant-id007|ERROR|1 nodes failed:
+	// - Node did not start job.
 	// read job queue: <nil>
 	// quant-id123-node-0|UNKNOWN|
 	// quant-id123-node-1|UNKNOWN|
