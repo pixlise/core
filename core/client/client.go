@@ -37,7 +37,7 @@ type PIXLISEConfig struct {
 	ApiUrl        string `json:"apiUrl"`
 }
 
-var configEnvVar = "PIXLISE_CLIENT_CONFIG"
+var ConfigEnvVar = "PIXLISE_CLIENT_CONFIG"
 var configFileName = ".pixlise-config.json" // We look for this file in home dir
 var responseTimeoutSec = 10
 var ClientMapKeyPrefix = "client-map-"
@@ -87,20 +87,20 @@ func Authenticate() (*APIClient, error) {
 			source = configPath
 		}
 	} else {
-		fmt.Printf("Failed to get user home directory to find pixlise config. Error: %v", err)
+		fmt.Printf("Failed to get user home directory to find pixlise config. Error: %v\n", err)
 	}
 
 	// If we haven't read anything useful yet, lets try read the environment variable
 	if len(configStr) <= 0 {
-		configStr = os.Getenv(configEnvVar)
+		configStr = os.Getenv(ConfigEnvVar)
 		if len(configStr) > 0 {
-			source = configEnvVar
+			source = ConfigEnvVar
 		}
 	}
 
 	// If we haven't read anything useful, stop here
 	if len(source) <= 0 || len(configStr) <= 0 {
-		return nil, fmt.Errorf(`Couldn't read config file "%v" and no environment variable (%v) defined. Cannot authenticate. To configure, create the file or set the environment variable containing a JSON encoded structure with the following fields: "host", "user", "pass" where host is the URL of the PIXLISE webpage`, configPath, configEnvVar)
+		return nil, fmt.Errorf(`Couldn't read config file "%v" and no environment variable (%v) defined. Cannot authenticate. To configure, create the file or set the environment variable containing a JSON encoded structure with the following fields: "host", "user", "pass" where host is the URL of the PIXLISE webpage`, configPath, ConfigEnvVar)
 	}
 
 	// Try to decode it
