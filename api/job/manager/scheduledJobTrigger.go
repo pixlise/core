@@ -19,12 +19,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (jm *JobManager) RunScheduledPostImportJobs(scan *protos.ScanItem) error {
+func (jm *JobManager) RunScheduledPostImportJobs(scan *protos.ScanItem) ([]string, error) {
+	jobIds := []string{}
 	jm.svcs.Log.Infof("RunScheduledPostImportJobs for scan %v with instrument %v", scan.Id, scan.Instrument)
 
 	jobs, err := jm.ListScheduledJobs()
 	if err != nil {
-		return err
+		return jobIds, err
 	}
 
 	// Find all jobs relevant to this scan
@@ -39,7 +40,7 @@ func (jm *JobManager) RunScheduledPostImportJobs(scan *protos.ScanItem) error {
 
 	if len(chosenJobs) <= 0 {
 		jm.svcs.Log.Infof("RunScheduledPostImportJobs: No jobs found for scan %v with instrument %v", scan.Id, scan.Instrument)
-		return nil
+		return jobIds, nil
 	}
 
 	jm.svcs.Log.Infof("RunScheduledPostImportJobs found %v jobs for scan %v with instrument %v", len(chosenJobs), scan.Id, scan.Instrument)
@@ -47,14 +48,15 @@ func (jm *JobManager) RunScheduledPostImportJobs(scan *protos.ScanItem) error {
 	sort.Slice(chosenJobs, func(i, j int) bool { return chosenJobs[i].JobOrder < chosenJobs[j].JobOrder })
 
 	// Run the jobs one-by-one
-
 	for _, job := range chosenJobs {
-		if err = jm.RunScheduledJob(job, scan); err != nil {
-			return err
+		if jobId, err := jm.RunScheduledJob(job, scan); err != nil {
+			return jobIds, err
+		} else {
+			jobIds = append(jobIds, jobId)
 		}
 	}
 
-	return nil
+	return jobIds, nil
 }
 
 func (jm *JobManager) getProcessedJobParams(names []string, job *protos.ScheduledJob, importedScanId string) (map[string]string, error) {
@@ -190,16 +192,17 @@ func (jm *JobManager) getProcessedJobParams(names []string, job *protos.Schedule
 	return result, nil
 }
 
-func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.ScanItem) error {
+func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.ScanItem) (string, error) {
+	var jobStatus *protos.JobStatus
 	if job.JobType == protos.JobType_JT_RUN_EXPRESSION {
 		if scan == nil {
-			return errors.New("No scanId specified")
+			return "", errors.New("No scanId specified")
 		}
 
 		// Get parameters
 		params, err := jm.getProcessedJobParams([]string{"scanId", "quant", "expressionId"}, job, scan.Id)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		scanId := params["scanId"]
@@ -209,27 +212,27 @@ func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.Sca
 		exprItem := &protos.DataExpression{}
 		err = expressionrunner.ReadOne(dbCollections.ExpressionsName, bson.M{"_id": params["expressionId"]}, &exprItem, jm.svcs.MongoDB)
 		if err != nil {
-			return fmt.Errorf("Could not read expression %v: %v", params["expressionId"], err)
+			return "", fmt.Errorf("Could not read expression %v: %v", params["expressionId"], err)
 		}
 
 		// Form a mem cache key
 		cacheKey, err := memoisation.MakeCacheKey(scan, exprItem, params["quantId"], roiId, units)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		jm.svcs.Log.Infof("RunScheduledJob submitting expression job %v...", job.Id)
-		_, err = jm.SubmitExpressionJob(scanId, params["quantId"], params["expressionId"], roiId, cacheKey, nil, nil)
-		return err
+		jobStatus, err = jm.SubmitExpressionJob(scanId, params["quantId"], params["expressionId"], roiId, cacheKey, nil, nil)
+		return "", err
 	} else if job.JobType == protos.JobType_JT_RUN_QUANT {
 		if scan == nil {
-			return errors.New("No scanId specified")
+			return "", errors.New("No scanId specified")
 		}
 
 		// Get parameters
 		params, err := jm.getProcessedJobParams([]string{"scanId", "elements", "quantName", "configName", "quantMode"}, job, scan.Id)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		scanId := params["scanId"]
@@ -237,12 +240,12 @@ func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.Sca
 		// Get the list of PMCs to quantify
 		exprPB, err := wsHelpers.ReadDatasetFile(scanId, jm.svcs)
 		if err != nil {
-			return fmt.Errorf("AutoQuant failed to read scan %v to determine PMC list: %v", scanId, err)
+			return "", fmt.Errorf("AutoQuant failed to read scan %v to determine PMC list: %v", scanId, err)
 		}
 
 		pmcs, err := quantification.ReadQuantifiablePMCs(exprPB, scanId, jm.svcs.Log)
 		if err != nil {
-			return fmt.Errorf("Failed to read PMCs from %v: %v", scanId, err)
+			return "", fmt.Errorf("Failed to read PMCs from %v: %v", scanId, err)
 		}
 
 		createParams := &protos.QuantCreateParams{
@@ -260,8 +263,8 @@ func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.Sca
 		}
 
 		jm.svcs.Log.Infof("RunScheduledJob submitting quant job %v...", job.Id)
-		_, err = jm.SubmitQuantJob(createParams, nil, nil)
-		return err
+		jobStatus, err = jm.SubmitQuantJob(createParams, nil, nil)
+		return "", err
 	} else if job.JobType == protos.JobType_JT_RUN_PYTHON_SCRIPT {
 		// Get parameters
 		importedScanId := ""
@@ -272,13 +275,13 @@ func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.Sca
 		expectedParams := []string{"repositoryId", jobrunner.ArgBranchName, jobrunner.ArgExecFileName, "scanId", "quant", "clientAuthId"}
 		params, err := jm.getProcessedJobParams(expectedParams, job, importedScanId)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		jm.svcs.Log.Infof("RunScheduledJob submitting python job %v...", job.Id)
-		_, err = jm.SubmitPythonJob(params["repositoryId"], params[jobrunner.ArgBranchName], params[jobrunner.ArgExecFileName], params["scanId"], params["quantId"], params["clientAuthId"], nil, nil)
-		return err
+		jobStatus, err = jm.SubmitPythonJob(params["repositoryId"], params[jobrunner.ArgBranchName], params[jobrunner.ArgExecFileName], params["scanId"], params["quantId"], params["clientAuthId"], nil, nil)
+		return "", err
 	}
 
-	return fmt.Errorf("RunScheduledJob cannot run job %v of type %v", job.Id, job.JobType)
+	return jobStatus.JobId, fmt.Errorf("RunScheduledJob cannot run job %v of type %v", job.Id, job.JobType)
 }

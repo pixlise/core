@@ -69,8 +69,8 @@ type JobManagerInterface interface {
 	GetScheduledJob(string) (*protos.ScheduledJob, error)
 	SetScheduledJob(job *protos.ScheduledJob) (*protos.ScheduledJob, error)
 
-	RunScheduledPostImportJobs(scan *protos.ScanItem) error
-	RunScheduledJob(job *protos.ScheduledJob, scan *protos.ScanItem) error
+	RunScheduledPostImportJobs(scan *protos.ScanItem) ([]string, error)
+	RunScheduledJob(job *protos.ScheduledJob, scan *protos.ScanItem) (string, error)
 }
 
 type APIServices struct {

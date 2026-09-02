@@ -12,7 +12,10 @@ import (
 	"github.com/pixlise/core/v4/api/sessionuser"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 func (jm *JobManager) internalSubmitJob(jg *protos.JobGroupConfig, requestorSession *melody.Session) (*protos.JobStatus, error) {
@@ -86,25 +89,46 @@ func (jm *JobManager) internalSubmitJob(jg *protos.JobGroupConfig, requestorSess
 	}
 
 	ctx := context.TODO()
-	coll := jm.svcs.MongoDB.Collection(dbCollections.JobStatusName)
-	result, err := coll.InsertOne(ctx, job, options.InsertOne())
+
+	// Set both states in one transaction
+	wc := writeconcern.New(writeconcern.WMajority())
+	rc := readconcern.Snapshot()
+	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
+
+	sess, err := jm.svcs.MongoDB.Client().StartSession()
+	if err != nil {
+		return nil, err
+	}
+	defer sess.EndSession(ctx)
+
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		coll := jm.svcs.MongoDB.Collection(dbCollections.JobStatusName)
+		result, err := coll.InsertOne(ctx, job, options.InsertOne())
+		if err != nil {
+			return nil, err
+		}
+
+		if result.InsertedID != jg.JobGroupId {
+			return nil, fmt.Errorf("Inserted job status id %v doesn't match db id %v", jg.JobGroupId, result.InsertedID)
+		}
+
+		// Also write out the job config we're running to the jobs table. That doesn't get updated as status changes, it's more a record of what we started with
+		coll = jm.svcs.MongoDB.Collection(dbCollections.JobsName)
+		result, err = coll.InsertOne(ctx, jg, options.InsertOne())
+		if err != nil {
+			return nil, err
+		}
+
+		if result.InsertedID != jg.JobGroupId {
+			return nil, fmt.Errorf("Inserted job id %v doesn't match db id %v", jg.JobGroupId, result.InsertedID)
+		}
+		return nil, err
+	}
+
+	_, err = sess.WithTransaction(ctx, callback, txnOpts)
+
 	if err != nil {
 		return job, err
-	}
-
-	if result.InsertedID != jg.JobGroupId {
-		return job, fmt.Errorf("Inserted job stats for %v doesn't match db id %v", jg.JobGroupId, result.InsertedID)
-	}
-
-	// Also write out the job config we're running to the jobs table. That doesn't get updated as status changes, it's more a record of what we started with
-	coll = jm.svcs.MongoDB.Collection(dbCollections.JobsName)
-	result, err = coll.InsertOne(ctx, jg, options.InsertOne())
-	if err != nil {
-		return job, err
-	}
-
-	if result.InsertedID != jg.JobGroupId {
-		return job, fmt.Errorf("Inserted job %v doesn't match db id %v", jg.JobGroupId, result.InsertedID)
 	}
 
 	// Queue up each individual job so it can run on a node. Job queue will eventually be empty and the job completes
