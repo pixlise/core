@@ -67,6 +67,11 @@ func (jm *JobManager) QueueJob(jg *protos.JobGroupConfig) error {
 		}
 
 		// Update job state
+		// TODO: This kind of defeats the purpose of the transaction!
+		// This was originally done as a transaction but that breaks things expecting to see a "STARTING" then a "PREPARING_NODES" state
+		// so we now run this in a go routine so it happens after this function returns
+		// Perhaps if we retired the old quant code and no longer need things to be exactly compatible to pass tests, etc
+		// this can be switched back to running within the transaction?
 		go /*err =*/ jm.updateJobStatus(jg.JobGroupId, protos.JobStatus_PREPARING_NODES, fmt.Sprintf("Preparing %v nodes...", len(qItems)), true)
 		return nil, err
 	}

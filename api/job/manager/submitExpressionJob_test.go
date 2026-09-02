@@ -166,6 +166,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_NoQuant() {
 	//     }
 	//   ]
 	// }
+	// INFO: Scanning arguments...
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua" -> "source.lua":
 	// DEBUG:  Local path is <CWD>/source.lua
@@ -285,6 +286,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_ExprModSyntaxError() {
 	//     }
 	//   ]
 	// }
+	// INFO: Scanning arguments...
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua" -> "source.lua":
 	// DEBUG:  Local path is <CWD>/source.lua
@@ -361,6 +363,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK() {
 	//     }
 	//   ]
 	// }
+	// INFO: Scanning arguments...
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua" -> "source.lua":
 	// DEBUG:  Local path is <CWD>/source.lua
@@ -487,6 +490,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK_NoDuplicateRuns() {
 	//     }
 	//   ]
 	// }
+	// INFO: Scanning arguments...
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua" -> "source.lua":
 	// DEBUG:  Local path is <CWD>/source.lua
@@ -627,6 +631,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK_AllowSecondRunToOverwri
 	//     }
 	//   ]
 	// }
+	// INFO: Scanning arguments...
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua" -> "source.lua":
 	// DEBUG:  Local path is <CWD>/source.lua
@@ -696,6 +701,7 @@ func Example_jobmanager_SubmitExpressionJob_048300551_OK_AllowSecondRunToOverwri
 	//     }
 	//   ]
 	// }
+	// INFO: Scanning arguments...
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://job-bucket/JobData/048300551/expr-lua-JQTGm8pjGVDeJ6SMImAxOucRhLbnIaHvWQ7Axljg4nE/source.lua" -> "source.lua":
 	// DEBUG:  Local path is <CWD>/source.lua

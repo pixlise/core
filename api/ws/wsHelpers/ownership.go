@@ -289,14 +289,22 @@ func ListGroupAccessibleIDs(requireEdit bool, objectType protos.ObjectType, grou
 }
 
 func FetchOwnershipSummary(ownership *protos.OwnershipItem, sessionUser sessionuser.SessionUser, db *mongo.Database, ts timestamper.ITimeStamper, fullDetails bool) *protos.OwnershipSummary {
-	user, err := getUserInfo(ownership.CreatorUserId, db, ts)
 	result := &protos.OwnershipSummary{
 		CreatedUnixSec: ownership.CreatedUnixSec,
 		CanEdit:        false,
 	}
-	if err == nil {
-		result.CreatorUser = user
-	} else {
+
+	// Guard against pointless queries
+	if len(ownership.CreatorUserId) > 0 && !sessionuser.IsSystemUser(ownership.CreatorUserId) {
+		user, err := getUserInfo(ownership.CreatorUserId, db, ts)
+
+		if err == nil {
+			result.CreatorUser = user
+		}
+	}
+
+	// If we haven't queried a user at this point, just create a dummy item so things can function
+	if result.CreatorUser == nil {
 		result.CreatorUser = &protos.UserInfo{
 			Id: ownership.CreatorUserId,
 		}

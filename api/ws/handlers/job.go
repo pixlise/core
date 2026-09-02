@@ -128,10 +128,10 @@ func HandleTriggerScheduledJobReq(req *protos.TriggerScheduledJobReq, hctx wsHel
 		scheduledJob.JobParameters["quant"] = quant
 	}
 
-	err = hctx.Svcs.JobManager.RunScheduledJob(scheduledJob, scanItem)
+	jobId, err := hctx.Svcs.JobManager.RunScheduledJob(scheduledJob, scanItem)
 	if err != nil {
 		return nil, err
 	}
 
-	return &protos.TriggerScheduledJobResp{}, nil
+	return &protos.TriggerScheduledJobResp{JobId: jobId}, nil
 }
