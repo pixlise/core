@@ -56,6 +56,11 @@ func (s *SocketConn) GetHost(path string) (*url.URL, error) {
 
 // Inspired by: https://tradermade.com/tutorials/golang-websocket-client
 func (s *SocketConn) Connect(connectParams ConnectInfo, auth0Params Auth0Info) error {
+	// For local/integration tests
+	if strings.HasPrefix(connectParams.Host, "localhost") {
+		connectParams.Host = "http://" + connectParams.Host
+	}
+
 	token, err := s.getWSConnectToken(connectParams, auth0Params)
 	if err != nil {
 		return err

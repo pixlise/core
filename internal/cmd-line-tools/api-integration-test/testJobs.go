@@ -34,7 +34,6 @@ func testJobs(apiHost string) {
 
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
-
 }
 
 func testJobSchedule(apiHost string) {
