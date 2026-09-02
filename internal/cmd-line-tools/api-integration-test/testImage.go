@@ -108,7 +108,10 @@ func failIf(cond bool, err error) {
 }
 
 func testImageGet_NoJWT(apiHost string) {
-	resp, err := http.Get("http://" + path.Join(apiHost, imagePath))
+	res, err := url.JoinPath(apiHost, imagePath)
+	failIf(err != nil, err)
+
+	resp, err := http.Get(res)
 	failIf(err != nil, err)
 
 	defer resp.Body.Close()
@@ -121,12 +124,18 @@ func testImageGet_NoJWT(apiHost string) {
 	failIf(string(body) != "Token not found\n" || resp.StatusCode != 500, fmt.Errorf("Unexpected response! Status %v, body: %v", resp.StatusCode, string(body)))
 }
 
-func doHTTPRequest(scheme string, method string, apiHost string, urlPath string, query string, reqBody *bytes.Buffer, jwt string) (int, []byte, error) {
+func doHTTPRequest(method string, apiHost string, urlPath string, query string, reqBody *bytes.Buffer, jwt string) (int, []byte, error) {
 	if !strings.HasPrefix(urlPath, "/") {
 		urlPath = "/" + urlPath
 	}
 
-	wsConnectUrl := url.URL{Scheme: scheme, Host: apiHost, Path: urlPath, RawQuery: query}
+	wsConnectUrl, err := url.Parse(apiHost)
+	if err != nil {
+		return 0, []byte{}, err
+	}
+
+	wsConnectUrl.Path = path.Join(wsConnectUrl.Path, urlPath)
+	wsConnectUrl.RawQuery = query
 
 	var bodyReader io.Reader
 	if reqBody != nil {
@@ -137,10 +146,10 @@ func doHTTPRequest(scheme string, method string, apiHost string, urlPath string,
 
 	client := &http.Client{}
 	req, err := http.NewRequest(method, wsConnectUrl.String(), bodyReader)
-	req.Header.Set("Authorization", "Bearer "+jwt)
 	if err != nil {
 		return 0, []byte{}, err
 	}
+	req.Header.Set("Authorization", "Bearer "+jwt)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -157,21 +166,21 @@ func doHTTPRequest(scheme string, method string, apiHost string, urlPath string,
 }
 
 func testImageGet_BadPath(apiHost string, jwt string) {
-	status, body, err := doHTTPRequest("http", "GET", apiHost, "images/download/non-existant", "", nil, jwt)
+	status, body, err := doHTTPRequest("GET", apiHost, "images/download/non-existant", "", nil, jwt)
 
 	failIf(err != nil, err)
 	failIf(string(body) != "404 page not found\n" || status != 404, fmt.Errorf("Unexpected response! Status %v, body: %v", status, string(body)))
 }
 
 func testImageGet_NoMembership(apiHost string, urlPath string, method string, reqBody *bytes.Buffer, jwt string) {
-	status, body, err := doHTTPRequest("http", method, apiHost, urlPath, "", reqBody, jwt)
+	status, body, err := doHTTPRequest(method, apiHost, urlPath, "", reqBody, jwt)
 
 	failIf(err != nil, err)
 	failIf(string(body) != "User has no group membership, can't determine permissions\n" || status != 400, fmt.Errorf("Unexpected response! Status %v, body: %v", status, string(body)))
 }
 
 func testImageGet_OK(apiHost string, jwt string) {
-	status, body, err := doHTTPRequest("http", "GET", apiHost, imagePath, "", nil, jwt)
+	status, body, err := doHTTPRequest("GET", apiHost, imagePath, "", nil, jwt)
 	failIf(err != nil, err)
 	img, format, err := image.Decode(bytes.NewReader(body))
 	var imgW, imgH int
@@ -185,7 +194,7 @@ func testImageGet_OK(apiHost string, jwt string) {
 }
 
 func testImageGetScaled_OK(apiHost string, jwt string, minWidthPx int, minWidthPxExpected int, minHeightPxExpected int) {
-	status, body, err := doHTTPRequest("http", "GET", apiHost, imagePath, fmt.Sprintf("minwidth=%v", minWidthPx), nil, jwt)
+	status, body, err := doHTTPRequest("GET", apiHost, imagePath, fmt.Sprintf("minwidth=%v", minWidthPx), nil, jwt)
 	failIf(err != nil, err)
 	failIf(status != 200, fmt.Errorf("Unexpected status: %v. Body: %v", status, string(body)))
 	/*

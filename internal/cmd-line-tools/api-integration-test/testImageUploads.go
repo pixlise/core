@@ -264,7 +264,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	wstestlib.ExecQueuedActions(&u1)
 
 	// Download image data
-	status, body, err := doHTTPRequest("http", "GET", apiHost, fmt.Sprintf("images/download/%v/file_Name.png", scanId), "", nil, imageGetJWT)
+	status, body, err := doHTTPRequest("GET", apiHost, fmt.Sprintf("images/download/%v/file_Name.png", scanId), "", nil, imageGetJWT)
 	failIf(err != nil, err)
 	img, format, err := image.Decode(bytes.NewReader(body))
 	var imgW, imgH int
@@ -277,7 +277,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	)
 
 	// Download a scaled version (forcing generation of cached scaled image)
-	status, body, err = doHTTPRequest("http", "GET", apiHost, fmt.Sprintf("images/download/%v/file_Name.png", scanId), "minwidth=2", nil, imageGetJWT)
+	status, body, err = doHTTPRequest("GET", apiHost, fmt.Sprintf("images/download/%v/file_Name.png", scanId), "minwidth=2", nil, imageGetJWT)
 	failIf(err != nil, err)
 	img, format, err = image.Decode(bytes.NewReader(body))
 	if img != nil {
@@ -764,7 +764,7 @@ func getImageUploadResult(action string, apiHost string, req *protos.ImageUpload
 		log.Fatalln(err)
 	}
 
-	status, respBody, err := doHTTPRequest("http", "PUT", apiHost, "images", "", bytes.NewBuffer(uploadBody), imageUploadJWT)
+	status, respBody, err := doHTTPRequest("PUT", apiHost, "images", "", bytes.NewBuffer(uploadBody), imageUploadJWT)
 
 	if err != nil {
 		log.Fatalln(err)
