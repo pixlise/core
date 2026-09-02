@@ -11,13 +11,14 @@ import (
 func completePythonScript(jg *protos.JobGroupConfig, lastJobStatus *protos.JobStatus, session *melody.Session, svcs *services.APIServices) (*protos.JobStatus, error) {
 	now := svcs.TimeStamper.GetTimeNowSec()
 	return &protos.JobStatus{
-		JobId:            lastJobStatus.JobId,
-		JobItemId:        lastJobStatus.JobItemId,
-		JobType:          lastJobStatus.JobType,
-		Status:           protos.JobStatus_COMPLETE,
-		Message:          fmt.Sprintf("Python script %v ran in %vsec", jg.JobName, now-int64(lastJobStatus.StartUnixTimeSec)),
-		StartUnixTimeSec: lastJobStatus.StartUnixTimeSec,
-		EndUnixTimeSec:   uint32(now),
+		JobId:                 lastJobStatus.JobId,
+		JobItemId:             lastJobStatus.JobItemId,
+		JobType:               lastJobStatus.JobType,
+		Status:                protos.JobStatus_COMPLETE,
+		Message:               fmt.Sprintf("Python script %v ran in %vsec", jg.JobName, now-int64(lastJobStatus.StartUnixTimeSec)),
+		StartUnixTimeSec:      lastJobStatus.StartUnixTimeSec,
+		LastUpdateUnixTimeSec: uint32(now),
+		EndUnixTimeSec:        uint32(now),
 		//OutputFilePath:   memoKey,
 		OtherLogFiles:   []string{},
 		Name:            jg.JobName,

@@ -78,14 +78,15 @@ func (jm *JobManager) internalSubmitJob(jg *protos.JobGroupConfig, requestorSess
 		JobId: jg.JobGroupId,
 		// For backwards compatibility with old quants... so tests pass. Hopefully not needed in future!
 		//LogId:            jg.JobGroupId,
-		Status:           protos.JobStatus_STARTING,
-		StartUnixTimeSec: now,
-		OtherLogFiles:    []string{},
-		JobType:          jg.JobType,
-		JobItemId:        itemId,
-		Name:             jg.JobName,
-		Elements:         jg.ElementList,
-		RequestorUserId:  jg.RequestorUserId,
+		Status:                protos.JobStatus_STARTING,
+		StartUnixTimeSec:      now,
+		LastUpdateUnixTimeSec: now,
+		OtherLogFiles:         []string{},
+		JobType:               jg.JobType,
+		JobItemId:             itemId,
+		Name:                  jg.JobName,
+		Elements:              jg.ElementList,
+		RequestorUserId:       jg.RequestorUserId,
 	}
 
 	ctx := context.TODO()

@@ -21,7 +21,7 @@ func (jm *JobManager) ListJobs(isAdmin bool, requestorUserId string, skip, limit
 	ctx := context.TODO()
 	coll := jm.svcs.MongoDB.Collection(dbCollections.JobStatusName)
 
-	sort := bson.D{{"lastupdateunixtimesec", -1}}
+	sort := bson.D{{"lastupdateunixtimesec", -1}, {"endunixtimesec", -1}}
 
 	opts := options.Find().SetSort(sort).SetLimit(limit).SetSkip(skip)
 	cursor, err := coll.Find(ctx, filter, opts)
@@ -58,6 +58,8 @@ func (jm *JobManager) ListJobs(isAdmin bool, requestorUserId string, skip, limit
 	nowUnixSec := jm.svcs.TimeStamper.GetTimeNowSec()
 
 	for _, j := range itemsToSend {
+		fixLastTimeStamp(j)
+
 		if j.Status == protos.JobStatus_COMPLETE || j.Status == protos.JobStatus_ERROR {
 			jobs = append(jobs, j)
 		} else {
@@ -88,6 +90,8 @@ func (jm *JobManager) GetJob(jobId string, isAdmin bool, requestorUserId string)
 		return nil, nil, err
 	}
 
+	fixLastTimeStamp(status)
+
 	config := &protos.JobGroupConfig{}
 	err = expressionrunner.ReadOne(dbCollections.JobsName, filter, config, jm.svcs.MongoDB)
 	if err != nil {
@@ -100,4 +104,15 @@ func (jm *JobManager) GetJob(jobId string, isAdmin bool, requestorUserId string)
 	}
 
 	return status, config, nil
+}
+
+func fixLastTimeStamp(j *protos.JobStatus) {
+	// Past records don't always have the last field set, so set it to something here... if end is not
+	// set, even setting it to start time is better!
+	if j.LastUpdateUnixTimeSec <= 0 {
+		j.LastUpdateUnixTimeSec = j.EndUnixTimeSec
+	}
+	if j.LastUpdateUnixTimeSec <= 0 {
+		j.LastUpdateUnixTimeSec = j.StartUnixTimeSec
+	}
 }

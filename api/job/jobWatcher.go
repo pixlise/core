@@ -47,15 +47,16 @@ func AddJob(
 	}
 
 	job := &protos.JobStatus{
-		JobId:            jobId,
-		Status:           protos.JobStatus_STARTING,
-		StartUnixTimeSec: now,
-		OtherLogFiles:    []string{},
-		JobType:          jobType,
-		JobItemId:        jobItemId,
-		Name:             jobName,
-		Elements:         elementList,
-		RequestorUserId:  requestorUserId,
+		JobId:                 jobId,
+		Status:                protos.JobStatus_STARTING,
+		StartUnixTimeSec:      now,
+		LastUpdateUnixTimeSec: now,
+		OtherLogFiles:         []string{},
+		JobType:               jobType,
+		JobItemId:             jobItemId,
+		Name:                  jobName,
+		Elements:              elementList,
+		RequestorUserId:       requestorUserId,
 	}
 
 	if _, ok := activeJobs[jobId]; ok {
@@ -147,12 +148,13 @@ func watchJob(jobId string, watchUntilUnixSec uint32, db *mongo.Database, logger
 			if now > int64(watchUntilUnixSec) {
 				// We've timed out
 				sendUpdate(&protos.JobStatus{
-					JobId:          jobId,
-					Status:         protos.JobStatus_ERROR,
-					Message:        "Timed out while waiting for status update",
-					EndUnixTimeSec: uint32(ts.GetTimeNowSec()),
-					OutputFilePath: "",
-					OtherLogFiles:  []string{},
+					JobId:                 jobId,
+					Status:                protos.JobStatus_ERROR,
+					Message:               "Timed out while waiting for status update",
+					LastUpdateUnixTimeSec: uint32(now),
+					EndUnixTimeSec:        uint32(now),
+					OutputFilePath:        "",
+					OtherLogFiles:         []string{},
 				})
 
 				break

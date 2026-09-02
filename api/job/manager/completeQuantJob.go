@@ -150,18 +150,19 @@ func completeQuantMultiNodeJob(jg *protos.JobGroupConfig, lastJobStatus *protos.
 	completeMsg := fmt.Sprintf("Nodes ran: %v", jg.NodeCount)
 	now := svcs.TimeStamper.GetTimeNowSec()
 	completeStatus := &protos.JobStatus{
-		JobId:            jobId,
-		JobItemId:        jobId,
-		JobType:          lastJobStatus.JobType,
-		Status:           protos.JobStatus_COMPLETE,
-		Message:          completeMsg,
-		StartUnixTimeSec: lastJobStatus.StartUnixTimeSec,
-		EndUnixTimeSec:   uint32(now),
-		OutputFilePath:   quantOutPath,
-		OtherLogFiles:    piquantLogList,
-		Name:             jg.JobName,
-		Elements:         jg.ElementList,
-		RequestorUserId:  jg.RequestorUserId,
+		JobId:                 jobId,
+		JobItemId:             jobId,
+		JobType:               lastJobStatus.JobType,
+		Status:                protos.JobStatus_COMPLETE,
+		Message:               completeMsg,
+		StartUnixTimeSec:      lastJobStatus.StartUnixTimeSec,
+		LastUpdateUnixTimeSec: uint32(now),
+		EndUnixTimeSec:        uint32(now),
+		OutputFilePath:        quantOutPath,
+		OtherLogFiles:         piquantLogList,
+		Name:                  jg.JobName,
+		Elements:              jg.ElementList,
+		RequestorUserId:       jg.RequestorUserId,
 	}
 	summary := &protos.QuantificationSummary{
 		Id:     jobId,
