@@ -271,6 +271,7 @@ func Example_jobmanager_SubmitQuantJob_Naltsos() {
 	//     }
 	//   ]
 	// }
+	// INFO: Scanning arguments...
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://datasets-bucket/Scans/048300551/dataset.bin" -> "dataset.bin":
 	// DEBUG:  Local path is <CWD>/dataset.bin
@@ -473,6 +474,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	//     }
 	//   ]
 	// }
+	// INFO: Scanning arguments...
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://datasets-bucket/Scans/983561/dataset.bin" -> "dataset.bin":
 	// DEBUG:  Local path is <CWD>/dataset.bin
@@ -573,6 +575,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	//     }
 	//   ]
 	// }
+	// INFO: Scanning arguments...
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://datasets-bucket/Scans/983561/dataset.bin" -> "dataset.bin":
 	// DEBUG:  Local path is <CWD>/dataset.bin
@@ -673,6 +676,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	//     }
 	//   ]
 	// }
+	// INFO: Scanning arguments...
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://datasets-bucket/Scans/983561/dataset.bin" -> "dataset.bin":
 	// DEBUG:  Local path is <CWD>/dataset.bin
@@ -773,6 +777,7 @@ func Example_jobmanager_SubmitQuantJob_983561() {
 	//     }
 	//   ]
 	// }
+	// INFO: Scanning arguments...
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://datasets-bucket/Scans/983561/dataset.bin" -> "dataset.bin":
 	// DEBUG:  Local path is <CWD>/dataset.bin
@@ -970,6 +975,7 @@ func Example_jobmanager_SubmitQuantJob_983561_FailJobNotFound() {
 	//     }
 	//   ]
 	// }
+	// INFO: Scanning arguments...
 	// INFO: Downloading files...
 	// DEBUG: Download "s3://datasets-bucket/Scans/983561/dataset.bin" -> "dataset.bin":
 	// DEBUG:  Local path is <CWD>/dataset.bin
