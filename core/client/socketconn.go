@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path"
 	"strings"
 	"time"
 
@@ -77,9 +78,8 @@ func (s *SocketConn) Connect(connectParams ConnectInfo, auth0Params Auth0Info) e
 		hostUrl = strings.TrimPrefix(hostUrl, "http://")
 	}
 
-	hostUrl = strings.TrimSuffix(hostUrl, "/")
-
-	wsUrl := url.URL{Scheme: protocol, Host: hostUrl, Path: "/ws", RawQuery: "token=" + token}
+	connectHost, connectPath := normaliseURLAndPath(hostUrl, "ws")
+	wsUrl := url.URL{Scheme: protocol, Host: connectHost, Path: connectPath, RawQuery: "token=" + token}
 	ws, resp, err := websocket.DefaultDialer.Dial(wsUrl.String(), nil)
 	if err != nil {
 		log.Fatalln("WS connection failed:", err)
@@ -221,9 +221,9 @@ func (s *SocketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Au
 	} else {
 		hostUrl = strings.TrimPrefix(hostUrl, "http://")
 	}
-	hostUrl = strings.TrimSuffix(hostUrl, "/")
 
-	wsConnectUrl := url.URL{Scheme: protocol, Host: hostUrl, Path: "/ws-connect"}
+	connectHost, connectPath := normaliseURLAndPath(hostUrl, "ws-connect")
+	wsConnectUrl := url.URL{Scheme: protocol, Host: connectHost, Path: connectPath}
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", wsConnectUrl.String(), nil)
@@ -255,6 +255,41 @@ func (s *SocketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Au
 	s.HostProtocol = protocol
 
 	return respBody.ConnToken, nil
+}
+
+func normaliseURLAndPath(urlHost, urlPath string) (string, string) {
+	// If the host URL contains path stuff, we want to remove that and prepend it to the path we're creating
+
+	// If there are any path elements on the url, prepend them to the path
+	parts := strings.Split(urlHost, "/")
+
+	// We expect https://www.pixlise.org to become:
+	// [0]="https:"
+	// [1]=""
+	// [2]="www.pixlise.org"
+
+	// So we find the first "" then put all other bits into the path after
+	resultUrl := ""
+	resultPath := ""
+
+	// Check for the above
+	if len(parts) > 2 && len(parts[1]) <= 0 {
+		resultUrl = parts[0] + "//" + parts[2]
+		resultPath = path.Join(append(parts[3:], urlPath)...)
+	} else if len(parts) > 1 {
+		// Maybe there's no host at the start? Just assemble all but the first bit
+		resultUrl = parts[0]
+		resultPath = path.Join(append(parts[1:], urlPath)...)
+	}
+
+	if strings.HasSuffix(urlPath, "/") {
+		resultPath = resultPath + "/"
+	}
+
+	// Ensure path has a slash at the start
+	resultPath = strings.TrimLeft(resultPath, "/")
+
+	return resultUrl, "/" + resultPath
 }
 
 func (s *SocketConn) SendMessage(msg *protos.WSMessage) error {
