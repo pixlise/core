@@ -133,13 +133,14 @@ func completeExpressionJob(jg *protos.JobGroupConfig, lastJobStatus *protos.JobS
 
 	now := svcs.TimeStamper.GetTimeNowSec()
 	return &protos.JobStatus{
-		JobId:            lastJobStatus.JobId,
-		JobItemId:        lastJobStatus.JobItemId,
-		JobType:          lastJobStatus.JobType,
-		Status:           protos.JobStatus_COMPLETE,
-		Message:          fmt.Sprintf("Memoised as: %v", memoKey),
-		StartUnixTimeSec: lastJobStatus.StartUnixTimeSec,
-		EndUnixTimeSec:   uint32(now),
+		JobId:                 lastJobStatus.JobId,
+		JobItemId:             lastJobStatus.JobItemId,
+		JobType:               lastJobStatus.JobType,
+		Status:                protos.JobStatus_COMPLETE,
+		Message:               fmt.Sprintf("Memoised as: %v", memoKey),
+		StartUnixTimeSec:      lastJobStatus.StartUnixTimeSec,
+		LastUpdateUnixTimeSec: uint32(now),
+		EndUnixTimeSec:        uint32(now),
 		//OutputFilePath:   memoKey,
 		OtherLogFiles:   []string{},
 		Name:            jg.JobName,
