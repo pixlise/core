@@ -223,7 +223,7 @@ func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.Sca
 
 		jm.svcs.Log.Infof("RunScheduledJob submitting expression job %v...", job.Id)
 		jobStatus, err = jm.SubmitExpressionJob(scanId, params["quantId"], params["expressionId"], roiId, cacheKey, nil, nil)
-		return "", err
+		return jobStatus.JobId, err
 	} else if job.JobType == protos.JobType_JT_RUN_QUANT {
 		if scan == nil {
 			return "", errors.New("No scanId specified")
@@ -264,7 +264,7 @@ func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.Sca
 
 		jm.svcs.Log.Infof("RunScheduledJob submitting quant job %v...", job.Id)
 		jobStatus, err = jm.SubmitQuantJob(createParams, nil, nil)
-		return "", err
+		return jobStatus.JobId, err
 	} else if job.JobType == protos.JobType_JT_RUN_PYTHON_SCRIPT {
 		// Get parameters
 		importedScanId := ""
@@ -280,8 +280,8 @@ func (jm *JobManager) RunScheduledJob(job *protos.ScheduledJob, scan *protos.Sca
 
 		jm.svcs.Log.Infof("RunScheduledJob submitting python job %v...", job.Id)
 		jobStatus, err = jm.SubmitPythonJob(params["repositoryId"], params[jobrunner.ArgBranchName], params[jobrunner.ArgExecFileName], params["scanId"], params["quantId"], params["clientAuthId"], nil, nil)
-		return "", err
+		return jobStatus.JobId, err
 	}
 
-	return jobStatus.JobId, fmt.Errorf("RunScheduledJob cannot run job %v of type %v", job.Id, job.JobType)
+	return "", fmt.Errorf("RunScheduledJob cannot run job %v of type %v", job.Id, job.JobType)
 }
