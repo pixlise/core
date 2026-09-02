@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"path"
 	"strings"
 	"time"
 
@@ -261,41 +260,6 @@ func makeConnectURL(urlHost string, urlPath string, useWebSocketProtocol bool) (
 	}
 
 	return u, err
-}
-
-func normaliseURLAndPath(urlHost, urlPath string) (string, string) {
-	// If the host URL contains path stuff, we want to remove that and prepend it to the path we're creating
-
-	// If there are any path elements on the url, prepend them to the path
-	parts := strings.Split(urlHost, "/")
-
-	// We expect https://www.pixlise.org to become:
-	// [0]="https:"
-	// [1]=""
-	// [2]="www.pixlise.org"
-
-	// So we find the first "" then put all other bits into the path after
-	resultUrl := ""
-	resultPath := ""
-
-	// Check for the above
-	if len(parts) > 2 && len(parts[1]) <= 0 {
-		resultUrl = parts[0] + "//" + parts[2]
-		resultPath = path.Join(append(parts[3:], urlPath)...)
-	} else if len(parts) > 1 {
-		// Maybe there's no host at the start? Just assemble all but the first bit
-		resultUrl = parts[0]
-		resultPath = path.Join(append(parts[1:], urlPath)...)
-	}
-
-	if strings.HasSuffix(urlPath, "/") {
-		resultPath = resultPath + "/"
-	}
-
-	// Ensure path has a slash at the start
-	resultPath = strings.TrimLeft(resultPath, "/")
-
-	return resultUrl, "/" + resultPath
 }
 
 func (s *SocketConn) SendMessage(msg *protos.WSMessage) error {
