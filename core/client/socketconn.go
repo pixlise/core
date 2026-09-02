@@ -68,18 +68,13 @@ func (s *SocketConn) Connect(connectParams ConnectInfo, auth0Params Auth0Info) e
 	signal.Notify(s.interrupt, os.Interrupt)
 
 	// NOTE: not using wss for local...
-	protocol := "ws"
-	hostUrl := connectParams.Host
-
-	if strings.HasPrefix(hostUrl, "https://") {
-		protocol = "wss"
-		hostUrl = strings.TrimPrefix(hostUrl, "https://")
-	} else {
-		hostUrl = strings.TrimPrefix(hostUrl, "http://")
+	wsUrl, err := makeConnectURL(connectParams.Host, "ws", true)
+	if err != nil {
+		return err
 	}
 
-	connectHost, connectPath := normaliseURLAndPath(hostUrl, "ws")
-	wsUrl := url.URL{Scheme: protocol, Host: connectHost, Path: connectPath, RawQuery: "token=" + token}
+	wsUrl.RawQuery = "token=" + token
+
 	ws, resp, err := websocket.DefaultDialer.Dial(wsUrl.String(), nil)
 	if err != nil {
 		log.Fatalln("WS connection failed:", err)
@@ -212,18 +207,10 @@ func (s *SocketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Au
 
 	// Get WS connection token
 	// NOTE: not using https for local...
-	protocol := "http"
-	hostUrl := connectParams.Host
-
-	if strings.HasPrefix(hostUrl, "https://") {
-		protocol = "https"
-		hostUrl = strings.TrimPrefix(hostUrl, "https://")
-	} else {
-		hostUrl = strings.TrimPrefix(hostUrl, "http://")
+	wsConnectUrl, err := makeConnectURL(connectParams.Host, "ws-connect", false)
+	if err != nil {
+		return "", err
 	}
-
-	connectHost, connectPath := normaliseURLAndPath(hostUrl, "ws-connect")
-	wsConnectUrl := url.URL{Scheme: protocol, Host: connectHost, Path: connectPath}
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", wsConnectUrl.String(), nil)
@@ -251,10 +238,29 @@ func (s *SocketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Au
 	}
 
 	// Remember this host for later
-	s.Host = hostUrl
-	s.HostProtocol = protocol
+	s.Host = wsConnectUrl.Host
+	s.HostProtocol = wsConnectUrl.Scheme
 
 	return respBody.ConnToken, nil
+}
+
+func makeConnectURL(urlHost string, urlPath string, useWebSocketProtocol bool) (*url.URL, error) {
+	// Create a whole path
+	urlString := strings.TrimRight(urlHost, "/") + "/" + strings.TrimLeft(urlPath, "/")
+	u, err := url.Parse(urlString)
+
+	if useWebSocketProtocol {
+		switch u.Scheme {
+		case "https":
+			u.Scheme = "wss"
+		case "http":
+			u.Scheme = "ws"
+		default:
+			return nil, fmt.Errorf("makeConnectURL: Unknown scheme when replacing with websocket: %v", u.Scheme)
+		}
+	}
+
+	return u, err
 }
 
 func normaliseURLAndPath(urlHost, urlPath string) (string, string) {
