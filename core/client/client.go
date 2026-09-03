@@ -1259,53 +1259,68 @@ func (c *APIClient) LoadMapData(key string) (*protos.ClientMap, error) {
 	return mapResult, nil
 }
 
-/*
-	func (c *APIClient) CalculateExpression(scanId, quantId, expressionId, roiId string, units protos.DataUnit) (*protos.ClientMap, error) {
-		req := &protos.ExpressionCalculateReq{Requests: []*protos.DataSourceParams{{
+func (c *APIClient) TriggerScheduledJob(scheduledJobId string, jobParametersJson string) (string, error) {
+	params := map[string]string{}
+	err := json.Unmarshal([]byte(jobParametersJson), &params)
+	if err != nil {
+		return "", err
+	}
+
+	req := &protos.TriggerScheduledJobReq{
+		ScheduledJobId: scheduledJobId,
+		JobParameters:  params,
+	}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_TriggerScheduledJobReq{
+		TriggerScheduledJobReq: req,
+	}}
+
+	resps, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return "", err
+	}
+
+	if resps[0].Status != protos.ResponseStatus_WS_OK {
+		return "", fmt.Errorf("TriggerScheduledJob %v status: %v, error: %v", scheduledJobId, resps[0].Status, resps[0].ErrorText)
+	}
+
+	resp := resps[0].GetTriggerScheduledJobResp()
+	return resp.JobId, nil
+}
+
+func (c *APIClient) GetExpressionOutput(scanId, quantId, expressionId, roiId string, units protos.DataUnit) (*protos.ClientMap, error) {
+	req := &protos.ExpressionOutputReq{
+		Request: &protos.DataSourceParams{
 			ScanId:       scanId,
 			QuantId:      quantId,
 			ExpressionId: expressionId,
 			RoiId:        roiId,
 			Units:        units,
-		}}}
-
-		msg := &protos.WSMessage{Contents: &protos.WSMessage_ExpressionCalculateReq{
-			ExpressionCalculateReq: req,
-		}}
-
-		resps, err := c.sendMessageWaitResponse(msg)
-		if err != nil {
-			return nil, err
-		}
-
-		resp := resps[0].GetExpressionCalculateResp()
-
-		if len(resp.Result.Error) > 0 {
-			return nil, fmt.Errorf("Error calculating expression: %v", resp.Result.Error)
-		}
-
-		if len(resp.Result.QueryResults) != 1 {
-			return nil, fmt.Errorf("Expected 1 expression calculation result, got %v", len(resp.Result.QueryResults))
-		}
-
-		if len(resp.Result.QueryResults[0].Error) > 0 {
-			return nil, fmt.Errorf("Error calculating expression (%v): %v", expressionId, resp.Result.QueryResults[0].Error)
-		}
-
-		// Convert the result to a map
-		result := &protos.ClientMap{
-			EntryPMCs:   []int32{},
-			FloatValues: []float64{},
-		}
-
-		for _, item := range resp.Result.QueryResults[0].ExprResult.ResultValues.Values {
-			result.EntryPMCs = append(result.EntryPMCs, int32(item.Pmc))
-			result.FloatValues = append(result.FloatValues, float64(item.Value))
-		}
-
-		return result, nil
+		},
 	}
-*/
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ExpressionOutputReq{
+		ExpressionOutputReq: req,
+	}}
+
+	resps, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	if resps[0].Status != protos.ResponseStatus_WS_OK {
+		return nil, fmt.Errorf("ExpressionOutput status: %v, error: %v", resps[0].Status, resps[0].ErrorText)
+	}
+
+	resp := resps[0].GetExpressionOutputResp()
+	if resp == nil {
+		return nil, fmt.Errorf("ExpressionOutput got empty response")
+	}
+
+	// We got the job id/cache key - read it from memoisation
+	return c.LoadMapData(resp.Key)
+}
+
 func (c *APIClient) DeleteImage(imageName string) error {
 	req := &protos.ImageDeleteReq{Name: imageName}
 

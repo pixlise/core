@@ -297,14 +297,28 @@ func loadMapData(key string) *C.char {
 	return processRequest("loadMapData", func() (proto.Message, error) { return apiClient.LoadMapData(key) })
 }
 
-/*
-//export calculateExpression
-func calculateExpression(scanId, quantId, expressionId, roiId string, units int) *C.char {
-	return processRequest("calculateExpression", func() (proto.Message, error) {
-		return apiClient.Express.CalculateExpression(scanId, quantId, expressionId, roiId, protos.DataUnit(units))
+//export getExpressionOutput
+func getExpressionOutput(scanId, quantId, expressionId, roiId string, units int) *C.char {
+	return processRequest("getExpressionOutput", func() (proto.Message, error) {
+		return apiClient.GetExpressionOutput(scanId, quantId, expressionId, roiId, protos.DataUnit(units))
 	})
 }
-*/
+
+//export triggerScheduledJob
+func triggerScheduledJob(scheduledJobId string, jobParams string) (*C.char, *C.char) {
+	if apiClient == nil {
+		return emptyCString, C.CString("Not authenticated")
+	}
+
+	jobId, err := apiClient.TriggerScheduledJob(scheduledJobId, jobParams)
+
+	if err != nil {
+		return emptyCString, C.CString(fmt.Sprintf("triggerScheduledJob: Error: %v", err))
+	}
+
+	return C.CString(jobId), emptyCString
+}
+
 //export uploadImage
 func uploadImage(imageUpload string) *C.char {
 	// Here we can read the data string as a protobuf message and create the right structure
