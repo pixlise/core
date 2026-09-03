@@ -1190,20 +1190,20 @@ func (c *APIClient) sendRequest(key string, url *url.URL) (*http.Response, []byt
 	urlString := url.String()
 	req, err := http.NewRequest("GET", urlString, nil)
 	if err != nil {
-		return nil, nil, fmt.Errorf("LoadMapData %v failed to create request: %v", key, err)
+		return nil, nil, fmt.Errorf("sendRequest %v failed to create request: %v", key, err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, nil, fmt.Errorf("LoadMapData %v request failed: %v", key, err)
+		return nil, nil, fmt.Errorf("sendRequest %v request failed: %v", key, err)
 	}
 
 	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, nil, fmt.Errorf("LoadMapData %v failed to read response: %v", key, err)
+		return nil, nil, fmt.Errorf("sendRequest %v failed to read response: %v", key, err)
 	}
 
 	return resp, b, err
