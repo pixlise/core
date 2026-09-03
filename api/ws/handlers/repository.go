@@ -25,6 +25,11 @@ func HandleSourceRepositoryListReq(req *protos.SourceRepositoryListReq, hctx wsH
 		return nil, fmt.Errorf("Failed to decode source repositories: %v", err)
 	}
 
+	// Run through and mask all the secrets
+	for _, r := range repos {
+		r.Secret = wsHelpers.MaskSecretField(r.Secret)
+	}
+
 	return &protos.SourceRepositoryListResp{
 		Repositories: repos,
 	}, nil
