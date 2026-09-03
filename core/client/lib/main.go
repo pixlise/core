@@ -48,18 +48,18 @@ func allocSlice[T any](alloc C.alloc_f, n int, typeCode string) []T {
 // 	return allocSlice[int32](alloc, n, "l")
 // }
 
-func allocInts(alloc C.alloc_f, n int) []int64 {
-	return allocSlice[int64](alloc, n, "q")
-}
+// func allocInts(alloc C.alloc_f, n int) []int64 {
+// 	return allocSlice[int64](alloc, n, "q")
+// }
 
 func allocBytes(alloc C.alloc_f, n int) []byte {
 	return allocSlice[byte](alloc, n, "B")
 }
 
-func allocString(alloc C.alloc_f, s string) {
-	b := allocBytes(alloc, len(s))
-	copy(b, s)
-}
+// func allocString(alloc C.alloc_f, s string) {
+// 	b := allocBytes(alloc, len(s))
+// 	copy(b, s)
+// }
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -90,9 +90,7 @@ func serialiseForPython(msg proto.Message) *C.char {
 	}
 
 	mem := allocBytes(allocFn, len(buf))
-	for c, v := range buf {
-		mem[c] = v
-	}
+	copy(mem, buf)
 
 	return emptyCString
 }

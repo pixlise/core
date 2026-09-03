@@ -65,7 +65,7 @@ func main() {
 	var testType string
 	var envName string
 
-	flag.StringVar(&apiHost, "apiHost", "", "Host name of API we're testing. Eg: localhost:8080 or something.review.pixlise.org")
+	flag.StringVar(&apiHost, "apiHost", "", "Host name of API we're testing. Eg: http://localhost:8080 or https://something.pixlise.org")
 	flag.StringVar(&apiDBSecret, "apiDBSecret", "", "Mongo secret of the DB the API is connected")
 	flag.StringVar(&apiDatasetBucket, "datasetBucket", "", "Dataset bucket the API is using")
 	flag.StringVar(&apiUsersBucket, "usersBucket", "", "User Data bucket the API is using")
