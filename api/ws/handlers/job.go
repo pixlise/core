@@ -5,9 +5,11 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	expressionrunner "github.com/pixlise/core/v4/api/job/jobrunner/expression-runner"
 	jobmanager "github.com/pixlise/core/v4/api/job/manager"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -134,4 +136,47 @@ func HandleTriggerScheduledJobReq(req *protos.TriggerScheduledJobReq, hctx wsHel
 	}
 
 	return &protos.TriggerScheduledJobResp{JobId: jobId}, nil
+}
+
+func HandleJobOutputGetReq(req *protos.JobOutputGetReq, hctx wsHelpers.HandlerContext) (*protos.JobOutputGetResp, error) {
+	if err := wsHelpers.CheckStringField(&req.JobId, "JobId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+		return nil, err
+	}
+	if err := wsHelpers.CheckStringField(&req.FilePath, "FilePath", 1, 512); err != nil {
+		return nil, err
+	}
+
+	// Get the job config so we can independently get the bucket/path etc, confirming it exists and this isn't
+	// some client code stabbing in the dark!
+	filter := bson.M{"_id": req.JobId}
+	config := &protos.JobGroupConfig{}
+	if err := expressionrunner.ReadOne(dbCollections.JobsName, filter, config, hctx.Svcs.MongoDB); err != nil {
+		return nil, err
+	}
+
+	if req.NodeIndex >= config.NodeCount {
+		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Invalid node index: %v", req.NodeIndex))
+	}
+
+	nodeConfig := jobconfig.FlattenJobConfig(config.NodeConfig, uint(req.NodeIndex))
+
+	// At this point, we should be able to find the requested path
+	for _, out := range nodeConfig.OutputFiles {
+		if out.RemotePath == req.FilePath {
+			// Found it!
+			fileData, err := hctx.Svcs.FS.ReadObject(out.RemoteBucket, out.RemotePath)
+			if err != nil {
+				if hctx.Svcs.FS.IsNotFoundError(err) {
+					return nil, errorwithstatus.MakeNotFoundError(req.FilePath)
+				}
+				return nil, err
+			}
+
+			return &protos.JobOutputGetResp{
+				Content: fileData,
+			}, nil
+		}
+	}
+
+	return nil, errorwithstatus.MakeNotFoundError(fmt.Sprintf("Node: %v, Path %v", req.NodeIndex, req.FilePath))
 }
