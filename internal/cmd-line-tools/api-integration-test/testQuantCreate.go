@@ -179,13 +179,14 @@ func runQuantificationTest(idx int, apiHost string, user string, pass string,
 				"jobId": "${IDSAVE=quantCreate%v}",
 				"status": "STARTING",
 				"startUnixTimeSec": "${SECAGO=%v}",
+				"lastUpdateUnixTimeSec": "${SECAGO=%v}",
 				"jobItemId": "${IGNORE}",
 				"jobType": "JT_RUN_QUANT",
 				"requestorUserId": "${USERID}",
 				"name": "%v",
 				"elements": [%v]
 			}
-		}}`, idx+1, maxAgeSec, quantName, elemListStr),
+		}}`, idx+1, maxAgeSec, maxAgeSec, quantName, elemListStr),
 	)
 
 	finalMsg := fmt.Sprintf(`{"quantCreateUpd":{

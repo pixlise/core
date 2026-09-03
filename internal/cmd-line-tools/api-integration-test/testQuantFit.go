@@ -73,6 +73,7 @@ func testQuantFit(apiHost string) {
 				"jobType": "JT_RUN_FIT",
 				"requestorUserId": "${USERID}",
 				"startUnixTimeSec": "${SECAGO=60}",
+				"lastUpdateUnixTimeSec": "${SECAGO=60}",
 				"elements": ["Ca", "Ti"]
 			}
 		}}`,
