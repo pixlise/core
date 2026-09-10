@@ -139,7 +139,7 @@ func HandleTriggerScheduledJobReq(req *protos.TriggerScheduledJobReq, hctx wsHel
 }
 
 func HandleJobOutputGetReq(req *protos.JobOutputGetReq, hctx wsHelpers.HandlerContext) (*protos.JobOutputGetResp, error) {
-	if err := wsHelpers.CheckStringField(&req.JobId, "JobId", 1, wsHelpers.IdFieldMaxLength); err != nil {
+	if err := wsHelpers.CheckStringField(&req.JobId, "JobId", 1, wsHelpers.IdFieldMaxLength*3); err != nil {
 		return nil, err
 	}
 	if err := wsHelpers.CheckStringField(&req.FilePath, "FilePath", 1, 512); err != nil {
