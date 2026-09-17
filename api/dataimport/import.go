@@ -25,6 +25,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -73,7 +74,7 @@ func ImportDataset(
 	// Read previously saved dataset summary file, so we have something to compare against to see what changes
 	// we will need to notify on
 	oldSummary, errOldSummary := scan.ReadScanItem(datasetID, db)
-	if err != nil {
+	if errOldSummary != nil {
 		// NOTE: we don't die here, we may be importing for the first time! Just log and continue
 		//return workingDir, savedSummary, "", false, err
 		log.Infof("Failed to import previous dataset summary file - assuming we're a new dataset...")
@@ -187,7 +188,7 @@ func ImportFromLocalFileSystem(
 		return "", err
 	}
 
-	log.Infof("Running dataset converter...")
+	log.Infof("Running dataset converter %v...", reflect.TypeOf(importer))
 	data, contextImageSrcPath, err := importer.Import(localImportPath, localPseudoIntensityRangesPath, datasetID, log)
 	if err != nil {
 		return "", fmt.Errorf("Import failed: %v", err)

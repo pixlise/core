@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pixlise/core/v4/api/dataimport/internal/converters/bruker"
 	"github.com/pixlise/core/v4/api/dataimport/internal/converters/converter"
 	"github.com/pixlise/core/v4/api/dataimport/internal/converters/jplbreadboard"
 	pixlidspipeline "github.com/pixlise/core/v4/api/dataimport/internal/converters/pixl-ids-pipeline"
@@ -94,6 +95,13 @@ func SelectDataConverter(localFS fileaccess.FileAccess, remoteFS fileaccess.File
 		}
 	} else {
 		log.Errorf("Failed to open detector.json when determining dataset type. Error: %v", err)
+	}
+
+	// Check if it's bruker
+	if bruker.IsBrukerFormat(importPath) {
+		return &bruker.Bruker{
+			Downsample: 8,
+		}, nil
 	}
 
 	// Log the paths to help us diagnose issues...
