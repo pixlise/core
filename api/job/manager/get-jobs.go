@@ -6,6 +6,7 @@ import (
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	expressionrunner "github.com/pixlise/core/v4/api/job/jobrunner/expression-runner"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -95,6 +96,11 @@ func (jm *JobManager) GetJob(jobId string, isAdmin bool, requestorUserId string)
 	config := &protos.JobGroupConfig{}
 	err = expressionrunner.ReadOne(dbCollections.JobsName, filter, config, jm.svcs.MongoDB)
 	if err != nil {
+		if err.(errorwithstatus.Error).Status() == 404 {
+			// This must be an old pre-job-runner job, here we emulate a job config so the UI doesn't have to worry about this
+			// backwards-compatibility stuff
+		}
+
 		return nil, nil, err
 	}
 

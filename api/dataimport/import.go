@@ -87,6 +87,10 @@ func ImportDataset(
 		return workingDir, savedSummary, "", false, err
 	}
 
+	// if datasetID == "bcf-test" {
+	// 	localDownloadPath = "/tmp/archive2145906920/downloaded"
+	// 	localUnzippedPath = "/tmp/archive2145906920/unzipped"
+	// } else {
 	// If no zip files were loaded, maybe this dataset is a manually uploaded one, try to import from there instead
 	if len(zipFiles) == 0 {
 		log.Infof("No zip files found in archive, dataset may have been manually uploaded. Trying to download...")
@@ -95,6 +99,7 @@ func ImportDataset(
 			return workingDir, savedSummary, "", false, err
 		}
 	}
+	// }
 
 	// No obvious place to make this change right now, but pseudo-intensities have changed in flight software
 	// and this is likely to go live in late 2023.
