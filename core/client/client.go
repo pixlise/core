@@ -211,36 +211,13 @@ func (c *APIClient) ensureScanSpectra(scanId string) error {
 	// Decode (decompress) all spectra we receive
 	for _, spectra := range resp.SpectraPerLocation {
 		for _, spectrum := range spectra.Spectra {
-			spectrum.Counts = zeroRunDecode(spectrum.Counts)
+			spectrum.Counts = utils.ZeroRunDecode(spectrum.Counts)
 		}
 	}
 
 	c.scanSpectra[scanId] = resp
 
 	return nil
-}
-
-func (c *APIClient) makeClientSpectrum(scanId string, spectrum *protos.Spectrum) (*protos.ClientSpectrum, error) {
-	if err := c.ensureScanMetaLabels(scanId); err != nil {
-		return nil, err
-	}
-
-	labels := c.scanMetaLabels[scanId]
-
-	meta := map[string]*protos.ScanMetaDataItem{}
-	for idx, item := range spectrum.Meta {
-		// Find the string label
-		label := labels.MetaLabels[idx]
-		meta[label] = item
-	}
-
-	return &protos.ClientSpectrum{
-		Detector: spectrum.Detector,
-		Type:     spectrum.Type,
-		Counts:   spectrum.Counts,
-		MaxCount: spectrum.MaxCount,
-		Meta:     meta,
-	}, nil
 }
 
 func (c *APIClient) GetScanSpectrum(scanId string, pmc int32, spectrumType protos.SpectrumType, detector string) (*protos.ClientSpectrum, error) {
@@ -278,6 +255,66 @@ func (c *APIClient) GetScanSpectrum(scanId string, pmc int32, spectrumType proto
 	}
 
 	return nil, fmt.Errorf("Failed to find spectrum for scan %v, pmc %v, spectrumType %v, detector %v", scanId, pmc, spectrumType, detector)
+}
+
+func (c *APIClient) UploadScanSpectra(scanId string, locs *protos.ClientSpectraPerLocation) error {
+	if err := c.ensureScanMetaLabels(scanId); err != nil {
+		return err
+	}
+
+	// Turn the client-specified spectra into sendable spectra. We send them up in batches!
+	batchSize := 15
+	send := []*protos.Spectra{}
+	msgCount := 0
+	sentLocCount := 0
+	for i := 0; i < len(locs.Locations); i++ {
+		loc := locs.Locations[i]
+
+		locSpectraToSend := []*protos.Spectrum{}
+		for _, spectrum := range loc.Spectra {
+			if s, err := c.makeSendableSpectrum(scanId, spectrum); err != nil {
+				return fmt.Errorf("Error at spectrum %v: %v", i, err)
+			} else {
+				locSpectraToSend = append(locSpectraToSend, s)
+			}
+		}
+
+		send = append(send, &protos.Spectra{Spectra: locSpectraToSend})
+
+		// If we've just finished a chunk, send!
+		if i%batchSize == 0 || i == len(locs.Locations)-1 {
+			msgCount++
+
+			req := &protos.SpectrumUploadReq{
+				ScanId:             scanId,
+				FirstLocationIndex: uint32(sentLocCount),
+				SpectraPerLocation: send,
+			}
+
+			msg := &protos.WSMessage{Contents: &protos.WSMessage_SpectrumUploadReq{
+				SpectrumUploadReq: req,
+			}}
+
+			resps, err := c.sendMessageWaitResponse(msg)
+			if err != nil {
+				return err
+			}
+
+			if len(resps) != 1 {
+				return fmt.Errorf("Got invalid response count %v when sending spectrum upload message %v", len(resps), msgCount)
+			}
+
+			if resps[0].GetSpectrumUploadResp() == nil {
+				return fmt.Errorf("Got empty response when sending spectrum upload message %v", msgCount)
+			}
+
+			// Clear it for the next run
+			sentLocCount += len(send)
+			send = []*protos.Spectra{}
+		}
+	}
+
+	return nil
 }
 
 // Adds up all channels from channelStart, to channel at index channelEnd-1

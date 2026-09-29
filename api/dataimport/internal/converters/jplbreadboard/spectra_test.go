@@ -82,7 +82,7 @@ func Example_addToSpectraLookup() {
 			"PMC":         dataConvertModels.IntMetaValue(123),
 			"DETECTOR_ID": dataConvertModels.StringMetaValue("A"),
 		},
-		[]int64{1, 2, 3},
+		[]int32{1, 2, 3},
 	)
 
 	fmt.Printf("%+v\n", detectorsToString(lookup[123]))
@@ -92,7 +92,7 @@ func Example_addToSpectraLookup() {
 			"PMC":         dataConvertModels.IntMetaValue(123),
 			"DETECTOR_ID": dataConvertModels.StringMetaValue("B"),
 		},
-		[]int64{4, 5, 6},
+		[]int32{4, 5, 6},
 	)
 
 	fmt.Printf("%+v\n", detectorsToString(lookup[123]))
@@ -102,7 +102,7 @@ func Example_addToSpectraLookup() {
 			"PMC":         dataConvertModels.IntMetaValue(555),
 			"DETECTOR_ID": dataConvertModels.StringMetaValue("B"),
 		},
-		[]int64{9, 8, 7},
+		[]int32{9, 8, 7},
 	)
 
 	fmt.Printf("%+v\n", detectorsToString(lookup[555]))
@@ -113,7 +113,7 @@ func Example_addToSpectraLookup() {
 			"PMC":         dataConvertModels.IntMetaValue(123),
 			"DETECTOR_ID": dataConvertModels.StringMetaValue("A"),
 		},
-		[]int64{7, 8, 9},
+		[]int32{7, 8, 9},
 	)
 
 	fmt.Printf("%+v\n", detectorsToString(lookup[555]))
@@ -133,21 +133,21 @@ func Example_makeBulkMaxSpectra() {
 		1: []dataConvertModels.DetectorSample{
 			{
 				Meta:     dataConvertModels.MetaData{"PMC": dataConvertModels.IntMetaValue(1), "DETECTOR_ID": dataConvertModels.StringMetaValue("A"), "XPERCHAN": dataConvertModels.FloatMetaValue(10.4), "OFFSET": dataConvertModels.FloatMetaValue(4)},
-				Spectrum: []int64{1, 10, 100},
+				Spectrum: []int32{1, 10, 100},
 			},
 			{
 				Meta:     dataConvertModels.MetaData{"PMC": dataConvertModels.IntMetaValue(1), "DETECTOR_ID": dataConvertModels.StringMetaValue("B"), "LIVETIME": dataConvertModels.FloatMetaValue(9.5)},
-				Spectrum: []int64{3, 4, 5},
+				Spectrum: []int32{3, 4, 5},
 			},
 		},
 		2: []dataConvertModels.DetectorSample{
 			{
 				Meta:     dataConvertModels.MetaData{"PMC": dataConvertModels.IntMetaValue(2), "DETECTOR_ID": dataConvertModels.StringMetaValue("A"), "XPERCHAN": dataConvertModels.FloatMetaValue(6.4), "OFFSET": dataConvertModels.FloatMetaValue(-6), "LIVETIME": dataConvertModels.FloatMetaValue(8.5)},
-				Spectrum: []int64{20, 30, 40},
+				Spectrum: []int32{20, 30, 40},
 			},
 			{
 				Meta:     dataConvertModels.MetaData{"PMC": dataConvertModels.IntMetaValue(2), "DETECTOR_ID": dataConvertModels.StringMetaValue("B"), "LIVETIME": dataConvertModels.FloatMetaValue(10)},
-				Spectrum: []int64{21, 22, 23},
+				Spectrum: []int32{21, 22, 23},
 			},
 		},
 	}
@@ -173,21 +173,21 @@ func Example_jplbreadboard_EVCalibrationOverride() {
 		1: []dataConvertModels.DetectorSample{
 			dataConvertModels.DetectorSample{
 				Meta:     dataConvertModels.MetaData{"PMC": dataConvertModels.IntMetaValue(1), "DETECTOR_ID": dataConvertModels.StringMetaValue("A"), "XPERCHAN": dataConvertModels.FloatMetaValue(10.4), "OFFSET": dataConvertModels.FloatMetaValue(4)},
-				Spectrum: []int64{1, 10, 100},
+				Spectrum: []int32{1, 10, 100},
 			},
 			dataConvertModels.DetectorSample{
 				Meta:     dataConvertModels.MetaData{"PMC": dataConvertModels.IntMetaValue(1), "DETECTOR_ID": dataConvertModels.StringMetaValue("B")},
-				Spectrum: []int64{3, 4, 5},
+				Spectrum: []int32{3, 4, 5},
 			},
 		},
 		2: []dataConvertModels.DetectorSample{
 			dataConvertModels.DetectorSample{
 				Meta:     dataConvertModels.MetaData{"PMC": dataConvertModels.IntMetaValue(2), "DETECTOR_ID": dataConvertModels.StringMetaValue("A"), "XPERCHAN": dataConvertModels.FloatMetaValue(6.4), "OFFSET": dataConvertModels.FloatMetaValue(-6)},
-				Spectrum: []int64{20, 30, 40},
+				Spectrum: []int32{20, 30, 40},
 			},
 			dataConvertModels.DetectorSample{
 				Meta:     dataConvertModels.MetaData{"PMC": dataConvertModels.IntMetaValue(2), "DETECTOR_ID": dataConvertModels.StringMetaValue("B")},
-				Spectrum: []int64{21, 22, 23},
+				Spectrum: []int32{21, 22, 23},
 			},
 		},
 	}

@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"google.golang.org/protobuf/proto"
 )
 
 func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumResp, error) {
@@ -209,4 +211,73 @@ func convertSpectrum(
 	}
 
 	return spectrum, nil
+}
+
+func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumUploadResp, error) {
+	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Lets check that spectra uploaded are:
+	// - The same size as existing
+	// - For valid existing location indexes
+	// - Not overwriting existing detector spectra. Eg if there's an "A" spectrum, new upload can't be "A", we append
+	//   a suffix so save as "A'". We do allow overwriting a suffixed detectors spectrum though, so "A'" can be edited
+	// We save each upload in a separate file in S3 where our scan is stored (in a separate sub-dir) until the last spectra
+	// arrive, at which point we merge all the new spectra into the dataset.bin file.
+	// Longer-term if we have huge data-sets this won't be a valid way to operate but for operating with PIXL data this
+	// should suffice for now. Re-organising for longer-term storage will require other re-architecting anyway.
+
+	// If it's not the last, we just save
+	spectraUploadSubdir := "spectra-upload"
+
+	lastLocUploaded := int(req.FirstLocationIndex) + len(req.SpectraPerLocation)
+	if lastLocUploaded < len(exprPB.Locations) {
+		// Just save the file
+		fileName := fmt.Sprintf("%v/%06d.bin", spectraUploadSubdir, req.FirstLocationIndex)
+		s3Path := filepaths.GetScanFilePath(req.ScanId, fileName)
+
+		reqBytes, err := proto.Marshal(req)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to serialise spectrum upload file %v. Error: %v", s3Path, err)
+		}
+
+		hctx.Svcs.Log.Debugf("Writing temp spectra upload file: s3://%v/%v", hctx.Svcs.Config.DatasetsBucket, s3Path)
+		err = hctx.Svcs.FS.WriteObject(hctx.Svcs.Config.DatasetsBucket, s3Path, reqBytes)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to write spectrum upload file %v. Error: %v", s3Path, err)
+		}
+
+		// Otherwise we've written it, yay!
+	}
+
+	// ELSE: It looks like this was the last upload, so process it all and merge with existing spectra in the file
+	s3Path := filepaths.GetScanFilePath(req.ScanId, spectraUploadSubdir)
+
+	allSpectra, err := wsHelpers.ReadSpectraUploads(s3Path, hctx.Svcs)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read uploaded spectra: %v", err)
+	}
+
+	// Finish off with the batch
+	if req.FirstLocationIndex != uint32(len(allSpectra)) {
+		return nil, fmt.Errorf("Last spectrum list start index expected to be %v, got %v", len(allSpectra), req.FirstLocationIndex)
+	}
+
+	allSpectra = append(allSpectra, req.SpectraPerLocation...)
+
+	if err = wsHelpers.MergeSpectra(exprPB, allSpectra); err != nil {
+		return nil, fmt.Errorf("Failed merge uploaded spectra with existing scan data: %v", err)
+	}
+
+	// Overwrite the original scan data file
+	if exprData, err := proto.Marshal(exprPB); err != nil {
+		return nil, fmt.Errorf("Failed to serialise scan data: %v", err)
+	} else {
+		err = hctx.Svcs.FS.WriteObject(hctx.Svcs.Config.DatasetsBucket, s3Path, exprData)
+	}
+
+	// Success!
+	return &protos.SpectrumUploadResp{}, nil
 }

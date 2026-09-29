@@ -190,6 +190,111 @@ func (x *SpectrumResp) GetTimeStampUnixSec() uint32 {
 	return 0
 }
 
+// Uploads spectra - allows adding or editing spectra to a scan in batches. First location index can indicate the index of where
+// to save the first spectrum - if there are 3000 locations, and we upload in batches of 100, we'd expect the first message to
+// have firstLocationIndex=0, then firstLocationIndex=100, firstLocationIndex=200, etc
+// Each batch is saved in a separate file, and only merged into the scan bin file when the last spectrum is uploaded.
+//
+// NOTE: If we're dealing with a PIXL scan, this should only allow adding spectra not from detector A and B. It should also only
+// allow the same sized spectra as other existing spectra. Bulk and Max Value spectra won't be re-calculated.
+//
+// requires(EDIT_SCAN)
+type SpectrumUploadReq struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	ScanId             string                 `protobuf:"bytes,1,opt,name=scanId,proto3" json:"scanId,omitempty"`
+	FirstLocationIndex uint32                 `protobuf:"varint,2,opt,name=firstLocationIndex,proto3" json:"firstLocationIndex,omitempty"`
+	SpectraPerLocation []*Spectra             `protobuf:"bytes,3,rep,name=spectraPerLocation,proto3" json:"spectraPerLocation,omitempty"` // Note a location may have 0 or more spectra
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *SpectrumUploadReq) Reset() {
+	*x = SpectrumUploadReq{}
+	mi := &file_spectrum_msgs_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SpectrumUploadReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SpectrumUploadReq) ProtoMessage() {}
+
+func (x *SpectrumUploadReq) ProtoReflect() protoreflect.Message {
+	mi := &file_spectrum_msgs_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SpectrumUploadReq.ProtoReflect.Descriptor instead.
+func (*SpectrumUploadReq) Descriptor() ([]byte, []int) {
+	return file_spectrum_msgs_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *SpectrumUploadReq) GetScanId() string {
+	if x != nil {
+		return x.ScanId
+	}
+	return ""
+}
+
+func (x *SpectrumUploadReq) GetFirstLocationIndex() uint32 {
+	if x != nil {
+		return x.FirstLocationIndex
+	}
+	return 0
+}
+
+func (x *SpectrumUploadReq) GetSpectraPerLocation() []*Spectra {
+	if x != nil {
+		return x.SpectraPerLocation
+	}
+	return nil
+}
+
+type SpectrumUploadResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SpectrumUploadResp) Reset() {
+	*x = SpectrumUploadResp{}
+	mi := &file_spectrum_msgs_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SpectrumUploadResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SpectrumUploadResp) ProtoMessage() {}
+
+func (x *SpectrumUploadResp) ProtoReflect() protoreflect.Message {
+	mi := &file_spectrum_msgs_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SpectrumUploadResp.ProtoReflect.Descriptor instead.
+func (*SpectrumUploadResp) Descriptor() ([]byte, []int) {
+	return file_spectrum_msgs_proto_rawDescGZIP(), []int{3}
+}
+
 var File_spectrum_msgs_proto protoreflect.FileDescriptor
 
 const file_spectrum_msgs_proto_rawDesc = "" +
@@ -211,7 +316,12 @@ const file_spectrum_msgs_proto_rawDesc = "" +
 	"\x14normalSpectraForScan\x18\x05 \x01(\rR\x14normalSpectraForScan\x120\n" +
 	"\x13dwellSpectraForScan\x18\x06 \x01(\rR\x13dwellSpectraForScan\x12,\n" +
 	"\x11liveTimeMetaIndex\x18\a \x01(\rR\x11liveTimeMetaIndex\x12*\n" +
-	"\x10timeStampUnixSec\x18\b \x01(\rR\x10timeStampUnixSecB\n" +
+	"\x10timeStampUnixSec\x18\b \x01(\rR\x10timeStampUnixSec\"\x95\x01\n" +
+	"\x11SpectrumUploadReq\x12\x16\n" +
+	"\x06scanId\x18\x01 \x01(\tR\x06scanId\x12.\n" +
+	"\x12firstLocationIndex\x18\x02 \x01(\rR\x12firstLocationIndex\x128\n" +
+	"\x12spectraPerLocation\x18\x03 \x03(\v2\b.SpectraR\x12spectraPerLocation\"\x14\n" +
+	"\x12SpectrumUploadRespB\n" +
 	"Z\b.;protosb\x06proto3"
 
 var (
@@ -226,24 +336,27 @@ func file_spectrum_msgs_proto_rawDescGZIP() []byte {
 	return file_spectrum_msgs_proto_rawDescData
 }
 
-var file_spectrum_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_spectrum_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_spectrum_msgs_proto_goTypes = []any{
-	(*SpectrumReq)(nil),    // 0: SpectrumReq
-	(*SpectrumResp)(nil),   // 1: SpectrumResp
-	(*ScanEntryRange)(nil), // 2: ScanEntryRange
-	(*Spectra)(nil),        // 3: Spectra
-	(*Spectrum)(nil),       // 4: Spectrum
+	(*SpectrumReq)(nil),        // 0: SpectrumReq
+	(*SpectrumResp)(nil),       // 1: SpectrumResp
+	(*SpectrumUploadReq)(nil),  // 2: SpectrumUploadReq
+	(*SpectrumUploadResp)(nil), // 3: SpectrumUploadResp
+	(*ScanEntryRange)(nil),     // 4: ScanEntryRange
+	(*Spectra)(nil),            // 5: Spectra
+	(*Spectrum)(nil),           // 6: Spectrum
 }
 var file_spectrum_msgs_proto_depIdxs = []int32{
-	2, // 0: SpectrumReq.entries:type_name -> ScanEntryRange
-	3, // 1: SpectrumResp.spectraPerLocation:type_name -> Spectra
-	4, // 2: SpectrumResp.bulkSpectra:type_name -> Spectrum
-	4, // 3: SpectrumResp.maxSpectra:type_name -> Spectrum
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	4, // 0: SpectrumReq.entries:type_name -> ScanEntryRange
+	5, // 1: SpectrumResp.spectraPerLocation:type_name -> Spectra
+	6, // 2: SpectrumResp.bulkSpectra:type_name -> Spectrum
+	6, // 3: SpectrumResp.maxSpectra:type_name -> Spectrum
+	5, // 4: SpectrumUploadReq.spectraPerLocation:type_name -> Spectra
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_spectrum_msgs_proto_init() }
@@ -259,7 +372,7 @@ func file_spectrum_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spectrum_msgs_proto_rawDesc), len(file_spectrum_msgs_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
