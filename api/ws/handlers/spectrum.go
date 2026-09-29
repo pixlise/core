@@ -250,32 +250,40 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 		}
 
 		// Otherwise we've written it, yay!
-	}
-
-	// ELSE: It looks like this was the last upload, so process it all and merge with existing spectra in the file
-	s3Path := filepaths.GetScanFilePath(req.ScanId, spectraUploadSubdir)
-
-	allSpectra, err := wsHelpers.ReadSpectraUploads(s3Path, hctx.Svcs)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to read uploaded spectra: %v", err)
-	}
-
-	// Finish off with the batch
-	if req.FirstLocationIndex != uint32(len(allSpectra)) {
-		return nil, fmt.Errorf("Last spectrum list start index expected to be %v, got %v", len(allSpectra), req.FirstLocationIndex)
-	}
-
-	allSpectra = append(allSpectra, req.SpectraPerLocation...)
-
-	if err = wsHelpers.MergeSpectra(exprPB, allSpectra); err != nil {
-		return nil, fmt.Errorf("Failed merge uploaded spectra with existing scan data: %v", err)
-	}
-
-	// Overwrite the original scan data file
-	if exprData, err := proto.Marshal(exprPB); err != nil {
-		return nil, fmt.Errorf("Failed to serialise scan data: %v", err)
 	} else {
-		err = hctx.Svcs.FS.WriteObject(hctx.Svcs.Config.DatasetsBucket, s3Path, exprData)
+		// ELSE: It looks like this was the last upload, so process it all and merge with existing spectra in the file
+		s3Path := filepaths.GetScanFilePath(req.ScanId, spectraUploadSubdir)
+
+		allSpectra, err := wsHelpers.ReadSpectraUploads(s3Path, hctx.Svcs)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read uploaded spectra: %v", err)
+		}
+
+		// Finish off with the batch
+		if req.FirstLocationIndex != uint32(len(allSpectra)) {
+			return nil, fmt.Errorf("Last spectrum list start index expected to be %v, got %v", len(allSpectra), req.FirstLocationIndex)
+		}
+
+		allSpectra = append(allSpectra, req.SpectraPerLocation...)
+
+		if err = wsHelpers.MergeSpectra(exprPB, allSpectra); err != nil {
+			return nil, fmt.Errorf("Failed merge uploaded spectra with existing scan data: %v", err)
+		}
+
+		// Overwrite the original scan data file
+		if exprData, err := proto.Marshal(exprPB); err != nil {
+			return nil, fmt.Errorf("Failed to serialise scan data: %v", err)
+		} else {
+			s3Path = filepaths.GetScanFilePath(req.ScanId, filepaths.DatasetFileName)
+			err = hctx.Svcs.FS.WriteObject(hctx.Svcs.Config.DatasetsBucket, s3Path, exprData)
+
+			if err != nil {
+				return nil, fmt.Errorf("Failed to write modified scan file: %v", err)
+			}
+
+			// TODO: At this point we probably need to re-run the diffraction detector??
+			// TODO: At this point we could delete the uploaded spectra dir - only keeping it around for now for debugging purposes!
+		}
 	}
 
 	// Success!

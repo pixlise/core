@@ -126,6 +126,21 @@ func Authenticate() (*APIClient, error) {
 			return nil, fmt.Errorf("failed to decode auth config from \"%v\": %v", cfg.Host, err)
 		}
 
+		// For testing locally, we have a fallback to try with a different name
+		if strings.Contains(string(body), "Cannot GET /pixlise-config.json") {
+			url := cfg.Host + "/" + "local-development-pixlise-config.json"
+			resp, err = http.Get(url)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read auth config from local dev host \"%v\": %v", cfg.Host, err)
+			}
+			defer resp.Body.Close()
+
+			body, err = io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, fmt.Errorf("failed to decode auth config from local dev host \"%v\": %v", cfg.Host, err)
+			}
+		}
+
 		err = json.Unmarshal(body, pixliseConfig)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read pixlise connection config: %v", err)
@@ -282,7 +297,7 @@ func (c *APIClient) UploadScanSpectra(scanId string, locs *protos.ClientSpectraP
 		send = append(send, &protos.Spectra{Spectra: locSpectraToSend})
 
 		// If we've just finished a chunk, send!
-		if i%batchSize == 0 || i == len(locs.Locations)-1 {
+		if (i > 0 && i%batchSize == 0) || i == len(locs.Locations)-1 {
 			msgCount++
 
 			req := &protos.SpectrumUploadReq{
