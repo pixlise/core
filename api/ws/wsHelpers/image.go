@@ -154,11 +154,11 @@ func GetDBImageFilter(imageName string) bson.D {
 		root := path.Dir(imageName)
 		imagePath := imageName
 		if len(root) > 0 {
-			meta.SetVersionStr("..")
+			meta.SetVersionStr("[0-9][0-9]")
 			imagePath = meta.ToString(true, false)
 		}
 
-		filter = bson.D{{"_id", primitive.Regex{Pattern: imagePath, Options: ""}}}
+		filter = bson.D{{"_id", primitive.Regex{Pattern: "^" + imagePath, Options: ""}}}
 	}
 
 	return filter

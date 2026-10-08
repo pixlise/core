@@ -281,7 +281,8 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 				return nil, fmt.Errorf("Failed to write modified scan file: %v", err)
 			}
 
-			// TODO: At this point we probably need to re-run the diffraction detector??
+			// NOTE: At this point we DON'T need to re-run the diffraction detector - it was all about A & B, but we now
+			//       have some undefined user-edited set of spectra with A & B unchanged. Diffraction DB is still valid!
 			// TODO: At this point we could delete the uploaded spectra dir - only keeping it around for now for debugging purposes!
 		}
 	}

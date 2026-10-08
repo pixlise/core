@@ -11,6 +11,7 @@ import (
 
 	"github.com/olahol/melody"
 	"github.com/pixlise/core/v4/api/dataimport"
+	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	dataimportModel "github.com/pixlise/core/v4/api/dataimport/models"
 	"github.com/pixlise/core/v4/api/dataimport/scanOwner"
 	"github.com/pixlise/core/v4/api/dbCollections"
@@ -138,6 +139,234 @@ func HandleScanGetReq(req *protos.ScanGetReq, hctx wsHelpers.HandlerContext) (*p
 
 	return &protos.ScanGetResp{
 		Scan: dbItem,
+	}, nil
+}
+
+func HandleScanCloneReq(req *protos.ScanCloneReq, hctx wsHelpers.HandlerContext) (*protos.ScanCloneResp, error) {
+	// Check that we have access to this scan
+	if len(req.Id) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Scan ID must be specified"))
+	}
+
+	if len(req.ClonedIdPrefix) <= 0 {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("Scan ID must be specified"))
+	}
+
+	if hctx.SessUser.User.Id == "" {
+		return nil, errorwithstatus.MakeBadRequestError(errors.New("User must be logged in"))
+	}
+
+	// Check user has access
+	scanItem, _ /*owner*/, err := wsHelpers.GetUserObjectById[protos.ScanItem](true, req.Id, protos.ObjectType_OT_SCAN, dbCollections.ScansName, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// If we got this far we have access. Insert a copy of it into DB, then we deal with the associated files/images/etc
+	prefix := req.ClonedIdPrefix + "-"
+	cloneId := prefix + req.Id
+	hctx.Svcs.Log.Infof("Cloning scan %v as %v...", req.Id, cloneId)
+	scanItem.Id = cloneId
+	scanItem.Title = prefix + scanItem.Title
+
+	creationUnixTimeSec := time.Now().Unix()
+
+	ctx := context.TODO()
+	coll := hctx.Svcs.MongoDB.Collection(dbCollections.ScansName)
+
+	hctx.Svcs.Log.Infof("  Inserting duplicated scan: %v", scanItem.Id)
+	result, err := coll.InsertOne(ctx, scanItem)
+
+	if err != nil {
+		err = fmt.Errorf("Failed to write duplicated scan %v to DB: %v", scanItem.Id, err)
+		hctx.Svcs.Log.Errorf("%v", err)
+		return nil, err
+	} else if result.InsertedID != scanItem.Id {
+		hctx.Svcs.Log.Errorf("Expected written scan id %v to match requested scan id %v", result.InsertedID, scanItem.Id)
+	}
+
+	// And its ownership
+	autoShare := &protos.ScanAutoShareEntry{
+		Viewers: &protos.UserGroupList{UserIds: []string{}, GroupIds: []string{}},
+		Editors: &protos.UserGroupList{UserIds: []string{hctx.SessUser.User.Id}, GroupIds: []string{}},
+	}
+	err = scanOwner.WriteAutoSharedOwnership(cloneId,
+		protos.ObjectType_OT_SCAN,
+		autoShare,
+		hctx.SessUser.User.Id,
+		creationUnixTimeSec,
+		hctx.Svcs.MongoDB,
+		hctx.Svcs.Log)
+
+	if err != nil {
+		err = fmt.Errorf("Failed to write duplicated scan %v ownership: %v", cloneId, err)
+		hctx.Svcs.Log.Errorf("%v", err)
+		return nil, err
+	}
+
+	// Copy the scan files
+	files := []string{filepaths.DatasetFileName, filepaths.DiffractionDBFileName}
+	for _, f := range files {
+		bucket := hctx.Svcs.Config.DatasetsBucket
+		srcFile := filepaths.GetScanFilePath(req.Id, f)
+		dstFile := filepaths.GetScanFilePath(cloneId, f)
+
+		hctx.Svcs.Log.Infof("  Duplicating file: %v as %v (in bucket %v)", bucket, srcFile, dstFile)
+
+		err := hctx.Svcs.FS.CopyObject(bucket, srcFile, bucket, dstFile)
+		if err != nil {
+			err = fmt.Errorf("Failed to copy file s3://%v/%v while duplicating scan %v: %v", bucket, srcFile, req.Id, err)
+			hctx.Svcs.Log.Errorf("%v", err)
+			return nil, err
+		}
+	}
+
+	// Default image
+	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ScanDefaultImagesName)
+	defImgResult := coll.FindOne(ctx, bson.M{"_id": req.Id})
+	if defImgResult.Err() != nil {
+		hctx.Svcs.Log.Errorf("Failed to read default image for: %v", req.Id)
+	} else {
+		def := &protos.ScanImageDefaultDB{}
+		err = defImgResult.Decode(def)
+		if err != nil {
+			hctx.Svcs.Log.Errorf("Failed to decode default image for: %v", req.Id)
+		} else {
+			def.DefaultImageFileName = prefix + def.DefaultImageFileName
+			def.ScanId = prefix + def.ScanId
+
+			hctx.Svcs.Log.Infof("  Inserting duplicated default image: %v", def.ScanId)
+			result, err := coll.InsertOne(ctx, def)
+
+			if err != nil {
+				err = fmt.Errorf("Failed to write duplicated default image %v to DB: %v", def.ScanId, err)
+				hctx.Svcs.Log.Errorf("%v", err)
+				return nil, err
+			} else if result.InsertedID != def.ScanId {
+				hctx.Svcs.Log.Errorf("Expected written duplicated default image %v to be %v", result.InsertedID, def.ScanId)
+			}
+		}
+	}
+
+	// Now read images
+	filter := bson.M{"associatedscanids": bson.M{"$in": []string{req.Id}}}
+	coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+	cursor, err := coll.Find(ctx, filter)
+	if err != nil {
+		err = fmt.Errorf("Failed to list images while duplicating scan %v: %v", req.Id, err)
+		hctx.Svcs.Log.Errorf("%v", err)
+		return nil, err
+	}
+
+	imageItems := []*protos.ScanImage{}
+	err = cursor.All(context.TODO(), &imageItems)
+	if err != nil {
+		err = fmt.Errorf("Failed to read images while duplicating scan %v: %v", req.Id, err)
+		hctx.Svcs.Log.Errorf("%v", err)
+		return nil, err
+	}
+
+	origImages := []string{}
+	for _, img := range imageItems {
+		// Insert the image item (with the modified ids)
+		origImgPath := img.ImagePath
+		origImages = append(origImages, origImgPath)
+
+		img.ImagePath = prefix + img.ImagePath
+		if img.OriginScanId == req.Id {
+			img.OriginScanId = prefix + img.OriginScanId
+		}
+
+		for c, aid := range img.AssociatedScanIds {
+			if aid == req.Id {
+				img.AssociatedScanIds[c] = prefix + aid
+				break
+			}
+		}
+
+		if img.MatchInfo != nil {
+			img.MatchInfo.BeamImageFileName = prefix + img.MatchInfo.BeamImageFileName
+		}
+
+		hctx.Svcs.Log.Infof("  Inserting duplicated image: %v", img.ImagePath)
+		result, err := coll.InsertOne(ctx, img)
+
+		if err != nil {
+			err = fmt.Errorf("Failed to write duplicated image %v to DB: %v", img.ImagePath, err)
+			hctx.Svcs.Log.Errorf("%v", err)
+			return nil, err
+		} else if result.InsertedID != img.ImagePath {
+			hctx.Svcs.Log.Errorf("Expected written duplicated image id %v to be %v", result.InsertedID, img.ImagePath)
+		}
+
+		// Copy the file to the new path
+		bucket := hctx.Svcs.Config.DatasetsBucket
+		srcFile := filepaths.GetImageFilePath(origImgPath)
+		dstFile := filepaths.GetImageFilePath(img.ImagePath)
+
+		hctx.Svcs.Log.Infof("  Duplicating image file: %v as %v (in bucket %v)", bucket, srcFile, dstFile)
+
+		err = hctx.Svcs.FS.CopyObject(bucket, srcFile, bucket, dstFile)
+		if err != nil {
+			err = fmt.Errorf("Failed to copy file s3://%v/%v while duplicating scan %v: %v", bucket, srcFile, req.Id, err)
+			hctx.Svcs.Log.Errorf("%v", err)
+			return nil, err
+		}
+	}
+
+	// And beam locations
+	written := map[string]bool{}
+	for _, imgPath := range origImages {
+		coll = hctx.Svcs.MongoDB.Collection(dbCollections.ImageBeamLocationsName)
+		sansVerPath := dataImportHelpers.GetImageNameSansVersion(imgPath)
+
+		// We may have written this already, stop here if so!
+		if written[sansVerPath] {
+			hctx.Svcs.Log.Infof("  Skipping inserting duplicated image beam locations for: %v - already inserted!", imgPath)
+			continue
+		}
+
+		locResult := coll.FindOne(ctx, bson.M{"_id": sansVerPath})
+		if locResult.Err() != nil {
+			if locResult.Err() == mongo.ErrNoDocuments {
+				hctx.Svcs.Log.Infof("  No image beam locations for: %v", sansVerPath)
+				continue
+			}
+			err = fmt.Errorf("Failed to find image beam locations for %v: %v", sansVerPath, locResult.Err())
+			hctx.Svcs.Log.Errorf("%v", err)
+			return nil, err
+		}
+
+		loc := &protos.ImageLocations{}
+		err = locResult.Decode(loc)
+		if err != nil {
+			err = fmt.Errorf("Failed to decode image beam locations for %v: %v", sansVerPath, err)
+			hctx.Svcs.Log.Errorf("%v", err)
+			return nil, err
+		}
+
+		loc.ImageName = prefix + loc.ImageName
+		for lc, loc4Scan := range loc.LocationPerScan {
+			loc.LocationPerScan[lc].ScanId = prefix + loc4Scan.ScanId
+		}
+
+		// Write it for this new id
+		hctx.Svcs.Log.Infof("  Inserting duplicated image beam locations for: %v", loc.ImageName)
+		locInsResult, err := coll.InsertOne(ctx, loc)
+		if err != nil {
+			err = fmt.Errorf("Failed to write duplicated image beam locations for %v to DB: %v", loc.ImageName, err)
+			hctx.Svcs.Log.Errorf("%v", err)
+			return nil, err
+		} else if locInsResult.InsertedID != loc.ImageName {
+			hctx.Svcs.Log.Errorf("Expected written duplicated image beam location id %v to be %v", locInsResult.InsertedID, loc.ImageName)
+		}
+
+		written[sansVerPath] = true
+	}
+
+	return &protos.ScanCloneResp{
+		Id:       req.Id,
+		ClonedId: cloneId,
 	}, nil
 }
 
@@ -327,7 +556,7 @@ func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHel
 		jobId = jobStatus.JobId
 	}
 
-	if err != nil || len(jobId) < 0 {
+	if err != nil || len(jobId) <= 0 {
 		returnErr := fmt.Errorf("Failed to add job watcher for scan import trigger Job ID: %v. Error was: %v", jobId, err)
 		hctx.Svcs.Log.Errorf("%v", returnErr)
 		return nil, returnErr
@@ -452,7 +681,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 		jobId = jobStatus.JobId
 	}
 
-	if err != nil || len(jobId) < 0 {
+	if err != nil || len(jobId) <= 0 {
 		returnErr := fmt.Errorf("Failed to add job watcher for scan upload Job ID: %v. Error was: %v", jobId, err)
 		hctx.Svcs.Log.Errorf("%v", returnErr)
 		return nil, returnErr
