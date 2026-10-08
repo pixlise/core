@@ -97,6 +97,15 @@ func MergeSpectra(exprPB *protos.Experiment, uploadedSpectra []*protos.Spectra) 
 			// If no detector found that matches, we create a new one
 			if detIdxToWrite == -1 {
 				// Oh no! At some point we defined these with different integer types... shaaaame :(
+				spectrumType := "Normal"
+				if spectrum.Type == protos.SpectrumType_SPECTRUM_BULK {
+					spectrumType = "BulkSum"
+				} else if spectrum.Type == protos.SpectrumType_SPECTRUM_MAX {
+					spectrumType = "MaxValue"
+				} else if spectrum.Type == protos.SpectrumType_SPECTRUM_DWELL {
+					spectrumType = "Dwell"
+				}
+
 				newDet := &protos.Experiment_Location_DetectorSpectrum{
 					SpectrumMax: int32(spectrum.MaxCount),
 					Meta: []*protos.Experiment_Location_MetaDataItem{
@@ -106,7 +115,7 @@ func MergeSpectra(exprPB *protos.Experiment, uploadedSpectra []*protos.Spectra) 
 						},
 						{
 							LabelIdx: int32(readtypeIdx),
-							Ivalue:   int32(spectrum.Type),
+							Svalue:   spectrumType,
 						},
 					},
 				}
