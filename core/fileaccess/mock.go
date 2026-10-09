@@ -45,7 +45,7 @@ func (m *Mock) DeleteObject(bucket string, path string) error {
 func (m *Mock) CopyObject(srcBucket string, srcPath string, dstBucket string, dstPath string) error {
 }
 
-func (m *Mock) EmptyObjects(targetBucket string) error {
+func (m *Mock) EmptyObjects(targetBucket string, targetPathPrefix string) error {
 }
 
 func (m *Mock) IsNotFoundError(err error) bool {

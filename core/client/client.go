@@ -40,7 +40,7 @@ type PIXLISEConfig struct {
 
 var configEnvVar = "PIXLISE_CLIENT_CONFIG"
 var configFileName = ".pixlise-config.json" // We look for this file in home dir
-var responseTimeoutSec = 10
+var responseTimeoutSec = 20                 // upload spectra allows for 20x longer
 var ClientMapKeyPrefix = "client-map-"
 
 type APIClient struct {
@@ -194,13 +194,18 @@ func (c *APIClient) sendMessageWaitResponse(msg *protos.WSMessage) ([]*protos.WS
 	// Check if we need rate limiting
 	c.rateLimiter.CheckRateLimit()
 
+	timeoutSec := responseTimeoutSec
+	if msg.GetSpectrumUploadReq() != nil {
+		timeoutSec *= 15
+	}
+
 	if err := c.socket.SendMessage(msg); err != nil {
 		return []*protos.WSMessage{}, err
 	}
 
-	resps := c.socket.WaitForMessages(1, time.Duration(responseTimeoutSec)*time.Second)
+	resps := c.socket.WaitForMessages(1, time.Duration(timeoutSec)*time.Second)
 	if len(resps) != 1 {
-		return []*protos.WSMessage{}, fmt.Errorf("Expected 1 response, got %v", len(resps))
+		return []*protos.WSMessage{}, fmt.Errorf("Expected 1 response, got %v (timeout was %vsec)", len(resps), timeoutSec)
 	}
 
 	if len(resps[0].ErrorText) > 0 {
@@ -276,9 +281,24 @@ func (c *APIClient) UploadScanSpectra(scanId string, locs *protos.ClientSpectraP
 	if err := c.ensureScanMetaLabels(scanId); err != nil {
 		return err
 	}
+	if err := c.ensureScanEntries(scanId); err != nil {
+		return err
+	}
+
+	// Check that we have the right number of locations provided
+	if len(c.scanEntries[scanId].Entries) != len(locs.Locations) {
+		return fmt.Errorf("Provided %v locations, expected %v", len(locs.Locations), len(c.scanEntries[scanId].Entries))
+	}
+
+	// Ensure there are no spectra in locations that don't have any
+	for i, e := range c.scanEntries[scanId].Entries {
+		if e.NormalSpectra == 0 && len(locs.Locations[i].Spectra) > 0 || e.NormalSpectra > 0 && len(locs.Locations[i].Spectra) <= 0 {
+			return fmt.Errorf("Location %v specified %v spectra while originally %v spectra existed - spectra must only be added where originally spectra were scanned", i, len(locs.Locations[i].Spectra), e.NormalSpectra)
+		}
+	}
 
 	// Turn the client-specified spectra into sendable spectra. We send them up in batches!
-	batchSize := 15
+	batchSize := 120
 	send := []*protos.Spectra{}
 	msgCount := 0
 	sentLocCount := 0

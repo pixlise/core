@@ -239,6 +239,17 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 
 	lastLocUploaded := int(req.FirstLocationIndex) + len(req.SpectraPerLocation)
 	if lastLocUploaded < len(exprPB.Locations) {
+		// If we're the first upload, clear them!
+		if req.FirstLocationIndex == 0 {
+			spectraUploadPath := filepaths.GetScanFilePath(req.ScanId, spectraUploadSubdir)
+			hctx.Svcs.Log.Infof("Emptying temp spectra upload directory s3://%v/%v for %v", hctx.Svcs.Config.DatasetsBucket, spectraUploadPath, req.ScanId)
+
+			err = hctx.Svcs.FS.EmptyObjects(hctx.Svcs.Config.DatasetsBucket, spectraUploadPath)
+			if err != nil {
+				hctx.Svcs.Log.Errorf("Failed to EmptyObjects for s3://%v/%v. Error: %v", hctx.Svcs.Config.DatasetsBucket, spectraUploadPath, err)
+			}
+		}
+
 		// Just save the file
 		fileName := fmt.Sprintf("%v/%06d.bin", spectraUploadSubdir, req.FirstLocationIndex)
 		s3Path := filepaths.GetScanFilePath(req.ScanId, fileName)
@@ -248,7 +259,7 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 			return nil, fmt.Errorf("Failed to serialise spectrum upload file %v. Error: %v", s3Path, err)
 		}
 
-		hctx.Svcs.Log.Debugf("Writing temp spectra upload file: s3://%v/%v", hctx.Svcs.Config.DatasetsBucket, s3Path)
+		hctx.Svcs.Log.Infof("Writing temp spectra upload file: s3://%v/%v", hctx.Svcs.Config.DatasetsBucket, s3Path)
 		err = hctx.Svcs.FS.WriteObject(hctx.Svcs.Config.DatasetsBucket, s3Path, reqBytes)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to write spectrum upload file %v. Error: %v", s3Path, err)
@@ -259,6 +270,7 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 		// ELSE: It looks like this was the last upload, so process it all and merge with existing spectra in the file
 		s3Path := filepaths.GetScanFilePath(req.ScanId, spectraUploadSubdir)
 
+		hctx.Svcs.Log.Infof("Last spectra upload received for %v. Reading all upload chunks from %v ...", req.ScanId, s3Path)
 		allSpectra, err := wsHelpers.ReadSpectraUploads(s3Path, hctx.Svcs)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read uploaded spectra: %v", err)
@@ -271,11 +283,14 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 
 		allSpectra = append(allSpectra, req.SpectraPerLocation...)
 
+		hctx.Svcs.Log.Infof("Merging upload and existing spectra for scan %v...", req.ScanId)
+
 		if err = wsHelpers.MergeSpectra(exprPB, allSpectra); err != nil {
 			return nil, fmt.Errorf("Failed merge uploaded spectra with existing scan data: %v", err)
 		}
 
 		// Overwrite the original scan data file
+		hctx.Svcs.Log.Infof("Writing new scan file for %v...", req.ScanId)
 		if exprData, err := proto.Marshal(exprPB); err != nil {
 			return nil, fmt.Errorf("Failed to serialise scan data: %v", err)
 		} else {
@@ -289,6 +304,8 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 			// NOTE: At this point we DON'T need to re-run the diffraction detector - it was all about A & B, but we now
 			//       have some undefined user-edited set of spectra with A & B unchanged. Diffraction DB is still valid!
 			// TODO: At this point we could delete the uploaded spectra dir - only keeping it around for now for debugging purposes!
+
+			hctx.Svcs.Log.Infof("Notifying clients of scan spectra change for %v", req.ScanId)
 
 			// Also, if we have it locally cached, clear it
 			wsHelpers.ClearCacheForScanId(req.ScanId, hctx.Svcs.TimeStamper, hctx.Svcs.Log)

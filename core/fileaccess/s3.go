@@ -205,9 +205,10 @@ func (s3Access S3Access) CopyObject(srcBucket string, srcPath string, dstBucket 
 	return err
 }
 
-func (s3Access S3Access) EmptyObjects(targetBucket string) error {
+func (s3Access S3Access) EmptyObjects(targetBucket string, targetPathPrefix string) error {
 	iter := s3manager.NewDeleteListIterator(s3Access.s3Api, &s3.ListObjectsInput{
 		Bucket: aws.String(targetBucket),
+		Prefix: aws.String(targetPathPrefix),
 	})
 
 	// Traverse iterator deleting each object
