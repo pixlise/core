@@ -176,7 +176,7 @@ func parseSpectraCSVData(data [][]string, readType string, jobLog logger.ILogger
 			// Allocate spectra values for all
 			for pmc := range result {
 				for specIdx := range result[pmc] {
-					result[pmc][specIdx].Spectrum = make([]int64, channelCount)
+					result[pmc][specIdx].Spectrum = make([]int32, channelCount)
 				}
 			}
 		} else if len(row) > len(tableBHeaderSample) && utils.SlicesEqual(row[0:len(tableBHeaderSample)], tableBHeaderSample) {
@@ -214,7 +214,7 @@ func parseSpectraCSVData(data [][]string, readType string, jobLog logger.ILogger
 				if err != nil {
 					return nil, fmt.Errorf("row %v, col %v - failed to read value, got: %v", idx+1, colIdx+1, col)
 				}
-				result[pmc][spectraIdx].Spectrum[colIdx] = int64(valI)
+				result[pmc][spectraIdx].Spectrum[colIdx] = int32(valI)
 			}
 		} else if !readingXYZTable {
 			// If we've hit the XYZ table, we ignore that...
@@ -299,11 +299,11 @@ func parseSpectraCSVData(data [][]string, readType string, jobLog logger.ILogger
 			result[pmc] = []dataConvertModels.DetectorSample{
 				dataConvertModels.DetectorSample{
 					Meta:     metaA,
-					Spectrum: []int64{},
+					Spectrum: []int32{},
 				},
 				dataConvertModels.DetectorSample{
 					Meta:     metaB,
-					Spectrum: []int64{},
+					Spectrum: []int32{},
 				},
 			}
 		}

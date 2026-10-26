@@ -107,8 +107,15 @@ func failIf(cond bool, err error) {
 	}
 }
 
+func makeAPIHostWithProtocol(apiHost string) string {
+	if strings.Contains(apiHost, "local") || strings.Contains(apiHost, "unittest") {
+		return "http://" + apiHost
+	}
+	return "https://" + apiHost
+}
+
 func testImageGet_NoJWT(apiHost string) {
-	resp, err := http.Get("http://" + path.Join(apiHost, imagePath))
+	resp, err := http.Get(makeAPIHostWithProtocol(apiHost + "/" + strings.TrimLeft(imagePath, "/")))
 	failIf(err != nil, err)
 
 	defer resp.Body.Close()
@@ -137,10 +144,11 @@ func doHTTPRequest(scheme string, method string, apiHost string, urlPath string,
 
 	client := &http.Client{}
 	req, err := http.NewRequest(method, wsConnectUrl.String(), bodyReader)
-	req.Header.Set("Authorization", "Bearer "+jwt)
 	if err != nil {
 		return 0, []byte{}, err
 	}
+
+	req.Header.Set("Authorization", "Bearer "+jwt)
 
 	resp, err := client.Do(req)
 	if err != nil {

@@ -241,7 +241,7 @@ func getSpectraReadType(filename string) (string, error) {
 	return readType, nil
 }
 
-func addToSpectraLookup(spectralookup dataConvertModels.DetectorSampleByPMC, metaFromFile dataConvertModels.MetaData, spectraFromFile []int64) dataConvertModels.DetectorSampleByPMC {
+func addToSpectraLookup(spectralookup dataConvertModels.DetectorSampleByPMC, metaFromFile dataConvertModels.MetaData, spectraFromFile []int32) dataConvertModels.DetectorSampleByPMC {
 	pmc := metaFromFile["PMC"].IValue
 
 	if _, ok := spectralookup[pmc]; ok {
@@ -283,7 +283,7 @@ func makeBulkMaxSpectra(spectraLookup dataConvertModels.DetectorSampleByPMC, xpe
 			"READTYPE":    dataConvertModels.StringMetaValue("BulkSum"),
 			"SOURCEFILE":  dataConvertModels.StringMetaValue("GeneratedByPIXLISEConverter"),
 		},
-		Spectrum: []int64{},
+		Spectrum: []int32{},
 	}
 
 	generated["bulkB"] = dataConvertModels.DetectorSample{
@@ -293,7 +293,7 @@ func makeBulkMaxSpectra(spectraLookup dataConvertModels.DetectorSampleByPMC, xpe
 			"READTYPE":    dataConvertModels.StringMetaValue("BulkSum"),
 			"SOURCEFILE":  dataConvertModels.StringMetaValue("GeneratedByPIXLISEConverter"),
 		},
-		Spectrum: []int64{},
+		Spectrum: []int32{},
 	}
 
 	generated["maxA"] = dataConvertModels.DetectorSample{
@@ -303,7 +303,7 @@ func makeBulkMaxSpectra(spectraLookup dataConvertModels.DetectorSampleByPMC, xpe
 			"READTYPE":    dataConvertModels.StringMetaValue("MaxValue"),
 			"SOURCEFILE":  dataConvertModels.StringMetaValue("GeneratedByPIXLISEConverter"),
 		},
-		Spectrum: []int64{},
+		Spectrum: []int32{},
 	}
 
 	generated["maxB"] = dataConvertModels.DetectorSample{
@@ -313,7 +313,7 @@ func makeBulkMaxSpectra(spectraLookup dataConvertModels.DetectorSampleByPMC, xpe
 			"READTYPE":    dataConvertModels.StringMetaValue("MaxValue"),
 			"SOURCEFILE":  dataConvertModels.StringMetaValue("GeneratedByPIXLISEConverter"),
 		},
-		Spectrum: []int64{},
+		Spectrum: []int32{},
 	}
 
 	liveTimeA := float32(0)
@@ -367,7 +367,7 @@ func makeBulkMaxSpectra(spectraLookup dataConvertModels.DetectorSampleByPMC, xpe
 				l := len(detectorData.Spectrum)
 				generated[bulkID] = dataConvertModels.DetectorSample{
 					Meta:     generated[bulkID].Meta,
-					Spectrum: make([]int64, l),
+					Spectrum: make([]int32, l),
 				}
 			}
 
@@ -375,7 +375,7 @@ func makeBulkMaxSpectra(spectraLookup dataConvertModels.DetectorSampleByPMC, xpe
 				l := len(detectorData.Spectrum)
 				generated[maxID] = dataConvertModels.DetectorSample{
 					Meta:     generated[maxID].Meta,
-					Spectrum: make([]int64, l),
+					Spectrum: make([]int32, l),
 				}
 			}
 

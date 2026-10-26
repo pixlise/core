@@ -300,10 +300,16 @@ func createBeamLocation(isCalTarget bool, rsiPath string, rtt int64, outputBeamL
 	if bgtLog, logErr := os.ReadFile(outLog); logErr != nil {
 		logger.Infof("Failed to read BGT log \"%v\": %v", outLog, logErr)
 	} else {
-		logger.Infof("BGT Log Output:\n%s", bgtLog)
+		logger.Infof("BGT Log Output:\n==============================\n%s\n==============================\n", bgtLog)
 	}
 
 	if errOut {
+		// In the case of an error, log the RSI file out too
+		if rsiData, err := os.ReadFile(rsiPath); err != nil {
+			logger.Infof("Failed to read RSI file %v: %v", rsiPath, err)
+		} else {
+			logger.Infof("RSI Contents:\n==============================\n%s\n==============================\n", rsiData)
+		}
 		return "", "", "", fmt.Errorf("BGT tool error: %v", err)
 	}
 
