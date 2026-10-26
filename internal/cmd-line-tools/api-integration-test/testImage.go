@@ -107,11 +107,19 @@ func failIf(cond bool, err error) {
 	}
 }
 
-func testImageGet_NoJWT(apiHost string) {
-	res, err := url.JoinPath(apiHost, imagePath)
-	failIf(err != nil, err)
+func makeAPIHostWithProtocol(apiHost string) string {
+	if strings.Contains(apiHost, "local") || strings.Contains(apiHost, "unittest") {
+		return "http://" + apiHost
+	}
+	return "https://" + apiHost
+}
 
-	resp, err := http.Get(res)
+func testImageGet_NoJWT(apiHost string) {
+	//res, err := url.JoinPath(apiHost, imagePath)
+	//failIf(err != nil, err)
+	//resp, err := http.Get(res)
+
+	resp, err := http.Get(makeAPIHostWithProtocol(apiHost + "/" + strings.TrimLeft(imagePath, "/")))
 	failIf(err != nil, err)
 
 	defer resp.Body.Close()
@@ -149,6 +157,8 @@ func doHTTPRequest(method string, apiHost string, urlPath string, query string, 
 	if err != nil {
 		return 0, []byte{}, err
 	}
+	req.Header.Set("Authorization", "Bearer "+jwt)
+
 	req.Header.Set("Authorization", "Bearer "+jwt)
 
 	resp, err := client.Do(req)

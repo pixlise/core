@@ -30,6 +30,7 @@ func HandleUserDetailsReq(req *protos.UserDetailsReq, hctx wsHelpers.HandlerCont
 		Details: &protos.UserDetails{
 			Info:                  userDBItem.Info,
 			DataCollectionVersion: userDBItem.DataCollectionVersion,
+			Guidance:              userDBItem.Guidance,
 			Permissions:           perms,
 		},
 	}, nil
@@ -59,6 +60,17 @@ func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, hctx wsHelpers.H
 		}
 	}
 
+	if req.Guidance != nil {
+		if err := wsHelpers.CheckFieldLength(req.Guidance.SeenFeatureIds, "SeenFeatureIds", 0, 500); err != nil {
+			return nil, err
+		}
+		for _, id := range req.Guidance.SeenFeatureIds {
+			if err := wsHelpers.CheckStringField(&id, "SeenFeatureId", 1, 100); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	update := bson.D{}
 	if &req.Name != nil && req.Name != "" {
 		update = append(update, bson.E{Key: "info.name", Value: req.Name})
@@ -66,11 +78,14 @@ func HandleUserDetailsWriteReq(req *protos.UserDetailsWriteReq, hctx wsHelpers.H
 	if &req.Email != nil && req.Email != "" {
 		update = append(update, bson.E{Key: "info.email", Value: req.Email})
 	}
-	if &req.IconURL != nil {
+	if req.IconURL != "" || req.Guidance == nil {
 		update = append(update, bson.E{Key: "info.iconurl", Value: req.IconURL})
 	}
 	if &req.DataCollectionVersion != nil && req.DataCollectionVersion != "" {
 		update = append(update, bson.E{Key: "datacollectionversion", Value: req.DataCollectionVersion})
+	}
+	if req.Guidance != nil {
+		update = append(update, bson.E{Key: "guidance", Value: req.Guidance})
 	}
 
 	if len(update) <= 0 {

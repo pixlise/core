@@ -234,10 +234,10 @@ func (fs *FSAccess) CopyObject(srcRootPath string, srcPath string, dstRootPath s
 	return err
 }
 
-func (fs *FSAccess) EmptyObjects(rootPath string) error {
+func (fs *FSAccess) EmptyObjects(rootPath string, pathPrefix string) error {
 	// Found we had a function floating around already that does this
 	// and it doesn't delete the original dir, so doesn't need Mkdir as below
-	d, err := os.Open(fs.filePath(rootPath, ""))
+	d, err := os.Open(fs.filePath(rootPath, pathPrefix))
 	if err != nil {
 		return err
 	}
@@ -293,7 +293,7 @@ func MakeEmptyLocalDirectory(root string, subdir string) (string, error) {
 	}
 
 	localFS := FSAccess{}
-	err = localFS.EmptyObjects(emptyDirPath)
+	err = localFS.EmptyObjects(emptyDirPath, "")
 	if err != nil {
 		return emptyDirPath, fmt.Errorf("Failed to clear directory %v for importer: %v", emptyDirPath, err)
 	}

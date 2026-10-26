@@ -135,3 +135,7 @@ func HandleTriggerScheduledJobReq(req *protos.TriggerScheduledJobReq, hctx wsHel
 
 	return &protos.TriggerScheduledJobResp{JobId: jobId}, nil
 }
+
+func HandleJobOutputGetReq(req *protos.JobOutputGetReq, hctx wsHelpers.HandlerContext) (*protos.JobOutputGetResp, error) {
+	return nil, errors.New("Not implemented in this branch")
+}
