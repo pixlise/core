@@ -219,11 +219,13 @@ func makeBulkSums(uploadedSpectra []*protos.Spectra, metaLabels []string) []*pro
 			}
 
 			bs := bulkSums[s.Detector]
+
+			countsDecoded := utils.ZeroRunDecode(s.Counts)
 			if bs == nil {
 				bs = &protos.Spectrum{
 					Detector: s.Detector,
 					Type:     protos.SpectrumType_SPECTRUM_BULK,
-					Counts:   make([]uint32, len(s.Counts)),
+					Counts:   make([]uint32, len(countsDecoded)),
 					MaxCount: 0,
 					Meta:     map[int32]*protos.ScanMetaDataItem{},
 				}
@@ -232,7 +234,7 @@ func makeBulkSums(uploadedSpectra []*protos.Spectra, metaLabels []string) []*pro
 
 			if s.Type == protos.SpectrumType_SPECTRUM_NORMAL {
 				// Add spectrum to the one we already have
-				for i, count := range s.Counts {
+				for i, count := range countsDecoded {
 					bs.Counts[i] += count
 				}
 
@@ -275,6 +277,9 @@ func makeBulkSums(uploadedSpectra []*protos.Spectra, metaLabels []string) []*pro
 				bs.MaxCount = c
 			}
 		}
+
+		// Encode for efficiency again
+		bs.Counts = utils.ZeroRunEncode(bs.Counts)
 
 		// Fix meta values that need to be averages
 		for _, l := range toAverage {

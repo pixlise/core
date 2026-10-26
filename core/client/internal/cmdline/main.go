@@ -29,7 +29,7 @@ func main() {
 	uploadSpectrumCounts := []uint32{}
 	for c := 0; c < 4096; c++ {
 		p := uint32(0)
-		if c > 4000 {
+		if c > 2000 {
 			p = uint32(c)
 		}
 		uploadSpectrumCounts = append(uploadSpectrumCounts, p)
