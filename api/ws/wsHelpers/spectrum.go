@@ -1,8 +1,10 @@
 package wsHelpers
 
 import (
+	"errors"
 	"fmt"
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/pixlise/core/v4/api/services"
@@ -45,7 +47,7 @@ func ReadSpectraUploads(spectraTempFilesPath string, svcs *services.APIServices)
 	return allSpectra, nil
 }
 
-func MergeSpectra(exprPB *protos.Experiment, uploadedSpectra []*protos.Spectra) error {
+func MergeSpectra(exprPB *protos.Experiment, uploadedSpectra []*protos.Spectra, makeBulkSum bool) error {
 	detectorIdIdx := -1
 	readtypeIdx := -1
 	for c, label := range exprPB.MetaLabels {
@@ -58,6 +60,24 @@ func MergeSpectra(exprPB *protos.Experiment, uploadedSpectra []*protos.Spectra) 
 		if readtypeIdx > -1 && detectorIdIdx > -1 {
 			break
 		}
+	}
+
+	// If we're making a bulk sum too, find the index to add it to
+	bulkSumLocIdx := -1
+	if makeBulkSum {
+		bulkSumLocIdx = findBulkSumLocIdx(exprPB, readtypeIdx)
+
+		if bulkSumLocIdx < 0 {
+			return errors.New("No location found for saving bulk sum")
+		}
+
+		bulkSums := makeBulkSums(uploadedSpectra, exprPB.MetaLabels)
+
+		if len(bulkSums) <= 0 {
+			return errors.New("No bulk sums calculated")
+		}
+
+		uploadedSpectra[bulkSumLocIdx].Spectra = append(uploadedSpectra[bulkSumLocIdx].Spectra, bulkSums...)
 	}
 
 	if detectorIdIdx == -1 || readtypeIdx == -1 {
@@ -162,4 +182,112 @@ func MergeSpectra(exprPB *protos.Experiment, uploadedSpectra []*protos.Spectra) 
 	}
 
 	return nil
+}
+
+func findBulkSumLocIdx(exprPB *protos.Experiment, readtypeIdx int) int {
+	for locIdx, loc := range exprPB.Locations {
+		for _, det := range loc.Detectors {
+			for _, m := range det.Meta {
+				if m.LabelIdx == int32(readtypeIdx) && m.Svalue == "BulkSum" {
+					return locIdx
+				}
+			}
+		}
+	}
+
+	return -1
+}
+
+func makeBulkSums(uploadedSpectra []*protos.Spectra, metaLabels []string) []*protos.Spectrum {
+	// Find the indexes for what we're interested in
+	labels := []string{"LIVETIME", "REALTIME", "OFFSET", "XPERCHAN"}
+	toAverage := []string{"OFFSET", "XPERCHAN"}
+	labelIndexes := map[string]int32{}
+	for i, l := range metaLabels {
+		if utils.ItemInSlice(l, labels) {
+			labelIndexes[l] = int32(i)
+		}
+	}
+
+	bulkSums := map[string]*protos.Spectrum{}
+	n := float32(0)
+	detectorToCount := ""
+	for _ /*locIdx*/, spectra := range uploadedSpectra {
+		for _, s := range spectra.Spectra {
+			if len(detectorToCount) <= 0 {
+				detectorToCount = s.Detector
+			}
+
+			bs := bulkSums[s.Detector]
+			if bs == nil {
+				bs = &protos.Spectrum{
+					Detector: s.Detector,
+					Type:     protos.SpectrumType_SPECTRUM_BULK,
+					Counts:   make([]uint32, len(s.Counts)),
+					MaxCount: 0,
+					Meta:     map[int32]*protos.ScanMetaDataItem{},
+				}
+				bulkSums[s.Detector] = bs
+			}
+
+			if s.Type == protos.SpectrumType_SPECTRUM_NORMAL {
+				// Add spectrum to the one we already have
+				for i, count := range s.Counts {
+					bs.Counts[i] += count
+				}
+
+				// Fill out the meta data
+				for _ /*label*/, idx := range labelIndexes {
+					if idx >= 0 {
+						prev := float32(0)
+						if v, ok := bs.Meta[idx]; ok {
+							prev = v.GetFvalue()
+						} else {
+							bs.Meta[idx] = &protos.ScanMetaDataItem{}
+						}
+
+						bs.Meta[idx].Value = &protos.ScanMetaDataItem_Fvalue{
+							Fvalue: prev + s.Meta[idx].GetFvalue(),
+						}
+					}
+				}
+
+				// Count it if we have the right detector
+				if s.Detector == detectorToCount {
+					n++
+				}
+			}
+		}
+	}
+
+	// Save them sorted by detector so our tests can deterministic order
+	detectors := utils.GetMapKeys(bulkSums)
+	sort.Strings(detectors)
+
+	result := []*protos.Spectrum{}
+
+	for _, det := range detectors {
+		bs := bulkSums[det]
+
+		// Update max counts
+		for _, c := range bs.Counts {
+			if c > bs.MaxCount {
+				bs.MaxCount = c
+			}
+		}
+
+		// Fix meta values that need to be averages
+		for _, l := range toAverage {
+			if i, ok := labelIndexes[l]; ok {
+				bs.Meta[i].Value = &protos.ScanMetaDataItem_Fvalue{
+					Fvalue: bs.Meta[i].GetFvalue() / n,
+				}
+			}
+		}
+
+		// Put them in a list
+		result = append(result, bs)
+	}
+
+	return result
 }

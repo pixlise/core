@@ -285,8 +285,30 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 
 		hctx.Svcs.Log.Infof("Merging upload and existing spectra for scan %v...", req.ScanId)
 
-		if err = wsHelpers.MergeSpectra(exprPB, allSpectra); err != nil {
+		if err = wsHelpers.MergeSpectra(exprPB, allSpectra, true); err != nil {
 			return nil, fmt.Errorf("Failed merge uploaded spectra with existing scan data: %v", err)
+		}
+
+		// Back up original scan file if its not already
+		s3Path = filepaths.GetScanFilePath(req.ScanId, "orig_"+filepaths.DatasetFileName)
+		doBackup := false
+		if exists, err := hctx.Svcs.FS.ObjectExists(hctx.Svcs.Config.DatasetsBucket, s3Path); err != nil {
+			// Can't determine if backup file exists, try backup anyway
+			hctx.Svcs.Log.Errorf("Failed to determine if scan file backup exists: %v. Will attempt backup anyway...", err)
+			doBackup = true
+		} else if !exists {
+			// Doesn't exist, do it for sure
+			doBackup = true
+		}
+
+		if doBackup {
+			s3PathOrig := filepaths.GetScanFilePath(req.ScanId, filepaths.DatasetFileName)
+			hctx.Svcs.Log.Infof("Backing up original scan file s3://%v/%v to s3://%v/%v...", hctx.Svcs.Config.DatasetsBucket, s3PathOrig, hctx.Svcs.Config.DatasetsBucket, s3Path)
+
+			err = hctx.Svcs.FS.CopyObject(hctx.Svcs.Config.DatasetsBucket, s3PathOrig, hctx.Svcs.Config.DatasetsBucket, s3Path)
+			if err != nil {
+				hctx.Svcs.Log.Errorf("Failed to back up original scan file: %v", err)
+			}
 		}
 
 		// Overwrite the original scan data file
@@ -318,4 +340,58 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 
 	// Success!
 	return &protos.SpectrumUploadResp{}, nil
+}
+
+// Quick message to query the list of detectors we have spectra for
+func HandleSpectrumDetectorsReq(req *protos.SpectrumDetectorsReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumDetectorsResp, error) {
+	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	detectorIdIdx := -1
+	readtypeIdx := -1
+	for c, label := range exprPB.MetaLabels {
+		if label == "DETECTOR_ID" {
+			detectorIdIdx = c
+		} else if label == "READTYPE" {
+			readtypeIdx = c
+		}
+
+		if readtypeIdx > -1 && detectorIdIdx > -1 {
+			break
+		}
+	}
+
+	detectors := map[string]bool{}
+
+	// Run through all locations
+	for _, loc := range exprPB.Locations {
+		// And all detectors
+		for _, det := range loc.Detectors {
+			// If we find the detector ID, add it to our list
+			detector := ""
+			readType := 0
+
+			for _, m := range det.Meta {
+				if m.LabelIdx == int32(detectorIdIdx) {
+					detectors[m.Svalue] = true
+				}
+				if m.LabelIdx == int32(readtypeIdx) {
+					readType = int(m.Ivalue)
+				}
+			}
+
+			if readType == int(protos.SpectrumType_SPECTRUM_NORMAL) {
+				detectors[detector] = true
+			}
+		}
+
+		// Assume we have the same detectors defined at each location...
+		if len(detectors) > 0 {
+			break
+		}
+	}
+
+	return &protos.SpectrumDetectorsResp{DetectorId: utils.GetMapKeys(detectors)}, nil
 }
