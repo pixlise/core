@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"google.golang.org/protobuf/proto"
 )
 
 func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumResp, error) {
@@ -209,4 +211,187 @@ func convertSpectrum(
 	}
 
 	return spectrum, nil
+}
+
+func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumUploadResp, error) {
+	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// scanItem, err := scan.ReadScanItem(req.ScanId, hctx.Svcs.MongoDB)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// Lets check that spectra uploaded are:
+	// - The same size as existing
+	// - For valid existing location indexes
+	// - Not overwriting existing detector spectra. Eg if there's an "A" spectrum, new upload can't be "A", we append
+	//   a suffix so save as "A'". We do allow overwriting a suffixed detectors spectrum though, so "A'" can be edited
+	// We save each upload in a separate file in S3 where our scan is stored (in a separate sub-dir) until the last spectra
+	// arrive, at which point we merge all the new spectra into the dataset.bin file.
+	// Longer-term if we have huge data-sets this won't be a valid way to operate but for operating with PIXL data this
+	// should suffice for now. Re-organising for longer-term storage will require other re-architecting anyway.
+
+	// If it's not the last, we just save
+	spectraUploadSubdir := "spectra-upload"
+
+	lastLocUploaded := int(req.FirstLocationIndex) + len(req.SpectraPerLocation)
+	if lastLocUploaded < len(exprPB.Locations) {
+		// If we're the first upload, clear them!
+		if req.FirstLocationIndex == 0 {
+			spectraUploadPath := filepaths.GetScanFilePath(req.ScanId, spectraUploadSubdir)
+			hctx.Svcs.Log.Infof("Emptying temp spectra upload directory s3://%v/%v for %v", hctx.Svcs.Config.DatasetsBucket, spectraUploadPath, req.ScanId)
+
+			err = hctx.Svcs.FS.EmptyObjects(hctx.Svcs.Config.DatasetsBucket, spectraUploadPath)
+			if err != nil {
+				hctx.Svcs.Log.Errorf("Failed to EmptyObjects for s3://%v/%v. Error: %v", hctx.Svcs.Config.DatasetsBucket, spectraUploadPath, err)
+			}
+		}
+
+		// Just save the file
+		fileName := fmt.Sprintf("%v/%06d.bin", spectraUploadSubdir, req.FirstLocationIndex)
+		s3Path := filepaths.GetScanFilePath(req.ScanId, fileName)
+
+		reqBytes, err := proto.Marshal(req)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to serialise spectrum upload file %v. Error: %v", s3Path, err)
+		}
+
+		hctx.Svcs.Log.Infof("Writing temp spectra upload file: s3://%v/%v", hctx.Svcs.Config.DatasetsBucket, s3Path)
+		err = hctx.Svcs.FS.WriteObject(hctx.Svcs.Config.DatasetsBucket, s3Path, reqBytes)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to write spectrum upload file %v. Error: %v", s3Path, err)
+		}
+
+		// Otherwise we've written it, yay!
+	} else {
+		// ELSE: It looks like this was the last upload, so process it all and merge with existing spectra in the file
+		s3Path := filepaths.GetScanFilePath(req.ScanId, spectraUploadSubdir)
+
+		hctx.Svcs.Log.Infof("Last spectra upload received for %v. Reading all upload chunks from %v ...", req.ScanId, s3Path)
+		allSpectra, err := wsHelpers.ReadSpectraUploads(s3Path, hctx.Svcs)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read uploaded spectra: %v", err)
+		}
+
+		// Finish off with the batch
+		if req.FirstLocationIndex != uint32(len(allSpectra)) {
+			return nil, fmt.Errorf("Last spectrum list start index expected to be %v, got %v", len(allSpectra), req.FirstLocationIndex)
+		}
+
+		allSpectra = append(allSpectra, req.SpectraPerLocation...)
+
+		hctx.Svcs.Log.Infof("Merging upload and existing spectra for scan %v...", req.ScanId)
+
+		if err = wsHelpers.MergeSpectra(exprPB, allSpectra, true); err != nil {
+			return nil, fmt.Errorf("Failed merge uploaded spectra with existing scan data: %v", err)
+		}
+
+		// Back up original scan file if its not already
+		s3Path = filepaths.GetScanFilePath(req.ScanId, "orig_"+filepaths.DatasetFileName)
+		doBackup := false
+		if exists, err := hctx.Svcs.FS.ObjectExists(hctx.Svcs.Config.DatasetsBucket, s3Path); err != nil {
+			// Can't determine if backup file exists, try backup anyway
+			hctx.Svcs.Log.Errorf("Failed to determine if scan file backup exists: %v. Will attempt backup anyway...", err)
+			doBackup = true
+		} else if !exists {
+			// Doesn't exist, do it for sure
+			doBackup = true
+		}
+
+		if doBackup {
+			s3PathOrig := filepaths.GetScanFilePath(req.ScanId, filepaths.DatasetFileName)
+			hctx.Svcs.Log.Infof("Backing up original scan file s3://%v/%v to s3://%v/%v...", hctx.Svcs.Config.DatasetsBucket, s3PathOrig, hctx.Svcs.Config.DatasetsBucket, s3Path)
+
+			err = hctx.Svcs.FS.CopyObject(hctx.Svcs.Config.DatasetsBucket, s3PathOrig, hctx.Svcs.Config.DatasetsBucket, s3Path)
+			if err != nil {
+				hctx.Svcs.Log.Errorf("Failed to back up original scan file: %v", err)
+			}
+		}
+
+		// Overwrite the original scan data file
+		hctx.Svcs.Log.Infof("Writing new scan file for %v...", req.ScanId)
+		if exprData, err := proto.Marshal(exprPB); err != nil {
+			return nil, fmt.Errorf("Failed to serialise scan data: %v", err)
+		} else {
+			s3Path = filepaths.GetScanFilePath(req.ScanId, filepaths.DatasetFileName)
+			err = hctx.Svcs.FS.WriteObject(hctx.Svcs.Config.DatasetsBucket, s3Path, exprData)
+
+			if err != nil {
+				return nil, fmt.Errorf("Failed to write modified scan file: %v", err)
+			}
+
+			// NOTE: At this point we DON'T need to re-run the diffraction detector - it was all about A & B, but we now
+			//       have some undefined user-edited set of spectra with A & B unchanged. Diffraction DB is still valid!
+			// TODO: At this point we could delete the uploaded spectra dir - only keeping it around for now for debugging purposes!
+
+			hctx.Svcs.Log.Infof("Notifying clients of scan spectra change for %v", req.ScanId)
+
+			// Also, if we have it locally cached, clear it
+			wsHelpers.ClearCacheForScanId(req.ScanId, hctx.Svcs.TimeStamper, hctx.Svcs.Log)
+
+			// Notify out that a scan changed
+			hctx.Svcs.Notifier.SysNotifyScanChanged(req.ScanId)
+			//hctx.Svcs.Notifier.NotifyUpdatedScan(scanItem.Title, req.ScanId)
+		}
+	}
+
+	// Success!
+	return &protos.SpectrumUploadResp{}, nil
+}
+
+// Quick message to query the list of detectors we have spectra for
+func HandleSpectrumDetectorsReq(req *protos.SpectrumDetectorsReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumDetectorsResp, error) {
+	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	detectorIdIdx := -1
+	readtypeIdx := -1
+	for c, label := range exprPB.MetaLabels {
+		if label == "DETECTOR_ID" {
+			detectorIdIdx = c
+		} else if label == "READTYPE" {
+			readtypeIdx = c
+		}
+
+		if readtypeIdx > -1 && detectorIdIdx > -1 {
+			break
+		}
+	}
+
+	detectors := map[string]bool{}
+
+	// Run through all locations
+	for _, loc := range exprPB.Locations {
+		// And all detectors
+		for _, det := range loc.Detectors {
+			// If we find the detector ID, add it to our list
+			detector := ""
+			readType := 0
+
+			for _, m := range det.Meta {
+				if m.LabelIdx == int32(detectorIdIdx) {
+					detectors[m.Svalue] = true
+				}
+				if m.LabelIdx == int32(readtypeIdx) {
+					readType = int(m.Ivalue)
+				}
+			}
+
+			if readType == int(protos.SpectrumType_SPECTRUM_NORMAL) {
+				detectors[detector] = true
+			}
+		}
+
+		// Assume we have the same detectors defined at each location...
+		if len(detectors) > 0 {
+			break
+		}
+	}
+
+	return &protos.SpectrumDetectorsResp{DetectorId: utils.GetMapKeys(detectors)}, nil
 }

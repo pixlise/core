@@ -14,7 +14,7 @@ func main() {
 	apiClient, err := client.Authenticate()
 	fmt.Printf("auth err: %v\n", err)
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 	/*
 		m, err := apiClient.CalculateExpression("669909507", "quant-tl2mrnxroian1acm", "9b4h4zjuynpshf7c", "AllPoints-669909507", 0)
@@ -23,6 +23,63 @@ func main() {
 		}
 		fmt.Printf("%+v\n", m)
 	*/
+
+	entries, err := apiClient.GetScanEntries("048300551")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	locs := &protos.ClientSpectraPerLocation{
+		Locations: []*protos.ClientSpectra{},
+	}
+
+	uploadSpectrumCounts := []uint32{}
+	for c := 0; c < 4096; c++ {
+		p := uint32(0)
+		if c > 2000 {
+			p = uint32(c)
+		}
+		uploadSpectrumCounts = append(uploadSpectrumCounts, p)
+	}
+
+	for _, e := range entries.Entries {
+		locSpectra := &protos.ClientSpectra{
+			Spectra: []*protos.ClientSpectrum{},
+		}
+
+		//for i := uint32(0); i < e.NormalSpectra; i++ {
+		if e.NormalSpectra > 0 {
+			locSpectra.Spectra = append(locSpectra.Spectra, &protos.ClientSpectrum{
+				Detector: "B",
+				Type:     protos.SpectrumType_SPECTRUM_NORMAL,
+				Counts:   uploadSpectrumCounts,
+				MaxCount: uploadSpectrumCounts[len(uploadSpectrumCounts)-1],
+				Meta: map[string]*protos.ScanMetaDataItem{
+					"LIVETIME": {
+						Value: &protos.ScanMetaDataItem_Fvalue{Fvalue: 10.8},
+					},
+					"OFFSET": {
+						Value: &protos.ScanMetaDataItem_Fvalue{Fvalue: -0.75},
+					},
+					"REALTIME": {
+						Value: &protos.ScanMetaDataItem_Fvalue{Fvalue: 10.881},
+					},
+					"XPERCHAN": {
+						Value: &protos.ScanMetaDataItem_Fvalue{Fvalue: 11.2},
+					},
+				},
+			})
+		}
+
+		locs.Locations = append(locs.Locations, locSpectra)
+	}
+
+	if err = apiClient.UploadScanSpectra("048300551", locs); err != nil {
+		log.Fatal(err)
+	}
+
+	return // No more testing now...
+
 	k := "my-mapX"
 	//k = `{"scanId":"602735105","exprId":"h43yqjza1m23mmr0","quantId":"quant-aqpxxfk6i05gcsy3","roiId":"AllPoints-602735105","units":0},Resp:false,exprMod:1744785719,spectra:3298,90,0`
 	k = `{"scanId":"669909507","exprId":"9b4h4zjuynpshf7c","quantId":"quant-tl2mrnxroian1acm","roiId":"AllPoints-669909507","units":0},Resp:false,exprMod:1772072860,spectra:2754,6,0`

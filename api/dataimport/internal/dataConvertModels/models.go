@@ -97,7 +97,7 @@ type DetectorSample struct {
 	// Metadata for the spectrum, string->string
 	Meta MetaData
 	// Spectrum histogram values, generally 4096 of them
-	Spectrum []int64
+	Spectrum []int32
 }
 
 // ToString - for tests

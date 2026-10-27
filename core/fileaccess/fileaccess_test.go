@@ -112,7 +112,7 @@ func runTest(fs FileAccess, bucket string) {
 	fmt.Printf("Listing subdir2: %v, %v\n", err, listing)
 
 	// Empty dir
-	fmt.Printf("Empty dir: %v\n", fs.EmptyObjects(bucket))
+	fmt.Printf("Empty dir: %v\n", fs.EmptyObjects(bucket, ""))
 
 	// List emptied dir
 	listing, err = fs.ListObjects(bucket, "")

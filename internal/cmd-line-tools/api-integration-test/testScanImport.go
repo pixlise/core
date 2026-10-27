@@ -13,7 +13,7 @@ import (
 	"github.com/pixlise/core/v4/core/wstestlib"
 )
 
-var uploadedBreadboardScanId = "TEST_breadboard_upload"
+//var uploadedBreadboardScanId = "TEST_breadboard_upload"
 
 func testImports(apiHost string) {
 	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
@@ -71,7 +71,9 @@ func testImports(apiHost string) {
 
 	testScanImport(apiHost, u1)
 	testImageImport(u1)
-	testScanDelete(u1)
+	nextMsgId := 13
+	//nextMsgId += testScanClone(u1, nextMsgId)
+	testScanDelete(u1, nextMsgId)
 
 	// TODO: Test/simulate a FM downlink
 }
@@ -146,48 +148,52 @@ func testScanImport(apiHost string, u1 wstestlib.ScriptedTestUser) {
 		}}`,
 	)
 
+	// TODO: Put this functionality back, we lost the upload updates/listing update being sent out
+	//       at some point when new job mechanism was introduced
+	// NO, the above is wrong! This probably only works on envs which have the importer lambda
+	// function deployed. Doesn't work on a local test!
 	u1.CloseActionGroup([]string{
 		`{"scanUploadUpd":{
-			"status": {
-				"jobId": "${IDCHK=breadboardImportJobId}",
-				"logId": "${IGNORE}",
-				"message": "Starting importer",
-				"status": "STARTING",
-				"startUnixTimeSec": "${SECAGO=8}",
-				"lastUpdateUnixTimeSec": "${SECAGO=8}"
-			}
-		}}`,
-		/*`{"scanUploadUpd":{
-			"status": {
-				"jobId": "${IDCHK=breadboardImportJobId}",
-				"logId": "${IGNORE}",
-				"message": "Cores/Node: 4",
-				"status": "PREPARING_NODES",
-				"startUnixTimeSec": "${SECAGO=8}",
-				"lastUpdateUnixTimeSec": "${SECAGO=8}"
-			}
-		}}`,*/
+				"status": {
+					"jobId": "${IDCHK=breadboardImportJobId}",
+					"logId": "${IGNORE}",
+					"message": "Starting importer",
+					"status": "STARTING",
+					"startUnixTimeSec": "${SECAGO=8}",
+					"lastUpdateUnixTimeSec": "${SECAGO=8}"
+				}
+			}}`,
+		// `{"scanUploadUpd":{
+		// 	"status": {
+		// 		"jobId": "${IDCHK=breadboardImportJobId}",
+		// 		"logId": "${IGNORE}",
+		// 		"message": "Cores/Node: 4",
+		// 		"status": "PREPARING_NODES",
+		// 		"startUnixTimeSec": "${SECAGO=8}",
+		// 		"lastUpdateUnixTimeSec": "${SECAGO=8}"
+		// 	}
+		// }}`,
 		`{"scanUploadUpd":{
-			"status": {
-				"jobId": "${IDCHK=breadboardImportJobId}",
-				"logId": "${IGNORE}",
-				"message": "Importing Files",
-				"status": "RUNNING",
-				"startUnixTimeSec": "${SECAGO=8}",
-				"lastUpdateUnixTimeSec": "${SECAGO=8}"
-			}
-		}}`,
+				"status": {
+					"jobId": "${IDCHK=breadboardImportJobId}",
+					"logId": "${IGNORE}",
+					"message": "Importing Files",
+					"status": "RUNNING",
+					"startUnixTimeSec": "${SECAGO=8}",
+					"lastUpdateUnixTimeSec": "${SECAGO=8}"
+				}
+			}}`,
 		`{"scanUploadUpd":{
-			"status": {
-				"jobId": "${IDCHK=breadboardImportJobId}",
-				"logId": "${IGNORE}",
-				"message": "Imported successfully",
-				"status": "COMPLETE",
-				"startUnixTimeSec": "${SECAGO=8}",
-				"lastUpdateUnixTimeSec": "${SECAGO=8}",
-				"endUnixTimeSec": "${SECAGO=8}"
-			}
-		}}`,
+				"status": {
+					"jobId": "${IDCHK=breadboardImportJobId}",
+					"logId": "${IGNORE}",
+					"message": "Imported successfully",
+					"status": "COMPLETE",
+					"startUnixTimeSec": "${SECAGO=8}",
+					"lastUpdateUnixTimeSec": "${SECAGO=8}",
+					"endUnixTimeSec": "${SECAGO=8}"
+				}
+			}}`,
 		`{"scanListUpd": {}}`,
 	}, 10000)
 	wstestlib.ExecQueuedActions(&u1)
@@ -295,31 +301,75 @@ func testImageImport(u1 wstestlib.ScriptedTestUser) {
 	wstestlib.ExecQueuedActions(&u1)
 }
 
-func testScanDelete(u1 wstestlib.ScriptedTestUser) {
+func testScanDelete(u1 wstestlib.ScriptedTestUser, nextMsgId int) {
 	// Now delete it
 	u1.AddSendReqAction("Delete new upload (should fail, bad verification)",
 		`{"scanDeleteReq":{"scanId": "${IDLOAD=breadboardImportScanId}", "scanNameForVerification": "My new upload"}}`,
-		fmt.Sprintf(`{"msgId":13,
+		fmt.Sprintf(`{"msgId":%v,
 			"status": "WS_BAD_REQUEST",
 			"errorText": "Specified title did not match scan title of: \"%v\"",
-			"scanDeleteResp":{}}`, wstestlib.GetIdCreated("breadboardImportScanId")),
+			"scanDeleteResp":{}}`, nextMsgId, wstestlib.GetIdCreated("breadboardImportScanId")),
 	)
+	nextMsgId++
 
 	u1.AddSendReqAction("Delete new upload",
 		`{"scanDeleteReq":{"scanId": "${IDLOAD=breadboardImportScanId}", "scanNameForVerification": "${IDLOAD=breadboardImportScanId}"}}`,
-		`{"msgId":14,
+		fmt.Sprintf(`{"msgId":%v,
 			"status":"WS_OK",
-			"scanDeleteResp":{}}`,
+			"scanDeleteResp":{}}`, nextMsgId),
 	)
+	nextMsgId++
 
 	// Check
 	u1.AddSendReqAction("List scans expecting new upload",
 		`{"scanListReq":{}}`,
-		`{"msgId":15,
+		fmt.Sprintf(`{"msgId":%v,
 			"status":"WS_OK",
-			"scanListResp":{}}`,
+			"scanListResp":{}}`, nextMsgId),
 	)
 
 	u1.CloseActionGroup([]string{}, 2000)
 	wstestlib.ExecQueuedActions(&u1)
 }
+
+/*
+func testScanClone(u1 wstestlib.ScriptedTestUser, nextMsgId int) int {
+	u1.AddSendReqAction("List scans",
+		`{"scanListReq":{}}`,
+		fmt.Sprintf(`{"msgId":13,
+			"status":"WS_OK",
+			"scanListResp":{}}`, nextMsgId),
+	)
+	nextMsgId++
+
+	// Clone a scan
+	u1.AddSendReqAction("Clone a scan",
+		`{"scanCloneReq":{"id": "abc123"}}`,
+		fmt.Sprintf(`{"msgId":14,
+			"status":"WS_OK",
+			"scanListResp":{}}`, nextMsgId),
+	)
+	nextMsgId++
+
+	u1.AddSendReqAction("List scans",
+		`{"scanListReq":{}}`,
+		fmt.Sprintf(`{"msgId":15,
+			"status":"WS_OK",
+			"scanListResp":{}}`, nextMsgId),
+	)
+	nextMsgId++
+
+	u1.AddSendReqAction("Delete cloned scan",
+		`{"scanDeleteReq":{"scanId": "${IDLOAD=breadboardImportScanId}", "scanNameForVerification": "${IDLOAD=breadboardImportScanId}"}}`,
+		fmt.Sprintf(`{"msgId":16,
+			"status":"WS_OK",
+			"scanDeleteResp":{}}`, nextMsgId),
+	)
+	nextMsgId++
+
+	u1.CloseActionGroup([]string{}, 2000)
+	wstestlib.ExecQueuedActions(&u1)
+
+	return nextMsgId
+}
+*/
