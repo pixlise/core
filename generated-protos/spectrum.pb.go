@@ -324,6 +324,94 @@ func (x *ClientSpectrum) GetMeta() map[string]*ScanMetaDataItem {
 	return nil
 }
 
+type ClientSpectra struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Spectra       []*ClientSpectrum      `protobuf:"bytes,1,rep,name=spectra,proto3" json:"spectra,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClientSpectra) Reset() {
+	*x = ClientSpectra{}
+	mi := &file_spectrum_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClientSpectra) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClientSpectra) ProtoMessage() {}
+
+func (x *ClientSpectra) ProtoReflect() protoreflect.Message {
+	mi := &file_spectrum_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClientSpectra.ProtoReflect.Descriptor instead.
+func (*ClientSpectra) Descriptor() ([]byte, []int) {
+	return file_spectrum_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ClientSpectra) GetSpectra() []*ClientSpectrum {
+	if x != nil {
+		return x.Spectra
+	}
+	return nil
+}
+
+type ClientSpectraPerLocation struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Locations     []*ClientSpectra       `protobuf:"bytes,1,rep,name=locations,proto3" json:"locations,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClientSpectraPerLocation) Reset() {
+	*x = ClientSpectraPerLocation{}
+	mi := &file_spectrum_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClientSpectraPerLocation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClientSpectraPerLocation) ProtoMessage() {}
+
+func (x *ClientSpectraPerLocation) ProtoReflect() protoreflect.Message {
+	mi := &file_spectrum_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClientSpectraPerLocation.ProtoReflect.Descriptor instead.
+func (*ClientSpectraPerLocation) Descriptor() ([]byte, []int) {
+	return file_spectrum_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ClientSpectraPerLocation) GetLocations() []*ClientSpectra {
+	if x != nil {
+		return x.Locations
+	}
+	return nil
+}
+
 type ClientSpectrumEnergyCalibration struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StarteV       float32                `protobuf:"fixed32,1,opt,name=StarteV,proto3" json:"StarteV,omitempty"`
@@ -334,7 +422,7 @@ type ClientSpectrumEnergyCalibration struct {
 
 func (x *ClientSpectrumEnergyCalibration) Reset() {
 	*x = ClientSpectrumEnergyCalibration{}
-	mi := &file_spectrum_proto_msgTypes[3]
+	mi := &file_spectrum_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -346,7 +434,7 @@ func (x *ClientSpectrumEnergyCalibration) String() string {
 func (*ClientSpectrumEnergyCalibration) ProtoMessage() {}
 
 func (x *ClientSpectrumEnergyCalibration) ProtoReflect() protoreflect.Message {
-	mi := &file_spectrum_proto_msgTypes[3]
+	mi := &file_spectrum_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -359,7 +447,7 @@ func (x *ClientSpectrumEnergyCalibration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClientSpectrumEnergyCalibration.ProtoReflect.Descriptor instead.
 func (*ClientSpectrumEnergyCalibration) Descriptor() ([]byte, []int) {
-	return file_spectrum_proto_rawDescGZIP(), []int{3}
+	return file_spectrum_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ClientSpectrumEnergyCalibration) GetStarteV() float32 {
@@ -385,7 +473,7 @@ type ClientEnergyCalibration struct {
 
 func (x *ClientEnergyCalibration) Reset() {
 	*x = ClientEnergyCalibration{}
-	mi := &file_spectrum_proto_msgTypes[4]
+	mi := &file_spectrum_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -397,7 +485,7 @@ func (x *ClientEnergyCalibration) String() string {
 func (*ClientEnergyCalibration) ProtoMessage() {}
 
 func (x *ClientEnergyCalibration) ProtoReflect() protoreflect.Message {
-	mi := &file_spectrum_proto_msgTypes[4]
+	mi := &file_spectrum_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -410,7 +498,7 @@ func (x *ClientEnergyCalibration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClientEnergyCalibration.ProtoReflect.Descriptor instead.
 func (*ClientEnergyCalibration) Descriptor() ([]byte, []int) {
-	return file_spectrum_proto_rawDescGZIP(), []int{4}
+	return file_spectrum_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ClientEnergyCalibration) GetDetectorCalibrations() map[string]*ClientSpectrumEnergyCalibration {
@@ -445,7 +533,11 @@ const file_spectrum_proto_rawDesc = "" +
 	"\x04meta\x18\x05 \x03(\v2\x19.ClientSpectrum.MetaEntryR\x04meta\x1aJ\n" +
 	"\tMetaEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12'\n" +
-	"\x05value\x18\x02 \x01(\v2\x11.ScanMetaDataItemR\x05value:\x028\x01\"_\n" +
+	"\x05value\x18\x02 \x01(\v2\x11.ScanMetaDataItemR\x05value:\x028\x01\":\n" +
+	"\rClientSpectra\x12)\n" +
+	"\aspectra\x18\x01 \x03(\v2\x0f.ClientSpectrumR\aspectra\"H\n" +
+	"\x18ClientSpectraPerLocation\x12,\n" +
+	"\tlocations\x18\x01 \x03(\v2\x0e.ClientSpectraR\tlocations\"_\n" +
 	"\x1fClientSpectrumEnergyCalibration\x12\x18\n" +
 	"\aStarteV\x18\x01 \x01(\x02R\aStarteV\x12\"\n" +
 	"\fPerChanneleV\x18\x02 \x01(\x02R\fPerChanneleV\"\xec\x01\n" +
@@ -479,35 +571,39 @@ func file_spectrum_proto_rawDescGZIP() []byte {
 }
 
 var file_spectrum_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_spectrum_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_spectrum_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_spectrum_proto_goTypes = []any{
 	(SpectrumType)(0),                       // 0: SpectrumType
 	(EnergyCalibrationSource)(0),            // 1: EnergyCalibrationSource
 	(*Spectrum)(nil),                        // 2: Spectrum
 	(*Spectra)(nil),                         // 3: Spectra
 	(*ClientSpectrum)(nil),                  // 4: ClientSpectrum
-	(*ClientSpectrumEnergyCalibration)(nil), // 5: ClientSpectrumEnergyCalibration
-	(*ClientEnergyCalibration)(nil),         // 6: ClientEnergyCalibration
-	nil,                                     // 7: Spectrum.MetaEntry
-	nil,                                     // 8: ClientSpectrum.MetaEntry
-	nil,                                     // 9: ClientEnergyCalibration.DetectorCalibrationsEntry
-	(*ScanMetaDataItem)(nil),                // 10: ScanMetaDataItem
+	(*ClientSpectra)(nil),                   // 5: ClientSpectra
+	(*ClientSpectraPerLocation)(nil),        // 6: ClientSpectraPerLocation
+	(*ClientSpectrumEnergyCalibration)(nil), // 7: ClientSpectrumEnergyCalibration
+	(*ClientEnergyCalibration)(nil),         // 8: ClientEnergyCalibration
+	nil,                                     // 9: Spectrum.MetaEntry
+	nil,                                     // 10: ClientSpectrum.MetaEntry
+	nil,                                     // 11: ClientEnergyCalibration.DetectorCalibrationsEntry
+	(*ScanMetaDataItem)(nil),                // 12: ScanMetaDataItem
 }
 var file_spectrum_proto_depIdxs = []int32{
 	0,  // 0: Spectrum.type:type_name -> SpectrumType
-	7,  // 1: Spectrum.meta:type_name -> Spectrum.MetaEntry
+	9,  // 1: Spectrum.meta:type_name -> Spectrum.MetaEntry
 	2,  // 2: Spectra.spectra:type_name -> Spectrum
 	0,  // 3: ClientSpectrum.type:type_name -> SpectrumType
-	8,  // 4: ClientSpectrum.meta:type_name -> ClientSpectrum.MetaEntry
-	9,  // 5: ClientEnergyCalibration.DetectorCalibrations:type_name -> ClientEnergyCalibration.DetectorCalibrationsEntry
-	10, // 6: Spectrum.MetaEntry.value:type_name -> ScanMetaDataItem
-	10, // 7: ClientSpectrum.MetaEntry.value:type_name -> ScanMetaDataItem
-	5,  // 8: ClientEnergyCalibration.DetectorCalibrationsEntry.value:type_name -> ClientSpectrumEnergyCalibration
-	9,  // [9:9] is the sub-list for method output_type
-	9,  // [9:9] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	10, // 4: ClientSpectrum.meta:type_name -> ClientSpectrum.MetaEntry
+	4,  // 5: ClientSpectra.spectra:type_name -> ClientSpectrum
+	5,  // 6: ClientSpectraPerLocation.locations:type_name -> ClientSpectra
+	11, // 7: ClientEnergyCalibration.DetectorCalibrations:type_name -> ClientEnergyCalibration.DetectorCalibrationsEntry
+	12, // 8: Spectrum.MetaEntry.value:type_name -> ScanMetaDataItem
+	12, // 9: ClientSpectrum.MetaEntry.value:type_name -> ScanMetaDataItem
+	7,  // 10: ClientEnergyCalibration.DetectorCalibrationsEntry.value:type_name -> ClientSpectrumEnergyCalibration
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_spectrum_proto_init() }
@@ -522,7 +618,7 @@ func file_spectrum_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spectrum_proto_rawDesc), len(file_spectrum_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

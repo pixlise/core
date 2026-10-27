@@ -71,7 +71,7 @@ type FileAccess interface {
 	CopyObject(srcBucket string, srcPath string, dstBucket string, dstPath string) error
 
 	// Effectively performs "rm -rf" of all files the given bucket/root directory
-	EmptyObjects(targetBucket string) error
+	EmptyObjects(targetBucket string, targetPathPrefix string) error
 
 	// Checks if the given error is a "not found" error for the implementation. This is because
 	// AWS S3 would provide a different "not found" error than would a local file system fopen() failing

@@ -928,14 +928,14 @@ func (s *PIXLISEDataSaver) saveExperimentLocationItem(saveToExperiment *protos.E
 			return err
 		}
 
-		max := int64(0)
+		detector.SpectrumMax = 0
 		for i, e := range det.Spectrum {
-			if i == 0 || e > max {
-				max = e
+			if i == 0 || e > detector.SpectrumMax {
+				detector.SpectrumMax = e
 			}
 		}
-		detector.SpectrumMax = int32(max)
-		zero := zeroRunEncode(det.Spectrum)
+
+		zero := utils.ZeroRunEncode(det.Spectrum)
 		detector.Spectrum = append(detector.Spectrum, zero...)
 		location.Detectors = append(location.Detectors, detector)
 	}

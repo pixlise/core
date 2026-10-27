@@ -90,6 +90,13 @@ func serialiseForPython(msg proto.Message) *C.char {
 	}
 
 	mem := allocBytes(allocFn, len(buf))
+
+	// Instead of:
+	/*for c, v := range buf {
+		mem[c] = v
+	}*/
+
+	// Linting advised doing this:
 	copy(mem, buf)
 
 	return emptyCString
@@ -122,6 +129,26 @@ func getScanSpectrumRangeAsMap(scanId string, channelStart int32, channelEnd int
 	return processRequest("getScanSpectrumRangeAsMap", func() (proto.Message, error) {
 		return apiClient.GetScanSpectrumRangeAsMap(scanId, channelStart, channelEnd, detector)
 	})
+}
+
+//export uploadScanSpectra
+func uploadScanSpectra(scanId string, spectraPerlocations string) *C.char {
+	// Here we can read the data string as a protobuf message and create the right structure
+	spectraPerLocs := &protos.ClientSpectraPerLocation{}
+	err := protojson.Unmarshal([]byte(spectraPerlocations), spectraPerLocs)
+	if err != nil {
+		return C.CString(fmt.Sprintf("uploadScanSpectra: Failed to decode spectraPerlocations: %v", err))
+	}
+
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	if err = apiClient.UploadScanSpectra(scanId, spectraPerLocs); err != nil {
+		return C.CString(fmt.Sprintf("uploadScanSpectra error: %v", err))
+	}
+
+	return emptyCString
 }
 
 //export listScans

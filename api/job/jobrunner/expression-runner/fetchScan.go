@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
-	"github.com/pixlise/core/v4/core/client"
+	"github.com/pixlise/core/v4/core/utils"
 )
 
 func (e *expressionRunner) ensureFetchedScan() error {
@@ -79,7 +79,7 @@ func (e *expressionRunner) ensureFetchedScanNormalSpectra() error {
 					foundNormal = true
 
 					// Store this spectrum
-					spectrum := client.ZeroRunDecode(det.Spectrum)
+					spectrum := utils.ZeroRunDecode(det.Spectrum)
 
 					e.spectrumCounts = len(spectrum)
 					e.spectra[detectorId] = append(e.spectra[detectorId], spectrum)

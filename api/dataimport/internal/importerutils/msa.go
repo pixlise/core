@@ -32,11 +32,11 @@ func ReadMSAFileLines(lines []string, singleDetectorMSA bool, expectPMC bool, de
 	var err error
 	// If single detector, we're reading:
 	meta := dataConvertModels.MetaData{}
-	var spectra []int64
+	var spectra []int32
 
 	// If multi-detector, we also read:
 	metaB := dataConvertModels.MetaData{}
-	var spectraB []int64
+	var spectraB []int32
 
 	msaNumColumns := 1
 	expColCount := 2
@@ -376,19 +376,19 @@ func parseMSAMetadataLine(line string) (string, string, error) {
 	return field, value, nil
 }
 
-func parseMSASpectraLine(line string, lc int, ncolumns int) ([]int64, error) {
+func parseMSASpectraLine(line string, lc int, ncolumns int) ([]int32, error) {
 	items := strings.Split(line, ",")
 
 	if len(items) != ncolumns {
 		return nil, fmt.Errorf("Expected %d spectrum columns, got %d on line [%d]:%s", ncolumns, len(items), lc, line)
 	}
 
-	var specvals []int64
+	var specvals []int32
 
 	for _, v := range items {
 		val := strings.TrimSpace(v)
 
-		specval, err := strconv.ParseInt(val, 10, 64)
+		specval, err := strconv.ParseInt(val, 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read spectra \"%v\" on line [%v]:%v", val, lc, line)
 		}
@@ -397,7 +397,7 @@ func parseMSASpectraLine(line string, lc int, ncolumns int) ([]int64, error) {
 			return nil, fmt.Errorf("Spectra expected non-negative value \"%v\" on line [%v]:%v", val, lc, line)
 		}
 
-		specvals = append(specvals, specval)
+		specvals = append(specvals, int32(specval))
 	}
 
 	return specvals, nil
