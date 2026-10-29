@@ -2,6 +2,7 @@ package piquant
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/services"
@@ -17,7 +18,14 @@ func ReadConfig(id string, svcs *services.APIServices) (*protos.DetectorConfig, 
 	// Read versions
 	versions := GetPiquantConfigVersions(svcs, id)
 	if len(versions) <= 0 {
-		return nil, versions, fmt.Errorf("DetectorConfig %v has no versions defined", id)
+		svcs.Log.Errorf("DetectorConfig %v has no versions defined", id)
+
+		// We expect this for PIXL but not the others
+		if strings.Contains(id, "PIXL") {
+			return nil, versions, fmt.Errorf("DetectorConfig %v has no versions defined", id)
+		} else {
+			return cfg, []string{}, nil
+		}
 	}
 
 	latestVersion := versions[len(versions)-1]

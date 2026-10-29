@@ -109,10 +109,10 @@ func MakeFMDatasetOutput(
 	}
 
 	data := &dataConvertModels.OutputData{
-		DatasetID:      meta.RTT,
-		Instrument:     instrument,
-		Meta:           meta,
-		DetectorConfig: detectorConfig,
+		DatasetID:          meta.RTT,
+		Instrument:         instrument,
+		Meta:               meta,
+		DetectorConfigName: detectorConfig,
 		//BulkQuantFile: "", <-- no bulk quant for tactical... TODO: what do we do here, does a scientist do it and we publish it back through PDS?
 		PseudoRanges:         pseudoIntensityRanges,
 		PerPMCData:           map[int32]*dataConvertModels.PMCData{},

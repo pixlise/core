@@ -419,23 +419,6 @@ func DetectPIXLFMStructure(importPath string) (string, error) {
 	return "", errors.New("unknown data source type")
 }
 
-func validatePaths(importPath string, validpaths []string) error {
-	validated := []string{}
-	c, _ := os.ReadDir(importPath)
-	for _, entry := range c {
-		for _, p := range validpaths {
-			if p == entry.Name() && entry.IsDir() {
-				validated = append(validated, p)
-			}
-		}
-	}
-
-	if len(validated) != len(importPath) {
-		return errors.New("not all directories located")
-	}
-	return nil
-}
-
 func getByLowestSCLK(fileNames map[string]gdsfilename.FileNameMeta) string {
 	chosenFile := ""
 	var chosenSCLK int32
