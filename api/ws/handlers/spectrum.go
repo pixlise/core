@@ -11,6 +11,31 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+func HandleSpectrumAggregateReq(req *protos.SpectrumAggregateReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumAggregateResp, error) {
+	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	bulkSums, maxValues, err := wsHelpers.GenerateAggregateSpectrum(indexes, req.Detectors, req.ReadType, req.BulkSum, req.MaxValue, exprPB)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &protos.SpectrumAggregateResp{BulkSpectra: []*protos.Spectrum{}, MaxSpectra: []*protos.Spectrum{}}
+	// Return in alphabetical order for easier unit testing
+	keys := utils.GetMapKeys(bulkSums)
+	for _, k := range keys {
+		result.BulkSpectra = append(result.BulkSpectra, bulkSums[k])
+	}
+	keys = utils.GetMapKeys(maxValues)
+	for _, k := range keys {
+		result.MaxSpectra = append(result.MaxSpectra, maxValues[k])
+	}
+
+	return result, nil
+}
+
 func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumResp, error) {
 	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
 	if err != nil {
@@ -138,7 +163,7 @@ func convertSpectrum(
 	metaTypes []protos.Experiment_MetaDataType,
 	detectorIdIdx int,
 	readtypeIdx int) (*protos.Spectrum, error) {
-	detectorType := protos.SpectrumType_SPECTRUM_UNKNOWN
+	specType := protos.SpectrumType_SPECTRUM_UNKNOWN
 	detectorId := ""
 	meta := map[int32]*protos.ScanMetaDataItem{}
 
@@ -159,16 +184,7 @@ func convertSpectrum(
 			// Verify type
 			if t := metaTypes[m.LabelIdx]; t == protos.Experiment_MT_STRING {
 				// These are hard-coded string values
-				switch m.Svalue {
-				case "Normal":
-					detectorType = protos.SpectrumType_SPECTRUM_NORMAL
-				case "Dwell":
-					detectorType = protos.SpectrumType_SPECTRUM_DWELL
-				case "BulkSum":
-					detectorType = protos.SpectrumType_SPECTRUM_BULK
-				case "MaxValue":
-					detectorType = protos.SpectrumType_SPECTRUM_MAX
-				}
+				specType = utils.StringToSpectrumType(m.Svalue)
 			} else {
 				return nil, fmt.Errorf("Unexpected %v when reading spectrum type", t)
 			}
@@ -198,13 +214,13 @@ func convertSpectrum(
 	// If we didn't get anything, complain
 	if len(detectorId) <= 0 {
 		return nil, errors.New("Failed to read detector id")
-	} else if detectorType == protos.SpectrumType_SPECTRUM_UNKNOWN {
+	} else if specType == protos.SpectrumType_SPECTRUM_UNKNOWN {
 		return nil, errors.New("Failed to read spectrum type")
 	}
 
 	spectrum := &protos.Spectrum{
 		Detector: detectorId,
-		Type:     detectorType,
+		Type:     specType,
 		Meta:     meta,
 		MaxCount: uint32(detector.SpectrumMax),
 		Counts:   utils.ConvertIntSlice[uint32](detector.Spectrum),

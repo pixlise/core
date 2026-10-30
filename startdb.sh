@@ -5,7 +5,7 @@ set -e
 # Arguments: AWS profile, backup bucket path, local path, excluded collection name (optional)
 # If we run without any parameters, we default to PIXLISE stuff
 aws_profile="${1:-default}"
-s3_path="${2:-pixlise-backup/DB/pixlise-prodv4/}"
+s3_path="${2:-pixlise-backup/WholeEnvBackup/DB/pixlise-prodv4/}"
 local_path="${3:-./db-restore}"
 db_name="${4:-pixlise-local-pixlise}"
 db_reset="${5:-false}"
