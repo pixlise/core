@@ -374,6 +374,8 @@ type WSMessage struct {
 	//	*WSMessage_SourceRepositoryListResp
 	//	*WSMessage_SourceRepositorySetReq
 	//	*WSMessage_SourceRepositorySetResp
+	//	*WSMessage_SpectrumAggregateReq
+	//	*WSMessage_SpectrumAggregateResp
 	//	*WSMessage_SpectrumDetectorsReq
 	//	*WSMessage_SpectrumDetectorsResp
 	//	*WSMessage_SpectrumReq
@@ -2964,6 +2966,24 @@ func (x *WSMessage) GetSourceRepositorySetResp() *SourceRepositorySetResp {
 	return nil
 }
 
+func (x *WSMessage) GetSpectrumAggregateReq() *SpectrumAggregateReq {
+	if x != nil {
+		if x, ok := x.Contents.(*WSMessage_SpectrumAggregateReq); ok {
+			return x.SpectrumAggregateReq
+		}
+	}
+	return nil
+}
+
+func (x *WSMessage) GetSpectrumAggregateResp() *SpectrumAggregateResp {
+	if x != nil {
+		if x, ok := x.Contents.(*WSMessage_SpectrumAggregateResp); ok {
+			return x.SpectrumAggregateResp
+		}
+	}
+	return nil
+}
+
 func (x *WSMessage) GetSpectrumDetectorsReq() *SpectrumDetectorsReq {
 	if x != nil {
 		if x, ok := x.Contents.(*WSMessage_SpectrumDetectorsReq); ok {
@@ -4767,6 +4787,14 @@ type WSMessage_SourceRepositorySetResp struct {
 	SourceRepositorySetResp *SourceRepositorySetResp `protobuf:"bytes,383,opt,name=sourceRepositorySetResp,proto3,oneof"`
 }
 
+type WSMessage_SpectrumAggregateReq struct {
+	SpectrumAggregateReq *SpectrumAggregateReq `protobuf:"bytes,394,opt,name=spectrumAggregateReq,proto3,oneof"`
+}
+
+type WSMessage_SpectrumAggregateResp struct {
+	SpectrumAggregateResp *SpectrumAggregateResp `protobuf:"bytes,395,opt,name=spectrumAggregateResp,proto3,oneof"`
+}
+
 type WSMessage_SpectrumDetectorsReq struct {
 	SpectrumDetectorsReq *SpectrumDetectorsReq `protobuf:"bytes,390,opt,name=spectrumDetectorsReq,proto3,oneof"`
 }
@@ -5627,6 +5655,10 @@ func (*WSMessage_SourceRepositorySetReq) isWSMessage_Contents() {}
 
 func (*WSMessage_SourceRepositorySetResp) isWSMessage_Contents() {}
 
+func (*WSMessage_SpectrumAggregateReq) isWSMessage_Contents() {}
+
+func (*WSMessage_SpectrumAggregateResp) isWSMessage_Contents() {}
+
 func (*WSMessage_SpectrumDetectorsReq) isWSMessage_Contents() {}
 
 func (*WSMessage_SpectrumDetectorsResp) isWSMessage_Contents() {}
@@ -5789,7 +5821,7 @@ var File_websocket_proto protoreflect.FileDescriptor
 
 const file_websocket_proto_rawDesc = "" +
 	"\n" +
-	"\x0fwebsocket.proto\x1a\x1adetector-config-msgs.proto\x1a$diffraction-detected-peak-msgs.proto\x1a\x1ddiffraction-manual-msgs.proto\x1a\x1ddiffraction-status-msgs.proto\x1a\x16element-set-msgs.proto\x1a\x11export-msgs.proto\x1a\x1bexpression-group-msgs.proto\x1a\x15expression-msgs.proto\x1a\x1fexpression-calculate-msgs.proto\x1a\x1fimage-3d-model-point-msgs.proto\x1a\x1eimage-beam-location-msgs.proto\x1a\x10image-msgs.proto\x1a\x18image-pyramid-msgs.proto\x1a\x0ejob-msgs.proto\x1a\x0elog-msgs.proto\x1a\x16memoisation-msgs.proto\x1a\x11module-msgs.proto\x1a\x1bownership-access-msgs.proto\x1a\x12piquant-msgs.proto\x1a\x1dpseudo-intensities-msgs.proto\x1a\x1bquantification-create.proto\x1a$quantification-management-msgs.proto\x1a\x1fquantification-multi-msgs.proto\x1a#quantification-retrieval-msgs.proto\x1a quantification-upload-msgs.proto\x1a\x0eroi-msgs.proto\x1a\x1dscan-beam-location-msgs.proto\x1a\x1escan-entry-metadata-msgs.proto\x1a\x15scan-entry-msgs.proto\x1a\x1dscan-entry-polygon-msgs.proto\x1a\x0fscan-msgs.proto\x1a\x1aselection-pixel-msgs.proto\x1a\x1aselection-entry-msgs.proto\x1a\x13spectrum-msgs.proto\x1a\x17notification-msgs.proto\x1a\x0etag-msgs.proto\x1a\x0ftest-msgs.proto\x1a user-group-management-msgs.proto\x1a\x1cuser-group-admins-msgs.proto\x1a\x1duser-group-joining-msgs.proto\x1a user-group-membership-msgs.proto\x1a\x1fuser-group-retrieval-msgs.proto\x1a\x1auser-management-msgs.proto\x1a\x0fuser-msgs.proto\x1a$user-notification-setting-msgs.proto\x1a\x0edoi-msgs.proto\x1a\x1fscreen-configuration-msgs.proto\x1a\x16widget-data-msgs.proto\x1a\fsystem.proto\x1a\x15references-msgs.proto\x1a\x15repository-msgs.proto\"\x88\xda\x01\n" +
+	"\x0fwebsocket.proto\x1a\x1adetector-config-msgs.proto\x1a$diffraction-detected-peak-msgs.proto\x1a\x1ddiffraction-manual-msgs.proto\x1a\x1ddiffraction-status-msgs.proto\x1a\x16element-set-msgs.proto\x1a\x11export-msgs.proto\x1a\x1bexpression-group-msgs.proto\x1a\x15expression-msgs.proto\x1a\x1fexpression-calculate-msgs.proto\x1a\x1fimage-3d-model-point-msgs.proto\x1a\x1eimage-beam-location-msgs.proto\x1a\x10image-msgs.proto\x1a\x18image-pyramid-msgs.proto\x1a\x0ejob-msgs.proto\x1a\x0elog-msgs.proto\x1a\x16memoisation-msgs.proto\x1a\x11module-msgs.proto\x1a\x1bownership-access-msgs.proto\x1a\x12piquant-msgs.proto\x1a\x1dpseudo-intensities-msgs.proto\x1a\x1bquantification-create.proto\x1a$quantification-management-msgs.proto\x1a\x1fquantification-multi-msgs.proto\x1a#quantification-retrieval-msgs.proto\x1a quantification-upload-msgs.proto\x1a\x0eroi-msgs.proto\x1a\x1dscan-beam-location-msgs.proto\x1a\x1escan-entry-metadata-msgs.proto\x1a\x15scan-entry-msgs.proto\x1a\x1dscan-entry-polygon-msgs.proto\x1a\x0fscan-msgs.proto\x1a\x1aselection-pixel-msgs.proto\x1a\x1aselection-entry-msgs.proto\x1a\x13spectrum-msgs.proto\x1a\x17notification-msgs.proto\x1a\x0etag-msgs.proto\x1a\x0ftest-msgs.proto\x1a user-group-management-msgs.proto\x1a\x1cuser-group-admins-msgs.proto\x1a\x1duser-group-joining-msgs.proto\x1a user-group-membership-msgs.proto\x1a\x1fuser-group-retrieval-msgs.proto\x1a\x1auser-management-msgs.proto\x1a\x0fuser-msgs.proto\x1a$user-notification-setting-msgs.proto\x1a\x0edoi-msgs.proto\x1a\x1fscreen-configuration-msgs.proto\x1a\x16widget-data-msgs.proto\x1a\fsystem.proto\x1a\x15references-msgs.proto\x1a\x15repository-msgs.proto\"\xa7\xdb\x01\n" +
 	"\tWSMessage\x12\x14\n" +
 	"\x05msgId\x18\x01 \x01(\rR\x05msgId\x12'\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x0f.ResponseStatusR\x06status\x12\x1c\n" +
@@ -6080,6 +6112,8 @@ const file_websocket_proto_rawDesc = "" +
 	"\x18sourceRepositoryListResp\x18\xfd\x02 \x01(\v2\x19.SourceRepositoryListRespH\x00R\x18sourceRepositoryListResp\x12R\n" +
 	"\x16sourceRepositorySetReq\x18\xfe\x02 \x01(\v2\x17.SourceRepositorySetReqH\x00R\x16sourceRepositorySetReq\x12U\n" +
 	"\x17sourceRepositorySetResp\x18\xff\x02 \x01(\v2\x18.SourceRepositorySetRespH\x00R\x17sourceRepositorySetResp\x12L\n" +
+	"\x14spectrumAggregateReq\x18\x8a\x03 \x01(\v2\x15.SpectrumAggregateReqH\x00R\x14spectrumAggregateReq\x12O\n" +
+	"\x15spectrumAggregateResp\x18\x8b\x03 \x01(\v2\x16.SpectrumAggregateRespH\x00R\x15spectrumAggregateResp\x12L\n" +
 	"\x14spectrumDetectorsReq\x18\x86\x03 \x01(\v2\x15.SpectrumDetectorsReqH\x00R\x14spectrumDetectorsReq\x12O\n" +
 	"\x15spectrumDetectorsResp\x18\x87\x03 \x01(\v2\x16.SpectrumDetectorsRespH\x00R\x15spectrumDetectorsResp\x120\n" +
 	"\vspectrumReq\x18r \x01(\v2\f.SpectrumReqH\x00R\vspectrumReq\x123\n" +
@@ -6463,85 +6497,87 @@ var file_websocket_proto_goTypes = []any{
 	(*SourceRepositoryListResp)(nil),                 // 271: SourceRepositoryListResp
 	(*SourceRepositorySetReq)(nil),                   // 272: SourceRepositorySetReq
 	(*SourceRepositorySetResp)(nil),                  // 273: SourceRepositorySetResp
-	(*SpectrumDetectorsReq)(nil),                     // 274: SpectrumDetectorsReq
-	(*SpectrumDetectorsResp)(nil),                    // 275: SpectrumDetectorsResp
-	(*SpectrumReq)(nil),                              // 276: SpectrumReq
-	(*SpectrumResp)(nil),                             // 277: SpectrumResp
-	(*SpectrumUploadReq)(nil),                        // 278: SpectrumUploadReq
-	(*SpectrumUploadResp)(nil),                       // 279: SpectrumUploadResp
-	(*TagCreateReq)(nil),                             // 280: TagCreateReq
-	(*TagCreateResp)(nil),                            // 281: TagCreateResp
-	(*TagDeleteReq)(nil),                             // 282: TagDeleteReq
-	(*TagDeleteResp)(nil),                            // 283: TagDeleteResp
-	(*TagListReq)(nil),                               // 284: TagListReq
-	(*TagListResp)(nil),                              // 285: TagListResp
-	(*TriggerScheduledJobReq)(nil),                   // 286: TriggerScheduledJobReq
-	(*TriggerScheduledJobResp)(nil),                  // 287: TriggerScheduledJobResp
-	(*UserAddRoleReq)(nil),                           // 288: UserAddRoleReq
-	(*UserAddRoleResp)(nil),                          // 289: UserAddRoleResp
-	(*UserDeleteRoleReq)(nil),                        // 290: UserDeleteRoleReq
-	(*UserDeleteRoleResp)(nil),                       // 291: UserDeleteRoleResp
-	(*UserDetailsReq)(nil),                           // 292: UserDetailsReq
-	(*UserDetailsResp)(nil),                          // 293: UserDetailsResp
-	(*UserDetailsWriteReq)(nil),                      // 294: UserDetailsWriteReq
-	(*UserDetailsWriteResp)(nil),                     // 295: UserDetailsWriteResp
-	(*UserGroupAddAdminReq)(nil),                     // 296: UserGroupAddAdminReq
-	(*UserGroupAddAdminResp)(nil),                    // 297: UserGroupAddAdminResp
-	(*UserGroupAddMemberReq)(nil),                    // 298: UserGroupAddMemberReq
-	(*UserGroupAddMemberResp)(nil),                   // 299: UserGroupAddMemberResp
-	(*UserGroupAddViewerReq)(nil),                    // 300: UserGroupAddViewerReq
-	(*UserGroupAddViewerResp)(nil),                   // 301: UserGroupAddViewerResp
-	(*UserGroupCreateReq)(nil),                       // 302: UserGroupCreateReq
-	(*UserGroupCreateResp)(nil),                      // 303: UserGroupCreateResp
-	(*UserGroupDeleteAdminReq)(nil),                  // 304: UserGroupDeleteAdminReq
-	(*UserGroupDeleteAdminResp)(nil),                 // 305: UserGroupDeleteAdminResp
-	(*UserGroupDeleteMemberReq)(nil),                 // 306: UserGroupDeleteMemberReq
-	(*UserGroupDeleteMemberResp)(nil),                // 307: UserGroupDeleteMemberResp
-	(*UserGroupDeleteReq)(nil),                       // 308: UserGroupDeleteReq
-	(*UserGroupDeleteResp)(nil),                      // 309: UserGroupDeleteResp
-	(*UserGroupDeleteViewerReq)(nil),                 // 310: UserGroupDeleteViewerReq
-	(*UserGroupDeleteViewerResp)(nil),                // 311: UserGroupDeleteViewerResp
-	(*UserGroupEditDetailsReq)(nil),                  // 312: UserGroupEditDetailsReq
-	(*UserGroupEditDetailsResp)(nil),                 // 313: UserGroupEditDetailsResp
-	(*UserGroupIgnoreJoinReq)(nil),                   // 314: UserGroupIgnoreJoinReq
-	(*UserGroupIgnoreJoinResp)(nil),                  // 315: UserGroupIgnoreJoinResp
-	(*UserGroupJoinListReq)(nil),                     // 316: UserGroupJoinListReq
-	(*UserGroupJoinListResp)(nil),                    // 317: UserGroupJoinListResp
-	(*UserGroupJoinReq)(nil),                         // 318: UserGroupJoinReq
-	(*UserGroupJoinResp)(nil),                        // 319: UserGroupJoinResp
-	(*UserGroupListJoinableReq)(nil),                 // 320: UserGroupListJoinableReq
-	(*UserGroupListJoinableResp)(nil),                // 321: UserGroupListJoinableResp
-	(*UserGroupListReq)(nil),                         // 322: UserGroupListReq
-	(*UserGroupListResp)(nil),                        // 323: UserGroupListResp
-	(*UserGroupReq)(nil),                             // 324: UserGroupReq
-	(*UserGroupResp)(nil),                            // 325: UserGroupResp
-	(*UserImpersonateGetReq)(nil),                    // 326: UserImpersonateGetReq
-	(*UserImpersonateGetResp)(nil),                   // 327: UserImpersonateGetResp
-	(*UserImpersonateReq)(nil),                       // 328: UserImpersonateReq
-	(*UserImpersonateResp)(nil),                      // 329: UserImpersonateResp
-	(*UserListReq)(nil),                              // 330: UserListReq
-	(*UserListResp)(nil),                             // 331: UserListResp
-	(*UserNotificationSettingsReq)(nil),              // 332: UserNotificationSettingsReq
-	(*UserNotificationSettingsResp)(nil),             // 333: UserNotificationSettingsResp
-	(*UserNotificationSettingsUpd)(nil),              // 334: UserNotificationSettingsUpd
-	(*UserNotificationSettingsWriteReq)(nil),         // 335: UserNotificationSettingsWriteReq
-	(*UserNotificationSettingsWriteResp)(nil),        // 336: UserNotificationSettingsWriteResp
-	(*UserRoleListReq)(nil),                          // 337: UserRoleListReq
-	(*UserRoleListResp)(nil),                         // 338: UserRoleListResp
-	(*UserRolesListReq)(nil),                         // 339: UserRolesListReq
-	(*UserRolesListResp)(nil),                        // 340: UserRolesListResp
-	(*UserSearchReq)(nil),                            // 341: UserSearchReq
-	(*UserSearchResp)(nil),                           // 342: UserSearchResp
-	(*WidgetDataGetReq)(nil),                         // 343: WidgetDataGetReq
-	(*WidgetDataGetResp)(nil),                        // 344: WidgetDataGetResp
-	(*WidgetDataWriteReq)(nil),                       // 345: WidgetDataWriteReq
-	(*WidgetDataWriteResp)(nil),                      // 346: WidgetDataWriteResp
-	(*WidgetMetadataGetReq)(nil),                     // 347: WidgetMetadataGetReq
-	(*WidgetMetadataGetResp)(nil),                    // 348: WidgetMetadataGetResp
-	(*WidgetMetadataWriteReq)(nil),                   // 349: WidgetMetadataWriteReq
-	(*WidgetMetadataWriteResp)(nil),                  // 350: WidgetMetadataWriteResp
-	(*ZenodoDOIGetReq)(nil),                          // 351: ZenodoDOIGetReq
-	(*ZenodoDOIGetResp)(nil),                         // 352: ZenodoDOIGetResp
+	(*SpectrumAggregateReq)(nil),                     // 274: SpectrumAggregateReq
+	(*SpectrumAggregateResp)(nil),                    // 275: SpectrumAggregateResp
+	(*SpectrumDetectorsReq)(nil),                     // 276: SpectrumDetectorsReq
+	(*SpectrumDetectorsResp)(nil),                    // 277: SpectrumDetectorsResp
+	(*SpectrumReq)(nil),                              // 278: SpectrumReq
+	(*SpectrumResp)(nil),                             // 279: SpectrumResp
+	(*SpectrumUploadReq)(nil),                        // 280: SpectrumUploadReq
+	(*SpectrumUploadResp)(nil),                       // 281: SpectrumUploadResp
+	(*TagCreateReq)(nil),                             // 282: TagCreateReq
+	(*TagCreateResp)(nil),                            // 283: TagCreateResp
+	(*TagDeleteReq)(nil),                             // 284: TagDeleteReq
+	(*TagDeleteResp)(nil),                            // 285: TagDeleteResp
+	(*TagListReq)(nil),                               // 286: TagListReq
+	(*TagListResp)(nil),                              // 287: TagListResp
+	(*TriggerScheduledJobReq)(nil),                   // 288: TriggerScheduledJobReq
+	(*TriggerScheduledJobResp)(nil),                  // 289: TriggerScheduledJobResp
+	(*UserAddRoleReq)(nil),                           // 290: UserAddRoleReq
+	(*UserAddRoleResp)(nil),                          // 291: UserAddRoleResp
+	(*UserDeleteRoleReq)(nil),                        // 292: UserDeleteRoleReq
+	(*UserDeleteRoleResp)(nil),                       // 293: UserDeleteRoleResp
+	(*UserDetailsReq)(nil),                           // 294: UserDetailsReq
+	(*UserDetailsResp)(nil),                          // 295: UserDetailsResp
+	(*UserDetailsWriteReq)(nil),                      // 296: UserDetailsWriteReq
+	(*UserDetailsWriteResp)(nil),                     // 297: UserDetailsWriteResp
+	(*UserGroupAddAdminReq)(nil),                     // 298: UserGroupAddAdminReq
+	(*UserGroupAddAdminResp)(nil),                    // 299: UserGroupAddAdminResp
+	(*UserGroupAddMemberReq)(nil),                    // 300: UserGroupAddMemberReq
+	(*UserGroupAddMemberResp)(nil),                   // 301: UserGroupAddMemberResp
+	(*UserGroupAddViewerReq)(nil),                    // 302: UserGroupAddViewerReq
+	(*UserGroupAddViewerResp)(nil),                   // 303: UserGroupAddViewerResp
+	(*UserGroupCreateReq)(nil),                       // 304: UserGroupCreateReq
+	(*UserGroupCreateResp)(nil),                      // 305: UserGroupCreateResp
+	(*UserGroupDeleteAdminReq)(nil),                  // 306: UserGroupDeleteAdminReq
+	(*UserGroupDeleteAdminResp)(nil),                 // 307: UserGroupDeleteAdminResp
+	(*UserGroupDeleteMemberReq)(nil),                 // 308: UserGroupDeleteMemberReq
+	(*UserGroupDeleteMemberResp)(nil),                // 309: UserGroupDeleteMemberResp
+	(*UserGroupDeleteReq)(nil),                       // 310: UserGroupDeleteReq
+	(*UserGroupDeleteResp)(nil),                      // 311: UserGroupDeleteResp
+	(*UserGroupDeleteViewerReq)(nil),                 // 312: UserGroupDeleteViewerReq
+	(*UserGroupDeleteViewerResp)(nil),                // 313: UserGroupDeleteViewerResp
+	(*UserGroupEditDetailsReq)(nil),                  // 314: UserGroupEditDetailsReq
+	(*UserGroupEditDetailsResp)(nil),                 // 315: UserGroupEditDetailsResp
+	(*UserGroupIgnoreJoinReq)(nil),                   // 316: UserGroupIgnoreJoinReq
+	(*UserGroupIgnoreJoinResp)(nil),                  // 317: UserGroupIgnoreJoinResp
+	(*UserGroupJoinListReq)(nil),                     // 318: UserGroupJoinListReq
+	(*UserGroupJoinListResp)(nil),                    // 319: UserGroupJoinListResp
+	(*UserGroupJoinReq)(nil),                         // 320: UserGroupJoinReq
+	(*UserGroupJoinResp)(nil),                        // 321: UserGroupJoinResp
+	(*UserGroupListJoinableReq)(nil),                 // 322: UserGroupListJoinableReq
+	(*UserGroupListJoinableResp)(nil),                // 323: UserGroupListJoinableResp
+	(*UserGroupListReq)(nil),                         // 324: UserGroupListReq
+	(*UserGroupListResp)(nil),                        // 325: UserGroupListResp
+	(*UserGroupReq)(nil),                             // 326: UserGroupReq
+	(*UserGroupResp)(nil),                            // 327: UserGroupResp
+	(*UserImpersonateGetReq)(nil),                    // 328: UserImpersonateGetReq
+	(*UserImpersonateGetResp)(nil),                   // 329: UserImpersonateGetResp
+	(*UserImpersonateReq)(nil),                       // 330: UserImpersonateReq
+	(*UserImpersonateResp)(nil),                      // 331: UserImpersonateResp
+	(*UserListReq)(nil),                              // 332: UserListReq
+	(*UserListResp)(nil),                             // 333: UserListResp
+	(*UserNotificationSettingsReq)(nil),              // 334: UserNotificationSettingsReq
+	(*UserNotificationSettingsResp)(nil),             // 335: UserNotificationSettingsResp
+	(*UserNotificationSettingsUpd)(nil),              // 336: UserNotificationSettingsUpd
+	(*UserNotificationSettingsWriteReq)(nil),         // 337: UserNotificationSettingsWriteReq
+	(*UserNotificationSettingsWriteResp)(nil),        // 338: UserNotificationSettingsWriteResp
+	(*UserRoleListReq)(nil),                          // 339: UserRoleListReq
+	(*UserRoleListResp)(nil),                         // 340: UserRoleListResp
+	(*UserRolesListReq)(nil),                         // 341: UserRolesListReq
+	(*UserRolesListResp)(nil),                        // 342: UserRolesListResp
+	(*UserSearchReq)(nil),                            // 343: UserSearchReq
+	(*UserSearchResp)(nil),                           // 344: UserSearchResp
+	(*WidgetDataGetReq)(nil),                         // 345: WidgetDataGetReq
+	(*WidgetDataGetResp)(nil),                        // 346: WidgetDataGetResp
+	(*WidgetDataWriteReq)(nil),                       // 347: WidgetDataWriteReq
+	(*WidgetDataWriteResp)(nil),                      // 348: WidgetDataWriteResp
+	(*WidgetMetadataGetReq)(nil),                     // 349: WidgetMetadataGetReq
+	(*WidgetMetadataGetResp)(nil),                    // 350: WidgetMetadataGetResp
+	(*WidgetMetadataWriteReq)(nil),                   // 351: WidgetMetadataWriteReq
+	(*WidgetMetadataWriteResp)(nil),                  // 352: WidgetMetadataWriteResp
+	(*ZenodoDOIGetReq)(nil),                          // 353: ZenodoDOIGetReq
+	(*ZenodoDOIGetResp)(nil),                         // 354: ZenodoDOIGetResp
 }
 var file_websocket_proto_depIdxs = []int32{
 	0,   // 0: WSMessage.status:type_name -> ResponseStatus
@@ -6817,90 +6853,92 @@ var file_websocket_proto_depIdxs = []int32{
 	271, // 270: WSMessage.sourceRepositoryListResp:type_name -> SourceRepositoryListResp
 	272, // 271: WSMessage.sourceRepositorySetReq:type_name -> SourceRepositorySetReq
 	273, // 272: WSMessage.sourceRepositorySetResp:type_name -> SourceRepositorySetResp
-	274, // 273: WSMessage.spectrumDetectorsReq:type_name -> SpectrumDetectorsReq
-	275, // 274: WSMessage.spectrumDetectorsResp:type_name -> SpectrumDetectorsResp
-	276, // 275: WSMessage.spectrumReq:type_name -> SpectrumReq
-	277, // 276: WSMessage.spectrumResp:type_name -> SpectrumResp
-	278, // 277: WSMessage.spectrumUploadReq:type_name -> SpectrumUploadReq
-	279, // 278: WSMessage.spectrumUploadResp:type_name -> SpectrumUploadResp
-	280, // 279: WSMessage.tagCreateReq:type_name -> TagCreateReq
-	281, // 280: WSMessage.tagCreateResp:type_name -> TagCreateResp
-	282, // 281: WSMessage.tagDeleteReq:type_name -> TagDeleteReq
-	283, // 282: WSMessage.tagDeleteResp:type_name -> TagDeleteResp
-	284, // 283: WSMessage.tagListReq:type_name -> TagListReq
-	285, // 284: WSMessage.tagListResp:type_name -> TagListResp
-	286, // 285: WSMessage.triggerScheduledJobReq:type_name -> TriggerScheduledJobReq
-	287, // 286: WSMessage.triggerScheduledJobResp:type_name -> TriggerScheduledJobResp
-	288, // 287: WSMessage.userAddRoleReq:type_name -> UserAddRoleReq
-	289, // 288: WSMessage.userAddRoleResp:type_name -> UserAddRoleResp
-	290, // 289: WSMessage.userDeleteRoleReq:type_name -> UserDeleteRoleReq
-	291, // 290: WSMessage.userDeleteRoleResp:type_name -> UserDeleteRoleResp
-	292, // 291: WSMessage.userDetailsReq:type_name -> UserDetailsReq
-	293, // 292: WSMessage.userDetailsResp:type_name -> UserDetailsResp
-	294, // 293: WSMessage.userDetailsWriteReq:type_name -> UserDetailsWriteReq
-	295, // 294: WSMessage.userDetailsWriteResp:type_name -> UserDetailsWriteResp
-	296, // 295: WSMessage.userGroupAddAdminReq:type_name -> UserGroupAddAdminReq
-	297, // 296: WSMessage.userGroupAddAdminResp:type_name -> UserGroupAddAdminResp
-	298, // 297: WSMessage.userGroupAddMemberReq:type_name -> UserGroupAddMemberReq
-	299, // 298: WSMessage.userGroupAddMemberResp:type_name -> UserGroupAddMemberResp
-	300, // 299: WSMessage.userGroupAddViewerReq:type_name -> UserGroupAddViewerReq
-	301, // 300: WSMessage.userGroupAddViewerResp:type_name -> UserGroupAddViewerResp
-	302, // 301: WSMessage.userGroupCreateReq:type_name -> UserGroupCreateReq
-	303, // 302: WSMessage.userGroupCreateResp:type_name -> UserGroupCreateResp
-	304, // 303: WSMessage.userGroupDeleteAdminReq:type_name -> UserGroupDeleteAdminReq
-	305, // 304: WSMessage.userGroupDeleteAdminResp:type_name -> UserGroupDeleteAdminResp
-	306, // 305: WSMessage.userGroupDeleteMemberReq:type_name -> UserGroupDeleteMemberReq
-	307, // 306: WSMessage.userGroupDeleteMemberResp:type_name -> UserGroupDeleteMemberResp
-	308, // 307: WSMessage.userGroupDeleteReq:type_name -> UserGroupDeleteReq
-	309, // 308: WSMessage.userGroupDeleteResp:type_name -> UserGroupDeleteResp
-	310, // 309: WSMessage.userGroupDeleteViewerReq:type_name -> UserGroupDeleteViewerReq
-	311, // 310: WSMessage.userGroupDeleteViewerResp:type_name -> UserGroupDeleteViewerResp
-	312, // 311: WSMessage.userGroupEditDetailsReq:type_name -> UserGroupEditDetailsReq
-	313, // 312: WSMessage.userGroupEditDetailsResp:type_name -> UserGroupEditDetailsResp
-	314, // 313: WSMessage.userGroupIgnoreJoinReq:type_name -> UserGroupIgnoreJoinReq
-	315, // 314: WSMessage.userGroupIgnoreJoinResp:type_name -> UserGroupIgnoreJoinResp
-	316, // 315: WSMessage.userGroupJoinListReq:type_name -> UserGroupJoinListReq
-	317, // 316: WSMessage.userGroupJoinListResp:type_name -> UserGroupJoinListResp
-	318, // 317: WSMessage.userGroupJoinReq:type_name -> UserGroupJoinReq
-	319, // 318: WSMessage.userGroupJoinResp:type_name -> UserGroupJoinResp
-	320, // 319: WSMessage.userGroupListJoinableReq:type_name -> UserGroupListJoinableReq
-	321, // 320: WSMessage.userGroupListJoinableResp:type_name -> UserGroupListJoinableResp
-	322, // 321: WSMessage.userGroupListReq:type_name -> UserGroupListReq
-	323, // 322: WSMessage.userGroupListResp:type_name -> UserGroupListResp
-	324, // 323: WSMessage.userGroupReq:type_name -> UserGroupReq
-	325, // 324: WSMessage.userGroupResp:type_name -> UserGroupResp
-	326, // 325: WSMessage.userImpersonateGetReq:type_name -> UserImpersonateGetReq
-	327, // 326: WSMessage.userImpersonateGetResp:type_name -> UserImpersonateGetResp
-	328, // 327: WSMessage.userImpersonateReq:type_name -> UserImpersonateReq
-	329, // 328: WSMessage.userImpersonateResp:type_name -> UserImpersonateResp
-	330, // 329: WSMessage.userListReq:type_name -> UserListReq
-	331, // 330: WSMessage.userListResp:type_name -> UserListResp
-	332, // 331: WSMessage.userNotificationSettingsReq:type_name -> UserNotificationSettingsReq
-	333, // 332: WSMessage.userNotificationSettingsResp:type_name -> UserNotificationSettingsResp
-	334, // 333: WSMessage.userNotificationSettingsUpd:type_name -> UserNotificationSettingsUpd
-	335, // 334: WSMessage.userNotificationSettingsWriteReq:type_name -> UserNotificationSettingsWriteReq
-	336, // 335: WSMessage.userNotificationSettingsWriteResp:type_name -> UserNotificationSettingsWriteResp
-	337, // 336: WSMessage.userRoleListReq:type_name -> UserRoleListReq
-	338, // 337: WSMessage.userRoleListResp:type_name -> UserRoleListResp
-	339, // 338: WSMessage.userRolesListReq:type_name -> UserRolesListReq
-	340, // 339: WSMessage.userRolesListResp:type_name -> UserRolesListResp
-	341, // 340: WSMessage.userSearchReq:type_name -> UserSearchReq
-	342, // 341: WSMessage.userSearchResp:type_name -> UserSearchResp
-	343, // 342: WSMessage.widgetDataGetReq:type_name -> WidgetDataGetReq
-	344, // 343: WSMessage.widgetDataGetResp:type_name -> WidgetDataGetResp
-	345, // 344: WSMessage.widgetDataWriteReq:type_name -> WidgetDataWriteReq
-	346, // 345: WSMessage.widgetDataWriteResp:type_name -> WidgetDataWriteResp
-	347, // 346: WSMessage.widgetMetadataGetReq:type_name -> WidgetMetadataGetReq
-	348, // 347: WSMessage.widgetMetadataGetResp:type_name -> WidgetMetadataGetResp
-	349, // 348: WSMessage.widgetMetadataWriteReq:type_name -> WidgetMetadataWriteReq
-	350, // 349: WSMessage.widgetMetadataWriteResp:type_name -> WidgetMetadataWriteResp
-	351, // 350: WSMessage.zenodoDOIGetReq:type_name -> ZenodoDOIGetReq
-	352, // 351: WSMessage.zenodoDOIGetResp:type_name -> ZenodoDOIGetResp
-	352, // [352:352] is the sub-list for method output_type
-	352, // [352:352] is the sub-list for method input_type
-	352, // [352:352] is the sub-list for extension type_name
-	352, // [352:352] is the sub-list for extension extendee
-	0,   // [0:352] is the sub-list for field type_name
+	274, // 273: WSMessage.spectrumAggregateReq:type_name -> SpectrumAggregateReq
+	275, // 274: WSMessage.spectrumAggregateResp:type_name -> SpectrumAggregateResp
+	276, // 275: WSMessage.spectrumDetectorsReq:type_name -> SpectrumDetectorsReq
+	277, // 276: WSMessage.spectrumDetectorsResp:type_name -> SpectrumDetectorsResp
+	278, // 277: WSMessage.spectrumReq:type_name -> SpectrumReq
+	279, // 278: WSMessage.spectrumResp:type_name -> SpectrumResp
+	280, // 279: WSMessage.spectrumUploadReq:type_name -> SpectrumUploadReq
+	281, // 280: WSMessage.spectrumUploadResp:type_name -> SpectrumUploadResp
+	282, // 281: WSMessage.tagCreateReq:type_name -> TagCreateReq
+	283, // 282: WSMessage.tagCreateResp:type_name -> TagCreateResp
+	284, // 283: WSMessage.tagDeleteReq:type_name -> TagDeleteReq
+	285, // 284: WSMessage.tagDeleteResp:type_name -> TagDeleteResp
+	286, // 285: WSMessage.tagListReq:type_name -> TagListReq
+	287, // 286: WSMessage.tagListResp:type_name -> TagListResp
+	288, // 287: WSMessage.triggerScheduledJobReq:type_name -> TriggerScheduledJobReq
+	289, // 288: WSMessage.triggerScheduledJobResp:type_name -> TriggerScheduledJobResp
+	290, // 289: WSMessage.userAddRoleReq:type_name -> UserAddRoleReq
+	291, // 290: WSMessage.userAddRoleResp:type_name -> UserAddRoleResp
+	292, // 291: WSMessage.userDeleteRoleReq:type_name -> UserDeleteRoleReq
+	293, // 292: WSMessage.userDeleteRoleResp:type_name -> UserDeleteRoleResp
+	294, // 293: WSMessage.userDetailsReq:type_name -> UserDetailsReq
+	295, // 294: WSMessage.userDetailsResp:type_name -> UserDetailsResp
+	296, // 295: WSMessage.userDetailsWriteReq:type_name -> UserDetailsWriteReq
+	297, // 296: WSMessage.userDetailsWriteResp:type_name -> UserDetailsWriteResp
+	298, // 297: WSMessage.userGroupAddAdminReq:type_name -> UserGroupAddAdminReq
+	299, // 298: WSMessage.userGroupAddAdminResp:type_name -> UserGroupAddAdminResp
+	300, // 299: WSMessage.userGroupAddMemberReq:type_name -> UserGroupAddMemberReq
+	301, // 300: WSMessage.userGroupAddMemberResp:type_name -> UserGroupAddMemberResp
+	302, // 301: WSMessage.userGroupAddViewerReq:type_name -> UserGroupAddViewerReq
+	303, // 302: WSMessage.userGroupAddViewerResp:type_name -> UserGroupAddViewerResp
+	304, // 303: WSMessage.userGroupCreateReq:type_name -> UserGroupCreateReq
+	305, // 304: WSMessage.userGroupCreateResp:type_name -> UserGroupCreateResp
+	306, // 305: WSMessage.userGroupDeleteAdminReq:type_name -> UserGroupDeleteAdminReq
+	307, // 306: WSMessage.userGroupDeleteAdminResp:type_name -> UserGroupDeleteAdminResp
+	308, // 307: WSMessage.userGroupDeleteMemberReq:type_name -> UserGroupDeleteMemberReq
+	309, // 308: WSMessage.userGroupDeleteMemberResp:type_name -> UserGroupDeleteMemberResp
+	310, // 309: WSMessage.userGroupDeleteReq:type_name -> UserGroupDeleteReq
+	311, // 310: WSMessage.userGroupDeleteResp:type_name -> UserGroupDeleteResp
+	312, // 311: WSMessage.userGroupDeleteViewerReq:type_name -> UserGroupDeleteViewerReq
+	313, // 312: WSMessage.userGroupDeleteViewerResp:type_name -> UserGroupDeleteViewerResp
+	314, // 313: WSMessage.userGroupEditDetailsReq:type_name -> UserGroupEditDetailsReq
+	315, // 314: WSMessage.userGroupEditDetailsResp:type_name -> UserGroupEditDetailsResp
+	316, // 315: WSMessage.userGroupIgnoreJoinReq:type_name -> UserGroupIgnoreJoinReq
+	317, // 316: WSMessage.userGroupIgnoreJoinResp:type_name -> UserGroupIgnoreJoinResp
+	318, // 317: WSMessage.userGroupJoinListReq:type_name -> UserGroupJoinListReq
+	319, // 318: WSMessage.userGroupJoinListResp:type_name -> UserGroupJoinListResp
+	320, // 319: WSMessage.userGroupJoinReq:type_name -> UserGroupJoinReq
+	321, // 320: WSMessage.userGroupJoinResp:type_name -> UserGroupJoinResp
+	322, // 321: WSMessage.userGroupListJoinableReq:type_name -> UserGroupListJoinableReq
+	323, // 322: WSMessage.userGroupListJoinableResp:type_name -> UserGroupListJoinableResp
+	324, // 323: WSMessage.userGroupListReq:type_name -> UserGroupListReq
+	325, // 324: WSMessage.userGroupListResp:type_name -> UserGroupListResp
+	326, // 325: WSMessage.userGroupReq:type_name -> UserGroupReq
+	327, // 326: WSMessage.userGroupResp:type_name -> UserGroupResp
+	328, // 327: WSMessage.userImpersonateGetReq:type_name -> UserImpersonateGetReq
+	329, // 328: WSMessage.userImpersonateGetResp:type_name -> UserImpersonateGetResp
+	330, // 329: WSMessage.userImpersonateReq:type_name -> UserImpersonateReq
+	331, // 330: WSMessage.userImpersonateResp:type_name -> UserImpersonateResp
+	332, // 331: WSMessage.userListReq:type_name -> UserListReq
+	333, // 332: WSMessage.userListResp:type_name -> UserListResp
+	334, // 333: WSMessage.userNotificationSettingsReq:type_name -> UserNotificationSettingsReq
+	335, // 334: WSMessage.userNotificationSettingsResp:type_name -> UserNotificationSettingsResp
+	336, // 335: WSMessage.userNotificationSettingsUpd:type_name -> UserNotificationSettingsUpd
+	337, // 336: WSMessage.userNotificationSettingsWriteReq:type_name -> UserNotificationSettingsWriteReq
+	338, // 337: WSMessage.userNotificationSettingsWriteResp:type_name -> UserNotificationSettingsWriteResp
+	339, // 338: WSMessage.userRoleListReq:type_name -> UserRoleListReq
+	340, // 339: WSMessage.userRoleListResp:type_name -> UserRoleListResp
+	341, // 340: WSMessage.userRolesListReq:type_name -> UserRolesListReq
+	342, // 341: WSMessage.userRolesListResp:type_name -> UserRolesListResp
+	343, // 342: WSMessage.userSearchReq:type_name -> UserSearchReq
+	344, // 343: WSMessage.userSearchResp:type_name -> UserSearchResp
+	345, // 344: WSMessage.widgetDataGetReq:type_name -> WidgetDataGetReq
+	346, // 345: WSMessage.widgetDataGetResp:type_name -> WidgetDataGetResp
+	347, // 346: WSMessage.widgetDataWriteReq:type_name -> WidgetDataWriteReq
+	348, // 347: WSMessage.widgetDataWriteResp:type_name -> WidgetDataWriteResp
+	349, // 348: WSMessage.widgetMetadataGetReq:type_name -> WidgetMetadataGetReq
+	350, // 349: WSMessage.widgetMetadataGetResp:type_name -> WidgetMetadataGetResp
+	351, // 350: WSMessage.widgetMetadataWriteReq:type_name -> WidgetMetadataWriteReq
+	352, // 351: WSMessage.widgetMetadataWriteResp:type_name -> WidgetMetadataWriteResp
+	353, // 352: WSMessage.zenodoDOIGetReq:type_name -> ZenodoDOIGetReq
+	354, // 353: WSMessage.zenodoDOIGetResp:type_name -> ZenodoDOIGetResp
+	354, // [354:354] is the sub-list for method output_type
+	354, // [354:354] is the sub-list for method input_type
+	354, // [354:354] is the sub-list for extension type_name
+	354, // [354:354] is the sub-list for extension extendee
+	0,   // [0:354] is the sub-list for field type_name
 }
 
 func init() { file_websocket_proto_init() }
@@ -7232,6 +7270,8 @@ func file_websocket_proto_init() {
 		(*WSMessage_SourceRepositoryListResp)(nil),
 		(*WSMessage_SourceRepositorySetReq)(nil),
 		(*WSMessage_SourceRepositorySetResp)(nil),
+		(*WSMessage_SpectrumAggregateReq)(nil),
+		(*WSMessage_SpectrumAggregateResp)(nil),
 		(*WSMessage_SpectrumDetectorsReq)(nil),
 		(*WSMessage_SpectrumDetectorsResp)(nil),
 		(*WSMessage_SpectrumReq)(nil),
