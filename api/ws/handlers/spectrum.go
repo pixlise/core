@@ -242,6 +242,8 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 
 	// Lets check that spectra uploaded are:
 	// - The same size as existing
+	// - Not named something weird/have names that are too long/clashing with spectrum expressions, eg bulk(A). So no
+	//   funny character business - maybe just allow AlNum and '??
 	// - For valid existing location indexes
 	// - Not overwriting existing detector spectra. Eg if there's an "A" spectrum, new upload can't be "A", we append
 	//   a suffix so save as "A'". We do allow overwriting a suffixed detectors spectrum though, so "A'" can be edited
@@ -249,6 +251,16 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 	// arrive, at which point we merge all the new spectra into the dataset.bin file.
 	// Longer-term if we have huge data-sets this won't be a valid way to operate but for operating with PIXL data this
 	// should suffice for now. Re-organising for longer-term storage will require other re-architecting anyway.
+
+	// NOTE: more than 1 client uploading spectra to a scan (even if they're differently named) WILL FAIL!!!
+	// TODO: Fix this - perhaps force requestor to include a unique ID for this upload job, including that in every
+	//       message uploaded??
+
+	// Reject badly named spectra straight up
+	err = wsHelpers.CheckValidDetectorNames(req.SpectraPerLocation)
+	if err != nil {
+		return nil, err
+	}
 
 	// If it's not the last, we just save
 	spectraUploadSubdir := "spectra-upload"

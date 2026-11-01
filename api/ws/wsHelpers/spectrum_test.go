@@ -401,3 +401,76 @@ func Example_wsHelpers_GenerateAggregateSpectrum() {
 	// - max-A: A|SPECTRUM_NORMAL|counts=3343|maxcount=7017, meta: map[119:fvalue:13.889736 120:fvalue:-18.5 123:fvalue:15 124:fvalue:7.862]
 	// - max-A counts(4096): [4 3 4 5 5 5] ... [17 27 20 17 20 24]
 }
+
+func Example_wsHelpers_CheckValidDetectorNames() {
+	uploaded := []*protos.Spectra{
+		{},
+		{
+			Spectra: []*protos.Spectrum{
+				{
+					Detector: "A",
+				},
+				{
+					Detector: "C121",
+				},
+				{
+					Detector: "B'",
+				},
+				{
+					Detector: "",
+				},
+			},
+		},
+	}
+
+	err := CheckValidDetectorNames(uploaded)
+	fmt.Printf("%v\n", err)
+
+	uploaded = []*protos.Spectra{
+		{
+			Spectra: []*protos.Spectrum{
+				{
+					Detector: "2Long",
+				},
+			},
+		},
+	}
+
+	err = CheckValidDetectorNames(uploaded)
+	fmt.Printf("%v\n", err)
+
+	uploaded = []*protos.Spectra{
+		{},
+		{},
+		{
+			Spectra: []*protos.Spectrum{
+				{
+					Detector: "C",
+				},
+				{
+					Detector: "D7",
+				},
+				{
+					Detector: "D748",
+				},
+				{
+					Detector: "D7'",
+				},
+				{
+					Detector: "DD7'",
+				},
+				{
+					Detector: "D(7)",
+				},
+			},
+		},
+	}
+
+	err = CheckValidDetectorNames(uploaded)
+	fmt.Printf("%v\n", err)
+
+	// Output:
+	// Invalid detector name "" at location 1
+	// Invalid detector name "2Long" at location 0
+	// Invalid detector name "D(7)" at location 2
+}

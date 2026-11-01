@@ -3,6 +3,7 @@ package wsHelpers
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -45,6 +46,28 @@ func ReadSpectraUploads(spectraTempFilesPath string, svcs *services.APIServices)
 	}
 
 	return allSpectra, nil
+}
+
+func CheckValidDetectorNames(uploaded []*protos.Spectra) error {
+	for locIdx, spectra := range uploaded {
+		if len(spectra.Spectra) > 0 {
+			// Assume the rest are all the same detectors... This way we only need to check the first set of spectra we find!
+			for _, s := range spectra.Spectra {
+				valid := true
+				if len(s.Detector) > 4 {
+					valid = false
+				} else {
+					valid, _ = regexp.MatchString("^[A-Z][A-Z0-9']*$", s.Detector)
+				}
+
+				if !valid {
+					return fmt.Errorf("Invalid detector name \"%v\" at location %v", s.Detector, locIdx)
+				}
+			}
+			break
+		}
+	}
+	return nil
 }
 
 func MergeSpectra(exprPB *protos.Experiment, uploadedSpectra []*protos.Spectra, makeBulkSum bool) error {
