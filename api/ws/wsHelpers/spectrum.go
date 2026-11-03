@@ -367,6 +367,15 @@ func GenerateAggregateSpectrum(
 		return nil, nil, fmt.Errorf("Requested invalid spectrum type %v", readType)
 	}
 
+	if len(indexes) <= 0 {
+		// Grab all the indexes where we have a pseudo-intensity
+		for i, loc := range exprPB.Locations {
+			if len(loc.PseudoIntensities) > 0 {
+				indexes = append(indexes, uint32(i))
+			}
+		}
+	}
+
 	for _, locIdx := range indexes {
 		if locIdx >= uint32(len(exprPB.Locations)) {
 			return nil, nil, fmt.Errorf("Invalid location %v, location count is %v", locIdx, len(exprPB.Locations))
