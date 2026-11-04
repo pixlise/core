@@ -39,7 +39,7 @@ func AddToDatasetArchive(remoteFS fileaccess.FileAccess, log logger.ILogger, dat
 	// TODO: Check if file exists already in archive, in which case fail, because nothing new to be updated?? Or check file sizes differ or something?
 	writePath := path.Join(filepaths.RootArchive, fileName)
 
-	exists, err := remoteFS.ObjectExists(datasetBucket, writePath)
+	exists, _, err := remoteFS.ObjectExists(datasetBucket, writePath)
 
 	if err != nil {
 		err = fmt.Errorf("Failed to check if incoming file exists in archive. Incoming: \"s3://%v/%v\", Destination: \"s3://%v/%v\"", sourceBucket, sourceFilePath, datasetBucket, writePath)

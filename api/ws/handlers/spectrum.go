@@ -320,7 +320,7 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 		// Back up original scan file if its not already
 		s3Path = filepaths.GetScanFilePath(req.ScanId, "orig_"+filepaths.DatasetFileName)
 		doBackup := false
-		if exists, err := hctx.Svcs.FS.ObjectExists(hctx.Svcs.Config.DatasetsBucket, s3Path); err != nil {
+		if exists, _, err := hctx.Svcs.FS.ObjectExists(hctx.Svcs.Config.DatasetsBucket, s3Path); err != nil {
 			// Can't determine if backup file exists, try backup anyway
 			hctx.Svcs.Log.Errorf("Failed to determine if scan file backup exists: %v. Will attempt backup anyway...", err)
 			doBackup = true
