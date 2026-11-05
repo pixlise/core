@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/pixlise/core/v4/api/services"
@@ -13,6 +14,8 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"google.golang.org/protobuf/proto"
 )
+
+var SpectrumDefaultChannelCount = 4096
 
 // Here we merge existing scan data with spectra from the temp dir and the last downloaded set
 // to form a new scan file that can be saved containing everything
@@ -339,7 +342,7 @@ func GenerateAggregateSpectrum(
 		return nil, nil, errors.New("Request didn't specify spectrum type")
 	}
 
-	interestingLabels := []string{"DETECTOR_ID", "READTYPE", "LIVETIME", "REALTIME", "OFFSET", "XPERCHAN"}
+	interestingLabels := []string{"DETECTOR_ID", "READTYPE", "LIVETIME", "REALTIME", "OFFSET", "XPERCHAN", "NPOINTS"}
 	labelIdxs := map[string]int{}
 
 	for c, label := range exprPB.MetaLabels {
@@ -358,6 +361,7 @@ func GenerateAggregateSpectrum(
 
 	detectorIdMetaIdx := -1
 	readtypeMetaIdx := -1
+	//nPointsMetaIdx := -1
 
 	bulkSums := map[string]*protos.Spectrum{}
 	maxValues := map[string]*protos.Spectrum{}
@@ -367,11 +371,78 @@ func GenerateAggregateSpectrum(
 		return nil, nil, fmt.Errorf("Requested invalid spectrum type %v", readType)
 	}
 
+	NPoints := int32(0)
 	if len(indexes) <= 0 {
-		// Grab all the indexes where we have a pseudo-intensity
-		for i, loc := range exprPB.Locations {
-			if len(loc.PseudoIntensities) > 0 {
-				indexes = append(indexes, uint32(i))
+		// No indexes specified - if we are set to look for NORMAL spectra and want bulk OR max, we can try to find the
+		// pre-computed bulk or max and return that
+		bulkSubstituted := false
+		maxSubstituted := false
+
+		// If there is a bulk and max spectrum already stored, just return that single one
+		for _, loc := range exprPB.Locations {
+			for _, det := range loc.Detectors {
+				thisDetectorId := ""
+				thisReadType := ""
+				for _, m := range det.Meta {
+					if m.LabelIdx == int32(labelIdxs["DETECTOR_ID"]) {
+						thisDetectorId = m.Svalue
+					}
+					if m.LabelIdx == int32(labelIdxs["READTYPE"]) {
+						thisReadType = m.Svalue
+					}
+					if NPoints == 0 && m.LabelIdx == int32(labelIdxs["NPOINTS"]) {
+						NPoints = readMetaAsInt(m)
+					}
+
+					if len(thisReadType) > 0 && len(thisDetectorId) > 0 && NPoints > 0 {
+						break
+					}
+				}
+
+				if detectorsRequested[thisDetectorId] {
+					if genBulk && utils.StringToSpectrumType(thisReadType) == protos.SpectrumType_SPECTRUM_BULK {
+						// Ensure this doesn't exist yet in bulk sums!
+						bs := bulkSums[thisDetectorId]
+						if bs != nil {
+							return nil, nil, fmt.Errorf("More than one bulk sum found for detector %v", thisDetectorId)
+						}
+
+						bs = makeSpectrumCopy(det, thisDetectorId, readType, 0, makeSpectrumMeta(labelIdxs, NPoints))
+						updateSpectrumMeta(bs, det.Meta)
+
+						bulkSums[thisDetectorId] = bs
+						bulkSubstituted = true
+					}
+					if genMax && utils.StringToSpectrumType(thisReadType) == protos.SpectrumType_SPECTRUM_MAX {
+						// Ensure this doesn't exist yet in bulk sums!
+						mv := maxValues[thisDetectorId]
+						if mv != nil {
+							return nil, nil, fmt.Errorf("More than one bulk sum found for detector %v", thisDetectorId)
+						}
+
+						mv = makeSpectrumCopy(det, thisDetectorId, readType, 0, makeSpectrumMeta(labelIdxs, NPoints))
+						updateSpectrumMeta(mv, det.Meta)
+
+						maxValues[thisDetectorId] = mv
+						maxSubstituted = true
+					}
+				}
+			}
+		}
+
+		// If we found a bulk and max for everything, return it instead of calculating from all spectra
+		if bulkSubstituted == genBulk && maxSubstituted == genMax {
+			return bulkSums, maxValues, nil
+		}
+
+		// If we're still around, we didn't find the substitutions, so we have to read every spectrum and add/max them as needed
+		// to form our result
+		if len(indexes) <= 0 {
+			// Grab all the indexes where we have a pseudo-intensity
+			for i, loc := range exprPB.Locations {
+				if len(loc.PseudoIntensities) > 0 {
+					indexes = append(indexes, uint32(i))
+				}
 			}
 		}
 	}
@@ -388,9 +459,22 @@ func GenerateAggregateSpectrum(
 		}
 
 		for _, det := range exprPB.Locations[locIdx].Detectors {
-			thisDetectorId, thisReadType, err := getDetectorMetaValues(det, int32(labelIdxs["DETECTOR_ID"]), int32(labelIdxs["READTYPE"]), &detectorIdMetaIdx, &readtypeMetaIdx)
+			thisDetectorId, thisReadType /*nPoints,*/, err := getDetectorMetaValues(
+				det,
+				int32(labelIdxs["DETECTOR_ID"]),
+				int32(labelIdxs["READTYPE"]),
+				//int32(labelIdxs["NPOINTS"]),
+				&detectorIdMetaIdx,
+				&readtypeMetaIdx,
+				//&nPointsMetaIdx,
+			)
+
 			if err != nil {
 				return nil, nil, fmt.Errorf("Failed reading location %v: %v", locIdx, err)
+			}
+
+			if NPoints <= 0 {
+				NPoints = int32(SpectrumDefaultChannelCount)
 			}
 
 			// Is this one of the detectors/read types we care about
@@ -417,7 +501,7 @@ func GenerateAggregateSpectrum(
 			if genBulk {
 				bs := bulkSums[thisDetectorId]
 				if bs == nil {
-					bs = makeSpectrumCopy(det, thisDetectorId, readType, len(countsDecoded), makeSpectrumMeta(labelIdxs))
+					bs = makeSpectrumCopy(det, thisDetectorId, readType, len(countsDecoded), makeSpectrumMeta(labelIdxs, NPoints))
 					bulkSums[thisDetectorId] = bs
 				}
 
@@ -435,7 +519,7 @@ func GenerateAggregateSpectrum(
 			if genMax {
 				bs := maxValues[thisDetectorId]
 				if bs == nil {
-					bs = makeSpectrumCopy(det, thisDetectorId, readType, len(countsDecoded), makeSpectrumMeta(labelIdxs))
+					bs = makeSpectrumCopy(det, thisDetectorId, readType, len(countsDecoded), makeSpectrumMeta(labelIdxs, NPoints))
 					maxValues[thisDetectorId] = bs
 				}
 
@@ -516,12 +600,13 @@ func makeSpectrumCopy(
 	return result
 }
 
-func makeSpectrumMeta(labelIdxs map[string]int) map[int32]*protos.ScanMetaDataItem {
+func makeSpectrumMeta(labelIdxs map[string]int, NPoints int32) map[int32]*protos.ScanMetaDataItem {
 	return map[int32]*protos.ScanMetaDataItem{
 		int32(labelIdxs["OFFSET"]):   {Value: &protos.ScanMetaDataItem_Fvalue{Fvalue: 0}},
 		int32(labelIdxs["XPERCHAN"]): {Value: &protos.ScanMetaDataItem_Fvalue{Fvalue: 0}},
 		int32(labelIdxs["REALTIME"]): {Value: &protos.ScanMetaDataItem_Fvalue{Fvalue: 0}},
 		int32(labelIdxs["LIVETIME"]): {Value: &protos.ScanMetaDataItem_Fvalue{Fvalue: 0}},
+		int32(labelIdxs["NPOINTS"]):  {Value: &protos.ScanMetaDataItem_Ivalue{Ivalue: NPoints}},
 	}
 }
 
@@ -540,13 +625,25 @@ func updateSpectrumMeta(toUpdate *protos.Spectrum, updateWithMeta []*protos.Expe
 	}
 }
 
+func readMetaAsInt(item *protos.Experiment_Location_MetaDataItem) int32 {
+	// If string has data, convert it
+	if len(item.Svalue) > 0 {
+		if i, err := strconv.Atoi(item.Svalue); err == nil {
+			return int32(i)
+		}
+	}
+
+	return item.Ivalue
+}
+
 func getDetectorMetaValues(
 	det *protos.Experiment_Location_DetectorSpectrum,
-	detectorIdLabelIdx int32, readTypeLabelIdx int32,
-	lastDetectorIdMetaIdx *int, lastReadTypeMetaIdx *int) (string, string, error) {
+	detectorIdLabelIdx int32, readTypeLabelIdx int32, //nPointsLabelIdx int32,
+	lastDetectorIdMetaIdx *int, lastReadTypeMetaIdx *int /*, lastNPointsMetaIdx *int*/) (string, string /*int32,*/, error) {
 	// Check if the ones at the same meta index are valid... if not we search from the start
 	thisDetectorId := ""
 	thisReadType := ""
+	//nPoints := int32(0)
 
 	if *lastDetectorIdMetaIdx >= 0 && *lastDetectorIdMetaIdx < len(det.Meta) && det.Meta[*lastDetectorIdMetaIdx].LabelIdx == detectorIdLabelIdx {
 		// It's in the same spot so just grab it
@@ -556,7 +653,11 @@ func getDetectorMetaValues(
 	if *lastReadTypeMetaIdx >= 0 && *lastReadTypeMetaIdx < len(det.Meta) && det.Meta[*lastReadTypeMetaIdx].LabelIdx == readTypeLabelIdx {
 		thisReadType = det.Meta[*lastReadTypeMetaIdx].Svalue
 	}
-
+	/*
+		if *lastNPointsMetaIdx >= 0 && *lastNPointsMetaIdx < len(det.Meta) && det.Meta[*lastNPointsMetaIdx].LabelIdx == nPointsLabelIdx {
+			nPoints = readMetaAsInt(det.Meta[*lastNPointsMetaIdx])
+		}
+	*/
 	if len(thisDetectorId) <= 0 || len(thisReadType) <= 0 {
 		// We don't have a valid one of either of these, so search!
 		for i, m := range det.Meta {
@@ -569,8 +670,13 @@ func getDetectorMetaValues(
 				thisReadType = m.Svalue
 				*lastReadTypeMetaIdx = i // Remember for subsequent call
 			}
-
-			if len(thisDetectorId) > 0 && len(thisReadType) > 0 {
+			/*
+				if m.LabelIdx == int32(nPointsLabelIdx) {
+					nPoints = readMetaAsInt(det.Meta[*lastNPointsMetaIdx])
+					*lastNPointsMetaIdx = i // Remember for subsequent call
+				}
+			*/
+			if len(thisDetectorId) > 0 && len(thisReadType) > 0 /*&& nPoints > 0*/ {
 				break // don't loop if we've found all we need
 			}
 		}
@@ -578,11 +684,15 @@ func getDetectorMetaValues(
 
 	// At this point if either is empty, stop
 	if len(thisDetectorId) <= 0 {
-		return thisDetectorId, thisReadType, errors.New("detector id not found")
+		return thisDetectorId, thisReadType /*nPoints,*/, errors.New("detector id not found")
 	}
 	if len(thisReadType) <= 0 {
-		return thisDetectorId, thisReadType, errors.New("spectrum read type not found")
+		return thisDetectorId, thisReadType /*nPoints,*/, errors.New("spectrum read type not found")
 	}
-
-	return thisDetectorId, thisReadType, nil
+	/*
+		if nPoints <= 0 {
+			return thisDetectorId, thisReadType, nPoints, errors.New("spectrum NPoints not found")
+		}
+	*/
+	return thisDetectorId, thisReadType /*nPoints,*/, nil
 }

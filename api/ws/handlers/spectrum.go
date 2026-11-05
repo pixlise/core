@@ -3,6 +3,7 @@ package wsHandler
 import (
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
@@ -73,7 +74,7 @@ func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (
 
 	// For now, all our spectra are 4096 but in time if we have other detectors, we should be able to send back
 	// the channel count based on the detector here...
-	channelCount := uint32(4096)
+	channelCount := uint32(wsHelpers.SpectrumDefaultChannelCount)
 
 	result := &protos.SpectrumResp{
 		TimeStampUnixSec:     uint32(exprPB.ImportTimeStampUnixSec),
@@ -421,5 +422,8 @@ func HandleSpectrumDetectorsReq(req *protos.SpectrumDetectorsReq, hctx wsHelpers
 		}
 	}
 
-	return &protos.SpectrumDetectorsResp{DetectorId: utils.GetMapKeys(detectors)}, nil
+	detectorList := utils.GetMapKeys(detectors)
+	sort.Strings(detectorList)
+
+	return &protos.SpectrumDetectorsResp{DetectorId: detectorList}, nil
 }
