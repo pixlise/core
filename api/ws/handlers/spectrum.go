@@ -3,6 +3,8 @@ package wsHandler
 import (
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
@@ -10,6 +12,36 @@ import (
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"google.golang.org/protobuf/proto"
 )
+
+func HandleSpectrumAggregateReq(req *protos.SpectrumAggregateReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumAggregateResp, error) {
+	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	bulkSums, maxValues, warnings, err := wsHelpers.GenerateAggregateSpectrum(indexes, req.Detectors, req.ReadType, req.BulkSum, req.MaxValue, exprPB)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(warnings) > 0 {
+		hctx.Svcs.Log.Errorf("Requesting aggregate spectra for scan %v, detectors: [%v], readType: %v, bulk: %v, max: %v resulted in warnings:\n  %v",
+			req.ScanId, strings.Join(req.Detectors, ","), req.ReadType, req.BulkSum, req.MaxValue, strings.Join(warnings, ", "))
+	}
+
+	result := &protos.SpectrumAggregateResp{BulkSpectra: []*protos.Spectrum{}, MaxSpectra: []*protos.Spectrum{}}
+	// Return in alphabetical order for easier unit testing
+	keys := utils.GetMapKeys(bulkSums)
+	for _, k := range keys {
+		result.BulkSpectra = append(result.BulkSpectra, bulkSums[k])
+	}
+	keys = utils.GetMapKeys(maxValues)
+	for _, k := range keys {
+		result.MaxSpectra = append(result.MaxSpectra, maxValues[k])
+	}
+
+	return result, nil
+}
 
 func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumResp, error) {
 	exprPB, indexes, err := beginDatasetFileReqForRange(req.ScanId, req.Entries, hctx)
@@ -48,7 +80,7 @@ func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (
 
 	// For now, all our spectra are 4096 but in time if we have other detectors, we should be able to send back
 	// the channel count based on the detector here...
-	channelCount := uint32(4096)
+	channelCount := uint32(wsHelpers.SpectrumDefaultChannelCount)
 
 	result := &protos.SpectrumResp{
 		TimeStampUnixSec:     uint32(exprPB.ImportTimeStampUnixSec),
@@ -138,7 +170,7 @@ func convertSpectrum(
 	metaTypes []protos.Experiment_MetaDataType,
 	detectorIdIdx int,
 	readtypeIdx int) (*protos.Spectrum, error) {
-	detectorType := protos.SpectrumType_SPECTRUM_UNKNOWN
+	specType := protos.SpectrumType_SPECTRUM_UNKNOWN
 	detectorId := ""
 	meta := map[int32]*protos.ScanMetaDataItem{}
 
@@ -159,16 +191,7 @@ func convertSpectrum(
 			// Verify type
 			if t := metaTypes[m.LabelIdx]; t == protos.Experiment_MT_STRING {
 				// These are hard-coded string values
-				switch m.Svalue {
-				case "Normal":
-					detectorType = protos.SpectrumType_SPECTRUM_NORMAL
-				case "Dwell":
-					detectorType = protos.SpectrumType_SPECTRUM_DWELL
-				case "BulkSum":
-					detectorType = protos.SpectrumType_SPECTRUM_BULK
-				case "MaxValue":
-					detectorType = protos.SpectrumType_SPECTRUM_MAX
-				}
+				specType = utils.StringToSpectrumType(m.Svalue)
 			} else {
 				return nil, fmt.Errorf("Unexpected %v when reading spectrum type", t)
 			}
@@ -198,13 +221,13 @@ func convertSpectrum(
 	// If we didn't get anything, complain
 	if len(detectorId) <= 0 {
 		return nil, errors.New("Failed to read detector id")
-	} else if detectorType == protos.SpectrumType_SPECTRUM_UNKNOWN {
+	} else if specType == protos.SpectrumType_SPECTRUM_UNKNOWN {
 		return nil, errors.New("Failed to read spectrum type")
 	}
 
 	spectrum := &protos.Spectrum{
 		Detector: detectorId,
-		Type:     detectorType,
+		Type:     specType,
 		Meta:     meta,
 		MaxCount: uint32(detector.SpectrumMax),
 		Counts:   utils.ConvertIntSlice[uint32](detector.Spectrum),
@@ -226,6 +249,8 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 
 	// Lets check that spectra uploaded are:
 	// - The same size as existing
+	// - Not named something weird/have names that are too long/clashing with spectrum expressions, eg bulk(A). So no
+	//   funny character business - maybe just allow AlNum and '??
 	// - For valid existing location indexes
 	// - Not overwriting existing detector spectra. Eg if there's an "A" spectrum, new upload can't be "A", we append
 	//   a suffix so save as "A'". We do allow overwriting a suffixed detectors spectrum though, so "A'" can be edited
@@ -233,6 +258,16 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 	// arrive, at which point we merge all the new spectra into the dataset.bin file.
 	// Longer-term if we have huge data-sets this won't be a valid way to operate but for operating with PIXL data this
 	// should suffice for now. Re-organising for longer-term storage will require other re-architecting anyway.
+
+	// NOTE: more than 1 client uploading spectra to a scan (even if they're differently named) WILL FAIL!!!
+	// TODO: Fix this - perhaps force requestor to include a unique ID for this upload job, including that in every
+	//       message uploaded??
+
+	// Reject badly named spectra straight up
+	err = wsHelpers.CheckValidDetectorNames(req.SpectraPerLocation)
+	if err != nil {
+		return nil, err
+	}
 
 	// If it's not the last, we just save
 	spectraUploadSubdir := "spectra-upload"
@@ -292,7 +327,7 @@ func HandleSpectrumUploadReq(req *protos.SpectrumUploadReq, hctx wsHelpers.Handl
 		// Back up original scan file if its not already
 		s3Path = filepaths.GetScanFilePath(req.ScanId, "orig_"+filepaths.DatasetFileName)
 		doBackup := false
-		if exists, err := hctx.Svcs.FS.ObjectExists(hctx.Svcs.Config.DatasetsBucket, s3Path); err != nil {
+		if exists, _, err := hctx.Svcs.FS.ObjectExists(hctx.Svcs.Config.DatasetsBucket, s3Path); err != nil {
 			// Can't determine if backup file exists, try backup anyway
 			hctx.Svcs.Log.Errorf("Failed to determine if scan file backup exists: %v. Will attempt backup anyway...", err)
 			doBackup = true
@@ -393,5 +428,8 @@ func HandleSpectrumDetectorsReq(req *protos.SpectrumDetectorsReq, hctx wsHelpers
 		}
 	}
 
-	return &protos.SpectrumDetectorsResp{DetectorId: utils.GetMapKeys(detectors)}, nil
+	detectorList := utils.GetMapKeys(detectors)
+	sort.Strings(detectorList)
+
+	return &protos.SpectrumDetectorsResp{DetectorId: detectorList}, nil
 }

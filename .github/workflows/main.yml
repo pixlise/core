@@ -74,7 +74,7 @@ jobs:
           echo "Running genvips..."
           ./genvips.sh
       - name: Start MongoDB
-        uses: supercharge/mongodb-github-action@1.10.0
+        uses: supercharge/mongodb-github-action@1.12.1
         with:
           mongodb-version: 8
           mongodb-replica-set: testu
@@ -119,7 +119,7 @@ jobs:
           echo "Running genvips..."
           ./genvips.sh
       - name: Start MongoDB
-        uses: supercharge/mongodb-github-action@1.10.0
+        uses: supercharge/mongodb-github-action@1.12.1
         with:
           mongodb-version: 8
           mongodb-replica-set: testi

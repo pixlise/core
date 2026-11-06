@@ -41,7 +41,8 @@ type FileAccess interface {
 	ListObjects(bucket string, prefix string) ([]string, error)
 
 	// Does a file at a given path exist
-	ObjectExists(rootPath string, path string) (bool, error)
+	// Returns bool exists, size in bytes, and error if there is one
+	ObjectExists(rootPath string, path string) (bool, int64, error)
 
 	// Reads a file as bytes
 	ReadObject(bucket string, path string) ([]byte, error)

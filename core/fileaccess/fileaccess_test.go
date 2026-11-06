@@ -44,15 +44,15 @@ func runTest(fs FileAccess, bucket string) {
 	fmt.Printf("JSON no-indent: %v\n", fs.WriteJSONNoIndent(bucket, "the-files/subdir/ugly.json", testData{Name: "Hello", Value: 778, Description: "World"}))
 
 	// Check file exists, should fail
-	exists, err := fs.ObjectExists(bucket, "the-files/data.bin")
-	fmt.Printf("Exists1: %v|%v\n", exists, err)
+	exists, existsBytes, err := fs.ObjectExists(bucket, "the-files/data.bin")
+	fmt.Printf("Exists1: %v|%v|%v\n", exists, existsBytes, err)
 
 	// Write binary data
 	fmt.Printf("Binary: %v\n", fs.WriteObject(bucket, "the-files/data.bin", []byte{250, 130, 10, 0, 33}))
 
 	// Check file exists, should exist now...
-	exists, err = fs.ObjectExists(bucket, "the-files/data.bin")
-	fmt.Printf("Exists2: %v|%v\n", exists, err)
+	exists, existsBytes, err = fs.ObjectExists(bucket, "the-files/data.bin")
+	fmt.Printf("Exists2: %v|%v|%v\n", exists, existsBytes, err)
 
 	// Copy a file
 	fmt.Printf("Copy: %v\n", fs.CopyObject(bucket, "the-files/pretty.json", bucket, "the-files/subdir/copied.json"))
@@ -132,9 +132,9 @@ func Example_localFileSystem() {
 	// Setup: <nil>
 	// JSON: <nil>
 	// JSON no-indent: <nil>
-	// Exists1: false|<nil>
+	// Exists1: false|0|<nil>
 	// Binary: <nil>
-	// Exists2: true|<nil>
+	// Exists2: true|5|<nil>
 	// Copy: <nil>
 	// Copy bad path, got not found error: true
 	// Read JSON: <nil>, {Hello 778 World}
@@ -169,9 +169,9 @@ func Example_localFileSystemS3Sim() {
 	// Setup: <nil>
 	// JSON: <nil>
 	// JSON no-indent: <nil>
-	// Exists1: false|<nil>
+	// Exists1: false|0|<nil>
 	// Binary: <nil>
-	// Exists2: true|<nil>
+	// Exists2: true|5|<nil>
 	// Copy: <nil>
 	// Copy bad path, got not found error: true
 	// Read JSON: <nil>, {Hello 778 World}
@@ -234,9 +234,9 @@ func Example_s3() {
 	// Setup: <nil>
 	// JSON: <nil>
 	// JSON no-indent: <nil>
-	// Exists1: false|<nil>
+	// Exists1: false|0|<nil>
 	// Binary: <nil>
-	// Exists2: true|<nil>
+	// Exists2: true|5|<nil>
 	// Copy: <nil>
 	// Copy bad path, got not found error: true
 	// Read JSON: <nil>, {Hello 778 World}
