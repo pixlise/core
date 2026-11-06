@@ -478,6 +478,7 @@ type SpectrumAggregateResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	BulkSpectra   []*Spectrum            `protobuf:"bytes,1,rep,name=bulkSpectra,proto3" json:"bulkSpectra,omitempty"`
 	MaxSpectra    []*Spectrum            `protobuf:"bytes,2,rep,name=maxSpectra,proto3" json:"maxSpectra,omitempty"`
+	Warnings      []string               `protobuf:"bytes,3,rep,name=warnings,proto3" json:"warnings,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -526,6 +527,13 @@ func (x *SpectrumAggregateResp) GetMaxSpectra() []*Spectrum {
 	return nil
 }
 
+func (x *SpectrumAggregateResp) GetWarnings() []string {
+	if x != nil {
+		return x.Warnings
+	}
+	return nil
+}
+
 var File_spectrum_msgs_proto protoreflect.FileDescriptor
 
 const file_spectrum_msgs_proto_rawDesc = "" +
@@ -565,12 +573,13 @@ const file_spectrum_msgs_proto_rawDesc = "" +
 	"\tdetectors\x18\x03 \x03(\tR\tdetectors\x12)\n" +
 	"\breadType\x18\x04 \x01(\x0e2\r.SpectrumTypeR\breadType\x12\x18\n" +
 	"\abulkSum\x18\x05 \x01(\bR\abulkSum\x12\x1a\n" +
-	"\bmaxValue\x18\x06 \x01(\bR\bmaxValue\"o\n" +
+	"\bmaxValue\x18\x06 \x01(\bR\bmaxValue\"\x8b\x01\n" +
 	"\x15SpectrumAggregateResp\x12+\n" +
 	"\vbulkSpectra\x18\x01 \x03(\v2\t.SpectrumR\vbulkSpectra\x12)\n" +
 	"\n" +
 	"maxSpectra\x18\x02 \x03(\v2\t.SpectrumR\n" +
-	"maxSpectraB\n" +
+	"maxSpectra\x12\x1a\n" +
+	"\bwarnings\x18\x03 \x03(\tR\bwarningsB\n" +
 	"Z\b.;protosb\x06proto3"
 
 var (

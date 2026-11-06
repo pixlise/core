@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
@@ -18,9 +19,14 @@ func HandleSpectrumAggregateReq(req *protos.SpectrumAggregateReq, hctx wsHelpers
 		return nil, err
 	}
 
-	bulkSums, maxValues, err := wsHelpers.GenerateAggregateSpectrum(indexes, req.Detectors, req.ReadType, req.BulkSum, req.MaxValue, exprPB)
+	bulkSums, maxValues, warnings, err := wsHelpers.GenerateAggregateSpectrum(indexes, req.Detectors, req.ReadType, req.BulkSum, req.MaxValue, exprPB)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(warnings) > 0 {
+		hctx.Svcs.Log.Errorf("Requesting aggregate spectra for scan %v, detectors: [%v], readType: %v, bulk: %v, max: %v resulted in warnings:\n  %v",
+			req.ScanId, strings.Join(req.Detectors, ","), req.ReadType, req.BulkSum, req.MaxValue, strings.Join(warnings, ", "))
 	}
 
 	result := &protos.SpectrumAggregateResp{BulkSpectra: []*protos.Spectrum{}, MaxSpectra: []*protos.Spectrum{}}
