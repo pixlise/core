@@ -322,15 +322,15 @@ func makeBulkSums(uploadedSpectra []*protos.Spectra, metaLabels []string) []*pro
 func GenerateAggregateSpectrum(
 	indexes []uint32, detectors []string, readType protos.SpectrumType,
 	genBulk bool, genMax bool,
-	exprPB *protos.Experiment) (map[string]*protos.Spectrum, map[string]*protos.Spectrum, error) {
+	exprPB *protos.Experiment) (map[string]*protos.Spectrum, map[string]*protos.Spectrum, []string, error) {
 	// check for insanity
 	if !genBulk && !genMax {
-		return nil, nil, errors.New("Requested neither bulk sum nor max value")
+		return nil, nil, []string{}, errors.New("Requested neither bulk sum nor max value")
 	}
 
 	// Ensure there's a detector
 	if len(detectors) <= 0 {
-		return nil, nil, errors.New("Request didn't specify detector(s)")
+		return nil, nil, []string{}, errors.New("Request didn't specify detector(s)")
 	}
 
 	detectorsRequested := map[string]bool{}
@@ -339,7 +339,7 @@ func GenerateAggregateSpectrum(
 	}
 
 	if readType == protos.SpectrumType_SPECTRUM_UNKNOWN {
-		return nil, nil, errors.New("Request didn't specify spectrum type")
+		return nil, nil, []string{}, errors.New("Request didn't specify spectrum type")
 	}
 
 	interestingLabels := []string{"DETECTOR_ID", "READTYPE", "LIVETIME", "REALTIME", "OFFSET", "XPERCHAN", "NPOINTS"}
@@ -356,7 +356,7 @@ func GenerateAggregateSpectrum(
 	}
 
 	if len(labelIdxs) != len(interestingLabels) {
-		return nil, nil, fmt.Errorf("Missing meta labels from spectra. Need [%v], found [%v]", interestingLabels, utils.GetMapKeys(labelIdxs))
+		return nil, nil, []string{}, fmt.Errorf("Missing meta labels from spectra. Need [%v], found [%v]", interestingLabels, utils.GetMapKeys(labelIdxs))
 	}
 
 	detectorIdMetaIdx := -1
@@ -368,7 +368,7 @@ func GenerateAggregateSpectrum(
 
 	readTypeRequestedStr := utils.SpectrumTypeToString(readType)
 	if len(readTypeRequestedStr) <= 0 {
-		return nil, nil, fmt.Errorf("Requested invalid spectrum type %v", readType)
+		return nil, nil, []string{}, fmt.Errorf("Requested invalid spectrum type %v", readType)
 	}
 
 	NPoints := int32(0)
@@ -404,7 +404,7 @@ func GenerateAggregateSpectrum(
 						// Ensure this doesn't exist yet in bulk sums!
 						bs := bulkSums[thisDetectorId]
 						if bs != nil {
-							return nil, nil, fmt.Errorf("More than one bulk sum found for detector %v", thisDetectorId)
+							return nil, nil, []string{}, fmt.Errorf("More than one bulk sum found for detector %v", thisDetectorId)
 						}
 
 						bs = makeSpectrumCopy(det, thisDetectorId, readType, 0, makeSpectrumMeta(labelIdxs, NPoints))
@@ -417,7 +417,7 @@ func GenerateAggregateSpectrum(
 						// Ensure this doesn't exist yet in bulk sums!
 						mv := maxValues[thisDetectorId]
 						if mv != nil {
-							return nil, nil, fmt.Errorf("More than one bulk sum found for detector %v", thisDetectorId)
+							return nil, nil, []string{}, fmt.Errorf("More than one bulk sum found for detector %v", thisDetectorId)
 						}
 
 						mv = makeSpectrumCopy(det, thisDetectorId, readType, 0, makeSpectrumMeta(labelIdxs, NPoints))
@@ -432,7 +432,7 @@ func GenerateAggregateSpectrum(
 
 		// If we found a bulk and max for everything, return it instead of calculating from all spectra
 		if bulkSubstituted == genBulk && maxSubstituted == genMax {
-			return bulkSums, maxValues, nil
+			return bulkSums, maxValues, []string{}, nil
 		}
 
 		// If we're still around, we didn't find the substitutions, so we have to read every spectrum and add/max them as needed
@@ -447,12 +447,16 @@ func GenerateAggregateSpectrum(
 		}
 	}
 
+	warnings := []string{}
+
 	for _, locIdx := range indexes {
 		if locIdx >= uint32(len(exprPB.Locations)) {
-			return nil, nil, fmt.Errorf("Invalid location %v, location count is %v", locIdx, len(exprPB.Locations))
+			return nil, nil, warnings, fmt.Errorf("Invalid location %v, location count is %v", locIdx, len(exprPB.Locations))
 		}
 
-		// Loop through all detectors and read the ones we're interested in. If we requested detectors that don't exist, fail!
+		// Loop through all detectors and read the ones we're interested in. If we don't find detectors at all for a PMC
+		// it may be because a user circled some points and found a housekeeping or image related PMC. This causes us to
+		// send back a warning msg as part of our response
 		detectorsFound := map[string]bool{}
 		for _, d := range detectors {
 			detectorsFound[d] = false
@@ -470,7 +474,7 @@ func GenerateAggregateSpectrum(
 			)
 
 			if err != nil {
-				return nil, nil, fmt.Errorf("Failed reading location %v: %v", locIdx, err)
+				return nil, nil, warnings, fmt.Errorf("Failed reading location %v: %v", locIdx, err)
 			}
 
 			if NPoints <= 0 {
@@ -538,8 +542,8 @@ func GenerateAggregateSpectrum(
 
 		// Did we miss any detectors?
 		for d, found := range detectorsFound {
-			if !found {
-				return nil, nil, fmt.Errorf("Requested detector %v, read type %v not found at location %v", d, readTypeRequestedStr, locIdx)
+			if !found && len(warnings) < 2 {
+				warnings = append(warnings, fmt.Sprintf("Detector %v, read type %v not found at location %v", d, readTypeRequestedStr, locIdx))
 			}
 		}
 	}
@@ -571,7 +575,7 @@ func GenerateAggregateSpectrum(
 		}
 	}
 
-	return bulkSums, maxValues, nil
+	return bulkSums, maxValues, warnings, nil
 }
 
 func makeSpectrumCopy(
