@@ -164,7 +164,7 @@ func runRestore(startTimestamp int64, svcs *services.APIServices, downloadRemote
 	/*
 		// Check if we're restoring old style backups (at root of bucket) or if we've got a directory in S3. Use the directory
 		// otherwise the bucket.
-		exists, err := svcs.FS.ObjectExists(svcs.Config.DataBackupBucket, envS3Path)
+		exists, _, err := svcs.FS.ObjectExists(svcs.Config.DataBackupBucket, envS3Path)
 		// If it doesn't exist, use the root
 		if err != nil {
 			svcs.Log.Errorf("Failed to check backup bucket path \"%v\" exists: %v", envS3Path, err)

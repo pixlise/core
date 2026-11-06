@@ -88,7 +88,7 @@ func seedDBQuants(quants []*protos.QuantificationSummary) {
 }
 
 func seedS3File(fileName string, s3Path string /*userId string, scanId string*/, bucket string) {
-	if exists, err := apiStorageFileAccess.ObjectExists(bucket, s3Path); err == nil && exists {
+	if exists, _, err := apiStorageFileAccess.ObjectExists(bucket, s3Path); err == nil && exists {
 		fmt.Printf("s3://%v/%v already exists, skipping upload\n", bucket, s3Path)
 		return
 	}

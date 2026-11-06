@@ -507,7 +507,7 @@ func seedBuckets(s3 fileaccess.FileAccess, apiDatasetBucket string) error {
 		}
 
 		upPath := path.Join("Scans", file[pos+len(rootPath):])
-		if exists, err := apiStorageFileAccess.ObjectExists(apiDatasetBucket, upPath); err == nil && exists {
+		if exists, _, err := apiStorageFileAccess.ObjectExists(apiDatasetBucket, upPath); err == nil && exists {
 			fmt.Printf("s3://%v/%v already exists, skipping upload\n", apiDatasetBucket, upPath)
 			continue
 		}

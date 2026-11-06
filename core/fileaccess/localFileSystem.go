@@ -49,7 +49,7 @@ func (fs *FSAccess) ListObjects(rootPath string, prefix string) ([]string, error
 	// because user may be querying for files with a given path prefix, so we my have to go up
 	// one directory and walk those files WITH a prefix check
 	filePrefix := ""
-	fullPathExists, err := fs.ObjectExists(fullPath, "")
+	fullPathExists, _, err := fs.ObjectExists(fullPath, "")
 	if err != nil {
 		return result, err
 	}
@@ -60,7 +60,7 @@ func (fs *FSAccess) ListObjects(rootPath string, prefix string) ([]string, error
 		fullPath = filepath.Dir(fullPath)
 
 		// Check this directory exists...
-		fullPathExists, err = fs.ObjectExists(fullPath, "")
+		fullPathExists, _, err = fs.ObjectExists(fullPath, "")
 		if err != nil {
 			return result, err
 		}
@@ -108,17 +108,17 @@ func (fs *FSAccess) ListObjects(rootPath string, prefix string) ([]string, error
 	return result, err
 }
 
-func (fs *FSAccess) ObjectExists(rootPath string, path string) (bool, error) {
+func (fs *FSAccess) ObjectExists(rootPath string, path string) (bool, int64, error) {
 	fullPath := fs.filePath(rootPath, path)
-	_, err := os.Stat(fullPath)
+	s, err := os.Stat(fullPath)
 
 	// If we got a not exist error, file doesn't exist, and this is not an error...
 	if err != nil && os.IsNotExist(err) {
-		return false, nil
+		return false, 0, nil
 	}
 
 	// Otherwise, return the bool flag and error itself
-	return err == nil, err
+	return err == nil, s.Size(), err
 }
 
 func (fs *FSAccess) ReadObject(rootPath string, path string) ([]byte, error) {
@@ -247,7 +247,7 @@ func (fs *FSAccess) EmptyObjects(rootPath string, pathPrefix string) error {
 		return err
 	}
 	for _, name := range names {
-		err = os.RemoveAll(fs.filePath(rootPath, name))
+		err = os.RemoveAll(fs.filePath(rootPath, filepath.Join(pathPrefix, name)))
 		if err != nil {
 			return err
 		}
