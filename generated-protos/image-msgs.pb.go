@@ -451,8 +451,6 @@ type ImageUploadHttpRequest struct {
 	//	*ImageUploadHttpRequest_LocationPerScan
 	//	*ImageUploadHttpRequest_BeamImageRef
 	Association        isImageUploadHttpRequest_Association `protobuf_oneof:"Association"`
-	PartNo             uint32                               `protobuf:"varint,7,opt,name=partNo,proto3" json:"partNo,omitempty"`
-	TotalParts         uint32                               `protobuf:"varint,8,opt,name=totalParts,proto3" json:"totalParts,omitempty"`
 	ImageByteSize      uint64                               `protobuf:"varint,9,opt,name=imageByteSize,proto3" json:"imageByteSize,omitempty"`
 	BytesUploadedSoFar uint64                               `protobuf:"varint,10,opt,name=bytesUploadedSoFar,proto3" json:"bytesUploadedSoFar,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -540,20 +538,6 @@ func (x *ImageUploadHttpRequest) GetBeamImageRef() *ImageMatchTransform {
 		}
 	}
 	return nil
-}
-
-func (x *ImageUploadHttpRequest) GetPartNo() uint32 {
-	if x != nil {
-		return x.PartNo
-	}
-	return 0
-}
-
-func (x *ImageUploadHttpRequest) GetTotalParts() uint32 {
-	if x != nil {
-		return x.TotalParts
-	}
-	return 0
 }
 
 func (x *ImageUploadHttpRequest) GetImageByteSize() uint64 {
@@ -833,22 +817,18 @@ const file_image_msgs_proto_rawDesc = "" +
 	"\x12ImageSetDefaultReq\x12\x16\n" +
 	"\x06scanId\x18\x01 \x01(\tR\x06scanId\x122\n" +
 	"\x14defaultImageFileName\x18\x02 \x01(\tR\x14defaultImageFileName\"\x15\n" +
-	"\x13ImageSetDefaultResp\"\xb2\x03\n" +
+	"\x13ImageSetDefaultResp\"\x86\x03\n" +
 	"\x16ImageUploadHttpRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1c\n" +
 	"\timageData\x18\x02 \x01(\fR\timageData\x12,\n" +
 	"\x11associatedScanIds\x18\x05 \x03(\tR\x11associatedScanIds\x12\"\n" +
 	"\foriginScanId\x18\x06 \x01(\tR\foriginScanId\x12;\n" +
 	"\x0flocationPerScan\x18\x03 \x01(\v2\x0f.ImageLocationsH\x00R\x0flocationPerScan\x12:\n" +
-	"\fbeamImageRef\x18\x04 \x01(\v2\x14.ImageMatchTransformH\x00R\fbeamImageRef\x12\x16\n" +
-	"\x06partNo\x18\a \x01(\rR\x06partNo\x12\x1e\n" +
-	"\n" +
-	"totalParts\x18\b \x01(\rR\n" +
-	"totalParts\x12$\n" +
+	"\fbeamImageRef\x18\x04 \x01(\v2\x14.ImageMatchTransformH\x00R\fbeamImageRef\x12$\n" +
 	"\rimageByteSize\x18\t \x01(\x04R\rimageByteSize\x12.\n" +
 	"\x12bytesUploadedSoFar\x18\n" +
 	" \x01(\x04R\x12bytesUploadedSoFarB\r\n" +
-	"\vAssociation\"B\n" +
+	"\vAssociationJ\x04\b\a\x10\bJ\x04\b\b\x10\t\"B\n" +
 	"\x1aImageUploadHttpPartialInfo\x12$\n" +
 	"\rbytesReceived\x18\x01 \x01(\x04R\rbytesReceived\"$\n" +
 	"\x0eImageDeleteReq\x12\x12\n" +
