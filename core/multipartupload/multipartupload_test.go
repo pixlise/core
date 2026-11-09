@@ -102,7 +102,7 @@ func Example_upload() {
 	// GC: <nil>
 	// INFO: MultiPartFileUpload Garbage Collector running...
 	// GC2: <nil>
-	// INFO: - Freeing part-path/new.png as it completed 23 sec ago
+	// INFO: - Freeing s3://bucket/part-path/new.png as it completed 23 sec ago
 	// new.png stat err: stat ./test-bucket/bucket/part-path/new.png: no such file or directory
 	// part-path stat err: <nil>
 }
