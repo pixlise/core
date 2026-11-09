@@ -21,14 +21,14 @@ func Example_upload() {
 	l := logger.StdOutLoggerForTest{}
 	mp := MakeMultiPartUploadHandler("bucket", "part-path", 20, 10, fs, &ts, &l)
 
-	sz, err := mp.StartUpload("new.png", 10)
-	fmt.Printf("start: %v|%v\n", sz, err)
+	sz, comp, err := mp.StartUpload("new.png", 10)
+	fmt.Printf("start: %v|%v|%v\n", sz, comp, err)
 
-	sz, err = mp.StartUpload("new.png", 12)
-	fmt.Printf("start_diff_size: %v|%v\n", sz, err)
+	sz, comp, err = mp.StartUpload("new.png", 12)
+	fmt.Printf("start_diff_size: %v|%v|%v\n", sz, comp, err)
 
-	sz, err = mp.StartUpload("new.png", 9)
-	fmt.Printf("start_diff_size2: %v|%v\n", sz, err)
+	sz, comp, err = mp.StartUpload("new.png", 9)
+	fmt.Printf("start_diff_size2: %v|%v|%v\n", sz, comp, err)
 
 	completed := false
 	sz, completed, err = mp.UploadPart("not-started.png", 0, []byte{1, 2})
@@ -55,8 +55,8 @@ func Example_upload() {
 	sz, completed, err = mp.UploadPart("new.png", 9, []byte{9})
 	fmt.Printf("upload-part-4-fail: %v|%v|%v\n", sz, completed, err)
 
-	sz, err = mp.StartUpload("new.png", 10)
-	fmt.Printf("start_resume: %v|%v\n", sz, err)
+	sz, comp, err = mp.StartUpload("new.png", 10)
+	fmt.Printf("start_resume: %v|%v|%v\n", sz, comp, err)
 
 	sz, completed, err = mp.UploadPart("new.png", 8, []byte{9})
 	fmt.Printf("upload-part-4: %v|%v|%v\n", sz, completed, err)
@@ -64,8 +64,8 @@ func Example_upload() {
 	sz, completed, err = mp.UploadPart("new.png", 9, []byte{10})
 	fmt.Printf("upload-part-5: %v|%v|%v\n", sz, completed, err)
 
-	sz, err = mp.StartUpload("new.png", 10)
-	fmt.Printf("start_resume-fail: %v|%v\n", sz, err)
+	sz, comp, err = mp.StartUpload("new.png", 10)
+	fmt.Printf("start_resume-fail: %v|%v|%v\n", sz, comp, err)
 
 	err = mp.GarbageCollect()
 	fmt.Printf("GC: %v\n", err)

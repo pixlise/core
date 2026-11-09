@@ -450,12 +450,13 @@ type ImageUploadHttpRequest struct {
 	//
 	//	*ImageUploadHttpRequest_LocationPerScan
 	//	*ImageUploadHttpRequest_BeamImageRef
-	Association   isImageUploadHttpRequest_Association `protobuf_oneof:"Association"`
-	PartNo        uint32                               `protobuf:"varint,7,opt,name=partNo,proto3" json:"partNo,omitempty"`
-	TotalParts    uint32                               `protobuf:"varint,8,opt,name=totalParts,proto3" json:"totalParts,omitempty"`
-	ImageByteSize uint64                               `protobuf:"varint,9,opt,name=imageByteSize,proto3" json:"imageByteSize,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Association        isImageUploadHttpRequest_Association `protobuf_oneof:"Association"`
+	PartNo             uint32                               `protobuf:"varint,7,opt,name=partNo,proto3" json:"partNo,omitempty"`
+	TotalParts         uint32                               `protobuf:"varint,8,opt,name=totalParts,proto3" json:"totalParts,omitempty"`
+	ImageByteSize      uint64                               `protobuf:"varint,9,opt,name=imageByteSize,proto3" json:"imageByteSize,omitempty"`
+	BytesUploadedSoFar uint64                               `protobuf:"varint,10,opt,name=bytesUploadedSoFar,proto3" json:"bytesUploadedSoFar,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ImageUploadHttpRequest) Reset() {
@@ -558,6 +559,13 @@ func (x *ImageUploadHttpRequest) GetTotalParts() uint32 {
 func (x *ImageUploadHttpRequest) GetImageByteSize() uint64 {
 	if x != nil {
 		return x.ImageByteSize
+	}
+	return 0
+}
+
+func (x *ImageUploadHttpRequest) GetBytesUploadedSoFar() uint64 {
+	if x != nil {
+		return x.BytesUploadedSoFar
 	}
 	return 0
 }
@@ -825,7 +833,7 @@ const file_image_msgs_proto_rawDesc = "" +
 	"\x12ImageSetDefaultReq\x12\x16\n" +
 	"\x06scanId\x18\x01 \x01(\tR\x06scanId\x122\n" +
 	"\x14defaultImageFileName\x18\x02 \x01(\tR\x14defaultImageFileName\"\x15\n" +
-	"\x13ImageSetDefaultResp\"\x82\x03\n" +
+	"\x13ImageSetDefaultResp\"\xb2\x03\n" +
 	"\x16ImageUploadHttpRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1c\n" +
 	"\timageData\x18\x02 \x01(\fR\timageData\x12,\n" +
@@ -837,7 +845,9 @@ const file_image_msgs_proto_rawDesc = "" +
 	"\n" +
 	"totalParts\x18\b \x01(\rR\n" +
 	"totalParts\x12$\n" +
-	"\rimageByteSize\x18\t \x01(\x04R\rimageByteSizeB\r\n" +
+	"\rimageByteSize\x18\t \x01(\x04R\rimageByteSize\x12.\n" +
+	"\x12bytesUploadedSoFar\x18\n" +
+	" \x01(\x04R\x12bytesUploadedSoFarB\r\n" +
 	"\vAssociation\"B\n" +
 	"\x1aImageUploadHttpPartialInfo\x12$\n" +
 	"\rbytesReceived\x18\x01 \x01(\x04R\rbytesReceived\"$\n" +

@@ -493,68 +493,114 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 		return fmt.Errorf("Failed to decode scan: %v. Error: %v", req.OriginScanId, err)
 	}
 
-	// Check if data size sent is 0 - treat this as an enquiry to what part we have already (resuming)
+	// See if we're just starting to upload this or not
 	if len(req.ImageData) <= 0 {
-		resp := &protos.ImageUploadHttpPartialInfo{}
-
-		// This is a good time to check if the image exists yet, otherwise we wait for the upload
-		// and then say it already exists - fail!
-		savePath := path.Join(req.OriginScanId, req.Name)
-
-		coll := params.Svcs.MongoDB.Collection(dbCollections.ImagesName)
-		imgResult := coll.FindOne(ctx, bson.M{"_id": savePath}, options.FindOne())
-		if imgResult.Err() == nil {
-			return errorwithstatus.MakeStatusError(409, fmt.Errorf("%v already exists", savePath))
-		} // else we could check for errors here but if we have a DB connectivity issue the last ScanItem check would've found it
-		//   and a not found error is actually what we want to continue on!
-
-		item, ok := filePartsRecvd[req.Name]
-		if ok {
-			resp.BytesReceived = item.BytesSoFar
+		sz, completed, err := params.Svcs.MultiPartUpload.StartUpload(req.Name, req.ImageByteSize)
+		if err != nil {
+			return errorwithstatus.MakeBadRequestError(err)
 		}
 
+		if completed {
+			// It's marked completed, so we must've finished uploading it before. Maybe our post-uploading task hasn't completed
+			// and that's why we're being prompted. Try run that now.
+			return postComplete(req, scan, params.Svcs)
+		}
+
+		// Return the size
+		resp := &protos.ImageUploadHttpPartialInfo{BytesReceived: sz}
 		utils.SendProtoJSON(params.Writer, resp)
 		return nil
 	}
 
-	// At this point we can decide what we're dealing with... if it's a multi-part send, we have to keep saving the pieces
-	// but if it's a single one (or the last piece), we process and save it
-	isLast, isMultipart, err := getMultipartImageRecvState(req.Name, req.PartNo, req.TotalParts, uint64(len(req.ImageData)))
+	// We received data, try to save
+	_ /*szUploaded*/, complete, err := params.Svcs.MultiPartUpload.UploadPart(req.Name, req.BytesUploadedSoFar, req.ImageData)
 	if err != nil {
-		return err
+		return errorwithstatus.MakeBadRequestError(err)
 	}
 
-	// NOTE: In multi-part situations we always save the current chunk
-	if isMultipart {
-		params.Svcs.Log.Infof("Saving file %v chunk %v/%v", req.Name, req.PartNo, req.TotalParts)
-
-		err = saveChunk(req.Name, req.PartNo, req.TotalParts, req.ImageData)
-		if err != nil {
-			return err
-		}
-	}
-
-	// If we're just saving chunks, stop here
-	if !isLast {
+	if !complete {
+		// Not yet complete, just stop here
 		return nil
 	}
 
-	// At this point we've "finished" receiving an image and have to store it.
-	// If it's not multi-part we can operate with what's in memory but if it is multi-part we'll have to
-	// read the file that was saved locally (and delete it when we're done)
+	// It's complete! Process it
+	return postComplete(req, scan, params.Svcs)
+}
 
-	// At this point check that our local file is the same size as the remote one
-	localFilePath := ""
-	if isMultipart {
-		localFilePath, err = verifyChunksReceived(req.Name, req.ImageByteSize)
+func postComplete(req *protos.ImageUploadHttpRequest, scan *protos.ScanItem, svcs *services.APIServices) error {
+	nameLowerCase := strings.ToLower(req.Name)
+
+	ctx := context.TODO()
+	f, err := svcs.MultiPartUpload.ReadCompletedUpload(req.Name)
+	if err != nil {
+		return errorwithstatus.MakeBadRequestError(err)
+	}
+
+	localFilePath := f.Name()
+
+	/*
+		// Check if data size sent is 0 - treat this as an enquiry to what part we have already (resuming)
+		if len(req.ImageData) <= 0 {
+			resp := &protos.ImageUploadHttpPartialInfo{}
+
+			// This is a good time to check if the image exists yet, otherwise we wait for the upload
+			// and then say it already exists - fail!
+			savePath := path.Join(req.OriginScanId, req.Name)
+
+			coll := svcs.MongoDB.Collection(dbCollections.ImagesName)
+			imgResult := coll.FindOne(ctx, bson.M{"_id": savePath}, options.FindOne())
+			if imgResult.Err() == nil {
+				return errorwithstatus.MakeStatusError(409, fmt.Errorf("%v already exists", savePath))
+			} // else we could check for errors here but if we have a DB connectivity issue the last ScanItem check would've found it
+			//   and a not found error is actually what we want to continue on!
+
+			item, ok := filePartsRecvd[req.Name]
+			if ok {
+				resp.BytesReceived = item.BytesSoFar
+			}
+
+			utils.SendProtoJSON(params.Writer, resp)
+			return nil
+		}
+
+		// At this point we can decide what we're dealing with... if it's a multi-part send, we have to keep saving the pieces
+		// but if it's a single one (or the last piece), we process and save it
+		isLast, isMultipart, err := getMultipartImageRecvState(req.Name, req.PartNo, req.TotalParts, uint64(len(req.ImageData)))
 		if err != nil {
 			return err
 		}
 
-		// Also delete the image from our parts received log
-		delete(filePartsRecvd, req.Name)
-	}
+		// NOTE: In multi-part situations we always save the current chunk
+		if isMultipart {
+			svcs.Log.Infof("Saving file %v chunk %v/%v", req.Name, req.PartNo, req.TotalParts)
 
+			err = saveChunk(req.Name, req.PartNo, req.TotalParts, req.ImageData)
+			if err != nil {
+				return err
+			}
+		}
+
+		// If we're just saving chunks, stop here
+		if !isLast {
+			return nil
+		}
+
+		// At this point we've "finished" receiving an image and have to store it.
+		// If it's not multi-part we can operate with what's in memory but if it is multi-part we'll have to
+		// read the file that was saved locally (and delete it when we're done)
+
+		// At this point check that our local file is the same size as the remote one
+		localFilePath := ""
+		if isMultipart {
+			localFilePath, err = verifyChunksReceived(req.Name, req.ImageByteSize)
+			if err != nil {
+				return err
+			}
+
+			// Also delete the image from our parts received log
+			delete(filePartsRecvd, req.Name)
+		}
+	*/
 	// It's the last part, so here we finish everything...
 
 	// Save image meta in collection
@@ -577,7 +623,7 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 
 	// If it's a multi-part image, we read from the file we saved
 	// otherwise we just read what's in memory
-	if isMultipart {
+	if req.ImageByteSize > uint64(len(req.ImageData)) /*isMultipart*/ {
 		img, err := vips.NewImageFromFile(localFilePath, nil)
 		if err != nil {
 			return err
@@ -626,65 +672,65 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 
 		pyramidLevels := wsHelpers.BuildImagePyramidLevels(scanImage.Width, scanImage.Height, pyramidTileSize)
 
-		params.Svcs.Log.Infof("Importing image %v (%vx%v) as pyramid with tile size: %v, levels: %v. Pyramid ID generated: %v", req.Name, scanImage.Width, scanImage.Height, pyramidLevels.TileSize, len(pyramidLevels.Pyramid), scanImage.PyramidId)
+		svcs.Log.Infof("Importing image %v (%vx%v) as pyramid with tile size: %v, levels: %v. Pyramid ID generated: %v", req.Name, scanImage.Width, scanImage.Height, pyramidLevels.TileSize, len(pyramidLevels.Pyramid), scanImage.PyramidId)
 
-		err = savePyramidEntry(ctx, params.Svcs.MongoDB, scanImage.PyramidId, pyramidLevels, params.Svcs.Log)
+		err = savePyramidEntry(ctx, svcs.MongoDB, scanImage.PyramidId, pyramidLevels, svcs.Log)
 		if err != nil {
 			return err
 		}
 	}
 
-	generateCoords, isDuplicate, err := saveScanImage(ctx, params.Svcs.MongoDB, scan, scanImage)
+	generateCoords, isDuplicate, err := saveScanImage(ctx, svcs.MongoDB, scan, scanImage)
 	if err != nil {
 		// If this isn't an "already exists" error, we delete what we've saved already. We don't want
 		// to delete otherwise though, or we'd wipe out the one that already existed!
 		// TODO: Probably should do this with transactions
 		if !isDuplicate {
-			undoScanImagePUT(ctx, params.Svcs.MongoDB, req.Name, scanImage.ImagePath, scanImage.PyramidId, localFilePath, req.ImageByteSize, params.Svcs.Log)
+			undoScanImagePUT(ctx, svcs.MongoDB, req.Name, scanImage.ImagePath, scanImage.PyramidId, localFilePath, req.ImageByteSize, svcs.Log)
 		}
 		return err
 	}
 
 	if len(localFilePath) > 0 {
 		if asPyramid {
-			err = saveImageDataAsPyramid(params.Svcs.FS, params.Svcs.Config.DatasetsBucket, savePath, localFilePath, pyramidTileSize, pyramidQuality, params.Svcs.Log)
+			err = saveImageDataAsPyramid(svcs.FS, svcs.Config.DatasetsBucket, savePath, localFilePath, pyramidTileSize, pyramidQuality, svcs.Log)
 		} else {
-			err = saveImageDataFromFile(params.Svcs.FS, params.Svcs.Config.DatasetsBucket, savePath, localFilePath)
+			err = saveImageDataFromFile(svcs.FS, svcs.Config.DatasetsBucket, savePath, localFilePath)
 		}
 	} else {
-		err = saveImageDataFromMemory(params.Svcs.FS, params.Svcs.Config.DatasetsBucket, savePath, req.ImageData)
+		err = saveImageDataFromMemory(svcs.FS, svcs.Config.DatasetsBucket, savePath, req.ImageData)
 	}
 
 	if err != nil {
-		undoScanImagePUT(ctx, params.Svcs.MongoDB, req.Name, scanImage.ImagePath, scanImage.PyramidId, localFilePath, req.ImageByteSize, params.Svcs.Log)
+		undoScanImagePUT(ctx, svcs.MongoDB, req.Name, scanImage.ImagePath, scanImage.PyramidId, localFilePath, req.ImageByteSize, svcs.Log)
 		return err
 	}
 
 	// Delete the temp file now!
 	err = os.Remove(localFilePath)
 	if err != nil {
-		params.Svcs.Log.Errorf("Failed to delete uploaded image file cache for: %v. Error: %v", localFilePath, err)
+		svcs.Log.Errorf("Failed to delete uploaded image file cache for: %v. Error: %v", localFilePath, err)
 		// No need to stop here though!
 	}
 
 	// From this point on, we consider the image created. If IJ generation fails or anything else, we don't roll back and delete
 
 	if generateCoords {
-		_, err = wsHelpers.GenerateIJs(scanImage.ImagePath, req.OriginScanId, scan.Instrument, params.Svcs)
+		_, err = wsHelpers.GenerateIJs(scanImage.ImagePath, req.OriginScanId, scan.Instrument, svcs)
 		if err != nil {
 			return err
 		}
 	}
 
 	// Finally, update the scan if needed
-	err = wsHelpers.UpdateScanImageDataTypes(req.OriginScanId, params.Svcs.MongoDB, params.Svcs.Log)
+	err = wsHelpers.UpdateScanImageDataTypes(req.OriginScanId, svcs.MongoDB, svcs.Log)
 	if err != nil {
-		params.Svcs.Log.Errorf("UpdateScanImageDataTypes Failed for scan: %v, when uploading image: %v. DataType counts may not be accurate on Scan Item, RGBU icon may not show correctly.", req.OriginScanId, scanImage.ImagePath)
+		svcs.Log.Errorf("UpdateScanImageDataTypes Failed for scan: %v, when uploading image: %v. DataType counts may not be accurate on Scan Item, RGBU icon may not show correctly.", req.OriginScanId, scanImage.ImagePath)
 	}
 
 	// Notify of our successful image addition
-	params.Svcs.Notifier.NotifyNewScanImage(req.OriginScanId, req.OriginScanId, scanImage.ImagePath)
-	params.Svcs.Notifier.SysNotifyScanImagesChanged(scanImage.ImagePath, scanImage.AssociatedScanIds)
+	svcs.Notifier.NotifyNewScanImage(req.OriginScanId, req.OriginScanId, scanImage.ImagePath)
+	svcs.Notifier.SysNotifyScanImagesChanged(scanImage.ImagePath, scanImage.AssociatedScanIds)
 
 	return nil
 }

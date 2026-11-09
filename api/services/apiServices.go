@@ -41,6 +41,7 @@ import (
 	"github.com/pixlise/core/v4/core/jwtparser"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/core/multipartupload"
 	"github.com/pixlise/core/v4/core/timestamper"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -118,4 +119,6 @@ type APIServices struct {
 	InstanceId string
 
 	JobManager JobManagerInterface
+
+	MultiPartUpload *multipartupload.MultiPartUploadHandler
 }

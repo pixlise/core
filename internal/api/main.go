@@ -35,6 +35,7 @@ import (
 	"github.com/pixlise/core/v4/core/jwtparser"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/core/multipartupload"
 	"github.com/pixlise/core/v4/core/scan"
 	"github.com/pixlise/core/v4/core/singleinstance"
 	"github.com/pixlise/core/v4/core/timestamper"
@@ -201,6 +202,7 @@ func main() {
 
 	go job.ListenForExternalTriggeredJobs(dataimport.JobIDAutoImportPrefix, handler.handleAutoImportJobStatus, svcs.MongoDB, svcs.Log)
 	go memoisation.RunMemoisationGarbageCollector(uint32(cfg.MemoisationGCIntervalSec), uint32(cfg.MaxUnretrievedMemoisationAgeSec), svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+	go garbageCollectMultiPartUploads(120, svcs.MultiPartUpload)
 
 	log.Fatal(
 		http.ListenAndServe(":8080",
@@ -208,6 +210,12 @@ func main() {
 				handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
 				handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"}),
 				handlers.AllowedOrigins([]string{"*"}))(router.Router)))
+}
+
+func garbageCollectMultiPartUploads(intervalSec int, mpu *multipartupload.MultiPartUploadHandler) {
+	for range time.Tick(time.Second * time.Duration(intervalSec)) {
+		mpu.GarbageCollect()
+	}
 }
 
 func loadConfig() config.APIConfig {
@@ -313,6 +321,18 @@ func initServices(cfg *config.APIConfig, m *melody.Melody, apiInstanceId string)
 	ec2Svc := ec2.New(sess)
 	smSvc := secretsmanager.New(sess)
 
+	ts := &timestamper.UnixTimeNowStamper{}
+
+	// Make a multi-part upload handler allowing clients to upload large files
+	mpu := multipartupload.MakeMultiPartUploadHandler(
+		cfg.ManualUploadBucket,
+		"MultiPartUploads",
+		300,  // If an upload completes, we can delete it quick as it's probably been processed already
+		1800, // If an upload is incomplete, delete it later, leaving time for resuming
+		fs,
+		ts,
+		iLog)
+
 	// Set up services
 	svcs := &services.APIServices{
 		Config:           *cfg,
@@ -325,11 +345,12 @@ func initServices(cfg *config.APIConfig, m *melody.Melody, apiInstanceId string)
 		FS:               fs,
 		JWTReader:        jwt,
 		IDGen:            &idgen.IDGen{},
-		TimeStamper:      &timestamper.UnixTimeNowStamper{},
+		TimeStamper:      ts,
 		MongoDB:          db,
 		MongoConnectInfo: mongoConnectInfo,
 		// Notifier is configured after ws is created
-		InstanceId: apiInstanceId,
+		InstanceId:      apiInstanceId,
+		MultiPartUpload: mpu,
 	}
 
 	// Create job manager and point it back here
