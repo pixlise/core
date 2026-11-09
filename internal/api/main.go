@@ -327,8 +327,8 @@ func initServices(cfg *config.APIConfig, m *melody.Melody, apiInstanceId string)
 	mpu := multipartupload.MakeMultiPartUploadHandler(
 		cfg.ManualUploadBucket,
 		"MultiPartUploads",
-		300,  // If an upload completes, we can delete it quick as it's probably been processed already
-		1800, // If an upload is incomplete, delete it later, leaving time for resuming
+		uint64(cfg.CompletedFileGCTimeoutSec),  // If an upload completes, we can delete it quick as it's probably been processed already
+		uint64(cfg.IncompleteFileGCTimeoutSec), // If an upload is incomplete, delete it later, leaving time for resuming
 		fs,
 		ts,
 		iLog)
