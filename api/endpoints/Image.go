@@ -837,7 +837,21 @@ func saveImageDataAsPyramid(
 	// Write to S3 (need to use a multithreaded approach as it'd take way too long otherwise)
 	// Save the image we saved to local storage in chunks as one file to S3
 	s3Path := filepaths.GetImageFilePath(savePath)
-	return fileaccess.CopyToBucket(fs, localImageDataPath+"_files", bucket, s3Path, true, l)
+	localImagePyramidPath := localImageDataPath + "_files"
+	err = fileaccess.CopyToBucket(fs, localImagePyramidPath, bucket, s3Path, true, l)
+
+	// If we're done or not, delete the locally generated files
+	if remErr := os.RemoveAll(localImagePyramidPath); remErr != nil {
+		// Warn about this
+		l.Errorf("Failed to delete image pyramid tiles at %v after they were uploaded: %v", localImagePyramidPath, remErr)
+	}
+
+	// Also remove the .dzi file
+	if remErr := os.RemoveAll(localImageDataPath + ".dzi"); remErr != nil {
+		l.Errorf("Failed to delete image pyramid tiles at %v after they were uploaded: %v", localImageDataPath+".dzi", remErr)
+	}
+
+	return err
 }
 
 func saveImageDataFromFile(fs fileaccess.FileAccess, bucket string, savePath string, localImageDataPath string) error {

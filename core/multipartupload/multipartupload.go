@@ -346,20 +346,20 @@ func (mp *MultiPartUploadHandler) GarbageCollect() error {
 
 				if status.CompleteTimeUnixSec > 0 && nowUnixSec-int64(status.CompleteTimeUnixSec) > int64(mp.completedFileGCTimeoutSec) {
 					deletePath = path.Dir(f)
-					mp.log.Infof("- Freeing %v as it completed %v sec ago", deletePath, nowUnixSec-int64(status.CompleteTimeUnixSec))
+					mp.log.Infof("- Freeing s3://%v/%v as it completed %v sec ago", mp.bucket, deletePath, nowUnixSec-int64(status.CompleteTimeUnixSec))
 				} else if nowUnixSec-lastTS > int64(mp.incompleteFileGCTimeoutSec) {
 					deletePath = path.Dir(f)
-					mp.log.Infof("- Freeing %v as it was last uploaded to %v sec ago", deletePath, nowUnixSec-int64(status.LastUploadTimeUnixSec))
+					mp.log.Infof("- Freeing s3://%v/%v as it was last uploaded to %v sec ago", mp.bucket, deletePath, nowUnixSec-int64(status.LastUploadTimeUnixSec))
 				}
 
 				if len(deletePath) > 0 {
 					err = mp.fs.EmptyObjects(mp.bucket, deletePath)
 					if err != nil {
-						mp.log.Infof("MultiPartFileUpload GC: Failed to free %v: %v", deletePath, err)
+						mp.log.Infof("MultiPartFileUpload GC: Failed to free s3://%v/%v: %v", mp.bucket, deletePath, err)
 					}
 					err = mp.fs.DeleteObject(mp.bucket, deletePath)
 					if err != nil {
-						mp.log.Infof("MultiPartFileUpload GC: Failed to free root %v: %v", deletePath, err)
+						mp.log.Infof("MultiPartFileUpload GC: Failed to free root s3://%v/%v: %v", mp.bucket, deletePath, err)
 					}
 					freed++
 				}
