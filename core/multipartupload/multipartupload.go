@@ -172,7 +172,7 @@ func (mp *MultiPartUploadHandler) UploadPart(fileName string, totalUploadedBytes
 		err = fmt.Errorf("UploadPart for %v (%v bytes so far) error: %v", fileName, totalUploadedBytes, err)
 		mp.log.Errorf("%v", err)
 	} else {
-		mp.log.Infof("UploadPart for %v received %02f%% %v bytes, complete: %v", fileName, float32(totalUploadedBytes)/float32(totalSz), totalUploadedBytes, sz, comp)
+		mp.log.Infof("UploadPart for %v received %.1f%% %v bytes, complete: %v", fileName, 100*float32(totalUploadedBytes)/float32(totalSz), sz, comp)
 	}
 	return sz, comp, err
 }
