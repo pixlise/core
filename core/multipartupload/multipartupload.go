@@ -33,7 +33,7 @@ type MultiPartStatus struct {
 }
 
 var statusFileName = "status.json"
-var maxPartSize = 1024 * 1024 * 21
+var MaxPartSize = 1024 * 1024 * 21
 
 func MakeMultiPartUploadHandler(
 	bucket string,
@@ -172,7 +172,7 @@ func (mp *MultiPartUploadHandler) UploadPart(fileName string, totalUploadedBytes
 		err = fmt.Errorf("UploadPart for %v (%v bytes so far) error: %v", fileName, totalUploadedBytes, err)
 		mp.log.Errorf("%v", err)
 	} else {
-		mp.log.Infof("UploadPart for %v received %.1f%% %v bytes, complete: %v", fileName, 100*float32(totalUploadedBytes)/float32(totalSz), sz, comp)
+		mp.log.Infof("UploadPart for %v received %.1f%% %v bytes, complete: %v", fileName, 100*float32(sz)/float32(totalSz), sz, comp)
 	}
 	return sz, comp, err
 }
@@ -180,7 +180,7 @@ func (mp *MultiPartUploadHandler) UploadPart(fileName string, totalUploadedBytes
 func (mp *MultiPartUploadHandler) internalUploadPart(fileName string, totalUploadedBytes uint64, data []byte) (uint64, bool, uint64, error) {
 	errIdentifier := fmt.Sprintf("Uploading part of file %v, total bytes so far %v", fileName, totalUploadedBytes)
 
-	if len(data) <= 0 || len(data) >= maxPartSize {
+	if len(data) <= 0 || len(data) >= MaxPartSize {
 		// Can't upload this many bytes!
 		return 0, false, 0, fmt.Errorf("%v: part size unexpected: %v", errIdentifier, len(data))
 	}
@@ -245,7 +245,7 @@ func (mp *MultiPartUploadHandler) internalUploadPart(fileName string, totalUploa
 // prohibitive, eg what if they're uploading many files concurrently - our local disk may fill up! What if this
 // is read from a separate machine though, eg a new "importing" node in docker? No issues there!
 // TODO: Provide an expected checksum?
-func (mp *MultiPartUploadHandler) ReadCompletedUpload(fileName string) (*os.File, error) {
+func (mp *MultiPartUploadHandler) ReadCompletedUpload(fileName string) (string, error) {
 	mp.log.Infof("ReadCompletedUpload for %v...", fileName)
 
 	f, err := mp.internalReadCompletedUpload(fileName)
@@ -259,7 +259,7 @@ func (mp *MultiPartUploadHandler) ReadCompletedUpload(fileName string) (*os.File
 	return f, err
 }
 
-func (mp *MultiPartUploadHandler) internalReadCompletedUpload(fileName string) (*os.File, error) {
+func (mp *MultiPartUploadHandler) internalReadCompletedUpload(fileName string) (string, error) {
 	errIdentifier := fmt.Sprintf("Reading completed upload of multi-part file %v", fileName)
 
 	// Try to read all chunks, ensure expected bytes matches
@@ -269,24 +269,24 @@ func (mp *MultiPartUploadHandler) internalReadCompletedUpload(fileName string) (
 	status := MultiPartStatus{}
 	if err := mp.fs.ReadJSON(mp.bucket, statusPath, &status, false); err != nil {
 		// Something went wrong
-		return nil, fmt.Errorf("%v: failed to read status: %v", errIdentifier, err)
+		return "", fmt.Errorf("%v: failed to read status: %v", errIdentifier, err)
 	}
 
 	// Ensure it's complete
 	if status.TotalBytes == 0 {
-		return nil, fmt.Errorf("%v: status total bytes was 0", errIdentifier)
+		return "", fmt.Errorf("%v: status total bytes was 0", errIdentifier)
 	}
 
 	if status.CompleteTimeUnixSec == 0 {
-		return nil, fmt.Errorf("%v: not complete", errIdentifier)
+		return "", fmt.Errorf("%v: not complete", errIdentifier)
 	}
 
 	// Ensure it's the right size
 	uploadedTotalBytes, listingNames, _, err := mp.uploadedBytesSoFar(fileName, true)
 	if err != nil {
-		return nil, fmt.Errorf("%v: failed to calculate total uploaded size: %v", errIdentifier, err)
+		return "", fmt.Errorf("%v: failed to calculate total uploaded size: %v", errIdentifier, err)
 	} else if uploadedTotalBytes != status.TotalBytes {
-		return nil, fmt.Errorf("%v: actual uploaded size %v bytes, expected %v bytes", errIdentifier, uploadedTotalBytes, status.TotalBytes)
+		return "", fmt.Errorf("%v: actual uploaded size %v bytes, expected %v bytes", errIdentifier, uploadedTotalBytes, status.TotalBytes)
 	}
 
 	// Read each file from S3 and build a local file we can provide
@@ -294,8 +294,11 @@ func (mp *MultiPartUploadHandler) internalReadCompletedUpload(fileName string) (
 
 	fComplete, err := os.CreateTemp("", filepath.Base(fileName)+"*")
 	if err != nil {
-		return nil, fmt.Errorf("%v: failed to create uploaded file: %v", errIdentifier, err)
+		return "", fmt.Errorf("%v: failed to create uploaded file: %v", errIdentifier, err)
 	}
+	defer fComplete.Close()
+
+	returnPath := fComplete.Name()
 
 	// Write each piece to the file
 	for i, fPart := range listingNames {
@@ -303,16 +306,16 @@ func (mp *MultiPartUploadHandler) internalReadCompletedUpload(fileName string) (
 
 		fData, err := mp.fs.ReadObject(mp.bucket, fPart)
 		if err != nil {
-			return nil, fmt.Errorf("%v: failed to read file part: %v. Error: %v", errIdentifier, fPart, err)
+			return "", fmt.Errorf("%v: failed to read file part: %v. Error: %v", errIdentifier, fPart, err)
 		}
 
 		_, err = fComplete.Write(fData)
 		if err != nil {
-			return nil, fmt.Errorf("%v: failed to write file part: %v. Error: %v", errIdentifier, fPart, err)
+			return "", fmt.Errorf("%v: failed to write file part: %v. Error: %v", errIdentifier, fPart, err)
 		}
 	}
 
-	return fComplete, nil
+	return returnPath, nil
 }
 
 // Run through old/complete uploads and delete ones we aren't using any more

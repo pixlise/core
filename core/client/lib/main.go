@@ -359,9 +359,23 @@ func uploadImage(imageUpload string) *C.char {
 		return C.CString("Not authenticated")
 	}
 
-	err = apiClient.UploadImage(upload)
+	_ /*sz*/, err = apiClient.UploadImage(upload)
 	if err != nil {
 		return C.CString(fmt.Sprintf("uploadImage error: %v", err))
+	}
+
+	return emptyCString
+}
+
+//export uploadLargeImage
+func uploadLargeImage(localImagePath string, scanId string, imageName string) *C.char {
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	err := apiClient.UploadLargeImage(localImagePath, scanId, imageName)
+	if err != nil {
+		return C.CString(fmt.Sprintf("%v", err))
 	}
 
 	return emptyCString
@@ -407,6 +421,17 @@ func uploadImageBeamLocations(imageName string, locationsForScanBuff string) *C.
 	err = apiClient.UploadImageBeamLocations(imageName, locForScan)
 	if err != nil {
 		return C.CString(fmt.Sprintf("uploadImageBeamLocations error: %v", err))
+	}
+
+	return emptyCString
+}
+
+//export createUserDefinedScan
+func createUserDefinedScan(scanId string) *C.char {
+	err := apiClient.CreateUserDefinedScan(scanId)
+
+	if err != nil {
+		return C.CString(fmt.Sprintf("createUserDefinedScan error: %v", err))
 	}
 
 	return emptyCString

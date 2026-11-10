@@ -478,22 +478,41 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 		return err
 	}
 
+	// work out the name we'll save it under. If name is prefixed with scan id don't do that step twice
+	saveName := req.Name
+	if !strings.HasPrefix(saveName, req.OriginScanId+"/") {
+		saveName = req.OriginScanId + "/" + saveName
+	}
+
+	// Check if it exists already
+	coll := params.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+	findOneResult := coll.FindOne(ctx, bson.M{"_id": saveName}, options.FindOne())
+	if findOneResult.Err() == nil {
+		// If we don't have an error, we have this already
+		return errorwithstatus.MakeBadRequestError(fmt.Errorf("Image \"%v\" already exists", saveName))
+	} else {
+		// We found an error, only stop for non-no-document errors. What we DO want is a no document error!
+		if findOneResult.Err() != mongo.ErrNoDocuments {
+			return errorwithstatus.MakeBadRequestError(fmt.Errorf("Failed to check if image \"%v\" already exists: %v", saveName, findOneResult.Err()))
+		}
+	}
+
 	// Read the scan to confirm it's valid, and also so we have the instrument to save for beams (if needed)
-	coll := params.Svcs.MongoDB.Collection(dbCollections.ScansName)
-	scanResult := coll.FindOne(ctx, bson.M{"_id": req.OriginScanId}, options.FindOne())
-	if scanResult.Err() != nil {
+	coll = params.Svcs.MongoDB.Collection(dbCollections.ScansName)
+	findOneResult = coll.FindOne(ctx, bson.M{"_id": req.OriginScanId}, options.FindOne())
+	if findOneResult.Err() != nil {
 		return errorwithstatus.MakeNotFoundError(req.OriginScanId)
 	}
 
 	scan := &protos.ScanItem{}
-	err = scanResult.Decode(scan)
+	err = findOneResult.Decode(scan)
 	if err != nil {
 		return fmt.Errorf("Failed to decode scan: %v. Error: %v", req.OriginScanId, err)
 	}
 
 	// See if we're just starting to upload this or not
 	if len(req.ImageData) <= 0 {
-		sz, completed, err := params.Svcs.MultiPartUpload.StartUpload(req.Name, req.ImageByteSize)
+		sz, completed, err := params.Svcs.MultiPartUpload.StartUpload(saveName, req.ImageByteSize)
 		if err != nil {
 			return errorwithstatus.MakeBadRequestError(err)
 		}
@@ -501,17 +520,20 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 		if completed {
 			// It's marked completed, so we must've finished uploading it before. Maybe our post-uploading task hasn't completed
 			// and that's why we're being prompted. Try run that now.
-			return postComplete(req, scan, params.Svcs)
+			return postComplete(req, saveName, scan, params.Svcs)
 		}
 
 		// Return the size
 		resp := &protos.ImageUploadHttpPartialInfo{BytesReceived: sz}
 		utils.SendProtoJSON(params.Writer, resp)
 		return nil
+	} else if req.ImageByteSize == 0 && req.BytesUploadedSoFar == 0 {
+		// They're uploading an entire image in one message. Just read it in as such.
+		return postComplete(req, saveName, scan, params.Svcs)
 	}
 
 	// We received data, try to save
-	_ /*szUploaded*/, complete, err := params.Svcs.MultiPartUpload.UploadPart(req.Name, req.BytesUploadedSoFar, req.ImageData)
+	_ /*szUploaded*/, complete, err := params.Svcs.MultiPartUpload.UploadPart(saveName, req.BytesUploadedSoFar, req.ImageData)
 	if err != nil {
 		return errorwithstatus.MakeBadRequestError(err)
 	}
@@ -522,24 +544,39 @@ func PutImage(params apiRouter.ApiHandlerGenericParams) error {
 	}
 
 	// It's complete! Process it
-	return postComplete(req, scan, params.Svcs)
+	return postComplete(req, saveName, scan, params.Svcs)
 }
 
-func postComplete(req *protos.ImageUploadHttpRequest, scan *protos.ScanItem, svcs *services.APIServices) error {
-	nameLowerCase := strings.ToLower(req.Name)
-
+func postComplete(req *protos.ImageUploadHttpRequest, saveName string, scan *protos.ScanItem, svcs *services.APIServices) error {
 	ctx := context.TODO()
-	f, err := svcs.MultiPartUpload.ReadCompletedUpload(req.Name)
-	if err != nil {
-		return errorwithstatus.MakeBadRequestError(err)
-	}
 
-	localFilePath := f.Name()
+	// If it's not multi-part, write it to disk here and continue
+	localFilePath := ""
+	var err error
+
+	if req.ImageByteSize == 0 && req.BytesUploadedSoFar == 0 {
+		f, err := os.CreateTemp("", filepath.Base(saveName)+"*")
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		_, err = f.Write(req.ImageData)
+		if err != nil {
+			return err
+		}
+		localFilePath = f.Name()
+	} else {
+		// Read back the multi-part image to disk
+		localFilePath, err = svcs.MultiPartUpload.ReadCompletedUpload(saveName)
+		if err != nil {
+			return errorwithstatus.MakeBadRequestError(err)
+		}
+	}
 
 	// Save image meta in collection
 	purpose := protos.ScanImagePurpose_SIP_VIEWING
-	if strings.HasSuffix(nameLowerCase, ".tif") {
-		meta, err := gdsfilename.ParseFileName(req.Name)
+	if strings.HasSuffix(strings.ToLower(saveName), ".tif") {
+		meta, err := gdsfilename.ParseFileName(saveName)
 		if err == nil && meta.ProdType == "MSA" || meta.ProdType == "VIS" {
 			// It's only considered an RGBU image based on strict file naming!
 			purpose = protos.ScanImagePurpose_SIP_MULTICHANNEL
@@ -572,9 +609,8 @@ func postComplete(req *protos.ImageUploadHttpRequest, scan *protos.ScanItem, svc
 	}
 
 	// We make the names more unique this way...
-	savePath := path.Join(req.OriginScanId, req.Name)
 	scanImage := utils.MakeScanImage(
-		savePath,
+		saveName,
 		imgFileSize,
 		protos.ScanImageSource_SI_UPLOAD,
 		purpose,
@@ -626,12 +662,12 @@ func postComplete(req *protos.ImageUploadHttpRequest, scan *protos.ScanItem, svc
 
 	if len(localFilePath) > 0 {
 		if asPyramid {
-			err = saveImageDataAsPyramid(svcs.FS, svcs.Config.DatasetsBucket, savePath, localFilePath, pyramidTileSize, pyramidQuality, svcs.Log)
+			err = saveImageDataAsPyramid(svcs.FS, svcs.Config.DatasetsBucket, saveName, localFilePath, pyramidTileSize, pyramidQuality, svcs.Log)
 		} else {
-			err = saveImageDataFromFile(svcs.FS, svcs.Config.DatasetsBucket, savePath, localFilePath)
+			err = saveImageDataFromFile(svcs.FS, svcs.Config.DatasetsBucket, saveName, localFilePath)
 		}
 	} else {
-		err = saveImageDataFromMemory(svcs.FS, svcs.Config.DatasetsBucket, savePath, req.ImageData)
+		err = saveImageDataFromMemory(svcs.FS, svcs.Config.DatasetsBucket, saveName, req.ImageData)
 	}
 
 	if err != nil {
@@ -871,135 +907,6 @@ func saveImageDataFromMemory(fs fileaccess.FileAccess, bucket string, savePath s
 
 func isPyramidImport(imageWidth uint32, imageHeight uint32, imageFileSize uint64) bool {
 	return imageWidth > 4000 || imageHeight > 4000 || imageFileSize > 35*1024*1024
-}
-
-func getImageChunkPath(fileName string) (string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(wd, "image-cache", fileName), nil
-}
-
-// Returns: isLast, isMultiPart, error
-// Where: Error is nil unless something doesn't make sense
-//
-//	isLast is true if this is the "last" part of the file we're dealing with
-//	isMultiPart is true if the image is being received in multiple parts
-func getMultipartImageRecvState(fileName string, partNo uint32, totalParts uint32, byteLength uint64) (bool, bool, error) {
-	// If it's a single part download, just stop here, it's the "final" part already
-	// NOTE: we're treating total=0 the same as 1, I guess in case something sends
-	// us an image without having updated the code, the field will be 0 and we can
-	// treat that just like we treat a 1 anyway...
-	if totalParts <= 1 {
-		return true, false, nil
-	}
-
-	// It's more than 1 part, if we've got parts for it before we can verify a few things...
-	if item, ok := filePartsRecvd[fileName]; !ok {
-		// We don't have a log item for this, so assume it's a start... we should be getting part 0!
-		if partNo != 0 {
-			return false, true, fmt.Errorf("Expected multipart upload to start with file part number 0, got: %v", partNo)
-		}
-		// Expecting more, signal to save the chunk
-		return false, true, nil
-	} else {
-		// We have a record already, check that we've got the next sequential part down
-		if partNo != item.LastPartNo+1 {
-			return false, true, fmt.Errorf("Expected file part number: %v, got: %v", item.LastPartNo+1, partNo)
-		}
-
-		if partNo >= totalParts {
-			return false, true, fmt.Errorf("Unexpected file part number: %v for total %v", partNo, totalParts)
-		}
-
-		if totalParts != item.TotalParts {
-			return false, true, fmt.Errorf("Total parts changed from: %v, to: %v", item.TotalParts, totalParts)
-		}
-
-		// If it's the last part, process it as such
-		return partNo == item.TotalParts-1, true, nil
-	}
-}
-
-func saveChunk(fileName string, partNo uint32, totalParts uint32, data []byte) error {
-	truncate := partNo == 0
-
-	// Write it
-	imgPath, err := getImageChunkPath(fileName)
-	if err != nil {
-		return err
-	}
-
-	err = os.MkdirAll(filepath.Dir(imgPath), 0777)
-	if err != nil {
-		return err
-	}
-
-	flags := os.O_CREATE | os.O_WRONLY
-	if truncate {
-		flags |= os.O_TRUNC
-	} else {
-		flags |= os.O_APPEND
-	}
-
-	f, err := os.OpenFile(imgPath, flags, 0777)
-	if err != nil {
-		return err
-	}
-
-	_, err = f.Write(data)
-	if err != nil {
-		return err
-	}
-
-	err = f.Sync()
-	if err != nil {
-		return err
-	}
-
-	err = f.Close()
-	if err != nil {
-		return err
-	}
-
-	// We saved it, no errors, now update filePartsRecvd
-	if item, ok := filePartsRecvd[fileName]; !ok {
-		// We don't have a log item for this, save one
-		filePartsRecvd[fileName] = FilePartRecvItem{
-			LastPartNo: partNo,
-			TotalParts: totalParts,
-			BytesSoFar: uint64(len(data)),
-		}
-	} else {
-		item.BytesSoFar += uint64(len(data))
-		item.LastPartNo = partNo
-
-		filePartsRecvd[fileName] = item
-	}
-
-	return nil
-}
-
-// Returns local image path, error if needed
-func verifyChunksReceived(fileName string, expectedSize uint64) (string, error) {
-	imgPath, err := getImageChunkPath(fileName)
-	if err != nil {
-		return "", err
-	}
-
-	info, err := os.Stat(imgPath)
-	if err != nil {
-		return imgPath, err
-	}
-
-	if info.Size() != int64(expectedSize) {
-		return imgPath, fmt.Errorf("Unexpected upload size %v for file \"%v\", expected %v bytes", info.Size(), fileName, expectedSize)
-	}
-
-	// TODO: Checksum stuff?
-	return imgPath, nil
 }
 
 func checkImpersonation(ctx context.Context, svcs *services.APIServices, userId string) (string, error) {
