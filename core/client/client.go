@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -47,6 +48,7 @@ var ClientMapKeyPrefix = "client-map-"
 type APIClient struct {
 	socket      *SocketConn
 	rateLimiter *utils.RateLimiter
+	apiUrl      string
 
 	// Local caching of things we need to build responses to things that are easier to digest on client-side
 	// For example, we download meta labels, and pass back maps of string->value to client
@@ -173,6 +175,7 @@ func AuthenticateWithAuth0Info(connectParams ConnectInfo, auth0Params Auth0Info)
 
 	return &APIClient{
 		socket:                       socket,
+		apiUrl:                       connectParams.Host,
 		rateLimiter:                  utils.MakeRateLimiter(&timestamper.UnixTimeNowStamper{}, 50, 70, 10, 3),
 		scanPMCToLocIdx:              map[string]map[int]int{},
 		scanLocIdxToPMC:              map[string]map[int]int{},
@@ -702,7 +705,7 @@ func (c *APIClient) ListScanImages(scanIds []string, mustIncludeAll bool) (*prot
 		MustIncludeAll: mustIncludeAll,
 	}
 
-	fmt.Printf("%v", scanIds)
+	//fmt.Printf("%v", scanIds)
 	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageListReq{
 		ImageListReq: req,
 	}}
@@ -1421,13 +1424,19 @@ func (c *APIClient) UploadImage(imageUpload *protos.ImageUploadHttpRequest) (uin
 	}
 
 	// We send this via HTTP endpoints
-	url, err := c.socket.GetHost("/images")
+	/*url, err := c.socket.GetHost("/images")
+	if err != nil {
+		return 0, fmt.Errorf("UploadImage failed to get url: %v", err)
+	}*/
+
+	u, err := url.Parse(c.apiUrl)
 	if err != nil {
 		return 0, fmt.Errorf("UploadImage failed to get url: %v", err)
 	}
+	u.Path = path.Join(u.Path, "images")
 
 	client := &http.Client{}
-	req, err := http.NewRequest("PUT", url.String(), bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest("PUT", u.String(), bytes.NewBuffer(reqBody))
 	if err != nil {
 		return 0, fmt.Errorf("UploadImage failed to create request: %v", err)
 	}
