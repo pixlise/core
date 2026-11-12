@@ -207,6 +207,27 @@ func (c *APIClient) sendMessageWaitResponse(msg *protos.WSMessage) ([]*protos.WS
 		return []*protos.WSMessage{}, err
 	}
 
+	resps, err := c.waitForResp(timeoutSec)
+	if err != nil {
+		return []*protos.WSMessage{}, err
+	}
+
+	// If we got a notification update, client doesn't care about those, so gobble it up and wait for another one
+	// This is a work-around for the situation in our python lib test where it uploads an image
+	// and gets a response and a notification, after which it sends in default image get/set msgs, but they were
+	// receiving the notification update. Now hopefully they will receive that, notice it here, and we'll get the
+	// real response!
+	if resps[0].GetNotificationUpd() != nil {
+		resps, err = c.waitForResp(timeoutSec)
+		if err != nil {
+			return []*protos.WSMessage{}, err
+		}
+	}
+
+	return resps, nil
+}
+
+func (c *APIClient) waitForResp(timeoutSec int) ([]*protos.WSMessage, error) {
 	resps := c.socket.WaitForMessages(1, time.Duration(timeoutSec)*time.Second)
 	if len(resps) != 1 {
 		return []*protos.WSMessage{}, fmt.Errorf("Expected 1 response, got %v (timeout was %vsec)", len(resps), timeoutSec)
@@ -1403,6 +1424,56 @@ func (c *APIClient) DeleteImage(imageName string) error {
 
 	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageDeleteReq{
 		ImageDeleteReq: req,
+	}}
+
+	_, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *APIClient) GetScanDefaultImage(scanIds []string) (map[string]string, error) { //([]string, []string, error) {
+	req := &protos.ImageGetDefaultReq{ScanIds: scanIds}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageGetDefaultReq{
+		ImageGetDefaultReq: req,
+	}}
+
+	resps, err := c.sendMessageWaitResponse(msg)
+
+	if err != nil {
+		//return nil, nil, err
+		return nil, err
+	}
+	//return []string{fmt.Sprintf("resps length=%v", len(resps))}, []string{fmt.Sprintf("%+v", resps[0])}, nil
+
+	resp := resps[0].GetImageGetDefaultResp()
+	if resp == nil {
+		//return nil, nil, fmt.Errorf("Expected response type not received")
+		return nil, fmt.Errorf("Expected response type not received")
+	}
+
+	return resp.DefaultImagesPerScanId, nil
+	/*
+	   ids := utils.GetMapKeys(resp.DefaultImagesPerScanId)
+	   sort.Strings(ids)
+	   defaultImages := []string{}
+
+	   	for _, id := range ids {
+	   		defaultImages = append(defaultImages, resp.DefaultImagesPerScanId[id])
+	   	}
+
+	   return ids, defaultImages, nil
+	*/
+}
+
+func (c *APIClient) SetScanDefaultImage(scanId string, imageName string) error {
+	req := &protos.ImageSetDefaultReq{ScanId: scanId, DefaultImageFileName: imageName}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageSetDefaultReq{
+		ImageSetDefaultReq: req,
 	}}
 
 	_, err := c.sendMessageWaitResponse(msg)

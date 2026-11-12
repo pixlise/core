@@ -16,6 +16,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// ids, defaultImages, err := apiClient.GetScanDefaultImage([]string{"669909507"})
+	// fmt.Printf("Ids: %v\n", ids)
+	// fmt.Printf("DefaultImages: %v\n", defaultImages)
+	// fmt.Printf("As string: %v\n", "["+strings.Join(ids, "|")+"],["+strings.Join(defaultImages, "|")+"]")
+	defaultImages, err := apiClient.GetScanDefaultImage([]string{"669909507"})
+	fmt.Printf("DefaultImages: %v\n", defaultImages)
+	fmt.Printf("error: %v\n", err)
+	return
 	/*
 		m, err := apiClient.CalculateExpression("669909507", "quant-tl2mrnxroian1acm", "9b4h4zjuynpshf7c", "AllPoints-669909507", 0)
 		if err != nil {
