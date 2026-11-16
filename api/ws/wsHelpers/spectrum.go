@@ -74,19 +74,7 @@ func CheckValidDetectorNames(uploaded []*protos.Spectra) error {
 }
 
 func MergeSpectra(exprPB *protos.Experiment, uploadedSpectra []*protos.Spectra, makeBulkSum bool) error {
-	detectorIdIdx := -1
-	readtypeIdx := -1
-	for c, label := range exprPB.MetaLabels {
-		if label == "DETECTOR_ID" {
-			detectorIdIdx = c
-		} else if label == "READTYPE" {
-			readtypeIdx = c
-		}
-
-		if readtypeIdx > -1 && detectorIdIdx > -1 {
-			break
-		}
-	}
+	detectorIdIdx, readtypeIdx := GetScanMetaIndexes(exprPB)
 
 	// If we're making a bulk sum too, find the index to add it to
 	bulkSumLocIdx := -1
@@ -699,4 +687,149 @@ func getDetectorMetaValues(
 		}
 	*/
 	return thisDetectorId, thisReadType /*nPoints,*/, nil
+}
+
+func GenerateSpectrumRangeWithOp(
+	op protos.SpectrumRangeOp,
+	detectors []string,
+	readType protos.SpectrumType,
+	channelStart int32,
+	channelEnd int32,
+	exprPB *protos.Experiment) (*PMCDataValues, error) {
+	if !utils.ItemInSlice(op, []protos.SpectrumRangeOp{protos.SpectrumRangeOp_SRO_SUM, protos.SpectrumRangeOp_SRO_MAX_OF_DIFF, protos.SpectrumRangeOp_SRO_SUM_OF_DIFF}) {
+		return nil, fmt.Errorf("Invalid op: %v", op)
+	}
+	// Check that op is valid for request
+	if len(detectors) < 1 {
+		return nil, fmt.Errorf("At least 1 detector must be specified")
+	}
+	if op != protos.SpectrumRangeOp_SRO_SUM && len(detectors) != 2 {
+		return nil, fmt.Errorf("Op %v requires 2 detectors, got %v", op, len(detectors))
+	}
+	if channelEnd <= channelStart {
+		return nil, fmt.Errorf("Invalid channel start/end")
+	}
+	if channelStart < 0 {
+		return nil, fmt.Errorf("Negative channel start")
+	}
+
+	// NOTE: There is an other implementation of spectrum range calculation in runtime.go for expression running. The two implementations are unfortunately incompatible
+	//       so were not able to be put in a single utility function as the expression runner pre-loads all spectra and caches them in a map as opposed to here we're reading
+	//       directly from the experiment binary file and decoding as we read
+	// Perhaps if performance becomes an issue we might also implement a spectrum cache here but we'd need to watch out for memory runaway with multiple large datasets
+	// being opened by users. For now we're already caching the experiment file on local disk so maybe this approach (reading from file each time) is enough.
+
+	// At least we're re-using the PMCDataValues implementation!!!
+
+	detectorIdIdx, readtypeIdx := GetScanMetaIndexes(exprPB)
+
+	// Run through all locations and perform the operation on each
+	result := &PMCDataValues{}
+
+	paramsChecked := false
+
+	for idx, loc := range exprPB.Locations {
+		// Read the PMC
+		pmc, err := strconv.Atoi(loc.Id)
+		if err != nil {
+			return nil, fmt.Errorf("Location idx %v had invalid PMC: %v", idx, loc.Id)
+		}
+
+		// Find the detectors for this location
+		detectorsFound := [][]int32{}
+
+		if len(loc.Detectors) > 0 {
+			detsMatched := 0
+			readTypesMatched := 0
+
+			for _, det := range loc.Detectors {
+				// If we find the detector ID, add it to our list
+				thisDetector := ""
+				thisReadType := 0
+
+				for _, m := range det.Meta {
+					if m.LabelIdx == int32(detectorIdIdx) {
+						thisDetector = m.Svalue
+					}
+					if m.LabelIdx == int32(readtypeIdx) {
+						if len(m.Svalue) > 0 {
+							thisReadType = int(utils.StringToSpectrumType(m.Svalue))
+						} else {
+							thisReadType = int(m.Ivalue)
+						}
+					}
+				}
+
+				// If it matches what we're interested in, add it
+				detMatch := false
+				if utils.ItemInSlice(thisDetector, detectors) {
+					detMatch = true
+					detsMatched++
+				}
+
+				if thisReadType == int(readType) {
+					readTypesMatched++
+
+					if detMatch {
+						// Decode (uncompress) the counts
+						detectorsFound = append(detectorsFound, utils.ZeroRunDecode(det.Spectrum))
+					}
+				}
+			}
+
+			// Now that we have decoded spectra, ensure the parameters specified are valid
+			if !paramsChecked {
+				// We found all detectors
+				if detsMatched < len(detectors) {
+					return nil, fmt.Errorf("Some requested detectors didn't exist in scan")
+				}
+
+				// Channels
+				if channelStart > int32(len(detectorsFound[0])) || channelEnd > int32(len(detectorsFound[0])) {
+					return nil, fmt.Errorf("Channel start or end past last spectrum channel: %v", len(detectorsFound[0]))
+				}
+
+				paramsChecked = true
+			}
+		}
+
+		value := int32(0)
+
+		if op == protos.SpectrumRangeOp_SRO_SUM {
+			// Just add them
+			for _, det := range detectorsFound {
+				for i := channelStart; i < channelEnd; i++ {
+					value += det[i]
+				}
+			}
+		} else {
+			if len(detectorsFound) == 2 {
+				if op == protos.SpectrumRangeOp_SRO_SUM_OF_DIFF {
+					// Take their diff, then add that diff
+					for i := channelStart; i < channelEnd; i++ {
+						diff := utils.Abs(detectorsFound[0][i] - detectorsFound[1][i])
+						value += diff
+					}
+				} else {
+					// Take their diff, then take the max of the 2
+					for i := channelStart; i < channelEnd; i++ {
+						diff := utils.Abs(detectorsFound[0][i] - detectorsFound[1][i])
+						if diff > value {
+							value = diff
+						}
+					}
+				}
+			}
+		}
+
+		// Store it for this index
+		result.AddValue(PMCDataValue{
+			PMC:   pmc,
+			Value: float64(value),
+			//IsUndefined: false,
+			//Label: "",
+		})
+	}
+
+	return result, nil
 }

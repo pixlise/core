@@ -515,3 +515,101 @@ func Example_wsHelpers_CheckValidDetectorNames() {
 	// Invalid detector name "2Long" at location 0
 	// Invalid detector name "D(7)" at location 2
 }
+
+func Example_wsHelpers_GenerateSpectrumRangeWithOp() {
+	b, err := os.ReadFile("./test-data/naltsos.bin")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	exprPB := &protos.Experiment{}
+	if err = proto.Unmarshal(b, exprPB); err != nil {
+		log.Fatal(err)
+	}
+
+	// Check fail cases
+	v, err := GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 210, exprPB)
+	fmt.Printf("No detector: %v|%v\n", v, err)
+
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"C"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 210, exprPB)
+	fmt.Printf("Bad detector: %v|%v\n", v, err)
+
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 200, exprPB)
+	fmt.Printf("Equal channel: %v|%v\n", v, err)
+
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, -5, 10, exprPB)
+	fmt.Printf("Negative channel number: %v|%v\n", v, err)
+
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 20000, 20010, exprPB)
+	fmt.Printf("Bad channel number: %v|%v\n", v, err)
+
+	// Check that the operations do what we're expecting
+	fmt.Println("Raw A:")
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 201, exprPB)
+	fmt.Printf("PMC%v Ch200=%v, PMC=%v Ch200=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 201, 202, exprPB)
+	fmt.Printf("PMC%v Ch201=%v, PMC=%v Ch201=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 202, 203, exprPB)
+	fmt.Printf("PMC%v Ch202=%v, PMC=%v Ch202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+
+	fmt.Println("Raw B:")
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 201, exprPB)
+	fmt.Printf("PMC%v Ch200=%v, PMC=%v Ch200=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 201, 202, exprPB)
+	fmt.Printf("PMC%v Ch201=%v, PMC=%v Ch201=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 202, 203, exprPB)
+	fmt.Printf("PMC%v Ch202=%v, PMC=%v Ch202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+
+	fmt.Println("Sum A:")
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
+	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+
+	fmt.Println("Sum B:")
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
+	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+
+	fmt.Println("Sum A+B:")
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A", "B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
+	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+
+	fmt.Println("Sum-Diff:")
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM_OF_DIFF, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
+	fmt.Printf("Bad detectors: %v|%v\n", v, err)
+
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM_OF_DIFF, []string{"A", "B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
+	fmt.Printf("PMC%v Sumdiff of Ch200->202=%v, PMC=%v Sumdiff of Ch200->202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+
+	fmt.Println("Sum-Max:")
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_MAX_OF_DIFF, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
+	fmt.Printf("Bad detectors: %v|%v\n", v, err)
+
+	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_MAX_OF_DIFF, []string{"A", "B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
+	fmt.Printf("PMC%v Sumdiff of Ch200->202=%v, PMC=%v Sumdiff of Ch200->202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+
+	// Output:
+	// No detector: <nil>|At least 1 detector must be specified
+	// Bad detector: <nil>|Some requested detectors didn't exist in scan
+	// Equal channel: <nil>|Invalid channel start/end
+	// Negative channel number: <nil>|Negative channel start
+	// Bad channel number: <nil>|Channel start or end past last spectrum channel: 4096
+	// Raw A:
+	// PMC100 Ch200=31, PMC=112 Ch200=45|<nil>
+	// PMC100 Ch201=43, PMC=112 Ch201=44|<nil>
+	// PMC100 Ch202=31, PMC=112 Ch202=34|<nil>
+	// Raw B:
+	// PMC100 Ch200=46, PMC=112 Ch200=35|<nil>
+	// PMC100 Ch201=40, PMC=112 Ch201=51|<nil>
+	// PMC100 Ch202=42, PMC=112 Ch202=58|<nil>
+	// Sum A:
+	// PMC100 Ch200+201+202=105, PMC=112 Ch200+201+202=123|<nil>
+	// Sum B:
+	// PMC100 Ch200+201+202=128, PMC=112 Ch200+201+202=144|<nil>
+	// Sum A+B:
+	// PMC100 Ch200+201+202=233, PMC=112 Ch200+201+202=267|<nil>
+	// Sum-Diff:
+	// Bad detectors: <nil>|Op SRO_SUM_OF_DIFF requires 2 detectors, got 1
+	// PMC100 Sumdiff of Ch200->202=29, PMC=112 Sumdiff of Ch200->202=41|<nil>
+	// Sum-Max:
+	// Bad detectors: <nil>|Op SRO_MAX_OF_DIFF requires 2 detectors, got 1
+	// PMC100 Sumdiff of Ch200->202=15, PMC=112 Sumdiff of Ch200->202=24|<nil>
+}

@@ -87,3 +87,21 @@ func UpdateScanImageDataTypes(scanId string, db *mongo.Database, logger logger.I
 	}
 	return nil
 }
+
+func GetScanMetaIndexes(exprPB *protos.Experiment) (int, int) {
+	detectorIdIdx := -1
+	readtypeIdx := -1
+	for c, label := range exprPB.MetaLabels {
+		if label == "DETECTOR_ID" {
+			detectorIdIdx = c
+		} else if label == "READTYPE" {
+			readtypeIdx = c
+		}
+
+		if readtypeIdx > -1 && detectorIdIdx > -1 {
+			break
+		}
+	}
+
+	return detectorIdIdx, readtypeIdx
+}
