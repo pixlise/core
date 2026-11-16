@@ -64,8 +64,8 @@ func (b Bruker) readSpectra(item *brukerreader.HspyItem) (
 	// 	}
 	// }
 
-	bulkSpectrum := make([]int64, axes.channels)
-	maxSpectrum := make([]int64, axes.channels)
+	bulkSpectrum := make([]int32, axes.channels)
+	maxSpectrum := make([]int32, axes.channels)
 	bulkLiveTime := float32(0)
 
 	xPhysicalSize := axes.xScale
@@ -109,12 +109,12 @@ func (b Bruker) readSpectra(item *brukerreader.HspyItem) (
 			cubeIdx := pmc * int32(axes.channels)
 			readCounts := cube.Data[cubeIdx : cubeIdx+int32(axes.channels)]
 
-			spectrumCounts := make([]int64, axes.channels)
+			spectrumCounts := make([]int32, axes.channels)
 			for i, c := range readCounts {
-				spectrumCounts[i] = int64(c)
-				bulkSpectrum[i] += int64(c)
-				if int64(c) > maxSpectrum[i] {
-					maxSpectrum[i] = int64(c)
+				spectrumCounts[i] = int32(c)
+				bulkSpectrum[i] += int32(c)
+				if int32(c) > maxSpectrum[i] {
+					maxSpectrum[i] = int32(c)
 				}
 			}
 

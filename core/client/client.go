@@ -8,15 +8,18 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/pixlise/core/v4/core/indexcompression"
+	"github.com/pixlise/core/v4/core/multipartupload"
 	"github.com/pixlise/core/v4/core/timestamper"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -45,6 +48,7 @@ var ClientMapKeyPrefix = "client-map-"
 type APIClient struct {
 	socket      *SocketConn
 	rateLimiter *utils.RateLimiter
+	apiUrl      string
 
 	// Local caching of things we need to build responses to things that are easier to digest on client-side
 	// For example, we download meta labels, and pass back maps of string->value to client
@@ -171,6 +175,7 @@ func AuthenticateWithAuth0Info(connectParams ConnectInfo, auth0Params Auth0Info)
 
 	return &APIClient{
 		socket:                       socket,
+		apiUrl:                       connectParams.Host,
 		rateLimiter:                  utils.MakeRateLimiter(&timestamper.UnixTimeNowStamper{}, 50, 70, 10, 3),
 		scanPMCToLocIdx:              map[string]map[int]int{},
 		scanLocIdxToPMC:              map[string]map[int]int{},
@@ -202,6 +207,27 @@ func (c *APIClient) sendMessageWaitResponse(msg *protos.WSMessage) ([]*protos.WS
 		return []*protos.WSMessage{}, err
 	}
 
+	resps, err := c.waitForResp(timeoutSec)
+	if err != nil {
+		return []*protos.WSMessage{}, err
+	}
+
+	// If we got a notification update, client doesn't care about those, so gobble it up and wait for another one
+	// This is a work-around for the situation in our python lib test where it uploads an image
+	// and gets a response and a notification, after which it sends in default image get/set msgs, but they were
+	// receiving the notification update. Now hopefully they will receive that, notice it here, and we'll get the
+	// real response!
+	if resps[0].GetNotificationUpd() != nil {
+		resps, err = c.waitForResp(timeoutSec)
+		if err != nil {
+			return []*protos.WSMessage{}, err
+		}
+	}
+
+	return resps, nil
+}
+
+func (c *APIClient) waitForResp(timeoutSec int) ([]*protos.WSMessage, error) {
 	resps := c.socket.WaitForMessages(1, time.Duration(timeoutSec)*time.Second)
 	if len(resps) != 1 {
 		return []*protos.WSMessage{}, fmt.Errorf("Expected 1 response, got %v (timeout was %vsec)", len(resps), timeoutSec)
@@ -700,7 +726,7 @@ func (c *APIClient) ListScanImages(scanIds []string, mustIncludeAll bool) (*prot
 		MustIncludeAll: mustIncludeAll,
 	}
 
-	fmt.Printf("%v", scanIds)
+	//fmt.Printf("%v", scanIds)
 	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageListReq{
 		ImageListReq: req,
 	}}
@@ -1408,39 +1434,201 @@ func (c *APIClient) DeleteImage(imageName string) error {
 	return nil
 }
 
-func (c *APIClient) UploadImage(imageUpload *protos.ImageUploadHttpRequest) error {
+func (c *APIClient) GetScanDefaultImage(scanIds []string) (map[string]string, error) { //([]string, []string, error) {
+	req := &protos.ImageGetDefaultReq{ScanIds: scanIds}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageGetDefaultReq{
+		ImageGetDefaultReq: req,
+	}}
+
+	resps, err := c.sendMessageWaitResponse(msg)
+
+	if err != nil {
+		//return nil, nil, err
+		return nil, err
+	}
+	//return []string{fmt.Sprintf("resps length=%v", len(resps))}, []string{fmt.Sprintf("%+v", resps[0])}, nil
+
+	resp := resps[0].GetImageGetDefaultResp()
+	if resp == nil {
+		//return nil, nil, fmt.Errorf("Expected response type not received")
+		return nil, fmt.Errorf("Expected response type not received")
+	}
+
+	return resp.DefaultImagesPerScanId, nil
+	/*
+	   ids := utils.GetMapKeys(resp.DefaultImagesPerScanId)
+	   sort.Strings(ids)
+	   defaultImages := []string{}
+
+	   	for _, id := range ids {
+	   		defaultImages = append(defaultImages, resp.DefaultImagesPerScanId[id])
+	   	}
+
+	   return ids, defaultImages, nil
+	*/
+}
+
+func (c *APIClient) SetScanDefaultImage(scanId string, imageName string) error {
+	req := &protos.ImageSetDefaultReq{ScanId: scanId, DefaultImageFileName: imageName}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageSetDefaultReq{
+		ImageSetDefaultReq: req,
+	}}
+
+	_, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *APIClient) UploadImage(imageUpload *protos.ImageUploadHttpRequest) (uint64, error) {
+	/*if len(imageUpload.ImageData) > multipartupload.MaxPartSize-1000 {
+		// Suggest it gets sent as a multi-part upload instead
+	}*/
+
 	reqBody, err := proto.Marshal(imageUpload)
 	if err != nil {
-		return fmt.Errorf("UploadImage failed to create request body: %v", err)
+		return 0, fmt.Errorf("UploadImage failed to create request body: %v", err)
 	}
 
 	// We send this via HTTP endpoints
-	url, err := c.socket.GetHost("/images")
+	/*url, err := c.socket.GetHost("/images")
 	if err != nil {
-		return fmt.Errorf("UploadImage failed to get url: %v", err)
+		return 0, fmt.Errorf("UploadImage failed to get url: %v", err)
+	}*/
+
+	u, err := url.Parse(c.apiUrl)
+	if err != nil {
+		return 0, fmt.Errorf("UploadImage failed to get url: %v", err)
 	}
+	u.Path = path.Join(u.Path, "images")
 
 	client := &http.Client{}
-	req, err := http.NewRequest("PUT", url.String(), bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest("PUT", u.String(), bytes.NewBuffer(reqBody))
 	if err != nil {
-		return fmt.Errorf("UploadImage failed to create request: %v", err)
+		return 0, fmt.Errorf("UploadImage failed to create request: %v", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("UploadImage request failed: %v", err)
+		return 0, fmt.Errorf("UploadImage request failed: %v", err)
 	}
 
 	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("UploadImage failed to read response: %v", err)
+		return 0, fmt.Errorf("UploadImage failed to read response: %v", err)
 	}
 
 	if len(b) > 0 {
-		return fmt.Errorf("Upload image unexpected result: %v", string(b))
+		// Read it as a ImageUploadHttpPartialInfo, we may be getting something back encoded like that
+		respPI := &protos.ImageUploadHttpPartialInfo{}
+		err = protojson.Unmarshal(b, respPI) // proto.Unmarshal(b, respPI)
+		if err == nil {
+			return respPI.BytesReceived, nil
+		}
+
+		// Otherwise it's an error!
+		return 0, fmt.Errorf("Upload image unexpected result: %v. Error: %v", string(b), err)
+	}
+
+	return 0, nil
+}
+
+func (c *APIClient) UploadLargeImage(localImagePath string, scanId string, imageName string) error {
+	// First, check if we are resuming
+	/* Resume check:
+		const imagePutResumeCheckReq = {
+	      name: imageToUpload.name,
+	      imageData: new Uint8Array(),
+	      imageByteSize: imageToUpload.size,
+	      associatedScanIds: [scanId],
+	      originScanId: scanId,
+	    };
+	*/
+
+	fi, err := os.Stat(localImagePath)
+	if err != nil {
+		return fmt.Errorf("UploadLargeImage: Failed to find file: %v", err)
+	}
+
+	if fi.IsDir() {
+		return fmt.Errorf("UploadLargeImage: %v is a directory", localImagePath)
+	}
+
+	if fi.Size() <= 0 {
+		return fmt.Errorf("UploadLargeImage: %v is empty", localImagePath)
+	}
+
+	resumeCheck := &protos.ImageUploadHttpRequest{
+		Name:              imageName,
+		ImageByteSize:     uint64(fi.Size()),
+		AssociatedScanIds: []string{scanId},
+		OriginScanId:      scanId,
+	}
+
+	sz, err := c.UploadImage(resumeCheck)
+	if err != nil {
+		return fmt.Errorf("UploadLargeImage resume check error: %v", err)
+	}
+
+	// We now know where to start reading from
+	if sz >= resumeCheck.ImageByteSize {
+		// Somethings wrong
+		return fmt.Errorf("UploadLargeImage unexpected resume position past end of file: %v", sz)
+	}
+
+	f, err := os.Open(localImagePath)
+	if err != nil {
+		return fmt.Errorf("UploadLargeImage failed to open: %v", localImagePath)
+	}
+
+	// Seek to the resume position
+	_, err = f.Seek(int64(sz), 0)
+	if err != nil {
+		return fmt.Errorf("UploadLargeImage failed to seek: %v", err)
+	}
+
+	// Read a part. File may not have enough bytes left!
+	partByteSize := multipartupload.MaxPartSize - 1024*1024
+	partBytes := make([]byte, partByteSize)
+	filePos := sz
+	for filePos < uint64(fi.Size()) {
+		// We have more stuff to send, read in a chunk and send it
+		readSize, err := f.Read(partBytes)
+		if err != nil {
+			return fmt.Errorf("UploadLargeImage failed to read part of file: %v", err)
+		}
+
+		// Send it
+		if readSize > 0 {
+			endPos := filePos + uint64(readSize)
+			fmt.Printf("Uploading %v: bytes %v-%v (%.1f%%)...\n", imageName, filePos, endPos, 100*float32(endPos)/float32(fi.Size()))
+			upload := &protos.ImageUploadHttpRequest{
+				Name:               imageName,
+				ImageData:          partBytes[0:readSize],
+				ImageByteSize:      uint64(fi.Size()),
+				AssociatedScanIds:  []string{scanId},
+				OriginScanId:       scanId,
+				BytesUploadedSoFar: filePos,
+			}
+
+			uploadRespSz, err := c.UploadImage(upload)
+			if err != nil {
+				return fmt.Errorf("UploadLargeImage error uploading part: %v", err)
+			}
+
+			if uploadRespSz > 0 {
+				return fmt.Errorf("UploadLargeImage unexpected size returned: %v", uploadRespSz)
+			}
+
+			filePos += uint64(readSize)
+		}
 	}
 
 	return nil
@@ -1507,6 +1695,23 @@ func (c *APIClient) UploadImageBeamLocations(imageName string, locForScan *proto
 
 	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageBeamLocationUploadReq{
 		ImageBeamLocationUploadReq: req,
+	}}
+
+	_, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *APIClient) CreateUserDefinedScan(scanId string) error {
+	req := &protos.ScanCreateUserDefinedReq{
+		Id: scanId,
+	}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ScanCreateUserDefinedReq{
+		ScanCreateUserDefinedReq: req,
 	}}
 
 	_, err := c.sendMessageWaitResponse(msg)

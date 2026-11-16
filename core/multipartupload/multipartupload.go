@@ -33,7 +33,7 @@ type MultiPartStatus struct {
 }
 
 var statusFileName = "status.json"
-var maxPartSize = 1024 * 1024 * 11
+var MaxPartSize = 1024 * 1024 * 21
 
 func MakeMultiPartUploadHandler(
 	bucket string,
@@ -58,9 +58,20 @@ func MakeMultiPartUploadHandler(
 
 // Call this when starting an upload. It checks to see how many bytes we may have received already (in case it's a resume)
 // otherwise returns 0
-func (mp *MultiPartUploadHandler) StartUpload(fileName string, totalBytes uint64) (uint64, error) {
+func (mp *MultiPartUploadHandler) StartUpload(fileName string, totalBytes uint64) (uint64, bool, error) {
+	sz, comp, err := mp.internalStartUpload(fileName, totalBytes)
+	if err != nil {
+		err = fmt.Errorf("StartUpload for %v (%v bytes) error: %v", fileName, totalBytes, err)
+		mp.log.Errorf("%v", err)
+	} else {
+		mp.log.Infof("StartUpload for %v (%v bytes): uploaded %v bytes, complete: %v", fileName, totalBytes, sz, comp)
+	}
+	return sz, comp, err
+}
+
+func (mp *MultiPartUploadHandler) internalStartUpload(fileName string, totalBytes uint64) (uint64, bool, error) {
 	if totalBytes == 0 {
-		return 0, fmt.Errorf("StartUpload for file %v rejected as totalBytes is 0", fileName)
+		return 0, false, fmt.Errorf("StartUpload for file %v rejected as totalBytes is 0", fileName)
 	}
 
 	// Check if status file exists
@@ -70,7 +81,7 @@ func (mp *MultiPartUploadHandler) StartUpload(fileName string, totalBytes uint64
 	status := MultiPartStatus{}
 	if err := mp.fs.ReadJSON(mp.bucket, statusPath, &status, true); err != nil {
 		// Something went wrong
-		return 0, err
+		return 0, false, err
 	}
 
 	// If what we read is empty...
@@ -81,31 +92,35 @@ func (mp *MultiPartUploadHandler) StartUpload(fileName string, totalBytes uint64
 			TotalBytes:             totalBytes,
 		}
 
-		return 0, mp.fs.WriteJSON(mp.bucket, statusPath, &status)
+		return 0, false, mp.fs.WriteJSON(mp.bucket, statusPath, &status)
 	}
 
 	// Check that it's not yet complete
 	if status.CompleteTimeUnixSec > 0 {
-		return 0, fmt.Errorf("Upload start for %v: already complete at %v", fileName, status.CompleteTimeUnixSec)
+		return 0, true, nil //fmt.Errorf("Upload start for %v: already complete at %v", fileName, status.CompleteTimeUnixSec)
 	}
 
 	// It's been started. Check the total bytes match!
 	if status.TotalBytes != totalBytes {
 		// TODO: Clear existing attempt and start fresh??
 		// Maybe this should just be a warning/log message??
-		return 0, fmt.Errorf("Upload start failed due to total bytes mismatch. Expecting %v bytes, now starting with %v bytes", status.TotalBytes, totalBytes)
+		return 0, false, fmt.Errorf("Upload start failed due to total bytes mismatch. Expecting %v bytes, now starting with %v bytes", status.TotalBytes, totalBytes)
 	}
 
 	// Return how many bytes we already have
-	return mp.uploadedBytesSoFar(fileName, nil, nil)
+	sz, _, _, err := mp.uploadedBytesSoFar(fileName, false)
+	return sz, false, err
 }
 
-func (mp *MultiPartUploadHandler) uploadedBytesSoFar(fileName string, names []string, sizes []uint64) (uint64, error) {
+func (mp *MultiPartUploadHandler) uploadedBytesSoFar(fileName string, getNamesAndSizes bool) (uint64, []string, []uint64, error) {
+	names := []string{}
+	sizes := []uint64{}
+
 	// Take a listing of the uploaded data so far and find the total byte size
 	s3Path := mp.getPartUploadPath(fileName)
 	files, err := mp.fs.ListObjects(mp.bucket, s3Path)
 	if err != nil {
-		return 0, err
+		return 0, names, sizes, err
 	}
 
 	// Get the size of each file
@@ -115,29 +130,29 @@ func (mp *MultiPartUploadHandler) uploadedBytesSoFar(fileName string, names []st
 		if !strings.HasSuffix(f, statusFileName) {
 			exists, sz, err := mp.fs.ObjectExists(mp.bucket, f)
 			if err != nil {
-				return 0, err
+				return 0, names, sizes, err
 			}
 
 			if !exists {
-				return 0, fmt.Errorf("File part named %v not found", f)
+				return 0, names, sizes, fmt.Errorf("File part named %v not found", f)
 			}
 
 			if sz < 0 {
-				return 0, fmt.Errorf("File part named %v unexpected size: %v", f, sz)
+				return 0, names, sizes, fmt.Errorf("File part named %v unexpected size: %v", f, sz)
 			}
 
 			sz64 := uint64(sz)
 			bytesSoFar += sz64
 
 			// If we have names & sizes to report, do it
-			if names != nil && sizes != nil {
+			if getNamesAndSizes {
 				names = append(names, f)
 				sizes = append(sizes, sz64)
 			}
 		}
 	}
 
-	return bytesSoFar, nil
+	return bytesSoFar, names, sizes, nil
 }
 
 func (mp *MultiPartUploadHandler) getPartUploadPath(fileName string) string {
@@ -152,11 +167,22 @@ func (mp *MultiPartUploadHandler) getPartUploadPath(fileName string) string {
 // If upload position doesn't match, we return an error
 // Returns bytesReceived (uint64), isComplete (bool), error
 func (mp *MultiPartUploadHandler) UploadPart(fileName string, totalUploadedBytes uint64, data []byte) (uint64, bool, error) {
+	sz, comp, totalSz, err := mp.internalUploadPart(fileName, totalUploadedBytes, data)
+	if err != nil {
+		err = fmt.Errorf("UploadPart for %v (%v bytes so far) error: %v", fileName, totalUploadedBytes, err)
+		mp.log.Errorf("%v", err)
+	} else {
+		mp.log.Infof("UploadPart for %v received %.1f%% %v bytes, complete: %v", fileName, 100*float32(sz)/float32(totalSz), sz, comp)
+	}
+	return sz, comp, err
+}
+
+func (mp *MultiPartUploadHandler) internalUploadPart(fileName string, totalUploadedBytes uint64, data []byte) (uint64, bool, uint64, error) {
 	errIdentifier := fmt.Sprintf("Uploading part of file %v, total bytes so far %v", fileName, totalUploadedBytes)
 
-	if len(data) <= 0 || len(data) >= maxPartSize {
+	if len(data) <= 0 || len(data) >= MaxPartSize {
 		// Can't upload this many bytes!
-		return 0, false, fmt.Errorf("%v: part size unexpected: %v", errIdentifier, len(data))
+		return 0, false, 0, fmt.Errorf("%v: part size unexpected: %v", errIdentifier, len(data))
 	}
 
 	// Check that the upload has started
@@ -166,33 +192,33 @@ func (mp *MultiPartUploadHandler) UploadPart(fileName string, totalUploadedBytes
 	status := MultiPartStatus{}
 	if err := mp.fs.ReadJSON(mp.bucket, statusPath, &status, false); err != nil {
 		// Something went wrong
-		return 0, false, fmt.Errorf("%v: failed to read status: %v", errIdentifier, err)
+		return 0, false, 0, fmt.Errorf("%v: failed to read status: %v", errIdentifier, err)
 	}
 
 	// Make sure status is valid too
 	if status.TotalBytes == 0 {
-		return 0, false, fmt.Errorf("%v: unexpected status total bytes is 0", errIdentifier)
+		return 0, false, 0, fmt.Errorf("%v: unexpected status total bytes is 0", errIdentifier)
 	}
 
 	if status.UploadStartTimeUnixSec == 0 {
-		return 0, false, fmt.Errorf("%v: unexpected status start time stamp is 0", errIdentifier)
+		return 0, false, 0, fmt.Errorf("%v: unexpected status start time stamp is 0", errIdentifier)
 	}
 
 	if status.CompleteTimeUnixSec > 0 {
-		return 0, false, fmt.Errorf("%v: unexpected status already complete at %v", errIdentifier, status.CompleteTimeUnixSec)
+		return 0, false, 0, fmt.Errorf("%v: unexpected status already complete at %v", errIdentifier, status.CompleteTimeUnixSec)
 	}
 
 	// Check that the total bytes uploaded so far matches what we have too
-	if expectedTotalBytesSoFar, err := mp.uploadedBytesSoFar(fileName, nil, nil); err != nil {
-		return 0, false, fmt.Errorf("%v: Failed to read total bytes so far: %v", errIdentifier, err)
+	if expectedTotalBytesSoFar, _, _, err := mp.uploadedBytesSoFar(fileName, false); err != nil {
+		return 0, false, 0, fmt.Errorf("%v: Failed to read total bytes so far: %v", errIdentifier, err)
 	} else if expectedTotalBytesSoFar != totalUploadedBytes {
-		return 0, false, fmt.Errorf("%v: Expected total bytes so far of %v, got %v", errIdentifier, expectedTotalBytesSoFar, totalUploadedBytes)
+		return 0, false, 0, fmt.Errorf("%v: Expected total bytes so far of %v, got %v", errIdentifier, expectedTotalBytesSoFar, totalUploadedBytes)
 	}
 
 	// Check if this completes the upload or not
 	totalUploadedIncludingNow := totalUploadedBytes + uint64(len(data))
 	if totalUploadedIncludingNow > status.TotalBytes {
-		return 0, false, fmt.Errorf("%v: uploaded too many bytes. Expected %v, got %v", errIdentifier, status.TotalBytes, totalUploadedIncludingNow)
+		return 0, false, 0, fmt.Errorf("%v: uploaded too many bytes. Expected %v, got %v", errIdentifier, status.TotalBytes, totalUploadedIncludingNow)
 	}
 
 	// If it matches exactly, we're complete
@@ -203,23 +229,37 @@ func (mp *MultiPartUploadHandler) UploadPart(fileName string, totalUploadedBytes
 
 	// Write status
 	if err := mp.fs.WriteJSON(mp.bucket, statusPath, status); err != nil {
-		return 0, false, fmt.Errorf("%v: failed to store status: %v", errIdentifier, err)
+		return 0, false, 0, fmt.Errorf("%v: failed to store status: %v", errIdentifier, err)
 	}
 
 	// Write uploaded part to S3
 	partPath := path.Join(s3Path, fmt.Sprintf("%012d.part", totalUploadedBytes))
 	if err := mp.fs.WriteObject(mp.bucket, partPath, data); err != nil {
-		return 0, false, fmt.Errorf("%v: failed to store: %v", errIdentifier, err)
+		return 0, false, 0, fmt.Errorf("%v: failed to store: %v", errIdentifier, err)
 	}
 
-	return totalUploadedIncludingNow, status.CompleteTimeUnixSec > 0, nil
+	return totalUploadedIncludingNow, status.CompleteTimeUnixSec > 0, status.TotalBytes, nil
 }
 
 // TODO: Return an io.Reader? For now we download it to the local disk and return a file, but this may prove too
 // prohibitive, eg what if they're uploading many files concurrently - our local disk may fill up! What if this
 // is read from a separate machine though, eg a new "importing" node in docker? No issues there!
 // TODO: Provide an expected checksum?
-func (mp *MultiPartUploadHandler) ReadCompletedUpload(fileName string) (*os.File, error) {
+func (mp *MultiPartUploadHandler) ReadCompletedUpload(fileName string) (string, error) {
+	mp.log.Infof("ReadCompletedUpload for %v...", fileName)
+
+	f, err := mp.internalReadCompletedUpload(fileName)
+	if err != nil {
+		err = fmt.Errorf("ReadCompletedUpload for %v error: %v", fileName, err)
+		mp.log.Errorf("%v", err)
+	} else {
+		mp.log.Infof("ReadCompletedUpload for %v returning file...", fileName)
+	}
+
+	return f, err
+}
+
+func (mp *MultiPartUploadHandler) internalReadCompletedUpload(fileName string) (string, error) {
 	errIdentifier := fmt.Sprintf("Reading completed upload of multi-part file %v", fileName)
 
 	// Try to read all chunks, ensure expected bytes matches
@@ -229,26 +269,24 @@ func (mp *MultiPartUploadHandler) ReadCompletedUpload(fileName string) (*os.File
 	status := MultiPartStatus{}
 	if err := mp.fs.ReadJSON(mp.bucket, statusPath, &status, false); err != nil {
 		// Something went wrong
-		return nil, fmt.Errorf("%v: failed to read status: %v", errIdentifier, err)
+		return "", fmt.Errorf("%v: failed to read status: %v", errIdentifier, err)
 	}
 
 	// Ensure it's complete
-	if status.TotalBytes != 0 {
-		return nil, fmt.Errorf("%v: status total bytes was 0", errIdentifier)
+	if status.TotalBytes == 0 {
+		return "", fmt.Errorf("%v: status total bytes was 0", errIdentifier)
 	}
 
 	if status.CompleteTimeUnixSec == 0 {
-		return nil, fmt.Errorf("%v: not complete", errIdentifier)
+		return "", fmt.Errorf("%v: not complete", errIdentifier)
 	}
 
 	// Ensure it's the right size
-	listingNames := []string{}
-	listingSizes := []uint64{}
-	uploadedTotalBytes, err := mp.uploadedBytesSoFar(fileName, listingNames, listingSizes)
+	uploadedTotalBytes, listingNames, _, err := mp.uploadedBytesSoFar(fileName, true)
 	if err != nil {
-		return nil, fmt.Errorf("%v: failed to calculate total uploaded size: %v", errIdentifier, err)
+		return "", fmt.Errorf("%v: failed to calculate total uploaded size: %v", errIdentifier, err)
 	} else if uploadedTotalBytes != status.TotalBytes {
-		return nil, fmt.Errorf("%v: actual uploaded size %v bytes, expected %v bytes", errIdentifier, uploadedTotalBytes, status.TotalBytes)
+		return "", fmt.Errorf("%v: actual uploaded size %v bytes, expected %v bytes", errIdentifier, uploadedTotalBytes, status.TotalBytes)
 	}
 
 	// Read each file from S3 and build a local file we can provide
@@ -256,23 +294,28 @@ func (mp *MultiPartUploadHandler) ReadCompletedUpload(fileName string) (*os.File
 
 	fComplete, err := os.CreateTemp("", filepath.Base(fileName)+"*")
 	if err != nil {
-		return nil, fmt.Errorf("%v: failed to create uploaded file: %v", errIdentifier, err)
+		return "", fmt.Errorf("%v: failed to create uploaded file: %v", errIdentifier, err)
 	}
+	defer fComplete.Close()
+
+	returnPath := fComplete.Name()
 
 	// Write each piece to the file
-	for _, fPart := range listingNames {
+	for i, fPart := range listingNames {
+		mp.log.Infof(" Reading %v (%v/%v)...", fPart, i, len(listingNames))
+
 		fData, err := mp.fs.ReadObject(mp.bucket, fPart)
 		if err != nil {
-			return nil, fmt.Errorf("%v: failed to read file part: %v. Error: %v", errIdentifier, fPart, err)
+			return "", fmt.Errorf("%v: failed to read file part: %v. Error: %v", errIdentifier, fPart, err)
 		}
 
 		_, err = fComplete.Write(fData)
 		if err != nil {
-			return nil, fmt.Errorf("%v: failed to write file part: %v. Error: %v", errIdentifier, fPart, err)
+			return "", fmt.Errorf("%v: failed to write file part: %v. Error: %v", errIdentifier, fPart, err)
 		}
 	}
 
-	return fComplete, nil
+	return returnPath, nil
 }
 
 // Run through old/complete uploads and delete ones we aren't using any more
@@ -299,22 +342,27 @@ func (mp *MultiPartUploadHandler) GarbageCollect() error {
 			} else {
 				// Check if it's old
 				deletePath := ""
+				lastTS := int64(status.LastUploadTimeUnixSec)
+				if lastTS <= 0 {
+					lastTS = int64(status.UploadStartTimeUnixSec)
+				}
+
 				if status.CompleteTimeUnixSec > 0 && nowUnixSec-int64(status.CompleteTimeUnixSec) > int64(mp.completedFileGCTimeoutSec) {
 					deletePath = path.Dir(f)
-					mp.log.Infof("- Freeing %v as it completed %v sec ago", deletePath, nowUnixSec-int64(status.CompleteTimeUnixSec))
-				} else if nowUnixSec-int64(status.LastUploadTimeUnixSec) > int64(mp.incompleteFileGCTimeoutSec) {
+					mp.log.Infof("- Freeing s3://%v/%v as it completed %v sec ago", mp.bucket, deletePath, nowUnixSec-int64(status.CompleteTimeUnixSec))
+				} else if nowUnixSec-lastTS > int64(mp.incompleteFileGCTimeoutSec) {
 					deletePath = path.Dir(f)
-					mp.log.Infof("- Freeing %v as it was last uploaded to %v sec ago", deletePath, nowUnixSec-int64(status.LastUploadTimeUnixSec))
+					mp.log.Infof("- Freeing s3://%v/%v as it was last uploaded to %v sec ago", mp.bucket, deletePath, nowUnixSec-int64(status.LastUploadTimeUnixSec))
 				}
 
 				if len(deletePath) > 0 {
 					err = mp.fs.EmptyObjects(mp.bucket, deletePath)
 					if err != nil {
-						mp.log.Infof("MultiPartFileUpload GC: Failed to free %v: %v", deletePath, err)
+						mp.log.Infof("MultiPartFileUpload GC: Failed to free s3://%v/%v: %v", mp.bucket, deletePath, err)
 					}
 					err = mp.fs.DeleteObject(mp.bucket, deletePath)
 					if err != nil {
-						mp.log.Infof("MultiPartFileUpload GC: Failed to free root %v: %v", deletePath, err)
+						mp.log.Infof("MultiPartFileUpload GC: Failed to free root s3://%v/%v: %v", mp.bucket, deletePath, err)
 					}
 					freed++
 				}

@@ -116,6 +116,9 @@ type APIConfig struct {
 
 	ExpressionRerunIntervalSec int64
 	FileCacheDisabled          bool // Only enable for tests so we get consistant/reproducable output!
+
+	CompletedFileGCTimeoutSec  int // If a file has uploaded and is marked complete, we keep it around for this many seconds before garbage collecting it
+	IncompleteFileGCTimeoutSec int // If a file upload has NOT completed, we keep the uploaded fragments around for this many seconds before garbage collecting it
 }
 
 // JobRunningConfig contains all configs required to be able to run jobs by the back-end. This can involve starting quants or other jobs
@@ -282,6 +285,14 @@ func applyConfigLimits(cfg *APIConfig) {
 
 	if cfg.ExpressionRerunIntervalSec <= 0 {
 		cfg.ExpressionRerunIntervalSec = 600
+	}
+
+	if cfg.CompletedFileGCTimeoutSec <= 0 {
+		cfg.CompletedFileGCTimeoutSec = 900
+	}
+
+	if cfg.IncompleteFileGCTimeoutSec <= 0 {
+		cfg.IncompleteFileGCTimeoutSec = 3600
 	}
 }
 
