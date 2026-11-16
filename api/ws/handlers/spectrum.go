@@ -391,7 +391,11 @@ func HandleSpectrumDetectorsReq(req *protos.SpectrumDetectorsReq, hctx wsHelpers
 					detector = m.Svalue
 				}
 				if m.LabelIdx == int32(readtypeIdx) {
-					readType = int(m.Ivalue)
+					if len(m.Svalue) > 0 {
+						readType = int(utils.StringToSpectrumType(m.Svalue))
+					} else {
+						readType = int(m.Ivalue)
+					}
 				}
 			}
 
