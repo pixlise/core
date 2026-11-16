@@ -21,6 +21,58 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type SpectrumRangeOp int32
+
+const (
+	SpectrumRangeOp_SRO_UNKNOWN     SpectrumRangeOp = 0
+	SpectrumRangeOp_SRO_SUM         SpectrumRangeOp = 1
+	SpectrumRangeOp_SRO_SUM_OF_DIFF SpectrumRangeOp = 2
+	SpectrumRangeOp_SRO_MAX_OF_DIFF SpectrumRangeOp = 3
+)
+
+// Enum value maps for SpectrumRangeOp.
+var (
+	SpectrumRangeOp_name = map[int32]string{
+		0: "SRO_UNKNOWN",
+		1: "SRO_SUM",
+		2: "SRO_SUM_OF_DIFF",
+		3: "SRO_MAX_OF_DIFF",
+	}
+	SpectrumRangeOp_value = map[string]int32{
+		"SRO_UNKNOWN":     0,
+		"SRO_SUM":         1,
+		"SRO_SUM_OF_DIFF": 2,
+		"SRO_MAX_OF_DIFF": 3,
+	}
+)
+
+func (x SpectrumRangeOp) Enum() *SpectrumRangeOp {
+	p := new(SpectrumRangeOp)
+	*p = x
+	return p
+}
+
+func (x SpectrumRangeOp) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SpectrumRangeOp) Descriptor() protoreflect.EnumDescriptor {
+	return file_spectrum_msgs_proto_enumTypes[0].Descriptor()
+}
+
+func (SpectrumRangeOp) Type() protoreflect.EnumType {
+	return &file_spectrum_msgs_proto_enumTypes[0]
+}
+
+func (x SpectrumRangeOp) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SpectrumRangeOp.Descriptor instead.
+func (SpectrumRangeOp) EnumDescriptor() ([]byte, []int) {
+	return file_spectrum_msgs_proto_rawDescGZIP(), []int{0}
+}
+
 // requires(NONE)
 type SpectrumReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -534,11 +586,146 @@ func (x *SpectrumAggregateResp) GetWarnings() []string {
 	return nil
 }
 
+// requires(NONE)
+type SpectrumRangeCalcReq struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Which scan's spectra
+	ScanId string `protobuf:"bytes,1,opt,name=scanId,proto3" json:"scanId,omitempty"`
+	// Which detectors
+	// For SUM ops it must be 1 or more, for DIFF ops it must have 2
+	Detectors []string `protobuf:"bytes,3,rep,name=detectors,proto3" json:"detectors,omitempty"`
+	// What read type to work from
+	ReadType SpectrumType `protobuf:"varint,4,opt,name=readType,proto3,enum=SpectrumType" json:"readType,omitempty"`
+	// Channel indexes to sum between
+	ChannelStart int32 `protobuf:"varint,5,opt,name=channelStart,proto3" json:"channelStart,omitempty"`
+	ChannelEnd   int32 `protobuf:"varint,6,opt,name=channelEnd,proto3" json:"channelEnd,omitempty"`
+	// What kind of calculation
+	Op            SpectrumRangeOp `protobuf:"varint,7,opt,name=op,proto3,enum=SpectrumRangeOp" json:"op,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SpectrumRangeCalcReq) Reset() {
+	*x = SpectrumRangeCalcReq{}
+	mi := &file_spectrum_msgs_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SpectrumRangeCalcReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SpectrumRangeCalcReq) ProtoMessage() {}
+
+func (x *SpectrumRangeCalcReq) ProtoReflect() protoreflect.Message {
+	mi := &file_spectrum_msgs_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SpectrumRangeCalcReq.ProtoReflect.Descriptor instead.
+func (*SpectrumRangeCalcReq) Descriptor() ([]byte, []int) {
+	return file_spectrum_msgs_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SpectrumRangeCalcReq) GetScanId() string {
+	if x != nil {
+		return x.ScanId
+	}
+	return ""
+}
+
+func (x *SpectrumRangeCalcReq) GetDetectors() []string {
+	if x != nil {
+		return x.Detectors
+	}
+	return nil
+}
+
+func (x *SpectrumRangeCalcReq) GetReadType() SpectrumType {
+	if x != nil {
+		return x.ReadType
+	}
+	return SpectrumType_SPECTRUM_UNKNOWN
+}
+
+func (x *SpectrumRangeCalcReq) GetChannelStart() int32 {
+	if x != nil {
+		return x.ChannelStart
+	}
+	return 0
+}
+
+func (x *SpectrumRangeCalcReq) GetChannelEnd() int32 {
+	if x != nil {
+		return x.ChannelEnd
+	}
+	return 0
+}
+
+func (x *SpectrumRangeCalcReq) GetOp() SpectrumRangeOp {
+	if x != nil {
+		return x.Op
+	}
+	return SpectrumRangeOp_SRO_UNKNOWN
+}
+
+type SpectrumRangeCalcResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Result        *MemPMCDataValues      `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SpectrumRangeCalcResp) Reset() {
+	*x = SpectrumRangeCalcResp{}
+	mi := &file_spectrum_msgs_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SpectrumRangeCalcResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SpectrumRangeCalcResp) ProtoMessage() {}
+
+func (x *SpectrumRangeCalcResp) ProtoReflect() protoreflect.Message {
+	mi := &file_spectrum_msgs_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SpectrumRangeCalcResp.ProtoReflect.Descriptor instead.
+func (*SpectrumRangeCalcResp) Descriptor() ([]byte, []int) {
+	return file_spectrum_msgs_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SpectrumRangeCalcResp) GetResult() *MemPMCDataValues {
+	if x != nil {
+		return x.Result
+	}
+	return nil
+}
+
 var File_spectrum_msgs_proto protoreflect.FileDescriptor
 
 const file_spectrum_msgs_proto_rawDesc = "" +
 	"\n" +
-	"\x13spectrum-msgs.proto\x1a\x0espectrum.proto\x1a\n" +
+	"\x13spectrum-msgs.proto\x1a\x11memoisation.proto\x1a\x0espectrum.proto\x1a\n" +
 	"scan.proto\"\x86\x01\n" +
 	"\vSpectrumReq\x12\x16\n" +
 	"\x06scanId\x18\x01 \x01(\tR\x06scanId\x12)\n" +
@@ -579,7 +766,23 @@ const file_spectrum_msgs_proto_rawDesc = "" +
 	"\n" +
 	"maxSpectra\x18\x02 \x03(\v2\t.SpectrumR\n" +
 	"maxSpectra\x12\x1a\n" +
-	"\bwarnings\x18\x03 \x03(\tR\bwarningsB\n" +
+	"\bwarnings\x18\x03 \x03(\tR\bwarnings\"\xdd\x01\n" +
+	"\x14SpectrumRangeCalcReq\x12\x16\n" +
+	"\x06scanId\x18\x01 \x01(\tR\x06scanId\x12\x1c\n" +
+	"\tdetectors\x18\x03 \x03(\tR\tdetectors\x12)\n" +
+	"\breadType\x18\x04 \x01(\x0e2\r.SpectrumTypeR\breadType\x12\"\n" +
+	"\fchannelStart\x18\x05 \x01(\x05R\fchannelStart\x12\x1e\n" +
+	"\n" +
+	"channelEnd\x18\x06 \x01(\x05R\n" +
+	"channelEnd\x12 \n" +
+	"\x02op\x18\a \x01(\x0e2\x10.SpectrumRangeOpR\x02op\"B\n" +
+	"\x15SpectrumRangeCalcResp\x12)\n" +
+	"\x06result\x18\x01 \x01(\v2\x11.MemPMCDataValuesR\x06result*Y\n" +
+	"\x0fSpectrumRangeOp\x12\x0f\n" +
+	"\vSRO_UNKNOWN\x10\x00\x12\v\n" +
+	"\aSRO_SUM\x10\x01\x12\x13\n" +
+	"\x0fSRO_SUM_OF_DIFF\x10\x02\x12\x13\n" +
+	"\x0fSRO_MAX_OF_DIFF\x10\x03B\n" +
 	"Z\b.;protosb\x06proto3"
 
 var (
@@ -594,36 +797,44 @@ func file_spectrum_msgs_proto_rawDescGZIP() []byte {
 	return file_spectrum_msgs_proto_rawDescData
 }
 
-var file_spectrum_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_spectrum_msgs_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_spectrum_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_spectrum_msgs_proto_goTypes = []any{
-	(*SpectrumReq)(nil),           // 0: SpectrumReq
-	(*SpectrumResp)(nil),          // 1: SpectrumResp
-	(*SpectrumUploadReq)(nil),     // 2: SpectrumUploadReq
-	(*SpectrumUploadResp)(nil),    // 3: SpectrumUploadResp
-	(*SpectrumDetectorsReq)(nil),  // 4: SpectrumDetectorsReq
-	(*SpectrumDetectorsResp)(nil), // 5: SpectrumDetectorsResp
-	(*SpectrumAggregateReq)(nil),  // 6: SpectrumAggregateReq
-	(*SpectrumAggregateResp)(nil), // 7: SpectrumAggregateResp
-	(*ScanEntryRange)(nil),        // 8: ScanEntryRange
-	(*Spectra)(nil),               // 9: Spectra
-	(*Spectrum)(nil),              // 10: Spectrum
-	(SpectrumType)(0),             // 11: SpectrumType
+	(SpectrumRangeOp)(0),          // 0: SpectrumRangeOp
+	(*SpectrumReq)(nil),           // 1: SpectrumReq
+	(*SpectrumResp)(nil),          // 2: SpectrumResp
+	(*SpectrumUploadReq)(nil),     // 3: SpectrumUploadReq
+	(*SpectrumUploadResp)(nil),    // 4: SpectrumUploadResp
+	(*SpectrumDetectorsReq)(nil),  // 5: SpectrumDetectorsReq
+	(*SpectrumDetectorsResp)(nil), // 6: SpectrumDetectorsResp
+	(*SpectrumAggregateReq)(nil),  // 7: SpectrumAggregateReq
+	(*SpectrumAggregateResp)(nil), // 8: SpectrumAggregateResp
+	(*SpectrumRangeCalcReq)(nil),  // 9: SpectrumRangeCalcReq
+	(*SpectrumRangeCalcResp)(nil), // 10: SpectrumRangeCalcResp
+	(*ScanEntryRange)(nil),        // 11: ScanEntryRange
+	(*Spectra)(nil),               // 12: Spectra
+	(*Spectrum)(nil),              // 13: Spectrum
+	(SpectrumType)(0),             // 14: SpectrumType
+	(*MemPMCDataValues)(nil),      // 15: MemPMCDataValues
 }
 var file_spectrum_msgs_proto_depIdxs = []int32{
-	8,  // 0: SpectrumReq.entries:type_name -> ScanEntryRange
-	9,  // 1: SpectrumResp.spectraPerLocation:type_name -> Spectra
-	10, // 2: SpectrumResp.bulkSpectra:type_name -> Spectrum
-	10, // 3: SpectrumResp.maxSpectra:type_name -> Spectrum
-	9,  // 4: SpectrumUploadReq.spectraPerLocation:type_name -> Spectra
-	8,  // 5: SpectrumAggregateReq.entries:type_name -> ScanEntryRange
-	11, // 6: SpectrumAggregateReq.readType:type_name -> SpectrumType
-	10, // 7: SpectrumAggregateResp.bulkSpectra:type_name -> Spectrum
-	10, // 8: SpectrumAggregateResp.maxSpectra:type_name -> Spectrum
-	9,  // [9:9] is the sub-list for method output_type
-	9,  // [9:9] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	11, // 0: SpectrumReq.entries:type_name -> ScanEntryRange
+	12, // 1: SpectrumResp.spectraPerLocation:type_name -> Spectra
+	13, // 2: SpectrumResp.bulkSpectra:type_name -> Spectrum
+	13, // 3: SpectrumResp.maxSpectra:type_name -> Spectrum
+	12, // 4: SpectrumUploadReq.spectraPerLocation:type_name -> Spectra
+	11, // 5: SpectrumAggregateReq.entries:type_name -> ScanEntryRange
+	14, // 6: SpectrumAggregateReq.readType:type_name -> SpectrumType
+	13, // 7: SpectrumAggregateResp.bulkSpectra:type_name -> Spectrum
+	13, // 8: SpectrumAggregateResp.maxSpectra:type_name -> Spectrum
+	14, // 9: SpectrumRangeCalcReq.readType:type_name -> SpectrumType
+	0,  // 10: SpectrumRangeCalcReq.op:type_name -> SpectrumRangeOp
+	15, // 11: SpectrumRangeCalcResp.result:type_name -> MemPMCDataValues
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_spectrum_msgs_proto_init() }
@@ -631,6 +842,7 @@ func file_spectrum_msgs_proto_init() {
 	if File_spectrum_msgs_proto != nil {
 		return
 	}
+	file_memoisation_proto_init()
 	file_spectrum_proto_init()
 	file_scan_proto_init()
 	type x struct{}
@@ -638,13 +850,14 @@ func file_spectrum_msgs_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spectrum_msgs_proto_rawDesc), len(file_spectrum_msgs_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   8,
+			NumEnums:      1,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_spectrum_msgs_proto_goTypes,
 		DependencyIndexes: file_spectrum_msgs_proto_depIdxs,
+		EnumInfos:         file_spectrum_msgs_proto_enumTypes,
 		MessageInfos:      file_spectrum_msgs_proto_msgTypes,
 	}.Build()
 	File_spectrum_msgs_proto = out.File

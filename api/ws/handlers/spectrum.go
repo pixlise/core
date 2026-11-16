@@ -32,10 +32,12 @@ func HandleSpectrumAggregateReq(req *protos.SpectrumAggregateReq, hctx wsHelpers
 	result := &protos.SpectrumAggregateResp{BulkSpectra: []*protos.Spectrum{}, MaxSpectra: []*protos.Spectrum{}}
 	// Return in alphabetical order for easier unit testing
 	keys := utils.GetMapKeys(bulkSums)
+	sort.Strings(keys) // For deterministic output/tests
 	for _, k := range keys {
 		result.BulkSpectra = append(result.BulkSpectra, bulkSums[k])
 	}
 	keys = utils.GetMapKeys(maxValues)
+	sort.Strings(keys) // For deterministic output/tests
 	for _, k := range keys {
 		result.MaxSpectra = append(result.MaxSpectra, maxValues[k])
 	}
@@ -49,19 +51,7 @@ func HandleSpectrumReq(req *protos.SpectrumReq, hctx wsHelpers.HandlerContext) (
 		return nil, err
 	}
 
-	detectorIdIdx := -1
-	readtypeIdx := -1
-	for c, label := range exprPB.MetaLabels {
-		if label == "DETECTOR_ID" {
-			detectorIdIdx = c
-		} else if label == "READTYPE" {
-			readtypeIdx = c
-		}
-
-		if readtypeIdx > -1 && detectorIdIdx > -1 {
-			break
-		}
-	}
+	detectorIdIdx, readtypeIdx := wsHelpers.GetScanMetaIndexes(exprPB)
 
 	spectra := []*protos.Spectra{}
 
@@ -384,20 +374,7 @@ func HandleSpectrumDetectorsReq(req *protos.SpectrumDetectorsReq, hctx wsHelpers
 		return nil, err
 	}
 
-	detectorIdIdx := -1
-	readtypeIdx := -1
-	for c, label := range exprPB.MetaLabels {
-		if label == "DETECTOR_ID" {
-			detectorIdIdx = c
-		} else if label == "READTYPE" {
-			readtypeIdx = c
-		}
-
-		if readtypeIdx > -1 && detectorIdIdx > -1 {
-			break
-		}
-	}
-
+	detectorIdIdx, readtypeIdx := wsHelpers.GetScanMetaIndexes(exprPB)
 	detectors := map[string]bool{}
 
 	// Run through all locations
@@ -410,14 +387,16 @@ func HandleSpectrumDetectorsReq(req *protos.SpectrumDetectorsReq, hctx wsHelpers
 
 			for _, m := range det.Meta {
 				if m.LabelIdx == int32(detectorIdIdx) {
-					detectors[m.Svalue] = true
+					//detectors[m.Svalue] = true
+					detector = m.Svalue
 				}
 				if m.LabelIdx == int32(readtypeIdx) {
 					readType = int(m.Ivalue)
 				}
 			}
 
-			if readType == int(protos.SpectrumType_SPECTRUM_NORMAL) {
+			if readType == int(protos.SpectrumType_SPECTRUM_NORMAL) && len(detector) > 0 {
+				// Only mark it if we have a normal spectrum for this detector
 				detectors[detector] = true
 			}
 		}
@@ -432,4 +411,40 @@ func HandleSpectrumDetectorsReq(req *protos.SpectrumDetectorsReq, hctx wsHelpers
 	sort.Strings(detectorList)
 
 	return &protos.SpectrumDetectorsResp{DetectorId: detectorList}, nil
+}
+
+func HandleSpectrumRangeCalcReq(req *protos.SpectrumRangeCalcReq, hctx wsHelpers.HandlerContext) (*protos.SpectrumRangeCalcResp, error) {
+	// if err := wsHelpers.CheckStringField(&req.ScanId, "ScanId", 1, wsHelpers.IdFieldMaxLength*2); err != nil {
+	// 	return nil, err
+	// }
+
+	// Get scan file
+	exprPB, err := beginDatasetFileReq(req.ScanId, hctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := wsHelpers.GenerateSpectrumRangeWithOp(req.Op, req.Detectors, req.ReadType, req.ChannelStart, req.ChannelEnd, exprPB)
+	if err != nil {
+		return nil, err
+	}
+
+	values := make([]*protos.MemPMCDataValue, len(result.Values))
+	for c, v := range result.Values {
+		values[c].Pmc = uint32(v.PMC)
+		values[c].Value = float32(v.Value)
+		values[c].IsUndefined = v.IsUndefined
+		values[c].Label = v.Label
+	}
+
+	// TODO: Maybe remove this/make it all dependent on the same structures/code instead of copying stuff here...
+	result2 := &protos.MemPMCDataValues{
+		MinValue: float32(*result.ValueRange.Min),
+		MaxValue: float32(*result.ValueRange.Max),
+		IsBinary: result.IsBinary,
+		Warning:  result.Warning,
+		Values:   values,
+	}
+
+	return &protos.SpectrumRangeCalcResp{Result: result2}, nil
 }
