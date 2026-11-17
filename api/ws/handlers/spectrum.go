@@ -435,10 +435,12 @@ func HandleSpectrumRangeCalcReq(req *protos.SpectrumRangeCalcReq, hctx wsHelpers
 
 	values := make([]*protos.MemPMCDataValue, len(result.Values))
 	for c, v := range result.Values {
-		values[c].Pmc = uint32(v.PMC)
-		values[c].Value = float32(v.Value)
-		values[c].IsUndefined = v.IsUndefined
-		values[c].Label = v.Label
+		values[c] = &protos.MemPMCDataValue{
+			Pmc:         uint32(v.PMC),
+			Value:       float32(v.Value),
+			IsUndefined: v.IsUndefined,
+			Label:       v.Label,
+		}
 	}
 
 	// TODO: Maybe remove this/make it all dependent on the same structures/code instead of copying stuff here...
