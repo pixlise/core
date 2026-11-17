@@ -8,13 +8,8 @@ type MinMax struct {
 }
 
 func (m *MinMax) Expand(v float64) {
-<<<<<<< HEAD
-	m.expandMin(v)
-	m.expandMax(v)
-=======
 	m.ExpandMin(v)
 	m.ExpandMax(v)
->>>>>>> main
 }
 
 func (m *MinMax) ExpandMin(v float64) bool {
