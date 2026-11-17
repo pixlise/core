@@ -822,13 +822,15 @@ func GenerateSpectrumRangeWithOp(
 			}
 		}
 
-		// Store it for this index
-		result.AddValue(PMCDataValue{
-			PMC:   pmc,
-			Value: float64(value),
-			//IsUndefined: false,
-			//Label: "",
-		})
+		// Store it for this index but only if we have a real value - don't store 0's where we are undefined
+		if len(detectorsFound) > 0 {
+			result.AddValue(PMCDataValue{
+				PMC:   pmc,
+				Value: float64(value),
+				//IsUndefined: false,
+				//Label: "",
+			})
+		}
 	}
 
 	return result, nil
