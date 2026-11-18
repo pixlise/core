@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	queryparams "github.com/pixlise/core/v4/api/endpoints/query-params"
 	"github.com/pixlise/core/v4/core/indexcompression"
 	"github.com/pixlise/core/v4/core/multipartupload"
 	"github.com/pixlise/core/v4/core/timestamper"
@@ -1484,60 +1485,55 @@ func (c *APIClient) SetScanDefaultImage(scanId string, imageName string) error {
 	return nil
 }
 
-func (c *APIClient) UploadImage(imageUpload *protos.ImageUploadHttpRequest) (uint64, error) {
-	/*if len(imageUpload.ImageData) > multipartupload.MaxPartSize-1000 {
-		// Suggest it gets sent as a multi-part upload instead
-	}*/
-
-	reqBody, err := proto.Marshal(imageUpload)
-	if err != nil {
-		return 0, fmt.Errorf("UploadImage failed to create request body: %v", err)
-	}
-
-	// We send this via HTTP endpoints
-	/*url, err := c.socket.GetHost("/images")
-	if err != nil {
-		return 0, fmt.Errorf("UploadImage failed to get url: %v", err)
-	}*/
-
+func (c *APIClient) UploadImage(
+	scanId string,
+	fileName string,
+	totalBytes uint64,
+	writePos uint64,
+	data []byte) (uint64, bool, error) {
 	u, err := url.Parse(c.apiUrl)
 	if err != nil {
-		return 0, fmt.Errorf("UploadImage failed to get url: %v", err)
+		return 0, false, fmt.Errorf("UploadImage failed to get url: %v", err)
 	}
 	u.Path = path.Join(u.Path, "images")
 
+	u.Query().Add(queryparams.ScanIdentifier, scanId)
+	u.Query().Add(queryparams.FileNameIdentifier, fileName)
+	u.Query().Add(queryparams.FileTotalBytes, fmt.Sprintf("%v", totalBytes))
+	u.Query().Add(queryparams.BytesUploadedSoFar, fmt.Sprintf("%v", writePos))
+
 	client := &http.Client{}
-	req, err := http.NewRequest("PUT", u.String(), bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest("PUT", u.String(), bytes.NewBuffer(data))
 	if err != nil {
-		return 0, fmt.Errorf("UploadImage failed to create request: %v", err)
+		return 0, false, fmt.Errorf("UploadImage failed to create request: %v", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return 0, fmt.Errorf("UploadImage request failed: %v", err)
+		return 0, false, fmt.Errorf("UploadImage request failed: %v", err)
 	}
 
 	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return 0, fmt.Errorf("UploadImage failed to read response: %v", err)
+		return 0, false, fmt.Errorf("UploadImage failed to read response: %v", err)
 	}
 
 	if len(b) > 0 {
 		// Read it as a ImageUploadHttpPartialInfo, we may be getting something back encoded like that
-		respPI := &protos.ImageUploadHttpPartialInfo{}
+		respPI := &protos.UploadHttpResponseBody{}
 		err = protojson.Unmarshal(b, respPI) // proto.Unmarshal(b, respPI)
 		if err == nil {
-			return respPI.BytesReceived, nil
+			return respPI.BytesReceived, respPI.Completed, nil
 		}
 
 		// Otherwise it's an error!
-		return 0, fmt.Errorf("Upload image unexpected result: %v. Error: %v", string(b), err)
+		return 0, false, fmt.Errorf("Upload image unexpected result: %v. Error: %v", string(b), err)
 	}
 
-	return 0, nil
+	return 0, false, nil
 }
 
 func (c *APIClient) UploadLargeImage(localImagePath string, scanId string, imageName string) error {
@@ -1565,20 +1561,19 @@ func (c *APIClient) UploadLargeImage(localImagePath string, scanId string, image
 		return fmt.Errorf("UploadLargeImage: %v is empty", localImagePath)
 	}
 
-	resumeCheck := &protos.ImageUploadHttpRequest{
-		Name:              imageName,
-		ImageByteSize:     uint64(fi.Size()),
-		AssociatedScanIds: []string{scanId},
-		OriginScanId:      scanId,
-	}
-
-	sz, err := c.UploadImage(resumeCheck)
+	imgByteSize := uint64(fi.Size())
+	sz, complete, err := c.UploadImage(scanId, imageName, imgByteSize, 0, nil)
 	if err != nil {
 		return fmt.Errorf("UploadLargeImage resume check error: %v", err)
 	}
 
+	if complete {
+		// It's there already, stop here
+		return nil
+	}
+
 	// We now know where to start reading from
-	if sz >= resumeCheck.ImageByteSize {
+	if sz >= imgByteSize {
 		// Somethings wrong
 		return fmt.Errorf("UploadLargeImage unexpected resume position past end of file: %v", sz)
 	}
@@ -1598,7 +1593,7 @@ func (c *APIClient) UploadLargeImage(localImagePath string, scanId string, image
 	partByteSize := multipartupload.MaxPartSize - 1024*1024
 	partBytes := make([]byte, partByteSize)
 	filePos := sz
-	for filePos < uint64(fi.Size()) {
+	for filePos < imgByteSize {
 		// We have more stuff to send, read in a chunk and send it
 		readSize, err := f.Read(partBytes)
 		if err != nil {
@@ -1609,18 +1604,17 @@ func (c *APIClient) UploadLargeImage(localImagePath string, scanId string, image
 		if readSize > 0 {
 			endPos := filePos + uint64(readSize)
 			fmt.Printf("Uploading %v: bytes %v-%v (%.1f%%)...\n", imageName, filePos, endPos, 100*float32(endPos)/float32(fi.Size()))
-			upload := &protos.ImageUploadHttpRequest{
-				Name:               imageName,
-				ImageData:          partBytes[0:readSize],
-				ImageByteSize:      uint64(fi.Size()),
-				AssociatedScanIds:  []string{scanId},
-				OriginScanId:       scanId,
-				BytesUploadedSoFar: filePos,
-			}
 
-			uploadRespSz, err := c.UploadImage(upload)
+			uploadRespSz, completed, err := c.UploadImage(scanId, imageName, imgByteSize, filePos, partBytes[0:readSize])
 			if err != nil {
 				return fmt.Errorf("UploadLargeImage error uploading part: %v", err)
+			}
+
+			if completed {
+				if uploadRespSz != imgByteSize {
+					fmt.Printf("Upload complete, but upload size %v doesn't match file size %v", uploadRespSz, imgByteSize)
+				}
+				break
 			}
 
 			if uploadRespSz > 0 {

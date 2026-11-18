@@ -19,6 +19,7 @@ import (
 	"github.com/pixlise/core/v4/api/dataimport"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/endpoints"
+	queryparams "github.com/pixlise/core/v4/api/endpoints/query-params"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
 	jobmanager "github.com/pixlise/core/v4/api/job/manager"
@@ -132,36 +133,16 @@ func main() {
 
 	// Requesting images
 	router.AddCacheControlledStreamHandler(
-		apiRouter.MakeEndpointPath("/images/"+apiRouter.UrlStreamDownloadIndicator, endpoints.ScanIdentifier, endpoints.FileNameIdentifier),
+		apiRouter.MakeEndpointPath("/images/"+apiRouter.UrlStreamDownloadIndicator, queryparams.ScanIdentifier, queryparams.FileNameIdentifier),
 		apiRouter.MakeMethodPermission("GET", permission.PermPublic),
 		endpoints.GetImage,
 	)
 
-	router.AddGenericHandler("/images", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutImage)
-
-	// // Requesting pyramid tiles (simple local version for now)
-	// router.AddPublicHandler(
-	// 	apiRouter.MakeEndpointPath("/pyramid-tiles",
-	// 		endpoints.ScanIdentifier,
-	// 		endpoints.FileNameIdentifier,
-	// 		endpoints.PageIdentifier,
-	// 		endpoints.LevelIdentifier,
-	// 		endpoints.TileXIdentifier,
-	// 		endpoints.TileYIdentifier),
-	// 	"GET",
-	// 	endpoints.GetPyramidTileSimple,
-	// )
-
-	// // Requesting pyramid metadata (ImagePyramid proto)
-	// router.AddPublicHandler(
-	// 	apiRouter.MakeEndpointPath("/pyramid-info",
-	// 		endpoints.ScanIdentifier,
-	// 		endpoints.FileNameIdentifier),
-	// 	"GET",
-	// 	endpoints.GetPyramidInfoSimple,
-	// )
-
-	router.AddGenericHandler("/scan", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutScanData)
+	// Generic large file uploading - once a file is uploaded it's cached for a while, in the mean time
+	// clients must trigger the appropriate import using the file name for it to be imported. Otherwise
+	// the file times out and gets garbage collected. Supports uploading in chunks and resuming.
+	// NOTE: This works across instances! Saves to S3 as it goes
+	router.AddGenericHandler("/file", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutFileData)
 
 	router.AddGenericHandler("/memoise", apiRouter.MakeMethodPermission("GET", permission.PermPublic), endpoints.GetMemoise)
 	router.AddGenericHandler("/memoise", apiRouter.MakeMethodPermission("PUT", permission.PermPublic), endpoints.PutMemoise)

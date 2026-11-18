@@ -440,37 +440,35 @@ func (*ImageSetDefaultResp) Descriptor() ([]byte, []int) {
 	return file_image_msgs_proto_rawDescGZIP(), []int{8}
 }
 
-type ImageUploadHttpRequest struct {
+// requires(EDIT_SCAN)
+type ImageImportReq struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Name              string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	ImageData         []byte                 `protobuf:"bytes,2,opt,name=imageData,proto3" json:"imageData,omitempty"`
-	AssociatedScanIds []string               `protobuf:"bytes,5,rep,name=associatedScanIds,proto3" json:"associatedScanIds,omitempty"` // List of all scan ids which are associated with this image - in other words their points are visible on the image
-	OriginScanId      string                 `protobuf:"bytes,6,opt,name=originScanId,proto3" json:"originScanId,omitempty"`           // The scan this image came from
+	Name              string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`                           // The name of the file that was uploaded via HTTP /file PUT
+	OriginScanId      string                 `protobuf:"bytes,2,opt,name=originScanId,proto3" json:"originScanId,omitempty"`           // The scan this image came from
+	AssociatedScanIds []string               `protobuf:"bytes,3,rep,name=associatedScanIds,proto3" json:"associatedScanIds,omitempty"` // List of all scan ids which are associated with this image - in other words their points are visible on the image
 	// Types that are valid to be assigned to Association:
 	//
-	//	*ImageUploadHttpRequest_LocationPerScan
-	//	*ImageUploadHttpRequest_BeamImageRef
-	Association        isImageUploadHttpRequest_Association `protobuf_oneof:"Association"`
-	ImageByteSize      uint64                               `protobuf:"varint,9,opt,name=imageByteSize,proto3" json:"imageByteSize,omitempty"`
-	BytesUploadedSoFar uint64                               `protobuf:"varint,10,opt,name=bytesUploadedSoFar,proto3" json:"bytesUploadedSoFar,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	//	*ImageImportReq_LocationPerScan
+	//	*ImageImportReq_BeamImageRef
+	Association   isImageImportReq_Association `protobuf_oneof:"Association"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ImageUploadHttpRequest) Reset() {
-	*x = ImageUploadHttpRequest{}
+func (x *ImageImportReq) Reset() {
+	*x = ImageImportReq{}
 	mi := &file_image_msgs_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ImageUploadHttpRequest) String() string {
+func (x *ImageImportReq) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ImageUploadHttpRequest) ProtoMessage() {}
+func (*ImageImportReq) ProtoMessage() {}
 
-func (x *ImageUploadHttpRequest) ProtoReflect() protoreflect.Message {
+func (x *ImageImportReq) ProtoReflect() protoreflect.Message {
 	mi := &file_image_msgs_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -482,119 +480,97 @@ func (x *ImageUploadHttpRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ImageUploadHttpRequest.ProtoReflect.Descriptor instead.
-func (*ImageUploadHttpRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ImageImportReq.ProtoReflect.Descriptor instead.
+func (*ImageImportReq) Descriptor() ([]byte, []int) {
 	return file_image_msgs_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *ImageUploadHttpRequest) GetName() string {
+func (x *ImageImportReq) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-func (x *ImageUploadHttpRequest) GetImageData() []byte {
-	if x != nil {
-		return x.ImageData
-	}
-	return nil
-}
-
-func (x *ImageUploadHttpRequest) GetAssociatedScanIds() []string {
-	if x != nil {
-		return x.AssociatedScanIds
-	}
-	return nil
-}
-
-func (x *ImageUploadHttpRequest) GetOriginScanId() string {
+func (x *ImageImportReq) GetOriginScanId() string {
 	if x != nil {
 		return x.OriginScanId
 	}
 	return ""
 }
 
-func (x *ImageUploadHttpRequest) GetAssociation() isImageUploadHttpRequest_Association {
+func (x *ImageImportReq) GetAssociatedScanIds() []string {
+	if x != nil {
+		return x.AssociatedScanIds
+	}
+	return nil
+}
+
+func (x *ImageImportReq) GetAssociation() isImageImportReq_Association {
 	if x != nil {
 		return x.Association
 	}
 	return nil
 }
 
-func (x *ImageUploadHttpRequest) GetLocationPerScan() *ImageLocations {
+func (x *ImageImportReq) GetLocationPerScan() *ImageLocations {
 	if x != nil {
-		if x, ok := x.Association.(*ImageUploadHttpRequest_LocationPerScan); ok {
+		if x, ok := x.Association.(*ImageImportReq_LocationPerScan); ok {
 			return x.LocationPerScan
 		}
 	}
 	return nil
 }
 
-func (x *ImageUploadHttpRequest) GetBeamImageRef() *ImageMatchTransform {
+func (x *ImageImportReq) GetBeamImageRef() *ImageMatchTransform {
 	if x != nil {
-		if x, ok := x.Association.(*ImageUploadHttpRequest_BeamImageRef); ok {
+		if x, ok := x.Association.(*ImageImportReq_BeamImageRef); ok {
 			return x.BeamImageRef
 		}
 	}
 	return nil
 }
 
-func (x *ImageUploadHttpRequest) GetImageByteSize() uint64 {
-	if x != nil {
-		return x.ImageByteSize
-	}
-	return 0
+type isImageImportReq_Association interface {
+	isImageImportReq_Association()
 }
 
-func (x *ImageUploadHttpRequest) GetBytesUploadedSoFar() uint64 {
-	if x != nil {
-		return x.BytesUploadedSoFar
-	}
-	return 0
-}
-
-type isImageUploadHttpRequest_Association interface {
-	isImageUploadHttpRequest_Association()
-}
-
-type ImageUploadHttpRequest_LocationPerScan struct {
+type ImageImportReq_LocationPerScan struct {
 	// If uploading the optional beam locations, they can be in this field
 	// NOTE: locationPerScan.imageFileName must be empty
-	LocationPerScan *ImageLocations `protobuf:"bytes,3,opt,name=locationPerScan,proto3,oneof"`
+	LocationPerScan *ImageLocations `protobuf:"bytes,4,opt,name=locationPerScan,proto3,oneof"`
 }
 
-type ImageUploadHttpRequest_BeamImageRef struct {
+type ImageImportReq_BeamImageRef struct {
 	// Otherwise, if we're saying this image will use the beam
 	// data for another image, put the name of the other image here
-	BeamImageRef *ImageMatchTransform `protobuf:"bytes,4,opt,name=beamImageRef,proto3,oneof"`
+	BeamImageRef *ImageMatchTransform `protobuf:"bytes,5,opt,name=beamImageRef,proto3,oneof"`
 }
 
-func (*ImageUploadHttpRequest_LocationPerScan) isImageUploadHttpRequest_Association() {}
+func (*ImageImportReq_LocationPerScan) isImageImportReq_Association() {}
 
-func (*ImageUploadHttpRequest_BeamImageRef) isImageUploadHttpRequest_Association() {}
+func (*ImageImportReq_BeamImageRef) isImageImportReq_Association() {}
 
-type ImageUploadHttpPartialInfo struct {
+type ImageImportResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	BytesReceived uint64                 `protobuf:"varint,1,opt,name=bytesReceived,proto3" json:"bytesReceived,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ImageUploadHttpPartialInfo) Reset() {
-	*x = ImageUploadHttpPartialInfo{}
+func (x *ImageImportResp) Reset() {
+	*x = ImageImportResp{}
 	mi := &file_image_msgs_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ImageUploadHttpPartialInfo) String() string {
+func (x *ImageImportResp) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ImageUploadHttpPartialInfo) ProtoMessage() {}
+func (*ImageImportResp) ProtoMessage() {}
 
-func (x *ImageUploadHttpPartialInfo) ProtoReflect() protoreflect.Message {
+func (x *ImageImportResp) ProtoReflect() protoreflect.Message {
 	mi := &file_image_msgs_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -606,16 +582,9 @@ func (x *ImageUploadHttpPartialInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ImageUploadHttpPartialInfo.ProtoReflect.Descriptor instead.
-func (*ImageUploadHttpPartialInfo) Descriptor() ([]byte, []int) {
+// Deprecated: Use ImageImportResp.ProtoReflect.Descriptor instead.
+func (*ImageImportResp) Descriptor() ([]byte, []int) {
 	return file_image_msgs_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *ImageUploadHttpPartialInfo) GetBytesReceived() uint64 {
-	if x != nil {
-		return x.BytesReceived
-	}
-	return 0
 }
 
 // requires(EDIT_SCAN)
@@ -817,20 +786,15 @@ const file_image_msgs_proto_rawDesc = "" +
 	"\x12ImageSetDefaultReq\x12\x16\n" +
 	"\x06scanId\x18\x01 \x01(\tR\x06scanId\x122\n" +
 	"\x14defaultImageFileName\x18\x02 \x01(\tR\x14defaultImageFileName\"\x15\n" +
-	"\x13ImageSetDefaultResp\"\x86\x03\n" +
-	"\x16ImageUploadHttpRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1c\n" +
-	"\timageData\x18\x02 \x01(\fR\timageData\x12,\n" +
-	"\x11associatedScanIds\x18\x05 \x03(\tR\x11associatedScanIds\x12\"\n" +
-	"\foriginScanId\x18\x06 \x01(\tR\foriginScanId\x12;\n" +
-	"\x0flocationPerScan\x18\x03 \x01(\v2\x0f.ImageLocationsH\x00R\x0flocationPerScan\x12:\n" +
-	"\fbeamImageRef\x18\x04 \x01(\v2\x14.ImageMatchTransformH\x00R\fbeamImageRef\x12$\n" +
-	"\rimageByteSize\x18\t \x01(\x04R\rimageByteSize\x12.\n" +
-	"\x12bytesUploadedSoFar\x18\n" +
-	" \x01(\x04R\x12bytesUploadedSoFarB\r\n" +
-	"\vAssociationJ\x04\b\a\x10\bJ\x04\b\b\x10\t\"B\n" +
-	"\x1aImageUploadHttpPartialInfo\x12$\n" +
-	"\rbytesReceived\x18\x01 \x01(\x04R\rbytesReceived\"$\n" +
+	"\x13ImageSetDefaultResp\"\xfe\x01\n" +
+	"\x0eImageImportReq\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\"\n" +
+	"\foriginScanId\x18\x02 \x01(\tR\foriginScanId\x12,\n" +
+	"\x11associatedScanIds\x18\x03 \x03(\tR\x11associatedScanIds\x12;\n" +
+	"\x0flocationPerScan\x18\x04 \x01(\v2\x0f.ImageLocationsH\x00R\x0flocationPerScan\x12:\n" +
+	"\fbeamImageRef\x18\x05 \x01(\v2\x14.ImageMatchTransformH\x00R\fbeamImageRefB\r\n" +
+	"\vAssociation\"\x11\n" +
+	"\x0fImageImportResp\"$\n" +
 	"\x0eImageDeleteReq\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"\x11\n" +
 	"\x0fImageDeleteResp\"m\n" +
@@ -863,8 +827,8 @@ var file_image_msgs_proto_goTypes = []any{
 	(*ImageGetDefaultResp)(nil),        // 6: ImageGetDefaultResp
 	(*ImageSetDefaultReq)(nil),         // 7: ImageSetDefaultReq
 	(*ImageSetDefaultResp)(nil),        // 8: ImageSetDefaultResp
-	(*ImageUploadHttpRequest)(nil),     // 9: ImageUploadHttpRequest
-	(*ImageUploadHttpPartialInfo)(nil), // 10: ImageUploadHttpPartialInfo
+	(*ImageImportReq)(nil),             // 9: ImageImportReq
+	(*ImageImportResp)(nil),            // 10: ImageImportResp
 	(*ImageDeleteReq)(nil),             // 11: ImageDeleteReq
 	(*ImageDeleteResp)(nil),            // 12: ImageDeleteResp
 	(*ImageSetMatchTransformReq)(nil),  // 13: ImageSetMatchTransformReq
@@ -878,8 +842,8 @@ var file_image_msgs_proto_depIdxs = []int32{
 	16, // 0: ImageListResp.images:type_name -> ScanImage
 	16, // 1: ImageGetResp.image:type_name -> ScanImage
 	15, // 2: ImageGetDefaultResp.defaultImagesPerScanId:type_name -> ImageGetDefaultResp.DefaultImagesPerScanIdEntry
-	17, // 3: ImageUploadHttpRequest.locationPerScan:type_name -> ImageLocations
-	18, // 4: ImageUploadHttpRequest.beamImageRef:type_name -> ImageMatchTransform
+	17, // 3: ImageImportReq.locationPerScan:type_name -> ImageLocations
+	18, // 4: ImageImportReq.beamImageRef:type_name -> ImageMatchTransform
 	18, // 5: ImageSetMatchTransformReq.transform:type_name -> ImageMatchTransform
 	6,  // [6:6] is the sub-list for method output_type
 	6,  // [6:6] is the sub-list for method input_type
@@ -896,8 +860,8 @@ func file_image_msgs_proto_init() {
 	file_image_proto_init()
 	file_image_beam_location_proto_init()
 	file_image_msgs_proto_msgTypes[9].OneofWrappers = []any{
-		(*ImageUploadHttpRequest_LocationPerScan)(nil),
-		(*ImageUploadHttpRequest_BeamImageRef)(nil),
+		(*ImageImportReq_LocationPerScan)(nil),
+		(*ImageImportReq_BeamImageRef)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

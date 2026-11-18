@@ -422,7 +422,7 @@ func ProcessBreadboard(format string, creatorUserId string, datasetID string, zi
 	return nil
 }
 
-func ProcessUserDefined(creatorUserId string, datasetID string, zipReader *zip.Reader, zippedData []byte, req *protos.ScanUploadReq, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
+func ProcessUserDefined(creatorUserId string, datasetID string, zipReader *zip.Reader, zippedData []byte, req *protos.ScanImportReq, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
 	err := checkExpectedFiles(zipReader, ".tif")
 	if err != nil {
 		return err

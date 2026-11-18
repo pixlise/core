@@ -568,11 +568,28 @@ func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHel
 	return &protos.ScanTriggerReImportResp{JobId: jobId}, err
 }
 
+func getScanUploadFormats(hidePIXL bool) []string {
+	PIXL := []string{"jpl-breadboard", "sbu-breadboard", "pixl-em", "pixl-fm"}
+	nonPIXL := []string{"bruker-bcf", "user-defined"}
+
+	if hidePIXL {
+		return nonPIXL
+	}
+
+	return append(PIXL, nonPIXL...)
+}
+
+func HandleScanUploadFormatsReq(req *protos.ScanUploadFormatsReq, hctx wsHelpers.HandlerContext) (*protos.ScanUploadFormatsResp, error) {
+	return &protos.ScanUploadFormatsResp{Formats: getScanUploadFormats(hctx.Svcs.Config.HidePIXLScanUploads)}, nil
+}
+
 // NOTE: before this is sent, we expect the PUT /scan endpoint to have been called and a zip uploaded already
 //
 //	The same parameters passed there (scan id & file name) must be used with this request otherwise we
 //	won't look up the zip correctly and fail.
-func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContext) (*protos.ScanUploadResp, error) {
+
+// func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContext) (*protos.ScanUploadResp, error) {
+func HandleScanImportReq(req *protos.ScanImportReq, hctx wsHelpers.HandlerContext) (*protos.ScanImportResp, error) {
 	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, 50); err != nil {
 		return nil, err
 	}
@@ -593,8 +610,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 	// quant summary file was written with a + instead of a space?!
 	datasetID := fileaccess.MakeValidObjectName(req.Id, false)
 
-	formats := []string{"jpl-breadboard", "sbu-breadboard", "pixl-em", "pixl-fm", "user-defined"}
-	if !utils.ItemInSlice(req.Format, formats) {
+	if !utils.ItemInSlice(req.Format, getScanUploadFormats(hctx.Svcs.Config.HidePIXLScanUploads)) {
 		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Unexpected format: \"%v\"", req.Format))
 	}
 
@@ -695,7 +711,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 
 	logger.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Job ID: %v", result, jobId)
 
-	return &protos.ScanUploadResp{JobId: jobId}, nil
+	return &protos.ScanImportResp{JobId: jobId}, nil
 }
 
 type importUpdater struct {
@@ -734,8 +750,8 @@ func (i *importUpdater) sendReimportUpdate(status *protos.JobStatus) {
 
 func (i *importUpdater) sendImportUpdate(status *protos.JobStatus) {
 	wsUpd := protos.WSMessage{
-		Contents: &protos.WSMessage_ScanUploadUpd{
-			ScanUploadUpd: &protos.ScanUploadUpd{
+		Contents: &protos.WSMessage_ScanImportUpd{
+			ScanImportUpd: &protos.ScanImportUpd{
 				Status: status,
 			},
 		},

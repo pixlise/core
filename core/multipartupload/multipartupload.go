@@ -245,10 +245,11 @@ func (mp *MultiPartUploadHandler) internalUploadPart(fileName string, totalUploa
 // prohibitive, eg what if they're uploading many files concurrently - our local disk may fill up! What if this
 // is read from a separate machine though, eg a new "importing" node in docker? No issues there!
 // TODO: Provide an expected checksum?
-func (mp *MultiPartUploadHandler) ReadCompletedUpload(fileName string) (string, error) {
+// Returns local path to the file, size in bytes and optional error
+func (mp *MultiPartUploadHandler) ReadCompletedUpload(fileName string) (string, uint64, error) {
 	mp.log.Infof("ReadCompletedUpload for %v...", fileName)
 
-	f, err := mp.internalReadCompletedUpload(fileName)
+	f, sz, err := mp.internalReadCompletedUpload(fileName)
 	if err != nil {
 		err = fmt.Errorf("ReadCompletedUpload for %v error: %v", fileName, err)
 		mp.log.Errorf("%v", err)
@@ -256,10 +257,10 @@ func (mp *MultiPartUploadHandler) ReadCompletedUpload(fileName string) (string, 
 		mp.log.Infof("ReadCompletedUpload for %v returning file...", fileName)
 	}
 
-	return f, err
+	return f, sz, err
 }
 
-func (mp *MultiPartUploadHandler) internalReadCompletedUpload(fileName string) (string, error) {
+func (mp *MultiPartUploadHandler) internalReadCompletedUpload(fileName string) (string, uint64, error) {
 	errIdentifier := fmt.Sprintf("Reading completed upload of multi-part file %v", fileName)
 
 	// Try to read all chunks, ensure expected bytes matches
@@ -269,24 +270,24 @@ func (mp *MultiPartUploadHandler) internalReadCompletedUpload(fileName string) (
 	status := MultiPartStatus{}
 	if err := mp.fs.ReadJSON(mp.bucket, statusPath, &status, false); err != nil {
 		// Something went wrong
-		return "", fmt.Errorf("%v: failed to read status: %v", errIdentifier, err)
+		return "", 0, fmt.Errorf("%v: failed to read status: %v", errIdentifier, err)
 	}
 
 	// Ensure it's complete
 	if status.TotalBytes == 0 {
-		return "", fmt.Errorf("%v: status total bytes was 0", errIdentifier)
+		return "", 0, fmt.Errorf("%v: status total bytes was 0", errIdentifier)
 	}
 
 	if status.CompleteTimeUnixSec == 0 {
-		return "", fmt.Errorf("%v: not complete", errIdentifier)
+		return "", 0, fmt.Errorf("%v: not complete", errIdentifier)
 	}
 
 	// Ensure it's the right size
 	uploadedTotalBytes, listingNames, _, err := mp.uploadedBytesSoFar(fileName, true)
 	if err != nil {
-		return "", fmt.Errorf("%v: failed to calculate total uploaded size: %v", errIdentifier, err)
+		return "", 0, fmt.Errorf("%v: failed to calculate total uploaded size: %v", errIdentifier, err)
 	} else if uploadedTotalBytes != status.TotalBytes {
-		return "", fmt.Errorf("%v: actual uploaded size %v bytes, expected %v bytes", errIdentifier, uploadedTotalBytes, status.TotalBytes)
+		return "", 0, fmt.Errorf("%v: actual uploaded size %v bytes, expected %v bytes", errIdentifier, uploadedTotalBytes, status.TotalBytes)
 	}
 
 	// Read each file from S3 and build a local file we can provide
@@ -294,7 +295,7 @@ func (mp *MultiPartUploadHandler) internalReadCompletedUpload(fileName string) (
 
 	fComplete, err := os.CreateTemp("", filepath.Base(fileName)+"*")
 	if err != nil {
-		return "", fmt.Errorf("%v: failed to create uploaded file: %v", errIdentifier, err)
+		return "", 0, fmt.Errorf("%v: failed to create uploaded file: %v", errIdentifier, err)
 	}
 	defer fComplete.Close()
 
@@ -306,16 +307,23 @@ func (mp *MultiPartUploadHandler) internalReadCompletedUpload(fileName string) (
 
 		fData, err := mp.fs.ReadObject(mp.bucket, fPart)
 		if err != nil {
-			return "", fmt.Errorf("%v: failed to read file part: %v. Error: %v", errIdentifier, fPart, err)
+			return "", 0, fmt.Errorf("%v: failed to read file part: %v. Error: %v", errIdentifier, fPart, err)
 		}
 
 		_, err = fComplete.Write(fData)
 		if err != nil {
-			return "", fmt.Errorf("%v: failed to write file part: %v. Error: %v", errIdentifier, fPart, err)
+			return "", 0, fmt.Errorf("%v: failed to write file part: %v. Error: %v", errIdentifier, fPart, err)
 		}
 	}
 
-	return returnPath, nil
+	// Get the file size from file system... should match what we've written
+	// TODO: Put in a paranoia check in here comparing written bytes to the size we get back???
+	s, err := os.Stat(returnPath)
+	if err != nil {
+		return "", 0, fmt.Errorf("Wrote local file but stat failed: %v", err)
+	}
+
+	return returnPath, uint64(s.Size()), nil
 }
 
 // Run through old/complete uploads and delete ones we aren't using any more
