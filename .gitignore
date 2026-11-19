@@ -9,6 +9,7 @@ __debug_bin.exe
 api/ws/wsMessage.go
 
 db-restore*/
+local-scan-files/
 mongo-db-local-*/
 mongo-db-pixlise-*/
 

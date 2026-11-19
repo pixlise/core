@@ -58,6 +58,10 @@ type APIConfig struct {
 	UsersBucket        string
 	ManualUploadBucket string
 	DataBackupBucket   string
+	ScanFilesBucket    string // Files users attach to scans. Uses DatasetsBucket if blank
+
+	// If set, files attached to scans are stored in this local directory instead of S3 (for local testing)
+	ScanFilesLocalPath string
 
 	DataSourceSNSTopic string
 
@@ -234,6 +238,11 @@ func Init() (APIConfig, error) {
 	}
 
 	cfg.KubeConfig = *kubeconfig
+
+	// Relative to config file
+	if len(cfg.ScanFilesLocalPath) > 0 && !filepath.IsAbs(cfg.ScanFilesLocalPath) {
+		cfg.ScanFilesLocalPath = filepath.Join(filepath.Dir(*configFilePath), cfg.ScanFilesLocalPath)
+	}
 
 	applyConfigLimits(&cfg)
 

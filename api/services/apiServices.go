@@ -85,6 +85,9 @@ type APIServices struct {
 	// Anything accessing files should use this
 	FS fileaccess.FileAccess
 
+	// File storage for scans. only different from FS when storing locally
+	ScanFilesFS fileaccess.FileAccess
+
 	// Validation of JWT tokens
 	JWTReader jwtparser.IJWTReader
 

@@ -489,6 +489,12 @@ func HandleScanDeleteReq(req *protos.ScanDeleteReq, hctx wsHelpers.HandlerContex
 		return nil, fmt.Errorf("ScanDelete %v - partially succeeded, as some files failed to delete: %v", req.ScanId, err)
 	}
 
+	// Delete any files users attached to the scan
+	err = wsHelpers.DeleteAllScanFiles(ctx, req.ScanId, hctx.Svcs)
+	if err != nil {
+		return nil, fmt.Errorf("ScanDelete %v - partially succeeded, as some files failed to delete: %v", req.ScanId, err)
+	}
+
 	// Notify of our scan change
 	hctx.Svcs.Notifier.SysNotifyScanChanged(req.ScanId)
 

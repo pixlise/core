@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -162,6 +163,13 @@ func main() {
 
 	router.AddGenericHandler("/scan", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutScanData)
 
+	router.AddGenericHandler("/scan-files", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutScanFile)
+	router.AddGenericHandler(
+		apiRouter.MakeEndpointPath("/scan-files/"+apiRouter.UrlStreamDownloadIndicator, endpoints.ScanIdentifier, endpoints.ScanFileIdentifier),
+		apiRouter.MakeMethodPermission("GET", permission.PermPublic),
+		endpoints.GetScanFile,
+	)
+
 	router.AddGenericHandler("/memoise", apiRouter.MakeMethodPermission("GET", permission.PermPublic), endpoints.GetMemoise)
 	router.AddGenericHandler("/memoise", apiRouter.MakeMethodPermission("PUT", permission.PermPublic), endpoints.PutMemoise)
 
@@ -226,6 +234,20 @@ func loadConfig() config.APIConfig {
 	log.Println("API startup configuration:")
 	log.Println(cfgStr)
 	return cfg
+}
+
+func makeScanFilesFS(cfg *config.APIConfig, fs fileaccess.FileAccess) fileaccess.FileAccess {
+	if len(cfg.ScanFilesLocalPath) <= 0 {
+		return fs
+	}
+
+	localPath, err := filepath.Abs(cfg.ScanFilesLocalPath)
+	if err != nil {
+		log.Fatalf("Invalid ScanFilesLocalPath: %v. Error: %v", cfg.ScanFilesLocalPath, err)
+	}
+
+	fmt.Printf("Files attached to scans will be stored locally in: %v\n", localPath)
+	return fileaccess.MakeFSAccessS3Simulator(localPath)
 }
 
 func initServices(cfg *config.APIConfig, apiInstanceId string) *services.APIServices {
@@ -323,6 +345,7 @@ func initServices(cfg *config.APIConfig, apiInstanceId string) *services.APIServ
 		EC2:              ec2Svc,
 		SecretsManager:   smSvc,
 		FS:               fs,
+		ScanFilesFS:      makeScanFilesFS(cfg, fs),
 		JWTReader:        jwt,
 		IDGen:            &idgen.IDGen{},
 		TimeStamper:      &timestamper.UnixTimeNowStamper{},

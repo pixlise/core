@@ -33,6 +33,7 @@ const ReferencesName = "references"
 const RegionsOfInterestName = "regionsOfInterest"
 const ScanAutoShareName = "scanAutoShare"
 const ScanDefaultImagesName = "scanDefaultImages"
+const ScanFilesName = "scanFiles"
 const ScansName = "scans"
 const ScreenConfigurationName = "screenConfigurations"
 const SelectionName = "selection"
@@ -74,6 +75,7 @@ func GetAllCollections() []string {
 		RegionsOfInterestName,
 		ScanAutoShareName,
 		ScanDefaultImagesName,
+		ScanFilesName,
 		ScansName,
 		ScreenConfigurationName,
 		SelectionName,

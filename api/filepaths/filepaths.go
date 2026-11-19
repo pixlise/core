@@ -40,9 +40,14 @@ const DatasetImageCacheRoot = "Image-Cache"
 const DatasetPyramidsRoot = "Pyramids"
 const DatasetPyramidTileCacheRoot = "Pyramid-Tile-Cache"
 const DatasetScansRoot = "Scans"
+const ScanAttachedFilesRoot = "Scan-Files"
 
 func GetScanFilePath(scanID string, fileName string) string {
 	return path.Join(DatasetScansRoot, scanID, fileName)
+}
+
+func GetScanAttachedFilePath(scanID string, fileID string, fileName string) string {
+	return path.Join(ScanAttachedFilesRoot, scanID, fileID, fileName)
 }
 
 func GetImageFilePath(imagePath string) string {
