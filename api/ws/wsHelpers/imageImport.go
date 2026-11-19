@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/filepaths"
-	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/gdsfilename"
@@ -22,10 +22,30 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func ImportUploadedImage(req *protos.ImageImportReq, svcs *services.APIServices) error {
+func ImportUploadedImage(req *protos.ImageImportReq, hctx HandlerContext) error {
 	ctx := context.TODO()
+	svcs := hctx.Svcs
 
 	saveName := req.Name
+
+	if l := len(saveName); l <= 0 || l >= 100 {
+		return fmt.Errorf("Invalid image name")
+	}
+
+	// If we have a scan id provided, ensure we have access to it and ensure it prefixes the file name!
+	if len(req.OriginScanId) == 0 {
+		return fmt.Errorf("Missing OriginScanId")
+	}
+
+	// Ensure file name is prefixed with scan id
+	if !strings.HasPrefix(saveName, req.OriginScanId+"/") {
+		saveName = path.Join(req.OriginScanId, saveName)
+	}
+
+	_, err := CheckObjectAccess(true, req.OriginScanId, protos.ObjectType_OT_SCAN, hctx)
+	if err != nil {
+		return err
+	}
 
 	// Read back the multi-part image to disk
 	localFilePath, imgFileSize, err := svcs.MultiPartUpload.ReadCompletedUpload(saveName)

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pixlise/core/v4/api/dbCollections"
 	queryparams "github.com/pixlise/core/v4/api/endpoints/query-params"
 	apiRouter "github.com/pixlise/core/v4/api/router"
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
@@ -15,6 +16,9 @@ import (
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Allows uploading a file, either as one message or in multiple chunks with the possibility of resuming from
@@ -78,7 +82,7 @@ func PutFileData(params apiRouter.ApiHandlerGenericParams) error {
 	// If we have a scan id provided, ensure we have access to it and ensure it prefixes the file name!
 	if len(scanId) > 0 {
 		// Check that user has access to this scan
-		_, err = wsHelpers.CheckObjectAccessForUser(false, scanId, protos.ObjectType_OT_SCAN, userId, memberOfGroupIds, viewerOfGroupIds, params.Svcs.MongoDB)
+		_, err = wsHelpers.CheckObjectAccessForUser(true, scanId, protos.ObjectType_OT_SCAN, userId, memberOfGroupIds, viewerOfGroupIds, params.Svcs.MongoDB)
 		if err != nil {
 			return err
 		}
@@ -86,6 +90,40 @@ func PutFileData(params apiRouter.ApiHandlerGenericParams) error {
 		if !strings.HasPrefix(saveName, scanId+"/") {
 			saveName = path.Join(scanId, saveName)
 		}
+	}
+
+	// If we have an upload intent defined, we can check for permissions/duplicates etc when the upload starts
+	// so things fail now instead of when the corresponding import websocket message is sent in and the user
+	// has waited ages to upload something only to find it's a duplicate file name or something
+	uploadIntent := params.PathParams[queryparams.UploadIntent]
+
+	if uploadIntent == "image" {
+		// We only allow a few formats:
+		nameLowerCase := strings.ToLower(saveName)
+		if !strings.HasSuffix(nameLowerCase, ".png") && !strings.HasSuffix(nameLowerCase, ".jpg") && !strings.HasSuffix(nameLowerCase, ".tif") {
+			return errorwithstatus.MakeBadRequestError(fmt.Errorf("Unexpected format: %v. Must be PNG, JPG or TIF, or the special RGBU 32bit float 4-channel TIF format", saveName))
+		}
+
+		// Ensure there's a scan id
+		if len(scanId) <= 0 {
+			return errorwithstatus.MakeBadRequestError(errors.New("Missing scan id"))
+		}
+
+		// Check if there's already a duplicate image with this name
+		coll := params.Svcs.MongoDB.Collection(dbCollections.ImagesName)
+		findOneResult := coll.FindOne(ctx, bson.M{"_id": saveName}, options.FindOne())
+		if findOneResult.Err() == nil {
+			// If we don't have an error, we have this already
+			return errorwithstatus.MakeBadRequestError(fmt.Errorf("Image \"%v\" already exists", saveName))
+		} else {
+			// We found an error, only stop for non-no-document errors. What we DO want is a no document error!
+			if findOneResult.Err() != mongo.ErrNoDocuments {
+				return errorwithstatus.MakeBadRequestError(fmt.Errorf("Failed to check if image \"%v\" already exists: %v", saveName, findOneResult.Err()))
+			}
+		}
+	} else if len(uploadIntent) > 0 {
+		// Don't know this one
+		return errorwithstatus.MakeBadRequestError(fmt.Errorf("Unknown intent: \"%v\"", uploadIntent))
 	}
 
 	// Also need the byte size and bytes so far. If these aren't specified we just treat it like a single request upload of an entire file
@@ -109,18 +147,26 @@ func PutFileData(params apiRouter.ApiHandlerGenericParams) error {
 			return errorwithstatus.MakeBadRequestError(fmt.Errorf("Uploading without [%v, %v] set can't contain empty file data (body)", queryparams.FileTotalBytes, queryparams.BytesUploadedSoFar))
 		}
 
-		_ /*sz*/, completed, err := params.Svcs.MultiPartUpload.StartUpload(saveName, uint64(len(bodyData)))
+		sz, completed, err := params.Svcs.MultiPartUpload.StartUpload(saveName, uint64(len(bodyData)))
 		if err != nil {
 			return errorwithstatus.MakeBadRequestError(err)
 		}
 
 		if completed {
 			// We already had it, just report no errors
+
+			// Return the response
+			resp := &protos.UploadHttpResponseBody{
+				BytesReceived: sz,
+				Completed:     completed,
+			}
+			utils.SendProtoJSON(params.Writer, resp)
+
 			return nil
 		}
 
 		// Upload the chunk
-		sz, completed, err := params.Svcs.MultiPartUpload.UploadPart(saveName, 0, bodyData)
+		sz, completed, err = params.Svcs.MultiPartUpload.UploadPart(saveName, 0, bodyData)
 		if err != nil {
 			return errorwithstatus.MakeBadRequestError(err)
 		}
@@ -142,7 +188,7 @@ func PutFileData(params apiRouter.ApiHandlerGenericParams) error {
 	fileByteSize, err := strconv.Atoi(fileByteSizeStr)
 	if err != nil {
 		return errorwithstatus.MakeBadRequestError(fmt.Errorf("Failed to read %v: %v", queryparams.FileTotalBytes, err))
-	} else if fileByteSize < 0 {
+	} else if fileByteSize <= 0 {
 		return errorwithstatus.MakeBadRequestError(fmt.Errorf("Invalid %v: %v", queryparams.FileTotalBytes, err))
 	}
 

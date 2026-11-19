@@ -546,45 +546,45 @@ func Example_wsHelpers_GenerateSpectrumRangeWithOp() {
 	// Check that the operations do what we're expecting
 	fmt.Println("Raw A:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 201, exprPB)
-	fmt.Printf("PMC%v Ch200=%v, PMC=%v Ch200=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch200=%v, PMC=%v Ch200=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 201, 202, exprPB)
-	fmt.Printf("PMC%v Ch201=%v, PMC=%v Ch201=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch201=%v, PMC=%v Ch201=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 202, 203, exprPB)
-	fmt.Printf("PMC%v Ch202=%v, PMC=%v Ch202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch202=%v, PMC=%v Ch202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	fmt.Println("Raw B:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 201, exprPB)
-	fmt.Printf("PMC%v Ch200=%v, PMC=%v Ch200=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch200=%v, PMC=%v Ch200=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 201, 202, exprPB)
-	fmt.Printf("PMC%v Ch201=%v, PMC=%v Ch201=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch201=%v, PMC=%v Ch201=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 202, 203, exprPB)
-	fmt.Printf("PMC%v Ch202=%v, PMC=%v Ch202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch202=%v, PMC=%v Ch202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	fmt.Println("Sum A:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
-	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	fmt.Println("Sum B:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
-	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	fmt.Println("Sum A+B:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A", "B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
-	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	fmt.Println("Sum-Diff:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM_OF_DIFF, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
 	fmt.Printf("Bad detectors: %v|%v\n", v, err)
 
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM_OF_DIFF, []string{"A", "B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
-	fmt.Printf("PMC%v Sumdiff of Ch200->202=%v, PMC=%v Sumdiff of Ch200->202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Sumdiff of Ch200->202=%v, PMC=%v Sumdiff of Ch200->202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	fmt.Println("Sum-Max:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_MAX_OF_DIFF, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
 	fmt.Printf("Bad detectors: %v|%v\n", v, err)
 
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_MAX_OF_DIFF, []string{"A", "B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
-	fmt.Printf("PMC%v Sumdiff of Ch200->202=%v, PMC=%v Sumdiff of Ch200->202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Sumdiff of Ch200->202=%v, PMC=%v Sumdiff of Ch200->202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	// Output:
 	// No detector: <nil>|At least 1 detector must be specified

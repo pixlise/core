@@ -402,7 +402,7 @@ func HandleImageSetMatchTransformReq(req *protos.ImageSetMatchTransformReq, hctx
 }
 
 func HandleImageImportReq(req *protos.ImageImportReq, hctx wsHelpers.HandlerContext) (*protos.ImageImportResp, error) {
-	err := wsHelpers.ImportUploadedImage(req, hctx.Svcs)
+	err := wsHelpers.ImportUploadedImage(req, hctx)
 	if err != nil {
 		return nil, err
 	}

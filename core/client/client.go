@@ -1485,86 +1485,96 @@ func (c *APIClient) SetScanDefaultImage(scanId string, imageName string) error {
 	return nil
 }
 
-func (c *APIClient) UploadImage(
+func (c *APIClient) uploadFileData(
 	scanId string,
 	fileName string,
+	intent string,
 	totalBytes uint64,
 	writePos uint64,
 	data []byte) (uint64, bool, error) {
 	u, err := url.Parse(c.apiUrl)
 	if err != nil {
-		return 0, false, fmt.Errorf("UploadImage failed to get url: %v", err)
+		return 0, false, fmt.Errorf("uploadFileData failed to get url: %v", err)
 	}
-	u.Path = path.Join(u.Path, "images")
+	u.Path = path.Join(u.Path, "file")
 
-	u.Query().Add(queryparams.ScanIdentifier, scanId)
-	u.Query().Add(queryparams.FileNameIdentifier, fileName)
-	u.Query().Add(queryparams.FileTotalBytes, fmt.Sprintf("%v", totalBytes))
-	u.Query().Add(queryparams.BytesUploadedSoFar, fmt.Sprintf("%v", writePos))
+	q := u.Query()
+
+	q.Add(queryparams.ScanIdentifier, scanId)
+	q.Add(queryparams.FileNameIdentifier, fileName)
+	q.Add(queryparams.FileTotalBytes, fmt.Sprintf("%v", totalBytes))
+	q.Add(queryparams.BytesUploadedSoFar, fmt.Sprintf("%v", writePos))
+	if len(intent) > 0 {
+		q.Add(queryparams.UploadIntent, intent)
+	}
+
+	u.RawQuery = q.Encode()
 
 	client := &http.Client{}
 	req, err := http.NewRequest("PUT", u.String(), bytes.NewBuffer(data))
 	if err != nil {
-		return 0, false, fmt.Errorf("UploadImage failed to create request: %v", err)
+		return 0, false, fmt.Errorf("uploadFileData failed to create request: %v", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return 0, false, fmt.Errorf("UploadImage request failed: %v", err)
+		return 0, false, fmt.Errorf("uploadFileData request failed: %v", err)
 	}
 
 	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return 0, false, fmt.Errorf("UploadImage failed to read response: %v", err)
+		return 0, false, fmt.Errorf("uploadFileData failed to read response: %v", err)
 	}
 
-	if len(b) > 0 {
-		// Read it as a ImageUploadHttpPartialInfo, we may be getting something back encoded like that
-		respPI := &protos.UploadHttpResponseBody{}
-		err = protojson.Unmarshal(b, respPI) // proto.Unmarshal(b, respPI)
-		if err == nil {
-			return respPI.BytesReceived, respPI.Completed, nil
-		}
-
-		// Otherwise it's an error!
-		return 0, false, fmt.Errorf("Upload image unexpected result: %v. Error: %v", string(b), err)
+	if len(b) <= 0 {
+		return 0, false, fmt.Errorf("Got status %v but no error message", resp.Status)
 	}
 
-	return 0, false, nil
+	if resp.StatusCode != http.StatusOK {
+		// Body should contain an error
+		return 0, false, fmt.Errorf("%v", string(b))
+	}
+
+	// Status is OK, read body as JSON
+	respPI := &protos.UploadHttpResponseBody{}
+	err = protojson.Unmarshal(b, respPI) // proto.Unmarshal(b, respPI)
+	if err == nil {
+		return respPI.BytesReceived, respPI.Completed, nil
+	}
+
+	// Otherwise it's an error!
+	return 0, false, fmt.Errorf("uploadFileData unexpected result: %v. Error: %v", string(b), err)
 }
 
-func (c *APIClient) UploadLargeImage(localImagePath string, scanId string, imageName string) error {
-	// First, check if we are resuming
-	/* Resume check:
-		const imagePutResumeCheckReq = {
-	      name: imageToUpload.name,
-	      imageData: new Uint8Array(),
-	      imageByteSize: imageToUpload.size,
-	      associatedScanIds: [scanId],
-	      originScanId: scanId,
-	    };
-	*/
+func (c *APIClient) UploadImage(localImagePath string, imageImportReq *protos.ImageImportReq) error {
+	if imageImportReq == nil {
+		return fmt.Errorf("UploadImage: image import request cannot be empty")
+	}
 
 	fi, err := os.Stat(localImagePath)
 	if err != nil {
-		return fmt.Errorf("UploadLargeImage: Failed to find file: %v", err)
+		return fmt.Errorf("UploadImage: Failed to find file: %v", err)
 	}
 
 	if fi.IsDir() {
-		return fmt.Errorf("UploadLargeImage: %v is a directory", localImagePath)
+		return fmt.Errorf("UploadImage: %v is a directory", localImagePath)
 	}
 
 	if fi.Size() <= 0 {
-		return fmt.Errorf("UploadLargeImage: %v is empty", localImagePath)
+		return fmt.Errorf("UploadImage: %v is empty", localImagePath)
 	}
 
+	// Get file upload related constants from the request
+	scanId := imageImportReq.OriginScanId
+	imageName := imageImportReq.Name
+
 	imgByteSize := uint64(fi.Size())
-	sz, complete, err := c.UploadImage(scanId, imageName, imgByteSize, 0, nil)
+	sz, complete, err := c.uploadFileData(scanId, imageName, "image", imgByteSize, 0, nil)
 	if err != nil {
-		return fmt.Errorf("UploadLargeImage resume check error: %v", err)
+		return fmt.Errorf("UploadImage resume check error: %v", err)
 	}
 
 	if complete {
@@ -1575,18 +1585,18 @@ func (c *APIClient) UploadLargeImage(localImagePath string, scanId string, image
 	// We now know where to start reading from
 	if sz >= imgByteSize {
 		// Somethings wrong
-		return fmt.Errorf("UploadLargeImage unexpected resume position past end of file: %v", sz)
+		return fmt.Errorf("UploadImage unexpected resume position past end of file: %v", sz)
 	}
 
 	f, err := os.Open(localImagePath)
 	if err != nil {
-		return fmt.Errorf("UploadLargeImage failed to open: %v", localImagePath)
+		return fmt.Errorf("UploadImage failed to open: %v", localImagePath)
 	}
 
 	// Seek to the resume position
 	_, err = f.Seek(int64(sz), 0)
 	if err != nil {
-		return fmt.Errorf("UploadLargeImage failed to seek: %v", err)
+		return fmt.Errorf("UploadImage failed to seek: %v", err)
 	}
 
 	// Read a part. File may not have enough bytes left!
@@ -1597,7 +1607,7 @@ func (c *APIClient) UploadLargeImage(localImagePath string, scanId string, image
 		// We have more stuff to send, read in a chunk and send it
 		readSize, err := f.Read(partBytes)
 		if err != nil {
-			return fmt.Errorf("UploadLargeImage failed to read part of file: %v", err)
+			return fmt.Errorf("UploadImage failed to read part of file: %v", err)
 		}
 
 		// Send it
@@ -1605,9 +1615,9 @@ func (c *APIClient) UploadLargeImage(localImagePath string, scanId string, image
 			endPos := filePos + uint64(readSize)
 			fmt.Printf("Uploading %v: bytes %v-%v (%.1f%%)...\n", imageName, filePos, endPos, 100*float32(endPos)/float32(fi.Size()))
 
-			uploadRespSz, completed, err := c.UploadImage(scanId, imageName, imgByteSize, filePos, partBytes[0:readSize])
+			uploadRespSz, completed, err := c.uploadFileData(scanId, imageName, "image", imgByteSize, filePos, partBytes[0:readSize])
 			if err != nil {
-				return fmt.Errorf("UploadLargeImage error uploading part: %v", err)
+				return fmt.Errorf("UploadImage error uploading part: %v", err)
 			}
 
 			if completed {
@@ -1618,14 +1628,29 @@ func (c *APIClient) UploadLargeImage(localImagePath string, scanId string, image
 			}
 
 			if uploadRespSz > 0 {
-				return fmt.Errorf("UploadLargeImage unexpected size returned: %v", uploadRespSz)
+				return fmt.Errorf("UploadImage unexpected size returned: %v", uploadRespSz)
 			}
 
 			filePos += uint64(readSize)
 		}
 	}
 
-	return nil
+	// At this point we've uploaded the image, do the import
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageImportReq{
+		ImageImportReq: imageImportReq,
+	}}
+
+	resps, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return err
+	}
+
+	if len(resps) == 1 {
+		return nil
+	}
+
+	return fmt.Errorf("Expected 1 response for image import, got %v", len(resps))
 }
 
 func (c *APIClient) ensureTags() error {

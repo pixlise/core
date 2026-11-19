@@ -23,6 +23,7 @@ import (
 	"image"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/pixlise/core/v4/api/notificationSender"
 	"github.com/pixlise/core/v4/core/client"
@@ -52,6 +53,11 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		},
 	})
 
+	// Gotta clear upload area in bucket too so we don't interfere with tests rerunning
+	if err := apiStorageFileAccess.EmptyObjects(apiUploadBucket, "MultiPartUploads/"+scanId+"/"); err != nil {
+		log.Fatalf("Failed to clear upload file part bucket: %v", err)
+	}
+
 	// This got controvertial over time - originally we were uploading image data in a web socket message
 	// but that was too small
 	// We moved to uploading image in a HTTP request which covered most uses, but then we wanted to import
@@ -60,71 +66,137 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	// Now the test is a bit confusing, we are first testing file upload errors THEN testing sending bad
 	// import requests (that use the uploaded file)
 
-	checkImageUploadResult(
+	// These are attempts to upload just the file (with and without intent set to image, which does more checks)
+	// Actual testing of importing happens further down
+	checkFileUploadResult(
 		"Upload file with missing name",
 		apiHost,
 		&uploadFileReq{
 			data: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 		},
-		nil,
 		imageUploadJWT,
 		http.StatusBadRequest,
 		"Invalid filename: \"\"",
 	)
 
-	checkImageUploadResult(
+	checkFileUploadResult(
+		"Upload file with only write pos set",
+		apiHost,
+		&uploadFileReq{
+			data:     []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			writePos: 1,
+		},
+		imageUploadJWT,
+		http.StatusBadRequest,
+		"Invalid filename: \"\"",
+	)
+
+	checkFileUploadResult(
+		"Upload file with only total bytes set",
+		apiHost,
+		&uploadFileReq{
+			data:       []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			totalBytes: 13,
+		},
+		imageUploadJWT,
+		http.StatusBadRequest,
+		"Invalid filename: \"\"",
+	)
+
+	checkFileUploadResult(
+		"Upload with intent=unknown",
+		apiHost,
+		&uploadFileReq{
+			filename: "file_Name.jpg",
+			intent:   "unknown",
+			data:     []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		},
+		imageUploadJWT,
+		http.StatusBadRequest,
+		"Unknown intent: \"unknown\"",
+	)
+	// Checks for the use of intent=image, which should check a few extra things
+	checkFileUploadResult(
 		"Upload bad format image for scan",
 		apiHost,
-		/*&uploadFileReq{
+		&uploadFileReq{
 			filename: "file_Name.bmp",
+			intent:   "image",
 			data:     []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-		}*/nil,
-		&protos.ImageImportReq{
-			Name: "file_Name.bmp",
 		},
 		imageUploadJWT,
 		http.StatusBadRequest,
 		"Unexpected format: file_Name.bmp. Must be PNG, JPG or TIF, or the special RGBU 32bit float 4-channel TIF format",
 	)
 
-	checkImageUploadResult(
-		"Import image with missing name",
+	checkFileUploadResult(
+		"Upload image to non-existant scan",
 		apiHost,
-		/*&uploadFileReq{
-			data: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-		}*/nil,
-		&protos.ImageImportReq{},
+		&uploadFileReq{
+			filename: "file_Name.bmp",
+			intent:   "image",
+			scan:     "doesnt-exist",
+			data:     []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		},
 		imageUploadJWT,
-		http.StatusBadRequest,
-		"Name is too short",
+		http.StatusNotFound,
+		"doesnt-exist not found",
 	)
 
-	checkImageUploadResult(
-		"Import image missing scan id",
+	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
+	u1.AddConnectAction("Connect", &client.ConnectInfo{
+		Host: apiHost,
+		User: test1Username,
+		Pass: test1Password,
+	})
+
+	checkFileUploadResult(
+		"Import image with missing name",
 		apiHost,
-		/*&uploadFileReq{
-			filename: "file_Name.png",
-			data:     []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-		}*/nil,
-		&protos.ImageImportReq{
-			Name: "file_Name.png",
+		&uploadFileReq{
+			data: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 		},
 		imageUploadJWT,
 		http.StatusBadRequest,
-		"OriginScanId is too short",
+		"Invalid filename: \"\"",
 	)
 
-	checkImageUploadResult(
-		"Upload for non-existant origin id",
+	u1.AddSendReqAction("Import non-existant image",
+		fmt.Sprintf(`{"imageImportReq":{
+			"name": "",
+			"originScanId": "%v"
+		}}`, scanId),
+		`{
+			"msgId": 1,
+			"status": "WS_SERVER_ERROR",
+  			"errorText": "Invalid image name",
+			"imageImportResp": {}
+		}`,
+	)
+
+	u1.CloseActionGroup([]string{}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
+
+	checkFileUploadResult(
+		"Import image missing scan id",
 		apiHost,
-		/*&uploadFileReq{
+		&uploadFileReq{
+			filename: "file_Name.png",
+			intent:   "image",
+			data:     []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		},
+		imageUploadJWT,
+		http.StatusBadRequest,
+		"Missing scan id",
+	)
+
+	checkFileUploadResult(
+		"Upload for non-existant scan",
+		apiHost,
+		&uploadFileReq{
 			filename: "file_Name.png",
 			scan:     "scan123",
 			data:     []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-		}*/nil,
-		&protos.ImageImportReq{
-			Name:         "file_Name.png",
-			OriginScanId: "scan123",
 		},
 		imageUploadJWT,
 		http.StatusNotFound,
@@ -133,7 +205,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 
 	// TODO: test uploading corrupt image
 	/*
-		checkImageUploadResult(
+		checkFileUploadResult(
 			"Upload corrupt image",
 			apiHost,
 			&uploadFileReq{
@@ -146,20 +218,13 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 			"scan123 not found"
 		)*/
 
-	u1 := wstestlib.MakeScriptedTestUser(auth0Params)
-	u1.AddConnectAction("Connect", &client.ConnectInfo{
-		Host: apiHost,
-		User: test1Username,
-		Pass: test1Password,
-	})
-
 	// Delete a non-existant image
 	u1.AddSendReqAction("Delete non-existant image",
 		`{"imageDeleteReq":{
 			"name": "doesnt-exist.png"
 		}}`,
 		`{
-			"msgId": 1,
+			"msgId": 2,
 			"status": "WS_NOT_FOUND",
 			"errorText": "doesnt-exist.png not found",
 			"imageDeleteResp": {}
@@ -169,25 +234,24 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 
-	checkImageUploadResult(
-		"Upload should fail because no access to originScanId",
+	checkFileUploadResult(
+		fmt.Sprintf("Upload should fail because no access to %v", scanId),
 		apiHost,
 		&uploadFileReq{
 			filename: "file_Name.png",
 			scan:     scanId,
 			data:     []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 		},
-		nil,
 		imageUploadJWT,
 		http.StatusUnauthorized,
-		"View access denied for: SCAN named \"Naltsos\" (id: 048300551)",
+		"Edit access denied for: SCAN named \"Naltsos\" (id: 048300551)",
 	)
 
 	// Now allow access to originScanId
-	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, &protos.UserGroupList{UserIds: []string{u1.GetUserId()}}, nil)
+	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, nil, &protos.UserGroupList{UserIds: []string{u1.GetUserId()}})
 
 	// Upload success
-	checkImageUploadResult(
+	checkFileUploadResult(
 		"Upload OK",
 		apiHost,
 		&uploadFileReq{
@@ -195,55 +259,51 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 			scan:     scanId,
 			data:     uploadImgPNGData,
 		},
-		&protos.ImageImportReq{
-			Name:         "file_Name.png",
-			OriginScanId: scanId,
-		},
 		imageUploadJWT,
 		http.StatusOK,
-		"",
+		`{"bytesReceived":"596", "completed":true}`,
 	)
 
-	// Upload another so we can switch default images
-	checkImageUploadResult(
-		"Upload another OK",
-		apiHost,
-		&uploadFileReq{
-			filename: "another.png",
-			scan:     scanId,
-			data:     uploadImgPNGData,
-		},
-		&protos.ImageImportReq{
-			Name:         "another.png",
-			OriginScanId: scanId,
-		},
-		imageUploadJWT,
-		http.StatusOK,
-		"",
+	// Import the image
+	u1.AddSendReqAction("Import newly uploaded image",
+		fmt.Sprintf(`{"imageImportReq":{
+			"name": "file_Name.png",
+			"originScanId": "%v"
+		}}`, scanId),
+		`{
+			"msgId": 3,
+			"status": "WS_OK",
+			"imageImportResp": {}
+		}`,
 	)
 
-	// Duplicate upload should fail
-	checkImageUploadResult(
-		"Duplicate upload should fail",
-		apiHost,
-		&uploadFileReq{
-			filename: "file_Name.png",
-			scan:     scanId,
-			data:     uploadImgPNGData,
-		},
-		&protos.ImageImportReq{
-			Name:         "file_Name.png",
-			OriginScanId: scanId,
-		},
-		imageUploadJWT,
-		http.StatusBadRequest,
-		"048300551/file_Name.png already exists",
-	)
+	u1.CloseActionGroup([]string{`{"notificationUpd": {
+        "notification": {
+			"id": "${IGNORE}",
+			"notificationType": "NT_USER_MESSAGE",
+            "subject": "New image added to scan: 048300551",
+            "contents": "A new image named file_Name.png was added to scan: 048300551 (id: 048300551)",
+            "from": "Data Importer",
+			"timeStampUnixSec": "${SECAGO=10}",
+            "actionLink": "analysis?scan_id=048300551&image=048300551/file_Name.png"
+        }
+    }}`,
+		`{"notificationUpd": {
+			"notification": {
+				"notificationType": "NT_SYS_DATA_CHANGED",
+				"imageName": "048300551/file_Name.png",
+				"scanIds": [
+					"048300551"
+				]
+			}
+		}
+	}`}, 5000)
+	wstestlib.ExecQueuedActions(&u1)
 
 	// Get the image
 	u1.AddSendReqAction("Get uploaded image",
 		`{"imageGetReq":{"imageName": "048300551/file_Name.png"}}`,
-		fmt.Sprintf(`{"msgId": 2,
+		fmt.Sprintf(`{"msgId": 4,
 		"status": "WS_OK",
 		"imageGetResp":{
 			"image": {
@@ -262,18 +322,80 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	}`, scanId, scanId, scanId),
 	)
 
+	// Upload another so we can switch default images
+	checkFileUploadResult(
+		"Upload another OK",
+		apiHost,
+		&uploadFileReq{
+			filename: "another.png",
+			scan:     scanId,
+			data:     uploadImgPNGData,
+		},
+		imageUploadJWT,
+		http.StatusOK,
+		`{"bytesReceived":"596", "completed":true}`,
+	)
+
+	// Duplicate upload WITHOUT INTENT should work, replacing the file really
+	checkFileUploadResult(
+		"Duplicate upload WITHOUT INTENT should work",
+		apiHost,
+		&uploadFileReq{
+			filename: "file_Name.png",
+			scan:     scanId,
+			data:     uploadImgPNGData,
+		},
+		imageUploadJWT,
+		http.StatusOK,
+		`{"bytesReceived":"596", "completed":true}`,
+	)
+
+	// Duplicate upload should fail as this checks if the image exists already due to intent specified
+	checkFileUploadResult(
+		"Duplicate upload should fail",
+		apiHost,
+		&uploadFileReq{
+			filename: "file_Name.png",
+			scan:     scanId,
+			data:     uploadImgPNGData,
+			intent:   "image",
+		},
+		imageUploadJWT,
+		http.StatusBadRequest,
+		`Image "048300551/file_Name.png" already exists`,
+	)
+
+	// Try import the newly uploaded image
+	u1.AddSendReqAction("Import to for non-existant origin id",
+		`{"imageImportReq":{
+			"name": "file_Name.png",
+			"originScanId": "scan123"
+		}}`,
+		`{
+			"msgId": 5,
+			"status": "WS_NOT_FOUND",
+  			"errorText": "scan123 not found",
+			"imageImportResp": {}
+		}`,
+	)
+
+	// u1.CloseActionGroup([]string{}, 5000)
+	// wstestlib.ExecQueuedActions(&u1)
+
+	// Import the image correctly
+	u1.AddSendReqAction("Import should be OK",
+		fmt.Sprintf(`{"imageImportReq":{
+			"name": "another.png",
+			"originScanId": "%v"
+		}}`, scanId),
+		`{
+			"msgId": 6,
+			"status": "WS_OK",
+			"imageImportResp": {}
+		}`,
+	)
+
 	u1.CloseActionGroup([]string{`{"notificationUpd": {
-        "notification": {
-			"id": "${IGNORE}",
-			"notificationType": "NT_USER_MESSAGE",
-            "subject": "New image added to scan: 048300551",
-            "contents": "A new image named file_Name.png was added to scan: 048300551 (id: 048300551)",
-            "from": "Data Importer",
-			"timeStampUnixSec": "${SECAGO=10}",
-            "actionLink": "analysis?scan_id=048300551&image=048300551/file_Name.png"
-        }
-    }}`,
-		`{"notificationUpd": {
         "notification": {
 			"id": "${IGNORE}",
 			"notificationType": "NT_USER_MESSAGE",
@@ -288,16 +410,6 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 			"notification": {
 				"notificationType": "NT_SYS_DATA_CHANGED",
 				"imageName": "048300551/another.png",
-				"scanIds": [
-					"048300551"
-				]
-			}
-		}
-	}`,
-		`{"notificationUpd": {
-			"notification": {
-				"notificationType": "NT_SYS_DATA_CHANGED",
-				"imageName": "048300551/file_Name.png",
 				"scanIds": [
 					"048300551"
 				]
@@ -334,7 +446,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	// Set it as default image
 	u1.AddSendReqAction("set default image",
 		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "048300551/file_Name.png"}}`,
-		`{"msgId":3,
+		`{"msgId":7,
 			"status": "WS_OK",
 			"imageSetDefaultResp": {}
 		}`,
@@ -342,7 +454,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 
 	u1.AddSendReqAction("set non-existant default image (should fail)",
 		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "048300551/doesnt-exist.png"}}`,
-		`{"msgId":4,
+		`{"msgId":8,
 			"status": "WS_NOT_FOUND",
 			"errorText": "048300551/doesnt-exist.png not found",
 			"imageSetDefaultResp": {}
@@ -364,7 +476,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	// Upload beam locations for this image
 	u1.AddSendReqAction("Upload image beam locations with missing fields",
 		`{"imageBeamLocationUploadReq":{"imageName": "048300551/file_Name.png"}}`,
-		`{"msgId": 5,
+		`{"msgId": 9,
 			"status": "WS_SERVER_ERROR",
 			"errorText": "Request missing location",
 			"imageBeamLocationUploadResp":{}}`,
@@ -377,7 +489,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 			"instrument": 2,
 			"locations": [{"i": 3.2, "j": 8.3}, {"i": 7.2, "j": 28.3}]
 		}}}`,
-		`{"msgId": 6,
+		`{"msgId": 10,
 			"status": "WS_SERVER_ERROR",
 			"errorText": "Currently only version 0 supported for image beam location upload",
 			"imageBeamLocationUploadResp":{}}`,
@@ -390,7 +502,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 			"instrument": 2,
 			"locations": [{"i": 3.2, "j": 8.3}, {"i": 7.2, "j": 28.3}]
 		}}}`,
-		`{"msgId": 7,
+		`{"msgId": 11,
 			"status": "WS_NOT_FOUND",
 			"errorText": "non-existant-scan123 not found",
 			"imageBeamLocationUploadResp":{}}`,
@@ -403,7 +515,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 			"instrument": 2,
 			"locations": [{"i": 3.2, "j": 8.3}, {"i": 7.2, "j": 28.3}]
 		}}}`, scanId),
-		`{"msgId": 8,
+		`{"msgId": 12,
 			"status": "WS_OK",
 			"imageBeamLocationUploadResp":{}}`,
 	)
@@ -414,7 +526,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		"name": "048300551/file_Name.png"
 	}}`,
 		`{
-		"msgId": 9,
+		"msgId": 13,
 		"status": "WS_BAD_REQUEST",
 		"errorText": "Cannot delete image: \"048300551/file_Name.png\" because it is the default image for scans: [048300551]",
 		"imageDeleteResp": {}
@@ -424,7 +536,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 	// Unset default image
 	u1.AddSendReqAction("set default image",
 		`{"imageSetDefaultReq":{"scanId": "048300551", "defaultImageFileName": "048300551/another.png"}}`,
-		`{"msgId": 10,
+		`{"msgId": 14,
 		"status": "WS_OK",
 		"imageSetDefaultResp": {}
 	}`,
@@ -436,7 +548,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 			"name": "048300551/file_Name.png"
 		}}`,
 		`{
-			"msgId": 11,
+			"msgId": 15,
 			"status": "WS_OK",
 			"imageDeleteResp": {}
 		}`,
@@ -469,7 +581,7 @@ func testImageMultipartUpload(apiHost string) {
 
 	// TODO: test uploading corrupt image
 	/*
-		checkImageUploadResult(
+		checkFileUploadResult(
 			"Upload corrupt image",
 			apiHost,
 			&uploadFileReq{
@@ -484,12 +596,32 @@ func testImageMultipartUpload(apiHost string) {
 
 	scanId := scan_Naltsos.Id
 
+	// Send bad resume message with missing query params
 	respBody := getFileUploadResult(
 		"Checking resume status",
 		apiHost,
 		&uploadFileReq{
 			filename: "toResume.png",
 			scan:     scanId,
+			intent:   "image",
+		},
+		imageUploadJWT,
+		http.StatusBadRequest,
+	)
+
+	exp := "Uploading without [totalBytes, writePos] set can't contain empty file data (body)\n"
+	if string(respBody) != exp {
+		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
+	}
+
+	respBody = getFileUploadResult(
+		"Checking resume status",
+		apiHost,
+		&uploadFileReq{
+			filename:   "toResume.png",
+			scan:       scanId,
+			intent:     "image",
+			totalBytes: uint64(len(uploadImgPNGData)),
 		},
 		imageUploadJWT,
 		http.StatusOK,
@@ -517,11 +649,12 @@ func testImageMultipartUpload(apiHost string) {
 			writePos:   30,
 		},
 		imageUploadJWT,
-		http.StatusInternalServerError,
+		http.StatusBadRequest,
 	)
 
-	if string(respBody) != "Expected multipart upload to start with file part number 0, got: 3\n" {
-		log.Fatalf("Expected \"%v\", got \"%v\"", "Expected multipart upload to start with file part number 0, got: 3", string(respBody))
+	exp = "UploadPart for 048300551/toResume.png (30 bytes so far) error: expected total bytes so far of 0, got 30\n"
+	if string(respBody) != exp {
+		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
 	}
 
 	respBody = getFileUploadResult(
@@ -537,9 +670,15 @@ func testImageMultipartUpload(apiHost string) {
 		imageUploadJWT,
 		http.StatusOK,
 	)
-
-	if len(respBody) > 0 {
-		log.Fatalln("Expected empty response")
+	/*
+		err = protojson.Unmarshal(respBody, resp)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	*/
+	exp = "{\"bytesReceived\":\"20\"}"
+	if string(respBody) != exp {
+		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
 	}
 
 	respBody = getFileUploadResult(
@@ -555,17 +694,24 @@ func testImageMultipartUpload(apiHost string) {
 		imageUploadJWT,
 		http.StatusOK,
 	)
-
-	if len(respBody) > 0 {
-		log.Fatalln("Expected empty response")
+	/*
+		err = protojson.Unmarshal(respBody, resp)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	*/
+	exp = "{\"bytesReceived\":\"50\"}"
+	if string(respBody) != exp {
+		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
 	}
 
 	respBody = getFileUploadResult(
 		"Checking resume status after 2 chunks uploaded",
 		apiHost,
 		&uploadFileReq{
-			filename: "toResume.png",
-			scan:     scanId,
+			filename:   "toResume.png",
+			scan:       scanId,
+			totalBytes: uint64(len(uploadImgPNGData)),
 		},
 		imageUploadJWT,
 		http.StatusOK,
@@ -591,11 +737,12 @@ func testImageMultipartUpload(apiHost string) {
 			writePos:   20,
 		},
 		imageUploadJWT,
-		http.StatusInternalServerError,
+		http.StatusBadRequest,
 	)
 
-	if string(respBody) != "Expected file part number: 2, got: 1\n" {
-		log.Fatalf("Expected \"%v\", got \"%v\"", "Expected file part number: 2, got: 1", string(respBody))
+	exp = "UploadPart for 048300551/toResume.png (20 bytes so far) error: expected total bytes so far of 50, got 20\n"
+	if string(respBody) != exp {
+		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
 	}
 
 	respBody = getFileUploadResult(
@@ -609,19 +756,21 @@ func testImageMultipartUpload(apiHost string) {
 			writePos:   60,
 		},
 		imageUploadJWT,
-		http.StatusInternalServerError,
+		http.StatusBadRequest,
 	)
 
-	if string(respBody) != "Expected file part number: 2, got: 3\n" {
-		log.Fatalf("Expected \"%v\", got \"%v\"", "Expected file part number: 2, got: 3", string(respBody))
+	exp = "UploadPart for 048300551/toResume.png (60 bytes so far) error: expected total bytes so far of 50, got 60\n"
+	if string(respBody) != exp {
+		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
 	}
 
 	respBody = getFileUploadResult(
 		"Checking resume status after 2 chunks and some errors uploaded",
 		apiHost,
 		&uploadFileReq{
-			filename: "toResume.png",
-			scan:     scanId,
+			filename:   "toResume.png",
+			scan:       scanId,
+			totalBytes: uint64(len(uploadImgPNGData)),
 		},
 		imageUploadJWT,
 		http.StatusOK,
@@ -643,7 +792,7 @@ func testImageMultipartUpload(apiHost string) {
 		User: test1Username,
 		Pass: test1Password,
 	})
-	u1.AddSendReqAction("Get image",
+	u1.AddSendReqAction("Get image - should fail, not imported yet",
 		`{"imageGetReq":{"imageName": "048300551/toResume.png"}}`,
 		`{
 			"msgId": 1,
@@ -670,8 +819,9 @@ func testImageMultipartUpload(apiHost string) {
 		http.StatusOK,
 	)
 
-	if len(respBody) > 0 {
-		log.Fatalln("Expected empty response")
+	exp = "{\"bytesReceived\":\"200\"}"
+	if string(respBody) != exp {
+		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
 	}
 
 	respBody = getFileUploadResult(
@@ -688,14 +838,27 @@ func testImageMultipartUpload(apiHost string) {
 		http.StatusOK,
 	)
 
-	if len(respBody) > 0 {
-		log.Fatalln("Expected empty response")
+	exp = "{\"bytesReceived\":\"596\", \"completed\":true}"
+	if string(respBody) != exp {
+		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
 	}
+
+	u1.AddSendReqAction("Import multi-part multi-resumed image",
+		fmt.Sprintf(`{"imageImportReq":{
+			"name": "toResume.png",
+			"originScanId": "%v"
+		}}`, scanId),
+		`{
+			"msgId": 2,
+			"status": "WS_OK",
+			"imageImportResp": {}
+		}`,
+	)
 
 	// Check that we CAN request fully uploaded image
 	u1.AddSendReqAction("Get image",
 		`{"imageGetReq":{"imageName": "048300551/toResume.png"}}`,
-		fmt.Sprintf(`{"msgId": 2,
+		fmt.Sprintf(`{"msgId": 3,
 			"status": "WS_OK",
 			"imageGetResp":{
 				"image": {
@@ -740,17 +903,20 @@ func testImageMultipartUpload(apiHost string) {
 	wstestlib.ExecQueuedActions(&u1)
 
 	respBody = getFileUploadResult(
-		"Checking resume status after image upload completed, should signal received 0 bytes because it's been completed/processed/cleared",
+		"Checking resume status after image upload completed, should signal it's completed uploading",
 		apiHost,
 		&uploadFileReq{
-			filename: "toResume.png",
-			scan:     scanId,
+			filename:   "toResume.png",
+			scan:       scanId,
+			totalBytes: uint64(len(uploadImgPNGData)),
 		},
 		imageUploadJWT,
-		http.StatusConflict,
+		http.StatusOK,
 	)
-	if string(respBody) != "048300551/toResume.png already exists\n" {
-		log.Fatalf("Expected \"%v\", got \"%v\"", "048300551/toResume.png already exists", string(respBody))
+
+	exp = "{\"bytesReceived\":\"596\", \"completed\":true}"
+	if string(respBody) != exp {
+		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
 	}
 
 	respBody = getFileUploadResult(
@@ -764,11 +930,12 @@ func testImageMultipartUpload(apiHost string) {
 			writePos:   250,
 		},
 		imageUploadJWT,
-		http.StatusInternalServerError,
+		http.StatusBadRequest,
 	)
 
-	if string(respBody) != "Expected multipart upload to start with file part number 0, got: 4\n" {
-		log.Fatalf("Expected \"%v\", got \"%v\"", "Expected multipart upload to start with file part number 0, got: 4", string(respBody))
+	exp = "UploadPart for 048300551/toResume.png (250 bytes so far) error: unexpected status already complete\n"
+	if string(respBody) != exp {
+		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
 	}
 
 	respBody = getFileUploadResult(
@@ -782,15 +949,17 @@ func testImageMultipartUpload(apiHost string) {
 			writePos:   200,
 		},
 		imageUploadJWT,
-		http.StatusInternalServerError,
+		http.StatusBadRequest,
 	)
 
-	if string(respBody) != "Expected multipart upload to start with file part number 0, got: 3\n" {
-		log.Fatalf("Expected \"%v\", got \"%v\"", "Expected multipart upload to start with file part number 0, got: 3", string(respBody))
+	exp = "UploadPart for 048300551/toResume.png (200 bytes so far) error: unexpected status already complete\n"
+	if string(respBody) != exp {
+		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
 	}
 }
 
 type uploadFileReq struct {
+	intent     string
 	scan       string
 	filename   string
 	totalBytes uint64
@@ -798,10 +967,19 @@ type uploadFileReq struct {
 	data       []byte
 }
 
-func getFileUploadResult(action string, apiHost string, req *uploadFileReq /*importReq *protos.ImageImportReq,*/, imageUploadJWT string, expStatus int) []byte {
-	fmt.Printf("%v sending PUT request:\n", action)
+func getFileUploadResult(action string, apiHost string,
+	req *uploadFileReq,
+	imageUploadJWT string,
+	expStatus int) []byte {
+	fmt.Printf("%v - sending PUT request:\n", action)
 
-	query := fmt.Sprintf("scan=%v&filename=%v&totalBytes=%v&writePos=%v", req.scan, req.filename, req.totalBytes, req.writePos)
+	query := fmt.Sprintf("scan=%v&filename=%v", req.scan, req.filename)
+	if req.totalBytes > 0 || req.writePos > 0 {
+		query += fmt.Sprintf("&totalBytes=%v&writePos=%v", req.totalBytes, req.writePos)
+	}
+	if len(req.intent) > 0 {
+		query += fmt.Sprintf("&intent=%v", req.intent)
+	}
 
 	status, respBody, err := doHTTPRequest("PUT", apiHost, "file", query, bytes.NewBuffer(req.data), imageUploadJWT)
 
@@ -810,27 +988,24 @@ func getFileUploadResult(action string, apiHost string, req *uploadFileReq /*imp
 	}
 
 	if status != expStatus {
-		log.Fatalf("[%v] Expected status=%v, got status=%v", action, expStatus, status)
+		log.Fatalf("[%v] Expected status=%v, got status=%v\nBody: %v", action, expStatus, status, string(respBody))
 	}
-
-	// if importReq != nil {
-	// 	// Send import request via web socket
-	// 	//importReq
-	// }
 
 	return respBody
 }
 
-func checkImageUploadResult(action string, apiHost string, uploadReq *uploadFileReq, importReq *protos.ImageImportReq, imageUploadJWT string, expStatus int, expBody string) {
-	respBody := getFileUploadResult(action, apiHost, uploadReq, imageUploadJWT, expStatus)
+func checkFileUploadResult(action string, apiHost string,
+	uploadReq *uploadFileReq,
+	JWT string, expStatus int, expBody string) {
+	respBody := getFileUploadResult(action, apiHost, uploadReq, JWT, expStatus)
 
 	expBodyCompare := expBody
-	if len(expBody) > 0 {
+	if len(expBody) > 0 && strings.HasSuffix(string(respBody), "\n") {
 		expBodyCompare += "\n"
 	}
 
 	if string(respBody) != expBodyCompare {
-		log.Fatalf("[%v] Expected body=%v.\nGot, body=%v", action, expBody, string(respBody))
+		log.Fatalf("[%v]\nExpected body=%v\nReceived body=%v", action, expBody, string(respBody))
 	}
 }
 
@@ -901,23 +1076,32 @@ func testImageMatchTransform(apiHost string) {
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 
-	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, &protos.UserGroupList{UserIds: []string{u1.GetUserId()}}, nil)
+	seedDBOwnership(scanId, protos.ObjectType_OT_SCAN, nil, &protos.UserGroupList{UserIds: []string{u1.GetUserId()}})
 
-	checkImageUploadResult(
+	checkFileUploadResult(
 		"Upload matched OK",
 		apiHost,
 		&uploadFileReq{
 			filename: "file_Name.png",
 			scan:     scanId,
 			data:     uploadImgPNGData,
-		},
-		&protos.ImageImportReq{
-			Name:         "file_Name.png",
-			OriginScanId: scanId,
+			intent:   "image",
 		},
 		imageUploadJWT,
 		http.StatusOK,
-		"",
+		`{"bytesReceived":"596", "completed":true}`,
+	)
+
+	u1.AddSendReqAction("Import matched image",
+		fmt.Sprintf(`{"imageImportReq":{
+			"name": "file_Name.png",
+			"originScanId": "%v"
+		}}`, scanId),
+		`{
+			"msgId": 4,
+			"status": "WS_OK",
+			"imageImportResp": {}
+		}`,
 	)
 
 	u1.AddSendReqAction("Delete non-existant image (just really here to allow capturing notifications from the above)",
@@ -925,7 +1109,7 @@ func testImageMatchTransform(apiHost string) {
 			"name": "doesnt-exist.png"
 		}}`,
 		`{
-			"msgId": 4,
+			"msgId": 5,
 			"status": "WS_NOT_FOUND",
 			"errorText": "doesnt-exist.png not found",
 			"imageDeleteResp": {}
@@ -969,7 +1153,7 @@ func testImageMatchTransform(apiHost string) {
 			}
 		}}`,
 		`{
-			"msgId": 5,
+			"msgId": 6,
 			"status": "WS_SERVER_ERROR",
 			"errorText": "Failed edit transform for image 048300551/file_Name.png - it is not a matched image",
 			"imageSetMatchTransformResp": {}
@@ -982,7 +1166,7 @@ func testImageMatchTransform(apiHost string) {
 			"name": "048300551/file_Name.png"
 		}}`,
 		`{
-			"msgId": 6,
+			"msgId": 7,
 			"status": "WS_OK",
 			"imageDeleteResp": {}
 		}`,
@@ -1006,7 +1190,7 @@ func testImageMatchTransform(apiHost string) {
 			"name": "doesnt-exist.png"
 		}}`,
 		`{
-			"msgId": 7,
+			"msgId": 8,
 			"status": "WS_NOT_FOUND",
 			"errorText": "doesnt-exist.png not found",
 			"imageDeleteResp": {}
@@ -1014,28 +1198,36 @@ func testImageMatchTransform(apiHost string) {
 	)
 
 	// Re-upload as matched image
-	checkImageUploadResult(
-		"Upload Matched OK",
+	checkFileUploadResult(
+		"Upload Matched OK2",
 		apiHost,
 		&uploadFileReq{
 			filename: "file_Name.png",
 			scan:     scanId,
 			data:     uploadImgPNGData,
 		},
-		&protos.ImageImportReq{
-			Association: &protos.ImageImportReq_BeamImageRef{
-				BeamImageRef: &protos.ImageMatchTransform{
-					BeamImageFileName: "match_image.png",
-					XOffset:           0,
-					YOffset:           0,
-					XScale:            1,
-					YScale:            1,
-				},
-			},
-		},
 		imageUploadJWT,
 		http.StatusOK,
-		"",
+		`{"bytesReceived":"596", "completed":true}`,
+	)
+
+	u1.AddSendReqAction("Import as matched image",
+		fmt.Sprintf(`{"imageImportReq":{
+			"name": "file_Name.png",
+			"originScanId": "%v",
+			"beamImageRef": {
+				"beamImageFileName": "match_image.png",
+				"xOffset":           0,
+				"yOffset":           0,
+				"xScale":            1,
+				"yScale":            1
+			}
+		}}`, scanId),
+		`{
+			"msgId": 9,
+			"status": "WS_OK",
+			"imageImportResp": {}
+		}`,
 	)
 
 	u1.CloseActionGroup([]string{
@@ -1076,7 +1268,7 @@ func testImageMatchTransform(apiHost string) {
 			}
 		}}`,
 		`{
-			"msgId": 8,
+			"msgId": 10,
 			"status": "WS_OK",
 			"imageSetMatchTransformResp": {}
 		}`,
@@ -1094,7 +1286,7 @@ func testImageMatchTransform(apiHost string) {
 			}
 		}}`,
 		`{
-			"msgId": 9,
+			"msgId": 11,
 			"status": "WS_OK",
 			"imageSetMatchTransformResp": {}
 		}`,
@@ -1105,7 +1297,7 @@ func testImageMatchTransform(apiHost string) {
 			"imageName": "048300551/file_Name.png"
 		}}`,
 		`{
-			"msgId": 10,
+			"msgId": 12,
 			"status": "WS_OK",
 			"imageGetResp": {
 				"image": {
