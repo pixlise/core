@@ -161,7 +161,15 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: "1.22.0"
+          go-version: "1.24.5"
+      - name: Setup VIPS lib
+        run: |
+          echo "Installing libvips quietly..."
+          sudo apt-get update
+          sudo apt-get -y -qq install libvips-dev
+          sudo apt list --installed | grep libvips
+          echo "Running genvips..."
+          ./genvips.sh
       - name: Print Version
         run: |
           echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
