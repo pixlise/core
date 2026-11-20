@@ -17,10 +17,11 @@
 
 FROM golang:1.24-alpine AS builder
 
+##################################################################################################################
+# Note that we are now building differently - we start with binaries in _out, so the following is not used:
+
 # ARG VERSION
 # ARG GITHUB_SHA
-
-# Note that we are now building differently - we start with binaries in _out, so the following is not used:
 
 # RUN apk add --no-cache ca-certificates libc6-compat wget make bash build-base pkgconfig vips-dev
 #
@@ -32,9 +33,12 @@ FROM golang:1.24-alpine AS builder
 # RUN cd /build && ./genvips.sh
 # RUN cd /build && make build-linux-api
 
+##################################################################################################################
+
 # Instead, we just copy the out path
-RUN pwd && ls -al
+RUN pwd && ls -al . &&
 COPY ./_out/pixlise-api-linux /build
+RUN ls -al /build
 
 
 

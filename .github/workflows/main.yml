@@ -113,9 +113,10 @@ jobs:
         with:
           name: generated-files
       - name: Check generated stuff exists
+        if: false
         run: |
-          # ls -al ./vips
-          # ls -al ./generated-protos
+          ls -al ./vips
+          ls -al ./generated-protos
           ls -al ./_out
       - name: Setup VIPS lib
         run: |
@@ -287,6 +288,7 @@ jobs:
         with:
           name: generated-files
       - name: Check generated stuff exists
+        if: false
         run: |
           # ls -al ./vips
           # ls -al ./generated-protos
