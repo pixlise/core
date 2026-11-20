@@ -122,15 +122,14 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: generated-files
-      - name: Check generated stuff exists
-        if: false
-        run: |
-          ls -al ./vips
-          ls -al ./generated-protos
-          ls -al ./_out
-          ls -al ./_out-docker
-          ls -al ./api/ws/
-          ls -al ./
+      # - name: Check generated stuff exists
+      #   run: |
+      #     ls -al ./vips
+      #     ls -al ./generated-protos
+      #     ls -al ./_out
+      #     ls -al ./_out-docker
+      #     ls -al ./api/ws/
+      #     ls -al ./
       - name: Install VIPS lib
         run: |
           echo "Installing libvips quietly..."
@@ -175,12 +174,6 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: generated-files
-      - name: Check generated stuff exists
-        if: false
-        run: |
-          ls -al ./vips
-          ls -al ./generated-protos
-          ls -al ./_out
       - name: Start MongoDB
         uses: supercharge/mongodb-github-action@1.12.1
         with:
@@ -272,15 +265,14 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: generated-files
-      - name: Check generated stuff exists
-        if: true
-        run: |
-          ls -al ./vips
-          ls -al ./generated-protos
-          ls -al ./_out
-          ls -al ./_out-docker
-          ls -al ./api/ws/
-          ls -al ./
+      # - name: Check generated stuff exists
+      #   run: |
+      #     ls -al ./vips
+      #     ls -al ./generated-protos
+      #     ls -al ./_out
+      #     ls -al ./_out-docker
+      #     ls -al ./api/ws/
+      #     ls -al ./
       - name: Print Version
         run: |
           echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
