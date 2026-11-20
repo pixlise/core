@@ -123,6 +123,7 @@ jobs:
         with:
           name: generated-files
       - name: Check generated stuff exists
+        if: false
         run: |
           ls -al ./vips
           ls -al ./generated-protos
@@ -272,11 +273,14 @@ jobs:
         with:
           name: generated-files
       - name: Check generated stuff exists
-        if: false
+        if: true
         run: |
-          # ls -al ./vips
-          # ls -al ./generated-protos
+          ls -al ./vips
+          ls -al ./generated-protos
           ls -al ./_out
+          ls -al ./_out-docker
+          ls -al ./api/ws/
+          ls -al ./
       - name: Print Version
         run: |
           echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
@@ -309,7 +313,7 @@ jobs:
           tags: type=raw,value=${{ needs.version.outputs.version }}
 
       - name: Copy docker file
-        run: cp ./_out/Dockerfile ./
+        run: cp ./_out-docker/Dockerfile ./
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
