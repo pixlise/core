@@ -78,15 +78,23 @@ jobs:
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
           go install github.com/favadi/protoc-go-inject-tag@latest
           ./genproto.sh
-      - name: Build things
+      - name: Build executables
         run: |
           mkdir -p _out
-          echo "version: ${BUILD_VERSION}"
-          echo "sha: ${GITHUB_SHA}"
+          echo "Building executables for version: ${BUILD_VERSION}, sha: ${GITHUB_SHA}..."
           GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -o ./_out/pixlise-api-linux ./internal/api
           GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -o ./_out/api-integration-test ./internal/cmd-line-tools/api-integration-test
           GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -o ./_out/bootstrap ./internal/lambdas/data-import
           GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -o ./_out/pixlise-job-node ./internal/cmd-line-tools/job-node
+          echo "Copy AWS PEM for builds..."
+          wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
+          cp ./global-bundle.pem ./_out/
+      - name: Copy docker build related files
+        run: |
+          mkdir -p _out-docker
+          cp ./Dockerfile ./_out-docker/
+          cp ./beam-tool/BGT /_out-docker/
+          cp ./beam-tool/Geometry_PIXL_EM_Landing_25Jan2021.csv /_out-docker/
       - uses: actions/upload-artifact@v7
         with:
           name: generated-files
@@ -94,6 +102,7 @@ jobs:
             ./vips/
             ./generated-protos/
             ./_out/
+            ./_out-docker/
           archive: true
           if-no-files-found: error
           retention-days: 1
@@ -111,19 +120,11 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: generated-files
-      - name: Check generated stuff exists
-        if: false
-        run: |
-          ls -al ./vips
-          ls -al ./generated-protos
-          ls -al ./_out
-      - name: Setup VIPS lib
+      - name: Install VIPS lib
         run: |
           echo "Installing libvips quietly..."
           sudo apt-get -qq update
           sudo apt-get -y -qq install libvips-dev
-          # sudo apt list --installed | grep libvips
-          # go install github.com/cshum/vipsgen/cmd/vipsgen@v1.3.8
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
@@ -142,7 +143,6 @@ jobs:
           AWS_DEFAULT_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
       - name: Unit Test (FULL)
         if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
         run: |
@@ -232,7 +232,6 @@ jobs:
       - name: Copy to S3 Archive
         run: |
           cd _out
-          wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
           mkdir -p dataimport integrationtest
           zip -q dataimport/dataimport-linux-${{ needs.version.outputs.version }}.zip global-bundle.pem bootstrap
           rm bootstrap
@@ -308,6 +307,7 @@ jobs:
           context: .
           build-contexts: |
             build-outputs=./_out
+            other-files=./_out-docker
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

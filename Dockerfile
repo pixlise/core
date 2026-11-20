@@ -39,6 +39,7 @@ FROM golang:1.24-alpine AS builder
 #RUN pwd && ls -al . && ls -al ./bin && ls -al ./src
 #COPY ./_out/pixlise-api-linux /build
 COPY --from=build-outputs . /build/_out/
+COPY --from=other-files . /build/_out/
 #RUN ls -al /build
 
 
@@ -51,12 +52,17 @@ WORKDIR /root
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /build/_out/pixlise-api-linux ./
 
-COPY beam-tool/BGT ./
-COPY beam-tool/Geometry_PIXL_EM_Landing_25Jan2021.csv ./
+COPY --from=builder /build/_out/BGT ./
+COPY --from=builder /build/_out/Geometry_PIXL_EM_Landing_25Jan2021.csv ./
+COPY --from=builder /build/_out/global-bundle.pem ./
+
+#COPY beam-tool/BGT ./
+#COPY beam-tool/Geometry_PIXL_EM_Landing_25Jan2021.csv ./
 
 RUN apk add --no-cache vips-dev
 
-RUN chmod +x ./pixlise-api-linux && wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
+#RUN chmod +x ./pixlise-api-linux && wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
+RUN chmod +x ./pixlise-api-linux
 RUN chmod +x ./BGT
 
 # Expose port 8080 to the outside world
