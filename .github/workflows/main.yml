@@ -94,8 +94,8 @@ jobs:
         run: |
           mkdir -p _out-docker
           cp ./Dockerfile ./_out-docker/
-          cp ./beam-tool/BGT /_out-docker/
-          cp ./beam-tool/Geometry_PIXL_EM_Landing_25Jan2021.csv /_out-docker/
+          cp ./beam-tool/BGT ./_out-docker/
+          cp ./beam-tool/Geometry_PIXL_EM_Landing_25Jan2021.csv ./_out-docker/
       - uses: actions/upload-artifact@v7
         with:
           name: generated-files
