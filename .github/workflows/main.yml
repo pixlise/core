@@ -73,10 +73,12 @@ jobs:
           echo "Running genvips..."
           ./genvips.sh
       - name: Generate protobuf
-        run: ./genproto.sh
+        run: |
+          go install github.com/favadi/protoc-go-inject-tag@latest
+          ./genproto.sh
       - uses: actions/upload-artifact@v7
         with:
-          name: generated-files-{{ needs.version.outputs.version_tag }}
+          name: generated-files
           path: |
             ./vips/
             ./generated-protos/
@@ -96,7 +98,7 @@ jobs:
           submodules: true
       - uses: actions/download-artifact@v8
         with:
-          name: generated-files-{{ needs.version.outputs.version_tag }}
+          name: generated-files
       - name: Display structure of downloaded files
         run: ls -R
       - name: Setup Go
@@ -138,7 +140,7 @@ jobs:
           submodules: true
       - uses: actions/download-artifact@v8
         with:
-          name: generated-files-{{ needs.version.outputs.version_tag }}
+          name: generated-files
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -185,7 +187,7 @@ jobs:
           submodules: true
       - uses: actions/download-artifact@v8
         with:
-          name: generated-files-{{ needs.version.outputs.version_tag }}
+          name: generated-files
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -239,7 +241,7 @@ jobs:
           submodules: true
       - uses: actions/download-artifact@v8
         with:
-          name: generated-files-{{ needs.version.outputs.version_tag }}
+          name: generated-files
       - name: Print Version
         run: |
           echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
