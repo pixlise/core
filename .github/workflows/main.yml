@@ -103,6 +103,7 @@ jobs:
           name: generated-files
       - name: Check generated stuff exists
         run: |
+          go install github.com/cshum/vipsgen/cmd/vipsgen@v1.3.8
           ls -al ./vips
           ls -al ./generated-protos
       - name: Setup Go
@@ -147,6 +148,7 @@ jobs:
           name: generated-files
       - name: Check generated stuff exists
         run: |
+          go install github.com/cshum/vipsgen/cmd/vipsgen@v1.3.8
           ls -al ./vips
           ls -al ./generated-protos
       - name: Setup Go
@@ -198,6 +200,7 @@ jobs:
           name: generated-files
       - name: Check generated stuff exists
         run: |
+          go install github.com/cshum/vipsgen/cmd/vipsgen@v1.3.8
           ls -al ./vips
           ls -al ./generated-protos
       - name: Setup Go
