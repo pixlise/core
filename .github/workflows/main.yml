@@ -24,7 +24,7 @@ jobs:
       version_tag: ${{ steps.version.outputs.version_tag }}
       github_sha_short: ${GITHUB_SHA_SHORT}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       # - name: GitHub Slug Action
@@ -55,12 +55,12 @@ jobs:
   code-gen:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v7
         with:
           go-version: "1.24.5"
       - name: Setup VIPS lib
@@ -94,17 +94,19 @@ jobs:
     runs-on: ubuntu-latest
     needs: [version, code-gen]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
       - uses: actions/download-artifact@v8
         with:
           name: generated-files
-      - name: Display structure of downloaded files
-        run: ls -R
+      - name: Check generated stuff exists
+        run: |
+          ls -al ./vips
+          ls -al ./generated-protos
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v7
         with:
           go-version: "1.24.5"
       - name: Start MongoDB
@@ -136,15 +138,19 @@ jobs:
     runs-on: ubuntu-latest
     needs: [version, code-gen]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
       - uses: actions/download-artifact@v8
         with:
           name: generated-files
+      - name: Check generated stuff exists
+        run: |
+          ls -al ./vips
+          ls -al ./generated-protos
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v7
         with:
           go-version: "1.24.5"
       - name: Start MongoDB
@@ -183,15 +189,19 @@ jobs:
       AWS_DEFAULT_REGION: us-east-1
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
       - uses: actions/download-artifact@v8
         with:
           name: generated-files
+      - name: Check generated stuff exists
+        run: |
+          ls -al ./vips
+          ls -al ./generated-protos
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v7
         with:
           go-version: "1.24.5"
       - name: Print Version
@@ -237,13 +247,17 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
       - uses: actions/download-artifact@v8
         with:
           name: generated-files
+      - name: Check generated stuff exists
+        run: |
+          ls -al ./vips
+          ls -al ./generated-protos
       - name: Print Version
         run: |
           echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
@@ -279,7 +293,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         id: build-and-push
-        uses: docker/build-push-action@v4.0.0
+        uses: docker/build-push-action@v7.4.0
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
