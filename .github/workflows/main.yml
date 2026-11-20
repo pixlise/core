@@ -66,14 +66,14 @@ jobs:
       - name: Setup VIPS lib
         run: |
           echo "Installing libvips quietly..."
-          sudo apt-get update
+          sudo apt-get -qq update
           sudo apt-get -y -qq install libvips-dev
           sudo apt list --installed | grep libvips
           echo "Running genvips..."
           ./genvips.sh
       - name: Generate protobuf
         run: |
-          sudo apt install -y protobuf-compiler
+          sudo apt -qq install -y protobuf-compiler
           protoc --version
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
           go install github.com/favadi/protoc-go-inject-tag@latest
