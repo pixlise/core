@@ -123,7 +123,6 @@ jobs:
         with:
           name: generated-files
       - name: Check generated stuff exists
-        #if: false
         run: |
           ls -al ./vips
           ls -al ./generated-protos
