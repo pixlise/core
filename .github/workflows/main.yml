@@ -63,7 +63,7 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version: "1.24.5"
-      - name: Setup VIPS lib
+      - name: Generate VIPS lib
         run: |
           echo "Installing libvips quietly..."
           sudo apt-get -qq update
@@ -103,9 +103,15 @@ jobs:
           name: generated-files
       - name: Check generated stuff exists
         run: |
-          go install github.com/cshum/vipsgen/cmd/vipsgen@v1.3.8
           ls -al ./vips
           ls -al ./generated-protos
+      - name: Setup VIPS lib
+        run: |
+          echo "Installing libvips quietly..."
+          sudo apt-get -qq update
+          sudo apt-get -y -qq install libvips-dev
+          sudo apt list --installed | grep libvips
+          go install github.com/cshum/vipsgen/cmd/vipsgen@v1.3.8
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
@@ -151,6 +157,13 @@ jobs:
           go install github.com/cshum/vipsgen/cmd/vipsgen@v1.3.8
           ls -al ./vips
           ls -al ./generated-protos
+      - name: Setup VIPS lib
+        run: |
+          echo "Installing libvips quietly..."
+          sudo apt-get -qq update
+          sudo apt-get -y -qq install libvips-dev
+          sudo apt list --installed | grep libvips
+          go install github.com/cshum/vipsgen/cmd/vipsgen@v1.3.8
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
@@ -203,6 +216,13 @@ jobs:
           go install github.com/cshum/vipsgen/cmd/vipsgen@v1.3.8
           ls -al ./vips
           ls -al ./generated-protos
+      - name: Setup VIPS lib
+        run: |
+          echo "Installing libvips quietly..."
+          sudo apt-get -qq update
+          sudo apt-get -y -qq install libvips-dev
+          sudo apt list --installed | grep libvips
+          go install github.com/cshum/vipsgen/cmd/vipsgen@v1.3.8
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
@@ -261,6 +281,13 @@ jobs:
         run: |
           ls -al ./vips
           ls -al ./generated-protos
+      - name: Setup VIPS lib
+        run: |
+          echo "Installing libvips quietly..."
+          sudo apt-get -qq update
+          sudo apt-get -y -qq install libvips-dev
+          sudo apt list --installed | grep libvips
+          go install github.com/cshum/vipsgen/cmd/vipsgen@v1.3.8
       - name: Print Version
         run: |
           echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
