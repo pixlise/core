@@ -189,7 +189,7 @@ jobs:
           cp ./_out/pixlise-api-linux ./api-service
           cp ./_out/api-integration-test ./internal/cmd-line-tools/api-integration-test/tester
           chmod +x ./api-service
-          chmod +x ../internal/cmd-line-tools/api-integration-test/tester
+          chmod +x ./internal/cmd-line-tools/api-integration-test/tester
 
           echo "Starting PIXLISE API service..."
           ./api-service -customConfigPath ./integration-test-config.json &
