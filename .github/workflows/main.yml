@@ -52,8 +52,7 @@ jobs:
           # The output method used to generate list of users, 'csv' or 'json'.
           user_format_type: "csv"
 
-  unit-test:
-  # NOTE: ubuntu-latest equates to Description:	Ubuntu 24.04.3 LTS on 12 MAR 2026 (while I'm running Ubuntu 25.10)
+  code-gen:
     runs-on: ubuntu-latest
     needs: [version]
     steps:
@@ -73,6 +72,37 @@ jobs:
           sudo apt list --installed | grep libvips
           echo "Running genvips..."
           ./genvips.sh
+      - name: Generate protobuf
+        run: ./genproto.sh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: generated-files-{{ needs.version.outputs.version_tag }}
+          path: |
+            ./vips/
+            ./generated-protos/
+          archive: true
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 1
+
+  unit-test:
+  # NOTE: ubuntu-latest equates to Description:	Ubuntu 24.04.3 LTS on 12 MAR 2026 (while I'm running Ubuntu 25.10)
+    runs-on: ubuntu-latest
+    needs: [version, code-gen]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: generated-files-{{ needs.version.outputs.version_tag }}
+      - name: Display structure of downloaded files
+        run: ls -R
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.24.5"
       - name: Start MongoDB
         uses: supercharge/mongodb-github-action@1.12.1
         with:
@@ -100,24 +130,19 @@ jobs:
   integration-test:
   # NOTE: ubuntu-latest equates to Description:	Ubuntu 24.04.3 LTS on 12 MAR 2026 (while I'm running Ubuntu 25.10)
     runs-on: ubuntu-latest
-    needs: [version]
+    needs: [version, code-gen]
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
           submodules: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: generated-files-{{ needs.version.outputs.version_tag }}
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
           go-version: "1.24.5"
-      - name: Setup VIPS lib
-        run: |
-          echo "Installing libvips quietly..."
-          sudo apt-get update
-          sudo apt-get -y -qq install libvips-dev
-          sudo apt list --installed | grep libvips
-          echo "Running genvips..."
-          ./genvips.sh
       - name: Start MongoDB
         uses: supercharge/mongodb-github-action@1.12.1
         with:
@@ -148,7 +173,7 @@ jobs:
 
   build-lambdas:
     runs-on: ubuntu-latest
-    needs: [version]
+    needs: [version, code-gen]
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_DEFAULT_REGION: us-east-1
@@ -158,18 +183,13 @@ jobs:
         with:
           fetch-depth: 0
           submodules: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: generated-files-{{ needs.version.outputs.version_tag }}
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
           go-version: "1.24.5"
-      - name: Setup VIPS lib
-        run: |
-          echo "Installing libvips quietly..."
-          sudo apt-get update
-          sudo apt-get -y -qq install libvips-dev
-          sudo apt list --installed | grep libvips
-          echo "Running genvips..."
-          ./genvips.sh
       - name: Print Version
         run: |
           echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
@@ -203,7 +223,7 @@ jobs:
           aws s3 cp . s3://corestack-buildartifactsf774a77d-105on4pno9pjm/ --recursive --region us-east-1
 
   build-api-docker:
-    needs: [version]
+    needs: [version, code-gen]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -217,6 +237,9 @@ jobs:
         with:
           fetch-depth: 0
           submodules: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: generated-files-{{ needs.version.outputs.version_tag }}
       - name: Print Version
         run: |
           echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
