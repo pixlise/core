@@ -121,7 +121,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 	dbImage := dbImages[0]
 
 	for _, scanId := range dbImage.AssociatedScanIds {
-		_, err := wsHelpers.CheckObjectAccessForUser(true, scanId, protos.ObjectType_OT_SCAN, userId, memberOfGroupIds, viewerOfGroupIds, params.Svcs.MongoDB)
+		_, err := wsHelpers.CheckObjectAccessForUser(false, scanId, protos.ObjectType_OT_SCAN, userId, memberOfGroupIds, viewerOfGroupIds, params.Svcs.MongoDB)
 		if err != nil {
 			return nil, "", "", "", 0, err
 		}
