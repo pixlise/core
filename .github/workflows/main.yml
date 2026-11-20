@@ -73,9 +73,9 @@ jobs:
           ./genvips.sh
       - name: Generate protobuf
         run: |
+          sudo apt install -y protobuf-compiler
+          protoc --version
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-          # sudo apt install -y protobuf-compiler
-          # protoc --version
           go install github.com/favadi/protoc-go-inject-tag@latest
           ./genproto.sh
       - uses: actions/upload-artifact@v7
