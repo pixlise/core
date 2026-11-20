@@ -191,6 +191,10 @@ jobs:
           chmod +x ./api-service
           chmod +x ./internal/cmd-line-tools/api-integration-test/tester
 
+          echo "Installing libvips quietly..."
+          sudo apt-get -qq update
+          sudo apt-get -y -qq install libvips-dev
+
           echo "Starting PIXLISE API service..."
           ./api-service -customConfigPath ./integration-test-config.json &
           
