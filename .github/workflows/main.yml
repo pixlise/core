@@ -54,6 +54,7 @@ jobs:
 
   code-gen-build:
     runs-on: ubuntu-latest
+    needs: [version]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -164,9 +165,10 @@ jobs:
         with:
           name: generated-files
       - name: Check generated stuff exists
+        if: false
         run: |
-          # ls -al ./vips
-          # ls -al ./generated-protos
+          ls -al ./vips
+          ls -al ./generated-protos
           ls -al ./_out
       - name: Start MongoDB
         uses: supercharge/mongodb-github-action@1.12.1
@@ -186,6 +188,8 @@ jobs:
 
           cp ./_out/pixlise-api-linux ./api-service
           cp ./_out/api-integration-test ./internal/cmd-line-tools/api-integration-test/tester
+          chmod +x ./api-service
+          chmod +x ../internal/cmd-line-tools/api-integration-test/tester
 
           echo "Starting PIXLISE API service..."
           ./api-service -customConfigPath ./integration-test-config.json &
@@ -215,6 +219,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - uses: actions/checkout@v7
+        if: false
         with:
           fetch-depth: 0
           submodules: true
@@ -222,11 +227,13 @@ jobs:
         with:
           name: generated-files
       - name: Check generated stuff exists
+        if: false
         run: |
           # ls -al ./vips
           # ls -al ./generated-protos
           ls -al ./_out
       - name: Print Version
+        if: false
         run: |
           echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
           echo "Tag name: ${{ needs.version.outputs.version_tag }}"
