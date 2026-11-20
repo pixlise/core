@@ -49,7 +49,7 @@ func PutFileData(params apiRouter.ApiHandlerGenericParams) error {
 
 	// Check access to each associated scan. The user should already have a web socket open by this point, so we can
 	// look to see if there is a cached copy of their user group membership. If we don't find one, we stop
-	memberOfGroupIds, viewerOfGroupIds, err := wsHelpers.GetCachedUserGroupAccess(userId, params.Svcs.MongoDB)
+	viewerOfGroupIds, memberOfGroupIds, err := wsHelpers.GetCachedUserGroupAccess(userId, params.Svcs.MongoDB)
 	if err != nil {
 		// User is probably not logged in
 		return errorwithstatus.MakeBadRequestError(errors.New("User has no group membership, can't determine permissions"))

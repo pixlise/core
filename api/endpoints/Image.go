@@ -83,7 +83,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 
 	// Check access to each associated scan. The user should already have a web socket open by this point, so we can
 	// look to see if there is a cached copy of their user group membership. If we don't find one, we stop
-	memberOfGroupIds, viewerOfGroupIds, err := wsHelpers.GetCachedUserGroupAccess(userId, params.Svcs.MongoDB)
+	viewerOfGroupIds, memberOfGroupIds, err := wsHelpers.GetCachedUserGroupAccess(userId, params.Svcs.MongoDB)
 	if err != nil {
 		// User is probably not logged in
 		return nil, "", "", "", 0, errorwithstatus.MakeBadRequestError(errors.New("User has no group membership, can't determine permissions"))
@@ -121,7 +121,7 @@ func GetImage(params apiRouter.ApiHandlerStreamParams) (*s3.GetObjectOutput, str
 	dbImage := dbImages[0]
 
 	for _, scanId := range dbImage.AssociatedScanIds {
-		_, err := wsHelpers.CheckObjectAccessForUser(false, scanId, protos.ObjectType_OT_SCAN, userId, memberOfGroupIds, viewerOfGroupIds, params.Svcs.MongoDB)
+		_, err := wsHelpers.CheckObjectAccessForUser(true, scanId, protos.ObjectType_OT_SCAN, userId, memberOfGroupIds, viewerOfGroupIds, params.Svcs.MongoDB)
 		if err != nil {
 			return nil, "", "", "", 0, err
 		}

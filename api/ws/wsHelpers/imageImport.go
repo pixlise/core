@@ -42,7 +42,7 @@ func ImportUploadedImage(req *protos.ImageImportReq, hctx HandlerContext) error 
 		saveName = path.Join(req.OriginScanId, saveName)
 	}
 
-	_, err := CheckObjectAccess(true, req.OriginScanId, protos.ObjectType_OT_SCAN, hctx)
+	_, err := CheckObjectAccess(false, req.OriginScanId, protos.ObjectType_OT_SCAN, hctx)
 	if err != nil {
 		return err
 	}
