@@ -54,7 +54,6 @@ jobs:
 
   code-gen:
     runs-on: ubuntu-latest
-    needs: [version]
     steps:
       - uses: actions/checkout@v3
         with:
