@@ -15,13 +15,36 @@
 # specific language governing permissions and limitations
 # under the License.
 
+FROM golang:1.24-alpine AS builder
+
+# ARG VERSION
+# ARG GITHUB_SHA
+
+# Note that we are now building differently - we start with binaries in _out, so the following is not used:
+
+# RUN apk add --no-cache ca-certificates libc6-compat wget make bash build-base pkgconfig vips-dev
+#
+# COPY . /build
+# ENV CGO_ENABLED=1
+# ENV BUILD_VERSION=${VERSION}
+# ENV GITHUB_SHA=${GITHUB_SHA}
+#
+# RUN cd /build && ./genvips.sh
+# RUN cd /build && make build-linux-api
+
+# Instead, we just copy the out path
+RUN pwd && ls -al
+COPY ./_out/pixlise-api-linux /build
+
+
+
 FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates libc6-compat wget
 WORKDIR /root
 
 # Copy the Pre-built binary file from the previous stage
-COPY --from=builder ./_out/pixlise-api-linux ./
+COPY --from=builder /build/_out/pixlise-api-linux ./
 
 COPY beam-tool/BGT ./
 COPY beam-tool/Geometry_PIXL_EM_Landing_25Jan2021.csv ./
