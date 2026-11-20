@@ -255,6 +255,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        if: false
         with:
           fetch-depth: 0
           submodules: true
