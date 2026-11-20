@@ -36,7 +36,7 @@ FROM golang:1.24-alpine AS builder
 ##################################################################################################################
 
 # Instead, we just copy the out path
-RUN pwd && ls -al .
+RUN pwd && ls -al . && ls -al ./bin && ls -al ./src
 COPY ./_out/pixlise-api-linux /build
 RUN ls -al /build
 
