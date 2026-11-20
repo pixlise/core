@@ -1,5 +1,4 @@
 name: Bump Version
-env:
 on:
   pull_request:
     types:
