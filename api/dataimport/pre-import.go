@@ -35,7 +35,6 @@ import (
 	"github.com/pixlise/core/v4/api/dataimport/sdfToRSI"
 	"github.com/pixlise/core/v4/core/fileaccess"
 	"github.com/pixlise/core/v4/core/logger"
-	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
 func readFromZip(fileInZip *zip.File, outPath string) (string, error) {
@@ -61,7 +60,7 @@ func readFromZip(fileInZip *zip.File, outPath string) (string, error) {
 	return outFullPath, nil
 }
 
-func ProcessSDF(importId string, zipReader *zip.Reader, zippedData []byte, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
+func ProcessSDF(importId string, zipReader *zip.ReadCloser, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
 	// EM (and now FM if manually uploaded) data comes not via the FM pipeline, but more direct from the instrument via SDF peeks output format.
 	// We search the zip dir tree for:
 	// - sdf_raw.txt
@@ -69,7 +68,7 @@ func ProcessSDF(importId string, zipReader *zip.Reader, zippedData []byte, destB
 	// - All *.jpg files (and based on file name decide if they're needed)
 	// SDF raw file may contain data from multiple scans, so we have to generate one scan per RTT found in sdf_raw.
 
-	localTemp, sdfLocalPath, msas, images, err := startSDFProcess(importId, zipReader, zippedData, logger)
+	localTemp, sdfLocalPath, msas, images, err := startSDFProcess(importId, zipReader, logger)
 	if err != nil {
 		return err
 	}
@@ -158,7 +157,7 @@ func ProcessSDF(importId string, zipReader *zip.Reader, zippedData []byte, destB
 }
 
 // Just broken out to make it testable
-func startSDFProcess(importId string, zipReader *zip.Reader, zippedData []byte, logger logger.ILogger) (string, string, []string, []string, error) {
+func startSDFProcess(importId string, zipReader *zip.ReadCloser, logger logger.ILogger) (string, string, []string, []string, error) {
 	// We also have to run the beam location tool ourselves - there isn't one coming from sdf_raw.txt
 	localTemp := filepath.Join(os.TempDir(), importId)
 	localMSAPath := filepath.Join(localTemp, "msa")
@@ -331,7 +330,7 @@ func createBeamLocation(isCalTarget bool, rsiPath string, rtt int64, outputBeamL
 	return outRXL, outLog, outSurfaceTop, nil
 }
 
-func checkExpectedFiles(zipReader *zip.Reader, expectedFormat string) error {
+func checkExpectedFiles(zipReader *zip.ReadCloser, expectedFormat string) error {
 	count := 0
 	for _, f := range zipReader.File {
 		// If the zip path starts with __MACOSX, ignore it, it's garbage that a mac laptop has included...
@@ -357,7 +356,7 @@ func checkExpectedFiles(zipReader *zip.Reader, expectedFormat string) error {
 	return nil
 }
 
-func ProcessBreadboard(format string, creatorUserId string, datasetID string, zipReader *zip.Reader, zippedData []byte, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
+func ProcessBreadboard(format string, creatorUserId string, datasetID string, zipReader *zip.ReadCloser, localFilePath string, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
 	err := checkExpectedFiles(zipReader, ".msa")
 	if err != nil {
 		return err
@@ -365,6 +364,14 @@ func ProcessBreadboard(format string, creatorUserId string, datasetID string, zi
 
 	// Save the contents as a zip file in the uploads area
 	savePath := path.Join(s3PathStart, "spectra.zip")
+
+	// Read the zip and write it to S3
+	zipReader.Close()
+	zippedData, err := os.ReadFile(localFilePath)
+	if err != nil {
+		return err
+	}
+
 	err = fs.WriteObject(destBucket, savePath, zippedData)
 	if err != nil {
 		return err
@@ -412,60 +419,6 @@ func ProcessBreadboard(format string, creatorUserId string, datasetID string, zi
 	if format == "sbu-breadboard" {
 		importerFile.Group = "Stony Brook Breadboard"
 		importerFile.DetectorConfig = "StonyBrookBreadboard"
-	}
-
-	err = fs.WriteJSON(destBucket, savePath, importerFile)
-	if err != nil {
-		return err
-	}
-	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
-	return nil
-}
-
-func ProcessUserDefined(creatorUserId string, datasetID string, zipReader *zip.Reader, zippedData []byte, req *protos.ScanImportReq, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
-	err := checkExpectedFiles(zipReader, ".tif")
-	if err != nil {
-		return err
-	}
-
-	// Save the contents as a zip file in the uploads area
-	savePath := path.Join(s3PathStart, "user-data.zip")
-	err = fs.WriteObject(destBucket, savePath, zippedData)
-	if err != nil {
-		return err
-	}
-	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
-
-	// Now save detector info
-	savePath = path.Join(s3PathStart, "import.json")
-	importerFile := dataimportModel.BreadboardImportParams{
-		CreatorUserId: creatorUserId,
-
-		// The rest we set to the dataset ID
-		DatasetID: datasetID,
-		//Site: datasetID,
-		//Target: datasetID,
-		Title: datasetID,
-		/*
-			BeamFile // Beam location CSV path
-			HousekeepingFile // Housekeeping CSV path
-			ContextImgDir // Dir to find context images in
-			PseudoIntensityCSVPath // Pseudointensity CSV path
-			IgnoreMSAFiles // MSA files to ignore
-			SingleDetectorMSAs // Expecting single detector (1 column) MSA files
-			DetectorADuplicate // Duplication of detector A to B, because test MSA only had 1 set of spectra
-			BulkQuantFile // Bulk quantification file (for tactical datasets)
-			XPerChanA // eV calibration eV/channel (detector A)
-			OffsetA // eV calibration eV start offset (detector A)
-			XPerChanB // eV calibration eV/channel (detector B)
-			OffsetB // eV calibration eV start offset (detector B)
-			ExcludeNormalDwellSpectra // Hack for tactical datasets - load all MSAs to gen bulk sum, but dont save them in output
-			SOL // Might as well be able to specify SOL. Needed for first spectrum dataset on SOL13
-		*/
-
-		SkipRows:     req.SkipRows,
-		SkipColumns:  req.SkipColumns,
-		MaxMapPoints: req.MaxMapPoints,
 	}
 
 	err = fs.WriteJSON(destBucket, savePath, importerFile)

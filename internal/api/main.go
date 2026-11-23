@@ -183,7 +183,7 @@ func main() {
 
 	go job.ListenForExternalTriggeredJobs(dataimport.JobIDAutoImportPrefix, handler.handleAutoImportJobStatus, svcs.MongoDB, svcs.Log)
 	go memoisation.RunMemoisationGarbageCollector(uint32(cfg.MemoisationGCIntervalSec), uint32(cfg.MaxUnretrievedMemoisationAgeSec), svcs.MongoDB, svcs.TimeStamper, svcs.Log)
-	go garbageCollectMultiPartUploads(120, svcs.MultiPartUpload)
+	go garbageCollectMultiPartUploads(600, svcs.MultiPartUpload)
 
 	log.Fatal(
 		http.ListenAndServe(":8080",

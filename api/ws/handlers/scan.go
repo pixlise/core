@@ -2,7 +2,6 @@ package wsHandler
 
 import (
 	"archive/zip"
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -600,10 +599,9 @@ func HandleScanImportReq(req *protos.ScanImportReq, hctx wsHelpers.HandlerContex
 		return nil, err
 	}
 
-	destBucket := hctx.Svcs.Config.ManualUploadBucket
 	fs := hctx.Svcs.FS
 	logger := hctx.Svcs.Log
-	logger.Infof("Dataset create started for format: %v, id: %v", req.Format, req.Id)
+	logger.Infof("Dataset create started for format: %v, id: %v input file: %v", req.Format, req.Id, req.ZipFileName)
 
 	// Validate the dataset ID - can't contain funny characters because it ends up as an S3 path
 	// NOTE: we also turn space to _ here! Having spaces in the path broke quants because the
@@ -637,26 +635,25 @@ func HandleScanImportReq(req *protos.ScanImportReq, hctx wsHelpers.HandlerContex
 		}
 	*/
 
-	// Read the zip that was expected to be uploaded
-	zipPath := path.Join(s3PathStart, req.ZipFileName)
-	zippedData, err := hctx.Svcs.FS.ReadObject(destBucket, zipPath)
-	if err != nil {
-		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Failed to import, zip file not found: %v", zipPath))
-	}
+	// Use the multi-part uploader to read the file
+	localFile, _ /*sz*/, err := hctx.Svcs.MultiPartUpload.ReadCompletedUpload(req.ZipFileName)
 
 	// Validate zip contents matches the format we were given
-	zipReader, err := zip.NewReader(bytes.NewReader(zippedData), int64(len(zippedData)))
+	zipReader, err := zip.OpenReader(localFile)
 	if err != nil {
 		return nil, err
 	}
+	defer zipReader.Close()
 
 	// Validate contents - detector dependent
+	destBucket := hctx.Svcs.Config.ManualUploadBucket
+
 	if req.Format == "pixl-em" || req.Format == "pixl-fm" {
-		err = dataimport.ProcessSDF(datasetID, zipReader, zippedData, destBucket, s3PathStart, fs, logger)
+		err = dataimport.ProcessSDF(datasetID, zipReader, destBucket, s3PathStart, fs, logger)
 	} else if req.Format == "user-defined" {
-		err = dataimport.ProcessUserDefined(hctx.SessUser.User.Id, datasetID, zipReader, zippedData, req, destBucket, s3PathStart, fs, logger)
+		err = errors.New("user-defined scans must be created via ScanCreateUserDefinedReq message")
 	} else {
-		err = dataimport.ProcessBreadboard(req.Format, hctx.SessUser.User.Id, datasetID, zipReader, zippedData, destBucket, s3PathStart, fs, logger)
+		err = dataimport.ProcessBreadboard(req.Format, hctx.SessUser.User.Id, datasetID, zipReader, localFile, destBucket, s3PathStart, fs, logger)
 	}
 
 	if err != nil {
