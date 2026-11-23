@@ -261,7 +261,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		},
 		imageUploadJWT,
 		http.StatusOK,
-		`{"bytesReceived":"596", "completed":true}`,
+		`{"bytesReceived":"596","completed":true}`,
 	)
 
 	// Import the image
@@ -333,7 +333,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		},
 		imageUploadJWT,
 		http.StatusOK,
-		`{"bytesReceived":"596", "completed":true}`,
+		`{"bytesReceived":"596","completed":true}`,
 	)
 
 	// Duplicate upload WITHOUT INTENT should work, replacing the file really
@@ -347,7 +347,7 @@ func testImageUpload(apiHost string, userId1 string, userId2 string) {
 		},
 		imageUploadJWT,
 		http.StatusOK,
-		`{"bytesReceived":"596", "completed":true}`,
+		`{"bytesReceived":"596","completed":true}`,
 	)
 
 	// Duplicate upload should fail as this checks if the image exists already due to intent specified
@@ -999,12 +999,18 @@ func checkFileUploadResult(action string, apiHost string,
 	JWT string, expStatus int, expBody string) {
 	respBody := getFileUploadResult(action, apiHost, uploadReq, JWT, expStatus)
 
+	// JSON processing in Go sometimes puts in spaces, sometimes not, both of these are valid:
+	// {"bytesReceived":"596", "completed":true}
+	// {"bytesReceived":"596","completed":true}
+	// So here we remove the space
+	respStr := strings.ReplaceAll(string(respBody), "\", \"", "\",\"")
+
 	expBodyCompare := expBody
-	if len(expBody) > 0 && strings.HasSuffix(string(respBody), "\n") {
+	if len(expBody) > 0 && strings.HasSuffix(respStr, "\n") {
 		expBodyCompare += "\n"
 	}
 
-	if string(respBody) != expBodyCompare {
+	if respStr != expBodyCompare {
 		log.Fatalf("[%v]\nExpected body=%v\nReceived body=%v", action, expBody, string(respBody))
 	}
 }
@@ -1089,7 +1095,7 @@ func testImageMatchTransform(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusOK,
-		`{"bytesReceived":"596", "completed":true}`,
+		`{"bytesReceived":"596","completed":true}`,
 	)
 
 	u1.AddSendReqAction("Import matched image",
@@ -1208,7 +1214,7 @@ func testImageMatchTransform(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusOK,
-		`{"bytesReceived":"596", "completed":true}`,
+		`{"bytesReceived":"596","completed":true}`,
 	)
 
 	u1.AddSendReqAction("Import as matched image",
