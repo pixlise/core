@@ -59,8 +59,8 @@ func MakeMultiPartUploadHandler(
 // Call this when starting an upload. It checks to see how many bytes we may have received already (in case it's a resume)
 // otherwise returns 0
 func (mp *MultiPartUploadHandler) StartUpload(fileName string, totalBytes uint64) (uint64, bool, error) {
-	validName := fileaccess.MakeValidObjectName(fileName, true)
-	if validName != fileName {
+	validName := fileaccess.MakeValidObjectName(path.Base(fileName), true)
+	if validName != path.Base(fileName) {
 		return 0, false, fmt.Errorf("StartUpload: %v is not a valid file name", fileName)
 	}
 
@@ -172,8 +172,8 @@ func (mp *MultiPartUploadHandler) getPartUploadPath(fileName string) string {
 // If upload position doesn't match, we return an error
 // Returns bytesReceived (uint64), isComplete (bool), error
 func (mp *MultiPartUploadHandler) UploadPart(fileName string, totalUploadedBytes uint64, data []byte) (uint64, bool, error) {
-	validName := fileaccess.MakeValidObjectName(fileName, true)
-	if validName != fileName {
+	validName := fileaccess.MakeValidObjectName(path.Base(fileName), true)
+	if validName != path.Base(fileName) {
 		return 0, false, fmt.Errorf("UploadPart: %v is not a valid file name", fileName)
 	}
 
@@ -255,8 +255,8 @@ func (mp *MultiPartUploadHandler) internalUploadPart(fileName string, totalUploa
 // TODO: Provide an expected checksum?
 // Returns local path to the file, size in bytes and optional error
 func (mp *MultiPartUploadHandler) ReadCompletedUpload(fileName string) (string, uint64, error) {
-	validName := fileaccess.MakeValidObjectName(fileName, true)
-	if validName != fileName {
+	validName := fileaccess.MakeValidObjectName(path.Base(fileName), true)
+	if validName != path.Base(fileName) {
 		return "", 0, fmt.Errorf("ReadCompletedUpload: %v is not a valid file name", fileName)
 	}
 
