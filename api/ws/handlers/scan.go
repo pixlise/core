@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/olahol/melody"
@@ -612,6 +613,11 @@ func HandleScanImportReq(req *protos.ScanImportReq, hctx wsHelpers.HandlerContex
 		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Unexpected format: \"%v\"", req.Format))
 	}
 
+	saveName := req.ZipFileName
+	if !strings.HasPrefix(saveName, datasetID+"/") {
+		saveName = path.Join(datasetID, saveName)
+	}
+
 	s3PathStart := path.Join(filepaths.DatasetUploadRoot, datasetID)
 
 	// Append a few random chars to make it more unique from this point on
@@ -636,7 +642,10 @@ func HandleScanImportReq(req *protos.ScanImportReq, hctx wsHelpers.HandlerContex
 	*/
 
 	// Use the multi-part uploader to read the file
-	localFile, _ /*sz*/, err := hctx.Svcs.MultiPartUpload.ReadCompletedUpload(req.ZipFileName)
+	localFile, _ /*sz*/, err := hctx.Svcs.MultiPartUpload.ReadCompletedUpload(saveName)
+	if err != nil {
+		return nil, err
+	}
 
 	// Validate zip contents matches the format we were given
 	zipReader, err := zip.OpenReader(localFile)
@@ -652,7 +661,7 @@ func HandleScanImportReq(req *protos.ScanImportReq, hctx wsHelpers.HandlerContex
 		err = dataimport.ProcessSDF(datasetID, zipReader, destBucket, s3PathStart, fs, logger)
 	} else if req.Format == "user-defined" {
 		err = errors.New("user-defined scans must be created via ScanCreateUserDefinedReq message")
-	} else {
+	} else if req.Format != "bruker-bcf" {
 		err = dataimport.ProcessBreadboard(req.Format, hctx.SessUser.User.Id, datasetID, zipReader, localFile, destBucket, s3PathStart, fs, logger)
 	}
 
