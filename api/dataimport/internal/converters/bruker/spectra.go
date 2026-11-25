@@ -106,8 +106,8 @@ func (b Bruker) readSpectra(item *brukerreader.HspyItem) (
 
 			beamLookup[pmc+1] = loc
 
-			cubeIdx := pmc * int32(axes.channels)
-			readCounts := cube.Data[cubeIdx : cubeIdx+int32(axes.channels)]
+			cubeIdx := int64(pmc) * int64(axes.channels)
+			readCounts := cube.Data[cubeIdx : cubeIdx+int64(axes.channels)]
 
 			spectrumCounts := make([]int32, axes.channels)
 			for i, c := range readCounts {

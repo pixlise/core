@@ -29,6 +29,11 @@ func (b Bruker) Import(importPath string, pseudoIntensityRangesPath string, data
 		return nil, "", errors.New("Bruker BCF file not found")
 	}
 
+	// Validate parameters
+	if b.Downsample < 1 {
+		return nil, "", errors.New("Downsample must be 1 or greater")
+	}
+
 	// TODO: Figure out a way to save some more of the metadata in the BCF:
 	// Position parameters like stage XYZ, detector serial/window, energy characteristics, calibration params,
 	// date/timestamps, etc. Most of these were catered for in the PIXLISE world by having a detector config
