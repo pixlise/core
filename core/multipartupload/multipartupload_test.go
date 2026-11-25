@@ -64,8 +64,11 @@ func Example_upload() {
 	sz, completed, err = mp.UploadPart("new.png", 9, []byte{10})
 	fmt.Printf("upload-part-5: %v|%v|%v\n", sz, completed, err)
 
-	sz, comp, err = mp.StartUpload("new.png", 10)
+	sz, comp, err = mp.StartUpload("new.png", 12)
 	fmt.Printf("start_resume-fail: %v|%v|%v\n", sz, comp, err)
+
+	sz, comp, err = mp.StartUpload("new.png", 10)
+	fmt.Printf("start_resume-ok: %v|%v|%v\n", sz, comp, err)
 
 	err = mp.GarbageCollect()
 	fmt.Printf("GC: %v\n", err)
@@ -87,18 +90,19 @@ func Example_upload() {
 	// start: 0|false|<nil>
 	// start_diff_size: 0|false|StartUpload for new.png (12 bytes) error: Upload start failed due to total bytes mismatch. Expecting 10 bytes, now starting with 12 bytes
 	// start_diff_size2: 0|false|StartUpload for new.png (9 bytes) error: Upload start failed due to total bytes mismatch. Expecting 10 bytes, now starting with 9 bytes
-	// upload-part-fail: 0|false|UploadPart for not-started.png (0 bytes so far) error: Uploading part of file not-started.png, total bytes so far 0: failed to read status: open ./test-bucket/bucket/part-path/not-started.png/status.json: no such file or directory
-	// upload-part-err: 0|false|UploadPart for new.png (0 bytes so far) error: Uploading part of file new.png, total bytes so far 0: part size unexpected: 0
+	// upload-part-fail: 0|false|UploadPart for not-started.png (0 bytes so far) error: failed to read status: open ./test-bucket/bucket/part-path/not-started.png/status.json: no such file or directory
+	// upload-part-err: 0|false|UploadPart for new.png (0 bytes so far) error: part size unexpected: 0
 	// upload-part: 2|false|<nil>
-	// upload-part2-fail: 0|false|UploadPart for new.png (0 bytes so far) error: Uploading part of file new.png, total bytes so far 0: Expected total bytes so far of 2, got 0
+	// upload-part2-fail: 0|false|UploadPart for new.png (0 bytes so far) error: expected total bytes so far of 2, got 0
 	// upload-part2: 5|false|<nil>
-	// upload-part-3-toobig: 0|false|UploadPart for new.png (5 bytes so far) error: Uploading part of file new.png, total bytes so far 5: uploaded too many bytes. Expected 10, got 13
+	// upload-part-3-toobig: 0|false|UploadPart for new.png (5 bytes so far) error: uploaded too many bytes. Expected 10, got 13
 	// upload-part-3: 8|false|<nil>
-	// upload-part-4-fail: 0|false|UploadPart for new.png (9 bytes so far) error: Uploading part of file new.png, total bytes so far 9: Expected total bytes so far of 8, got 9
+	// upload-part-4-fail: 0|false|UploadPart for new.png (9 bytes so far) error: expected total bytes so far of 8, got 9
 	// start_resume: 8|false|<nil>
 	// upload-part-4: 9|false|<nil>
 	// upload-part-5: 10|true|<nil>
-	// start_resume-fail: 0|true|<nil>
+	// start_resume-fail: 0|true|StartUpload for new.png (12 bytes) error: Upload start failed due to total bytes mismatch. Expecting 10 bytes, now starting with 12 bytes
+	// start_resume-ok: 10|true|<nil>
 	// GC: <nil>
 	// INFO: MultiPartFileUpload Garbage Collector running...
 	// GC2: <nil>

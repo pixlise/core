@@ -19,7 +19,11 @@
 // and random ID strings, zipping files/directories, reading/writing images
 package utils
 
-import "golang.org/x/exp/constraints"
+import (
+	"sort"
+
+	"golang.org/x/exp/constraints"
+)
 
 // Simple Go helper functions
 // stuff that you'd expect to be part of the std lib but aren't, eg functions to search for strings
@@ -74,6 +78,17 @@ func GetMapKeys[K comparable, V any](theMap map[K]V) []K {
 		result = append(result, key)
 	}
 
+	return result
+}
+
+func GetSortedMapKeys[V any](theMap map[string]V) []string {
+	result := []string{}
+
+	for key := range theMap {
+		result = append(result, key)
+	}
+
+	sort.Strings(result)
 	return result
 }
 

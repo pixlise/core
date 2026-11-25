@@ -19,9 +19,7 @@ package dataimport
 
 import (
 	"archive/zip"
-	"bytes"
 	"fmt"
-	"os"
 
 	"github.com/pixlise/core/v4/api/dataimport/sdfToRSI"
 	"github.com/pixlise/core/v4/core/logger"
@@ -30,20 +28,15 @@ import (
 // Trigger for a manual dataset regeneration (user clicks save button on dataset edit page)
 func Example_dataimport_ProcessEM() {
 	p := "./test-data/PreImport/20240805_EM_V8.2_ATP_Test_65_A_Day_in_the_Life.zip"
-	zFile, err := os.ReadFile(p)
+	z, err := zip.OpenReader(p)
 
 	if err == nil {
-		var z *zip.Reader
-		z, err = zip.NewReader(bytes.NewReader(zFile), int64(len(zFile)))
+		l := logger.StdOutLoggerForTest{}
 
-		if err == nil {
-			l := logger.StdOutLoggerForTest{}
-
-			localTemp, sdfLocalPath, _, _, err := startSDFProcess("123", z, zFile, &l)
-			fmt.Printf("startEMProcess err=%v\n", err)
-			genFiles, rtts, err := sdfToRSI.ConvertSDFtoRSIs(sdfLocalPath, localTemp, &l)
-			fmt.Printf("genFiles: %v\nrtts: %v\nerr: %v\n", genFiles, rtts, err)
-		}
+		localTemp, sdfLocalPath, _, _, err := startSDFProcess("123", z, &l)
+		fmt.Printf("startEMProcess err=%v\n", err)
+		genFiles, rtts, err := sdfToRSI.ConvertSDFtoRSIs(sdfLocalPath, localTemp, &l)
+		fmt.Printf("genFiles: %v\nrtts: %v\nerr: %v\n", genFiles, rtts, err)
 	}
 
 	// Output:

@@ -13,18 +13,18 @@ lint: ## Lint the files
 	#golint -set_exit_status ${PKG_LIST}
 	golint ${PKG_LIST}
 
-unittest-short: ## Run unittests
-	mkdir -p _out
-	go install github.com/favadi/protoc-go-inject-tag@latest
-	go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
-	protoc-go-inject-tag -remove_tag_comment -input="./generated-protos/*.pb.go"
+unittest-short: ## Run unittests, Go tests check for this with "if testing.Short() {...}"
+	# mkdir -p _out
+	# go install github.com/favadi/protoc-go-inject-tag@latest
+	# go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
+	# protoc-go-inject-tag -remove_tag_comment -input="./generated-protos/*.pb.go"
 	go test -short ./...
 
 unittest-full: ## Run unittests
-	mkdir -p _out
-	go install github.com/favadi/protoc-go-inject-tag@latest
-	go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
-	protoc-go-inject-tag -remove_tag_comment -input="./generated-protos/*.pb.go"
+	# mkdir -p _out
+	# go install github.com/favadi/protoc-go-inject-tag@latest
+	# go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
+	# protoc-go-inject-tag -remove_tag_comment -input="./generated-protos/*.pb.go"
 	go test -timeout 30m ./...
 
 integrationtest:
@@ -55,8 +55,8 @@ build-linux-aux:
 	echo "version: ${BUILD_VERSION}"
 	echo "sha: ${GITHUB_SHA}"
 	GOOS=linux GOARCH=amd64 go run ./data-formats/codegen/main.go -protoPath ./data-formats/api-messages/ -goOutPath ./api/ws/
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -o ./_out/bootstrap ./internal/lambdas/data-import
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -o ./_out/pixlise-job-node ./internal/cmd-line-tools/job-node
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -o ./_out/bootstrap ./internal/lambdas/data-import
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'github.com/pixlise/core/v4/api/services.ApiVersion=${BUILD_VERSION}' -X 'github.com/pixlise/core/v4/api/services.GitHash=${GITHUB_SHA}'" -o ./_out/pixlise-job-node ./internal/cmd-line-tools/job-node
 #	GOOS=linux GOARCH=amd64 go build -v -o ./_out/importtest-linux ./internal/cmdline-tools/import-integration-test
 #	GOOS=linux GOARCH=amd64 go build -v -o ./_out/integrationtest-linux ./internal/cmdline-tools/api-integration-test
 

@@ -119,6 +119,8 @@ type APIConfig struct {
 
 	CompletedFileGCTimeoutSec  int // If a file has uploaded and is marked complete, we keep it around for this many seconds before garbage collecting it
 	IncompleteFileGCTimeoutSec int // If a file upload has NOT completed, we keep the uploaded fragments around for this many seconds before garbage collecting it
+
+	HidePIXLScanUploads bool
 }
 
 // JobRunningConfig contains all configs required to be able to run jobs by the back-end. This can involve starting quants or other jobs

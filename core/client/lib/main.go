@@ -352,33 +352,18 @@ func triggerScheduledJob(scheduledJobId string, jobParams string) *C.char {
 }
 
 //export uploadImage
-func uploadImage(imageUpload string) *C.char {
-	// Here we can read the data string as a protobuf message and create the right structure
-	upload := &protos.ImageUploadHttpRequest{}
-	err := protojson.Unmarshal([]byte(imageUpload), upload)
+func uploadImage(localImagePath string, importImageReq string) *C.char {
+	req := &protos.ImageImportReq{}
+	err := protojson.Unmarshal([]byte(importImageReq), req)
 	if err != nil {
-		return C.CString(fmt.Sprintf("uploadImage: Failed to decode imageUpload: %v", err))
+		return C.CString(fmt.Sprintf("uploadImage: Failed to decode ImageImportReq: %v", err))
 	}
 
 	if apiClient == nil {
 		return C.CString("Not authenticated")
 	}
 
-	_ /*sz*/, err = apiClient.UploadImage(upload)
-	if err != nil {
-		return C.CString(fmt.Sprintf("uploadImage error: %v", err))
-	}
-
-	return emptyCString
-}
-
-//export uploadLargeImage
-func uploadLargeImage(localImagePath string, scanId string, imageName string) *C.char {
-	if apiClient == nil {
-		return C.CString("Not authenticated")
-	}
-
-	err := apiClient.UploadLargeImage(localImagePath, scanId, imageName)
+	err = apiClient.UploadImage(localImagePath, req)
 	if err != nil {
 		return C.CString(fmt.Sprintf("%v", err))
 	}

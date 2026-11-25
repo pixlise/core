@@ -16,7 +16,6 @@ import (
 	"github.com/pixlise/core/v4/core/auth0login"
 	"github.com/pixlise/core/v4/core/wstestlib"
 	protos "github.com/pixlise/core/v4/generated-protos"
-	"google.golang.org/protobuf/proto"
 )
 
 const imagePath = "images/download/048300551/PCW_0125_0678031992_000RCM_N00417120483005510091075J02.png"
@@ -41,17 +40,11 @@ func testImageGet_PreWS(apiHost string) string {
 	seedImageLocations()
 	seedImageFile(path.Base(imagePath), scanId, apiDatasetBucket)
 
-	testImageGet_NoMembership(apiHost, imagePath, "GET", nil, imageGetJWT)
-
-	uploadBody, err := proto.Marshal(&protos.ImageUploadHttpRequest{
-		Name:      "image.jpg",
-		ImageData: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-	})
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	testImageGet_NoMembership(apiHost, "images", "PUT", bytes.NewBuffer(uploadBody), imageGetJWT)
+	// To support load balanced environments with multiple EC2s we had to remove the restriction that HTTP endpoints
+	// only work if the user has logged in to the web socket (and hence group information has been pre-cached!)
+	// So the following tests are no longer relevant:
+	// testImage_NoMembership(apiHost, imagePath, "GET", "", nil, imageGetJWT)
+	// testImage_NoMembership(apiHost, "images", "PUT", fmt.Sprintf("name=%v", "image.jpg"), bytes.NewBuffer([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}), imageGetJWT)
 	return imageGetJWT
 }
 
@@ -107,19 +100,12 @@ func failIf(cond bool, err error) {
 	}
 }
 
-func makeAPIHostWithProtocol(apiHost string) string {
-	if strings.Contains(apiHost, "local") || strings.Contains(apiHost, "unittest") {
-		return "http://" + apiHost
-	}
-	return "https://" + apiHost
-}
-
 func testImageGet_NoJWT(apiHost string) {
 	//res, err := url.JoinPath(apiHost, imagePath)
 	//failIf(err != nil, err)
 	//resp, err := http.Get(res)
 
-	resp, err := http.Get(makeAPIHostWithProtocol(apiHost + "/" + strings.TrimLeft(imagePath, "/")))
+	resp, err := http.Get(wstestlib.MakeAPIHostWithProtocol(apiHost + "/" + strings.TrimLeft(imagePath, "/")))
 	failIf(err != nil, err)
 
 	defer resp.Body.Close()
@@ -137,7 +123,7 @@ func doHTTPRequest(method string, apiHost string, urlPath string, query string, 
 		urlPath = "/" + urlPath
 	}
 
-	wsConnectUrl, err := url.Parse(apiHost)
+	wsConnectUrl, err := url.Parse(wstestlib.MakeAPIHostWithProtocol(apiHost))
 	if err != nil {
 		return 0, []byte{}, err
 	}
@@ -158,7 +144,6 @@ func doHTTPRequest(method string, apiHost string, urlPath string, query string, 
 		return 0, []byte{}, err
 	}
 	req.Header.Set("Authorization", "Bearer "+jwt)
-
 	req.Header.Set("Authorization", "Bearer "+jwt)
 
 	resp, err := client.Do(req)
@@ -182,13 +167,19 @@ func testImageGet_BadPath(apiHost string, jwt string) {
 	failIf(string(body) != "404 page not found\n" || status != 404, fmt.Errorf("Unexpected response! Status %v, body: %v", status, string(body)))
 }
 
-func testImageGet_NoMembership(apiHost string, urlPath string, method string, reqBody *bytes.Buffer, jwt string) {
-	status, body, err := doHTTPRequest(method, apiHost, urlPath, "", reqBody, jwt)
+/*
+	func testImage_NoMembership(apiHost string, urlPath string, method string, query string, reqBody *bytes.Buffer, jwt string) {
+		status, body, err := doHTTPRequest(method, apiHost, urlPath, query, reqBody, jwt)
 
-	failIf(err != nil, err)
-	failIf(string(body) != "User has no group membership, can't determine permissions\n" || status != 400, fmt.Errorf("Unexpected response! Status %v, body: %v", status, string(body)))
-}
-
+		failIf(err != nil, err)
+		// We were looking for this:
+		//failIf(string(body) != "User has no group membership, can't determine permissions\n" || status != 400, fmt.Errorf("Unexpected response! Status %v, body: %v", status, string(body)))
+		// But then to support load balanced environments with multiple EC2s we had to remove the restriction that HTTP endpoints
+		// only work if the user has logged in to the web socket (and hence group information has been pre-cached!)
+		// So now we expect this:
+		failIf(string(body) != "View access denied for: SCAN named \"Naltsos\" (id: 048300551)\n" || status != 401, fmt.Errorf("Unexpected response! Status %v, body: %v", status, string(body)))
+	}
+*/
 func testImageGet_OK(apiHost string, jwt string) {
 	status, body, err := doHTTPRequest("GET", apiHost, imagePath, "", nil, jwt)
 	failIf(err != nil, err)

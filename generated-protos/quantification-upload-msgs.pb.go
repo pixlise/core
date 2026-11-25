@@ -135,6 +135,119 @@ func (x *QuantUploadResp) GetCreatedQuantId() string {
 	return ""
 }
 
+// requires(QUANTIFY)
+type QuantImportReq struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	ScanId           string                 `protobuf:"bytes,1,opt,name=scanId,proto3" json:"scanId,omitempty"`
+	Name             string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Comments         string                 `protobuf:"bytes,3,opt,name=comments,proto3" json:"comments,omitempty"`
+	UploadedFileName string                 `protobuf:"bytes,5,opt,name=uploadedFileName,proto3" json:"uploadedFileName,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *QuantImportReq) Reset() {
+	*x = QuantImportReq{}
+	mi := &file_quantification_upload_msgs_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QuantImportReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuantImportReq) ProtoMessage() {}
+
+func (x *QuantImportReq) ProtoReflect() protoreflect.Message {
+	mi := &file_quantification_upload_msgs_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuantImportReq.ProtoReflect.Descriptor instead.
+func (*QuantImportReq) Descriptor() ([]byte, []int) {
+	return file_quantification_upload_msgs_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *QuantImportReq) GetScanId() string {
+	if x != nil {
+		return x.ScanId
+	}
+	return ""
+}
+
+func (x *QuantImportReq) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *QuantImportReq) GetComments() string {
+	if x != nil {
+		return x.Comments
+	}
+	return ""
+}
+
+func (x *QuantImportReq) GetUploadedFileName() string {
+	if x != nil {
+		return x.UploadedFileName
+	}
+	return ""
+}
+
+type QuantImportResp struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	CreatedQuantId string                 `protobuf:"bytes,1,opt,name=createdQuantId,proto3" json:"createdQuantId,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *QuantImportResp) Reset() {
+	*x = QuantImportResp{}
+	mi := &file_quantification_upload_msgs_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QuantImportResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuantImportResp) ProtoMessage() {}
+
+func (x *QuantImportResp) ProtoReflect() protoreflect.Message {
+	mi := &file_quantification_upload_msgs_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuantImportResp.ProtoReflect.Descriptor instead.
+func (*QuantImportResp) Descriptor() ([]byte, []int) {
+	return file_quantification_upload_msgs_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *QuantImportResp) GetCreatedQuantId() string {
+	if x != nil {
+		return x.CreatedQuantId
+	}
+	return ""
+}
+
 var File_quantification_upload_msgs_proto protoreflect.FileDescriptor
 
 const file_quantification_upload_msgs_proto_rawDesc = "" +
@@ -146,6 +259,13 @@ const file_quantification_upload_msgs_proto_rawDesc = "" +
 	"\bcomments\x18\x03 \x01(\tR\bcomments\x12\x18\n" +
 	"\acsvData\x18\x05 \x01(\tR\acsvData\"9\n" +
 	"\x0fQuantUploadResp\x12&\n" +
+	"\x0ecreatedQuantId\x18\x01 \x01(\tR\x0ecreatedQuantId\"\x84\x01\n" +
+	"\x0eQuantImportReq\x12\x16\n" +
+	"\x06scanId\x18\x01 \x01(\tR\x06scanId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
+	"\bcomments\x18\x03 \x01(\tR\bcomments\x12*\n" +
+	"\x10uploadedFileName\x18\x05 \x01(\tR\x10uploadedFileName\"9\n" +
+	"\x0fQuantImportResp\x12&\n" +
 	"\x0ecreatedQuantId\x18\x01 \x01(\tR\x0ecreatedQuantIdB\n" +
 	"Z\b.;protosb\x06proto3"
 
@@ -161,10 +281,12 @@ func file_quantification_upload_msgs_proto_rawDescGZIP() []byte {
 	return file_quantification_upload_msgs_proto_rawDescData
 }
 
-var file_quantification_upload_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_quantification_upload_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_quantification_upload_msgs_proto_goTypes = []any{
 	(*QuantUploadReq)(nil),  // 0: QuantUploadReq
 	(*QuantUploadResp)(nil), // 1: QuantUploadResp
+	(*QuantImportReq)(nil),  // 2: QuantImportReq
+	(*QuantImportResp)(nil), // 3: QuantImportResp
 }
 var file_quantification_upload_msgs_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -185,7 +307,7 @@ func file_quantification_upload_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_quantification_upload_msgs_proto_rawDesc), len(file_quantification_upload_msgs_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

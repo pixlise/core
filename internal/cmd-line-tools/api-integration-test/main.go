@@ -52,6 +52,7 @@ var test1Username, test1Password, test2Username, test2Password string
 
 var apiStorageFileAccess fileaccess.FileAccess
 var apiDatasetBucket string
+var apiUploadBucket string
 var apiUsersBucket string
 var apiJobsBucket string
 
@@ -69,6 +70,7 @@ func main() {
 	flag.StringVar(&apiDBSecret, "apiDBSecret", "", "Mongo secret of the DB the API is connected")
 	flag.StringVar(&apiDatasetBucket, "datasetBucket", "", "Dataset bucket the API is using")
 	flag.StringVar(&apiUsersBucket, "usersBucket", "", "User Data bucket the API is using")
+	flag.StringVar(&apiUploadBucket, "uploadBucket", "", "User uploads bucket the API is using")
 	flag.StringVar(&apiJobsBucket, "jobsBucket", "", "Job Data bucket the API is using")
 	flag.StringVar(&auth0Params.Domain, "auth0Domain", "", "Auth0 domain for management API")
 	flag.StringVar(&auth0Params.ClientId, "auth0ClientId", "", "Auth0 client id for management API")
@@ -198,7 +200,69 @@ func runLocalTests(apiHost string, isCI bool) {
 		testExpressionRuntimeMsgs(apiHost)
 	}
 	testDataModules(apiHost)
-	testUserContent(apiHost, map[string]contentMessaging{
+	testUserContent(apiHost, getUserContentTemplate())
+
+	testExpressionModuleRefBulkChange(apiHost)
+
+	testUserSearch(apiHost)
+	testUserDetails(apiHost, u1Id, u2Id)
+	if !isCI {
+		client.ClearJWTCache()
+		testUserManagement(apiHost)
+	}
+	testUserGroups(apiHost)
+	testLogMsgs(apiHost)
+	testScanData(apiHost, 3) // 3 takes about 5 minutes, 2 is quicker, 1 or less isn't testing enough user->group permission hops
+	testDetectorConfig(apiHost)
+
+	testTags(apiHost)
+	testROIUserConfiguration(apiHost)
+	testScreenConfiguration(apiHost)
+	testWidgetData(apiHost)
+
+	// Removed for now, looks like zenodo API changed recently?
+	//testDOI(apiHost)
+}
+
+func seedBuckets(s3 fileaccess.FileAccess, apiDatasetBucket string) error {
+	fs := fileaccess.FSAccess{}
+	rootPath := "test-files/seed-scans"
+	files, err := fs.ListObjects(".", rootPath)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		// Lop off the start of the path
+		pos := strings.Index(file, rootPath)
+		if pos < 0 {
+			return fmt.Errorf("Unexpected scan seed data path: %v", file)
+		}
+
+		upPath := path.Join("Scans", file[pos+len(rootPath):])
+		if exists, _, err := apiStorageFileAccess.ObjectExists(apiDatasetBucket, upPath); err == nil && exists {
+			fmt.Printf("s3://%v/%v already exists, skipping upload\n", apiDatasetBucket, upPath)
+			continue
+		}
+
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return err
+		}
+
+		err = s3.WriteObject(apiDatasetBucket, upPath, data)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Wrote s3://%v/%v...\n", apiDatasetBucket, upPath)
+	}
+
+	return nil
+}
+
+func getUserContentTemplate() map[string]contentMessaging {
+	return map[string]contentMessaging{
 		"elementSet": {
 			itemName: "elementSet",
 			listName: "elementSets",
@@ -469,63 +533,5 @@ func runLocalTests(apiHost string, isCI bool) {
 			u1CreatedItemName:       "User1 Expression",
 			u1CreatedItemEditedName: "User1 Expression",
 		},
-	})
-
-	testExpressionModuleRefBulkChange(apiHost)
-
-	testUserSearch(apiHost)
-	testUserDetails(apiHost, u1Id, u2Id)
-	if !isCI {
-		client.ClearJWTCache()
-		testUserManagement(apiHost)
 	}
-	testUserGroups(apiHost)
-	testLogMsgs(apiHost)
-	testScanData(apiHost, 3) // 3 takes about 5 minutes, 2 is quicker, 1 or less isn't testing enough user->group permission hops
-	testDetectorConfig(apiHost)
-
-	testTags(apiHost)
-	testROIUserConfiguration(apiHost)
-	testScreenConfiguration(apiHost)
-	testWidgetData(apiHost)
-
-	// Removed for now, looks like zenodo API changed recently?
-	//testDOI(apiHost)
-}
-
-func seedBuckets(s3 fileaccess.FileAccess, apiDatasetBucket string) error {
-	fs := fileaccess.FSAccess{}
-	rootPath := "test-files/seed-scans"
-	files, err := fs.ListObjects(".", rootPath)
-	if err != nil {
-		return err
-	}
-
-	for _, file := range files {
-		// Lop off the start of the path
-		pos := strings.Index(file, rootPath)
-		if pos < 0 {
-			return fmt.Errorf("Unexpected scan seed data path: %v", file)
-		}
-
-		upPath := path.Join("Scans", file[pos+len(rootPath):])
-		if exists, _, err := apiStorageFileAccess.ObjectExists(apiDatasetBucket, upPath); err == nil && exists {
-			fmt.Printf("s3://%v/%v already exists, skipping upload\n", apiDatasetBucket, upPath)
-			continue
-		}
-
-		data, err := os.ReadFile(file)
-		if err != nil {
-			return err
-		}
-
-		err = s3.WriteObject(apiDatasetBucket, upPath, data)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("Wrote s3://%v/%v...\n", apiDatasetBucket, upPath)
-	}
-
-	return nil
 }

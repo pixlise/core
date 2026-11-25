@@ -57,6 +57,13 @@ type ScriptedTestUser struct {
 
 var savedItems = map[string]string{}
 
+func MakeAPIHostWithProtocol(apiHost string) string {
+	if strings.Contains(apiHost, "local") || strings.Contains(apiHost, "unittest") {
+		return "http://" + apiHost
+	}
+	return "https://" + apiHost
+}
+
 func MakeScriptedTestUser(auth0Params client.Auth0Info) ScriptedTestUser {
 	return ScriptedTestUser{
 		auth0Params:  auth0Params,
@@ -87,6 +94,7 @@ func (s *ScriptedTestUser) ClearActions() {
 
 // Adding various action types
 func (s *ScriptedTestUser) AddConnectAction(annotation string, params *client.ConnectInfo) {
+	params.Host = MakeAPIHostWithProtocol(params.Host)
 	s.addAction(actionItem{annotation: annotation, connect: params})
 }
 
