@@ -79,23 +79,31 @@ func PutFileData(params apiRouter.ApiHandlerGenericParams) error {
 
 	saveName := fileName
 
+	// If we have an upload intent defined, we can check for permissions/duplicates etc when the upload starts
+	// so things fail now instead of when the corresponding import websocket message is sent in and the user
+	// has waited ages to upload something only to find it's a duplicate file name or something
+	uploadIntent := params.PathParams[queryparams.UploadIntent]
+
 	// If we have a scan id provided, ensure we have access to it and ensure it prefixes the file name!
 	if len(scanId) > 0 {
 		// Check that user has access to this scan
 		_, err = wsHelpers.CheckObjectAccessForUser(true, scanId, protos.ObjectType_OT_SCAN, userId, memberOfGroupIds, viewerOfGroupIds, params.Svcs.MongoDB)
-		if err != nil {
-			return err
+		// If we're uploading a scan, we want the scan NOT to exist!
+		if uploadIntent == "scan" {
+			if err == nil {
+				return errorwithstatus.MakeBadRequestError(fmt.Errorf("Scan %v already exists", scanId))
+			}
+		} else {
+			// Not a scan upload, so scan SHOULD exist
+			if err != nil {
+				return err
+			}
 		}
 
 		if !strings.HasPrefix(saveName, scanId+"/") {
 			saveName = path.Join(scanId, saveName)
 		}
 	}
-
-	// If we have an upload intent defined, we can check for permissions/duplicates etc when the upload starts
-	// so things fail now instead of when the corresponding import websocket message is sent in and the user
-	// has waited ages to upload something only to find it's a duplicate file name or something
-	uploadIntent := params.PathParams[queryparams.UploadIntent]
 
 	if uploadIntent == "image" {
 		// We only allow a few formats:
@@ -121,6 +129,18 @@ func PutFileData(params apiRouter.ApiHandlerGenericParams) error {
 				return errorwithstatus.MakeBadRequestError(fmt.Errorf("Failed to check if image \"%v\" already exists: %v", saveName, findOneResult.Err()))
 			}
 		}
+	} else if uploadIntent == "scan" {
+		// Must be a zip!
+		nameLowerCase := strings.ToLower(saveName)
+		if !strings.HasSuffix(nameLowerCase, ".zip") {
+			return errorwithstatus.MakeBadRequestError(fmt.Errorf("Unexpected format: %v. Must be ZIP", saveName))
+		}
+
+		// Ensure there's a scan id
+		// NOTE: This would've already been checked above when looking up the scan ID!
+		// if len(scanId) <= 0 {
+		// 	return errorwithstatus.MakeBadRequestError(errors.New("Missing scan id"))
+		// }
 	} else if len(uploadIntent) > 0 {
 		// Don't know this one
 		return errorwithstatus.MakeBadRequestError(fmt.Errorf("Unknown intent: \"%v\"", uploadIntent))
