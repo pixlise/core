@@ -638,7 +638,7 @@ func testImageMultipartUpload(apiHost string) {
 		log.Fatalf("Expected resp body BytesReceived to be 0, got: %v", resp.BytesReceived)
 	}
 
-	respBody = getFileUploadResult(
+	checkFileUploadResult(
 		"Send 3rd chunk of image, should fail, not the first one expected",
 		apiHost,
 		&uploadFileReq{
@@ -650,14 +650,10 @@ func testImageMultipartUpload(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusBadRequest,
+		"UploadPart for 048300551/toResume.png (30 bytes so far) error: expected total bytes so far of 0, got 30\n"
 	)
 
-	exp = "UploadPart for 048300551/toResume.png (30 bytes so far) error: expected total bytes so far of 0, got 30\n"
-	if string(respBody) != exp {
-		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
-	}
-
-	respBody = getFileUploadResult(
+	checkFileUploadResult(
 		"Send first chunk of image",
 		apiHost,
 		&uploadFileReq{
@@ -669,19 +665,10 @@ func testImageMultipartUpload(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusOK,
+		"{\"bytesReceived\":\"20\"}",
 	)
-	/*
-		err = protojson.Unmarshal(respBody, resp)
-		if err != nil {
-			log.Fatalln(err)
-		}
-	*/
-	exp = "{\"bytesReceived\":\"20\"}"
-	if string(respBody) != exp {
-		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
-	}
 
-	respBody = getFileUploadResult(
+	checkFileUploadResult(
 		"Send second chunk of image",
 		apiHost,
 		&uploadFileReq{
@@ -693,17 +680,8 @@ func testImageMultipartUpload(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusOK,
+		"{\"bytesReceived\":\"50\"}",
 	)
-	/*
-		err = protojson.Unmarshal(respBody, resp)
-		if err != nil {
-			log.Fatalln(err)
-		}
-	*/
-	exp = "{\"bytesReceived\":\"50\"}"
-	if string(respBody) != exp {
-		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
-	}
 
 	respBody = getFileUploadResult(
 		"Checking resume status after 2 chunks uploaded",
@@ -805,7 +783,7 @@ func testImageMultipartUpload(apiHost string) {
 	u1.CloseActionGroup([]string{}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 
-	respBody = getFileUploadResult(
+	checkFileUploadResult(
 		"Send third chunk of image",
 		apiHost,
 		&uploadFileReq{
@@ -817,14 +795,10 @@ func testImageMultipartUpload(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusOK,
+		"{\"bytesReceived\":\"200\"}",
 	)
 
-	exp = "{\"bytesReceived\":\"200\"}"
-	if string(respBody) != exp {
-		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
-	}
-
-	respBody = getFileUploadResult(
+	checkFileUploadResult(
 		"Send last chunk of image, should be finished",
 		apiHost,
 		&uploadFileReq{
@@ -836,12 +810,8 @@ func testImageMultipartUpload(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusOK,
+		"{\"bytesReceived\":\"596\",\"completed\":true}",
 	)
-
-	exp = "{\"bytesReceived\":\"596\", \"completed\":true}"
-	if string(respBody) != exp {
-		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
-	}
 
 	u1.AddSendReqAction("Import multi-part multi-resumed image",
 		fmt.Sprintf(`{"imageImportReq":{
@@ -902,7 +872,7 @@ func testImageMultipartUpload(apiHost string) {
 	}, 5000)
 	wstestlib.ExecQueuedActions(&u1)
 
-	respBody = getFileUploadResult(
+	checkFileUploadResult(
 		"Checking resume status after image upload completed, should signal it's completed uploading",
 		apiHost,
 		&uploadFileReq{
@@ -912,14 +882,10 @@ func testImageMultipartUpload(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusOK,
+		"{\"bytesReceived\":\"596\",\"completed\":true}"
 	)
 
-	exp = "{\"bytesReceived\":\"596\", \"completed\":true}"
-	if string(respBody) != exp {
-		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
-	}
-
-	respBody = getFileUploadResult(
+	checkFileUploadResult(
 		"Send extra 5th chunk of image, should fail",
 		apiHost,
 		&uploadFileReq{
@@ -931,14 +897,10 @@ func testImageMultipartUpload(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusBadRequest,
+		"UploadPart for 048300551/toResume.png (250 bytes so far) error: unexpected status already complete\n"
 	)
 
-	exp = "UploadPart for 048300551/toResume.png (250 bytes so far) error: unexpected status already complete\n"
-	if string(respBody) != exp {
-		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
-	}
-
-	respBody = getFileUploadResult(
+	checkFileUploadResult(
 		"Send last chunk of image again, should fail",
 		apiHost,
 		&uploadFileReq{
@@ -950,12 +912,8 @@ func testImageMultipartUpload(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusBadRequest,
+		"UploadPart for 048300551/toResume.png (200 bytes so far) error: unexpected status already complete\n"
 	)
-
-	exp = "UploadPart for 048300551/toResume.png (200 bytes so far) error: unexpected status already complete\n"
-	if string(respBody) != exp {
-		log.Fatalf("Expected \"%v\", got \"%v\"", exp, string(respBody))
-	}
 }
 
 type uploadFileReq struct {
