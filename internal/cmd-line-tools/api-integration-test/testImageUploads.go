@@ -963,8 +963,8 @@ func checkFileUploadResult(action string, apiHost string,
 	// So here we remove the space
 	respStr := strings.ReplaceAll(string(respBody), "\", \"", "\",\"")
 
-	strings.TrimRight(respStr, "\n")
-	strings.TrimRight(expBody, "\n")
+	respStr = strings.TrimRight(respStr, "\n")
+	expBody = strings.TrimRight(expBody, "\n")
 
 	if respStr != expBody {
 		log.Fatalf("[%v]\nExpected body=%v\nReceived body=%v", action, expBody, respStr)

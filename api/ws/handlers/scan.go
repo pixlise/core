@@ -661,7 +661,9 @@ func HandleScanImportReq(req *protos.ScanImportReq, hctx wsHelpers.HandlerContex
 		err = dataimport.ProcessSDF(datasetID, zipReader, destBucket, s3PathStart, fs, logger)
 	} else if req.Format == "user-defined" {
 		err = errors.New("user-defined scans must be created via ScanCreateUserDefinedReq message")
-	} else if req.Format != "bruker-bcf" {
+	} else if req.Format == "bruker-bcf" {
+		err = dataimport.ProcessBruker(hctx.SessUser.User.Id, datasetID, zipReader, localFile, destBucket, s3PathStart, fs, logger)
+	} else {
 		err = dataimport.ProcessBreadboard(req.Format, hctx.SessUser.User.Id, datasetID, zipReader, localFile, destBucket, s3PathStart, fs, logger)
 	}
 

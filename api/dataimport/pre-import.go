@@ -330,7 +330,7 @@ func createBeamLocation(isCalTarget bool, rsiPath string, rtt int64, outputBeamL
 	return outRXL, outLog, outSurfaceTop, nil
 }
 
-func checkExpectedFiles(zipReader *zip.ReadCloser, expectedFormat string) error {
+func checkExpectedFiles(zipReader *zip.ReadCloser, expectedFormat string) (int, error) {
 	count := 0
 	for _, f := range zipReader.File {
 		// If the zip path starts with __MACOSX, ignore it, it's garbage that a mac laptop has included...
@@ -339,25 +339,70 @@ func checkExpectedFiles(zipReader *zip.ReadCloser, expectedFormat string) error 
 		//}
 
 		if f.FileInfo().IsDir() {
-			return fmt.Errorf("Zip file must not contain sub-directories. Found: %v", f.Name)
+			return 0, fmt.Errorf("Zip file must not contain sub-directories. Found: %v", f.Name)
 		}
 
 		if !strings.HasSuffix(strings.ToLower(f.Name), expectedFormat) {
-			return fmt.Errorf("Zip file must only contain %v files. Found: %v", expectedFormat, f.Name)
+			return 0, fmt.Errorf("Zip file must only contain %v files. Found: %v", expectedFormat, f.Name)
 		}
 		count++
 	}
 
 	// Make sure it has at least one msa!
 	if count <= 0 {
-		return fmt.Errorf("Zip file did not contain any %v files", expectedFormat)
+		return 0, fmt.Errorf("Zip file did not contain any %v files", expectedFormat)
 	}
 
+	return count, nil
+}
+
+func ProcessBruker(creatorUserId string, datasetID string, zipReader *zip.ReadCloser, localFilePath string, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
+	count, err := checkExpectedFiles(zipReader, ".bcf")
+	if err != nil {
+		return err
+	}
+
+	if count != 1 {
+		return fmt.Errorf("Expected 1 .bcf file, received %v", count)
+	}
+
+	// We have one BCF file... do we now upload it to the dest bucket as one file? We just read it from parts
+	// so something will need it as one file, but it seems like such a waste to now save it and let something
+	// else continue... BUT that thing should be a "job node" in future running on its own EC2 instance which
+	// should work better...
+	f, err := os.OpenFile(localFilePath, os.O_RDONLY, 0777)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	savePath := path.Join(s3PathStart, "scan.bcf")
+	err = fs.WriteObjectStream(destBucket, savePath, f)
+	if err != nil {
+		return err
+	}
+	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
+
+	// TODO: Is this required???
+	// Now save detector info
+	savePath = path.Join(s3PathStart, "import.json")
+	importerFile := dataimportModel.BreadboardImportParams{
+		CreatorUserId: creatorUserId,
+		DatasetID:     datasetID,
+		Title:         datasetID,
+	}
+
+	err = fs.WriteJSON(destBucket, savePath, importerFile)
+	if err != nil {
+		return err
+	}
+
+	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
 	return nil
 }
 
 func ProcessBreadboard(format string, creatorUserId string, datasetID string, zipReader *zip.ReadCloser, localFilePath string, destBucket string, s3PathStart string, fs fileaccess.FileAccess, logger logger.ILogger) error {
-	err := checkExpectedFiles(zipReader, ".msa")
+	_, err := checkExpectedFiles(zipReader, ".msa")
 	if err != nil {
 		return err
 	}
@@ -366,6 +411,8 @@ func ProcessBreadboard(format string, creatorUserId string, datasetID string, zi
 	savePath := path.Join(s3PathStart, "spectra.zip")
 
 	// Read the zip and write it to S3
+	// TODO: Stream this somehow so we don't read it all into RAM... Was OK for small breadboard scans
+	//       but now larger datasets will be breaking...
 	zipReader.Close()
 	zippedData, err := os.ReadFile(localFilePath)
 	if err != nil {
@@ -425,6 +472,7 @@ func ProcessBreadboard(format string, creatorUserId string, datasetID string, zi
 	if err != nil {
 		return err
 	}
+
 	logger.Infof("  Uploaded: s3://%v/%v", destBucket, savePath)
 	return nil
 }
