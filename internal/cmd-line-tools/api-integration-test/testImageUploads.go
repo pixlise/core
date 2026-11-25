@@ -650,7 +650,7 @@ func testImageMultipartUpload(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusBadRequest,
-		"UploadPart for 048300551/toResume.png (30 bytes so far) error: expected total bytes so far of 0, got 30\n"
+		"UploadPart for 048300551/toResume.png (30 bytes so far) error: expected total bytes so far of 0, got 30\n",
 	)
 
 	checkFileUploadResult(
@@ -882,7 +882,7 @@ func testImageMultipartUpload(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusOK,
-		"{\"bytesReceived\":\"596\",\"completed\":true}"
+		"{\"bytesReceived\":\"596\",\"completed\":true}",
 	)
 
 	checkFileUploadResult(
@@ -897,7 +897,7 @@ func testImageMultipartUpload(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusBadRequest,
-		"UploadPart for 048300551/toResume.png (250 bytes so far) error: unexpected status already complete\n"
+		"UploadPart for 048300551/toResume.png (250 bytes so far) error: unexpected status already complete\n",
 	)
 
 	checkFileUploadResult(
@@ -912,7 +912,7 @@ func testImageMultipartUpload(apiHost string) {
 		},
 		imageUploadJWT,
 		http.StatusBadRequest,
-		"UploadPart for 048300551/toResume.png (200 bytes so far) error: unexpected status already complete\n"
+		"UploadPart for 048300551/toResume.png (200 bytes so far) error: unexpected status already complete\n",
 	)
 }
 
