@@ -90,6 +90,8 @@ jobs:
           echo "Copy AWS PEM for builds..."
           wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
           cp ./global-bundle.pem ./_out/
+        env:
+          BUILD_VERSION: ${{ needs.version.outputs.version }}
       - name: Copy docker build related files
         run: |
           mkdir -p _out-docker
