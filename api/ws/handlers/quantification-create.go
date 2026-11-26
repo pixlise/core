@@ -15,7 +15,7 @@ import (
 func HandleQuantCreateReq(req *protos.QuantCreateReq, hctx wsHelpers.HandlerContext) (*protos.QuantCreateResp, error) {
 	// If we have legacy jobs enabled, and the job name doesn't start with (new) we run it as a legacy quant job. Otherwise
 	// we run all jobs the "new" way
-	if hctx.Svcs.Config.Jobs.LegacyJobs && !strings.HasPrefix(req.Params.Name, "(new)") {
+	if strings.HasPrefix(req.Params.Name, "(legacy)") {
 		return legacyHandleQuantCreateReq(req, hctx)
 	}
 
