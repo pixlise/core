@@ -74,6 +74,7 @@ func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret 
 
 	jobNodeInstanceName := fmt.Sprintf("job-node-%v", jm.svcs.Config.EnvironmentName)
 
+	// We now assume the AMI has docker and libvips pre-installed so we only need our executable and can run@
 	startupScript := fmt.Sprintf(`#!/bin/bash
 set -e
 shutdown -h +%v
@@ -84,17 +85,6 @@ export AWS_SECRET_ACCESS_KEY="%v"
 export AWS_REGION="%v"
 export AWS_DEFAULT_REGION="%v"
 export AWS_S3_US_EAST_1_REGIONAL_ENDPOINT="regional"
-
-echo "Setting up Docker..."
-# Update system packages
-dnf update -y
-
-# Install Docker
-dnf install -y docker
-
-# Start and enable Docker service
-systemctl start docker
-systemctl enable docker
 
 echo "Downloading job node..."
 mkdir /job-node

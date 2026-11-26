@@ -23,7 +23,7 @@ func ReadDiffractionData(
 	roughnessPMCs := map[int]bool{}
 
 	for _, item := range detectedPeaks {
-		pmc, err := strconv.Atoi(item.Id)
+		pmc, err := strconv.Atoi(item.Id) // GitBot: 64bit to uint16 conversion without upper bound check, suggested int64 for roughnessPMCs map key
 		if err != nil {
 			fmt.Printf("Warning: Diffraction data contained invalid location id: %v", item.Id)
 			continue

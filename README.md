@@ -4,8 +4,6 @@
 [![DOI](https://zenodo.org/badge/520044172.svg)](https://zenodo.org/badge/latestdoi/520044172)
 
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/pixlise/core)
-
 [![build](https://github.com/pixlise/core/actions/workflows/features.yml/badge.svg)](https://github.com/pixlise/core/actions/workflows/features.yml)
 [![build](https://github.com/pixlise/core/actions/workflows/dev.yml/badge.svg?branch=development)](https://github.com/pixlise/core/actions/workflows/dev.yml)
 [![build](https://github.com/pixlise/core/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/pixlise/core/actions/workflows/release.yml)
@@ -48,10 +46,6 @@ To see the configuration JSON structure, look at the `APIConfig` structure in `/
 - AWS_ACCESS_KEY_ID
 - AWS_SECRET_ACCESS_KEY
 - AWS_REGION=us-west-1
-
-## Developing in Gitpod
-
-If you're wondering what the Gitpod button above is and would like to get a development environment up and running easily, visit the documentation [here](https://pixlise.gitlab.io/documentation/docs/build-and-release/getting-started/) for more info.
 
 ## Debugging in VS Code
 
