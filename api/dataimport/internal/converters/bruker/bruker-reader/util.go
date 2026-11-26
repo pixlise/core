@@ -67,11 +67,11 @@ func asFloat(v interface{}) float64 {
 func asInt(v interface{}) int {
 	switch t := v.(type) {
 	case int64:
-		return int(t)
+		return int(t) // GitBot: 64bit to uint16 conversion without upper bound check
 	case int:
 		return t
 	case float64:
-		return int(t)
+		return int(t) // GitBot: 64bit to uint16 conversion without upper bound check
 	case string:
 		i, _ := strconv.Atoi(t)
 		return i
