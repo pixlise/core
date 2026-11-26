@@ -89,7 +89,7 @@ func completeExpressionJob(jg *protos.JobGroupConfig, lastJobStatus *protos.JobS
 	memValues := []*protos.MemPMCDataValue{}
 
 	for c, row := range outCSV[1:] {
-		pmc, err := strconv.Atoi(row[0])
+		pmc, err := strconv.Atoi(row[0]) // GitBot: 64bit to uint16 conversion without upper bound check
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read PMC from row %v [%v] in s3://%v/%v for job: %v. Error: %v", c+1, row[0], outBucket, outPath, jg.JobGroupId, err)
 		}

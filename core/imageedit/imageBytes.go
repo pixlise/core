@@ -65,7 +65,7 @@ func MakeMonochromeImage[T uint16 | uint8](width int, height int, data []T) imag
 		for y := 0; y < height; y++ {
 			idx := (y*width + x)
 
-			shade := uint16(data[idx])
+			shade := uint16(data[idx]) // GitBot: 64bit to uint16 conversion without upper bound check
 
 			if denom > 1 {
 				shade = uint16(shade) / denom
