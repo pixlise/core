@@ -27,7 +27,7 @@ jobs:
           fetch-depth: 0
           submodules: true
       - name: GitHub Slug Action
-        uses: rlespinasse/github-slug-action@v4.4.0
+        uses: rlespinasse/github-slug-action@v5.7.1
   step:
     uses: ./.github/workflows/main.yml
     needs: slug

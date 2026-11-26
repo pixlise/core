@@ -27,7 +27,7 @@ jobs:
         with:
           fetch-depth: 0
       # - name: GitHub Slug Action
-      #   uses: rlespinasse/github-slug-action@v4.4.0
+      #   uses: rlespinasse/github-slug-action@v5.7.1
       - name: version
         uses: paulhatch/semantic-version@v6.0.7
         id: version
