@@ -2,7 +2,6 @@ package jobmanager
 
 import (
 	"github.com/olahol/melody"
-	jobconfig "github.com/pixlise/core/v4/api/job/config"
 	"github.com/pixlise/core/v4/api/job/jobnode"
 	"github.com/pixlise/core/v4/api/services"
 	protos "github.com/pixlise/core/v4/generated-protos"
@@ -10,28 +9,32 @@ import (
 
 var JobComplete_CombineCSVs = "combine_csvs"
 var JobComplete_SingleCSV = "single_csvs"
+var JobComplete_LuaExpression = "lua_expression"
+var JobComplete_PythonScript = "python_script"
 
-type JobManagerCompletionFunction func(*jobconfig.JobGroupConfig, *protos.JobStatus, *melody.Session, *services.APIServices) error
+type JobManagerCompletionFunction func(*protos.JobGroupConfig, *protos.JobStatus, *melody.Session, *services.APIServices) (*protos.JobStatus, error)
 
 type JobManager struct {
 	svcs                 *services.APIServices
+	melody               *melody.Melody
 	jobCompletionMethods map[string]JobManagerCompletionFunction
-	useFileCache         bool
 	localJobNode         *jobnode.JobNode
 	startNodes           bool
 	startedNodeCount     uint
 	userSessionLookup    map[string]*melody.Session
 }
 
-func CreateJobManager(svcs *services.APIServices, startupQueueCheckDelaySec int, monitorJobQueue bool, useFileCache bool, startNodes bool) (*JobManager, error) {
+func CreateJobManager(svcs *services.APIServices, m *melody.Melody, startupQueueCheckDelaySec int, monitorJobQueue bool, startNodes bool) (*JobManager, error) {
 	// Make a job manager
 	jm := &JobManager{
-		svcs: svcs,
+		svcs:   svcs,
+		melody: m,
 		jobCompletionMethods: map[string]JobManagerCompletionFunction{
-			JobComplete_CombineCSVs: completeQuantMultiNodeJob,
-			JobComplete_SingleCSV:   completeQuantSingleMapJob,
+			JobComplete_CombineCSVs:   completeQuantMultiNodeJob,
+			JobComplete_SingleCSV:     completeQuantSingleMapJob,
+			JobComplete_LuaExpression: completeExpressionJob,
+			JobComplete_PythonScript:  completePythonScript,
 		},
-		useFileCache:      useFileCache,
 		startNodes:        startNodes,
 		userSessionLookup: map[string]*melody.Session{},
 	}

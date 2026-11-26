@@ -127,3 +127,7 @@ func isABQuant(csvRows []string, filenameColumnIdx int) bool {
 
 	return !earlyIsCombined && !midIsCombined && !lastIsCombined
 }
+
+func HandleQuantImportReq(req *protos.QuantImportReq, hctx wsHelpers.HandlerContext) (*protos.QuantImportResp, error) {
+	return nil, errors.New("Not implemented yet")
+}

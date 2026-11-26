@@ -256,40 +256,27 @@ func (x *ScanGetResp) GetScan() *ScanItem {
 	return nil
 }
 
-// This should trigger a ScanListUpd to go out
 // requires(EDIT_SCAN)
-type ScanUploadReq struct {
-	state  protoimpl.MessageState `protogen:"open.v1"`
-	Id     string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Format string                 `protobuf:"bytes,2,opt,name=format,proto3" json:"format,omitempty"` // currently only allows jpl-breadboard
-	// NOTE: We used to send the zip data up here, but message size was never big enough
-	//
-	//	so instead of increasing that, we now have a PUT /scan endpoint to pass up
-	//	the zip first, then this can be called, passing the same scan id & file name
-	//
-	// bytes zippedData = 3; // jpl-breadboard implies this is a zip file of MSA files
-	ZipFileName   string `protobuf:"bytes,4,opt,name=zipFileName,proto3" json:"zipFileName,omitempty"`
-	SkipRows      uint32 `protobuf:"varint,5,opt,name=skipRows,proto3" json:"skipRows,omitempty"`
-	SkipColumns   uint32 `protobuf:"varint,6,opt,name=skipColumns,proto3" json:"skipColumns,omitempty"`
-	MaxMapPoints  uint32 `protobuf:"varint,7,opt,name=maxMapPoints,proto3" json:"maxMapPoints,omitempty"`
+type ScanUploadFormatsReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ScanUploadReq) Reset() {
-	*x = ScanUploadReq{}
+func (x *ScanUploadFormatsReq) Reset() {
+	*x = ScanUploadFormatsReq{}
 	mi := &file_scan_msgs_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ScanUploadReq) String() string {
+func (x *ScanUploadFormatsReq) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ScanUploadReq) ProtoMessage() {}
+func (*ScanUploadFormatsReq) ProtoMessage() {}
 
-func (x *ScanUploadReq) ProtoReflect() protoreflect.Message {
+func (x *ScanUploadFormatsReq) ProtoReflect() protoreflect.Message {
 	mi := &file_scan_msgs_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -301,75 +288,216 @@ func (x *ScanUploadReq) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ScanUploadReq.ProtoReflect.Descriptor instead.
-func (*ScanUploadReq) Descriptor() ([]byte, []int) {
+// Deprecated: Use ScanUploadFormatsReq.ProtoReflect.Descriptor instead.
+func (*ScanUploadFormatsReq) Descriptor() ([]byte, []int) {
 	return file_scan_msgs_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *ScanUploadReq) GetId() string {
+type ScanUploadFormatsResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Formats       []string               `protobuf:"bytes,1,rep,name=formats,proto3" json:"formats,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ScanUploadFormatsResp) Reset() {
+	*x = ScanUploadFormatsResp{}
+	mi := &file_scan_msgs_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ScanUploadFormatsResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScanUploadFormatsResp) ProtoMessage() {}
+
+func (x *ScanUploadFormatsResp) ProtoReflect() protoreflect.Message {
+	mi := &file_scan_msgs_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScanUploadFormatsResp.ProtoReflect.Descriptor instead.
+func (*ScanUploadFormatsResp) Descriptor() ([]byte, []int) {
+	return file_scan_msgs_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ScanUploadFormatsResp) GetFormats() []string {
+	if x != nil {
+		return x.Formats
+	}
+	return nil
+}
+
+// Here is the response message
+type UploadHttpResponseBody struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BytesReceived uint64                 `protobuf:"varint,1,opt,name=bytesReceived,proto3" json:"bytesReceived,omitempty"`
+	Completed     bool                   `protobuf:"varint,2,opt,name=completed,proto3" json:"completed,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UploadHttpResponseBody) Reset() {
+	*x = UploadHttpResponseBody{}
+	mi := &file_scan_msgs_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadHttpResponseBody) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadHttpResponseBody) ProtoMessage() {}
+
+func (x *UploadHttpResponseBody) ProtoReflect() protoreflect.Message {
+	mi := &file_scan_msgs_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UploadHttpResponseBody.ProtoReflect.Descriptor instead.
+func (*UploadHttpResponseBody) Descriptor() ([]byte, []int) {
+	return file_scan_msgs_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UploadHttpResponseBody) GetBytesReceived() uint64 {
+	if x != nil {
+		return x.BytesReceived
+	}
+	return 0
+}
+
+func (x *UploadHttpResponseBody) GetCompleted() bool {
+	if x != nil {
+		return x.Completed
+	}
+	return false
+}
+
+// This should trigger a ScanListUpd to go out
+// requires(EDIT_SCAN)
+type ScanImportReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Format        string                 `protobuf:"bytes,2,opt,name=format,proto3" json:"format,omitempty"`           // currently only allows jpl-breadboard
+	ZipFileName   string                 `protobuf:"bytes,4,opt,name=zipFileName,proto3" json:"zipFileName,omitempty"` // File name of something uploaded via HTTP /file PUT
+	SkipRows      uint32                 `protobuf:"varint,5,opt,name=skipRows,proto3" json:"skipRows,omitempty"`
+	SkipColumns   uint32                 `protobuf:"varint,6,opt,name=skipColumns,proto3" json:"skipColumns,omitempty"`
+	MaxMapPoints  uint32                 `protobuf:"varint,7,opt,name=maxMapPoints,proto3" json:"maxMapPoints,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ScanImportReq) Reset() {
+	*x = ScanImportReq{}
+	mi := &file_scan_msgs_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ScanImportReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScanImportReq) ProtoMessage() {}
+
+func (x *ScanImportReq) ProtoReflect() protoreflect.Message {
+	mi := &file_scan_msgs_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScanImportReq.ProtoReflect.Descriptor instead.
+func (*ScanImportReq) Descriptor() ([]byte, []int) {
+	return file_scan_msgs_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ScanImportReq) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *ScanUploadReq) GetFormat() string {
+func (x *ScanImportReq) GetFormat() string {
 	if x != nil {
 		return x.Format
 	}
 	return ""
 }
 
-func (x *ScanUploadReq) GetZipFileName() string {
+func (x *ScanImportReq) GetZipFileName() string {
 	if x != nil {
 		return x.ZipFileName
 	}
 	return ""
 }
 
-func (x *ScanUploadReq) GetSkipRows() uint32 {
+func (x *ScanImportReq) GetSkipRows() uint32 {
 	if x != nil {
 		return x.SkipRows
 	}
 	return 0
 }
 
-func (x *ScanUploadReq) GetSkipColumns() uint32 {
+func (x *ScanImportReq) GetSkipColumns() uint32 {
 	if x != nil {
 		return x.SkipColumns
 	}
 	return 0
 }
 
-func (x *ScanUploadReq) GetMaxMapPoints() uint32 {
+func (x *ScanImportReq) GetMaxMapPoints() uint32 {
 	if x != nil {
 		return x.MaxMapPoints
 	}
 	return 0
 }
 
-type ScanUploadResp struct {
+type ScanImportResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	JobId         string                 `protobuf:"bytes,1,opt,name=jobId,proto3" json:"jobId,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ScanUploadResp) Reset() {
-	*x = ScanUploadResp{}
-	mi := &file_scan_msgs_proto_msgTypes[6]
+func (x *ScanImportResp) Reset() {
+	*x = ScanImportResp{}
+	mi := &file_scan_msgs_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ScanUploadResp) String() string {
+func (x *ScanImportResp) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ScanUploadResp) ProtoMessage() {}
+func (*ScanImportResp) ProtoMessage() {}
 
-func (x *ScanUploadResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[6]
+func (x *ScanImportResp) ProtoReflect() protoreflect.Message {
+	mi := &file_scan_msgs_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -380,40 +508,40 @@ func (x *ScanUploadResp) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ScanUploadResp.ProtoReflect.Descriptor instead.
-func (*ScanUploadResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{6}
+// Deprecated: Use ScanImportResp.ProtoReflect.Descriptor instead.
+func (*ScanImportResp) Descriptor() ([]byte, []int) {
+	return file_scan_msgs_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *ScanUploadResp) GetJobId() string {
+func (x *ScanImportResp) GetJobId() string {
 	if x != nil {
 		return x.JobId
 	}
 	return ""
 }
 
-type ScanUploadUpd struct {
+type ScanImportUpd struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Status        *JobStatus             `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ScanUploadUpd) Reset() {
-	*x = ScanUploadUpd{}
-	mi := &file_scan_msgs_proto_msgTypes[7]
+func (x *ScanImportUpd) Reset() {
+	*x = ScanImportUpd{}
+	mi := &file_scan_msgs_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ScanUploadUpd) String() string {
+func (x *ScanImportUpd) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ScanUploadUpd) ProtoMessage() {}
+func (*ScanImportUpd) ProtoMessage() {}
 
-func (x *ScanUploadUpd) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[7]
+func (x *ScanImportUpd) ProtoReflect() protoreflect.Message {
+	mi := &file_scan_msgs_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -424,12 +552,12 @@ func (x *ScanUploadUpd) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ScanUploadUpd.ProtoReflect.Descriptor instead.
-func (*ScanUploadUpd) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{7}
+// Deprecated: Use ScanImportUpd.ProtoReflect.Descriptor instead.
+func (*ScanImportUpd) Descriptor() ([]byte, []int) {
+	return file_scan_msgs_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *ScanUploadUpd) GetStatus() *JobStatus {
+func (x *ScanImportUpd) GetStatus() *JobStatus {
 	if x != nil {
 		return x.Status
 	}
@@ -446,7 +574,7 @@ type ScanCreateUserDefinedReq struct {
 
 func (x *ScanCreateUserDefinedReq) Reset() {
 	*x = ScanCreateUserDefinedReq{}
-	mi := &file_scan_msgs_proto_msgTypes[8]
+	mi := &file_scan_msgs_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -458,7 +586,7 @@ func (x *ScanCreateUserDefinedReq) String() string {
 func (*ScanCreateUserDefinedReq) ProtoMessage() {}
 
 func (x *ScanCreateUserDefinedReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[8]
+	mi := &file_scan_msgs_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -471,7 +599,7 @@ func (x *ScanCreateUserDefinedReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanCreateUserDefinedReq.ProtoReflect.Descriptor instead.
 func (*ScanCreateUserDefinedReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{8}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ScanCreateUserDefinedReq) GetId() string {
@@ -489,7 +617,7 @@ type ScanCreateUserDefinedResp struct {
 
 func (x *ScanCreateUserDefinedResp) Reset() {
 	*x = ScanCreateUserDefinedResp{}
-	mi := &file_scan_msgs_proto_msgTypes[9]
+	mi := &file_scan_msgs_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -501,7 +629,7 @@ func (x *ScanCreateUserDefinedResp) String() string {
 func (*ScanCreateUserDefinedResp) ProtoMessage() {}
 
 func (x *ScanCreateUserDefinedResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[9]
+	mi := &file_scan_msgs_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -514,7 +642,7 @@ func (x *ScanCreateUserDefinedResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanCreateUserDefinedResp.ProtoReflect.Descriptor instead.
 func (*ScanCreateUserDefinedResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{9}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{12}
 }
 
 // requires(EDIT_SCAN)
@@ -528,7 +656,7 @@ type ScanCloneReq struct {
 
 func (x *ScanCloneReq) Reset() {
 	*x = ScanCloneReq{}
-	mi := &file_scan_msgs_proto_msgTypes[10]
+	mi := &file_scan_msgs_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -540,7 +668,7 @@ func (x *ScanCloneReq) String() string {
 func (*ScanCloneReq) ProtoMessage() {}
 
 func (x *ScanCloneReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[10]
+	mi := &file_scan_msgs_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -553,7 +681,7 @@ func (x *ScanCloneReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanCloneReq.ProtoReflect.Descriptor instead.
 func (*ScanCloneReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{10}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ScanCloneReq) GetId() string {
@@ -580,7 +708,7 @@ type ScanCloneResp struct {
 
 func (x *ScanCloneResp) Reset() {
 	*x = ScanCloneResp{}
-	mi := &file_scan_msgs_proto_msgTypes[11]
+	mi := &file_scan_msgs_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -592,7 +720,7 @@ func (x *ScanCloneResp) String() string {
 func (*ScanCloneResp) ProtoMessage() {}
 
 func (x *ScanCloneResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[11]
+	mi := &file_scan_msgs_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -605,7 +733,7 @@ func (x *ScanCloneResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanCloneResp.ProtoReflect.Descriptor instead.
 func (*ScanCloneResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{11}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ScanCloneResp) GetId() string {
@@ -633,7 +761,7 @@ type ScanAutoShareReq struct {
 
 func (x *ScanAutoShareReq) Reset() {
 	*x = ScanAutoShareReq{}
-	mi := &file_scan_msgs_proto_msgTypes[12]
+	mi := &file_scan_msgs_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -645,7 +773,7 @@ func (x *ScanAutoShareReq) String() string {
 func (*ScanAutoShareReq) ProtoMessage() {}
 
 func (x *ScanAutoShareReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[12]
+	mi := &file_scan_msgs_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -658,7 +786,7 @@ func (x *ScanAutoShareReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanAutoShareReq.ProtoReflect.Descriptor instead.
 func (*ScanAutoShareReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{12}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ScanAutoShareReq) GetId() string {
@@ -677,7 +805,7 @@ type ScanAutoShareResp struct {
 
 func (x *ScanAutoShareResp) Reset() {
 	*x = ScanAutoShareResp{}
-	mi := &file_scan_msgs_proto_msgTypes[13]
+	mi := &file_scan_msgs_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -689,7 +817,7 @@ func (x *ScanAutoShareResp) String() string {
 func (*ScanAutoShareResp) ProtoMessage() {}
 
 func (x *ScanAutoShareResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[13]
+	mi := &file_scan_msgs_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -702,7 +830,7 @@ func (x *ScanAutoShareResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanAutoShareResp.ProtoReflect.Descriptor instead.
 func (*ScanAutoShareResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{13}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ScanAutoShareResp) GetEntry() *ScanAutoShareEntry {
@@ -722,7 +850,7 @@ type ScanAutoShareWriteReq struct {
 
 func (x *ScanAutoShareWriteReq) Reset() {
 	*x = ScanAutoShareWriteReq{}
-	mi := &file_scan_msgs_proto_msgTypes[14]
+	mi := &file_scan_msgs_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -734,7 +862,7 @@ func (x *ScanAutoShareWriteReq) String() string {
 func (*ScanAutoShareWriteReq) ProtoMessage() {}
 
 func (x *ScanAutoShareWriteReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[14]
+	mi := &file_scan_msgs_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -747,7 +875,7 @@ func (x *ScanAutoShareWriteReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanAutoShareWriteReq.ProtoReflect.Descriptor instead.
 func (*ScanAutoShareWriteReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{14}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ScanAutoShareWriteReq) GetEntry() *ScanAutoShareEntry {
@@ -765,7 +893,7 @@ type ScanAutoShareWriteResp struct {
 
 func (x *ScanAutoShareWriteResp) Reset() {
 	*x = ScanAutoShareWriteResp{}
-	mi := &file_scan_msgs_proto_msgTypes[15]
+	mi := &file_scan_msgs_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -777,7 +905,7 @@ func (x *ScanAutoShareWriteResp) String() string {
 func (*ScanAutoShareWriteResp) ProtoMessage() {}
 
 func (x *ScanAutoShareWriteResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[15]
+	mi := &file_scan_msgs_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -790,7 +918,7 @@ func (x *ScanAutoShareWriteResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanAutoShareWriteResp.ProtoReflect.Descriptor instead.
 func (*ScanAutoShareWriteResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{15}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{18}
 }
 
 // This should trigger a ScanListUpd to go out
@@ -808,7 +936,7 @@ type ScanMetaWriteReq struct {
 
 func (x *ScanMetaWriteReq) Reset() {
 	*x = ScanMetaWriteReq{}
-	mi := &file_scan_msgs_proto_msgTypes[16]
+	mi := &file_scan_msgs_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -820,7 +948,7 @@ func (x *ScanMetaWriteReq) String() string {
 func (*ScanMetaWriteReq) ProtoMessage() {}
 
 func (x *ScanMetaWriteReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[16]
+	mi := &file_scan_msgs_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -833,7 +961,7 @@ func (x *ScanMetaWriteReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanMetaWriteReq.ProtoReflect.Descriptor instead.
 func (*ScanMetaWriteReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{16}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ScanMetaWriteReq) GetScanId() string {
@@ -872,7 +1000,7 @@ type ScanMetaWriteResp struct {
 
 func (x *ScanMetaWriteResp) Reset() {
 	*x = ScanMetaWriteResp{}
-	mi := &file_scan_msgs_proto_msgTypes[17]
+	mi := &file_scan_msgs_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -884,7 +1012,7 @@ func (x *ScanMetaWriteResp) String() string {
 func (*ScanMetaWriteResp) ProtoMessage() {}
 
 func (x *ScanMetaWriteResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[17]
+	mi := &file_scan_msgs_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -897,7 +1025,7 @@ func (x *ScanMetaWriteResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanMetaWriteResp.ProtoReflect.Descriptor instead.
 func (*ScanMetaWriteResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{17}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{20}
 }
 
 // Triggering a re-import, should publish a ScanListUpd to go out
@@ -913,7 +1041,7 @@ type ScanTriggerReImportReq struct {
 
 func (x *ScanTriggerReImportReq) Reset() {
 	*x = ScanTriggerReImportReq{}
-	mi := &file_scan_msgs_proto_msgTypes[18]
+	mi := &file_scan_msgs_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -925,7 +1053,7 @@ func (x *ScanTriggerReImportReq) String() string {
 func (*ScanTriggerReImportReq) ProtoMessage() {}
 
 func (x *ScanTriggerReImportReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[18]
+	mi := &file_scan_msgs_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -938,7 +1066,7 @@ func (x *ScanTriggerReImportReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanTriggerReImportReq.ProtoReflect.Descriptor instead.
 func (*ScanTriggerReImportReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{18}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ScanTriggerReImportReq) GetScanId() string {
@@ -957,7 +1085,7 @@ type ScanTriggerReImportResp struct {
 
 func (x *ScanTriggerReImportResp) Reset() {
 	*x = ScanTriggerReImportResp{}
-	mi := &file_scan_msgs_proto_msgTypes[19]
+	mi := &file_scan_msgs_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -969,7 +1097,7 @@ func (x *ScanTriggerReImportResp) String() string {
 func (*ScanTriggerReImportResp) ProtoMessage() {}
 
 func (x *ScanTriggerReImportResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[19]
+	mi := &file_scan_msgs_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -982,7 +1110,7 @@ func (x *ScanTriggerReImportResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanTriggerReImportResp.ProtoReflect.Descriptor instead.
 func (*ScanTriggerReImportResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{19}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ScanTriggerReImportResp) GetJobId() string {
@@ -1001,7 +1129,7 @@ type ScanTriggerReImportUpd struct {
 
 func (x *ScanTriggerReImportUpd) Reset() {
 	*x = ScanTriggerReImportUpd{}
-	mi := &file_scan_msgs_proto_msgTypes[20]
+	mi := &file_scan_msgs_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1013,7 +1141,7 @@ func (x *ScanTriggerReImportUpd) String() string {
 func (*ScanTriggerReImportUpd) ProtoMessage() {}
 
 func (x *ScanTriggerReImportUpd) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[20]
+	mi := &file_scan_msgs_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1026,7 +1154,7 @@ func (x *ScanTriggerReImportUpd) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanTriggerReImportUpd.ProtoReflect.Descriptor instead.
 func (*ScanTriggerReImportUpd) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{20}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ScanTriggerReImportUpd) GetStatus() *JobStatus {
@@ -1046,7 +1174,7 @@ type ScanMetaLabelsAndTypesReq struct {
 
 func (x *ScanMetaLabelsAndTypesReq) Reset() {
 	*x = ScanMetaLabelsAndTypesReq{}
-	mi := &file_scan_msgs_proto_msgTypes[21]
+	mi := &file_scan_msgs_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1058,7 +1186,7 @@ func (x *ScanMetaLabelsAndTypesReq) String() string {
 func (*ScanMetaLabelsAndTypesReq) ProtoMessage() {}
 
 func (x *ScanMetaLabelsAndTypesReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[21]
+	mi := &file_scan_msgs_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1071,7 +1199,7 @@ func (x *ScanMetaLabelsAndTypesReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanMetaLabelsAndTypesReq.ProtoReflect.Descriptor instead.
 func (*ScanMetaLabelsAndTypesReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{21}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ScanMetaLabelsAndTypesReq) GetScanId() string {
@@ -1091,7 +1219,7 @@ type ScanMetaLabelsAndTypesResp struct {
 
 func (x *ScanMetaLabelsAndTypesResp) Reset() {
 	*x = ScanMetaLabelsAndTypesResp{}
-	mi := &file_scan_msgs_proto_msgTypes[22]
+	mi := &file_scan_msgs_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1103,7 +1231,7 @@ func (x *ScanMetaLabelsAndTypesResp) String() string {
 func (*ScanMetaLabelsAndTypesResp) ProtoMessage() {}
 
 func (x *ScanMetaLabelsAndTypesResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[22]
+	mi := &file_scan_msgs_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1116,7 +1244,7 @@ func (x *ScanMetaLabelsAndTypesResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanMetaLabelsAndTypesResp.ProtoReflect.Descriptor instead.
 func (*ScanMetaLabelsAndTypesResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{22}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ScanMetaLabelsAndTypesResp) GetMetaLabels() []string {
@@ -1144,7 +1272,7 @@ type ScanDeleteReq struct {
 
 func (x *ScanDeleteReq) Reset() {
 	*x = ScanDeleteReq{}
-	mi := &file_scan_msgs_proto_msgTypes[23]
+	mi := &file_scan_msgs_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1156,7 +1284,7 @@ func (x *ScanDeleteReq) String() string {
 func (*ScanDeleteReq) ProtoMessage() {}
 
 func (x *ScanDeleteReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[23]
+	mi := &file_scan_msgs_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1169,7 +1297,7 @@ func (x *ScanDeleteReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanDeleteReq.ProtoReflect.Descriptor instead.
 func (*ScanDeleteReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{23}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ScanDeleteReq) GetScanId() string {
@@ -1194,7 +1322,7 @@ type ScanDeleteResp struct {
 
 func (x *ScanDeleteResp) Reset() {
 	*x = ScanDeleteResp{}
-	mi := &file_scan_msgs_proto_msgTypes[24]
+	mi := &file_scan_msgs_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1206,7 +1334,7 @@ func (x *ScanDeleteResp) String() string {
 func (*ScanDeleteResp) ProtoMessage() {}
 
 func (x *ScanDeleteResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[24]
+	mi := &file_scan_msgs_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1219,7 +1347,7 @@ func (x *ScanDeleteResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanDeleteResp.ProtoReflect.Descriptor instead.
 func (*ScanDeleteResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{24}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{27}
 }
 
 // requires(EDIT_SCAN)
@@ -1233,7 +1361,7 @@ type ScanTriggerJobReq struct {
 
 func (x *ScanTriggerJobReq) Reset() {
 	*x = ScanTriggerJobReq{}
-	mi := &file_scan_msgs_proto_msgTypes[25]
+	mi := &file_scan_msgs_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1245,7 +1373,7 @@ func (x *ScanTriggerJobReq) String() string {
 func (*ScanTriggerJobReq) ProtoMessage() {}
 
 func (x *ScanTriggerJobReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[25]
+	mi := &file_scan_msgs_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1258,7 +1386,7 @@ func (x *ScanTriggerJobReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanTriggerJobReq.ProtoReflect.Descriptor instead.
 func (*ScanTriggerJobReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{25}
+	return file_scan_msgs_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *ScanTriggerJobReq) GetScanId() string {
@@ -1283,7 +1411,7 @@ type ScanTriggerJobResp struct {
 
 func (x *ScanTriggerJobResp) Reset() {
 	*x = ScanTriggerJobResp{}
-	mi := &file_scan_msgs_proto_msgTypes[26]
+	mi := &file_scan_msgs_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1295,7 +1423,7 @@ func (x *ScanTriggerJobResp) String() string {
 func (*ScanTriggerJobResp) ProtoMessage() {}
 
 func (x *ScanTriggerJobResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[26]
+	mi := &file_scan_msgs_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1308,169 +1436,7 @@ func (x *ScanTriggerJobResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanTriggerJobResp.ProtoReflect.Descriptor instead.
 func (*ScanTriggerJobResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{26}
-}
-
-// requires(NONE)
-type ScanListJobsReq struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ScanListJobsReq) Reset() {
-	*x = ScanListJobsReq{}
-	mi := &file_scan_msgs_proto_msgTypes[27]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ScanListJobsReq) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ScanListJobsReq) ProtoMessage() {}
-
-func (x *ScanListJobsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[27]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ScanListJobsReq.ProtoReflect.Descriptor instead.
-func (*ScanListJobsReq) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{27}
-}
-
-type ScanListJobsResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Jobs          []*JobGroupConfig      `protobuf:"bytes,1,rep,name=jobs,proto3" json:"jobs,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ScanListJobsResp) Reset() {
-	*x = ScanListJobsResp{}
-	mi := &file_scan_msgs_proto_msgTypes[28]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ScanListJobsResp) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ScanListJobsResp) ProtoMessage() {}
-
-func (x *ScanListJobsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[28]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ScanListJobsResp.ProtoReflect.Descriptor instead.
-func (*ScanListJobsResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{28}
-}
-
-func (x *ScanListJobsResp) GetJobs() []*JobGroupConfig {
-	if x != nil {
-		return x.Jobs
-	}
-	return nil
-}
-
-// requires(EDIT_SCAN)
-type ScanWriteJobReq struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Job           *JobGroupConfig        `protobuf:"bytes,3,opt,name=job,proto3" json:"job,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ScanWriteJobReq) Reset() {
-	*x = ScanWriteJobReq{}
-	mi := &file_scan_msgs_proto_msgTypes[29]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ScanWriteJobReq) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ScanWriteJobReq) ProtoMessage() {}
-
-func (x *ScanWriteJobReq) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[29]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ScanWriteJobReq.ProtoReflect.Descriptor instead.
-func (*ScanWriteJobReq) Descriptor() ([]byte, []int) {
 	return file_scan_msgs_proto_rawDescGZIP(), []int{29}
-}
-
-func (x *ScanWriteJobReq) GetJob() *JobGroupConfig {
-	if x != nil {
-		return x.Job
-	}
-	return nil
-}
-
-type ScanWriteJobResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ScanWriteJobResp) Reset() {
-	*x = ScanWriteJobResp{}
-	mi := &file_scan_msgs_proto_msgTypes[30]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ScanWriteJobResp) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ScanWriteJobResp) ProtoMessage() {}
-
-func (x *ScanWriteJobResp) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[30]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ScanWriteJobResp.ProtoReflect.Descriptor instead.
-func (*ScanWriteJobResp) Descriptor() ([]byte, []int) {
-	return file_scan_msgs_proto_rawDescGZIP(), []int{30}
 }
 
 type ScanListReq_MinMaxInt struct {
@@ -1483,7 +1449,7 @@ type ScanListReq_MinMaxInt struct {
 
 func (x *ScanListReq_MinMaxInt) Reset() {
 	*x = ScanListReq_MinMaxInt{}
-	mi := &file_scan_msgs_proto_msgTypes[32]
+	mi := &file_scan_msgs_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1495,7 +1461,7 @@ func (x *ScanListReq_MinMaxInt) String() string {
 func (*ScanListReq_MinMaxInt) ProtoMessage() {}
 
 func (x *ScanListReq_MinMaxInt) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_msgs_proto_msgTypes[32]
+	mi := &file_scan_msgs_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1546,17 +1512,23 @@ const file_scan_msgs_proto_rawDesc = "" +
 	"ScanGetReq\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\",\n" +
 	"\vScanGetResp\x12\x1d\n" +
-	"\x04scan\x18\x01 \x01(\v2\t.ScanItemR\x04scan\"\xbb\x01\n" +
-	"\rScanUploadReq\x12\x0e\n" +
+	"\x04scan\x18\x01 \x01(\v2\t.ScanItemR\x04scan\"\x16\n" +
+	"\x14ScanUploadFormatsReq\"1\n" +
+	"\x15ScanUploadFormatsResp\x12\x18\n" +
+	"\aformats\x18\x01 \x03(\tR\aformats\"\\\n" +
+	"\x16UploadHttpResponseBody\x12$\n" +
+	"\rbytesReceived\x18\x01 \x01(\x04R\rbytesReceived\x12\x1c\n" +
+	"\tcompleted\x18\x02 \x01(\bR\tcompleted\"\xbb\x01\n" +
+	"\rScanImportReq\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06format\x18\x02 \x01(\tR\x06format\x12 \n" +
 	"\vzipFileName\x18\x04 \x01(\tR\vzipFileName\x12\x1a\n" +
 	"\bskipRows\x18\x05 \x01(\rR\bskipRows\x12 \n" +
 	"\vskipColumns\x18\x06 \x01(\rR\vskipColumns\x12\"\n" +
 	"\fmaxMapPoints\x18\a \x01(\rR\fmaxMapPoints\"&\n" +
-	"\x0eScanUploadResp\x12\x14\n" +
+	"\x0eScanImportResp\x12\x14\n" +
 	"\x05jobId\x18\x01 \x01(\tR\x05jobId\"3\n" +
-	"\rScanUploadUpd\x12\"\n" +
+	"\rScanImportUpd\x12\"\n" +
 	"\x06status\x18\x01 \x01(\v2\n" +
 	".JobStatusR\x06status\"*\n" +
 	"\x18ScanCreateUserDefinedReq\x12\x0e\n" +
@@ -1602,13 +1574,7 @@ const file_scan_msgs_proto_rawDesc = "" +
 	"\x11ScanTriggerJobReq\x12\x16\n" +
 	"\x06scanId\x18\x01 \x01(\tR\x06scanId\x12\x14\n" +
 	"\x05jobId\x18\x02 \x01(\tR\x05jobId\"\x14\n" +
-	"\x12ScanTriggerJobResp\"\x11\n" +
-	"\x0fScanListJobsReq\"7\n" +
-	"\x10ScanListJobsResp\x12#\n" +
-	"\x04jobs\x18\x01 \x03(\v2\x0f.JobGroupConfigR\x04jobs\"4\n" +
-	"\x0fScanWriteJobReq\x12!\n" +
-	"\x03job\x18\x03 \x01(\v2\x0f.JobGroupConfigR\x03job\"\x12\n" +
-	"\x10ScanWriteJobRespB\n" +
+	"\x12ScanTriggerJobRespB\n" +
 	"Z\b.;protosb\x06proto3"
 
 var (
@@ -1623,63 +1589,59 @@ func file_scan_msgs_proto_rawDescGZIP() []byte {
 	return file_scan_msgs_proto_rawDescData
 }
 
-var file_scan_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_scan_msgs_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_scan_msgs_proto_goTypes = []any{
 	(*ScanListReq)(nil),                // 0: ScanListReq
 	(*ScanListResp)(nil),               // 1: ScanListResp
 	(*ScanListUpd)(nil),                // 2: ScanListUpd
 	(*ScanGetReq)(nil),                 // 3: ScanGetReq
 	(*ScanGetResp)(nil),                // 4: ScanGetResp
-	(*ScanUploadReq)(nil),              // 5: ScanUploadReq
-	(*ScanUploadResp)(nil),             // 6: ScanUploadResp
-	(*ScanUploadUpd)(nil),              // 7: ScanUploadUpd
-	(*ScanCreateUserDefinedReq)(nil),   // 8: ScanCreateUserDefinedReq
-	(*ScanCreateUserDefinedResp)(nil),  // 9: ScanCreateUserDefinedResp
-	(*ScanCloneReq)(nil),               // 10: ScanCloneReq
-	(*ScanCloneResp)(nil),              // 11: ScanCloneResp
-	(*ScanAutoShareReq)(nil),           // 12: ScanAutoShareReq
-	(*ScanAutoShareResp)(nil),          // 13: ScanAutoShareResp
-	(*ScanAutoShareWriteReq)(nil),      // 14: ScanAutoShareWriteReq
-	(*ScanAutoShareWriteResp)(nil),     // 15: ScanAutoShareWriteResp
-	(*ScanMetaWriteReq)(nil),           // 16: ScanMetaWriteReq
-	(*ScanMetaWriteResp)(nil),          // 17: ScanMetaWriteResp
-	(*ScanTriggerReImportReq)(nil),     // 18: ScanTriggerReImportReq
-	(*ScanTriggerReImportResp)(nil),    // 19: ScanTriggerReImportResp
-	(*ScanTriggerReImportUpd)(nil),     // 20: ScanTriggerReImportUpd
-	(*ScanMetaLabelsAndTypesReq)(nil),  // 21: ScanMetaLabelsAndTypesReq
-	(*ScanMetaLabelsAndTypesResp)(nil), // 22: ScanMetaLabelsAndTypesResp
-	(*ScanDeleteReq)(nil),              // 23: ScanDeleteReq
-	(*ScanDeleteResp)(nil),             // 24: ScanDeleteResp
-	(*ScanTriggerJobReq)(nil),          // 25: ScanTriggerJobReq
-	(*ScanTriggerJobResp)(nil),         // 26: ScanTriggerJobResp
-	(*ScanListJobsReq)(nil),            // 27: ScanListJobsReq
-	(*ScanListJobsResp)(nil),           // 28: ScanListJobsResp
-	(*ScanWriteJobReq)(nil),            // 29: ScanWriteJobReq
-	(*ScanWriteJobResp)(nil),           // 30: ScanWriteJobResp
-	nil,                                // 31: ScanListReq.SearchFiltersEntry
-	(*ScanListReq_MinMaxInt)(nil),      // 32: ScanListReq.MinMaxInt
-	(*ScanItem)(nil),                   // 33: ScanItem
-	(*JobStatus)(nil),                  // 34: JobStatus
-	(*ScanAutoShareEntry)(nil),         // 35: ScanAutoShareEntry
-	(ScanMetaDataType)(0),              // 36: ScanMetaDataType
-	(*JobGroupConfig)(nil),             // 37: JobGroupConfig
+	(*ScanUploadFormatsReq)(nil),       // 5: ScanUploadFormatsReq
+	(*ScanUploadFormatsResp)(nil),      // 6: ScanUploadFormatsResp
+	(*UploadHttpResponseBody)(nil),     // 7: UploadHttpResponseBody
+	(*ScanImportReq)(nil),              // 8: ScanImportReq
+	(*ScanImportResp)(nil),             // 9: ScanImportResp
+	(*ScanImportUpd)(nil),              // 10: ScanImportUpd
+	(*ScanCreateUserDefinedReq)(nil),   // 11: ScanCreateUserDefinedReq
+	(*ScanCreateUserDefinedResp)(nil),  // 12: ScanCreateUserDefinedResp
+	(*ScanCloneReq)(nil),               // 13: ScanCloneReq
+	(*ScanCloneResp)(nil),              // 14: ScanCloneResp
+	(*ScanAutoShareReq)(nil),           // 15: ScanAutoShareReq
+	(*ScanAutoShareResp)(nil),          // 16: ScanAutoShareResp
+	(*ScanAutoShareWriteReq)(nil),      // 17: ScanAutoShareWriteReq
+	(*ScanAutoShareWriteResp)(nil),     // 18: ScanAutoShareWriteResp
+	(*ScanMetaWriteReq)(nil),           // 19: ScanMetaWriteReq
+	(*ScanMetaWriteResp)(nil),          // 20: ScanMetaWriteResp
+	(*ScanTriggerReImportReq)(nil),     // 21: ScanTriggerReImportReq
+	(*ScanTriggerReImportResp)(nil),    // 22: ScanTriggerReImportResp
+	(*ScanTriggerReImportUpd)(nil),     // 23: ScanTriggerReImportUpd
+	(*ScanMetaLabelsAndTypesReq)(nil),  // 24: ScanMetaLabelsAndTypesReq
+	(*ScanMetaLabelsAndTypesResp)(nil), // 25: ScanMetaLabelsAndTypesResp
+	(*ScanDeleteReq)(nil),              // 26: ScanDeleteReq
+	(*ScanDeleteResp)(nil),             // 27: ScanDeleteResp
+	(*ScanTriggerJobReq)(nil),          // 28: ScanTriggerJobReq
+	(*ScanTriggerJobResp)(nil),         // 29: ScanTriggerJobResp
+	nil,                                // 30: ScanListReq.SearchFiltersEntry
+	(*ScanListReq_MinMaxInt)(nil),      // 31: ScanListReq.MinMaxInt
+	(*ScanItem)(nil),                   // 32: ScanItem
+	(*JobStatus)(nil),                  // 33: JobStatus
+	(*ScanAutoShareEntry)(nil),         // 34: ScanAutoShareEntry
+	(ScanMetaDataType)(0),              // 35: ScanMetaDataType
 }
 var file_scan_msgs_proto_depIdxs = []int32{
-	31, // 0: ScanListReq.searchFilters:type_name -> ScanListReq.SearchFiltersEntry
-	33, // 1: ScanListResp.scans:type_name -> ScanItem
-	33, // 2: ScanGetResp.scan:type_name -> ScanItem
-	34, // 3: ScanUploadUpd.status:type_name -> JobStatus
-	35, // 4: ScanAutoShareResp.entry:type_name -> ScanAutoShareEntry
-	35, // 5: ScanAutoShareWriteReq.entry:type_name -> ScanAutoShareEntry
-	34, // 6: ScanTriggerReImportUpd.status:type_name -> JobStatus
-	36, // 7: ScanMetaLabelsAndTypesResp.metaTypes:type_name -> ScanMetaDataType
-	37, // 8: ScanListJobsResp.jobs:type_name -> JobGroupConfig
-	37, // 9: ScanWriteJobReq.job:type_name -> JobGroupConfig
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	30, // 0: ScanListReq.searchFilters:type_name -> ScanListReq.SearchFiltersEntry
+	32, // 1: ScanListResp.scans:type_name -> ScanItem
+	32, // 2: ScanGetResp.scan:type_name -> ScanItem
+	33, // 3: ScanImportUpd.status:type_name -> JobStatus
+	34, // 4: ScanAutoShareResp.entry:type_name -> ScanAutoShareEntry
+	34, // 5: ScanAutoShareWriteReq.entry:type_name -> ScanAutoShareEntry
+	33, // 6: ScanTriggerReImportUpd.status:type_name -> JobStatus
+	35, // 7: ScanMetaLabelsAndTypesResp.metaTypes:type_name -> ScanMetaDataType
+	8,  // [8:8] is the sub-list for method output_type
+	8,  // [8:8] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_scan_msgs_proto_init() }
@@ -1695,7 +1657,7 @@ func file_scan_msgs_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_scan_msgs_proto_rawDesc), len(file_scan_msgs_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   33,
+			NumMessages:   32,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

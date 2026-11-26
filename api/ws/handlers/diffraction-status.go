@@ -8,7 +8,6 @@ import (
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -18,35 +17,11 @@ func HandleDiffractionPeakStatusListReq(req *protos.DiffractionPeakStatusListReq
 	}
 
 	// TODO: Check if user has access to this scan id?
-
-	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.DiffractionDetectedPeakStatusesName)
-
-	filter := bson.M{"_id": req.ScanId}
-	dbResult := coll.FindOne(ctx, filter)
-	if dbResult.Err() != nil {
-		if dbResult.Err() == mongo.ErrNoDocuments {
-			// Silent error, just return empty
-			return &protos.DiffractionPeakStatusListResp{
-				PeakStatuses: &protos.DetectedDiffractionPeakStatuses{
-					Id:       req.ScanId,
-					ScanId:   req.ScanId,
-					Statuses: map[string]*protos.DetectedDiffractionPeakStatuses_PeakStatus{},
-				},
-			}, nil
-		}
-		return nil, dbResult.Err()
-	}
-
-	result := protos.DetectedDiffractionPeakStatuses{}
-	err := dbResult.Decode(&result)
+	result, err := wsHelpers.GetDiffractionPeakStatusList(req.ScanId, hctx.Svcs)
 	if err != nil {
 		return nil, err
 	}
-
-	return &protos.DiffractionPeakStatusListResp{
-		PeakStatuses: &result,
-	}, nil
+	return &protos.DiffractionPeakStatusListResp{PeakStatuses: result}, nil
 }
 
 // NOTE: ScanId isn't checked to see if it's a real scan upon insertion!

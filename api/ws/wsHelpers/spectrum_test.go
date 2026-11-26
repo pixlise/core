@@ -127,7 +127,7 @@ func Example_wsHelpers_MergeSpectra() {
 		}
 	}
 
-	detList := utils.GetMapKeys(dets)
+	detList := utils.GetSortedMapKeys(dets)
 	slices.Sort(detList)
 
 	fmt.Printf("Detectors: %v\n", strings.Join(detList, ","))
@@ -305,46 +305,34 @@ func Example_wsHelpers_GenerateAggregateSpectrum() {
 	// Generate a few aggregate spectra out of this
 	fmt.Println("Checking error cases...")
 	bulks, maxs, warnings, err := GenerateAggregateSpectrum([]uint32{3, 10, 15, 20, 900}, []string{"A", "F"}, protos.SpectrumType_SPECTRUM_NORMAL, true, true, exprPB)
-	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetMapKeys(bulks), utils.GetMapKeys(maxs), len(warnings))
-	if len(warnings) > 0 {
-		fmt.Println(strings.Join(warnings, "|"))
-	}
+	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetSortedMapKeys(bulks), utils.GetSortedMapKeys(maxs), len(warnings))
+	printWarnings(warnings)
 
 	bulks, maxs, warnings, err = GenerateAggregateSpectrum([]uint32{10, 15, 20, 900}, []string{"A", "F"}, protos.SpectrumType_SPECTRUM_NORMAL, true, true, exprPB)
-	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetMapKeys(bulks), utils.GetMapKeys(maxs), len(warnings))
-	if len(warnings) > 0 {
-		fmt.Println(strings.Join(warnings, "|"))
-	}
+	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetSortedMapKeys(bulks), utils.GetSortedMapKeys(maxs), len(warnings))
+	printWarnings(warnings)
 
 	bulks, maxs, warnings, err = GenerateAggregateSpectrum([]uint32{10, 15, 20, 900}, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, true, true, exprPB)
-	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetMapKeys(bulks), utils.GetMapKeys(maxs), len(warnings))
-	if len(warnings) > 0 {
-		fmt.Println(strings.Join(warnings, "|"))
-	}
+	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetSortedMapKeys(bulks), utils.GetSortedMapKeys(maxs), len(warnings))
+	printWarnings(warnings)
 
 	bulks, maxs, warnings, err = GenerateAggregateSpectrum([]uint32{10, 15, 20}, []string{"A"}, protos.SpectrumType_SPECTRUM_DWELL, true, true, exprPB)
-	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetMapKeys(bulks), utils.GetMapKeys(maxs), len(warnings))
-	if len(warnings) > 0 {
-		fmt.Println(strings.Join(warnings, "|"))
-	}
+	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetSortedMapKeys(bulks), utils.GetSortedMapKeys(maxs), len(warnings))
+	printWarnings(warnings)
 
 	fmt.Println("Checking valid request items found...")
 	bulks, maxs, warnings, err = GenerateAggregateSpectrum([]uint32{10, 15}, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, true, false, exprPB)
-	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetMapKeys(bulks), utils.GetMapKeys(maxs), len(warnings))
+	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetSortedMapKeys(bulks), utils.GetSortedMapKeys(maxs), len(warnings))
 
 	bulks, maxs, warnings, err = GenerateAggregateSpectrum([]uint32{10, 15}, []string{"A", "B"}, protos.SpectrumType_SPECTRUM_NORMAL, true, false, exprPB)
-	dets := utils.GetMapKeys(maxs)
+	dets := utils.GetSortedMapKeys(maxs)
 	sort.Strings(dets)
-	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetMapKeys(bulks), dets, len(warnings))
-	if len(warnings) > 0 {
-		fmt.Println(strings.Join(warnings, "|"))
-	}
+	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetSortedMapKeys(bulks), dets, len(warnings))
+	printWarnings(warnings)
 
 	bulks, maxs, warnings, err = GenerateAggregateSpectrum([]uint32{10, 15}, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, false, true, exprPB)
-	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetMapKeys(bulks), utils.GetMapKeys(maxs), len(warnings))
-	if len(warnings) > 0 {
-		fmt.Println(strings.Join(warnings, "|"))
-	}
+	fmt.Printf("%v|%v|%v|%v\n", err, utils.GetSortedMapKeys(bulks), utils.GetSortedMapKeys(maxs), len(warnings))
+	printWarnings(warnings)
 
 	indexLists := [][]uint32{{6}, {8}, {100}, {6, 8, 100}, {130}, {130}, {}, {}}
 	addToIdx := len(indexLists) - 1
@@ -373,8 +361,9 @@ func Example_wsHelpers_GenerateAggregateSpectrum() {
 			c == len(types)-2 || len(l) > 1 && types[c] == protos.SpectrumType_SPECTRUM_NORMAL,
 			exprPB)
 
-		fmt.Printf("- %v|%v|%v|%v\n", err, utils.GetMapKeys(bulks), utils.GetMapKeys(maxs), len(warnings))
+		fmt.Printf("- %v|%v|%v|%v\n", err, utils.GetSortedMapKeys(bulks), utils.GetSortedMapKeys(maxs), len(warnings))
 		if len(warnings) > 0 {
+			sort.Strings(warnings)
 			fmt.Println(strings.Join(warnings, "|"))
 		}
 
@@ -441,6 +430,13 @@ func Example_wsHelpers_GenerateAggregateSpectrum() {
 	// - bulk-A counts(4096): [95 119 129 160 178 178] ... [1074 1127 1146 1196 1307 1406]
 	// - max-A: A|SPECTRUM_NORMAL|counts=3343|maxcount=7017, meta: map[119:fvalue:13.889736 120:fvalue:-18.5 123:fvalue:15 124:fvalue:7.862 128:ivalue:4096]
 	// - max-A counts(4096): [4 3 4 5 5 5] ... [17 27 20 17 20 24]
+}
+
+func printWarnings(warnings []string) {
+	if len(warnings) > 0 {
+		sort.Strings(warnings)
+		fmt.Println(strings.Join(warnings, "|"))
+	}
 }
 
 func Example_wsHelpers_CheckValidDetectorNames() {
@@ -546,45 +542,45 @@ func Example_wsHelpers_GenerateSpectrumRangeWithOp() {
 	// Check that the operations do what we're expecting
 	fmt.Println("Raw A:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 201, exprPB)
-	fmt.Printf("PMC%v Ch200=%v, PMC=%v Ch200=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch200=%v, PMC=%v Ch200=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 201, 202, exprPB)
-	fmt.Printf("PMC%v Ch201=%v, PMC=%v Ch201=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch201=%v, PMC=%v Ch201=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 202, 203, exprPB)
-	fmt.Printf("PMC%v Ch202=%v, PMC=%v Ch202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch202=%v, PMC=%v Ch202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	fmt.Println("Raw B:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 201, exprPB)
-	fmt.Printf("PMC%v Ch200=%v, PMC=%v Ch200=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch200=%v, PMC=%v Ch200=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 201, 202, exprPB)
-	fmt.Printf("PMC%v Ch201=%v, PMC=%v Ch201=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch201=%v, PMC=%v Ch201=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 202, 203, exprPB)
-	fmt.Printf("PMC%v Ch202=%v, PMC=%v Ch202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch202=%v, PMC=%v Ch202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	fmt.Println("Sum A:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
-	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	fmt.Println("Sum B:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
-	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	fmt.Println("Sum A+B:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM, []string{"A", "B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
-	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Ch200+201+202=%v, PMC=%v Ch200+201+202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	fmt.Println("Sum-Diff:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM_OF_DIFF, []string{"A"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
 	fmt.Printf("Bad detectors: %v|%v\n", v, err)
 
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_SUM_OF_DIFF, []string{"A", "B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
-	fmt.Printf("PMC%v Sumdiff of Ch200->202=%v, PMC=%v Sumdiff of Ch200->202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Sumdiff of Ch200->202=%v, PMC=%v Sumdiff of Ch200->202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	fmt.Println("Sum-Max:")
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_MAX_OF_DIFF, []string{"B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
 	fmt.Printf("Bad detectors: %v|%v\n", v, err)
 
 	v, err = GenerateSpectrumRangeWithOp(protos.SpectrumRangeOp_SRO_MAX_OF_DIFF, []string{"A", "B"}, protos.SpectrumType_SPECTRUM_NORMAL, 200, 203, exprPB)
-	fmt.Printf("PMC%v Sumdiff of Ch200->202=%v, PMC=%v Sumdiff of Ch200->202=%v|%v\n", v.Values[12].PMC, v.Values[12].Value, v.Values[24].PMC, v.Values[24].Value, err)
+	fmt.Printf("PMC%v Sumdiff of Ch200->202=%v, PMC=%v Sumdiff of Ch200->202=%v|%v\n", v.Values[7].PMC, v.Values[7].Value, v.Values[19].PMC, v.Values[19].Value, err)
 
 	// Output:
 	// No detector: <nil>|At least 1 detector must be specified

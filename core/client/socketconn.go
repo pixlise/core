@@ -67,19 +67,13 @@ func (s *SocketConn) Connect(connectParams ConnectInfo, auth0Params Auth0Info) e
 	signal.Notify(s.interrupt, os.Interrupt)
 
 	// NOTE: not using wss for local...
-	protocol := "ws"
-	hostUrl := connectParams.Host
-
-	if strings.HasPrefix(hostUrl, "https://") {
-		protocol = "wss"
-		hostUrl = strings.TrimPrefix(hostUrl, "https://")
-	} else {
-		hostUrl = strings.TrimPrefix(hostUrl, "http://")
+	wsUrl, err := makeConnectURL(connectParams.Host, "ws", true)
+	if err != nil {
+		return err
 	}
 
-	hostUrl = strings.TrimSuffix(hostUrl, "/")
+	wsUrl.RawQuery = "token=" + token
 
-	wsUrl := url.URL{Scheme: protocol, Host: hostUrl, Path: "/ws", RawQuery: "token=" + token}
 	ws, resp, err := websocket.DefaultDialer.Dial(wsUrl.String(), nil)
 	if err != nil {
 		log.Fatalln("WS connection failed:", err)
@@ -176,7 +170,6 @@ func ClearJWTCache() {
 
 func GetJWTFromCache(host string, user string, pass string) string {
 	cacheKey := host + "-" + user + "-" + pass
-
 	return cachedJWT[cacheKey]
 }
 
@@ -212,18 +205,10 @@ func (s *SocketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Au
 
 	// Get WS connection token
 	// NOTE: not using https for local...
-	protocol := "http"
-	hostUrl := connectParams.Host
-
-	if strings.HasPrefix(hostUrl, "https://") {
-		protocol = "https"
-		hostUrl = strings.TrimPrefix(hostUrl, "https://")
-	} else {
-		hostUrl = strings.TrimPrefix(hostUrl, "http://")
+	wsConnectUrl, err := makeConnectURL(connectParams.Host, "ws-connect", false)
+	if err != nil {
+		return "", err
 	}
-	hostUrl = strings.TrimSuffix(hostUrl, "/")
-
-	wsConnectUrl := url.URL{Scheme: protocol, Host: hostUrl, Path: "/ws-connect"}
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", wsConnectUrl.String(), nil)
@@ -251,10 +236,29 @@ func (s *SocketConn) getWSConnectToken(connectParams ConnectInfo, auth0Params Au
 	}
 
 	// Remember this host for later
-	s.Host = hostUrl
-	s.HostProtocol = protocol
+	s.Host = wsConnectUrl.Host
+	s.HostProtocol = wsConnectUrl.Scheme
 
 	return respBody.ConnToken, nil
+}
+
+func makeConnectURL(urlHost string, urlPath string, useWebSocketProtocol bool) (*url.URL, error) {
+	// Create a whole path
+	urlString := strings.TrimRight(urlHost, "/") + "/" + strings.TrimLeft(urlPath, "/")
+	u, err := url.Parse(urlString)
+
+	if useWebSocketProtocol {
+		switch u.Scheme {
+		case "https":
+			u.Scheme = "wss"
+		case "http":
+			u.Scheme = "ws"
+		default:
+			return nil, fmt.Errorf("makeConnectURL: Unknown scheme when replacing with websocket: %v", u.Scheme)
+		}
+	}
+
+	return u, err
 }
 
 func (s *SocketConn) SendMessage(msg *protos.WSMessage) error {

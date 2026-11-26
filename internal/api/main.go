@@ -19,13 +19,13 @@ import (
 	"github.com/pixlise/core/v4/api/dataimport"
 	"github.com/pixlise/core/v4/api/dbCollections"
 	"github.com/pixlise/core/v4/api/endpoints"
+	queryparams "github.com/pixlise/core/v4/api/endpoints/query-params"
 	"github.com/pixlise/core/v4/api/filepaths"
 	"github.com/pixlise/core/v4/api/job"
 	jobmanager "github.com/pixlise/core/v4/api/job/manager"
 	"github.com/pixlise/core/v4/api/memoisation"
 	"github.com/pixlise/core/v4/api/notificationSender"
 	"github.com/pixlise/core/v4/api/permission"
-	"github.com/pixlise/core/v4/api/quantification"
 	apiRouter "github.com/pixlise/core/v4/api/router"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/api/ws"
@@ -36,6 +36,7 @@ import (
 	"github.com/pixlise/core/v4/core/jwtparser"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/core/multipartupload"
 	"github.com/pixlise/core/v4/core/scan"
 	"github.com/pixlise/core/v4/core/singleinstance"
 	"github.com/pixlise/core/v4/core/timestamper"
@@ -69,12 +70,13 @@ func main() {
 	log.SetFlags(0)
 
 	cfg := loadConfig()
-	svcs := initServices(&cfg, instanceId)
 
 	////////////////////////////////////////////////////
 	// Set up WebSocket server
 	// Looks like the default config for melody is to expect a ping at least every 54seconds
 	m := melody.New()
+
+	svcs := initServices(&cfg, m, instanceId)
 
 	// Set web socket configs
 	if cfg.WSWriteWaitMs > 0 {
@@ -131,36 +133,16 @@ func main() {
 
 	// Requesting images
 	router.AddCacheControlledStreamHandler(
-		apiRouter.MakeEndpointPath("/images/"+apiRouter.UrlStreamDownloadIndicator, endpoints.ScanIdentifier, endpoints.FileNameIdentifier),
+		apiRouter.MakeEndpointPath("/images/"+apiRouter.UrlStreamDownloadIndicator, queryparams.ScanIdentifier, queryparams.FileNameIdentifier),
 		apiRouter.MakeMethodPermission("GET", permission.PermPublic),
 		endpoints.GetImage,
 	)
 
-	router.AddGenericHandler("/images", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutImage)
-
-	// // Requesting pyramid tiles (simple local version for now)
-	// router.AddPublicHandler(
-	// 	apiRouter.MakeEndpointPath("/pyramid-tiles",
-	// 		endpoints.ScanIdentifier,
-	// 		endpoints.FileNameIdentifier,
-	// 		endpoints.PageIdentifier,
-	// 		endpoints.LevelIdentifier,
-	// 		endpoints.TileXIdentifier,
-	// 		endpoints.TileYIdentifier),
-	// 	"GET",
-	// 	endpoints.GetPyramidTileSimple,
-	// )
-
-	// // Requesting pyramid metadata (ImagePyramid proto)
-	// router.AddPublicHandler(
-	// 	apiRouter.MakeEndpointPath("/pyramid-info",
-	// 		endpoints.ScanIdentifier,
-	// 		endpoints.FileNameIdentifier),
-	// 	"GET",
-	// 	endpoints.GetPyramidInfoSimple,
-	// )
-
-	router.AddGenericHandler("/scan", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutScanData)
+	// Generic large file uploading - once a file is uploaded it's cached for a while, in the mean time
+	// clients must trigger the appropriate import using the file name for it to be imported. Otherwise
+	// the file times out and gets garbage collected. Supports uploading in chunks and resuming.
+	// NOTE: This works across instances! Saves to S3 as it goes
+	router.AddGenericHandler("/file", apiRouter.MakeMethodPermission("PUT", "EDIT_SCAN"), endpoints.PutFileData)
 
 	router.AddGenericHandler("/memoise", apiRouter.MakeMethodPermission("GET", permission.PermPublic), endpoints.GetMemoise)
 	router.AddGenericHandler("/memoise", apiRouter.MakeMethodPermission("PUT", permission.PermPublic), endpoints.PutMemoise)
@@ -201,6 +183,7 @@ func main() {
 
 	go job.ListenForExternalTriggeredJobs(dataimport.JobIDAutoImportPrefix, handler.handleAutoImportJobStatus, svcs.MongoDB, svcs.Log)
 	go memoisation.RunMemoisationGarbageCollector(uint32(cfg.MemoisationGCIntervalSec), uint32(cfg.MaxUnretrievedMemoisationAgeSec), svcs.MongoDB, svcs.TimeStamper, svcs.Log)
+	go garbageCollectMultiPartUploads(600, svcs.MultiPartUpload)
 
 	log.Fatal(
 		http.ListenAndServe(":8080",
@@ -208,6 +191,12 @@ func main() {
 				handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
 				handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"}),
 				handlers.AllowedOrigins([]string{"*"}))(router.Router)))
+}
+
+func garbageCollectMultiPartUploads(intervalSec int, mpu *multipartupload.MultiPartUploadHandler) {
+	for range time.Tick(time.Second * time.Duration(intervalSec)) {
+		mpu.GarbageCollect()
+	}
 }
 
 func loadConfig() config.APIConfig {
@@ -228,7 +217,7 @@ func loadConfig() config.APIConfig {
 	return cfg
 }
 
-func initServices(cfg *config.APIConfig, apiInstanceId string) *services.APIServices {
+func initServices(cfg *config.APIConfig, m *melody.Melody, apiInstanceId string) *services.APIServices {
 	// Get a session for the bucket region
 	sess, err := awsutil.GetSession()
 	if err != nil {
@@ -248,7 +237,7 @@ func initServices(cfg *config.APIConfig, apiInstanceId string) *services.APIServ
 	// If we have no job config yet, read it as a separate file
 	if len(cfg.Jobs.RunnerDockerImage) <= 0 {
 		fmt.Println("Reading job config from separate file...")
-		err = config.ReadJobConfig(cfg, fs)
+		err = config.ReadJobRunningConfig(cfg, fs)
 		if err != nil {
 			fmt.Printf("WARNING: Failed to read job config: %v\n", err)
 		} else {
@@ -313,6 +302,18 @@ func initServices(cfg *config.APIConfig, apiInstanceId string) *services.APIServ
 	ec2Svc := ec2.New(sess)
 	smSvc := secretsmanager.New(sess)
 
+	ts := &timestamper.UnixTimeNowStamper{}
+
+	// Make a multi-part upload handler allowing clients to upload large files
+	mpu := multipartupload.MakeMultiPartUploadHandler(
+		cfg.ManualUploadBucket,
+		"MultiPartUploads",
+		uint64(cfg.CompletedFileGCTimeoutSec),  // If an upload completes, we can delete it quick as it's probably been processed already
+		uint64(cfg.IncompleteFileGCTimeoutSec), // If an upload is incomplete, delete it later, leaving time for resuming
+		fs,
+		ts,
+		iLog)
+
 	// Set up services
 	svcs := &services.APIServices{
 		Config:           *cfg,
@@ -325,15 +326,16 @@ func initServices(cfg *config.APIConfig, apiInstanceId string) *services.APIServ
 		FS:               fs,
 		JWTReader:        jwt,
 		IDGen:            &idgen.IDGen{},
-		TimeStamper:      &timestamper.UnixTimeNowStamper{},
+		TimeStamper:      ts,
 		MongoDB:          db,
 		MongoConnectInfo: mongoConnectInfo,
 		// Notifier is configured after ws is created
-		InstanceId: apiInstanceId,
+		InstanceId:      apiInstanceId,
+		MultiPartUpload: mpu,
 	}
 
 	// Create job manager and point it back here
-	svcs.JobManager, err = jobmanager.CreateJobManager(svcs, 10, true, true, true)
+	svcs.JobManager, err = jobmanager.CreateJobManager(svcs, m, 10, true, true)
 	if err != nil {
 		log.Fatalf("Failed to init job manager. Error: %v", err)
 	}
@@ -414,13 +416,7 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 			h.svcs.Log.Infof("Scan complete detected, checking if auto-quantification needed...")
 			sourceId := scan.Id + "-quant"
 			err = singleinstance.HandleOnce(sourceId, h.instanceId, func(sourceId string) {
-				// We ask it to only run if it hasn't got auto-quants already
-				quantification.RunAutoQuantifications(scan.Id, h.svcs, true)
-
-				// Run post-import jobs - these are run in docker containers to process the imported data however we need. They read the files
-				// we wrote to S3 and output their own files back to S3
-				runPostImportJobs(scan.Id, h.svcs)
-
+				runPostImportJobs(scan, h.svcs)
 			}, h.svcs.MongoDB, h.svcs.TimeStamper, h.svcs.Log)
 
 			if err != nil {
@@ -435,12 +431,12 @@ func (h autoImportHandler) handleAutoImportJobStatus(status *protos.JobStatus) {
 	}
 }
 
-func runPostImportJobs(scanId string, svcs *services.APIServices) {
-	// _, err := jobexecutor.GetJobExecutor(svcs.Config.QuantExecutor)
-	// if err != nil {
-	// 	svcs.Log.Errorf("Failed to create job starter for running post-import jobs: %v", err)
-	// 	return
-	// }
+func runPostImportJobs(scan *protos.ScanItem, svcs *services.APIServices) {
+	// Legacy: This is how we used to run auto-quants, hard coded into the
+	// quantification namespace
+	// We ask it to only run if it hasn't got auto-quants already
+	//quantification.RunAutoQuantifications(scan.Id, svcs, true)
 
-	//jobStarter.StartJob(dockerImage, jobConfig, svcs.Config, sessionuser.PIXLISESystemUserId, svcs.Log)
+	// Now we have a job manager! Tell it to run jobs
+	svcs.JobManager.RunScheduledPostImportJobs(scan)
 }

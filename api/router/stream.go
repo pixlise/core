@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/s3"
+	queryparams "github.com/pixlise/core/v4/api/endpoints/query-params"
 	"github.com/pixlise/core/v4/api/services"
 	"github.com/pixlise/core/v4/core/errorwithstatus"
 	"github.com/pixlise/core/v4/core/jwtparser"
@@ -213,7 +214,7 @@ func printDebugPathParams(iLog logger.ILogger, pathParams map[string]string) str
 	sort.Strings(keys)
 
 	for _, key := range keys {
-		if key != "hostname" && key != "scan" /*endpoints.ScanIdentifier*/ && key != "filename" /*endpoints.FileNameIdentifier*/ {
+		if key != "hostname" && key != queryparams.ScanIdentifier && key != queryparams.FileNameIdentifier {
 			result += fmt.Sprintf("%v:%v ", key, pathParams[key])
 		}
 	}

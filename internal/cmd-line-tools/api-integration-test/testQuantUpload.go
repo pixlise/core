@@ -175,6 +175,7 @@ func testQuantUpload(apiHost string) {
 						"status": "COMPLETE",
 						"message": "user-supplied quantification processed",
 						"startUnixTimeSec": "${SECAGO=3}",
+						"lastUpdateUnixTimeSec": "${SECAGO=3}",
 						"endUnixTimeSec": "${SECAGO=3}",
 						"outputFilePath": "Quantifications/the-scan-id/%v",
 						"name": "uploaded Quant",

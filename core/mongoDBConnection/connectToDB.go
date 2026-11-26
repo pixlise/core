@@ -79,7 +79,7 @@ func connectAndCheckDB(
 	}
 
 	if len(mongoInfo.Username) > 0 {
-		iLog.Infof("Connect: Setting user name: %v, password length: %v", mongoInfo.Username, len(mongoInfo.Password))
+		iLog.Infof("DB Connect: Setting user name: %v, password length: %v", mongoInfo.Username, len(mongoInfo.Password))
 		opts = opts.SetAuth(
 			options.Credential{
 				Username:    mongoInfo.Username,

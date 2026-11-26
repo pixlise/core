@@ -581,224 +581,6 @@ func (x *ScanAutoShareEntry) GetEditors() *UserGroupList {
 	return nil
 }
 
-type JobGroupConfig struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobGroupId    string                 `protobuf:"bytes,1,opt,name=jobGroupId,proto3" json:"jobGroupId,omitempty"`
-	DockerImage   string                 `protobuf:"bytes,2,opt,name=dockerImage,proto3" json:"dockerImage,omitempty"`
-	FastStart     bool                   `protobuf:"varint,3,opt,name=fastStart,proto3" json:"fastStart,omitempty"`
-	NodeCount     int32                  `protobuf:"varint,4,opt,name=nodeCount,proto3" json:"nodeCount,omitempty"`
-	NodeConfig    *JobConfig             `protobuf:"bytes,5,opt,name=nodeConfig,proto3" json:"nodeConfig,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *JobGroupConfig) Reset() {
-	*x = JobGroupConfig{}
-	mi := &file_scan_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *JobGroupConfig) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*JobGroupConfig) ProtoMessage() {}
-
-func (x *JobGroupConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use JobGroupConfig.ProtoReflect.Descriptor instead.
-func (*JobGroupConfig) Descriptor() ([]byte, []int) {
-	return file_scan_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *JobGroupConfig) GetJobGroupId() string {
-	if x != nil {
-		return x.JobGroupId
-	}
-	return ""
-}
-
-func (x *JobGroupConfig) GetDockerImage() string {
-	if x != nil {
-		return x.DockerImage
-	}
-	return ""
-}
-
-func (x *JobGroupConfig) GetFastStart() bool {
-	if x != nil {
-		return x.FastStart
-	}
-	return false
-}
-
-func (x *JobGroupConfig) GetNodeCount() int32 {
-	if x != nil {
-		return x.NodeCount
-	}
-	return 0
-}
-
-func (x *JobGroupConfig) GetNodeConfig() *JobConfig {
-	if x != nil {
-		return x.NodeConfig
-	}
-	return nil
-}
-
-type JobFilePath struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The remote file info
-	RemoteBucket string `protobuf:"bytes,1,opt,name=remoteBucket,proto3" json:"remoteBucket,omitempty"`
-	RemotePath   string `protobuf:"bytes,2,opt,name=remotePath,proto3" json:"remotePath,omitempty"`
-	// Local copy
-	LocalPath     string `protobuf:"bytes,3,opt,name=localPath,proto3" json:"localPath,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *JobFilePath) Reset() {
-	*x = JobFilePath{}
-	mi := &file_scan_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *JobFilePath) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*JobFilePath) ProtoMessage() {}
-
-func (x *JobFilePath) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use JobFilePath.ProtoReflect.Descriptor instead.
-func (*JobFilePath) Descriptor() ([]byte, []int) {
-	return file_scan_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *JobFilePath) GetRemoteBucket() string {
-	if x != nil {
-		return x.RemoteBucket
-	}
-	return ""
-}
-
-func (x *JobFilePath) GetRemotePath() string {
-	if x != nil {
-		return x.RemotePath
-	}
-	return ""
-}
-
-func (x *JobFilePath) GetLocalPath() string {
-	if x != nil {
-		return x.LocalPath
-	}
-	return ""
-}
-
-type JobConfig struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The job id
-	JobId string `protobuf:"bytes,1,opt,name=jobId,proto3" json:"jobId,omitempty"`
-	// What files are required to be present when running the job?
-	RequiredFiles []*JobFilePath `protobuf:"bytes,2,rep,name=requiredFiles,proto3" json:"requiredFiles,omitempty"`
-	// What command to execute
-	Command string   `protobuf:"bytes,3,opt,name=command,proto3" json:"command,omitempty"`
-	Args    []string `protobuf:"bytes,4,rep,name=args,proto3" json:"args,omitempty"`
-	// What to upload on completion (if file doesn't exist, it can be ignored with a warning)
-	OutputFiles   []*JobFilePath `protobuf:"bytes,5,rep,name=outputFiles,proto3" json:"outputFiles,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *JobConfig) Reset() {
-	*x = JobConfig{}
-	mi := &file_scan_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *JobConfig) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*JobConfig) ProtoMessage() {}
-
-func (x *JobConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use JobConfig.ProtoReflect.Descriptor instead.
-func (*JobConfig) Descriptor() ([]byte, []int) {
-	return file_scan_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *JobConfig) GetJobId() string {
-	if x != nil {
-		return x.JobId
-	}
-	return ""
-}
-
-func (x *JobConfig) GetRequiredFiles() []*JobFilePath {
-	if x != nil {
-		return x.RequiredFiles
-	}
-	return nil
-}
-
-func (x *JobConfig) GetCommand() string {
-	if x != nil {
-		return x.Command
-	}
-	return ""
-}
-
-func (x *JobConfig) GetArgs() []string {
-	if x != nil {
-		return x.Args
-	}
-	return nil
-}
-
-func (x *JobConfig) GetOutputFiles() []*JobFilePath {
-	if x != nil {
-		return x.OutputFiles
-	}
-	return nil
-}
-
 // Client library side message types
 type ClientMap struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -812,7 +594,7 @@ type ClientMap struct {
 
 func (x *ClientMap) Reset() {
 	*x = ClientMap{}
-	mi := &file_scan_proto_msgTypes[7]
+	mi := &file_scan_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -824,7 +606,7 @@ func (x *ClientMap) String() string {
 func (*ClientMap) ProtoMessage() {}
 
 func (x *ClientMap) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_proto_msgTypes[7]
+	mi := &file_scan_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -837,7 +619,7 @@ func (x *ClientMap) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClientMap.ProtoReflect.Descriptor instead.
 func (*ClientMap) Descriptor() ([]byte, []int) {
-	return file_scan_proto_rawDescGZIP(), []int{7}
+	return file_scan_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ClientMap) GetEntryPMCs() []int32 {
@@ -877,7 +659,7 @@ type ClientStringList struct {
 
 func (x *ClientStringList) Reset() {
 	*x = ClientStringList{}
-	mi := &file_scan_proto_msgTypes[8]
+	mi := &file_scan_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -889,7 +671,7 @@ func (x *ClientStringList) String() string {
 func (*ClientStringList) ProtoMessage() {}
 
 func (x *ClientStringList) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_proto_msgTypes[8]
+	mi := &file_scan_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -902,7 +684,7 @@ func (x *ClientStringList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClientStringList.ProtoReflect.Descriptor instead.
 func (*ClientStringList) Descriptor() ([]byte, []int) {
-	return file_scan_proto_rawDescGZIP(), []int{8}
+	return file_scan_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ClientStringList) GetStrings() []string {
@@ -927,7 +709,7 @@ type ScanItem_ScanTypeCount struct {
 
 func (x *ScanItem_ScanTypeCount) Reset() {
 	*x = ScanItem_ScanTypeCount{}
-	mi := &file_scan_proto_msgTypes[9]
+	mi := &file_scan_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -939,7 +721,7 @@ func (x *ScanItem_ScanTypeCount) String() string {
 func (*ScanItem_ScanTypeCount) ProtoMessage() {}
 
 func (x *ScanItem_ScanTypeCount) ProtoReflect() protoreflect.Message {
-	mi := &file_scan_proto_msgTypes[9]
+	mi := &file_scan_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1012,30 +794,7 @@ const file_scan_proto_rawDesc = "" +
 	"\x12ScanAutoShareEntry\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12(\n" +
 	"\aviewers\x18\x02 \x01(\v2\x0e.UserGroupListR\aviewers\x12(\n" +
-	"\aeditors\x18\x03 \x01(\v2\x0e.UserGroupListR\aeditors\"\xba\x01\n" +
-	"\x0eJobGroupConfig\x12\x1e\n" +
-	"\n" +
-	"jobGroupId\x18\x01 \x01(\tR\n" +
-	"jobGroupId\x12 \n" +
-	"\vdockerImage\x18\x02 \x01(\tR\vdockerImage\x12\x1c\n" +
-	"\tfastStart\x18\x03 \x01(\bR\tfastStart\x12\x1c\n" +
-	"\tnodeCount\x18\x04 \x01(\x05R\tnodeCount\x12*\n" +
-	"\n" +
-	"nodeConfig\x18\x05 \x01(\v2\n" +
-	".JobConfigR\n" +
-	"nodeConfig\"o\n" +
-	"\vJobFilePath\x12\"\n" +
-	"\fremoteBucket\x18\x01 \x01(\tR\fremoteBucket\x12\x1e\n" +
-	"\n" +
-	"remotePath\x18\x02 \x01(\tR\n" +
-	"remotePath\x12\x1c\n" +
-	"\tlocalPath\x18\x03 \x01(\tR\tlocalPath\"\xb3\x01\n" +
-	"\tJobConfig\x12\x14\n" +
-	"\x05jobId\x18\x01 \x01(\tR\x05jobId\x122\n" +
-	"\rrequiredFiles\x18\x02 \x03(\v2\f.JobFilePathR\rrequiredFiles\x12\x18\n" +
-	"\acommand\x18\x03 \x01(\tR\acommand\x12\x12\n" +
-	"\x04args\x18\x04 \x03(\tR\x04args\x12.\n" +
-	"\voutputFiles\x18\x05 \x03(\v2\f.JobFilePathR\voutputFiles\"\x8d\x01\n" +
+	"\aeditors\x18\x03 \x01(\v2\x0e.UserGroupListR\aeditors\"\x8d\x01\n" +
 	"\tClientMap\x12\x1c\n" +
 	"\tEntryPMCs\x18\x01 \x03(\x05R\tEntryPMCs\x12 \n" +
 	"\vFloatValues\x18\x02 \x03(\x01R\vFloatValues\x12\x1c\n" +
@@ -1082,7 +841,7 @@ func file_scan_proto_rawDescGZIP() []byte {
 }
 
 var file_scan_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_scan_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_scan_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_scan_proto_goTypes = []any{
 	(ScanDataType)(0),              // 0: ScanDataType
 	(ScanInstrument)(0),            // 1: ScanInstrument
@@ -1091,34 +850,28 @@ var file_scan_proto_goTypes = []any{
 	(*ScanMetaDataItem)(nil),       // 4: ScanMetaDataItem
 	(*ScanEntryRange)(nil),         // 5: ScanEntryRange
 	(*ScanAutoShareEntry)(nil),     // 6: ScanAutoShareEntry
-	(*JobGroupConfig)(nil),         // 7: JobGroupConfig
-	(*JobFilePath)(nil),            // 8: JobFilePath
-	(*JobConfig)(nil),              // 9: JobConfig
-	(*ClientMap)(nil),              // 10: ClientMap
-	(*ClientStringList)(nil),       // 11: ClientStringList
-	(*ScanItem_ScanTypeCount)(nil), // 12: ScanItem.ScanTypeCount
-	nil,                            // 13: ScanItem.MetaEntry
-	nil,                            // 14: ScanItem.ContentCountsEntry
-	(*OwnershipSummary)(nil),       // 15: OwnershipSummary
-	(*UserGroupList)(nil),          // 16: UserGroupList
+	(*ClientMap)(nil),              // 7: ClientMap
+	(*ClientStringList)(nil),       // 8: ClientStringList
+	(*ScanItem_ScanTypeCount)(nil), // 9: ScanItem.ScanTypeCount
+	nil,                            // 10: ScanItem.MetaEntry
+	nil,                            // 11: ScanItem.ContentCountsEntry
+	(*OwnershipSummary)(nil),       // 12: OwnershipSummary
+	(*UserGroupList)(nil),          // 13: UserGroupList
 }
 var file_scan_proto_depIdxs = []int32{
-	12, // 0: ScanItem.dataTypes:type_name -> ScanItem.ScanTypeCount
+	9,  // 0: ScanItem.dataTypes:type_name -> ScanItem.ScanTypeCount
 	1,  // 1: ScanItem.instrument:type_name -> ScanInstrument
-	13, // 2: ScanItem.meta:type_name -> ScanItem.MetaEntry
-	14, // 3: ScanItem.contentCounts:type_name -> ScanItem.ContentCountsEntry
-	15, // 4: ScanItem.owner:type_name -> OwnershipSummary
-	16, // 5: ScanAutoShareEntry.viewers:type_name -> UserGroupList
-	16, // 6: ScanAutoShareEntry.editors:type_name -> UserGroupList
-	9,  // 7: JobGroupConfig.nodeConfig:type_name -> JobConfig
-	8,  // 8: JobConfig.requiredFiles:type_name -> JobFilePath
-	8,  // 9: JobConfig.outputFiles:type_name -> JobFilePath
-	0,  // 10: ScanItem.ScanTypeCount.dataType:type_name -> ScanDataType
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	10, // 2: ScanItem.meta:type_name -> ScanItem.MetaEntry
+	11, // 3: ScanItem.contentCounts:type_name -> ScanItem.ContentCountsEntry
+	12, // 4: ScanItem.owner:type_name -> OwnershipSummary
+	13, // 5: ScanAutoShareEntry.viewers:type_name -> UserGroupList
+	13, // 6: ScanAutoShareEntry.editors:type_name -> UserGroupList
+	0,  // 7: ScanItem.ScanTypeCount.dataType:type_name -> ScanDataType
+	8,  // [8:8] is the sub-list for method output_type
+	8,  // [8:8] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_scan_proto_init() }
@@ -1138,7 +891,7 @@ func file_scan_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_scan_proto_rawDesc), len(file_scan_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   12,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

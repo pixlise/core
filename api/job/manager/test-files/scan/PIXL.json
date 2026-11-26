@@ -1,0 +1,12 @@
+{
+  "_id": "PIXL",
+  "minelement": 11,
+  "maxelement": 92,
+  "xrfevlowerbound": 800,
+  "xrfevupperbound": 20000,
+  "xrfevresolution": 230,
+  "windowelement": 14,
+  "tubeelement": 45,
+  "defaultparams": "",
+  "mmbeamradius": 0.05999999865889549
+}

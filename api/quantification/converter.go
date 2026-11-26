@@ -18,15 +18,15 @@
 package quantification
 
 import (
-	"encoding/csv"
+	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 
+	dataImportHelpers "github.com/pixlise/core/v4/api/dataimport/dataimportHelpers"
 	"github.com/pixlise/core/v4/core/logger"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"google.golang.org/protobuf/proto"
@@ -36,7 +36,10 @@ import (
 // as it has to work the same as python, so tests are the same as for the python program, making functions/
 // structure match it too.
 
-func matchPMCsWithDataset(data *csvData, exprPB *protos.Experiment, matchByCoord bool, logger logger.ILogger) error {
+func matchPMCsWithDataset(csvFields [][]string, exprPB *protos.Experiment, matchByCoord bool, logger logger.ILogger) error {
+	csvHeader := csvFields[0:1]
+	csvBody := csvFields[1:]
+
 	fileNameMetaIndex := -1
 	if !matchByCoord {
 		// Look up the file name index
@@ -93,7 +96,7 @@ func matchPMCsWithDataset(data *csvData, exprPB *protos.Experiment, matchByCoord
 	zIdx := -1
 	filenameIdx := -1
 
-	for colIdx, col := range data.header {
+	for colIdx, col := range csvHeader[0] {
 		switch col {
 		case "PMC":
 			pmcColIdx = colIdx
@@ -111,15 +114,15 @@ func matchPMCsWithDataset(data *csvData, exprPB *protos.Experiment, matchByCoord
 	// If these columns don't exist in our PMC, fail here
 	if pmcColIdx == -1 {
 		// Add this column to the CSV data we read in
-		pmcColIdx = len(data.header)
-		data.header = append(data.header, "PMC")
+		pmcColIdx = len(csvHeader[0])
+		csvHeader[0] = append(csvHeader[0], "PMC")
 		logger.Infof("CSV does not contain PMC column, adding one in memory to store matched PMCs into")
 	} else if matchByCoord && (xIdx == -1 || yIdx == -1 || zIdx == -1) {
 		return fmt.Errorf("PMC matching failed: CSV does not contain X/Y/Z columns")
 	}
 
 	// Look up the PMC by whatever method selected (see matchByCoord), and store it in the PMC column of the CSV data
-	for rowIdx, row := range data.data {
+	for rowIdx, row := range csvBody {
 		lookupValue := ""
 
 		if matchByCoord {
@@ -140,9 +143,9 @@ func matchPMCsWithDataset(data *csvData, exprPB *protos.Experiment, matchByCoord
 			strPMC := strconv.Itoa(int(pmc))
 			// If the row doesn't contain a PMC, we add it
 			if pmcColIdx == len(row) {
-				data.data[rowIdx] = append(row, strPMC)
+				csvBody[rowIdx] = append(row, strPMC)
 			} else {
-				data.data[rowIdx][pmcColIdx] = strPMC
+				csvBody[rowIdx][pmcColIdx] = strPMC
 			}
 		} else {
 			return fmt.Errorf("matchPMCsWithDataset Failed to match %v to a PMC in dataset file", lookupValue)
@@ -264,15 +267,16 @@ type quantData struct {
 	locations []quantLoc
 }
 
-func makeColumnTypeList(csv csvData, colsToIgnore map[int]bool) ([]string, error) {
+func makeColumnTypeList(csvFields [][]string, colsToIgnore map[int]bool) ([]string, error) {
+	csvBody := csvFields[1:]
 	result := make([]string, 0)
 
 	// Using the first row...
-	if len(csv.data) <= 0 {
+	if len(csvBody) <= 0 {
 		return result, errors.New("No data found in CSV")
 	}
 
-	colsRead := len(csv.data[0])
+	colsRead := len(csvBody[0])
 
 	// Iterate through data by column
 	for colIdx := 0; colIdx < colsRead; colIdx++ {
@@ -280,7 +284,7 @@ func makeColumnTypeList(csv csvData, colsToIgnore map[int]bool) ([]string, error
 			floatFound := false
 
 			// Check if we have all floats or all ints in this column
-			for rowIdx, row := range csv.data {
+			for rowIdx, row := range csvBody {
 				value := row[colIdx]
 				_, ierr := strconv.ParseInt(value, 10, 32)
 				_, ferr := strconv.ParseFloat(value, 32)
@@ -310,15 +314,17 @@ func makeColumnTypeList(csv csvData, colsToIgnore map[int]bool) ([]string, error
 	return result, nil
 }
 
-func convertQuantificationData(csv csvData, expectMetaColumns []string) (quantData, error) {
+func convertQuantificationData(csvFields [][]string, expectMetaColumns []string) (quantData, error) {
+	csvHeader := csvFields[0]
+	csvBody := csvFields[1:]
 	var result quantData
 
-	if len(csv.data) <= 0 {
+	if len(csvBody) <= 0 {
 		return result, errors.New("Expected at least 1 data row")
 	}
 
 	// Returns a dict with the column name, and the index of the columns specified
-	interestingColIdxs, err := getInterestingColIndexes(csv.header, expectMetaColumns)
+	interestingColIdxs, err := getInterestingColIndexes(csvHeader, expectMetaColumns)
 	if err != nil {
 		return result, err
 	}
@@ -334,17 +340,17 @@ func convertQuantificationData(csv csvData, expectMetaColumns []string) (quantDa
 	//interestingColIdxsOnly = list(interestingColIdxs.values())
 
 	// Get only the labels that are not in the "Interesting" list above
-	result.labels = filterListItems(csv.header, indexToSkip)
+	result.labels = filterListItems(csvHeader, indexToSkip)
 
 	// Get data types for the non "Interesting" columns, ie for each element data column, like Fe_%, Fe_int, Fe_err and things like chisq, eVstart, etc.
-	result.types, err = makeColumnTypeList(csv, indexToSkip)
+	result.types, err = makeColumnTypeList(csvFields, indexToSkip)
 	if err != nil {
 		return result, err
 	}
 
 	// Read rows, separating columns into the "interesting" ones and the rest as "data"
-	for _, row := range csv.data {
-		loc, err := makeQuantedLocation(csv.header, row, indexToSkip)
+	for _, row := range csvBody {
+		loc, err := makeQuantedLocation(csvHeader, row, indexToSkip)
 		if err != nil {
 			return result, err
 		}
@@ -411,6 +417,7 @@ func makeQuantedLocation(header []string, row []string, metaColumns map[int]bool
 	return result, nil
 }
 
+/*
 type csvData struct {
 	header []string
 	data   [][]string
@@ -454,7 +461,7 @@ func readCSV(data string, headerRowIdx int) (csvData, error) {
 
 	return result, nil
 }
-
+*/
 // Verifying that parsing floats works as we need, because we have some floats come back from piquant in interesting ways
 func parseFloatColumnValue(val string) (float32, error) {
 	if val == "-nan" {
@@ -569,14 +576,15 @@ func saveToProto(data quantData, detectorIDSpecified string, detectorDuplicateAB
 // ConvertQuantificationCSV - converts from incoming string CSV data to serialised binary data. exprPB if nil means we wont match to dataset PMCs
 // Returns the serialised quantification bytes and the elements that were quantified
 func ConvertQuantificationCSV(logger logger.ILogger, data string, expectMetaColumns []string, exprPB *protos.Experiment, matchPMCByCoord bool, detectorIDOverride string, detectorDuplicateAB bool) ([]byte, []string, error) {
-	mapData, err := readCSV(data, 1)
+	csvFields, err := dataImportHelpers.ReadCSVData(bytes.NewReader([]byte(data)), 1, ',')
+	//mapData, err := readCSV(data, 1)
 	if err != nil {
 		return []byte{}, []string{}, err
 	}
 
 	// Match PMCS if required
 	if exprPB != nil {
-		if err = matchPMCsWithDataset(&mapData, exprPB, matchPMCByCoord, logger); err != nil {
+		if err = matchPMCsWithDataset(csvFields, exprPB, matchPMCByCoord, logger); err != nil {
 			return []byte{}, []string{}, err
 		}
 
@@ -595,7 +603,7 @@ func ConvertQuantificationCSV(logger logger.ILogger, data string, expectMetaColu
 	}
 
 	// Parse/convert it to a form we can save it in
-	quantToSave, err := convertQuantificationData(mapData, expectMetaColumns)
+	quantToSave, err := convertQuantificationData(csvFields, expectMetaColumns)
 	if err != nil {
 		return []byte{}, []string{}, err
 	}
@@ -605,7 +613,7 @@ func ConvertQuantificationCSV(logger logger.ILogger, data string, expectMetaColu
 		logger.Infof("  %v as %v", label, quantToSave.types[c])
 	}
 
-	elements := getElements(mapData.header)
+	elements := getElements(csvFields[0])
 	logger.Infof("Elements found: %v", elements)
 
 	// Write to bytes

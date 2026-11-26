@@ -214,8 +214,13 @@ type OutputData struct {
 	// The group the dataset will belong to
 	Instrument protos.ScanInstrument
 
-	Meta                FileMetaData
-	DetectorConfig      string
+	Meta FileMetaData
+
+	// If we have a saved detector config we can refer to it by name
+	// but some scans come with their own detector config supplied
+	DetectorConfigName string
+	DetectorConfigFull *protos.DetectorConfig
+
 	BulkQuantFile       string
 	DefaultContextImage string
 

@@ -1,34 +1,42 @@
 package dataImportHelpers
 
 import (
-	"bufio"
 	"encoding/csv"
 	"fmt"
 	"io"
 	"os"
-
-	"github.com/pixlise/core/v4/core/logger"
 )
 
-func ReadCSV(filePath string, headerIdx int, sep rune, jobLog logger.ILogger) ([][]string, error) {
+func ReadCSV(filePath string, headerIdx int, sep rune) ([][]string, error) {
 	csvFile, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	seekPos := int64(0)
-	if headerIdx > 0 {
-		n := 0
-		for n < headerIdx {
-			n = n + 1
-			row1, err := bufio.NewReader(csvFile).ReadSlice('\n')
+	fields, err := ReadCSVData(csvFile, headerIdx, sep)
+	if err != nil {
+		return fields, fmt.Errorf("ReadCSV \"%v\": %v", filePath, err)
+	}
+
+	return fields, nil
+}
+
+func ReadCSVData(csvFile io.Reader, headerIdx int, sep rune) ([][]string, error) {
+	// Gobble up this many lines at the start...
+	for c := 0; c < headerIdx; c++ {
+		b := []byte{0}
+		for {
+			n, err := csvFile.Read(b)
 			if err != nil {
-				return nil, err
+				return [][]string{}, fmt.Errorf("Failed to skip CSV header lines: %v", err)
 			}
-			seekPos += int64(len(row1))
-			_, err = csvFile.Seek(seekPos, io.SeekStart)
-			if err != nil {
-				return nil, err
+
+			if n != 1 {
+				return [][]string{}, fmt.Errorf("Failed read byte from CSV header line: %v", c+1)
+			}
+
+			if b[0] == '\n' {
+				break
 			}
 		}
 	}
@@ -41,6 +49,7 @@ func ReadCSV(filePath string, headerIdx int, sep rune, jobLog logger.ILogger) ([
 	// ReadAll() here, which blows up when the # cols differs, we read each line, and if we get the error
 	// "wrong number of fields", we can ignore it and keep reading
 	rows := [][]string{}
+	var err error
 	var lineRecord []string
 	for {
 		lineRecord, err = r.Read()
@@ -49,7 +58,7 @@ func ReadCSV(filePath string, headerIdx int, sep rune, jobLog logger.ILogger) ([
 		}
 
 		if err != nil {
-			if csverr, ok := err.(*csv.ParseError); !ok && csverr.Err != csv.ErrFieldCount {
+			if csverr, ok := err.(*csv.ParseError); !ok && (csverr == nil || csverr.Err != csv.ErrFieldCount) {
 				return nil, err
 			}
 		}
@@ -58,7 +67,7 @@ func ReadCSV(filePath string, headerIdx int, sep rune, jobLog logger.ILogger) ([
 	}
 
 	if len(rows) <= 0 {
-		return rows, fmt.Errorf("Read 0 rows from: %v", filePath)
+		return rows, fmt.Errorf("Read 0 CSV rows")
 	}
 	return rows, nil
 }

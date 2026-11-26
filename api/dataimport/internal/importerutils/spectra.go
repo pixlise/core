@@ -31,7 +31,7 @@ import (
 )
 
 func ReadSpectraCSV(path string, jobLog logger.ILogger) (dataConvertModels.DetectorSampleByPMC, error) {
-	data, err := dataImportHelpers.ReadCSV(path, 0, ',', jobLog)
+	data, err := dataImportHelpers.ReadCSV(path, 0, ',')
 	if err != nil {
 		return nil, err
 	}

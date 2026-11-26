@@ -20,6 +20,7 @@ const JobHandlersName = "jobHandlers"
 const JobsName = "jobs"
 const JobStatusName = "jobStatuses"
 const JobQueueName = "jobQueue"
+const JobScheduleName = "jobSchedule"
 const MemoisedItemsName = "memoisedItems"
 const MistROIsName = "mistROIs"
 const ModulesName = "modules"
@@ -30,6 +31,7 @@ const PiquantVersionName = "piquantVersion"
 const QuantificationsName = "quantifications"
 const QuantificationZStacksName = "quantificationZStacks"
 const ReferencesName = "references"
+const SourceRepositoriesName = "sourceRepositories"
 const RegionsOfInterestName = "regionsOfInterest"
 const ScanAutoShareName = "scanAutoShare"
 const ScanDefaultImagesName = "scanDefaultImages"
@@ -71,6 +73,7 @@ func GetAllCollections() []string {
 		QuantificationsName,
 		QuantificationZStacksName,
 		ReferencesName,
+		SourceRepositoriesName,
 		RegionsOfInterestName,
 		ScanAutoShareName,
 		ScanDefaultImagesName,

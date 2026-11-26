@@ -39,3 +39,19 @@ func CheckFieldLength[T any](field []T, fieldName string, minLength int, maxLeng
 
 	return nil
 }
+
+func MaskSecretField(s string) string {
+	masked := "***"
+
+	stars := len(s) - 3 /* at the end */ - 3 /* We already have 3 */
+	for c := 0; c < stars; c++ {
+		masked = masked + "*"
+	}
+
+	// Append remainder if any
+	if len(s) > len(masked) {
+		masked = masked + s[len(masked):]
+	}
+
+	return masked
+}

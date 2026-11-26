@@ -2,11 +2,11 @@ package wsHandler
 
 import (
 	"archive/zip"
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/olahol/melody"
@@ -430,7 +430,7 @@ func beginDatasetFileReq(scanId string, hctx wsHelpers.HandlerContext) (*protos.
 	}
 
 	// We've come this far, we have access to the scan, so read it
-	exprPB, err := wsHelpers.ReadDatasetFile(scanId, hctx.Svcs, true)
+	exprPB, err := wsHelpers.ReadDatasetFile(scanId, hctx.Svcs)
 	if err != nil {
 		return nil, err
 	}
@@ -568,11 +568,28 @@ func HandleScanTriggerReImportReq(req *protos.ScanTriggerReImportReq, hctx wsHel
 	return &protos.ScanTriggerReImportResp{JobId: jobId}, err
 }
 
+func getScanUploadFormats(hidePIXL bool) []string {
+	PIXL := []string{"jpl-breadboard", "sbu-breadboard", "pixl-em", "pixl-fm"}
+	nonPIXL := []string{"bruker-bcf", "user-defined"}
+
+	if hidePIXL {
+		return nonPIXL
+	}
+
+	return append(PIXL, nonPIXL...)
+}
+
+func HandleScanUploadFormatsReq(req *protos.ScanUploadFormatsReq, hctx wsHelpers.HandlerContext) (*protos.ScanUploadFormatsResp, error) {
+	return &protos.ScanUploadFormatsResp{Formats: getScanUploadFormats(hctx.Svcs.Config.HidePIXLScanUploads)}, nil
+}
+
 // NOTE: before this is sent, we expect the PUT /scan endpoint to have been called and a zip uploaded already
 //
 //	The same parameters passed there (scan id & file name) must be used with this request otherwise we
 //	won't look up the zip correctly and fail.
-func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContext) (*protos.ScanUploadResp, error) {
+
+// func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContext) (*protos.ScanUploadResp, error) {
+func HandleScanImportReq(req *protos.ScanImportReq, hctx wsHelpers.HandlerContext) (*protos.ScanImportResp, error) {
 	if err := wsHelpers.CheckStringField(&req.Id, "Id", 1, 50); err != nil {
 		return nil, err
 	}
@@ -583,19 +600,22 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 		return nil, err
 	}
 
-	destBucket := hctx.Svcs.Config.ManualUploadBucket
 	fs := hctx.Svcs.FS
 	logger := hctx.Svcs.Log
-	logger.Infof("Dataset create started for format: %v, id: %v", req.Format, req.Id)
+	logger.Infof("Dataset create started for format: %v, id: %v input file: %v", req.Format, req.Id, req.ZipFileName)
 
 	// Validate the dataset ID - can't contain funny characters because it ends up as an S3 path
 	// NOTE: we also turn space to _ here! Having spaces in the path broke quants because the
 	// quant summary file was written with a + instead of a space?!
 	datasetID := fileaccess.MakeValidObjectName(req.Id, false)
 
-	formats := []string{"jpl-breadboard", "sbu-breadboard", "pixl-em", "pixl-fm", "user-defined"}
-	if !utils.ItemInSlice(req.Format, formats) {
+	if !utils.ItemInSlice(req.Format, getScanUploadFormats(hctx.Svcs.Config.HidePIXLScanUploads)) {
 		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Unexpected format: \"%v\"", req.Format))
+	}
+
+	saveName := req.ZipFileName
+	if !strings.HasPrefix(saveName, datasetID+"/") {
+		saveName = path.Join(datasetID, saveName)
 	}
 
 	s3PathStart := path.Join(filepaths.DatasetUploadRoot, datasetID)
@@ -621,26 +641,30 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 		}
 	*/
 
-	// Read the zip that was expected to be uploaded
-	zipPath := path.Join(s3PathStart, req.ZipFileName)
-	zippedData, err := hctx.Svcs.FS.ReadObject(destBucket, zipPath)
-	if err != nil {
-		return nil, errorwithstatus.MakeBadRequestError(fmt.Errorf("Failed to import, zip file not found: %v", zipPath))
-	}
-
-	// Validate zip contents matches the format we were given
-	zipReader, err := zip.NewReader(bytes.NewReader(zippedData), int64(len(zippedData)))
+	// Use the multi-part uploader to read the file
+	localFile, _ /*sz*/, err := hctx.Svcs.MultiPartUpload.ReadCompletedUpload(saveName)
 	if err != nil {
 		return nil, err
 	}
 
+	// Validate zip contents matches the format we were given
+	zipReader, err := zip.OpenReader(localFile)
+	if err != nil {
+		return nil, err
+	}
+	defer zipReader.Close()
+
 	// Validate contents - detector dependent
+	destBucket := hctx.Svcs.Config.ManualUploadBucket
+
 	if req.Format == "pixl-em" || req.Format == "pixl-fm" {
-		err = dataimport.ProcessSDF(datasetID, zipReader, zippedData, destBucket, s3PathStart, fs, logger)
+		err = dataimport.ProcessSDF(datasetID, zipReader, destBucket, s3PathStart, fs, logger)
 	} else if req.Format == "user-defined" {
-		err = dataimport.ProcessUserDefined(hctx.SessUser.User.Id, datasetID, zipReader, zippedData, req, destBucket, s3PathStart, fs, logger)
+		err = errors.New("user-defined scans must be created via ScanCreateUserDefinedReq message")
+	} else if req.Format == "bruker-bcf" {
+		err = dataimport.ProcessBruker(hctx.SessUser.User.Id, datasetID, zipReader, localFile, destBucket, s3PathStart, fs, logger)
 	} else {
-		err = dataimport.ProcessBreadboard(req.Format, hctx.SessUser.User.Id, datasetID, zipReader, zippedData, destBucket, s3PathStart, fs, logger)
+		err = dataimport.ProcessBreadboard(req.Format, hctx.SessUser.User.Id, datasetID, zipReader, localFile, destBucket, s3PathStart, fs, logger)
 	}
 
 	if err != nil {
@@ -695,7 +719,7 @@ func HandleScanUploadReq(req *protos.ScanUploadReq, hctx wsHelpers.HandlerContex
 
 	logger.Infof("Triggered dataset reprocess via SNS topic. Result: %v. Job ID: %v", result, jobId)
 
-	return &protos.ScanUploadResp{JobId: jobId}, nil
+	return &protos.ScanImportResp{JobId: jobId}, nil
 }
 
 type importUpdater struct {
@@ -734,8 +758,8 @@ func (i *importUpdater) sendReimportUpdate(status *protos.JobStatus) {
 
 func (i *importUpdater) sendImportUpdate(status *protos.JobStatus) {
 	wsUpd := protos.WSMessage{
-		Contents: &protos.WSMessage_ScanUploadUpd{
-			ScanUploadUpd: &protos.ScanUploadUpd{
+		Contents: &protos.WSMessage_ScanImportUpd{
+			ScanImportUpd: &protos.ScanImportUpd{
 				Status: status,
 			},
 		},
@@ -850,40 +874,6 @@ func HandleScanTriggerJobReq(req *protos.ScanTriggerJobReq, hctx wsHelpers.Handl
 	quantification.RunAutoQuantifications(req.ScanId, hctx.Svcs, false)
 
 	return &protos.ScanTriggerJobResp{}, nil
-}
-
-func HandleScanListJobsReq(req *protos.ScanListJobsReq, hctx wsHelpers.HandlerContext) (*protos.ScanListJobsResp, error) {
-	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.JobsName)
-	cursor, err := coll.Find(ctx, bson.M{}, options.Find())
-	if err != nil {
-		return nil, err
-	}
-
-	jobs := []*protos.JobGroupConfig{}
-	err = cursor.All(context.TODO(), &jobs)
-	if err != nil {
-		return nil, err
-	}
-
-	return &protos.ScanListJobsResp{
-		Jobs: jobs,
-	}, nil
-}
-
-func HandleScanWriteJobReq(req *protos.ScanWriteJobReq, hctx wsHelpers.HandlerContext) (*protos.ScanWriteJobResp, error) {
-	ctx := context.TODO()
-	coll := hctx.Svcs.MongoDB.Collection(dbCollections.JobsName)
-	result, err := coll.UpdateByID(ctx, req.Job.JobGroupId, bson.D{{Key: "$set", Value: req.Job}}, options.Update().SetUpsert(true))
-	if err != nil {
-		return nil, err
-	}
-
-	if result.UpsertedCount == 0 && result.ModifiedCount == 0 {
-		hctx.Svcs.Log.Errorf("Unexpected update result for job: %+v", result)
-	}
-
-	return &protos.ScanWriteJobResp{}, nil
 }
 
 func HandleScanCreateUserDefinedReq(req *protos.ScanCreateUserDefinedReq, hctx wsHelpers.HandlerContext) (*protos.ScanCreateUserDefinedResp, error) {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"unsafe"
@@ -60,6 +61,17 @@ func allocBytes(alloc C.alloc_f, n int) []byte {
 // 	b := allocBytes(alloc, len(s))
 // 	copy(b, s)
 // }
+
+func readList(listAsString string) []string {
+	result := []string{}
+	if strings.Contains(listAsString, "|") {
+		result = strings.Split(listAsString, "|")
+	} else {
+		// Treat it as one id
+		result = append(result, listAsString)
+	}
+	return result
+}
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -188,14 +200,7 @@ func getQuant(quantId string, summaryOnly bool) *C.char {
 
 //export listScanImages
 func listScanImages(scanIds string, mustIncludeAll bool) *C.char {
-	scanIdList := []string{}
-	if strings.Contains(scanIds, "|") {
-		scanIdList = strings.Split(scanIds, "|")
-	} else {
-		// Treat it as one id
-		scanIdList = append(scanIdList, scanIds)
-	}
-
+	scanIdList := readList(scanIds)
 	return processRequest("listScanImages", func() (proto.Message, error) { return apiClient.ListScanImages(scanIdList, mustIncludeAll) })
 }
 
@@ -324,29 +329,43 @@ func loadMapData(key string) *C.char {
 	return processRequest("loadMapData", func() (proto.Message, error) { return apiClient.LoadMapData(key) })
 }
 
-//export calculateExpression
-func calculateExpression(scanId, quantId, expressionId, roiId string, units int) *C.char {
-	return processRequest("calculateExpression", func() (proto.Message, error) {
-		return apiClient.CalculateExpression(scanId, quantId, expressionId, roiId, protos.DataUnit(units))
+//export getExpressionOutput
+func getExpressionOutput(scanId, quantId, expressionId, roiId string, units int) *C.char {
+	return processRequest("getExpressionOutput", func() (proto.Message, error) {
+		return apiClient.GetExpressionOutput(scanId, quantId, expressionId, roiId, protos.DataUnit(units))
 	})
 }
 
-//export uploadImage
-func uploadImage(imageUpload string) *C.char {
-	// Here we can read the data string as a protobuf message and create the right structure
-	upload := &protos.ImageUploadHttpRequest{}
-	err := protojson.Unmarshal([]byte(imageUpload), upload)
+//export triggerScheduledJob
+func triggerScheduledJob(scheduledJobId string, jobParams string) *C.char {
+	if apiClient == nil {
+		return C.CString("|Not authenticated")
+	}
+
+	jobId, err := apiClient.TriggerScheduledJob(scheduledJobId, jobParams)
+
 	if err != nil {
-		return C.CString(fmt.Sprintf("uploadImage: Failed to decode imageUpload: %v", err))
+		return C.CString(fmt.Sprintf("|triggerScheduledJob: Error: %v", err))
+	}
+
+	return C.CString(jobId + "|")
+}
+
+//export uploadImage
+func uploadImage(localImagePath string, importImageReq string) *C.char {
+	req := &protos.ImageImportReq{}
+	err := protojson.Unmarshal([]byte(importImageReq), req)
+	if err != nil {
+		return C.CString(fmt.Sprintf("uploadImage: Failed to decode ImageImportReq: %v", err))
 	}
 
 	if apiClient == nil {
 		return C.CString("Not authenticated")
 	}
 
-	err = apiClient.UploadImage(upload)
+	err = apiClient.UploadImage(localImagePath, req)
 	if err != nil {
-		return C.CString(fmt.Sprintf("uploadImage error: %v", err))
+		return C.CString(fmt.Sprintf("%v", err))
 	}
 
 	return emptyCString
@@ -361,6 +380,49 @@ func deleteImage(imageName string) *C.char {
 	err := apiClient.DeleteImage(imageName)
 	if err != nil {
 		return C.CString(fmt.Sprintf("deleteImage error: %v", err))
+	}
+
+	return emptyCString
+}
+
+//export getScanDefaultImage
+func getScanDefaultImage(scanIds string) *C.char {
+	scanIdList := readList(scanIds)
+
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	/*ids,*/
+	defaultImages, err := apiClient.GetScanDefaultImage(scanIdList)
+	if err != nil {
+		return C.CString(fmt.Sprintf("getScanDefaultImage error: %v", err))
+	}
+
+	if defaultImages == nil {
+		return C.CString(fmt.Sprintf("getScanDefaultImage unexpected nil response"))
+	}
+
+	// Serialise the map to JSON and return that
+	b, err := json.Marshal(defaultImages)
+	if err != nil {
+		return C.CString(fmt.Sprintf("getScanDefaultImage failed to return json: %v", err))
+	}
+
+	return C.CString(string(b))
+
+	//return C.CString("[" + strings.Join(ids, "|") + "],[" + strings.Join(defaultImages, "|") + "]")
+}
+
+//export setScanDefaultImage
+func setScanDefaultImage(scanId string, imageName string) *C.char {
+	if apiClient == nil {
+		return C.CString("Not authenticated")
+	}
+
+	err := apiClient.SetScanDefaultImage(scanId, imageName)
+	if err != nil {
+		return C.CString(fmt.Sprintf("setScanDefaultImage error: %v", err))
 	}
 
 	return emptyCString
@@ -392,6 +454,17 @@ func uploadImageBeamLocations(imageName string, locationsForScanBuff string) *C.
 	err = apiClient.UploadImageBeamLocations(imageName, locForScan)
 	if err != nil {
 		return C.CString(fmt.Sprintf("uploadImageBeamLocations error: %v", err))
+	}
+
+	return emptyCString
+}
+
+//export createUserDefinedScan
+func createUserDefinedScan(scanId string) *C.char {
+	err := apiClient.CreateUserDefinedScan(scanId)
+
+	if err != nil {
+		return C.CString(fmt.Sprintf("createUserDefinedScan error: %v", err))
 	}
 
 	return emptyCString

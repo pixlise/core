@@ -90,6 +90,22 @@ func CreateDBUser(sessionId string, jwtUser jwtparser.JWTUserInfo, db *mongo.Dat
 }
 
 func makeSessionUser(userId string, sessionId string, permissions map[string]bool, userDBItem *protos.UserDBItem, db *mongo.Database) (*sessionuser.SessionUser, error) {
+	memberOfGroups, viewerOfGroups, err := readUserGroupAccess(userId, db)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &sessionuser.SessionUser{
+		SessionId:        sessionId,
+		User:             userDBItem.Info,
+		Permissions:      permissions,
+		MemberOfGroupIds: memberOfGroups,
+		ViewerOfGroupIds: viewerOfGroups,
+	}, nil
+}
+
+func readUserGroupAccess(userId string, db *mongo.Database) ([]string, []string, error) {
 	ourGroups := map[string]bool{} // Map of group IDs we are members of - true for members, false for viewers
 
 	// Now we read all the groups and find which ones we are members of
@@ -97,13 +113,13 @@ func makeSessionUser(userId string, sessionId string, permissions map[string]boo
 	opts := options.Find()
 	cursor, err := db.Collection(dbCollections.UserGroupsName).Find(context.TODO(), filter, opts)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	userGroups := []*protos.UserGroupDB{}
 	err = cursor.All(context.TODO(), &userGroups)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for _, userGroup := range userGroups {
@@ -167,23 +183,20 @@ func makeSessionUser(userId string, sessionId string, permissions map[string]boo
 	cachedUserGroupMembership[userId] = memberOfGroups
 	cachedUserGroupViewership[userId] = viewerOfGroups
 
-	return &sessionuser.SessionUser{
-		SessionId:        sessionId,
-		User:             userDBItem.Info,
-		Permissions:      permissions,
-		MemberOfGroupIds: memberOfGroups,
-		ViewerOfGroupIds: viewerOfGroups,
-	}, nil
+	return memberOfGroups, viewerOfGroups, nil
 }
 
-func GetCachedUserGroupMembership(userId string) ([]string, bool) {
+func GetCachedUserGroupAccess(userId string, db *mongo.Database) ([]string, []string, error) {
+	// Read from caches - if either fails, read from DB
 	membership, ok := cachedUserGroupMembership[userId]
-	return membership, ok
-}
-
-func GetCachedUserGroupViewership(userId string) ([]string, bool) {
-	membership, ok := cachedUserGroupViewership[userId]
-	return membership, ok
+	if !ok {
+		return readUserGroupAccess(userId, db)
+	}
+	viewership, ok := cachedUserGroupViewership[userId]
+	if !ok {
+		return readUserGroupAccess(userId, db)
+	}
+	return viewership, membership, nil
 }
 
 type UserImpersonationItem struct {

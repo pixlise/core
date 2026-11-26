@@ -41,6 +41,7 @@ import (
 	"github.com/pixlise/core/v4/core/jwtparser"
 	"github.com/pixlise/core/v4/core/logger"
 	"github.com/pixlise/core/v4/core/mongoDBConnection"
+	"github.com/pixlise/core/v4/core/multipartupload"
 	"github.com/pixlise/core/v4/core/timestamper"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -57,8 +58,20 @@ var GitHash string
 
 type JobManagerInterface interface {
 	SubmitQuantJob(createParams *protos.QuantCreateParams, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
-	// ListJobs() ([]jobmanager.JobGroupConfig, error)
-	// GetJob(JobId string) (jobmanager.JobGroupConfig, error)
+	SubmitExpressionJob(scanId, quantId, expressionId, roiId, memoCacheKey string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
+	SubmitPythonJob(repoId, branch, scriptName, scanId, quantId, clientRepoId string, requestorUserSess *sessionuser.SessionUser, requestorSession *melody.Session) (*protos.JobStatus, error)
+
+	ListJobs(isAdmin bool, requestorUserId string, skip, limit int64, jobTypes []protos.JobType) ([]*protos.JobStatus, []*protos.JobStatus, uint32, error)
+
+	GetJob(jobId string, isAdmin bool, requestorUserId string) (*protos.JobStatus, *protos.JobGroupConfig, error)
+
+	DeleteScheduledJob(id string) error
+	ListScheduledJobs() ([]*protos.ScheduledJob, error)
+	GetScheduledJob(string) (*protos.ScheduledJob, error)
+	SetScheduledJob(job *protos.ScheduledJob) (*protos.ScheduledJob, error)
+
+	RunScheduledPostImportJobs(scan *protos.ScanItem) ([]string, error)
+	RunScheduledJob(job *protos.ScheduledJob, scan *protos.ScanItem) (string, error)
 }
 
 type APIServices struct {
@@ -106,4 +119,6 @@ type APIServices struct {
 	InstanceId string
 
 	JobManager JobManagerInterface
+
+	MultiPartUpload *multipartupload.MultiPartUploadHandler
 }

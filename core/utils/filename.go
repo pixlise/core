@@ -56,6 +56,10 @@ func ApplyIndexToFileName(name string, index uint, applyIndex bool) string {
 		return name
 	}
 
+	if len(name) <= 0 {
+		return ""
+	}
+
 	// Ideally we could use:
 	//ext := filepath.Ext(name)
 	// But this is not the same behaviour as in PIQUANT when it outputs

@@ -1,2 +1,5 @@
 backup/
 image-cache/
+all-source.txt
+source.lua
+output.csv

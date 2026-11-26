@@ -71,6 +71,15 @@ func (s *PIXLISEDataSaver) Save(
 
 	outPrefix := ""
 
+	// Save detector config if needed
+	if data.DetectorConfigFull != nil {
+		if id, err := s.saveDetectorConfig(db, data.DetectorConfigFull); err != nil {
+			return err
+		} else {
+			data.DetectorConfigName = id
+		}
+	}
+
 	// Prepare to receive meta values
 	s.metaLookup = map[string]metaInfo{}
 
@@ -95,8 +104,8 @@ func (s *PIXLISEDataSaver) Save(
 
 	exp.Sclk = data.Meta.SCLK
 
-	jobLog.Infof("This dataset's detector config is %v", data.DetectorConfig)
-	exp.DetectorConfig = data.DetectorConfig
+	jobLog.Infof("This dataset's detector config is %v", data.DetectorConfigName)
+	exp.DetectorConfig = data.DetectorConfigName
 
 	// NOTE: count values are saved after we saved locations, see: saveSpectrumTypeCounts
 
@@ -124,7 +133,7 @@ func (s *PIXLISEDataSaver) Save(
 			Rtt:              src.RTT,
 			Sclk:             src.SCLK,
 			BulkSumQuantFile: "",
-			DetectorConfig:   data.DetectorConfig, // FIXME combine
+			DetectorConfig:   data.DetectorConfigName, // FIXME combine
 			IdOffset:         src.PMCOffset,
 		})
 	}
@@ -431,6 +440,55 @@ func (s *PIXLISEDataSaver) Save(
 	return err
 }
 
+func (s *PIXLISEDataSaver) saveDetectorConfig(db *mongo.Database, cfg *protos.DetectorConfig) (string, error) {
+	if len(cfg.Id) <= 0 {
+		return "", errors.New("Failed to insert detector config with blank name")
+	}
+
+	// Check if this one exists already - if so, we create one with a unique name
+	ctx := context.TODO()
+	coll := db.Collection(dbCollections.DetectorConfigsName)
+	result := coll.FindOne(ctx, bson.M{"_id": cfg.Id})
+	if result.Err() == mongo.ErrNoDocuments {
+		// Not found, so just write it
+		insResult, err := coll.InsertOne(ctx, cfg)
+		if err != nil {
+			return "", fmt.Errorf("Failed to write new detector config: %v", err)
+		}
+		return insResult.InsertedID.(string), nil
+	} else if result.Err() != nil {
+		// We failed to read it, stop here
+		return "", fmt.Errorf("Failed to read existing config %v: %v", cfg.Id, result.Err())
+	}
+
+	// Otherwise, we read one with this id, check that it's equal to ours
+	readCfg := &protos.DetectorConfig{}
+	if err := result.Decode(readCfg); err != nil {
+		// We failed to read it, stop here
+		return "", fmt.Errorf("Failed to decode existing config %v: %v", cfg.Id, err)
+	}
+
+	if readCfg.XrfeVLowerBound != cfg.XrfeVLowerBound ||
+		readCfg.XrfeVUpperBound != cfg.XrfeVUpperBound ||
+		readCfg.XrfeVResolution != cfg.XrfeVResolution ||
+		readCfg.MmBeamRadius != cfg.MmBeamRadius ||
+		readCfg.MaxElement != cfg.MaxElement ||
+		readCfg.MinElement != cfg.MinElement ||
+		readCfg.WindowElement != cfg.WindowElement ||
+		readCfg.TubeElement != cfg.TubeElement {
+		// Differs, so save a new one!
+		cfg.Id = fmt.Sprintf("%v-%v", cfg.Id, utils.RandStringBytesMaskImpr(6))
+		insResult, err := coll.InsertOne(ctx, cfg)
+		if err != nil {
+			return "", fmt.Errorf("Failed to write new detector config (when duplicate id existed): %v", err)
+		}
+		return insResult.InsertedID.(string), nil
+	}
+
+	// They match, just use it
+	return cfg.Id, nil
+}
+
 func insertDefaultImage(db *mongo.Database, scanId string, defaultImage string, jobLog logger.ILogger) error {
 	if len(scanId) <= 0 || len(defaultImage) <= 0 {
 		return nil // Don't write empty stuff
@@ -610,7 +668,7 @@ func copyImagesToOutput(
 			}
 
 			// Remember this PMC->file name mapping for any potential "matched" images we import
-			pmcToImage[pmc] = fileName
+			pmcToImage[pmc] = path.Join(originScanId, fileName)
 
 			if data.DefaultContextImage == item.ContextImageDst {
 				defaultMatched = true

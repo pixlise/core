@@ -25,21 +25,21 @@ func testMemoisation(apiHost string, jwt string) {
 
 func testMemoisationGet_BadKey(apiHost string, jwt string) {
 	key := utils.RandStringBytesMaskImpr(10)
-	status, body, err := doHTTPRequest("http", "GET", apiHost, "memoise", "key="+key, nil, jwt)
+	status, body, err := doHTTPRequest("GET", apiHost, "memoise", "key="+key, nil, jwt)
 
 	failIf(err != nil, err)
 	failIf(string(body) != key+" not found\n" || status != 404, fmt.Errorf("Unexpected memoisation response! Status %v, body: %v", status, string(body)))
 }
 
 func testMemoisationGet_NoKey(apiHost string, jwt string) {
-	status, body, err := doHTTPRequest("http", "GET", apiHost, "memoise", "key=", nil, jwt)
+	status, body, err := doHTTPRequest("GET", apiHost, "memoise", "key=", nil, jwt)
 
 	failIf(err != nil, err)
 	failIf(string(body) != "Key is too short\n" || status != 400, fmt.Errorf("Unexpected memoisation response! Status %v, body: %v", status, string(body)))
 }
 
 func testMemoisationWrite_NoKey(apiHost string, jwt string) {
-	status, body, err := doHTTPRequest("http", "PUT", apiHost, "memoise", "key=", nil, jwt)
+	status, body, err := doHTTPRequest("PUT", apiHost, "memoise", "key=", nil, jwt)
 
 	failIf(err != nil, err)
 	failIf(string(body) != "Key is too short\n" || status != 400, fmt.Errorf("Unexpected memoisation response! Status %v, body: %v", status, string(body)))
@@ -48,7 +48,7 @@ func testMemoisationWrite_NoKey(apiHost string, jwt string) {
 func testMemoisationWrite_NoData(apiHost string, jwt string) {
 	key := utils.RandStringBytesMaskImpr(10)
 
-	status, body, err := doHTTPRequest("http", "PUT", apiHost, "memoise", "key="+key, nil, jwt)
+	status, body, err := doHTTPRequest("PUT", apiHost, "memoise", "key="+key, nil, jwt)
 
 	failIf(err != nil, err)
 	failIf(string(body) != "Missing data field\n" || status != 400, fmt.Errorf("Unexpected memoisation response! Status %v, body: %v", status, string(body)))
@@ -69,7 +69,7 @@ func testMemoisationWrite_KeyNotMatched(apiHost string, jwt string) {
 		log.Fatalln(err)
 	}
 
-	status, body, err := doHTTPRequest("http", "PUT", apiHost, "memoise", "key="+key, bytes.NewBuffer(uploadBody), jwt)
+	status, body, err := doHTTPRequest("PUT", apiHost, "memoise", "key="+key, bytes.NewBuffer(uploadBody), jwt)
 
 	failIf(err != nil, err)
 	failIf(string(body) != "Memoisation item key doesn't match query parameter\n" || status != 400, fmt.Errorf("Unexpected memoisation response! Status %v, body: %v", status, string(body)))
@@ -91,7 +91,7 @@ func testMemoisationWrite_WriteReadRead(apiHost string, jwt string) {
 		log.Fatalln(err)
 	}
 
-	status, body, err := doHTTPRequest("http", "PUT", apiHost, "memoise", "key="+key, bytes.NewBuffer(uploadBody), jwt)
+	status, body, err := doHTTPRequest("PUT", apiHost, "memoise", "key="+key, bytes.NewBuffer(uploadBody), jwt)
 
 	failIf(err != nil, err)
 	failIf(status != 200, fmt.Errorf("Unexpected memoisation response! Status %v, body: %v", status, string(body)))
@@ -107,7 +107,7 @@ func testMemoisationWrite_WriteReadRead(apiHost string, jwt string) {
 	failIf(ts < 1742956321, fmt.Errorf("Invalid timestamp: %v", ts))
 
 	// Read (ensure the fields that the API should set are set - different to what we passed in above)
-	status, body, err = doHTTPRequest("http", "GET", apiHost, "memoise", "key="+key, nil, jwt)
+	status, body, err = doHTTPRequest("GET", apiHost, "memoise", "key="+key, nil, jwt)
 
 	failIf(err != nil, err)
 
@@ -127,7 +127,7 @@ func testMemoisationWrite_WriteReadRead(apiHost string, jwt string) {
 	// Wait over a second and read again - the last read timestamp should be different
 	time.Sleep(time.Second * 2)
 
-	status, body, err = doHTTPRequest("http", "GET", apiHost, "memoise", "key="+key, nil, jwt)
+	status, body, err = doHTTPRequest("GET", apiHost, "memoise", "key="+key, nil, jwt)
 
 	failIf(err != nil, err)
 

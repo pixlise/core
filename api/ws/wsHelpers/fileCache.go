@@ -16,6 +16,14 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// TODO: Modify this to work purely from the file system - instead of storing the cache map locally in memory
+//       we could store all cached files in a known location on disk, if we need other info we could store a
+//       file along side each cached file. This way if the API restarts, we could have the cache restored
+//       straight away. Also, this way the job node starting up could pre-cache files and let lua job
+//       executions pick them up from the cache directory!
+// This would save downloads and time potentially, because currently if 3 lua jobs are run, the job node
+// downloads the files 3 times!
+
 // This uses a cache as it may be reading the same thing many times in bursts.
 // Cache is updated upon user info change though
 type fileCacheItem struct {
@@ -30,12 +38,9 @@ var fileCache = map[string]fileCacheItem{}
 var MaxFileCacheAgeSec = int64(60 * 5)
 var MaxFileCacheSizeBytes = uint64(200 * 1024 * 1024)
 
-func ReadDatasetFile(scanId string, svcs *services.APIServices, useFileCache bool) (*protos.Experiment, error) {
+func ReadDatasetFile(scanId string, svcs *services.APIServices) (*protos.Experiment, error) {
 	cacheId := "scan-" + scanId
-	var fileBytes []byte
-	if useFileCache {
-		fileBytes = checkCache(cacheId, "scan", svcs)
-	}
+	fileBytes := checkCache(cacheId, "scan", svcs)
 
 	// If we don't have data by now, download it and add to our cache
 	var err error
@@ -53,10 +58,8 @@ func ReadDatasetFile(scanId string, svcs *services.APIServices, useFileCache boo
 			return nil, err
 		}
 
-		if useFileCache {
-			// Write locally
-			addToCache(cacheId, "-dataset.bin", fmt.Sprintf("s3://%v/%v", svcs.Config.DatasetsBucket, s3Path), fileBytes, svcs)
-		}
+		// Write locally
+		addToCache(cacheId, "-dataset.bin", fmt.Sprintf("s3://%v/%v", svcs.Config.DatasetsBucket, s3Path), fileBytes, svcs)
 	}
 
 	// Now decode the data & return it
@@ -167,6 +170,10 @@ func ClearCacheForScanId(scanId string, ts timestamper.ITimeStamper, l logger.IL
 
 func checkCache(id string, fileTypeName string, svcs *services.APIServices) []byte {
 	var fileBytes []byte
+	if svcs.Config.FileCacheDisabled {
+		return fileBytes
+	}
+
 	var err error
 	lfs := fileaccess.FSAccess{}
 
@@ -177,7 +184,7 @@ func checkCache(id string, fileTypeName string, svcs *services.APIServices) []by
 
 		if item.timestampUnixSec > now-MaxFileCacheAgeSec {
 			// Read the file from local cache
-			fmt.Printf("Reading local file: %v\n", item.localPath)
+			svcs.Log.Debugf("Reading local file: %v\n", item.localPath)
 			fileBytes, err = lfs.ReadObject("", item.localPath)
 			if err != nil {
 				// Failed to read locally, delete this cache item
@@ -187,7 +194,7 @@ func checkCache(id string, fileTypeName string, svcs *services.APIServices) []by
 			}
 		} else {
 			// Print that it timed out
-			fmt.Printf("Detected timed-out locally cached file: %v. Deleting...\n", item.localPath)
+			svcs.Log.Debugf("Detected timed-out locally cached file: %v. Deleting...\n", item.localPath)
 			err = os.Remove(item.localPath)
 			if err != nil {
 				svcs.Log.Errorf("Failed to delete timed-out locally cached file: %v. Error: %v", item.localPath, err)
@@ -200,6 +207,10 @@ func checkCache(id string, fileTypeName string, svcs *services.APIServices) []by
 }
 
 func addToCache(id string, fileSuffix string, srcPath string, fileBytes []byte, svcs *services.APIServices) {
+	if svcs.Config.FileCacheDisabled {
+		return
+	}
+
 	cacheRoot := os.TempDir()
 	cachePath := filepath.Join(cacheRoot, id+fileSuffix)
 	lfs := fileaccess.FSAccess{}

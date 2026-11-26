@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/pixlise/core/v4/core/client"
@@ -16,6 +17,55 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	img := []byte{0x89, 0x50, 0x4e, 0x47, 0xd, 0xa, 0x1a, 0xa, 0x0, 0x0, 0x0, 0xd, 0x49, 0x48, 0x44, 0x52, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x1, 0x8, 0x2, 0x0, 0x0, 0x0, 0x90, 0x77, 0x53, 0xde, 0x0, 0x0, 0x0, 0x1, 0x73, 0x52, 0x47, 0x42, 0x0, 0xae, 0xce, 0x1c, 0xe9, 0x0, 0x0, 0x0, 0xc, 0x49, 0x44, 0x41, 0x54, 0x18, 0x57, 0x63, 0x28, 0x3d, 0xaf, 0xb, 0x0, 0x3, 0x2e, 0x1, 0x72, 0x50, 0x4e, 0xda, 0xdf, 0x0, 0x0, 0x0, 0x0, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82}
+	err = os.WriteFile("/tmp/myimage.png", img, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req := &protos.ImageImportReq{
+		Name:         "myimage.png",
+		OriginScanId: "669909507",
+	}
+	// reqBytes, err := protojson.Marshal(req)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	/*sz, complete,*/
+	err = apiClient.UploadImage("/tmp/myimage.png", req) // string(reqBytes))
+	//fmt.Printf("sz: %v, complete: %v, err: %v\n", sz, complete, err)
+	fmt.Printf("err: %v\n", err)
+
+	// err = apiClient.UploadLargeImage("/home/peter/Documents/RawImageData/2026-gsq-upload/SmallerFiles/STW-PH-1-Section1-18_WithScale.png", "IU7", "STW-PH-1-Section1-18_WithScale.png")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	return
+
+	// ids, defaultImages, err := apiClient.GetScanDefaultImage([]string{"669909507"})
+	// fmt.Printf("Ids: %v\n", ids)
+	// fmt.Printf("DefaultImages: %v\n", defaultImages)
+	// fmt.Printf("As string: %v\n", "["+strings.Join(ids, "|")+"],["+strings.Join(defaultImages, "|")+"]")
+	defaultImages, err := apiClient.GetScanDefaultImage([]string{"669909507"})
+	fmt.Printf("DefaultImages: %v\n", defaultImages)
+	fmt.Printf("error: %v\n", err)
+	return
+	/*
+		m, err := apiClient.CalculateExpression("669909507", "quant-tl2mrnxroian1acm", "9b4h4zjuynpshf7c", "AllPoints-669909507", 0)
+		if err != nil {
+			return
+		}
+		fmt.Printf("%+v\n", m)
+	*/
+
+	// err = apiClient.CreateUserDefinedScan("myScan123")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// return
 
 	entries, err := apiClient.GetScanEntries("048300551")
 	if err != nil {
@@ -73,17 +123,11 @@ func main() {
 
 	return // No more testing now...
 
-	m, err := apiClient.CalculateExpression("669909507", "quant-tl2mrnxroian1acm", "9b4h4zjuynpshf7c", "AllPoints-669909507", 0)
-	if err != nil {
-		return
-	}
-	fmt.Printf("%+v\n", m)
-
 	k := "my-mapX"
 	//k = `{"scanId":"602735105","exprId":"h43yqjza1m23mmr0","quantId":"quant-aqpxxfk6i05gcsy3","roiId":"AllPoints-602735105","units":0},Resp:false,exprMod:1744785719,spectra:3298,90,0`
 	k = `{"scanId":"669909507","exprId":"9b4h4zjuynpshf7c","quantId":"quant-tl2mrnxroian1acm","roiId":"AllPoints-669909507","units":0},Resp:false,exprMod:1772072860,spectra:2754,6,0`
 
-	m, err = apiClient.LoadMapData(k)
+	m, err := apiClient.LoadMapData(k)
 	if err != nil {
 		return
 	}

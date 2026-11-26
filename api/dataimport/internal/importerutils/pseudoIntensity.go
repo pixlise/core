@@ -32,7 +32,7 @@ func ReadPseudoIntensityFile(path string, expectHeaderRow bool, jobLog logger.IL
 		firstRealRowIdx = 1
 	}
 
-	data, err := dataImportHelpers.ReadCSV(path, firstRealRowIdx, ',', jobLog)
+	data, err := dataImportHelpers.ReadCSV(path, firstRealRowIdx, ',')
 	if err != nil {
 		return nil, err
 	}

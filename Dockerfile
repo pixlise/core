@@ -17,18 +17,31 @@
 
 FROM golang:1.24-alpine AS builder
 
-ARG VERSION
-ARG GITHUB_SHA
+##################################################################################################################
+# Note that we are now building differently - we start with binaries in _out, so the following is not used:
 
-RUN apk add --no-cache ca-certificates libc6-compat wget make bash build-base pkgconfig vips-dev
+# ARG VERSION
+# ARG GITHUB_SHA
 
-COPY . /build
-ENV CGO_ENABLED=1
-ENV BUILD_VERSION=${VERSION}
-ENV GITHUB_SHA=${GITHUB_SHA}
+# RUN apk add --no-cache ca-certificates libc6-compat wget make bash build-base pkgconfig vips-dev
+#
+# COPY . /build
+# ENV CGO_ENABLED=1
+# ENV BUILD_VERSION=${VERSION}
+# ENV GITHUB_SHA=${GITHUB_SHA}
+#
+# RUN cd /build && ./genvips.sh
+# RUN cd /build && make build-linux-api
 
-RUN cd /build && ./genvips.sh
-RUN cd /build && make build-linux-api
+##################################################################################################################
+
+# Instead, we just copy the out path
+#RUN pwd && ls -al . && ls -al ./bin && ls -al ./src
+#COPY ./_out/pixlise-api-linux /build
+COPY --from=build-outputs . /build/_out/
+COPY --from=other-files . /build/_out/
+#RUN ls -al /build
+
 
 
 FROM alpine:latest
@@ -39,12 +52,17 @@ WORKDIR /root
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /build/_out/pixlise-api-linux ./
 
-COPY beam-tool/BGT ./
-COPY beam-tool/Geometry_PIXL_EM_Landing_25Jan2021.csv ./
+COPY --from=builder /build/_out/BGT ./
+COPY --from=builder /build/_out/Geometry_PIXL_EM_Landing_25Jan2021.csv ./
+COPY --from=builder /build/_out/global-bundle.pem ./
+
+#COPY beam-tool/BGT ./
+#COPY beam-tool/Geometry_PIXL_EM_Landing_25Jan2021.csv ./
 
 RUN apk add --no-cache vips-dev
 
-RUN chmod +x ./pixlise-api-linux && wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
+#RUN chmod +x ./pixlise-api-linux && wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
+RUN chmod +x ./pixlise-api-linux
 RUN chmod +x ./BGT
 
 # Expose port 8080 to the outside world

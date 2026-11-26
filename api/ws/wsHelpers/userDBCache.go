@@ -2,9 +2,11 @@ package wsHelpers
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/pixlise/core/v4/api/dbCollections"
+	"github.com/pixlise/core/v4/api/sessionuser"
 	"github.com/pixlise/core/v4/core/timestamper"
 	protos "github.com/pixlise/core/v4/generated-protos"
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,6 +22,12 @@ func GetDBUser(userId string, db *mongo.Database) (*protos.UserDBItem, error) {
 	// 	{Key: "datacollectionversion", Value: true},
 	// 	{Key: "notificationsettings", Value: true},
 	// })
+
+	// Safe guard so we don't query this all the time (it won't be in cache either)
+	if sessionuser.IsSystemUser(userId) {
+		return nil, fmt.Errorf("User %v not in DB", userId)
+	}
+
 	userResult := db.Collection(dbCollections.UsersName).FindOne(context.TODO(), bson.M{"_id": userId})
 	if userResult.Err() != nil {
 		return nil, userResult.Err()

@@ -40,6 +40,11 @@ import (
 // New jobs t3.2xlarge, 4 cores/node: elapsed time 11:46 top showing 200%/container ?? (failed to combine at end quant-5ikkcvd8hes5yrzq missing node 8 output)
 // New jobs t3.2xlarge, 8 cores/node: elapsed time 13:31 top showing 100%/container (failed to combine at end quant-y52kwmyey35n0cu2 missing node 1 output)
 
+// After EstimateNodeCountChange:
+// t3.medium 2/node 4 elements as 50 jobs/25 nodes: 221 sec
+// t3.xlarge 4/node 4 elements as 50 jobs/13 nodes: 250 sec
+// t3.2xlarge 8/node 4 elements as 50 jobs/7 nodes: 270 sec
+
 // Called to start a job node
 func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret string, awsRegion string) ([]*string, error) {
 	if len(jobIds) <= 0 || len(jobIds) > int(jm.svcs.Config.Jobs.CoresPerNode) {
@@ -54,6 +59,10 @@ func (jm *JobManager) startEC2JobNode(jobIds []string, awsKey string, awsSecret 
 	}
 
 	jobIdListStr := strings.Join(jobIds, ",")
+	// Trim in case it's too long and AWS rejects our EC2 start
+	if len(jobIdListStr) > 255 {
+		jobIdListStr = jobIdListStr[0:255]
+	}
 
 	if jm.svcs.Config.Jobs.MaxNodeRunTimeSec < 60 {
 		return []*string{}, fmt.Errorf("Cannot start job node that runs for only %vsec", jm.svcs.Config.Jobs.MaxNodeRunTimeSec)
@@ -97,7 +106,9 @@ echo "Downloading global-bumdle.pem..."
 wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O global-bundle.pem
 
 echo "Running job node..."
-./pixlise-job-node -bucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxRunTimeSec "%v" -jobs "%v"
+./pixlise-job-node -jobBucket "%v" -usersBucket "%v" -configBucket "%v" -datasetsBucket "%v" -jobContainer "%v" -mongoSecret "%v" -envName "%v" -maxRunTimeSec "%v" -jobs "%v"
+
+# TODO: save init log to bucket, eg like this - aws s3 cp /var/log/cloud-init-output.log s3://.../Nodes/
 
 echo "PIXLISE job node shutting down in 1 minute..."
 shutdown -h +1
@@ -108,6 +119,9 @@ shutdown -h +1
 		awsRegion, awsRegion,
 		jm.svcs.Config.Jobs.NodeS3Path,
 		jm.svcs.Config.PiquantJobsBucket,
+		jm.svcs.Config.UsersBucket,
+		jm.svcs.Config.ConfigBucket,
+		jm.svcs.Config.DatasetsBucket,
 		jm.svcs.Config.Jobs.RunnerDockerImage,
 		jm.svcs.Config.MongoSecret,
 		jm.svcs.Config.EnvironmentName,
@@ -280,25 +294,26 @@ func (jm *JobManager) startJobNodes(jobIds []string) error {
 		// yet started a job node thread, start one now
 		jm.svcs.Log.Debugf("  startJobNodes running in local mode, ensuring one job node thread is running...")
 
-		if jm.localJobNode != nil {
+		if jm.localJobNode == nil {
+			// Start a local one
+			jm.svcs.Log.Infof("  startJobNodes starting local job node")
+			jm.localJobNode = jobnode.CreateJobNode(
+				"local-job",
+				jm.svcs.Config.Jobs.RunnerDockerImage,
+				jm.svcs.Config.PiquantJobsBucket,
+				jm.svcs.Config.ConfigBucket,
+				jm.svcs.Config.UsersBucket,
+				jm.svcs.Config.DatasetsBucket,
+				jm.svcs.InstanceId,
+				jm.svcs.FS,
+				jm.svcs.MongoDB,
+				jm.svcs.Log,
+				jm.svcs.TimeStamper)
+		} else {
 			jm.svcs.Log.Infof("  startJobNodes skipped, already running a local one")
-			return nil
 		}
 
-		// Start a local one
-		jm.svcs.Log.Infof("  startJobNodes starting local job node")
-		jm.localJobNode = jobnode.CreateJobNode(
-			"local-job",
-			jm.svcs.Config.Jobs.RunnerDockerImage,
-			jm.svcs.Config.PiquantJobsBucket,
-			jm.svcs.InstanceId,
-			jm.svcs.FS,
-			jm.svcs.MongoDB,
-			jm.svcs.Log,
-			jm.svcs.TimeStamper)
-
 		jm.localJobNode.StartJobs(jobIds)
-
 		return nil
 	}
 

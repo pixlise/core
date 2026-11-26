@@ -90,6 +90,10 @@ type APIConfig struct {
 	// If it hasn't been accessed in this many seconds, consider it stale & delete it!
 	MaxUnretrievedMemoisationAgeSec uint
 
+	// How old is too old for a memoised item - if we read it and neither of its timestamps are less than this many
+	// seconds old, we don't use it
+	MemoiseCacheTimeOutSec uint
+
 	// How often we run memoisation GC
 	MemoisationGCIntervalSec uint
 
@@ -100,7 +104,7 @@ type APIConfig struct {
 	ImpersonateEnabled        bool
 
 	// Settings that control what kind of job processing EC2 instances we create
-	Jobs JobConfig
+	Jobs JobRunningConfig
 
 	// Deprecated configs, these should all disappear when we remove the old job code
 	ImportJobMaxTimeSec uint32
@@ -109,11 +113,19 @@ type APIConfig struct {
 	QuantNamespace      string // Used for running large multi-node quants
 	HotQuantNamespace   string // Used for faster PIQUANT runs, eg executing a spectral fit
 	KubernetesLocation  string // "internal" vs "external"
+
+	ExpressionRerunIntervalSec int64
+	FileCacheDisabled          bool // Only enable for tests so we get consistant/reproducable output!
+
+	CompletedFileGCTimeoutSec  int // If a file has uploaded and is marked complete, we keep it around for this many seconds before garbage collecting it
+	IncompleteFileGCTimeoutSec int // If a file upload has NOT completed, we keep the uploaded fragments around for this many seconds before garbage collecting it
+
+	HidePIXLScanUploads bool
 }
 
-// JobConfig contains all configs required to be able to run jobs by the back-end. This can involve starting quants or other jobs
+// JobRunningConfig contains all configs required to be able to run jobs by the back-end. This can involve starting quants or other jobs
 // locally in Docker, or starting up a JobNode (an EC2 instance with a pixlise-job-node executable running) to execute the job
-type JobConfig struct {
+type JobRunningConfig struct {
 	LegacyJobs bool
 
 	// Configuring AWS EC2 instance type for job node
@@ -230,7 +242,7 @@ func Init() (APIConfig, error) {
 	// If our job structure is empty, we attempt to read a job config from the config
 	// bucket
 	if len(cfg.Jobs.RunnerDockerImage) <= 0 {
-		cfg.Jobs = JobConfig{}
+		cfg.Jobs = JobRunningConfig{}
 	}
 
 	cfg.KubeConfig = *kubeconfig
@@ -268,9 +280,25 @@ func applyConfigLimits(cfg *APIConfig) {
 	if cfg.MemoisationGCIntervalSec <= 0 {
 		cfg.MemoisationGCIntervalSec = 3600
 	}
+
+	if cfg.MemoiseCacheTimeOutSec <= 0 {
+		cfg.MemoiseCacheTimeOutSec = 86400
+	}
+
+	if cfg.ExpressionRerunIntervalSec <= 0 {
+		cfg.ExpressionRerunIntervalSec = 600
+	}
+
+	if cfg.CompletedFileGCTimeoutSec <= 0 {
+		cfg.CompletedFileGCTimeoutSec = 900
+	}
+
+	if cfg.IncompleteFileGCTimeoutSec <= 0 {
+		cfg.IncompleteFileGCTimeoutSec = 3600
+	}
 }
 
-func ReadJobConfig(cfg *APIConfig, fs fileaccess.FileAccess) error {
+func ReadJobRunningConfig(cfg *APIConfig, fs fileaccess.FileAccess) error {
 	if err := fs.ReadJSON(cfg.ConfigBucket, "job-config.json", &cfg.Jobs, false); err != nil {
 		return err
 	}

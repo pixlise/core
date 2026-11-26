@@ -1,0 +1,54 @@
+{
+  "_id": "750idrpn2ql3j4fu",
+  "name": "Diffraction Map (B)",
+  "sourcecode": "local corrections = GeoAndDiffCorrection:new()\r\n\r\nlocal R,B,G = corrections:diffractionMap({binary = false, depth = 4, linear = true})\r\n\r\nreturn B",
+  "sourcelanguage": "LUA",
+  "comments": "Linear diffraction peak magnitudes for the blue channel",
+  "tags": [
+    "g4t61qi0dq1ycuin",
+    "q3oze81i5b8g58fp",
+    "uucgk71i17p1nrfq"
+  ],
+  "modulereferences": [
+    {
+      "moduleid": "idc2d7xifmbpqk8o",
+      "version": {
+        "major": 1,
+        "minor": 3,
+        "patch": 0
+      }
+    },
+    {
+      "moduleid": "ng46r8vwzr3z28ui",
+      "version": {
+        "major": 0,
+        "minor": 8,
+        "patch": 0
+      }
+    },
+    {
+      "moduleid": "f6hrn69g5tuyiq3m",
+      "version": {
+        "major": 0,
+        "minor": 33,
+        "patch": 0
+      }
+    },
+    {
+      "moduleid": "yg7o9dkue0orim26",
+      "version": {
+        "major": 3,
+        "minor": 5,
+        "patch": 5
+      }
+    }
+  ],
+  "recentexecstats": {
+    "datarequired": [
+      "spectrum"
+    ],
+    "runtimeMsPer1000Pts": 88098.5625,
+    "timestampunixsec": 1782845816
+  },
+  "modifiedunixsec": 1772139032
+}

@@ -38,7 +38,7 @@ func makeMockSvcs(fs fileaccess.FileAccess, idGen idgen.IDGenerator, logLevel *l
 		KubernetesLocation: "external",
 		QuantExecutor:      "null",
 		DataSourceSNSTopic: "arn:1:2:3:4:5",
-		Jobs: config.JobConfig{
+		Jobs: config.JobRunningConfig{
 			NodeCountOverride: 0,
 		},
 	}

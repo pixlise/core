@@ -1,11 +1,124 @@
 package jobmanager
 
-import jobconfig "github.com/pixlise/core/v4/api/job/config"
+import (
+	"context"
+	"fmt"
 
-func (jm *JobManager) ListJobs() ([]jobconfig.JobGroupConfig, error) {
-	return nil, nil
+	"github.com/pixlise/core/v4/api/dbCollections"
+	expressionrunner "github.com/pixlise/core/v4/api/job/jobrunner/expression-runner"
+	"github.com/pixlise/core/v4/core/errorwithstatus"
+	protos "github.com/pixlise/core/v4/generated-protos"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+func (jm *JobManager) ListJobs(isAdmin bool, requestorUserId string, skip, limit int64, jobTypes []protos.JobType) ([]*protos.JobStatus, []*protos.JobStatus, uint32, error) {
+	filter := bson.M{}
+
+	if len(jobTypes) > 0 {
+		filter["jobtype"] = bson.M{"$in": jobTypes}
+	}
+
+	ctx := context.TODO()
+	coll := jm.svcs.MongoDB.Collection(dbCollections.JobStatusName)
+
+	sort := bson.D{{"lastupdateunixtimesec", -1}, {"endunixtimesec", -1}}
+
+	opts := options.Find().SetSort(sort).SetLimit(limit).SetSkip(skip)
+	cursor, err := coll.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	items := []*protos.JobStatus{}
+	err = cursor.All(ctx, &items)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	itemsToSend := []*protos.JobStatus{}
+	if isAdmin {
+		itemsToSend = items
+	} else {
+		// Find only the jobs that were requested by this user
+		for _, item := range items {
+			if item.RequestorUserId == requestorUserId {
+				itemsToSend = append(itemsToSend, item)
+			}
+		}
+	}
+
+	jobs := []*protos.JobStatus{}
+	activeJobs := []*protos.JobStatus{}
+
+	totalDocs, err := coll.CountDocuments(ctx, filter)
+	if err != nil {
+		jm.svcs.Log.Errorf("Failed to estimate document count in %v: %v", dbCollections.JobStatusName, err)
+	}
+
+	nowUnixSec := jm.svcs.TimeStamper.GetTimeNowSec()
+
+	for _, j := range itemsToSend {
+		fixLastTimeStamp(j)
+
+		if j.Status == protos.JobStatus_COMPLETE || j.Status == protos.JobStatus_ERROR {
+			jobs = append(jobs, j)
+		} else {
+			// It's still active, check if it can be considered timed-out
+			if nowUnixSec-int64(j.LastUpdateUnixTimeSec) > 3600 {
+				// It's too old, mark it as error and set the text to timed out
+				msg := "Job timed out"
+				status := protos.JobStatus_ERROR
+				jm.updateJobStatus(j.JobId, status, msg, false /* prevent race conditions?*/)
+				// Add to the inactive list
+				j.Message = msg
+				j.Status = status
+				jobs = append(jobs, j)
+			} else {
+				activeJobs = append(activeJobs, j)
+			}
+		}
+	}
+
+	return jobs, activeJobs, uint32(totalDocs), nil
 }
 
-func (jm *JobManager) GetJob(JobId string) (jobconfig.JobGroupConfig, error) {
-	return jobconfig.JobGroupConfig{}, nil
+func (jm *JobManager) GetJob(jobId string, isAdmin bool, requestorUserId string) (*protos.JobStatus, *protos.JobGroupConfig, error) {
+	status := &protos.JobStatus{}
+	filter := bson.M{"_id": jobId}
+	err := expressionrunner.ReadOne(dbCollections.JobStatusName, filter, status, jm.svcs.MongoDB)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	fixLastTimeStamp(status)
+
+	config := &protos.JobGroupConfig{}
+	err = expressionrunner.ReadOne(dbCollections.JobsName, filter, config, jm.svcs.MongoDB)
+	if err != nil {
+		if err.(errorwithstatus.Error).Status() == 404 {
+			// This must be an old pre-job-runner job, here we emulate a job config so the UI doesn't have to worry about this
+			// backwards-compatibility stuff
+		}
+
+		return nil, nil, err
+	}
+
+	// Check if the user has rights to this job...
+	if status.RequestorUserId != requestorUserId && !isAdmin {
+		return nil, nil, fmt.Errorf("User %v has no access to job %v", requestorUserId, jobId)
+	}
+
+	return status, config, nil
+}
+
+func fixLastTimeStamp(j *protos.JobStatus) {
+	// Past records don't always have the last field set, so set it to something here... if end is not
+	// set, even setting it to start time is better!
+	if j.LastUpdateUnixTimeSec <= 0 {
+		j.LastUpdateUnixTimeSec = j.EndUnixTimeSec
+	}
+	if j.LastUpdateUnixTimeSec <= 0 {
+		j.LastUpdateUnixTimeSec = j.StartUnixTimeSec
+	}
 }

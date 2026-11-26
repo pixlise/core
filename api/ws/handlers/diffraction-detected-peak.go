@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/pixlise/core/v4/api/ws/wsHelpers"
-	"github.com/pixlise/core/v4/core/indexcompression"
 	protos "github.com/pixlise/core/v4/generated-protos"
 )
 
@@ -26,42 +25,9 @@ func HandleDetectedDiffractionPeaksReq(req *protos.DetectedDiffractionPeaksReq, 
 		return nil, err
 	}
 
-	// Form a PMC->diffraction peaks lookup
-	diffLookup := map[string]*protos.Diffraction_Location{}
-	for _, loc := range diffRawData.Locations {
-		diffLookup[loc.Id] = loc
-	}
-
-	// Decode the range
-	indexes, err := indexcompression.DecodeIndexList(req.Entries.Indexes, len(exprPB.Locations))
+	diffPerLoc, err := wsHelpers.GetDetectedDiffractionPeaks(req.Entries.Indexes, exprPB, diffRawData)
 	if err != nil {
 		return nil, err
-	}
-
-	diffPerLoc := []*protos.DetectedDiffractionPerLocation{}
-	for _, c := range indexes {
-		exprLoc := exprPB.Locations[c]
-
-		if loc, ok := diffLookup[exprLoc.Id]; ok {
-			peaks := []*protos.DetectedDiffractionPerLocation_DetectedDiffractionPeak{}
-
-			for _, locPeak := range loc.Peaks {
-				peaks = append(peaks, &protos.DetectedDiffractionPerLocation_DetectedDiffractionPeak{
-					PeakChannel:       locPeak.PeakChannel,
-					EffectSize:        locPeak.EffectSize,
-					BaselineVariation: locPeak.BaselineVariation,
-					GlobalDifference:  locPeak.GlobalDifference,
-					DifferenceSigma:   locPeak.DifferenceSigma,
-					PeakHeight:        locPeak.PeakHeight,
-					Detector:          locPeak.Detector,
-				})
-			}
-
-			diffPerLoc = append(diffPerLoc, &protos.DetectedDiffractionPerLocation{
-				Id:    loc.Id,
-				Peaks: peaks,
-			})
-		}
 	}
 
 	return &protos.DetectedDiffractionPeaksResp{

@@ -8,16 +8,19 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
+	queryparams "github.com/pixlise/core/v4/api/endpoints/query-params"
 	"github.com/pixlise/core/v4/core/indexcompression"
+	"github.com/pixlise/core/v4/core/multipartupload"
 	"github.com/pixlise/core/v4/core/timestamper"
 	"github.com/pixlise/core/v4/core/utils"
 	protos "github.com/pixlise/core/v4/generated-protos"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -38,7 +41,7 @@ type PIXLISEConfig struct {
 	ApiUrl        string `json:"apiUrl"`
 }
 
-var configEnvVar = "PIXLISE_CLIENT_CONFIG"
+var ConfigEnvVar = "PIXLISE_CLIENT_CONFIG"
 var configFileName = ".pixlise-config.json" // We look for this file in home dir
 var responseTimeoutSec = 20                 // upload spectra allows for 20x longer
 var ClientMapKeyPrefix = "client-map-"
@@ -46,6 +49,7 @@ var ClientMapKeyPrefix = "client-map-"
 type APIClient struct {
 	socket      *SocketConn
 	rateLimiter *utils.RateLimiter
+	apiUrl      string
 
 	// Local caching of things we need to build responses to things that are easier to digest on client-side
 	// For example, we download meta labels, and pass back maps of string->value to client
@@ -88,20 +92,20 @@ func Authenticate() (*APIClient, error) {
 			source = configPath
 		}
 	} else {
-		fmt.Printf("Failed to get user home directory to find pixlise config. Error: %v", err)
+		fmt.Printf("Failed to get user home directory to find pixlise config. Error: %v\n", err)
 	}
 
 	// If we haven't read anything useful yet, lets try read the environment variable
 	if len(configStr) <= 0 {
-		configStr = os.Getenv(configEnvVar)
+		configStr = os.Getenv(ConfigEnvVar)
 		if len(configStr) > 0 {
-			source = configEnvVar
+			source = ConfigEnvVar
 		}
 	}
 
 	// If we haven't read anything useful, stop here
 	if len(source) <= 0 || len(configStr) <= 0 {
-		return nil, fmt.Errorf(`Couldn't read config file "%v" and no environment variable (%v) defined. Cannot authenticate. To configure, create the file or set the environment variable containing a JSON encoded structure with the following fields: "host", "user", "pass" where host is the URL of the PIXLISE webpage`, configPath, configEnvVar)
+		return nil, fmt.Errorf(`Couldn't read config file "%v" and no environment variable (%v) defined. Cannot authenticate. To configure, create the file or set the environment variable containing a JSON encoded structure with the following fields: "host", "user", "pass" where host is the URL of the PIXLISE webpage`, configPath, ConfigEnvVar)
 	}
 
 	// Try to decode it
@@ -172,6 +176,7 @@ func AuthenticateWithAuth0Info(connectParams ConnectInfo, auth0Params Auth0Info)
 
 	return &APIClient{
 		socket:                       socket,
+		apiUrl:                       connectParams.Host,
 		rateLimiter:                  utils.MakeRateLimiter(&timestamper.UnixTimeNowStamper{}, 50, 70, 10, 3),
 		scanPMCToLocIdx:              map[string]map[int]int{},
 		scanLocIdxToPMC:              map[string]map[int]int{},
@@ -203,6 +208,27 @@ func (c *APIClient) sendMessageWaitResponse(msg *protos.WSMessage) ([]*protos.WS
 		return []*protos.WSMessage{}, err
 	}
 
+	resps, err := c.waitForResp(timeoutSec)
+	if err != nil {
+		return []*protos.WSMessage{}, err
+	}
+
+	// If we got a notification update, client doesn't care about those, so gobble it up and wait for another one
+	// This is a work-around for the situation in our python lib test where it uploads an image
+	// and gets a response and a notification, after which it sends in default image get/set msgs, but they were
+	// receiving the notification update. Now hopefully they will receive that, notice it here, and we'll get the
+	// real response!
+	if resps[0].GetNotificationUpd() != nil {
+		resps, err = c.waitForResp(timeoutSec)
+		if err != nil {
+			return []*protos.WSMessage{}, err
+		}
+	}
+
+	return resps, nil
+}
+
+func (c *APIClient) waitForResp(timeoutSec int) ([]*protos.WSMessage, error) {
 	resps := c.socket.WaitForMessages(1, time.Duration(timeoutSec)*time.Second)
 	if len(resps) != 1 {
 		return []*protos.WSMessage{}, fmt.Errorf("Expected 1 response, got %v (timeout was %vsec)", len(resps), timeoutSec)
@@ -701,7 +727,7 @@ func (c *APIClient) ListScanImages(scanIds []string, mustIncludeAll bool) (*prot
 		MustIncludeAll: mustIncludeAll,
 	}
 
-	fmt.Printf("%v", scanIds)
+	//fmt.Printf("%v", scanIds)
 	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageListReq{
 		ImageListReq: req,
 	}}
@@ -1098,82 +1124,7 @@ func (c *APIClient) GetDiffractionPeaks(scanId string, energyCalibrationSource p
 		return nil, fmt.Errorf("Failed to get energy calibration for scan: %v, source: %v", scanId, energyCalibrationSource)
 	}
 
-	// Some constants, along with others in this code!
-	roughnessItemThreshold := float32(0.16)
-	diffractionPeakHalfWidth := float32(15) * 0.5
-	eVCalibrationDetector := "A"
-
-	allPeaks := []*protos.ClientDiffractionPeak{}
-
-	roughnessItems := []*protos.ClientRoughnessItem{}
-	roughnessPMCs := map[int]bool{}
-
-	for _, item := range detectedPeaks.PeaksPerLocation {
-		pmc, err := strconv.Atoi(item.Id)
-		if err != nil {
-			fmt.Printf("Warning: Diffraction data contained invalid location id: %v", item.Id)
-			continue
-		}
-
-		for _, peak := range item.Peaks {
-			if peak.EffectSize <= 6 {
-				continue
-			}
-			statusId := fmt.Sprintf("%v-%v", pmc, peak.PeakChannel)
-
-			if peak.GlobalDifference > roughnessItemThreshold {
-				// It's roughness, can repeat so ensure we only save once
-				if _, ok := roughnessPMCs[pmc]; !ok {
-					status := "intensity-mismatch"
-					if s, ok := peakStatuses.PeakStatuses.Statuses[statusId]; ok {
-						status = s.Status
-					}
-
-					roughnessItems = append(roughnessItems, &protos.ClientRoughnessItem{
-						Id:               int32(pmc),
-						GlobalDifference: peak.GlobalDifference,
-						Deleted:          status != "intensity-mismatch",
-					})
-					roughnessPMCs[pmc] = true
-				}
-			} else if peak.PeakHeight > 0.64 {
-				startChannel := float32(peak.PeakChannel) - diffractionPeakHalfWidth
-				endChannel := float32(peak.PeakChannel) + diffractionPeakHalfWidth
-
-				channels := []float32{float32(peak.PeakChannel), startChannel, endChannel}
-				keVs := []float64{}
-				for det, cal := range spectrumEnergyCalibration.DetectorCalibrations {
-					if det == eVCalibrationDetector {
-						keVs = channelTokeV(channels, cal)
-					}
-				}
-
-				if len(keVs) == 3 {
-					status := "diffraction-peak"
-					if s, ok := peakStatuses.PeakStatuses.Statuses[statusId]; ok {
-						status = s.Status
-					}
-
-					allPeaks = append(allPeaks, &protos.ClientDiffractionPeak{
-						Id: int32(pmc),
-						Peak: &protos.DetectedDiffractionPerLocation_DetectedDiffractionPeak{
-							PeakChannel:       peak.PeakChannel,
-							EffectSize:        peak.EffectSize,
-							BaselineVariation: peak.BaselineVariation,
-							GlobalDifference:  peak.GlobalDifference,
-							DifferenceSigma:   peak.DifferenceSigma,
-							PeakHeight:        peak.PeakHeight,
-							Detector:          peak.Detector,
-						},
-						EnergykeV:      float32(keVs[0]),
-						StartEnergykeV: float32(keVs[1]),
-						EndEnergykeV:   float32(keVs[2]),
-						Status:         status,
-					})
-				}
-			}
-		}
-	}
+	allPeaks, roughnessItems := ReadDiffractionData(detectedPeaks.PeaksPerLocation, peakStatuses.PeakStatuses, spectrumEnergyCalibration)
 
 	result := &protos.ClientDiffractionData{Peaks: allPeaks, Roughnesses: roughnessItems}
 
@@ -1338,20 +1289,20 @@ func (c *APIClient) sendRequest(key string, url *url.URL) (*http.Response, []byt
 	urlString := url.String()
 	req, err := http.NewRequest("GET", urlString, nil)
 	if err != nil {
-		return nil, nil, fmt.Errorf("LoadMapData %v failed to create request: %v", key, err)
+		return nil, nil, fmt.Errorf("sendRequest %v failed to create request: %v", key, err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, nil, fmt.Errorf("LoadMapData %v request failed: %v", key, err)
+		return nil, nil, fmt.Errorf("sendRequest %v request failed: %v", key, err)
 	}
 
 	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, nil, fmt.Errorf("LoadMapData %v failed to read response: %v", key, err)
+		return nil, nil, fmt.Errorf("sendRequest %v failed to read response: %v", key, err)
 	}
 
 	return resp, b, err
@@ -1407,17 +1358,48 @@ func (c *APIClient) LoadMapData(key string) (*protos.ClientMap, error) {
 	return mapResult, nil
 }
 
-func (c *APIClient) CalculateExpression(scanId, quantId, expressionId, roiId string, units protos.DataUnit) (*protos.ClientMap, error) {
-	req := &protos.ExpressionCalculateReq{Requests: []*protos.DataSourceParams{{
-		ScanId:       scanId,
-		QuantId:      quantId,
-		ExpressionId: expressionId,
-		RoiId:        roiId,
-		Units:        units,
-	}}}
+func (c *APIClient) TriggerScheduledJob(scheduledJobId string, jobParametersJson string) (string, error) {
+	params := map[string]string{}
+	err := json.Unmarshal([]byte(jobParametersJson), &params)
+	if err != nil {
+		return "", err
+	}
 
-	msg := &protos.WSMessage{Contents: &protos.WSMessage_ExpressionCalculateReq{
-		ExpressionCalculateReq: req,
+	req := &protos.TriggerScheduledJobReq{
+		ScheduledJobId: scheduledJobId,
+		JobParameters:  params,
+	}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_TriggerScheduledJobReq{
+		TriggerScheduledJobReq: req,
+	}}
+
+	resps, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return "", err
+	}
+
+	if resps[0].Status != protos.ResponseStatus_WS_OK {
+		return "", fmt.Errorf("TriggerScheduledJob %v status: %v, error: %v", scheduledJobId, resps[0].Status, resps[0].ErrorText)
+	}
+
+	resp := resps[0].GetTriggerScheduledJobResp()
+	return resp.JobId, nil
+}
+
+func (c *APIClient) GetExpressionOutput(scanId, quantId, expressionId, roiId string, units protos.DataUnit) (*protos.ClientMap, error) {
+	req := &protos.ExpressionOutputReq{
+		Request: &protos.DataSourceParams{
+			ScanId:       scanId,
+			QuantId:      quantId,
+			ExpressionId: expressionId,
+			RoiId:        roiId,
+			Units:        units,
+		},
+	}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ExpressionOutputReq{
+		ExpressionOutputReq: req,
 	}}
 
 	resps, err := c.sendMessageWaitResponse(msg)
@@ -1425,32 +1407,17 @@ func (c *APIClient) CalculateExpression(scanId, quantId, expressionId, roiId str
 		return nil, err
 	}
 
-	resp := resps[0].GetExpressionCalculateResp()
-
-	if len(resp.Result.Error) > 0 {
-		return nil, fmt.Errorf("Error calculating expression: %v", resp.Result.Error)
+	if resps[0].Status != protos.ResponseStatus_WS_OK {
+		return nil, fmt.Errorf("ExpressionOutput status: %v, error: %v", resps[0].Status, resps[0].ErrorText)
 	}
 
-	if len(resp.Result.QueryResults) != 1 {
-		return nil, fmt.Errorf("Expected 1 expression calculation result, got %v", len(resp.Result.QueryResults))
+	resp := resps[0].GetExpressionOutputResp()
+	if resp == nil {
+		return nil, fmt.Errorf("ExpressionOutput got empty response")
 	}
 
-	if len(resp.Result.QueryResults[0].Error) > 0 {
-		return nil, fmt.Errorf("Error calculating expression (%v): %v", expressionId, resp.Result.QueryResults[0].Error)
-	}
-
-	// Convert the result to a map
-	result := &protos.ClientMap{
-		EntryPMCs:   []int32{},
-		FloatValues: []float64{},
-	}
-
-	for _, item := range resp.Result.QueryResults[0].ExprResult.ResultValues.Values {
-		result.EntryPMCs = append(result.EntryPMCs, int32(item.Pmc))
-		result.FloatValues = append(result.FloatValues, float64(item.Value))
-	}
-
-	return result, nil
+	// We got the job id/cache key - read it from memoisation
+	return c.LoadMapData(resp.Key)
 }
 
 func (c *APIClient) DeleteImage(imageName string) error {
@@ -1468,42 +1435,222 @@ func (c *APIClient) DeleteImage(imageName string) error {
 	return nil
 }
 
-func (c *APIClient) UploadImage(imageUpload *protos.ImageUploadHttpRequest) error {
-	reqBody, err := proto.Marshal(imageUpload)
+func (c *APIClient) GetScanDefaultImage(scanIds []string) (map[string]string, error) { //([]string, []string, error) {
+	req := &protos.ImageGetDefaultReq{ScanIds: scanIds}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageGetDefaultReq{
+		ImageGetDefaultReq: req,
+	}}
+
+	resps, err := c.sendMessageWaitResponse(msg)
+
 	if err != nil {
-		return fmt.Errorf("UploadImage failed to create request body: %v", err)
+		//return nil, nil, err
+		return nil, err
+	}
+	//return []string{fmt.Sprintf("resps length=%v", len(resps))}, []string{fmt.Sprintf("%+v", resps[0])}, nil
+
+	resp := resps[0].GetImageGetDefaultResp()
+	if resp == nil {
+		//return nil, nil, fmt.Errorf("Expected response type not received")
+		return nil, fmt.Errorf("Expected response type not received")
 	}
 
-	// We send this via HTTP endpoints
-	url, err := c.socket.GetHost("/images")
+	return resp.DefaultImagesPerScanId, nil
+	/*
+	   ids := utils.GetMapKeys(resp.DefaultImagesPerScanId)
+	   sort.Strings(ids)
+	   defaultImages := []string{}
+
+	   	for _, id := range ids {
+	   		defaultImages = append(defaultImages, resp.DefaultImagesPerScanId[id])
+	   	}
+
+	   return ids, defaultImages, nil
+	*/
+}
+
+func (c *APIClient) SetScanDefaultImage(scanId string, imageName string) error {
+	req := &protos.ImageSetDefaultReq{ScanId: scanId, DefaultImageFileName: imageName}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageSetDefaultReq{
+		ImageSetDefaultReq: req,
+	}}
+
+	_, err := c.sendMessageWaitResponse(msg)
 	if err != nil {
-		return fmt.Errorf("UploadImage failed to get url: %v", err)
+		return err
 	}
+
+	return nil
+}
+
+func (c *APIClient) uploadFileData(
+	scanId string,
+	fileName string,
+	intent string,
+	totalBytes uint64,
+	writePos uint64,
+	data []byte) (uint64, bool, error) {
+	u, err := url.Parse(c.apiUrl)
+	if err != nil {
+		return 0, false, fmt.Errorf("uploadFileData failed to get url: %v", err)
+	}
+	u.Path = path.Join(u.Path, "file")
+
+	q := u.Query()
+
+	q.Add(queryparams.ScanIdentifier, scanId)
+	q.Add(queryparams.FileNameIdentifier, fileName)
+	q.Add(queryparams.FileTotalBytes, fmt.Sprintf("%v", totalBytes))
+	q.Add(queryparams.BytesUploadedSoFar, fmt.Sprintf("%v", writePos))
+	if len(intent) > 0 {
+		q.Add(queryparams.UploadIntent, intent)
+	}
+
+	u.RawQuery = q.Encode()
 
 	client := &http.Client{}
-	req, err := http.NewRequest("PUT", url.String(), bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest("PUT", u.String(), bytes.NewBuffer(data))
 	if err != nil {
-		return fmt.Errorf("UploadImage failed to create request: %v", err)
+		return 0, false, fmt.Errorf("uploadFileData failed to create request: %v", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+c.socket.JWT)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("UploadImage request failed: %v", err)
+		return 0, false, fmt.Errorf("uploadFileData request failed: %v", err)
 	}
 
 	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("UploadImage failed to read response: %v", err)
+		return 0, false, fmt.Errorf("uploadFileData failed to read response: %v", err)
 	}
 
-	if len(b) > 0 {
-		return fmt.Errorf("Upload image unexpected result: %v", string(b))
+	if len(b) <= 0 {
+		return 0, false, fmt.Errorf("Got status %v but no error message", resp.Status)
 	}
 
-	return nil
+	if resp.StatusCode != http.StatusOK {
+		// Body should contain an error
+		return 0, false, fmt.Errorf("%v", string(b))
+	}
+
+	// Status is OK, read body as JSON
+	respPI := &protos.UploadHttpResponseBody{}
+	err = protojson.Unmarshal(b, respPI) // proto.Unmarshal(b, respPI)
+	if err == nil {
+		return respPI.BytesReceived, respPI.Completed, nil
+	}
+
+	// Otherwise it's an error!
+	return 0, false, fmt.Errorf("uploadFileData unexpected result: %v. Error: %v", string(b), err)
+}
+
+func (c *APIClient) UploadImage(localImagePath string, imageImportReq *protos.ImageImportReq) error {
+	if imageImportReq == nil {
+		return fmt.Errorf("UploadImage: image import request cannot be empty")
+	}
+
+	fi, err := os.Stat(localImagePath)
+	if err != nil {
+		return fmt.Errorf("UploadImage: Failed to find file: %v", err)
+	}
+
+	if fi.IsDir() {
+		return fmt.Errorf("UploadImage: %v is a directory", localImagePath)
+	}
+
+	if fi.Size() <= 0 {
+		return fmt.Errorf("UploadImage: %v is empty", localImagePath)
+	}
+
+	// Get file upload related constants from the request
+	scanId := imageImportReq.OriginScanId
+	imageName := imageImportReq.Name
+
+	imgByteSize := uint64(fi.Size())
+	sz, complete, err := c.uploadFileData(scanId, imageName, "image", imgByteSize, 0, nil)
+	if err != nil {
+		return fmt.Errorf("UploadImage resume check error: %v", err)
+	}
+
+	if complete {
+		// It's there already, stop here
+		return nil
+	}
+
+	// We now know where to start reading from
+	if sz >= imgByteSize {
+		// Somethings wrong
+		return fmt.Errorf("UploadImage unexpected resume position past end of file: %v", sz)
+	}
+
+	f, err := os.Open(localImagePath)
+	if err != nil {
+		return fmt.Errorf("UploadImage failed to open: %v", localImagePath)
+	}
+
+	// Seek to the resume position
+	_, err = f.Seek(int64(sz), 0)
+	if err != nil {
+		return fmt.Errorf("UploadImage failed to seek: %v", err)
+	}
+
+	// Read a part. File may not have enough bytes left!
+	partByteSize := multipartupload.MaxPartSize - 1024*1024
+	partBytes := make([]byte, partByteSize)
+	filePos := sz
+	for filePos < imgByteSize {
+		// We have more stuff to send, read in a chunk and send it
+		readSize, err := f.Read(partBytes)
+		if err != nil {
+			return fmt.Errorf("UploadImage failed to read part of file: %v", err)
+		}
+
+		// Send it
+		if readSize > 0 {
+			endPos := filePos + uint64(readSize)
+			fmt.Printf("Uploading %v: bytes %v-%v (%.1f%%)...\n", imageName, filePos, endPos, 100*float32(endPos)/float32(fi.Size()))
+
+			uploadRespSz, completed, err := c.uploadFileData(scanId, imageName, "image", imgByteSize, filePos, partBytes[0:readSize])
+			if err != nil {
+				return fmt.Errorf("UploadImage error uploading part: %v", err)
+			}
+
+			if completed {
+				if uploadRespSz != imgByteSize {
+					fmt.Printf("Upload complete, but upload size %v doesn't match file size %v", uploadRespSz, imgByteSize)
+				}
+				break
+			}
+
+			if uploadRespSz > 0 {
+				return fmt.Errorf("UploadImage unexpected size returned: %v", uploadRespSz)
+			}
+
+			filePos += uint64(readSize)
+		}
+	}
+
+	// At this point we've uploaded the image, do the import
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageImportReq{
+		ImageImportReq: imageImportReq,
+	}}
+
+	resps, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return err
+	}
+
+	if len(resps) == 1 {
+		return nil
+	}
+
+	return fmt.Errorf("Expected 1 response for image import, got %v", len(resps))
 }
 
 func (c *APIClient) ensureTags() error {
@@ -1567,6 +1714,23 @@ func (c *APIClient) UploadImageBeamLocations(imageName string, locForScan *proto
 
 	msg := &protos.WSMessage{Contents: &protos.WSMessage_ImageBeamLocationUploadReq{
 		ImageBeamLocationUploadReq: req,
+	}}
+
+	_, err := c.sendMessageWaitResponse(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *APIClient) CreateUserDefinedScan(scanId string) error {
+	req := &protos.ScanCreateUserDefinedReq{
+		Id: scanId,
+	}
+
+	msg := &protos.WSMessage{Contents: &protos.WSMessage_ScanCreateUserDefinedReq{
+		ScanCreateUserDefinedReq: req,
 	}}
 
 	_, err := c.sendMessageWaitResponse(msg)
